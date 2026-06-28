@@ -6,6 +6,7 @@ import { EditorArea } from "./EditorArea";
 import { PrimarySidebar } from "./PrimarySidebar";
 import { StatusBar } from "./StatusBar";
 import { TitleBarAuxiliaryToggle } from "./TitleBarAuxiliaryToggle";
+import { TitleBarPrimarySidebarToggle } from "./TitleBarPrimarySidebarToggle";
 import type { ActivityViewId } from "./types";
 
 export function WorkbenchLayout({ projectLabel }: { projectLabel: string }) {
@@ -29,6 +30,10 @@ export function WorkbenchLayout({ projectLabel }: { projectLabel: string }) {
 
   return (
     <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+      <TitleBarPrimarySidebarToggle
+        visible={primarySidebarVisible}
+        onToggle={() => setPrimarySidebarVisible((value) => !value)}
+      />
       <TitleBarAuxiliaryToggle
         visible={auxiliaryVisible}
         onToggle={() => setAuxiliaryVisible((value) => !value)}
