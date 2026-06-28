@@ -1,4 +1,5 @@
 import { cn } from "../../lib/cn";
+import { sidebarHeaderActionClass, sidebarHeaderIconClass } from "./sidebar-header-chrome";
 import type { ActivityViewId } from "./types";
 
 const viewTitles: Record<ActivityViewId, string> = {
@@ -26,13 +27,19 @@ export function PrimarySidebar({
       aria-label={viewTitles[activeView]}
       className="flex w-workbench-sidebar shrink-0 flex-col border-r border-titlebar-border bg-workbench-sidebar"
     >
-      <header className="flex h-workbench-tab shrink-0 items-center justify-between px-3 text-xs font-semibold tracking-wide text-workbench-sidebar-title uppercase">
+      <header className="flex h-workbench-tab shrink-0 items-center justify-between gap-2 px-3 text-xs font-semibold tracking-wide text-workbench-sidebar-title uppercase">
         <span className="truncate">{viewTitles[activeView]}</span>
-        <div className="flex items-center gap-0.5 text-workbench-activity-bar-foreground">
-          <span
-            aria-hidden="true"
-            className="icon-[codicon--ellipsis] rounded p-0.5 text-base hover:bg-window-button-hover"
-          />
+        <div className="flex shrink-0 items-center gap-0.5">
+          <button
+            aria-label="视图操作（演示）"
+            className={sidebarHeaderActionClass}
+            type="button"
+          >
+            <span
+              aria-hidden="true"
+              className={cn(sidebarHeaderIconClass, "icon-[codicon--ellipsis]")}
+            />
+          </button>
         </div>
       </header>
 

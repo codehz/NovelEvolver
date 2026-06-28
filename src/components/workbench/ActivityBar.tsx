@@ -22,6 +22,9 @@ const activityButtonClass = cn(
   "focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-badge-background",
 );
 
+const activityIconClass =
+  "inline-flex size-6 shrink-0 items-center justify-center text-[1.375rem] leading-none";
+
 export function ActivityBar({
   activeView,
   auxiliaryVisible,
@@ -60,13 +63,13 @@ export function ActivityBar({
                   className="absolute left-0 h-6 w-0.5 rounded-r bg-workbench-activity-indicator"
                 />
               ) : null}
-              <span aria-hidden="true" className={cn(item.iconClass, "size-6 text-2xl")} />
+              <span aria-hidden="true" className={cn(activityIconClass, item.iconClass)} />
             </button>
           );
         })}
       </div>
 
-      <div className="mt-auto flex flex-col pb-1">
+      <div className="mt-auto flex flex-col">
         <button
           aria-label={auxiliaryVisible ? "隐藏 AI 侧边栏" : "显示 AI 侧边栏"}
           aria-pressed={auxiliaryVisible}
@@ -81,7 +84,7 @@ export function ActivityBar({
           <span
             aria-hidden="true"
             className={cn(
-              "size-6 text-2xl",
+              activityIconClass,
               auxiliaryVisible
                 ? "icon-[codicon--layout-sidebar-right]"
                 : "icon-[codicon--layout-sidebar-right-off]",
@@ -94,7 +97,7 @@ export function ActivityBar({
           href="/"
           title="返回项目列表"
         >
-          <span aria-hidden="true" className="icon-[codicon--home] size-6 text-2xl" />
+          <span aria-hidden="true" className={cn(activityIconClass, "icon-[codicon--home]")} />
         </Link>
       </div>
     </nav>

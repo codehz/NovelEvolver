@@ -1,4 +1,5 @@
 import { cn } from "../../lib/cn";
+import { sidebarHeaderActionClass, sidebarHeaderIconClass } from "./sidebar-header-chrome";
 
 const demoMessages = [
   {
@@ -25,25 +26,31 @@ export function AuxiliarySidebar({ visible }: { visible: boolean }) {
       aria-label="AI 助手"
       className="flex w-workbench-auxiliary shrink-0 flex-col border-l border-titlebar-border bg-workbench-sidebar"
     >
-      <header className="flex h-workbench-tab shrink-0 items-center justify-between border-b border-titlebar-border px-3">
-        <div className="flex items-center gap-2 text-sm font-medium text-app-foreground">
-          <span aria-hidden="true" className="icon-[codicon--sparkle] text-base text-ctp-mauve" />
-          AI 助手
+      <header className="flex h-workbench-tab shrink-0 items-center justify-between gap-2 border-b border-titlebar-border px-3">
+        <div className="flex min-w-0 items-center gap-2 text-sm font-medium text-app-foreground">
+          <span
+            aria-hidden="true"
+            className={cn(sidebarHeaderIconClass, "icon-[codicon--sparkle] text-ctp-mauve")}
+          />
+          <span className="truncate">AI 助手</span>
         </div>
-        <div className="flex items-center gap-0.5 text-workbench-activity-bar-foreground">
+        <div className="flex shrink-0 items-center gap-0.5">
           <button
             aria-label="新建对话（演示）"
-            className="rounded p-1 hover:bg-window-button-hover"
+            className={sidebarHeaderActionClass}
             type="button"
           >
-            <span aria-hidden="true" className="icon-[codicon--add] text-sm" />
+            <span aria-hidden="true" className={cn(sidebarHeaderIconClass, "icon-[codicon--add]")} />
           </button>
           <button
             aria-label="更多操作（演示）"
-            className="rounded p-1 hover:bg-window-button-hover"
+            className={sidebarHeaderActionClass}
             type="button"
           >
-            <span aria-hidden="true" className="icon-[codicon--ellipsis] text-sm" />
+            <span
+              aria-hidden="true"
+              className={cn(sidebarHeaderIconClass, "icon-[codicon--ellipsis]")}
+            />
           </button>
         </div>
       </header>
