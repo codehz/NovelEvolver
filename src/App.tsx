@@ -1,14 +1,15 @@
-import { HashRouter } from "react-router-dom";
+import { Router } from "wouter";
+import { useHashLocation } from "wouter/use-hash-location";
 
 import { WindowFrame } from "./components/WindowFrame";
 import { AppRoutes } from "./routes";
 
 export default function App() {
   return (
-    <HashRouter>
+    <Router hook={useHashLocation}>
       <WindowFrame>
         <AppRoutes />
       </WindowFrame>
-    </HashRouter>
+    </Router>
   );
 }

@@ -27,8 +27,8 @@
     "nano-git": "^0.7.1",
     "react": "^19.2.7",
     "react-dom": "^19.2.7",
-    "react-router-dom": "^7.18.0",
-    "tailwind-merge": "^3.6.0"
+    "tailwind-merge": "^3.6.0",
+    "wouter": "^3.10.0"
   },
   "devDependencies": {
     "@tailwindcss/vite": "^4.3.1",

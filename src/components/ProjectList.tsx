@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useLocation } from "wouter";
 
 import type { ProjectListItem } from "../../shared/project";
 import { cn } from "../lib/cn";
@@ -22,7 +22,7 @@ const projectCardActionClass = cn(
 );
 
 export function ProjectList() {
-  const navigate = useNavigate();
+  const [, navigate] = useLocation();
   const [projects, setProjects] = useState<ProjectListItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -52,7 +52,7 @@ export function ProjectList() {
     try {
       const project = await window.invokeIpc("projects:create-dialog");
       if (project) {
-        void navigate(`/project/${project.id}`);
+        navigate(`/project/${project.id}`);
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : "创建项目失败");
@@ -67,7 +67,7 @@ export function ProjectList() {
     try {
       const project = await window.invokeIpc("projects:open-dialog");
       if (project) {
-        void navigate(`/project/${project.id}`);
+        navigate(`/project/${project.id}`);
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : "打开项目文件失败");
@@ -85,7 +85,7 @@ export function ProjectList() {
         await refresh();
         return;
       }
-      void navigate(`/project/${record.id}`);
+      navigate(`/project/${record.id}`);
     } catch (err) {
       setError(err instanceof Error ? err.message : "打开项目失败");
     }

@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Link, useParams } from "react-router-dom";
+import { Link, useParams } from "wouter";
 
 import type { ProjectListItem } from "../../shared/project";
 import { cn } from "../lib/cn";
@@ -61,7 +61,7 @@ export function ProjectWorkspace() {
             "inline-flex items-center gap-1 rounded-md border border-titlebar-border bg-titlebar-background px-3 py-1.5 text-sm font-medium text-app-foreground",
             "hover:bg-ctp-surface0/40",
           )}
-          to="/"
+          href="/"
         >
           <span aria-hidden="true" className="icon-[codicon--arrow-left] text-sm" />
           返回项目列表
