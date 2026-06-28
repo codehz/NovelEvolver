@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 
 import type { ProjectListItem } from "../../shared/project";
 import { cn } from "../lib/cn";
@@ -21,6 +22,7 @@ const projectCardActionClass = cn(
 );
 
 export function ProjectList() {
+  const navigate = useNavigate();
   const [projects, setProjects] = useState<ProjectListItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -50,7 +52,7 @@ export function ProjectList() {
     try {
       const project = await window.invokeIpc("projects:create-dialog");
       if (project) {
-        await refresh();
+        void navigate(`/project/${project.id}`);
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : "创建项目失败");
@@ -65,7 +67,7 @@ export function ProjectList() {
     try {
       const project = await window.invokeIpc("projects:open-dialog");
       if (project) {
-        await refresh();
+        void navigate(`/project/${project.id}`);
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : "打开项目文件失败");
@@ -77,10 +79,15 @@ export function ProjectList() {
   const handleOpenProject = async (id: number) => {
     setError(null);
     try {
-      await window.invokeIpc("projects:record-open", id);
-      await refresh();
+      const record = await window.invokeIpc("projects:record-open", id);
+      if (!record) {
+        setError("未找到该项目");
+        await refresh();
+        return;
+      }
+      void navigate(`/project/${record.id}`);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "更新打开时间失败");
+      setError(err instanceof Error ? err.message : "打开项目失败");
     }
   };
 

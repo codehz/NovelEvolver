@@ -7,6 +7,7 @@ export type AppIpcMethodMap = {
   "window:toggle-maximize": () => Promise<WindowState>;
   "window:close": () => Promise<void>;
   "projects:list": () => Promise<ProjectListItem[]>;
+  "projects:get": (id: number) => Promise<ProjectListItem | null>;
   "projects:open-dialog": () => Promise<ProjectRecord | null>;
   "projects:create-dialog": () => Promise<ProjectRecord | null>;
   "projects:record-open": (id: number) => Promise<ProjectRecord | null>;

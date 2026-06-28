@@ -15,6 +15,10 @@ export function createProjectsIpcMethodHandlers(
   return {
     "projects:list": async () =>
       deps.getProjectsDb().list().map((record) => projectWithDisplayPath(record)),
+    "projects:get": async (_event, id) => {
+      const record = deps.getProjectsDb().getById(id);
+      return record ? projectWithDisplayPath(record) : null;
+    },
     "projects:open-dialog": async (event) => {
       const window = getSenderWindow(event);
       const result = await dialog.showOpenDialog(window, {

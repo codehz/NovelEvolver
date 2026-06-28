@@ -40,6 +40,14 @@ export class ProjectsDatabase {
     return rows.map(rowToRecord);
   }
 
+  getById(id: number): ProjectRecord | null {
+    const row = this.#db
+      .prepare(`SELECT id, path, last_opened_at FROM projects WHERE id = ?`)
+      .get(id) as ProjectRow | undefined;
+
+    return row ? rowToRecord(row) : null;
+  }
+
   upsertByPath(absolutePath: string, lastOpenedAt: number): ProjectRecord {
     this.#db
       .prepare(
