@@ -16,7 +16,7 @@ const primaryItems: ActivityItem[] = [
 ];
 
 const activityButtonClass = cn(
-  "relative flex h-activity-bar-item w-activity-bar shrink-0 items-center justify-center border-0 bg-transparent p-2.5",
+  "flex h-activity-bar-item w-activity-bar shrink-0 items-center justify-center border-0 bg-transparent p-2.5",
   "text-workbench-activity-bar-foreground transition-colors duration-150",
   "hover:text-workbench-activity-bar-active",
   "focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-badge-background",
@@ -57,12 +57,6 @@ export function ActivityBar({
               type="button"
               onClick={() => onSelectView(item.id)}
             >
-              {isActive ? (
-                <span
-                  aria-hidden="true"
-                  className="absolute left-0 h-6 w-0.5 rounded-r bg-workbench-activity-indicator"
-                />
-              ) : null}
               <span aria-hidden="true" className={cn(activityIconClass, item.iconClass)} />
             </button>
           );

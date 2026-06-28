@@ -31,9 +31,8 @@
   --spacing-workbench-status-bar: 1.375rem;
 
   --color-workbench-activity-bar: var(--color-ctp-crust);
-  --color-workbench-activity-bar-foreground: var(--color-ctp-subtext0);
-  --color-workbench-activity-bar-active: var(--color-ctp-text);
-  --color-workbench-activity-indicator: var(--color-ctp-mauve);
+  --color-workbench-activity-bar-foreground: var(--color-ctp-overlay0);
+  --color-workbench-activity-bar-active: var(--color-ctp-mauve);
   --color-workbench-sidebar: var(--color-ctp-mantle);
   --color-workbench-sidebar-title: var(--color-ctp-mauve);
   --color-workbench-editor: var(--color-ctp-base);
