@@ -9,7 +9,8 @@ function formatLastOpened(timestamp: number): string {
 
 function projectName(path: string): string {
   const segments = path.replace(/\/$/, "").split(/[/\\]/);
-  return segments.at(-1) ?? path;
+  const fileName = segments.at(-1) ?? path;
+  return fileName.toLowerCase().endsWith(".npk") ? fileName.slice(0, -4) : fileName;
 }
 
 const projectCardActionClass = cn(
@@ -50,7 +51,7 @@ export function ProjectList() {
         await refresh();
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : "打开文件夹失败");
+      setError(err instanceof Error ? err.message : "打开项目文件失败");
     } finally {
       setOpening(false);
     }
@@ -104,7 +105,7 @@ export function ProjectList() {
       {loading ? (
         <p className="text-sm text-ctp-subtext0">加载中…</p>
       ) : projects.length === 0 ? (
-        <p className="text-sm text-ctp-subtext0">暂无项目，点击「打开项目」选择文件夹。</p>
+        <p className="text-sm text-ctp-subtext0">暂无项目，点击「打开项目」选择 .npk 文件。</p>
       ) : (
         <ul className="grid min-h-0 flex-1 auto-rows-fr grid-cols-[repeat(auto-fill,minmax(14rem,1fr))] gap-3 overflow-auto">
           {projects.map((project) => {
@@ -138,7 +139,7 @@ export function ProjectList() {
                   >
                     <span
                       aria-hidden="true"
-                      className="icon-[codicon--folder] text-xl text-ctp-mauve"
+                      className="icon-[codicon--file] text-xl text-ctp-mauve"
                     />
                     <span className="line-clamp-2 leading-snug font-medium text-app-foreground">
                       {name}

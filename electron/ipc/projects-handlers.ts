@@ -13,8 +13,9 @@ export function createProjectsIpcMethodHandlers(
     "projects:open-dialog": async (event) => {
       const window = getSenderWindow(event);
       const result = await dialog.showOpenDialog(window, {
-        properties: ["openDirectory"],
-        title: "打开项目文件夹",
+        properties: ["openFile"],
+        title: "打开项目文件",
+        filters: [{ name: "NovelEvolver 项目", extensions: ["npk"] }],
       });
 
       if (result.canceled || result.filePaths.length === 0) {
@@ -22,6 +23,10 @@ export function createProjectsIpcMethodHandlers(
       }
 
       const path = result.filePaths[0];
+      if (!path.toLowerCase().endsWith(".npk")) {
+        throw new Error("请选择 .npk 项目文件");
+      }
+
       return deps.getProjectsDb().upsertByPath(path, Date.now());
     },
     "projects:record-open": async (_event, id) => {
