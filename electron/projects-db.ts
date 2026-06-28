@@ -74,6 +74,11 @@ export class ProjectsDatabase {
     return row ? rowToRecord(row) : null;
   }
 
+  removeById(id: number): boolean {
+    const result = this.#db.prepare(`DELETE FROM projects WHERE id = ?`).run(id);
+    return result.changes > 0;
+  }
+
   close() {
     this.#db.close();
   }

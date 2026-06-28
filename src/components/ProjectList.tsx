@@ -12,6 +12,13 @@ function projectName(path: string): string {
   return segments.at(-1) ?? path;
 }
 
+const projectCardActionClass = cn(
+  "inline-flex size-7 shrink-0 items-center justify-center rounded-md border-0 bg-transparent p-0",
+  "text-ctp-subtext0 transition-colors duration-150",
+  "hover:bg-window-button-hover hover:text-ctp-red",
+  "focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-badge-background",
+);
+
 export function ProjectList() {
   const [projects, setProjects] = useState<ProjectRecord[]>([]);
   const [loading, setLoading] = useState(true);
@@ -59,8 +66,18 @@ export function ProjectList() {
     }
   };
 
+  const handleRemoveProject = async (id: number) => {
+    setError(null);
+    try {
+      await window.invokeIpc("projects:remove", id);
+      await refresh();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "从列表移除失败");
+    }
+  };
+
   return (
-    <div className="flex size-full flex-col gap-4 p-6">
+    <div className="flex size-full min-h-0 flex-col gap-4 p-6">
       <div className="flex items-center justify-between gap-4">
         <h1 className="text-lg font-semibold text-app-foreground">项目</h1>
         <button
@@ -89,27 +106,54 @@ export function ProjectList() {
       ) : projects.length === 0 ? (
         <p className="text-sm text-ctp-subtext0">暂无项目，点击「打开项目」选择文件夹。</p>
       ) : (
-        <ul className="flex flex-col gap-2">
-          {projects.map((project) => (
-            <li key={project.id}>
-              <button
-                className={cn(
-                  "flex w-full flex-col items-start gap-0.5 rounded-md border border-titlebar-border",
-                  "bg-titlebar-background px-3 py-2 text-left transition-colors hover:bg-ctp-surface0/40",
-                )}
-                type="button"
-                onClick={() => {
-                  void handleOpenProject(project.id);
-                }}
-              >
-                <span className="font-medium text-app-foreground">{projectName(project.path)}</span>
-                <span className="truncate text-xs text-ctp-subtext0">{project.path}</span>
-                <span className="text-xs text-ctp-subtext1">
-                  上次打开：{formatLastOpened(project.lastOpenedAt)}
-                </span>
-              </button>
-            </li>
-          ))}
+        <ul className="grid min-h-0 flex-1 auto-rows-fr grid-cols-project-list gap-3 overflow-auto">
+          {projects.map((project) => {
+            const name = projectName(project.path);
+
+            return (
+              <li key={project.id}>
+                <article
+                  className={cn(
+                    "group relative flex h-full min-h-28 flex-col rounded-lg border border-titlebar-border",
+                    "bg-titlebar-background transition-colors hover:border-ctp-surface1 hover:bg-ctp-surface0/30",
+                  )}
+                >
+                  <button
+                    aria-label={`从列表移除 ${name}`}
+                    className={cn(projectCardActionClass, "absolute top-2 right-2 z-10 opacity-0 group-hover:opacity-100")}
+                    type="button"
+                    onClick={() => {
+                      void handleRemoveProject(project.id);
+                    }}
+                  >
+                    <span aria-hidden="true" className="icon-[codicon--trash] text-sm" />
+                  </button>
+
+                  <button
+                    className="flex min-h-28 flex-1 flex-col gap-2 p-4 pr-10 text-left"
+                    type="button"
+                    onClick={() => {
+                      void handleOpenProject(project.id);
+                    }}
+                  >
+                    <span
+                      aria-hidden="true"
+                      className="icon-[codicon--folder] text-xl text-ctp-blue"
+                    />
+                    <span className="line-clamp-2 leading-snug font-medium text-app-foreground">
+                      {name}
+                    </span>
+                    <span className="line-clamp-2 text-xs leading-relaxed text-ctp-subtext0">
+                      {project.path}
+                    </span>
+                    <span className="mt-auto text-xs text-ctp-subtext1">
+                      {formatLastOpened(project.lastOpenedAt)}
+                    </span>
+                  </button>
+                </article>
+              </li>
+            );
+          })}
         </ul>
       )}
     </div>

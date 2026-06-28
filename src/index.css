@@ -23,6 +23,8 @@
   --spacing-titlebar: 2.25rem;
   --spacing-titlebar-button: 3rem;
   --spacing-mac-traffic-light-offset: 4.5rem;
+  --size-project-card-min: 14rem;
+  --grid-template-columns-project-list: repeat(auto-fill, minmax(var(--size-project-card-min), 1fr));
   --font-display: "MiSans", sans-serif;
 }
 

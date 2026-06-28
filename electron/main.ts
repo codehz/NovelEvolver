@@ -107,6 +107,9 @@ const ipcMethodHandlers = {
   "projects:record-open": async (_event, id) => {
     return getProjectsDb().touchById(id, Date.now());
   },
+  "projects:remove": async (_event, id) => {
+    return getProjectsDb().removeById(id);
+  },
 } satisfies IpcMainMethodHandlers<AppIpcMethodMap>;
 
 void app.whenReady().then(() => {

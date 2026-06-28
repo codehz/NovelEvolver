@@ -9,6 +9,7 @@ export type AppIpcMethodMap = {
   "projects:list": () => Promise<ProjectRecord[]>;
   "projects:open-dialog": () => Promise<ProjectRecord | null>;
   "projects:record-open": (id: number) => Promise<ProjectRecord | null>;
+  "projects:remove": (id: number) => Promise<boolean>;
 };
 
 export type AppIpcEventMap = {
