@@ -10,7 +10,17 @@ import type { ActivityViewId } from "./types";
 
 export function WorkbenchLayout({ projectLabel }: { projectLabel: string }) {
   const [activeView, setActiveView] = useState<ActivityViewId>("explorer");
+  const [primarySidebarVisible, setPrimarySidebarVisible] = useState(true);
   const [auxiliaryVisible, setAuxiliaryVisible] = useState(true);
+
+  function handleSelectView(view: ActivityViewId) {
+    if (view === activeView && primarySidebarVisible) {
+      setPrimarySidebarVisible(false);
+      return;
+    }
+    setActiveView(view);
+    setPrimarySidebarVisible(true);
+  }
 
   const tabs = [
     { id: "chapter-1", label: "第一章.md", active: true },
@@ -24,8 +34,14 @@ export function WorkbenchLayout({ projectLabel }: { projectLabel: string }) {
         onToggle={() => setAuxiliaryVisible((value) => !value)}
       />
       <div className="flex min-h-0 flex-1 overflow-hidden">
-        <ActivityBar activeView={activeView} onSelectView={setActiveView} />
-        <PrimarySidebar activeView={activeView} projectLabel={projectLabel} />
+        <ActivityBar
+          activeView={activeView}
+          primarySidebarVisible={primarySidebarVisible}
+          onSelectView={handleSelectView}
+        />
+        {primarySidebarVisible ? (
+          <PrimarySidebar activeView={activeView} projectLabel={projectLabel} />
+        ) : null}
         <EditorArea tabs={tabs} />
         <AuxiliarySidebar visible={auxiliaryVisible} />
       </div>

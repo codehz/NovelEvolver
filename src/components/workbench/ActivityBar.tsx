@@ -27,9 +27,11 @@ const activityIconClass =
 
 export function ActivityBar({
   activeView,
+  primarySidebarVisible,
   onSelectView,
 }: {
   activeView: ActivityViewId;
+  primarySidebarVisible: boolean;
   onSelectView: (view: ActivityViewId) => void;
 }) {
   return (
@@ -39,11 +41,12 @@ export function ActivityBar({
     >
       <div className="flex flex-col">
         {primaryItems.map((item) => {
-          const isActive = activeView === item.id;
+          const isActive = primarySidebarVisible && activeView === item.id;
           return (
             <button
               key={item.id}
               aria-current={isActive ? "page" : undefined}
+              aria-expanded={isActive ? true : undefined}
               aria-label={item.label}
               className={cn(
                 activityButtonClass,
