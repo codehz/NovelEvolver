@@ -1,5 +1,10 @@
 @import "tailwindcss";
 
+@theme {
+  --app-region-drag: drag;
+  --app-region-no-drag: no-drag;
+}
+
 :root {
   color: #1c1917;
   background: #f4efe7;
@@ -21,4 +26,8 @@ body,
 
 body {
   min-width: 320px;
+}
+
+@utility app-region-* {
+  -webkit-app-region: --value(--app-region-*);
 }
