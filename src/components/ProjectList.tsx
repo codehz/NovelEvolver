@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 
-import type { ProjectRecord } from "../../shared/project";
+import type { ProjectListItem } from "../../shared/project";
 import { cn } from "../lib/cn";
 
 function formatLastOpened(timestamp: number): string {
@@ -21,7 +21,7 @@ const projectCardActionClass = cn(
 );
 
 export function ProjectList() {
-  const [projects, setProjects] = useState<ProjectRecord[]>([]);
+  const [projects, setProjects] = useState<ProjectListItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [opening, setOpening] = useState(false);
@@ -178,8 +178,11 @@ export function ProjectList() {
                     <span className="line-clamp-2 min-h-0 min-w-0 leading-snug font-medium text-app-foreground">
                       {name}
                     </span>
-                    <span className="line-clamp-2 min-h-0 min-w-0 text-xs leading-relaxed wrap-break-word text-ctp-subtext0">
-                      {project.path}
+                    <span
+                      className="line-clamp-2 min-h-0 min-w-0 text-xs leading-relaxed wrap-break-word text-ctp-subtext0"
+                      title={project.path}
+                    >
+                      {project.displayPath}
                     </span>
                     <span className="mt-auto text-xs text-ctp-subtext1">
                       {formatLastOpened(project.lastOpenedAt)}

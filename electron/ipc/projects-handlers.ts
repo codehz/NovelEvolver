@@ -5,6 +5,7 @@ import { createSqliteRepository } from "nano-git/repository/sqlite";
 
 import type { ProjectsIpcMethodMap } from "../../shared/ipc/app-maps";
 import type { IpcMainMethodHandlers } from "../../shared/ipc/types";
+import { projectWithDisplayPath } from "../home-path";
 import type { IpcMainDeps } from "./deps";
 import { getSenderWindow } from "./window-helpers";
 
@@ -12,7 +13,8 @@ export function createProjectsIpcMethodHandlers(
   deps: IpcMainDeps,
 ): IpcMainMethodHandlers<ProjectsIpcMethodMap> {
   return {
-    "projects:list": async () => deps.getProjectsDb().list(),
+    "projects:list": async () =>
+      deps.getProjectsDb().list().map((record) => projectWithDisplayPath(record)),
     "projects:open-dialog": async (event) => {
       const window = getSenderWindow(event);
       const result = await dialog.showOpenDialog(window, {

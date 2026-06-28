@@ -1,4 +1,4 @@
-import type { ProjectRecord } from "../project";
+import type { ProjectListItem, ProjectRecord } from "../project";
 import type { WindowState } from "../window";
 
 export type AppIpcMethodMap = {
@@ -6,7 +6,7 @@ export type AppIpcMethodMap = {
   "window:minimize": () => Promise<void>;
   "window:toggle-maximize": () => Promise<WindowState>;
   "window:close": () => Promise<void>;
-  "projects:list": () => Promise<ProjectRecord[]>;
+  "projects:list": () => Promise<ProjectListItem[]>;
   "projects:open-dialog": () => Promise<ProjectRecord | null>;
   "projects:create-dialog": () => Promise<ProjectRecord | null>;
   "projects:record-open": (id: number) => Promise<ProjectRecord | null>;
