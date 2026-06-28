@@ -1,3 +1,4 @@
+@plugin "../tools/iconify.ts";
 @layer theme, base, components, utilities;
 
 /* App semantic tokens + layout (no default Tailwind palette; colours via Catppuccin ctp-*) */
