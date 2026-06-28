@@ -1,4 +1,4 @@
-import path from "node:path";
+import { join } from "node:path";
 import { app, BrowserWindow, ipcMain } from "electron";
 
 const isDev = !app.isPackaged;
@@ -12,7 +12,7 @@ function createWindow() {
     titleBarStyle: "hiddenInset",
     backgroundColor: "#f4efe7",
     webPreferences: {
-      preload: path.join(__dirname, "preload.js"),
+      preload: join(__dirname, "preload.js"),
       contextIsolation: true,
       nodeIntegration: false,
     },
@@ -24,7 +24,7 @@ function createWindow() {
     return;
   }
 
-  void window.loadFile(path.join(__dirname, "../dist/index.html"));
+  void window.loadFile(join(__dirname, "../dist/index.html"));
 }
 
 void app.whenReady().then(() => {
