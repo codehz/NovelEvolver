@@ -78,24 +78,20 @@ export function ExplorerSidebarDemo({ projectLabel }: { projectLabel: string }) 
     : undefined;
 
   return (
-    <div className="-m-2 flex min-h-0 flex-1 flex-col">
-      <p className="shrink-0 px-3 pt-2 text-xs text-ctp-subtext0" title={projectLabel}>
-        {projectLabel}
-      </p>
-      <div
-        ref={stackRef}
-        className="flex min-h-0 flex-1 flex-col overflow-hidden"
+    <div
+      ref={stackRef}
+      className="-m-2 flex min-h-0 flex-1 flex-col overflow-hidden"
+    >
+      <SidebarViewSection
+        ariaLabel={projectLabel}
+        bodyFillsSection={manuscriptExpanded && !bothExpanded}
+        bodyStyle={manuscriptBodyStyle}
+        expanded={manuscriptExpanded}
+        panelId="explorer-manuscript-panel"
+        sectionStyle={manuscriptSectionStyle}
+        title={projectLabel}
+        onToggleExpanded={() => setManuscriptExpanded((value) => !value)}
       >
-        <SidebarViewSection
-          ariaLabel="正文"
-          bodyFillsSection={manuscriptExpanded && !bothExpanded}
-          bodyStyle={manuscriptBodyStyle}
-          expanded={manuscriptExpanded}
-          panelId="explorer-manuscript-panel"
-          sectionStyle={manuscriptSectionStyle}
-          title="正文"
-          onToggleExpanded={() => setManuscriptExpanded((value) => !value)}
-        >
           <ExplorerTreeBody nodes={manuscriptTree} title="正文" />
         </SidebarViewSection>
         {bothExpanded ? (
@@ -116,7 +112,6 @@ export function ExplorerSidebarDemo({ projectLabel }: { projectLabel: string }) 
         >
           <ExplorerTreeBody nodes={referenceTree} title="辅助资料" />
         </SidebarViewSection>
-      </div>
     </div>
   );
 }
