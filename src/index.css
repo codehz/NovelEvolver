@@ -1,5 +1,6 @@
 @import "tailwindcss";
 @import "@catppuccin/tailwindcss/mocha.css";
+@import "misans/lib/Normal/MiSans-Regular.min.css";
 
 @plugin "../tools/iconify.js";
 
@@ -22,11 +23,12 @@
   --spacing-titlebar: 2.25rem;
   --spacing-titlebar-button: 3rem;
   --spacing-mac-traffic-light-offset: 4.5rem;
-  --font-app: "Segoe WPC", "Segoe UI", "Helvetica Neue", Helvetica, Arial, sans-serif;
+  --font-display: "MiSans", sans-serif;
 }
 
 @layer base {
   :root {
+    font-family: var(--font-display);
     color: var(--color-ctp-text);
     background: var(--color-ctp-base);
     color-scheme: dark;
