@@ -1,12 +1,23 @@
 import { join } from "node:path";
-import { app, BrowserWindow, ipcMain } from "electron";
+import { app, BrowserWindow, dialog, ipcMain } from "electron";
 
 import { registerIpcMethods, sendIpcEvent } from "./ipc";
+import { ProjectsDatabase } from "./projects-db";
 import type { AppIpcMethodMap } from "../shared/ipc/app-maps";
 import type { IpcMainMethodHandlers } from "../shared/ipc/types";
 import type { WindowState } from "../shared/window";
 
 const isDev = !app.isPackaged;
+
+let projectsDb: ProjectsDatabase | null = null;
+
+function getProjectsDb(): ProjectsDatabase {
+  if (!projectsDb) {
+    throw new Error("Projects database is not initialized.");
+  }
+
+  return projectsDb;
+}
 
 function getWindowState(window: BrowserWindow): WindowState {
   return {
@@ -78,9 +89,30 @@ const ipcMethodHandlers = {
   "window:close": async (event) => {
     getSenderWindow(event).close();
   },
+  "projects:list": async () => getProjectsDb().list(),
+  "projects:open-dialog": async (event) => {
+    const window = getSenderWindow(event);
+    const result = await dialog.showOpenDialog(window, {
+      properties: ["openDirectory"],
+      title: "打开项目文件夹",
+    });
+
+    if (result.canceled || result.filePaths.length === 0) {
+      return null;
+    }
+
+    const path = result.filePaths[0];
+    return getProjectsDb().upsertByPath(path, Date.now());
+  },
+  "projects:record-open": async (_event, id) => {
+    return getProjectsDb().touchById(id, Date.now());
+  },
 } satisfies IpcMainMethodHandlers<AppIpcMethodMap>;
 
 void app.whenReady().then(() => {
+  const dbPath = join(app.getPath("userData"), "projects.db");
+  projectsDb = new ProjectsDatabase(dbPath);
+
   registerIpcMethods(ipcMain, ipcMethodHandlers);
 
   createWindow();
@@ -96,4 +128,14 @@ app.on("window-all-closed", () => {
   if (process.platform !== "darwin") {
     app.quit();
   }
+});
+
+app.on("will-quit", () => {
+  projectsDb?.close();
+  projectsDb = null;
+});
+
+app.on("will-quit", () => {
+  projectsDb?.close();
+  projectsDb = null;
 });
