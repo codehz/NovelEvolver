@@ -8,7 +8,6 @@ export const SIDEBAR_SECTION_HEADER_HEIGHT_PX = 24;
 
 const sectionHeaderButtonClass = cn(
   "flex h-6 min-w-0 flex-1 items-center gap-0.5 bg-workbench-panel-header px-1.5 text-left text-xs font-semibold tracking-wide text-workbench-sidebar-title uppercase",
-  "hover:bg-window-button-hover",
   "focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-badge-background",
 );
 
@@ -18,7 +17,7 @@ const sectionHeaderChevronClass = cn(
 
 const sectionHeaderActionClass = cn(
   "inline-flex size-5 shrink-0 items-center justify-center rounded border-0 bg-transparent p-0",
-  "text-workbench-sidebar-title hover:bg-window-button-hover",
+  "text-workbench-sidebar-title",
   "focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-badge-background",
 );
 
