@@ -66,7 +66,7 @@ export function SidebarViewSection({
       className={cn("flex min-h-0 flex-col", bodyFillsSection && expanded && "min-h-0 flex-1")}
       style={sectionStyle}
     >
-      <div className="flex shrink-0 items-center">
+      <div className="flex shrink-0 items-center pr-3">
         <button
           aria-controls={panelId}
           aria-expanded={expanded}
@@ -86,7 +86,7 @@ export function SidebarViewSection({
         {headerActions ?? (
           <button
             aria-label={`${title} 视图操作`}
-            className={cn(sectionHeaderActionClass, "mr-0.5")}
+            className={sectionHeaderActionClass}
             type="button"
           >
             <span
