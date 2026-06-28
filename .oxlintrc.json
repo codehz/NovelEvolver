@@ -1,0 +1,40 @@
+{
+  "$schema": "./node_modules/oxlint/configuration_schema.json",
+  "ignorePatterns": ["dist/**", "dist-electron/**", "node_modules/**"],
+  "jsPlugins": ["oxlint-tailwindcss"],
+  "options": {
+    "typeAware": true,
+    "typeCheck": true
+  },
+  "settings": {
+    "tailwindcss": {
+      "entryPoint": "src/index.css"
+    }
+  },
+  "rules": {
+    "tailwindcss/no-unknown-classes": "error",
+    "tailwindcss/no-duplicate-classes": "error",
+    "tailwindcss/no-conflicting-classes": "error",
+    "tailwindcss/no-unnecessary-whitespace": "error",
+    "tailwindcss/enforce-canonical": "error",
+    "tailwindcss/enforce-sort-order": "warn",
+    "tailwindcss/consistent-variant-order": "warn",
+    "typescript/await-thenable": "error",
+    "typescript/no-floating-promises": "error",
+    "typescript/no-misused-promises": "error"
+  },
+  "overrides": [
+    {
+      "files": ["src/**/*.ts", "src/**/*.tsx"],
+      "env": {
+        "browser": true
+      }
+    },
+    {
+      "files": ["electron/**/*.ts"],
+      "env": {
+        "node": true
+      }
+    }
+  ]
+}

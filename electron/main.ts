@@ -1,5 +1,5 @@
-import { app, BrowserWindow, ipcMain } from "electron";
 import path from "node:path";
+import { app, BrowserWindow, ipcMain } from "electron";
 
 const isDev = !app.isPackaged;
 
@@ -19,15 +19,15 @@ function createWindow() {
   });
 
   if (isDev) {
-    window.loadURL("http://127.0.0.1:5173");
+    void window.loadURL("http://127.0.0.1:5173");
     window.webContents.openDevTools({ mode: "detach" });
     return;
   }
 
-  window.loadFile(path.join(__dirname, "../dist/index.html"));
+  void window.loadFile(path.join(__dirname, "../dist/index.html"));
 }
 
-app.whenReady().then(() => {
+void app.whenReady().then(() => {
   ipcMain.handle("app:get-versions", () => ({
     chrome: process.versions.chrome,
     electron: process.versions.electron,
