@@ -1,5 +1,7 @@
 import { useEffect, useState } from "react";
 
+import { cn } from "./lib/cn";
+
 type WindowState = {
   isMaximized: boolean;
   platform: string;
@@ -28,7 +30,7 @@ function WindowControls({
     <div className="flex h-full shrink-0 items-stretch self-stretch app-region-no-drag">
       <button
         aria-label="Minimize window"
-        className={windowControlButtonClass}
+        className={cn(windowControlButtonClass)}
         type="button"
         onClick={onMinimize}
       >
@@ -36,20 +38,24 @@ function WindowControls({
       </button>
       <button
         aria-label={isMaximized ? "Restore window" : "Maximize window"}
-        className={windowControlButtonClass}
+        className={cn(windowControlButtonClass)}
         type="button"
         onClick={onToggleMaximize}
       >
         <span
           aria-hidden="true"
-          className={
-            isMaximized ? "icon-[codicon--chrome-restore] text-sm" : "icon-[codicon--chrome-maximize] text-sm"
-          }
+          className={cn(
+            "text-sm",
+            isMaximized ? "icon-[codicon--chrome-restore]" : "icon-[codicon--chrome-maximize]",
+          )}
         />
       </button>
       <button
         aria-label="Close window"
-        className={`${windowControlButtonClass} hover:bg-window-button-close-hover hover:text-badge-foreground active:bg-window-button-close-hover active:text-badge-foreground`}
+        className={cn(
+          windowControlButtonClass,
+          "hover:bg-window-button-close-hover hover:text-badge-foreground active:bg-window-button-close-hover active:text-badge-foreground",
+        )}
         type="button"
         onClick={onClose}
       >
@@ -85,7 +91,10 @@ export default function App() {
     <main className="flex min-h-screen flex-col bg-app-background font-app text-app-foreground">
       <header className="flex h-titlebar items-stretch justify-between border-b border-titlebar-border bg-titlebar-background pl-3 select-none app-region-drag">
         <div
-          className={`flex min-w-0 items-center gap-2 self-center ${isMac ? "pl-mac-traffic-light-offset" : ""}`}
+          className={cn(
+            "flex min-w-0 items-center gap-2 self-center",
+            isMac && "pl-mac-traffic-light-offset",
+          )}
         >
           <div className="flex size-5 items-center justify-center rounded-sm bg-badge-background text-badge font-semibold text-badge-foreground app-region-no-drag">
             NE
