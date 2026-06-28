@@ -11,8 +11,8 @@
     "build": "bun run build:renderer && bun run build:electron",
     "build:renderer": "vite build",
     "build:electron": "tsdown --config tsdown.electron.mts",
-    "lint": "oxlint src electron",
-    "lint:fix": "oxlint --fix src electron",
+    "lint": "oxlint src electron shared",
+    "lint:fix": "oxlint --fix src electron shared",
     "format": "oxfmt --write .",
     "format:check": "oxfmt --check ."
   },

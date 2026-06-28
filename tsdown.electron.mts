@@ -8,7 +8,7 @@ export default defineConfig({
   outDir: "dist-electron",
   root: "electron",
   fixedExtension: false,
-  tsconfig: "tsconfig.electron.json",
+  tsconfig: "tsconfig.json",
   clean: true,
   dts: false,
   deps: {

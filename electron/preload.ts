@@ -1,9 +1,6 @@
 import { contextBridge, ipcRenderer } from "electron";
 
-type WindowState = {
-  isMaximized: boolean;
-  platform: NodeJS.Platform;
-};
+import type { WindowState } from "../shared/window";
 
 contextBridge.exposeInMainWorld("electronAPI", {
   getWindowState: () => ipcRenderer.invoke("window:get-state") as Promise<WindowState>,

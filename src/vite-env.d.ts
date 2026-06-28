@@ -1,16 +1,11 @@
 /// <reference types="vite/client" />
 
-type WindowState = {
-  isMaximized: boolean;
-  platform: string;
-};
+import type { ElectronAPI } from "../shared/window";
 
-interface Window {
-  electronAPI: {
-    getWindowState: () => Promise<WindowState>;
-    minimizeWindow: () => Promise<void>;
-    toggleMaximizeWindow: () => Promise<WindowState>;
-    closeWindow: () => Promise<void>;
-    onWindowStateChange: (callback: (state: WindowState) => void) => () => void;
-  };
+declare global {
+  interface Window {
+    electronAPI: ElectronAPI;
+  }
 }
+
+export {};

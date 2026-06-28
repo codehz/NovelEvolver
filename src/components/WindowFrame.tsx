@@ -1,12 +1,8 @@
 import { useEffect, useState, type ReactNode } from "react";
 
+import type { WindowState } from "../../shared/window";
 import { cn } from "../lib/cn";
 import { WindowControls } from "./WindowControls";
-
-type WindowState = {
-  isMaximized: boolean;
-  platform: string;
-};
 
 const fallbackWindowState: WindowState = {
   isMaximized: false,

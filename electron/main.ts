@@ -1,12 +1,9 @@
 import { join } from "node:path";
 import { app, BrowserWindow, ipcMain } from "electron";
 
-const isDev = !app.isPackaged;
+import type { WindowState } from "../shared/window";
 
-type WindowState = {
-  isMaximized: boolean;
-  platform: NodeJS.Platform;
-};
+const isDev = !app.isPackaged;
 
 function getWindowState(window: BrowserWindow): WindowState {
   return {

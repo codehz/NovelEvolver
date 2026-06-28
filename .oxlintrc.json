@@ -38,6 +38,25 @@
       "files": ["src/**/*.ts", "src/**/*.tsx"],
       "env": {
         "browser": true
+      },
+      "rules": {
+        "no-restricted-imports": [
+          "error",
+          {
+            "paths": [
+              {
+                "name": "electron",
+                "message": "Renderer must not import electron; use window.electronAPI via preload."
+              }
+            ],
+            "patterns": [
+              {
+                "group": ["electron/*", "../electron", "../electron/*", "../../electron", "../../electron/*"],
+                "message": "Renderer must not import electron main/preload code; use shared/ for IPC types."
+              }
+            ]
+          }
+        ]
       }
     },
     {
