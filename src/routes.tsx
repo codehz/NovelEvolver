@@ -1,12 +1,12 @@
 import { Route, Switch } from "wouter";
 
 import { ProjectList } from "./components/ProjectList";
-import { ProjectWorkspace } from "./pages/ProjectWorkspace";
+import { ProjectWorkbench } from "./pages/ProjectWorkbench";
 
 export function AppRoutes() {
   return (
     <Switch>
-      <Route path="/project/:projectId" component={ProjectWorkspace} />
+      <Route path="/project/:projectId" component={ProjectWorkbench} />
       <Route component={ProjectList} />
     </Switch>
   );

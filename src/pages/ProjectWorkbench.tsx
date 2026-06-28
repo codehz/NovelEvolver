@@ -7,7 +7,7 @@ import { projectDisplayName } from "../lib/project-display-name";
 import { TitleBarTitle } from "../components/TitleBarTitle";
 import { WorkbenchLayout } from "../components/workbench/WorkbenchLayout";
 
-export function ProjectWorkspace() {
+export function ProjectWorkbench() {
   const { projectId } = useParams<{ projectId: string }>();
   const parsedId = projectId ? Number.parseInt(projectId, 10) : Number.NaN;
   const validId = Number.isFinite(parsedId) && parsedId > 0;
