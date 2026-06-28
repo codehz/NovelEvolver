@@ -29,7 +29,7 @@ function WindowControls({
         type="button"
         onClick={onMinimize}
       >
-        <span className="text-lg -translate-y-px leading-none">-</span>
+        <span className="-translate-y-px text-lg leading-none">-</span>
       </button>
       <button
         aria-label={isMaximized ? "Restore window" : "Maximize window"}
@@ -37,7 +37,7 @@ function WindowControls({
         type="button"
         onClick={onToggleMaximize}
       >
-        <span className="text-sm -translate-y-px leading-none">{isMaximized ? "❐" : "□"}</span>
+        <span className="-translate-y-px text-sm leading-none">{isMaximized ? "❐" : "□"}</span>
       </button>
       <button
         aria-label="Close window"
@@ -45,7 +45,7 @@ function WindowControls({
         type="button"
         onClick={onClose}
       >
-        <span className="text-sm -translate-y-px leading-none">×</span>
+        <span className="-translate-y-px text-sm leading-none">×</span>
       </button>
     </div>
   );
@@ -75,12 +75,12 @@ export default function App() {
 
   return (
     <main className="flex min-h-screen flex-col bg-app-background font-app text-app-foreground">
-      <header className="pl-3 flex h-titlebar items-center justify-between border-b border-titlebar-border bg-titlebar-background select-none app-region-drag">
-        <div className={`min-w-0 gap-2 flex items-center ${isMac ? "pl-mac-traffic-light-offset" : ""}`}>
-          <div className="size-5 rounded-sm font-semibold flex items-center justify-center bg-badge-background text-badge text-badge-foreground app-region-no-drag">
+      <header className="flex h-titlebar items-center justify-between border-b border-titlebar-border bg-titlebar-background pl-3 select-none app-region-drag">
+        <div className={`flex min-w-0 items-center gap-2 ${isMac ? "pl-mac-traffic-light-offset" : ""}`}>
+          <div className="flex size-5 items-center justify-center rounded-sm bg-badge-background text-badge font-semibold text-badge-foreground app-region-no-drag">
             NE
           </div>
-          <p className="font-medium truncate text-titlebar text-titlebar-foreground">
+          <p className="truncate text-titlebar font-medium text-titlebar-foreground">
             NovelEvolver
           </p>
         </div>
