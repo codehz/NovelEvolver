@@ -58,7 +58,10 @@ function WindowControls({
   );
 }
 
+const titlebarChromeTransitionClass = "transition-opacity duration-200 ease-out";
+
 const fallbackWindowState: WindowState = {
+  isFocused: true,
   isMaximized: false,
   platform: "unknown",
 };
@@ -84,46 +87,57 @@ export function WindowFrame({ children }: { children: ReactNode }) {
   }, []);
 
   const isMac = windowState.platform === "darwin";
+  const titlebarChromeOpacityClass = windowState.isFocused
+    ? "opacity-100"
+    : "opacity-titlebar-inactive";
 
   return (
     <main className="flex min-h-0 flex-1 flex-col bg-app-background text-app-foreground">
-      <header className="flex h-titlebar items-stretch justify-between bg-titlebar-background pl-3 select-none app-region-drag">
+      <header className="flex h-titlebar items-stretch bg-titlebar-background pl-3 select-none app-region-drag">
         <div
           className={cn(
-            "flex min-w-0 items-center gap-2 self-center",
-            isMac && "pl-mac-traffic-light-offset",
+            "flex min-w-0 flex-1 items-stretch justify-between",
+            titlebarChromeTransitionClass,
+            titlebarChromeOpacityClass,
           )}
         >
-          <div className="flex size-5 items-center justify-center rounded-sm bg-badge-background text-badge font-semibold text-badge-foreground app-region-no-drag">
-            NE
-          </div>
-          <TitleBarPortalTarget
-            as="p"
-            className="truncate text-titlebar font-medium text-titlebar-foreground"
-          />
-        </div>
-
-        {isMac ? (
-          <div className="flex shrink-0 items-center self-stretch pr-2 app-region-no-drag">
-            <TitleBarActionsPortalTarget className="flex items-center" />
-          </div>
-        ) : (
-          <div className="flex shrink-0 items-center gap-1 self-stretch px-1 app-region-no-drag">
-            <TitleBarActionsPortalTarget className="flex items-center" />
-            <WindowControls
-              isMaximized={windowState.isMaximized}
-              onMinimize={() => {
-                void window.invokeIpc("window:minimize");
-              }}
-              onToggleMaximize={() => {
-                void window.invokeIpc("window:toggle-maximize").then(setWindowState);
-              }}
-              onClose={() => {
-                void window.invokeIpc("window:close");
-              }}
+          <div
+            className={cn(
+              "flex min-w-0 items-center gap-2 self-center",
+              isMac && "pl-mac-traffic-light-offset",
+            )}
+          >
+            <div className="flex size-5 items-center justify-center rounded-sm bg-badge-background text-badge font-semibold text-badge-foreground app-region-no-drag">
+              NE
+            </div>
+            <TitleBarPortalTarget
+              as="p"
+              className="truncate text-titlebar font-medium text-titlebar-foreground"
             />
           </div>
-        )}
+
+          {isMac ? (
+            <div className="flex shrink-0 items-center self-stretch pr-2 app-region-no-drag">
+              <TitleBarActionsPortalTarget className="flex items-center" />
+            </div>
+          ) : (
+            <div className="flex shrink-0 items-center gap-1 self-stretch px-1 app-region-no-drag">
+              <TitleBarActionsPortalTarget className="flex items-center" />
+              <WindowControls
+                isMaximized={windowState.isMaximized}
+                onMinimize={() => {
+                  void window.invokeIpc("window:minimize");
+                }}
+                onToggleMaximize={() => {
+                  void window.invokeIpc("window:toggle-maximize").then(setWindowState);
+                }}
+                onClose={() => {
+                  void window.invokeIpc("window:close");
+                }}
+              />
+            </div>
+          )}
+        </div>
       </header>
 
       <section className="flex min-h-0 flex-1 flex-col bg-app-background">{children}</section>

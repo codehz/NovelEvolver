@@ -44,6 +44,14 @@ function createWindow() {
     sendWindowState(window);
   });
 
+  window.on("focus", () => {
+    sendWindowState(window);
+  });
+
+  window.on("blur", () => {
+    sendWindowState(window);
+  });
+
   if (isDev) {
     void window.loadURL("http://localhost:5173");
     return;

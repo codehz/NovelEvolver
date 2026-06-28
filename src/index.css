@@ -13,6 +13,7 @@
   --color-titlebar-background: var(--color-ctp-crust);
   --color-titlebar-foreground: var(--color-ctp-text);
   --color-titlebar-border: var(--color-ctp-surface0);
+  --opacity-titlebar-inactive: 0.45;
   --color-badge-background: var(--color-ctp-mauve);
   --color-badge-foreground: var(--color-ctp-crust);
   --color-window-button-hover: color-mix(in srgb, var(--color-ctp-text) 8%, transparent);

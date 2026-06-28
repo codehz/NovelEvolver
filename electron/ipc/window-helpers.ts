@@ -5,6 +5,7 @@ import { sendIpcEvent } from "./register";
 
 export function getWindowState(window: BrowserWindow): WindowState {
   return {
+    isFocused: window.isFocused(),
     isMaximized: window.isMaximized(),
     platform: process.platform,
   };
