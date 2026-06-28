@@ -17,17 +17,17 @@ export function EditorArea({ tabs }: { tabs: WorkbenchDemoTab[] }) {
       className="flex min-h-0 min-w-0 flex-1 flex-col bg-workbench-editor"
     >
       <div
-        className="flex h-workbench-tab shrink-0 items-stretch border-b border-workbench-tab-border bg-workbench-tab-inactive"
+        className="flex h-workbench-tab shrink-0 items-stretch bg-workbench-tab-bar"
         role="tablist"
       >
         {tabs.map((tab) => (
           <div
             key={tab.id}
             className={cn(
-              "flex max-w-xs items-center gap-2 border-r border-workbench-tab-border px-3 text-sm",
+              "flex max-w-xs items-center gap-2 px-3 text-sm",
               tab.active
                 ? "bg-workbench-tab-active text-app-foreground"
-                : "text-ctp-subtext0",
+                : "bg-workbench-tab-inactive text-ctp-subtext0",
             )}
             role="tab"
             aria-selected={tab.active}
@@ -45,7 +45,7 @@ export function EditorArea({ tabs }: { tabs: WorkbenchDemoTab[] }) {
         ))}
       </div>
 
-      <div className="flex h-8 shrink-0 items-center gap-1 border-b border-titlebar-border bg-workbench-panel-header px-3 text-xs text-ctp-subtext0">
+      <div className="flex h-8 shrink-0 items-center gap-1 bg-workbench-editor px-3 text-xs text-ctp-subtext0">
         <span className="icon-[codicon--chevron-right] text-sm" />
         <span>手稿</span>
         <span className="icon-[codicon--chevron-right] text-sm" />
@@ -55,7 +55,7 @@ export function EditorArea({ tabs }: { tabs: WorkbenchDemoTab[] }) {
       <div className="flex min-h-0 flex-1 overflow-auto font-mono text-sm leading-6">
         <div
           aria-hidden="true"
-          className="flex shrink-0 flex-col border-r border-titlebar-border bg-workbench-editor-gutter px-3 py-4 text-right text-ctp-overlay0 select-none"
+          className="flex shrink-0 flex-col bg-workbench-editor px-3 py-4 text-right text-ctp-overlay0 select-none"
         >
           {demoLines.map((_, index) => (
             <span key={index}>{index + 1}</span>

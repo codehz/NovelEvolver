@@ -25,7 +25,7 @@ export function PrimarySidebar({
   return (
     <aside
       aria-label={viewTitles[activeView]}
-      className="flex w-workbench-sidebar shrink-0 flex-col border-r border-titlebar-border bg-workbench-sidebar"
+      className="flex w-workbench-sidebar shrink-0 flex-col bg-workbench-sidebar"
     >
       <header className="flex h-workbench-tab shrink-0 items-center justify-between gap-2 px-3 text-xs font-semibold tracking-wide text-workbench-sidebar-title uppercase">
         <span className="truncate">{viewTitles[activeView]}</span>

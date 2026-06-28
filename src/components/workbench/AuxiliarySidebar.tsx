@@ -24,9 +24,9 @@ export function AuxiliarySidebar({ visible }: { visible: boolean }) {
   return (
     <aside
       aria-label="AI 助手"
-      className="flex w-workbench-auxiliary shrink-0 flex-col border-l border-titlebar-border bg-workbench-sidebar"
+      className="flex w-workbench-auxiliary shrink-0 flex-col bg-workbench-sidebar"
     >
-      <header className="flex h-workbench-tab shrink-0 items-center justify-between gap-2 border-b border-titlebar-border px-3">
+      <header className="flex h-workbench-tab shrink-0 items-center justify-between gap-2 px-3">
         <div className="flex min-w-0 items-center gap-2 text-sm font-medium text-app-foreground">
           <span
             aria-hidden="true"
@@ -61,7 +61,7 @@ export function AuxiliarySidebar({ visible }: { visible: boolean }) {
             <div
               key={index}
               className={cn(
-                "rounded-lg border border-titlebar-border px-3 py-2",
+                "rounded-lg px-3 py-2",
                 message.role === "user"
                   ? "ml-4 bg-workbench-tab-active"
                   : "mr-4 bg-workbench-editor",
@@ -75,8 +75,8 @@ export function AuxiliarySidebar({ visible }: { visible: boolean }) {
           ))}
         </div>
 
-        <footer className="shrink-0 border-t border-titlebar-border p-3">
-          <div className="flex items-end gap-2 rounded-lg border border-titlebar-border bg-workbench-editor p-2">
+        <footer className="shrink-0 p-3">
+          <div className="flex items-end gap-2 rounded-lg bg-workbench-editor p-2">
             <textarea
               aria-label="消息输入（演示）"
               className="min-h-16 flex-1 resize-none border-0 bg-transparent text-sm text-app-foreground outline-none placeholder:text-ctp-overlay0"

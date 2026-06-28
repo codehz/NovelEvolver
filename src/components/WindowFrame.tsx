@@ -87,7 +87,7 @@ export function WindowFrame({ children }: { children: ReactNode }) {
 
   return (
     <main className="flex min-h-0 flex-1 flex-col bg-app-background text-app-foreground">
-      <header className="flex h-titlebar items-stretch justify-between border-b border-titlebar-border bg-titlebar-background pl-3 select-none app-region-drag">
+      <header className="flex h-titlebar items-stretch justify-between bg-titlebar-background pl-3 select-none app-region-drag">
         <div
           className={cn(
             "flex min-w-0 items-center gap-2 self-center",

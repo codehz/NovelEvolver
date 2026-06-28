@@ -10,7 +10,7 @@
 
   --color-app-foreground: var(--color-ctp-text);
   --color-app-background: var(--color-ctp-base);
-  --color-titlebar-background: var(--color-ctp-mantle);
+  --color-titlebar-background: var(--color-ctp-crust);
   --color-titlebar-foreground: var(--color-ctp-text);
   --color-titlebar-border: var(--color-ctp-surface0);
   --color-badge-background: var(--color-ctp-mauve);
@@ -34,11 +34,12 @@
   --color-workbench-activity-bar-active: var(--color-ctp-text);
   --color-workbench-activity-indicator: var(--color-ctp-mauve);
   --color-workbench-sidebar: var(--color-ctp-mantle);
-  --color-workbench-sidebar-title: var(--color-ctp-subtext1);
+  --color-workbench-sidebar-title: var(--color-ctp-mauve);
   --color-workbench-editor: var(--color-ctp-base);
   --color-workbench-editor-gutter: var(--color-ctp-mantle);
-  --color-workbench-tab-active: var(--color-ctp-surface0);
-  --color-workbench-tab-inactive: var(--color-ctp-mantle);
+  --color-workbench-tab-bar: var(--color-ctp-crust);
+  --color-workbench-tab-active: var(--color-ctp-base);
+  --color-workbench-tab-inactive: var(--color-workbench-sidebar);
   --color-workbench-tab-border: var(--color-ctp-surface0);
   --color-workbench-panel-header: var(--color-ctp-mantle);
   --font-display: "MiSans", sans-serif;

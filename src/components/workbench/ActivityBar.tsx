@@ -39,7 +39,7 @@ export function ActivityBar({
   return (
     <nav
       aria-label="活动栏"
-      className="flex h-full min-h-0 w-activity-bar shrink-0 flex-col border-r border-titlebar-border bg-workbench-activity-bar"
+      className="flex h-full min-h-0 w-activity-bar shrink-0 flex-col bg-workbench-activity-bar"
     >
       <div className="flex flex-col">
         {primaryItems.map((item) => {
