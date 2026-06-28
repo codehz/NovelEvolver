@@ -138,7 +138,7 @@ export function ProjectList() {
                   >
                     <span
                       aria-hidden="true"
-                      className="icon-[codicon--folder] text-xl text-ctp-blue"
+                      className="icon-[codicon--folder] text-xl text-ctp-mauve"
                     />
                     <span className="line-clamp-2 leading-snug font-medium text-app-foreground">
                       {name}
