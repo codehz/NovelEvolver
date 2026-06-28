@@ -4,6 +4,18 @@
 
 `src/` contains the Vite renderer application (`App.tsx`, `main.tsx`, `index.css`). `electron/` contains the Electron main and preload processes. Build output goes to `dist/` for the renderer and `dist-electron/` for Electron; do not edit generated files directly. Root config files include `vite.config.ts`, `tsconfig.json`, `.oxlintrc.json`, `.oxfmtrc.json`, and `tsdown.electron.mts`. IPC types shared between renderer and Electron live in `shared/`.
 
+### Electron IPC layout & type safety
+
+- Import main-process IPC from `electron/ipc/` (package entry `ipc/index.ts`). **Do not** add a sibling `electron/ipc.ts` file — it shadows the folder and breaks imports.
+- Channel contracts live in `shared/ipc/app-maps.ts` (`AppIpcMethodMap`, `AppIpcEventMap`). Renderer uses `preload` + `shared/ipc/renderer.ts`; main registers handlers via `registerIpcMethods`.
+- Handlers live in `electron/ipc/*-handlers.ts`, merged in `method-handlers.ts`. **Never import `main.ts` from handlers** — pass dependencies through `IpcMainDeps` (or extend that type) to avoid circular imports.
+- When adding or changing invoke channels:
+  1. Update `AppIpcMethodMap` in `shared/ipc/app-maps.ts`.
+  2. Implement the handler in the namespace file (`window-handlers.ts`, `projects-handlers.ts`, or a new `*-handlers.ts` for a new `prefix:` namespace).
+  3. Type each namespace handler as `IpcMainMethodHandlers<WindowIpcMethodMap>` (or the matching `*IpcMethodMap` slice) so **missing keys fail typecheck**.
+  4. `createAppIpcMethodHandlers` spreads namespace handlers and uses `satisfies IpcMainMethodHandlers<AppIpcMethodMap>` so **an unmerged channel fails typecheck**.
+  5. Keep `UncategorizedAppIpcMethodChannels` in `app-maps.ts` as `never` — if you add a channel outside existing prefixes, add a new prefix map + handler file (or extend the partition types); otherwise the partition assertion in `method-handlers.ts` fails.
+
 ## Build, Test, and Development Commands
 
 Use Bun for local work because the repo is locked with `bun.lock`.

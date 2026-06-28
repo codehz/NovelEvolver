@@ -4,7 +4,7 @@ import type {
   IpcEventMapBase,
   IpcMainMethodHandlers,
   IpcMethodMapBase,
-} from "../shared/ipc/types";
+} from "../../shared/ipc/types";
 
 export function registerIpcMethods<M extends IpcMethodMapBase>(
   ipcMain: IpcMain,

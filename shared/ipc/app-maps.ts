@@ -15,3 +15,19 @@ export type AppIpcMethodMap = {
 export type AppIpcEventMap = {
   "window:state-changed": WindowState;
 };
+
+export type WindowIpcMethodMap = Pick<
+  AppIpcMethodMap,
+  Extract<keyof AppIpcMethodMap, `window:${string}`>
+>;
+
+export type ProjectsIpcMethodMap = Pick<
+  AppIpcMethodMap,
+  Extract<keyof AppIpcMethodMap, `projects:${string}`>
+>;
+
+/** Must be `never` — add a new `*-handlers.ts` (or extend prefix lists) when introducing other channel namespaces. */
+export type UncategorizedAppIpcMethodChannels = Exclude<
+  keyof AppIpcMethodMap,
+  keyof WindowIpcMethodMap | keyof ProjectsIpcMethodMap
+>;
