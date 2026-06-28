@@ -16,7 +16,7 @@ const primaryItems: ActivityItem[] = [
 ];
 
 const activityButtonClass = cn(
-  "relative flex size-full max-h-12 w-activity-bar items-center justify-center border-0 bg-transparent p-0",
+  "relative flex h-activity-bar-item w-activity-bar shrink-0 items-center justify-center border-0 bg-transparent p-2.5",
   "text-workbench-activity-bar-foreground transition-colors duration-150",
   "hover:text-workbench-activity-bar-active",
   "focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-badge-background",
@@ -60,7 +60,7 @@ export function ActivityBar({
                   className="absolute left-0 h-6 w-0.5 rounded-r bg-workbench-activity-indicator"
                 />
               ) : null}
-              <span aria-hidden="true" className={cn(item.iconClass, "text-xl")} />
+              <span aria-hidden="true" className={cn(item.iconClass, "size-6 text-2xl")} />
             </button>
           );
         })}
@@ -81,7 +81,7 @@ export function ActivityBar({
           <span
             aria-hidden="true"
             className={cn(
-              "text-xl",
+              "size-6 text-2xl",
               auxiliaryVisible
                 ? "icon-[codicon--layout-sidebar-right]"
                 : "icon-[codicon--layout-sidebar-right-off]",
@@ -94,7 +94,7 @@ export function ActivityBar({
           href="/"
           title="返回项目列表"
         >
-          <span aria-hidden="true" className="icon-[codicon--home] text-xl" />
+          <span aria-hidden="true" className="icon-[codicon--home] size-6 text-2xl" />
         </Link>
       </div>
     </nav>
