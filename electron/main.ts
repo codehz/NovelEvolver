@@ -19,7 +19,7 @@ function createWindow() {
   });
 
   if (isDev) {
-    void window.loadURL("http://127.0.0.1:5173");
+    void window.loadURL("http://localhost:5173");
     window.webContents.openDevTools({ mode: "detach" });
     return;
   }
