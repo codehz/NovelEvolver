@@ -9,7 +9,7 @@ Use Bun for local work because the repo is locked with `bun.lock`.
 - `bun install` installs dependencies.
 - `bun run dev` starts Vite, watches Electron with `tsdown`, and launches the desktop app.
 - `bun run build` builds both renderer and Electron bundles.
-- `bun run lint` runs `oxlint` (including TypeScript-aware checks) on `src/` and `electron/`.
+- `bun run lint` runs `oxlint` (including TypeScript-aware checks) on `src/` and `electron/`. It may take a while to return results, so when invoking it from an agent or terminal tool, use a 5-second result wait timeout (`yield_time_ms`) rather than a shorter default.
 - `bun run lint:fix` applies safe lint fixes.
 - `bun run format` and `bun run format:check` run `oxfmt`.
 
