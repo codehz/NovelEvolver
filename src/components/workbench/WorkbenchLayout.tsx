@@ -39,8 +39,8 @@ const resizeHandleClass = cn(
 );
 
 const resizeHandleRailClass = cn(
-  "h-full w-px rounded-full bg-titlebar-border opacity-0 transition-opacity duration-150",
-  "group-hover:opacity-100 group-focus-visible:opacity-100",
+  "h-full w-1 bg-workbench-sidebar-title opacity-0 transition-opacity delay-0 duration-150",
+  "group-hover:opacity-100 group-hover:delay-300 group-focus-visible:opacity-100 group-focus-visible:delay-150",
 );
 
 function resolveWorkbenchLayout(
@@ -136,7 +136,7 @@ function ResizeHandle({
       <div
         className={cn(
           resizeHandleRailClass,
-          active && "bg-badge-background opacity-100",
+          active && "opacity-100",
         )}
       />
     </div>
