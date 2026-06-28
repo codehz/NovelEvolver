@@ -6,6 +6,7 @@ import { cn } from "../lib/cn";
 import { projectDisplayName } from "../lib/project-display-name";
 import { TitleBarTitle } from "../components/TitleBarTitle";
 import { WorkbenchLayout } from "../components/workbench/WorkbenchLayout";
+import { buildWorkbenchDemoSlots } from "../components/workbench/demo/workbench-demo";
 
 export function ProjectWorkbench() {
   const { projectId } = useParams<{ projectId: string }>();
@@ -91,7 +92,7 @@ export function ProjectWorkbench() {
           </Link>
         </div>
       ) : project ? (
-        <WorkbenchLayout projectLabel={projectDisplayName(project.path)} />
+        <WorkbenchLayout {...buildWorkbenchDemoSlots(projectDisplayName(project.path))} />
       ) : null}
     </div>
   );

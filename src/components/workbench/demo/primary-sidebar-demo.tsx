@@ -1,0 +1,59 @@
+import { cn } from "../../../lib/cn";
+
+const demoTree = [
+  { icon: cn("icon-[codicon--folder-opened]"), label: "手稿", open: true },
+  { icon: cn("icon-[codicon--file]"), label: "第一章.md", depth: 1 },
+  { icon: cn("icon-[codicon--file]"), label: "大纲.md", depth: 1 },
+  { icon: cn("icon-[codicon--folder]"), label: "设定", open: false },
+];
+
+export function ExplorerSidebarDemo({ projectLabel }: { projectLabel: string }) {
+  return (
+    <div className="flex flex-col gap-1">
+      <p className="px-1 text-xs text-ctp-subtext0" title={projectLabel}>
+        {projectLabel}
+      </p>
+      <ul className="flex flex-col gap-0.5" role="tree">
+        {demoTree.map((node) => (
+          <li
+            key={node.label}
+            className={cn(
+              "flex items-center gap-1.5 rounded px-1 py-0.5 text-app-foreground",
+              node.depth ? "pl-5" : undefined,
+              node.label === "第一章.md" && "bg-workbench-tab-active",
+            )}
+            role="treeitem"
+          >
+            <span aria-hidden="true" className={cn(node.icon, "shrink-0 text-base")} />
+            <span className="truncate">{node.label}</span>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
+export function SearchSidebarDemo() {
+  return (
+    <div className="flex flex-col gap-2 px-1">
+      <label className="flex flex-col gap-1 text-xs text-ctp-subtext0">
+        搜索
+        <span className="flex items-center gap-2 rounded border border-titlebar-border bg-workbench-editor px-2 py-1.5">
+          <span aria-hidden="true" className="icon-[codicon--search] text-sm" />
+          <span className="text-ctp-overlay0">搜索文件内容（演示）</span>
+        </span>
+      </label>
+      <p className="text-xs text-ctp-subtext0">输入关键词后将在此显示结果。</p>
+    </div>
+  );
+}
+
+export function ScmSidebarDemo() {
+  return (
+    <div className="flex flex-col items-center gap-2 px-2 py-6 text-center text-xs text-ctp-subtext0">
+      <span aria-hidden="true" className="icon-[codicon--source-control] text-2xl" />
+      <p>尚未配置版本控制。</p>
+      <p className="text-ctp-overlay0">布局演示占位。</p>
+    </div>
+  );
+}

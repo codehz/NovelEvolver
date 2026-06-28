@@ -1,15 +1,25 @@
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 
 import { ActivityBar } from "./ActivityBar";
 import { AuxiliarySidebar } from "./AuxiliarySidebar";
-import { EditorArea } from "./EditorArea";
 import { PrimarySidebar } from "./PrimarySidebar";
-import { StatusBar } from "./StatusBar";
 import { TitleBarAuxiliaryToggle } from "./TitleBarAuxiliaryToggle";
 import { TitleBarPrimarySidebarToggle } from "./TitleBarPrimarySidebarToggle";
 import type { ActivityViewId } from "./types";
 
-export function WorkbenchLayout({ projectLabel }: { projectLabel: string }) {
+export type WorkbenchLayoutProps = {
+  primarySidebar: Partial<Record<ActivityViewId, ReactNode>>;
+  editor: ReactNode;
+  auxiliary?: ReactNode;
+  statusBar?: ReactNode;
+};
+
+export function WorkbenchLayout({
+  primarySidebar,
+  editor,
+  auxiliary,
+  statusBar,
+}: WorkbenchLayoutProps) {
   const [activeView, setActiveView] = useState<ActivityViewId>("explorer");
   const [primarySidebarVisible, setPrimarySidebarVisible] = useState(true);
   const [auxiliaryVisible, setAuxiliaryVisible] = useState(true);
@@ -23,10 +33,7 @@ export function WorkbenchLayout({ projectLabel }: { projectLabel: string }) {
     setPrimarySidebarVisible(true);
   }
 
-  const tabs = [
-    { id: "chapter-1", label: "第一章.md", active: true },
-    { id: "outline", label: "大纲.md", active: false },
-  ];
+  const primaryContent = primarySidebar[activeView];
 
   return (
     <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
@@ -45,12 +52,12 @@ export function WorkbenchLayout({ projectLabel }: { projectLabel: string }) {
           onSelectView={handleSelectView}
         />
         {primarySidebarVisible ? (
-          <PrimarySidebar activeView={activeView} projectLabel={projectLabel} />
+          <PrimarySidebar activeView={activeView}>{primaryContent}</PrimarySidebar>
         ) : null}
-        <EditorArea tabs={tabs} />
-        <AuxiliarySidebar visible={auxiliaryVisible} />
+        <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">{editor}</div>
+        <AuxiliarySidebar visible={auxiliaryVisible}>{auxiliary}</AuxiliarySidebar>
       </div>
-      <StatusBar />
+      {statusBar}
     </div>
   );
 }
