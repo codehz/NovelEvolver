@@ -3,9 +3,11 @@ import { sidebarHeaderActionClass, sidebarHeaderIconClass } from "./sidebar-head
 
 export function AuxiliarySidebar({
   visible,
+  width,
   children,
 }: {
   visible: boolean;
+  width: number;
   children?: React.ReactNode;
 }) {
   if (!visible) {
@@ -16,6 +18,7 @@ export function AuxiliarySidebar({
     <aside
       aria-label="AI 助手"
       className="flex w-workbench-auxiliary shrink-0 flex-col bg-workbench-sidebar"
+      style={{ width }}
     >
       <header className="flex h-workbench-tab shrink-0 items-center justify-between gap-2 px-3">
         <div className="flex min-w-0 items-center gap-2 text-sm font-medium text-app-foreground">

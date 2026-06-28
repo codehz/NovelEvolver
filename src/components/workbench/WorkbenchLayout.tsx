@@ -1,11 +1,128 @@
-import { useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type PointerEvent as ReactPointerEvent, type ReactNode } from "react";
 
+import { cn } from "../../lib/cn";
 import { ActivityBar } from "./ActivityBar";
 import { AuxiliarySidebar } from "./AuxiliarySidebar";
 import { PrimarySidebar } from "./PrimarySidebar";
 import { TitleBarAuxiliaryToggle } from "./TitleBarAuxiliaryToggle";
 import { TitleBarPrimarySidebarToggle } from "./TitleBarPrimarySidebarToggle";
 import type { ActivityViewId } from "./types";
+
+const ACTIVITY_BAR_WIDTH = 48;
+const DEFAULT_PRIMARY_WIDTH = 256;
+const DEFAULT_AUXILIARY_WIDTH = 320;
+const MIN_PRIMARY_WIDTH = 208;
+const MIN_AUXILIARY_WIDTH = 240;
+const CLOSE_SIDEBAR_THRESHOLD = 160;
+const MIN_EDITOR_WIDTH = 520;
+
+type ResizePriority = "primary" | "auxiliary";
+type ResizeSide = ResizePriority;
+
+type LayoutPreferences = {
+  primaryVisible: boolean;
+  primaryWidth: number;
+  auxiliaryVisible: boolean;
+  auxiliaryWidth: number;
+  priority: ResizePriority;
+};
+
+type ResolvedWorkbenchLayout = {
+  primaryVisible: boolean;
+  primaryWidth: number;
+  auxiliaryVisible: boolean;
+  auxiliaryWidth: number;
+};
+
+const resizeHandleClass = cn(
+  "group absolute inset-y-0 z-20 flex w-3 -translate-x-1/2 cursor-col-resize touch-none items-center justify-center select-none",
+);
+
+const resizeHandleRailClass = cn(
+  "h-full w-px rounded-full bg-titlebar-border opacity-0 transition-opacity duration-150",
+  "group-hover:opacity-100 group-focus-visible:opacity-100",
+);
+
+function resolveWorkbenchLayout(
+  preferences: LayoutPreferences,
+  containerWidth: number,
+): ResolvedWorkbenchLayout {
+  const availableWidth = Math.max(containerWidth - ACTIVITY_BAR_WIDTH, 0);
+  const editorMinWidth = Math.min(MIN_EDITOR_WIDTH, availableWidth);
+  let remainingSidebarWidth = Math.max(availableWidth - editorMinWidth, 0);
+  let primaryWidth = 0;
+  let auxiliaryWidth = 0;
+  const allocationOrder =
+    preferences.priority === "auxiliary"
+      ? (["auxiliary", "primary"] as const)
+      : (["primary", "auxiliary"] as const);
+
+  for (const side of allocationOrder) {
+    const wantsVisible = side === "primary" ? preferences.primaryVisible : preferences.auxiliaryVisible;
+    if (!wantsVisible) {
+      continue;
+    }
+
+    const minWidth = side === "primary" ? MIN_PRIMARY_WIDTH : MIN_AUXILIARY_WIDTH;
+    if (remainingSidebarWidth < minWidth) {
+      continue;
+    }
+
+    const preferredWidth =
+      side === "primary"
+        ? Math.max(preferences.primaryWidth, MIN_PRIMARY_WIDTH)
+        : Math.max(preferences.auxiliaryWidth, MIN_AUXILIARY_WIDTH);
+    const width = Math.min(preferredWidth, remainingSidebarWidth);
+
+    if (side === "primary") {
+      primaryWidth = width;
+    } else {
+      auxiliaryWidth = width;
+    }
+    remainingSidebarWidth -= width;
+  }
+
+  return {
+    primaryVisible: primaryWidth >= MIN_PRIMARY_WIDTH,
+    primaryWidth,
+    auxiliaryVisible: auxiliaryWidth >= MIN_AUXILIARY_WIDTH,
+    auxiliaryWidth,
+  };
+}
+
+function normalizeSidebarWidth(width: number, minWidth: number) {
+  return Math.round(Math.max(width, minWidth));
+}
+
+function ResizeHandle({
+  active,
+  ariaLabel,
+  position,
+  onPointerDown,
+}: {
+  active: boolean;
+  ariaLabel: string;
+  position: number;
+  onPointerDown: (event: ReactPointerEvent<HTMLDivElement>) => void;
+}) {
+  return (
+    <div
+      aria-label={ariaLabel}
+      aria-orientation="vertical"
+      className={resizeHandleClass}
+      role="separator"
+      style={{ left: position }}
+      onPointerDown={onPointerDown}
+    >
+      <div
+        className={cn(
+          resizeHandleRailClass,
+          active && "bg-badge-background opacity-100",
+        )}
+      />
+    </div>
+  );
+}
 
 export type WorkbenchLayoutProps = {
   primarySidebar: Partial<Record<ActivityViewId, ReactNode>>;
@@ -21,16 +138,142 @@ export function WorkbenchLayout({
   statusBar,
 }: WorkbenchLayoutProps) {
   const [activeView, setActiveView] = useState<ActivityViewId>("explorer");
-  const [primarySidebarVisible, setPrimarySidebarVisible] = useState(true);
-  const [auxiliaryVisible, setAuxiliaryVisible] = useState(true);
+  const [layoutPreferences, setLayoutPreferences] = useState<LayoutPreferences>({
+    primaryVisible: true,
+    primaryWidth: DEFAULT_PRIMARY_WIDTH,
+    auxiliaryVisible: auxiliary != null,
+    auxiliaryWidth: DEFAULT_AUXILIARY_WIDTH,
+    priority: "primary",
+  });
+  const [containerWidth, setContainerWidth] = useState(
+    ACTIVITY_BAR_WIDTH + DEFAULT_PRIMARY_WIDTH + DEFAULT_AUXILIARY_WIDTH + MIN_EDITOR_WIDTH,
+  );
+  const [activeResizeSide, setActiveResizeSide] = useState<ResizeSide | null>(null);
+  const containerRef = useRef<HTMLDivElement | null>(null);
+  const dragCleanupRef = useRef<(() => void) | null>(null);
+
+  const hasAuxiliary = auxiliary != null;
+  const resolvedLayout = resolveWorkbenchLayout(layoutPreferences, containerWidth);
+  const primarySidebarVisible = resolvedLayout.primaryVisible;
+  const auxiliaryVisible = hasAuxiliary && resolvedLayout.auxiliaryVisible;
+
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container) {
+      return;
+    }
+
+    setContainerWidth(container.clientWidth);
+
+    const observer = new ResizeObserver((entries) => {
+      const entry = entries[0];
+      if (!entry) {
+        return;
+      }
+      setContainerWidth(Math.round(entry.contentRect.width));
+    });
+
+    observer.observe(container);
+
+    return () => {
+      observer.disconnect();
+    };
+  }, []);
+
+  useEffect(() => {
+    if (hasAuxiliary) {
+      return;
+    }
+
+    setLayoutPreferences((value) =>
+      value.auxiliaryVisible
+        ? {
+            ...value,
+            auxiliaryVisible: false,
+          }
+        : value,
+    );
+  }, [hasAuxiliary]);
+
+  useEffect(() => {
+    return () => {
+      dragCleanupRef.current?.();
+    };
+  }, []);
 
   function handleSelectView(view: ActivityViewId) {
     if (view === activeView && primarySidebarVisible) {
-      setPrimarySidebarVisible(false);
+      setLayoutPreferences((value) => ({
+        ...value,
+        primaryVisible: false,
+      }));
       return;
     }
     setActiveView(view);
-    setPrimarySidebarVisible(true);
+    setLayoutPreferences((value) => ({
+      ...value,
+      primaryVisible: true,
+      priority: "primary",
+    }));
+  }
+
+  function startResizeDrag(side: ResizeSide, event: ReactPointerEvent<HTMLDivElement>) {
+    if (event.button !== 0) {
+      return;
+    }
+
+    event.preventDefault();
+    dragCleanupRef.current?.();
+
+    const startX = event.clientX;
+    const startLayout = layoutPreferences;
+
+    setActiveResizeSide(side);
+    document.body.style.cursor = "col-resize";
+    document.body.style.userSelect = "none";
+
+    const handlePointerMove = (moveEvent: PointerEvent) => {
+      const deltaX = moveEvent.clientX - startX;
+
+      setLayoutPreferences((value) => {
+        if (side === "primary") {
+          const nextPrimaryWidth = startLayout.primaryWidth + deltaX;
+          const nextPrimaryVisible = nextPrimaryWidth >= CLOSE_SIDEBAR_THRESHOLD;
+
+          return {
+            ...value,
+            priority: "primary",
+            primaryVisible: nextPrimaryVisible,
+            primaryWidth: normalizeSidebarWidth(nextPrimaryWidth, MIN_PRIMARY_WIDTH),
+          };
+        }
+
+        const nextAuxiliaryWidth = startLayout.auxiliaryWidth - deltaX;
+        const nextAuxiliaryVisible = nextAuxiliaryWidth >= CLOSE_SIDEBAR_THRESHOLD;
+
+        return {
+          ...value,
+          priority: "auxiliary",
+          auxiliaryVisible: nextAuxiliaryVisible,
+          auxiliaryWidth: normalizeSidebarWidth(nextAuxiliaryWidth, MIN_AUXILIARY_WIDTH),
+        };
+      });
+    };
+
+    const cleanup = () => {
+      window.removeEventListener("pointermove", handlePointerMove);
+      window.removeEventListener("pointerup", cleanup);
+      window.removeEventListener("pointercancel", cleanup);
+      document.body.style.cursor = "";
+      document.body.style.userSelect = "";
+      setActiveResizeSide(null);
+      dragCleanupRef.current = null;
+    };
+
+    dragCleanupRef.current = cleanup;
+    window.addEventListener("pointermove", handlePointerMove);
+    window.addEventListener("pointerup", cleanup, { once: true });
+    window.addEventListener("pointercancel", cleanup, { once: true });
   }
 
   const primaryContent = primarySidebar[activeView];
@@ -39,23 +282,57 @@ export function WorkbenchLayout({
     <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
       <TitleBarPrimarySidebarToggle
         visible={primarySidebarVisible}
-        onToggle={() => setPrimarySidebarVisible((value) => !value)}
+        onToggle={() =>
+          setLayoutPreferences((value) => ({
+            ...value,
+            primaryVisible: !primarySidebarVisible,
+            priority: "primary",
+          }))
+        }
       />
-      <TitleBarAuxiliaryToggle
-        visible={auxiliaryVisible}
-        onToggle={() => setAuxiliaryVisible((value) => !value)}
-      />
-      <div className="flex min-h-0 flex-1 overflow-hidden">
+      {hasAuxiliary ? (
+        <TitleBarAuxiliaryToggle
+          visible={auxiliaryVisible}
+          onToggle={() =>
+            setLayoutPreferences((value) => ({
+              ...value,
+              auxiliaryVisible: !auxiliaryVisible,
+              priority: "auxiliary",
+            }))
+          }
+        />
+      ) : null}
+      <div ref={containerRef} className="relative flex min-h-0 flex-1 overflow-hidden">
         <ActivityBar
           activeView={activeView}
           primarySidebarVisible={primarySidebarVisible}
           onSelectView={handleSelectView}
         />
         {primarySidebarVisible ? (
-          <PrimarySidebar activeView={activeView}>{primaryContent}</PrimarySidebar>
+          <PrimarySidebar activeView={activeView} width={resolvedLayout.primaryWidth}>
+            {primaryContent}
+          </PrimarySidebar>
         ) : null}
         <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">{editor}</div>
-        <AuxiliarySidebar visible={auxiliaryVisible}>{auxiliary}</AuxiliarySidebar>
+        <AuxiliarySidebar visible={auxiliaryVisible} width={resolvedLayout.auxiliaryWidth}>
+          {auxiliary}
+        </AuxiliarySidebar>
+        {primarySidebarVisible ? (
+          <ResizeHandle
+            active={activeResizeSide === "primary"}
+            ariaLabel="调整主侧边栏宽度"
+            position={ACTIVITY_BAR_WIDTH + resolvedLayout.primaryWidth}
+            onPointerDown={(event) => startResizeDrag("primary", event)}
+          />
+        ) : null}
+        {auxiliaryVisible ? (
+          <ResizeHandle
+            active={activeResizeSide === "auxiliary"}
+            ariaLabel="调整辅助侧边栏宽度"
+            position={containerWidth - resolvedLayout.auxiliaryWidth}
+            onPointerDown={(event) => startResizeDrag("auxiliary", event)}
+          />
+        ) : null}
       </div>
       {statusBar}
     </div>

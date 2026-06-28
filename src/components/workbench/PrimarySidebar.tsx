@@ -12,15 +12,18 @@ const viewTitles: Record<ActivityViewId, string> = {
 
 export function PrimarySidebar({
   activeView,
+  width,
   children,
 }: {
   activeView: ActivityViewId;
+  width: number;
   children?: ReactNode;
 }) {
   return (
     <aside
       aria-label={viewTitles[activeView]}
       className="flex w-workbench-sidebar shrink-0 flex-col bg-workbench-sidebar"
+      style={{ width }}
     >
       <header className="flex h-workbench-tab shrink-0 items-center justify-between gap-2 px-3 text-xs font-semibold tracking-wide text-workbench-sidebar-title uppercase">
         <span className="truncate">{viewTitles[activeView]}</span>
