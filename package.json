@@ -17,6 +17,7 @@
     "format:check": "oxfmt --check ."
   },
   "dependencies": {
+    "@catppuccin/tailwindcss": "^1.0.0",
     "@iconify/json": "^2.2.492",
     "@iconify/utils": "^3.1.3",
     "clsx": "^2.1.1",

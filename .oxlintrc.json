@@ -21,9 +21,12 @@
     "tailwindcss/enforce-shorthand": "warn",
     "tailwindcss/enforce-sort-order": "warn",
     "tailwindcss/prefer-theme-tokens": "warn",
-    "tailwindcss/no-arbitrary-value": ["warn", {
-      "allow": ["icon-"]
-    }],
+    "tailwindcss/no-arbitrary-value": [
+      "warn",
+      {
+        "allow": ["icon-"]
+      }
+    ],
     "tailwindcss/no-hardcoded-colors": "warn",
     "tailwindcss/consistent-variant-order": "warn",
     "typescript/await-thenable": "error",

@@ -8,8 +8,7 @@ type WindowState = {
 contextBridge.exposeInMainWorld("electronAPI", {
   getWindowState: () => ipcRenderer.invoke("window:get-state") as Promise<WindowState>,
   minimizeWindow: () => ipcRenderer.invoke("window:minimize") as Promise<void>,
-  toggleMaximizeWindow: () =>
-    ipcRenderer.invoke("window:toggle-maximize") as Promise<WindowState>,
+  toggleMaximizeWindow: () => ipcRenderer.invoke("window:toggle-maximize") as Promise<WindowState>,
   closeWindow: () => ipcRenderer.invoke("window:close") as Promise<void>,
   onWindowStateChange: (callback: (state: WindowState) => void) => {
     const listener = (_event: Electron.IpcRendererEvent, state: WindowState) => {

@@ -1,8 +1,8 @@
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
-import plugin from "tailwindcss/plugin";
 import { getIconsCSSData } from "@iconify/utils/lib/css/icons";
 import { matchIconName } from "@iconify/utils/lib/icon/name";
+import plugin from "tailwindcss/plugin";
 
 function resolveFile(filename: string) {
   try {

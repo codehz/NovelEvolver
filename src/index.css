@@ -1,9 +1,8 @@
+@import "tailwindcss";
+@import "@catppuccin/tailwindcss/mocha.css";
+
 @plugin "../tools/iconify.ts";
-@layer theme, base, components, utilities;
 
-@import "./theme-tokens.css";
-
-/* App semantic tokens (colours via Catppuccin ctp-*) */
 @theme {
   --app-region-drag: drag;
   --app-region-no-drag: no-drag;
@@ -23,15 +22,14 @@
   --spacing-titlebar: 2.25rem;
   --spacing-titlebar-button: 3rem;
   --spacing-mac-traffic-light-offset: 4.5rem;
+  --font-app: "Segoe WPC", "Segoe UI", "Helvetica Neue", Helvetica, Arial, sans-serif;
 }
-
-@import "tailwindcss/preflight.css" layer(base);
-@import "tailwindcss/utilities.css" layer(utilities);
 
 @layer base {
   :root {
     color: var(--color-ctp-text);
     background: var(--color-ctp-base);
+    color-scheme: dark;
     line-height: 1.5;
     font-weight: 400;
     font-synthesis: none;
@@ -61,6 +59,3 @@
 @utility app-region-* {
   -webkit-app-region: --value(--app-region-*);
 }
-
-/* Catppuccin Mocha: @theme inline only (see catppuccin-mocha.inline.css) */
-@import "./catppuccin-mocha.inline.css";
