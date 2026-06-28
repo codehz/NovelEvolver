@@ -3,6 +3,8 @@ import { Link, useParams } from "wouter";
 
 import type { ProjectListItem } from "../../shared/project";
 import { cn } from "../lib/cn";
+import { projectDisplayName } from "../lib/project-display-name";
+import { TitleBarTitle } from "../components/TitleBarTitle";
 
 export function ProjectWorkspace() {
   const { projectId } = useParams<{ projectId: string }>();
@@ -53,8 +55,19 @@ export function ProjectWorkspace() {
     };
   }, [parsedId, validId]);
 
+  const titleBarLabel = !validId
+    ? "无效的项目"
+    : loading
+      ? "加载中…"
+      : error
+        ? "项目"
+        : project
+          ? projectDisplayName(project.path)
+          : "未找到项目";
+
   return (
     <div className="flex size-full min-h-0 flex-col gap-4 p-6">
+      <TitleBarTitle>{titleBarLabel}</TitleBarTitle>
       <div className="flex items-center gap-3">
         <Link
           className={cn(

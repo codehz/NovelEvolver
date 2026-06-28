@@ -22,5 +22,8 @@ export function createWindowIpcMethodHandlers(): IpcMainMethodHandlers<WindowIpc
     "window:close": async (event) => {
       getSenderWindow(event).close();
     },
+    "window:set-title": async (event, title) => {
+      getSenderWindow(event).setTitle(title);
+    },
   };
 }

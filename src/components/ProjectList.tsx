@@ -3,15 +3,11 @@ import { useLocation } from "wouter";
 
 import type { ProjectListItem } from "../../shared/project";
 import { cn } from "../lib/cn";
+import { projectDisplayName } from "../lib/project-display-name";
+import { TitleBarTitle } from "./TitleBarTitle";
 
 function formatLastOpened(timestamp: number): string {
   return new Date(timestamp).toLocaleString();
-}
-
-function projectName(path: string): string {
-  const segments = path.replace(/\/$/, "").split(/[/\\]/);
-  const fileName = segments.at(-1) ?? path;
-  return fileName.toLowerCase().endsWith(".npk") ? fileName.slice(0, -4) : fileName;
 }
 
 const projectCardActionClass = cn(
@@ -103,6 +99,7 @@ export function ProjectList() {
 
   return (
     <div className="flex size-full min-h-0 flex-col gap-4 p-6">
+      <TitleBarTitle>NovelEvolver</TitleBarTitle>
       <div className="flex items-center justify-between gap-4">
         <h1 className="text-lg font-semibold text-app-foreground">项目</h1>
         <div className="flex items-center gap-2">
@@ -150,7 +147,7 @@ export function ProjectList() {
       ) : (
         <ul className="grid min-h-0 flex-1 auto-rows-fr grid-cols-[repeat(auto-fill,minmax(14rem,1fr))] gap-3 overflow-auto">
           {projects.map((project) => {
-            const name = projectName(project.path);
+            const name = projectDisplayName(project.path);
 
             return (
               <li key={project.id}>

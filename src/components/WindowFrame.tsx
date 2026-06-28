@@ -2,6 +2,7 @@ import { useEffect, useState, type ReactNode } from "react";
 
 import type { WindowState } from "../../shared/window";
 import { cn } from "../lib/cn";
+import { TitleBarPortalTarget } from "../lib/titlebar-portal";
 
 const windowControlButtonClass = cn(
   "inline-flex size-7 shrink-0 items-center justify-center rounded-full border-0 bg-transparent p-0 text-titlebar-foreground transition-colors duration-150 hover:bg-window-button-hover focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-badge-background active:bg-window-button-hover",
@@ -96,9 +97,10 @@ export function WindowFrame({ children }: { children: ReactNode }) {
           <div className="flex size-5 items-center justify-center rounded-sm bg-badge-background text-badge font-semibold text-badge-foreground app-region-no-drag">
             NE
           </div>
-          <p className="truncate text-titlebar font-medium text-titlebar-foreground">
-            NovelEvolver
-          </p>
+          <TitleBarPortalTarget
+            as="p"
+            className="truncate text-titlebar font-medium text-titlebar-foreground"
+          />
         </div>
 
         {isMac ? null : (
