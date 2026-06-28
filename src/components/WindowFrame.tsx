@@ -13,14 +13,14 @@ export function WindowFrame({ children }: { children: ReactNode }) {
   const [windowState, setWindowState] = useState<WindowState>(fallbackWindowState);
 
   useEffect(() => {
-    window.electronAPI
-      .getWindowState()
+    window
+      .invokeIpc("window:get-state")
       .then(setWindowState)
       .catch(() => {
         setWindowState(fallbackWindowState);
       });
 
-    const disposeWindowStateListener = window.electronAPI.onWindowStateChange((state) => {
+    const disposeWindowStateListener = window.onIpcEvent("window:state-changed", (state) => {
       setWindowState(state);
     });
 
@@ -52,13 +52,13 @@ export function WindowFrame({ children }: { children: ReactNode }) {
           <WindowControls
             isMaximized={windowState.isMaximized}
             onMinimize={() => {
-              void window.electronAPI.minimizeWindow();
+              void window.invokeIpc("window:minimize");
             }}
             onToggleMaximize={() => {
-              void window.electronAPI.toggleMaximizeWindow().then(setWindowState);
+              void window.invokeIpc("window:toggle-maximize").then(setWindowState);
             }}
             onClose={() => {
-              void window.electronAPI.closeWindow();
+              void window.invokeIpc("window:close");
             }}
           />
         )}

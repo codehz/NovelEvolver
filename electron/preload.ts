@@ -1,21 +1,22 @@
 import { contextBridge, ipcRenderer } from "electron";
 
-import type { WindowState } from "../shared/window";
+import type { AppIpcEventMap, AppIpcMethodMap } from "../shared/ipc/app-maps";
+import type { AppInvokeIpc, AppOnIpcEvent } from "../shared/ipc/renderer";
 
-contextBridge.exposeInMainWorld("electronAPI", {
-  getWindowState: () => ipcRenderer.invoke("window:get-state") as Promise<WindowState>,
-  minimizeWindow: () => ipcRenderer.invoke("window:minimize") as Promise<void>,
-  toggleMaximizeWindow: () => ipcRenderer.invoke("window:toggle-maximize") as Promise<WindowState>,
-  closeWindow: () => ipcRenderer.invoke("window:close") as Promise<void>,
-  onWindowStateChange: (callback: (state: WindowState) => void) => {
-    const listener = (_event: Electron.IpcRendererEvent, state: WindowState) => {
-      callback(state);
-    };
+const invokeIpc: AppInvokeIpc = (channel, ...args) =>
+  ipcRenderer.invoke(channel as string, ...args) as ReturnType<AppIpcMethodMap[typeof channel]>;
 
-    ipcRenderer.on("window:state-changed", listener);
+const onIpcEvent: AppOnIpcEvent = (channel, callback) => {
+  const listener = (_event: Electron.IpcRendererEvent, payload: AppIpcEventMap[typeof channel]) => {
+    callback(payload);
+  };
 
-    return () => {
-      ipcRenderer.off("window:state-changed", listener);
-    };
-  },
-});
+  ipcRenderer.on(channel as string, listener);
+
+  return () => {
+    ipcRenderer.off(channel as string, listener);
+  };
+};
+
+contextBridge.exposeInMainWorld("invokeIpc", invokeIpc);
+contextBridge.exposeInMainWorld("onIpcEvent", onIpcEvent);

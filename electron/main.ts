@@ -1,6 +1,9 @@
 import { join } from "node:path";
 import { app, BrowserWindow, ipcMain } from "electron";
 
+import { registerIpcMethods, sendIpcEvent } from "./ipc";
+import type { AppIpcMethodMap } from "../shared/ipc/app-maps";
+import type { IpcMainMethodHandlers } from "../shared/ipc/types";
 import type { WindowState } from "../shared/window";
 
 const isDev = !app.isPackaged;
@@ -13,7 +16,16 @@ function getWindowState(window: BrowserWindow): WindowState {
 }
 
 function sendWindowState(window: BrowserWindow) {
-  window.webContents.send("window:state-changed", getWindowState(window));
+  sendIpcEvent(window.webContents, "window:state-changed", getWindowState(window));
+}
+
+function getSenderWindow(event: Electron.IpcMainInvokeEvent) {
+  const window = BrowserWindow.fromWebContents(event.sender);
+  if (!window) {
+    throw new Error("Window not found for sender.");
+  }
+
+  return window;
 }
 
 function createWindow() {
@@ -47,25 +59,13 @@ function createWindow() {
   void window.loadFile(join(__dirname, "../dist/index.html"));
 }
 
-void app.whenReady().then(() => {
-  ipcMain.handle("window:get-state", (event) => {
-    const window = BrowserWindow.fromWebContents(event.sender);
-    if (!window) {
-      throw new Error("Window not found for sender.");
-    }
-
-    return getWindowState(window);
-  });
-
-  ipcMain.handle("window:minimize", (event) => {
-    BrowserWindow.fromWebContents(event.sender)?.minimize();
-  });
-
-  ipcMain.handle("window:toggle-maximize", (event) => {
-    const window = BrowserWindow.fromWebContents(event.sender);
-    if (!window) {
-      throw new Error("Window not found for sender.");
-    }
+const ipcMethodHandlers = {
+  "window:get-state": async (event) => getWindowState(getSenderWindow(event)),
+  "window:minimize": async (event) => {
+    getSenderWindow(event).minimize();
+  },
+  "window:toggle-maximize": async (event) => {
+    const window = getSenderWindow(event);
 
     if (window.isMaximized()) {
       window.unmaximize();
@@ -74,11 +74,14 @@ void app.whenReady().then(() => {
     }
 
     return getWindowState(window);
-  });
+  },
+  "window:close": async (event) => {
+    getSenderWindow(event).close();
+  },
+} satisfies IpcMainMethodHandlers<AppIpcMethodMap>;
 
-  ipcMain.handle("window:close", (event) => {
-    BrowserWindow.fromWebContents(event.sender)?.close();
-  });
+void app.whenReady().then(() => {
+  registerIpcMethods(ipcMain, ipcMethodHandlers);
 
   createWindow();
 

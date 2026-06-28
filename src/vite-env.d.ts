@@ -1,10 +1,11 @@
 /// <reference types="vite/client" />
 
-import type { ElectronAPI } from "../shared/window";
+import type { AppInvokeIpc, AppOnIpcEvent } from "../shared/ipc/renderer";
 
 declare global {
   interface Window {
-    electronAPI: ElectronAPI;
+    invokeIpc: AppInvokeIpc;
+    onIpcEvent: AppOnIpcEvent;
   }
 }
 
