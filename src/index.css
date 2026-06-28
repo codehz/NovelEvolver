@@ -28,6 +28,7 @@
   --spacing-workbench-sidebar: 16rem;
   --spacing-workbench-auxiliary: 20rem;
   --spacing-workbench-tab: 2.125rem;
+  --spacing-workbench-status-bar: 1.375rem;
 
   --color-workbench-activity-bar: var(--color-ctp-crust);
   --color-workbench-activity-bar-foreground: var(--color-ctp-subtext0);
@@ -42,6 +43,9 @@
   --color-workbench-tab-inactive: var(--color-workbench-sidebar);
   --color-workbench-tab-border: var(--color-ctp-surface0);
   --color-workbench-panel-header: var(--color-ctp-mantle);
+  --color-workbench-status-bar: var(--color-ctp-crust);
+  --color-workbench-status-bar-foreground: var(--color-ctp-text);
+  --color-workbench-status-bar-muted: var(--color-ctp-subtext0);
   --font-display: "MiSans", sans-serif;
 }
 
