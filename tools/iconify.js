@@ -1,24 +1,23 @@
-import { readFileSync } from "node:fs";
-import { fileURLToPath } from "node:url";
-import { getIconsCSSData } from "@iconify/utils/lib/css/icons";
-import { matchIconName } from "@iconify/utils/lib/icon/name";
-import plugin from "tailwindcss/plugin";
+const { readFileSync } = require("node:fs");
+const plugin = require("tailwindcss/plugin");
+const { getIconsCSSData } = require("@iconify/utils/lib/css/icons");
+const { matchIconName } = require("@iconify/utils/lib/icon/name");
 
-function resolveFile(filename: string) {
+function resolveFile(filename) {
   try {
-    return fileURLToPath(import.meta.resolve(filename));
+    return require.resolve(filename);
   } catch {}
 
   return undefined;
 }
 
-function locateIconSet(prefix: string) {
+function locateIconSet(prefix) {
   return resolveFile(`@iconify/json/json/${prefix}.json`);
 }
 
 const iconSetCache = new Map();
 
-function loadIconSet(prefix: string) {
+function loadIconSet(prefix) {
   const cached = iconSetCache.get(prefix);
   if (cached) {
     return cached;
@@ -34,7 +33,7 @@ function loadIconSet(prefix: string) {
   return iconSet;
 }
 
-function getDynamicCSSRules(icon: string, { scale = 1 } = {}) {
+function getDynamicCSSRules(icon, { scale = 1 } = {}) {
   const nameParts = icon.split(/--|:/);
   if (nameParts.length !== 2) {
     throw new Error(`Invalid icon name: "${icon}"`);
@@ -53,23 +52,21 @@ function getDynamicCSSRules(icon: string, { scale = 1 } = {}) {
     throw new Error(`Cannot find "${icon}". Bad icon name?`);
   }
 
-  if (generated.common) {
-    if (scale) {
-      generated.common.rules.height = `${scale}em`;
-      generated.common.rules.width = `${scale}em`;
-    } else {
-      delete generated.common.rules.height;
-      delete generated.common.rules.width;
-    }
+  if (scale) {
+    generated.common.rules.height = `${scale}em`;
+    generated.common.rules.width = `${scale}em`;
+  } else {
+    delete generated.common.rules.height;
+    delete generated.common.rules.width;
   }
 
   return {
-    ...generated.common?.rules,
+    ...generated.common.rules,
     ...generated.css[0].rules,
   };
 }
 
-export default plugin.withOptions<{ prefix?: string; scale?: number }>((options = {}) => {
+module.exports = plugin.withOptions((options = {}) => {
   const prefix = typeof options.prefix === "string" ? options.prefix : "icon";
   const scale = typeof options.scale === "number" ? options.scale : 1;
 

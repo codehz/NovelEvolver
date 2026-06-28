@@ -1,7 +1,7 @@
 @import "tailwindcss";
 @import "@catppuccin/tailwindcss/mocha.css";
 
-@plugin "../tools/iconify.ts";
+@plugin "../tools/iconify.js";
 
 @theme {
   --app-region-drag: drag;
