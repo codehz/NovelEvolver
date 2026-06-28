@@ -23,6 +23,23 @@
   --spacing-titlebar: 2.25rem;
   --spacing-titlebar-button: 3rem;
   --spacing-mac-traffic-light-offset: 4.5rem;
+  --spacing-activity-bar: 3rem;
+  --spacing-workbench-sidebar: 16rem;
+  --spacing-workbench-auxiliary: 20rem;
+  --spacing-workbench-tab: 2.125rem;
+
+  --color-workbench-activity-bar: var(--color-ctp-crust);
+  --color-workbench-activity-bar-foreground: var(--color-ctp-subtext0);
+  --color-workbench-activity-bar-active: var(--color-ctp-text);
+  --color-workbench-activity-indicator: var(--color-ctp-mauve);
+  --color-workbench-sidebar: var(--color-ctp-mantle);
+  --color-workbench-sidebar-title: var(--color-ctp-subtext1);
+  --color-workbench-editor: var(--color-ctp-base);
+  --color-workbench-editor-gutter: var(--color-ctp-mantle);
+  --color-workbench-tab-active: var(--color-ctp-surface0);
+  --color-workbench-tab-inactive: var(--color-ctp-mantle);
+  --color-workbench-tab-border: var(--color-ctp-surface0);
+  --color-workbench-panel-header: var(--color-ctp-mantle);
   --font-display: "MiSans", sans-serif;
 }
 
@@ -44,7 +61,21 @@
   body,
   #root {
     margin: 0;
+    height: 100%;
     min-height: 100%;
+  }
+
+  #root {
+    display: flex;
+    min-height: 0;
+    flex-direction: column;
+  }
+
+  #root > * {
+    display: flex;
+    min-height: 0;
+    flex: 1 1 auto;
+    flex-direction: column;
   }
 
   body {

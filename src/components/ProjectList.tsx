@@ -98,7 +98,7 @@ export function ProjectList() {
   };
 
   return (
-    <div className="flex size-full min-h-0 flex-col gap-4 p-6">
+    <div className="flex min-h-0 flex-1 flex-col gap-4 p-6">
       <TitleBarTitle>NovelEvolver</TitleBarTitle>
       <div className="flex items-center justify-between gap-4">
         <h1 className="text-lg font-semibold text-app-foreground">项目</h1>
@@ -145,7 +145,7 @@ export function ProjectList() {
           暂无项目，可「新建项目」或「打开项目」选择 .npk 文件。
         </p>
       ) : (
-        <ul className="grid min-h-0 flex-1 auto-rows-fr grid-cols-[repeat(auto-fill,minmax(14rem,1fr))] gap-3 overflow-auto">
+        <ul className="grid min-h-0 flex-1 auto-rows-min grid-cols-[repeat(auto-fill,minmax(14rem,1fr))] content-start gap-3 overflow-auto">
           {projects.map((project) => {
             const name = projectDisplayName(project.path);
 
@@ -153,7 +153,7 @@ export function ProjectList() {
               <li key={project.id}>
                 <article
                   className={cn(
-                    "group relative flex h-full min-h-28 flex-col rounded-lg border border-titlebar-border",
+                    "group relative flex min-h-28 flex-col rounded-lg border border-titlebar-border",
                     "bg-titlebar-background transition-colors hover:border-ctp-surface1 hover:bg-ctp-surface0/30",
                   )}
                 >
@@ -169,7 +169,7 @@ export function ProjectList() {
                   </button>
 
                   <button
-                    className="flex min-h-28 w-full min-w-0 flex-1 flex-col gap-2 p-4 text-left"
+                    className="flex w-full min-w-0 flex-col gap-2 p-4 text-left"
                     type="button"
                     onClick={() => {
                       void handleOpenProject(project.id);

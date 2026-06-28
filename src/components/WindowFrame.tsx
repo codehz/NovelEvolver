@@ -86,7 +86,7 @@ export function WindowFrame({ children }: { children: ReactNode }) {
   const isMac = windowState.platform === "darwin";
 
   return (
-    <main className="flex min-h-screen flex-col bg-app-background text-app-foreground">
+    <main className="flex min-h-0 flex-1 flex-col bg-app-background text-app-foreground">
       <header className="flex h-titlebar items-stretch justify-between border-b border-titlebar-border bg-titlebar-background pl-3 select-none app-region-drag">
         <div
           className={cn(
@@ -119,7 +119,7 @@ export function WindowFrame({ children }: { children: ReactNode }) {
         )}
       </header>
 
-      <section className="flex-1 bg-app-background">{children}</section>
+      <section className="flex min-h-0 flex-1 flex-col bg-app-background">{children}</section>
     </main>
   );
 }

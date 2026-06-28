@@ -5,6 +5,7 @@ import type { ProjectListItem } from "../../shared/project";
 import { cn } from "../lib/cn";
 import { projectDisplayName } from "../lib/project-display-name";
 import { TitleBarTitle } from "../components/TitleBarTitle";
+import { WorkbenchLayout } from "../components/workbench/WorkbenchLayout";
 
 export function ProjectWorkspace() {
   const { projectId } = useParams<{ projectId: string }>();
@@ -66,50 +67,31 @@ export function ProjectWorkspace() {
           : "未找到项目";
 
   return (
-    <div className="flex size-full min-h-0 flex-col gap-4 p-6">
+    <div className="flex min-h-0 flex-1 flex-col">
       <TitleBarTitle>{titleBarLabel}</TitleBarTitle>
-      <div className="flex items-center gap-3">
-        <Link
-          className={cn(
-            "inline-flex items-center gap-1 rounded-md border border-titlebar-border bg-titlebar-background px-3 py-1.5 text-sm font-medium text-app-foreground",
-            "hover:bg-ctp-surface0/40",
-          )}
-          href="/"
-        >
-          <span aria-hidden="true" className="icon-[codicon--arrow-left] text-sm" />
-          返回项目列表
-        </Link>
-      </div>
 
       {loading ? (
-        <p className="text-sm text-ctp-subtext0">加载中…</p>
-      ) : error ? (
-        <p className="text-sm text-ctp-red" role="alert">
-          {error}
-        </p>
-      ) : project ? (
-        <div className="flex flex-col gap-3 rounded-lg border border-titlebar-border bg-titlebar-background p-6">
-          <h1 className="text-lg font-semibold text-app-foreground">项目工作区（占位）</h1>
-          <p className="text-sm text-ctp-subtext0">
-            路由已生效。后续将在此加载编辑器与项目内容。
-          </p>
-          <dl className="grid gap-2 text-sm">
-            <div className="flex flex-col gap-0.5 sm:flex-row sm:gap-2">
-              <dt className="shrink-0 font-medium text-ctp-subtext1">项目 ID</dt>
-              <dd className="text-app-foreground">{project.id}</dd>
-            </div>
-            <div className="flex flex-col gap-0.5 sm:flex-row sm:gap-2">
-              <dt className="shrink-0 font-medium text-ctp-subtext1">路径</dt>
-              <dd className="wrap-break-word text-app-foreground" title={project.path}>
-                {project.path}
-              </dd>
-            </div>
-            <div className="flex flex-col gap-0.5 sm:flex-row sm:gap-2">
-              <dt className="shrink-0 font-medium text-ctp-subtext1">显示路径</dt>
-              <dd className="wrap-break-word text-app-foreground">{project.displayPath}</dd>
-            </div>
-          </dl>
+        <div className="flex flex-1 items-center justify-center p-6">
+          <p className="text-sm text-ctp-subtext0">加载中…</p>
         </div>
+      ) : error ? (
+        <div className="flex flex-1 flex-col items-center justify-center gap-4 p-6">
+          <p className="text-sm text-ctp-red" role="alert">
+            {error}
+          </p>
+          <Link
+            className={cn(
+              "inline-flex items-center gap-1 rounded-md border border-titlebar-border bg-titlebar-background px-3 py-1.5 text-sm font-medium text-app-foreground",
+              "hover:bg-ctp-surface0/40",
+            )}
+            href="/"
+          >
+            <span aria-hidden="true" className="icon-[codicon--arrow-left] text-sm" />
+            返回项目列表
+          </Link>
+        </div>
+      ) : project ? (
+        <WorkbenchLayout projectLabel={projectDisplayName(project.path)} />
       ) : null}
     </div>
   );
