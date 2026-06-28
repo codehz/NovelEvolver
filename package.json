@@ -23,6 +23,7 @@
     "clsx": "^2.1.1",
     "electron": "^42.5.0",
     "foxact": "^0.3.8",
+    "nano-git": "^0.7.1",
     "react": "^19.2.7",
     "react-dom": "^19.2.7",
     "tailwind-merge": "^3.6.0"
