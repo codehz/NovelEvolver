@@ -94,6 +94,25 @@ function normalizeSidebarWidth(width: number, minWidth: number) {
   return Math.round(Math.max(width, minWidth));
 }
 
+function snapshotLayoutPreferences(
+  preferences: LayoutPreferences,
+  resolvedLayout: ResolvedWorkbenchLayout,
+  hasAuxiliary: boolean,
+): LayoutPreferences {
+  return {
+    ...preferences,
+    primaryVisible: resolvedLayout.primaryVisible,
+    primaryWidth: resolvedLayout.primaryVisible
+      ? resolvedLayout.primaryWidth
+      : preferences.primaryWidth,
+    auxiliaryVisible: hasAuxiliary && resolvedLayout.auxiliaryVisible,
+    auxiliaryWidth:
+      hasAuxiliary && resolvedLayout.auxiliaryVisible
+        ? resolvedLayout.auxiliaryWidth
+        : preferences.auxiliaryWidth,
+  };
+}
+
 function ResizeHandle({
   active,
   ariaLabel,
@@ -226,7 +245,11 @@ export function WorkbenchLayout({
     dragCleanupRef.current?.();
 
     const startX = event.clientX;
-    const startLayout = layoutPreferences;
+    const startLayout = snapshotLayoutPreferences(
+      layoutPreferences,
+      resolvedLayout,
+      hasAuxiliary,
+    );
 
     setActiveResizeSide(side);
     document.body.style.cursor = "col-resize";
