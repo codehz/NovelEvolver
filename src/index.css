@@ -89,6 +89,14 @@
     min-width: 320px;
     overflow: hidden;
     font-family: var(--font-app);
+    @apply select-none;
+  }
+
+  input,
+  textarea,
+  select,
+  [contenteditable="true"] {
+    @apply select-text;
   }
 
   button {
