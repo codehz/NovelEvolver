@@ -29,7 +29,7 @@ function WindowControls({
         type="button"
         onClick={onMinimize}
       >
-        <span className="-translate-y-px text-lg leading-none">-</span>
+        <span aria-hidden="true" className="icon-[codicon--chrome-minimize] text-base" />
       </button>
       <button
         aria-label={isMaximized ? "Restore window" : "Maximize window"}
@@ -37,7 +37,10 @@ function WindowControls({
         type="button"
         onClick={onToggleMaximize}
       >
-        <span className="-translate-y-px text-sm leading-none">{isMaximized ? "❐" : "□"}</span>
+        <span
+          aria-hidden="true"
+          className={isMaximized ? "icon-[codicon--chrome-restore] text-sm" : "icon-[codicon--chrome-maximize] text-sm"}
+        />
       </button>
       <button
         aria-label="Close window"
@@ -45,7 +48,7 @@ function WindowControls({
         type="button"
         onClick={onClose}
       >
-        <span className="-translate-y-px text-sm leading-none">×</span>
+        <span aria-hidden="true" className="icon-[codicon--close] text-sm" />
       </button>
     </div>
   );
