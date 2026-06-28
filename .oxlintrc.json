@@ -24,7 +24,7 @@
     "tailwindcss/no-arbitrary-value": [
       "warn",
       {
-        "allow": ["icon-"]
+        "allow": ["icon-", "grid-cols-"]
       }
     ],
     "tailwindcss/no-hardcoded-colors": "warn",

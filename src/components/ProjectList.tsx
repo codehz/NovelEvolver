@@ -106,7 +106,7 @@ export function ProjectList() {
       ) : projects.length === 0 ? (
         <p className="text-sm text-ctp-subtext0">暂无项目，点击「打开项目」选择文件夹。</p>
       ) : (
-        <ul className="grid min-h-0 flex-1 auto-rows-fr grid-cols-project-list gap-3 overflow-auto">
+        <ul className="grid min-h-0 flex-1 auto-rows-fr grid-cols-[repeat(auto-fill,minmax(14rem,1fr))] gap-3 overflow-auto">
           {projects.map((project) => {
             const name = projectName(project.path);
 
