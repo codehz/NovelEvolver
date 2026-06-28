@@ -22,7 +22,7 @@ export function PrimarySidebar({
   return (
     <aside
       aria-label={viewTitles[activeView]}
-      className="flex w-workbench-sidebar shrink-0 flex-col bg-workbench-sidebar"
+      className="flex min-h-0 w-workbench-sidebar shrink-0 flex-col bg-workbench-sidebar"
       style={{ width }}
     >
       <header className="flex h-workbench-tab shrink-0 items-center justify-between gap-2 px-3 text-xs font-semibold tracking-wide text-workbench-sidebar-title uppercase">
@@ -41,7 +41,7 @@ export function PrimarySidebar({
         </div>
       </header>
 
-      <div className="min-h-0 flex-1 overflow-auto p-2 text-sm">{children}</div>
+      <div className="flex min-h-0 flex-1 flex-col overflow-hidden p-2 text-sm">{children}</div>
     </aside>
   );
 }

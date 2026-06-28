@@ -1,41 +1,129 @@
-import { cn } from "../../../lib/cn";
+import { useState, type CSSProperties } from "react";
 
-const demoTree = [
-  { icon: cn("icon-[codicon--folder-opened]"), label: "手稿", open: true },
-  { icon: cn("icon-[codicon--file]"), label: "第一章.md", depth: 1 },
-  { icon: cn("icon-[codicon--file]"), label: "大纲.md", depth: 1 },
-  { icon: cn("icon-[codicon--folder]"), label: "设定", open: false },
+import { cn } from "../../../lib/cn";
+import {
+  SidebarSectionRowResizeHandle,
+  SidebarViewSection,
+} from "../SidebarViewSection";
+import { useSidebarSectionSplit } from "../use-sidebar-section-split";
+
+type DemoTreeNode = {
+  icon: string;
+  label: string;
+  depth?: number;
+  active?: boolean;
+};
+
+const manuscriptTree: DemoTreeNode[] = [
+  { icon: cn("icon-[codicon--folder-opened]"), label: "手稿" },
+  { icon: cn("icon-[codicon--file]"), label: "第一章.md", depth: 1, active: true },
+  { icon: cn("icon-[codicon--file]"), label: "第二章.md", depth: 1 },
+  { icon: cn("icon-[codicon--file]"), label: "番外·序.md", depth: 1 },
 ];
 
-export function ExplorerSidebarDemo({ projectLabel }: { projectLabel: string }) {
+const referenceTree: DemoTreeNode[] = [
+  { icon: cn("icon-[codicon--folder-opened]"), label: "设定" },
+  { icon: cn("icon-[codicon--file]"), label: "世界观.md", depth: 1 },
+  { icon: cn("icon-[codicon--file]"), label: "人物卡.md", depth: 1 },
+  { icon: cn("icon-[codicon--folder]"), label: "素材" },
+  { icon: cn("icon-[codicon--file]"), label: "地名参考.md", depth: 1 },
+  { icon: cn("icon-[codicon--file]"), label: "大纲.md", depth: 1 },
+];
+
+const DEFAULT_MANUSCRIPT_BODY_HEIGHT = 168;
+
+function ExplorerTreeBody({ nodes, title }: { nodes: DemoTreeNode[]; title: string }) {
   return (
-    <div className="flex flex-col gap-1">
-      <p className="px-1 text-xs text-ctp-subtext0" title={projectLabel}>
+    <ul className="flex flex-col gap-0.5 p-1" role="tree">
+      {nodes.map((node) => (
+        <li
+          key={`${title}-${node.label}`}
+          className={cn(
+            "flex items-center gap-1.5 rounded px-1 py-0.5 text-app-foreground",
+            node.depth ? "pl-5" : undefined,
+            node.active && "bg-workbench-tab-active",
+          )}
+          role="treeitem"
+        >
+          <span aria-hidden="true" className={cn(node.icon, "shrink-0 text-base")} />
+          <span className="truncate">{node.label}</span>
+        </li>
+      ))}
+    </ul>
+  );
+}
+
+export function ExplorerSidebarDemo({ projectLabel }: { projectLabel: string }) {
+  const [manuscriptExpanded, setManuscriptExpanded] = useState(true);
+  const [referenceExpanded, setReferenceExpanded] = useState(true);
+
+  const bothExpanded = manuscriptExpanded && referenceExpanded;
+  const { stackRef, topBodyHeight, resizeActive, onResizePointerDown } = useSidebarSectionSplit({
+    enabled: bothExpanded,
+    defaultTopBodyHeight: DEFAULT_MANUSCRIPT_BODY_HEIGHT,
+  });
+
+  const manuscriptSectionStyle: CSSProperties | undefined = bothExpanded
+    ? { flex: "0 0 auto" }
+    : manuscriptExpanded
+      ? { flex: "1 1 0" }
+      : undefined;
+
+  const manuscriptBodyStyle: CSSProperties | undefined = bothExpanded
+    ? { height: topBodyHeight }
+    : undefined;
+
+  const referenceSectionStyle: CSSProperties | undefined = referenceExpanded
+    ? { flex: "1 1 0", minHeight: 0 }
+    : undefined;
+
+  return (
+    <div className="-m-2 flex min-h-0 flex-1 flex-col">
+      <p className="shrink-0 px-3 pt-2 text-xs text-ctp-subtext0" title={projectLabel}>
         {projectLabel}
       </p>
-      <ul className="flex flex-col gap-0.5" role="tree">
-        {demoTree.map((node) => (
-          <li
-            key={node.label}
-            className={cn(
-              "flex items-center gap-1.5 rounded px-1 py-0.5 text-app-foreground",
-              node.depth ? "pl-5" : undefined,
-              node.label === "第一章.md" && "bg-workbench-tab-active",
-            )}
-            role="treeitem"
-          >
-            <span aria-hidden="true" className={cn(node.icon, "shrink-0 text-base")} />
-            <span className="truncate">{node.label}</span>
-          </li>
-        ))}
-      </ul>
+      <div
+        ref={stackRef}
+        className="flex min-h-0 flex-1 flex-col overflow-hidden"
+      >
+        <SidebarViewSection
+          ariaLabel="正文"
+          bodyFillsSection={manuscriptExpanded && !bothExpanded}
+          bodyStyle={manuscriptBodyStyle}
+          expanded={manuscriptExpanded}
+          panelId="explorer-manuscript-panel"
+          sectionStyle={manuscriptSectionStyle}
+          title="正文"
+          onToggleExpanded={() => setManuscriptExpanded((value) => !value)}
+        >
+          <ExplorerTreeBody nodes={manuscriptTree} title="正文" />
+        </SidebarViewSection>
+        {bothExpanded ? (
+          <SidebarSectionRowResizeHandle
+            active={resizeActive}
+            ariaLabel="调整正文与辅助资料区域高度"
+            onPointerDown={onResizePointerDown}
+          />
+        ) : null}
+        <SidebarViewSection
+          ariaLabel="辅助资料"
+          bodyFillsSection={referenceExpanded}
+          expanded={referenceExpanded}
+          panelId="explorer-reference-panel"
+          sectionStyle={referenceSectionStyle}
+          title="辅助资料"
+          onToggleExpanded={() => setReferenceExpanded((value) => !value)}
+        >
+          <ExplorerTreeBody nodes={referenceTree} title="辅助资料" />
+        </SidebarViewSection>
+      </div>
     </div>
   );
 }
 
 export function SearchSidebarDemo() {
   return (
-    <div className="flex flex-col gap-2 px-1">
+    <div className="flex flex-col gap-2 overflow-auto px-1">
       <label className="flex flex-col gap-1 text-xs text-ctp-subtext0">
         搜索
         <span className="flex items-center gap-2 rounded border border-titlebar-border bg-workbench-editor px-2 py-1.5">
@@ -50,7 +138,7 @@ export function SearchSidebarDemo() {
 
 export function ScmSidebarDemo() {
   return (
-    <div className="flex flex-col items-center gap-2 px-2 py-6 text-center text-xs text-ctp-subtext0">
+    <div className="flex flex-col items-center gap-2 overflow-auto px-2 py-6 text-center text-xs text-ctp-subtext0">
       <span aria-hidden="true" className="icon-[codicon--source-control] text-2xl" />
       <p>尚未配置版本控制。</p>
       <p className="text-ctp-overlay0">布局演示占位。</p>
