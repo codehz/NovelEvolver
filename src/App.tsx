@@ -13,7 +13,7 @@ const fallbackWindowState: WindowState = {
 };
 
 const windowControlButtonClass =
-  "inline-flex h-full w-titlebar-button shrink-0 items-center justify-center rounded-none border-0 bg-transparent p-0 text-titlebar-foreground transition-colors duration-150 hover:bg-window-button-hover active:bg-window-button-hover focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-badge-background";
+  cn("inline-flex size-7 shrink-0 items-center justify-center rounded-full border-0 bg-transparent p-0 text-titlebar-foreground transition-colors duration-150 hover:bg-window-button-hover focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-badge-background active:bg-window-button-hover");
 
 function WindowControls({
   isMaximized,
@@ -27,7 +27,7 @@ function WindowControls({
   onClose: () => void;
 }) {
   return (
-    <div className="flex h-full shrink-0 items-stretch self-stretch app-region-no-drag">
+    <div className="flex shrink-0 items-center gap-1 self-stretch px-1 app-region-no-drag">
       <button
         aria-label="Minimize window"
         className={cn(windowControlButtonClass)}
