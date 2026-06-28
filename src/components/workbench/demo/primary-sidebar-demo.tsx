@@ -1,10 +1,7 @@
 import { useState, type CSSProperties } from "react";
 
 import { cn } from "../../../lib/cn";
-import {
-  SidebarSectionRowResizeHandle,
-  SidebarViewSection,
-} from "../SidebarViewSection";
+import { SidebarSectionRowResizeHandle, SidebarViewSection } from "../SidebarViewSection";
 import { useSidebarSectionSplit } from "../use-sidebar-section-split";
 
 type DemoTreeNode = {
@@ -78,10 +75,7 @@ export function ExplorerSidebarDemo({ projectLabel }: { projectLabel: string }) 
     : undefined;
 
   return (
-    <div
-      ref={stackRef}
-      className="-m-2 flex min-h-0 flex-1 flex-col overflow-hidden"
-    >
+    <div ref={stackRef} className="-m-2 flex min-h-0 flex-1 flex-col overflow-hidden">
       <SidebarViewSection
         ariaLabel={projectLabel}
         bodyFillsSection={manuscriptExpanded && !bothExpanded}
@@ -92,26 +86,26 @@ export function ExplorerSidebarDemo({ projectLabel }: { projectLabel: string }) 
         title={projectLabel}
         onToggleExpanded={() => setManuscriptExpanded((value) => !value)}
       >
-          <ExplorerTreeBody nodes={manuscriptTree} title="正文" />
-        </SidebarViewSection>
-        {bothExpanded ? (
-          <SidebarSectionRowResizeHandle
-            active={resizeActive}
-            ariaLabel="调整正文与辅助资料区域高度"
-            onPointerDown={onResizePointerDown}
-          />
-        ) : null}
-        <SidebarViewSection
-          ariaLabel="辅助资料"
-          bodyFillsSection={referenceExpanded}
-          expanded={referenceExpanded}
-          panelId="explorer-reference-panel"
-          sectionStyle={referenceSectionStyle}
-          title="辅助资料"
-          onToggleExpanded={() => setReferenceExpanded((value) => !value)}
-        >
-          <ExplorerTreeBody nodes={referenceTree} title="辅助资料" />
-        </SidebarViewSection>
+        <ExplorerTreeBody nodes={manuscriptTree} title="正文" />
+      </SidebarViewSection>
+      {bothExpanded ? (
+        <SidebarSectionRowResizeHandle
+          active={resizeActive}
+          ariaLabel="调整正文与辅助资料区域高度"
+          onPointerDown={onResizePointerDown}
+        />
+      ) : null}
+      <SidebarViewSection
+        ariaLabel="辅助资料"
+        bodyFillsSection={referenceExpanded}
+        expanded={referenceExpanded}
+        panelId="explorer-reference-panel"
+        sectionStyle={referenceSectionStyle}
+        title="辅助资料"
+        onToggleExpanded={() => setReferenceExpanded((value) => !value)}
+      >
+        <ExplorerTreeBody nodes={referenceTree} title="辅助资料" />
+      </SidebarViewSection>
     </div>
   );
 }

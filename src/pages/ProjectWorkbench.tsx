@@ -2,11 +2,11 @@ import { useEffect, useState } from "react";
 import { Link, useParams } from "wouter";
 
 import type { ProjectListItem } from "../../shared/project";
+import { TitleBarTitle } from "../components/TitleBarTitle";
+import { buildWorkbenchDemoSlots } from "../components/workbench/demo/workbench-demo";
+import { WorkbenchLayout } from "../components/workbench/WorkbenchLayout";
 import { cn } from "../lib/cn";
 import { projectDisplayName } from "../lib/project-display-name";
-import { TitleBarTitle } from "../components/TitleBarTitle";
-import { WorkbenchLayout } from "../components/workbench/WorkbenchLayout";
-import { buildWorkbenchDemoSlots } from "../components/workbench/demo/workbench-demo";
 
 export function ProjectWorkbench() {
   const { projectId } = useParams<{ projectId: string }>();

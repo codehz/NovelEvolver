@@ -1,4 +1,10 @@
-import { useEffect, useRef, useState, type PointerEvent as ReactPointerEvent, type ReactNode } from "react";
+import {
+  useEffect,
+  useRef,
+  useState,
+  type PointerEvent as ReactPointerEvent,
+  type ReactNode,
+} from "react";
 
 import { cn } from "../../lib/cn";
 import { ActivityBar } from "./ActivityBar";
@@ -58,7 +64,8 @@ function resolveWorkbenchLayout(
       : (["primary", "auxiliary"] as const);
 
   for (const side of allocationOrder) {
-    const wantsVisible = side === "primary" ? preferences.primaryVisible : preferences.auxiliaryVisible;
+    const wantsVisible =
+      side === "primary" ? preferences.primaryVisible : preferences.auxiliaryVisible;
     if (!wantsVisible) {
       continue;
     }
@@ -133,12 +140,7 @@ function ResizeHandle({
       style={{ left: position }}
       onPointerDown={onPointerDown}
     >
-      <div
-        className={cn(
-          resizeHandleRailClass,
-          active && "opacity-100",
-        )}
-      />
+      <div className={cn(resizeHandleRailClass, active && "opacity-100")} />
     </div>
   );
 }
@@ -245,11 +247,7 @@ export function WorkbenchLayout({
     dragCleanupRef.current?.();
 
     const startX = event.clientX;
-    const startLayout = snapshotLayoutPreferences(
-      layoutPreferences,
-      resolvedLayout,
-      hasAuxiliary,
-    );
+    const startLayout = snapshotLayoutPreferences(layoutPreferences, resolvedLayout, hasAuxiliary);
 
     setActiveResizeSide(side);
     document.body.style.cursor = "col-resize";

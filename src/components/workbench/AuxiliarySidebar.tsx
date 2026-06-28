@@ -29,18 +29,13 @@ export function AuxiliarySidebar({
           <span className="truncate">AI 助手</span>
         </div>
         <div className="flex shrink-0 items-center gap-0.5">
-          <button
-            aria-label="新建对话（演示）"
-            className={sidebarHeaderActionClass}
-            type="button"
-          >
-            <span aria-hidden="true" className={cn(sidebarHeaderIconClass, "icon-[codicon--add]")} />
+          <button aria-label="新建对话（演示）" className={sidebarHeaderActionClass} type="button">
+            <span
+              aria-hidden="true"
+              className={cn(sidebarHeaderIconClass, "icon-[codicon--add]")}
+            />
           </button>
-          <button
-            aria-label="更多操作（演示）"
-            className={sidebarHeaderActionClass}
-            type="button"
-          >
+          <button aria-label="更多操作（演示）" className={sidebarHeaderActionClass} type="button">
             <span
               aria-hidden="true"
               className={cn(sidebarHeaderIconClass, "icon-[codicon--ellipsis]")}

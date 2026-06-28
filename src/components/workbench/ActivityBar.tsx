@@ -49,10 +49,7 @@ export function ActivityBar({
               aria-current={isActive ? "page" : undefined}
               aria-expanded={isActive ? true : undefined}
               aria-label={item.label}
-              className={cn(
-                activityButtonClass,
-                isActive && "text-workbench-activity-bar-active",
-              )}
+              className={cn(activityButtonClass, isActive && "text-workbench-activity-bar-active")}
               title={item.label}
               type="button"
               onClick={() => onSelectView(item.id)}

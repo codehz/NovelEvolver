@@ -159,7 +159,10 @@ export function ProjectList() {
                 >
                   <button
                     aria-label={`从列表移除 ${name}`}
-                    className={cn(projectCardActionClass, "absolute top-2 right-2 z-10 opacity-0 group-hover:opacity-100")}
+                    className={cn(
+                      projectCardActionClass,
+                      "absolute top-2 right-2 z-10 opacity-0 group-hover:opacity-100",
+                    )}
                     type="button"
                     onClick={() => {
                       void handleRemoveProject(project.id);

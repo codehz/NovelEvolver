@@ -12,8 +12,7 @@ function formatNativeWindowTitle(label: string): string {
 }
 
 export function TitleBarTitle({ children }: { children: ReactNode }) {
-  const label =
-    typeof children === "string" && children.length > 0 ? children : defaultWindowTitle;
+  const label = typeof children === "string" && children.length > 0 ? children : defaultWindowTitle;
   const nativeTitle = formatNativeWindowTitle(label);
 
   useEffect(() => {

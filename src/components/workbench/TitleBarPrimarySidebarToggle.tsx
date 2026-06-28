@@ -29,7 +29,9 @@ export function TitleBarPrimarySidebarToggle({
           aria-hidden="true"
           className={cn(
             "text-sm",
-            visible ? "icon-[codicon--layout-sidebar-left]" : "icon-[codicon--layout-sidebar-left-off]",
+            visible
+              ? "icon-[codicon--layout-sidebar-left]"
+              : "icon-[codicon--layout-sidebar-left-off]",
           )}
         />
       </button>

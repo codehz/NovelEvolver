@@ -98,10 +98,7 @@ export function SidebarViewSection({
       </div>
       {expanded ? (
         <div
-          className={cn(
-            "min-h-0 overflow-auto",
-            bodyFillsSection ? "h-0 flex-1" : undefined,
-          )}
+          className={cn("min-h-0 overflow-auto", bodyFillsSection ? "h-0 flex-1" : undefined)}
           id={panelId}
           style={bodyStyle}
         >
@@ -131,7 +128,11 @@ export function SidebarSectionRowResizeHandle({
         onPointerDown={onPointerDown}
       >
         <div
-          className={cn(sectionResizeRailClass, "absolute inset-x-0 bottom-1", active && "opacity-100")}
+          className={cn(
+            sectionResizeRailClass,
+            "absolute inset-x-0 bottom-1",
+            active && "opacity-100",
+          )}
         />
       </div>
     </div>

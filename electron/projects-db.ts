@@ -32,9 +32,7 @@ export class ProjectsDatabase {
 
   list(): ProjectRecord[] {
     const rows = this.#db
-      .prepare(
-        `SELECT id, path, last_opened_at FROM projects ORDER BY last_opened_at DESC`,
-      )
+      .prepare(`SELECT id, path, last_opened_at FROM projects ORDER BY last_opened_at DESC`)
       .all() as ProjectRow[];
 
     return rows.map(rowToRecord);
@@ -71,9 +69,7 @@ export class ProjectsDatabase {
   }
 
   touchById(id: number, lastOpenedAt: number): ProjectRecord | null {
-    this.#db
-      .prepare(`UPDATE projects SET last_opened_at = ? WHERE id = ?`)
-      .run(lastOpenedAt, id);
+    this.#db.prepare(`UPDATE projects SET last_opened_at = ? WHERE id = ?`).run(lastOpenedAt, id);
 
     const row = this.#db
       .prepare(`SELECT id, path, last_opened_at FROM projects WHERE id = ?`)

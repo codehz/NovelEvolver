@@ -1,14 +1,10 @@
 import type { ReactNode } from "react";
 
-import type { ActivityViewId } from "../types";
 import { EditorArea } from "../EditorArea";
 import { StatusBar } from "../StatusBar";
+import type { ActivityViewId } from "../types";
 import { AuxiliaryPanelDemo } from "./auxiliary-demo";
-import {
-  ExplorerSidebarDemo,
-  ScmSidebarDemo,
-  SearchSidebarDemo,
-} from "./primary-sidebar-demo";
+import { ExplorerSidebarDemo, ScmSidebarDemo, SearchSidebarDemo } from "./primary-sidebar-demo";
 
 const demoTabs = [
   { id: "chapter-1", label: "第一章.md", active: true },

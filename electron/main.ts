@@ -1,11 +1,7 @@
 import { join } from "node:path";
 import { app, BrowserWindow, ipcMain } from "electron";
 
-import {
-  createAppIpcMethodHandlers,
-  registerIpcMethods,
-  sendWindowState,
-} from "./ipc";
+import { createAppIpcMethodHandlers, registerIpcMethods, sendWindowState } from "./ipc";
 import { ProjectsDatabase } from "./projects-db";
 
 const isDev = !app.isPackaged;
@@ -64,10 +60,7 @@ void app.whenReady().then(() => {
   const dbPath = join(app.getPath("userData"), "projects.db");
   projectsDb = new ProjectsDatabase(dbPath);
 
-  registerIpcMethods(
-    ipcMain,
-    createAppIpcMethodHandlers({ getProjectsDb }),
-  );
+  registerIpcMethods(ipcMain, createAppIpcMethodHandlers({ getProjectsDb }));
 
   createWindow();
 

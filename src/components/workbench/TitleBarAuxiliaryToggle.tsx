@@ -29,7 +29,9 @@ export function TitleBarAuxiliaryToggle({
           aria-hidden="true"
           className={cn(
             "text-sm",
-            visible ? "icon-[codicon--layout-sidebar-right]" : "icon-[codicon--layout-sidebar-right-off]",
+            visible
+              ? "icon-[codicon--layout-sidebar-right]"
+              : "icon-[codicon--layout-sidebar-right-off]",
           )}
         />
       </button>

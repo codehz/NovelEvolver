@@ -1,7 +1,4 @@
-import type {
-  AppIpcMethodMap,
-  UncategorizedAppIpcMethodChannels,
-} from "../../shared/ipc/app-maps";
+import type { AppIpcMethodMap, UncategorizedAppIpcMethodChannels } from "../../shared/ipc/app-maps";
 import type { IpcMainMethodHandlers } from "../../shared/ipc/types";
 import type { IpcMainDeps } from "./deps";
 import { createProjectsIpcMethodHandlers } from "./projects-handlers";

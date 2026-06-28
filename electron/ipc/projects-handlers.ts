@@ -14,7 +14,10 @@ export function createProjectsIpcMethodHandlers(
 ): IpcMainMethodHandlers<ProjectsIpcMethodMap> {
   return {
     "projects:list": async () =>
-      deps.getProjectsDb().list().map((record) => projectWithDisplayPath(record)),
+      deps
+        .getProjectsDb()
+        .list()
+        .map((record) => projectWithDisplayPath(record)),
     "projects:get": async (_event, id) => {
       const record = deps.getProjectsDb().getById(id);
       return record ? projectWithDisplayPath(record) : null;

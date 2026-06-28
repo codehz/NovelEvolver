@@ -28,11 +28,7 @@ export function PrimarySidebar({
       <header className="flex h-workbench-tab shrink-0 items-center justify-between gap-2 px-3 text-xs font-semibold tracking-wide text-workbench-sidebar-title uppercase">
         <span className="truncate">{viewTitles[activeView]}</span>
         <div className="flex shrink-0 items-center gap-0.5">
-          <button
-            aria-label="视图操作（演示）"
-            className={sidebarHeaderActionClass}
-            type="button"
-          >
+          <button aria-label="视图操作（演示）" className={sidebarHeaderActionClass} type="button">
             <span
               aria-hidden="true"
               className={cn(sidebarHeaderIconClass, "icon-[codicon--ellipsis]")}
