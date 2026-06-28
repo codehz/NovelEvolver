@@ -165,7 +165,7 @@ export function ProjectList() {
                   </button>
 
                   <button
-                    className="flex min-h-28 w-full min-w-0 flex-1 flex-col gap-2 p-4 pr-10 text-left"
+                    className="flex min-h-28 w-full min-w-0 flex-1 flex-col gap-2 p-4 text-left"
                     type="button"
                     onClick={() => {
                       void handleOpenProject(project.id);
