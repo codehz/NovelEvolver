@@ -2,7 +2,7 @@ import { useEffect, useState, type ReactNode } from "react";
 
 import type { WindowState } from "../../shared/window";
 import { cn } from "../lib/cn";
-import { TitleBarPortalTarget } from "../lib/titlebar-portal";
+import { TitleBarActionsPortalTarget, TitleBarPortalTarget } from "../lib/titlebar-portal";
 
 const windowControlButtonClass = cn(
   "inline-flex size-7 shrink-0 items-center justify-center rounded-full border-0 bg-transparent p-0 text-titlebar-foreground transition-colors duration-150 hover:bg-window-button-hover focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-badge-background active:bg-window-button-hover",
@@ -20,7 +20,7 @@ function WindowControls({
   onClose: () => void;
 }) {
   return (
-    <div className="flex shrink-0 items-center gap-1 self-stretch px-1 app-region-no-drag">
+    <div className="flex shrink-0 items-center gap-1 self-stretch">
       <button
         aria-label="Minimize window"
         className={cn(windowControlButtonClass)}
@@ -103,19 +103,26 @@ export function WindowFrame({ children }: { children: ReactNode }) {
           />
         </div>
 
-        {isMac ? null : (
-          <WindowControls
-            isMaximized={windowState.isMaximized}
-            onMinimize={() => {
-              void window.invokeIpc("window:minimize");
-            }}
-            onToggleMaximize={() => {
-              void window.invokeIpc("window:toggle-maximize").then(setWindowState);
-            }}
-            onClose={() => {
-              void window.invokeIpc("window:close");
-            }}
-          />
+        {isMac ? (
+          <div className="flex shrink-0 items-center self-stretch pr-2 app-region-no-drag">
+            <TitleBarActionsPortalTarget className="flex items-center" />
+          </div>
+        ) : (
+          <div className="flex shrink-0 items-center gap-1 self-stretch px-1 app-region-no-drag">
+            <TitleBarActionsPortalTarget className="flex items-center" />
+            <WindowControls
+              isMaximized={windowState.isMaximized}
+              onMinimize={() => {
+                void window.invokeIpc("window:minimize");
+              }}
+              onToggleMaximize={() => {
+                void window.invokeIpc("window:toggle-maximize").then(setWindowState);
+              }}
+              onClose={() => {
+                void window.invokeIpc("window:close");
+              }}
+            />
+          </div>
         )}
       </header>
 

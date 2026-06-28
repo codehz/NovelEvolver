@@ -27,14 +27,10 @@ const activityIconClass =
 
 export function ActivityBar({
   activeView,
-  auxiliaryVisible,
   onSelectView,
-  onToggleAuxiliary,
 }: {
   activeView: ActivityViewId;
-  auxiliaryVisible: boolean;
   onSelectView: (view: ActivityViewId) => void;
-  onToggleAuxiliary: () => void;
 }) {
   return (
     <nav
@@ -64,27 +60,6 @@ export function ActivityBar({
       </div>
 
       <div className="mt-auto flex flex-col">
-        <button
-          aria-label={auxiliaryVisible ? "隐藏 AI 侧边栏" : "显示 AI 侧边栏"}
-          aria-pressed={auxiliaryVisible}
-          className={cn(
-            activityButtonClass,
-            auxiliaryVisible && "text-workbench-activity-bar-active",
-          )}
-          title="AI 助手面板"
-          type="button"
-          onClick={onToggleAuxiliary}
-        >
-          <span
-            aria-hidden="true"
-            className={cn(
-              activityIconClass,
-              auxiliaryVisible
-                ? "icon-[codicon--layout-sidebar-right]"
-                : "icon-[codicon--layout-sidebar-right-off]",
-            )}
-          />
-        </button>
         <Link
           aria-label="返回项目列表"
           className={cn(activityButtonClass, "app-region-no-drag")}
