@@ -1,8 +1,8 @@
-import { useState, type CSSProperties } from "react";
+import { Fragment, useMemo, useState } from "react";
 
 import { cn } from "../../../lib/cn";
 import { SidebarSectionRowResizeHandle, SidebarViewSection } from "../SidebarViewSection";
-import { useSidebarSectionSplit } from "../use-sidebar-section-split";
+import { useSidebarPaneStack } from "../use-sidebar-pane-stack";
 
 type DemoTreeNode = {
   icon: string;
@@ -27,7 +27,16 @@ const referenceTree: DemoTreeNode[] = [
   { icon: cn("icon-[codicon--file]"), label: "大纲.md", depth: 1 },
 ];
 
+const timelineTree: DemoTreeNode[] = [
+  { icon: cn("icon-[codicon--history]"), label: "修订记录" },
+  { icon: cn("icon-[codicon--circle-filled]"), label: "09:42 调整第一章节奏", depth: 1 },
+  { icon: cn("icon-[codicon--circle-filled]"), label: "昨天 22:15 更新人物卡", depth: 1 },
+  { icon: cn("icon-[codicon--circle-filled]"), label: "昨天 19:30 补充世界观设定", depth: 1 },
+];
+
 const DEFAULT_MANUSCRIPT_BODY_HEIGHT = 168;
+const DEFAULT_REFERENCE_BODY_HEIGHT = 148;
+const DEFAULT_TIMELINE_BODY_HEIGHT = 116;
 
 function ExplorerTreeBody({ nodes, title }: { nodes: DemoTreeNode[]; title: string }) {
   return (
@@ -53,59 +62,82 @@ function ExplorerTreeBody({ nodes, title }: { nodes: DemoTreeNode[]; title: stri
 export function ExplorerSidebarDemo({ projectLabel }: { projectLabel: string }) {
   const [manuscriptExpanded, setManuscriptExpanded] = useState(true);
   const [referenceExpanded, setReferenceExpanded] = useState(true);
+  const [timelineExpanded, setTimelineExpanded] = useState(true);
 
-  const bothExpanded = manuscriptExpanded && referenceExpanded;
-  const { stackRef, topBodyHeight, resizeActive, onResizePointerDown } = useSidebarSectionSplit({
-    enabled: bothExpanded,
-    defaultTopBodyHeight: DEFAULT_MANUSCRIPT_BODY_HEIGHT,
+  const panes = useMemo(
+    () => [
+      {
+        id: "manuscript",
+        title: projectLabel,
+        ariaLabel: projectLabel,
+        panelId: "explorer-manuscript-panel",
+        expanded: manuscriptExpanded,
+        defaultBodyHeight: DEFAULT_MANUSCRIPT_BODY_HEIGHT,
+        body: <ExplorerTreeBody nodes={manuscriptTree} title="正文" />,
+        onToggleExpanded: () => setManuscriptExpanded((value) => !value),
+      },
+      {
+        id: "reference",
+        title: "辅助资料",
+        ariaLabel: "辅助资料",
+        panelId: "explorer-reference-panel",
+        expanded: referenceExpanded,
+        defaultBodyHeight: DEFAULT_REFERENCE_BODY_HEIGHT,
+        body: <ExplorerTreeBody nodes={referenceTree} title="辅助资料" />,
+        onToggleExpanded: () => setReferenceExpanded((value) => !value),
+      },
+      {
+        id: "timeline",
+        title: "时间线",
+        ariaLabel: "时间线",
+        panelId: "explorer-timeline-panel",
+        expanded: timelineExpanded,
+        defaultBodyHeight: DEFAULT_TIMELINE_BODY_HEIGHT,
+        body: <ExplorerTreeBody nodes={timelineTree} title="时间线" />,
+        onToggleExpanded: () => setTimelineExpanded((value) => !value),
+      },
+    ],
+    [manuscriptExpanded, projectLabel, referenceExpanded, timelineExpanded],
+  );
+  const { stackRef, paneLayouts, resizeHandles, getResizeHandleProps } = useSidebarPaneStack({
+    panes,
   });
-
-  const manuscriptSectionStyle: CSSProperties | undefined = bothExpanded
-    ? { flex: "0 0 auto" }
-    : manuscriptExpanded
-      ? { flex: "1 1 0" }
-      : undefined;
-
-  const manuscriptBodyStyle: CSSProperties | undefined = bothExpanded
-    ? { height: topBodyHeight }
-    : undefined;
-
-  const referenceSectionStyle: CSSProperties | undefined = referenceExpanded
-    ? { flex: "1 1 0", minHeight: 0 }
-    : undefined;
+  const paneTitleMap = useMemo(
+    () => Object.fromEntries(panes.map((pane) => [pane.id, pane.title])),
+    [panes],
+  );
 
   return (
     <div ref={stackRef} className="-m-2 flex min-h-0 flex-1 flex-col overflow-hidden">
-      <SidebarViewSection
-        ariaLabel={projectLabel}
-        bodyFillsSection={manuscriptExpanded && !bothExpanded}
-        bodyStyle={manuscriptBodyStyle}
-        expanded={manuscriptExpanded}
-        panelId="explorer-manuscript-panel"
-        sectionStyle={manuscriptSectionStyle}
-        title={projectLabel}
-        onToggleExpanded={() => setManuscriptExpanded((value) => !value)}
-      >
-        <ExplorerTreeBody nodes={manuscriptTree} title="正文" />
-      </SidebarViewSection>
-      {bothExpanded ? (
-        <SidebarSectionRowResizeHandle
-          active={resizeActive}
-          ariaLabel="调整正文与辅助资料区域高度"
-          onPointerDown={onResizePointerDown}
-        />
-      ) : null}
-      <SidebarViewSection
-        ariaLabel="辅助资料"
-        bodyFillsSection={referenceExpanded}
-        expanded={referenceExpanded}
-        panelId="explorer-reference-panel"
-        sectionStyle={referenceSectionStyle}
-        title="辅助资料"
-        onToggleExpanded={() => setReferenceExpanded((value) => !value)}
-      >
-        <ExplorerTreeBody nodes={referenceTree} title="辅助资料" />
-      </SidebarViewSection>
+      {panes.map((pane) => {
+        const layout = paneLayouts[pane.id];
+        const resizeHandle = resizeHandles.find((handle) => handle.anchorPaneId === pane.id);
+        const resizeHandleProps = resizeHandle ? getResizeHandleProps(resizeHandle.id) : null;
+
+        return (
+          <Fragment key={pane.id}>
+            {resizeHandle && resizeHandleProps ? (
+              <SidebarSectionRowResizeHandle
+                active={resizeHandleProps.active}
+                ariaLabel={`调整${paneTitleMap[resizeHandle.upperPaneId]}与${pane.title}区域高度`}
+                onPointerDown={resizeHandleProps.onPointerDown}
+              />
+            ) : null}
+            <SidebarViewSection
+              ariaLabel={pane.ariaLabel}
+              bodyFillsSection={layout?.bodyFillsSection}
+              bodyStyle={layout?.bodyStyle}
+              expanded={pane.expanded}
+              panelId={pane.panelId}
+              sectionStyle={layout?.sectionStyle}
+              title={pane.title}
+              onToggleExpanded={pane.onToggleExpanded}
+            >
+              {pane.body}
+            </SidebarViewSection>
+          </Fragment>
+        );
+      })}
     </div>
   );
 }
