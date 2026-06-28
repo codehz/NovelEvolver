@@ -6,12 +6,6 @@ type WindowState = {
 };
 
 contextBridge.exposeInMainWorld("electronAPI", {
-  getVersions: () =>
-    ipcRenderer.invoke("app:get-versions") as Promise<{
-      chrome: string;
-      electron: string;
-      node: string;
-    }>,
   getWindowState: () => ipcRenderer.invoke("window:get-state") as Promise<WindowState>,
   minimizeWindow: () => ipcRenderer.invoke("window:minimize") as Promise<void>,
   toggleMaximizeWindow: () =>

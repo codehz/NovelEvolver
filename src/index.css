@@ -3,12 +3,32 @@
 @theme {
   --app-region-drag: drag;
   --app-region-no-drag: no-drag;
+  --color-vscode-foreground: #cccccc;
+  --color-vscode-editor-background: #1e1e1e;
+  --color-vscode-titlebar-background: #181818;
+  --color-vscode-titlebar-foreground: #cccccc;
+  --color-vscode-titlebar-border: #2b2b2b;
+  --color-vscode-badge-background: #007acc;
+  --color-vscode-badge-foreground: #ffffff;
+  --color-vscode-window-button-hover: rgb(255 255 255 / 0.08);
+  --color-vscode-window-button-close-hover: #c42b1c;
+  --font-vscode:
+    "Segoe WPC",
+    "Segoe UI",
+    "Helvetica Neue",
+    Helvetica,
+    Arial,
+    sans-serif;
+  --text-vscode-titlebar: 0.75rem;
+  --text-vscode-badge: 0.6875rem;
+  --spacing-titlebar: 2.25rem;
+  --spacing-titlebar-button: 3rem;
+  --spacing-mac-traffic-light-offset: 4.5rem;
 }
 
 :root {
-  color: #1c1917;
-  background: #f4efe7;
-  font-family: "Iowan Old Style", "Palatino Linotype", "Book Antiqua", Georgia, serif;
+  color: #cccccc;
+  background: #1e1e1e;
   line-height: 1.5;
   font-weight: 400;
   font-synthesis: none;
@@ -26,6 +46,12 @@ body,
 
 body {
   min-width: 320px;
+  overflow: hidden;
+  font-family: var(--font-vscode);
+}
+
+button {
+  font: inherit;
 }
 
 @utility app-region-* {

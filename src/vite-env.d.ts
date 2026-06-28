@@ -7,11 +7,6 @@ type WindowState = {
 
 interface Window {
   electronAPI: {
-    getVersions: () => Promise<{
-      chrome: string;
-      electron: string;
-      node: string;
-    }>;
     getWindowState: () => Promise<WindowState>;
     minimizeWindow: () => Promise<void>;
     toggleMaximizeWindow: () => Promise<WindowState>;

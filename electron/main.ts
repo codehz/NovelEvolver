@@ -26,7 +26,7 @@ function createWindow() {
     minWidth: 960,
     minHeight: 640,
     titleBarStyle: process.platform === "darwin" ? "hiddenInset" : "hidden",
-    backgroundColor: "#f4efe7",
+    backgroundColor: "#1e1e1e",
     webPreferences: {
       preload: join(__dirname, "preload.js"),
       contextIsolation: true,
@@ -44,7 +44,6 @@ function createWindow() {
 
   if (isDev) {
     void window.loadURL("http://localhost:5173");
-    window.webContents.openDevTools({ mode: "detach" });
     return;
   }
 
@@ -52,12 +51,6 @@ function createWindow() {
 }
 
 void app.whenReady().then(() => {
-  ipcMain.handle("app:get-versions", () => ({
-    chrome: process.versions.chrome,
-    electron: process.versions.electron,
-    node: process.versions.node,
-  }));
-
   ipcMain.handle("window:get-state", (event) => {
     const window = BrowserWindow.fromWebContents(event.sender);
     if (!window) {
