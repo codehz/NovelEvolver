@@ -165,7 +165,7 @@ export function ProjectList() {
                   </button>
 
                   <button
-                    className="flex min-h-28 flex-1 flex-col gap-2 p-4 pr-10 text-left"
+                    className="flex min-h-28 w-full min-w-0 flex-1 flex-col gap-2 p-4 pr-10 text-left"
                     type="button"
                     onClick={() => {
                       void handleOpenProject(project.id);
@@ -175,10 +175,10 @@ export function ProjectList() {
                       aria-hidden="true"
                       className="icon-[codicon--file] text-xl text-ctp-mauve"
                     />
-                    <span className="line-clamp-2 leading-snug font-medium text-app-foreground">
+                    <span className="line-clamp-2 min-h-0 min-w-0 leading-snug font-medium text-app-foreground">
                       {name}
                     </span>
-                    <span className="line-clamp-2 text-xs leading-relaxed text-ctp-subtext0">
+                    <span className="line-clamp-2 min-h-0 min-w-0 text-xs leading-relaxed wrap-break-word text-ctp-subtext0">
                       {project.path}
                     </span>
                     <span className="mt-auto text-xs text-ctp-subtext1">
