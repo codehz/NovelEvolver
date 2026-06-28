@@ -39,6 +39,8 @@ The renderer uses **Tailwind CSS v4** with theme tokens defined in `src/index.cs
 - **Do not add new ad-hoc CSS classes** in stylesheets for layout or appearance; express styling with Tailwind utilities wired to `@theme` tokens.
 - **Exception:** minimal global or component-scoped CSS is allowed only when integrating a **third-party component library** that cannot be styled via tokens/utilities, or for platform hooks (e.g. `-webkit-app-region`) already centralized in `index.css`.
 - New visual concepts should start by **extending `@theme`** with named tokens, then use those names in components.
+- **Tailwind class constants must use `cn()`:** Any module-level or local constant whose value is a Tailwind utility string (including a single short string) must be assigned via `cn("...")` or `cn("...", condition && "...")`, not a bare string literal. This lets `oxlint-tailwindcss` statically validate classes (unknown utilities, duplicates, conflicts, sort order, etc.). Inline `className="..."` on JSX is fine; the rule applies to extracted `*Class` / `*Classes` variables and similar reuse.
+- **Trust `bun run lint` for Tailwind after `@theme` / CSS changes:** The editor may show stale Tailwind diagnostics (e.g. “unknown class” for new theme tokens) because IDE Tailwind plugins do not always reload `src/index.css` immediately. Treat **`bun run lint`** (oxlint + `oxlint-tailwindcss`) as the authority; do not “fix” working theme utilities solely to clear editor squiggles.
 
 ## Testing Guidelines
 

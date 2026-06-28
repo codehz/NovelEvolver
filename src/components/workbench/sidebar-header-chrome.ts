@@ -6,5 +6,6 @@ export const sidebarHeaderActionClass = cn(
   "focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-badge-background",
 );
 
-export const sidebarHeaderIconClass =
-  "inline-flex size-4 shrink-0 items-center justify-center text-base leading-none";
+export const sidebarHeaderIconClass = cn(
+  "inline-flex size-4 shrink-0 items-center justify-center text-base leading-none",
+);

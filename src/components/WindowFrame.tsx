@@ -58,7 +58,7 @@ function WindowControls({
   );
 }
 
-const titlebarChromeTransitionClass = "transition-opacity duration-200 ease-out";
+const titlebarChromeTransitionClass = cn("transition-opacity duration-200 ease-out");
 
 const fallbackWindowState: WindowState = {
   isFocused: true,
@@ -87,9 +87,9 @@ export function WindowFrame({ children }: { children: ReactNode }) {
   }, []);
 
   const isMac = windowState.platform === "darwin";
-  const titlebarChromeOpacityClass = windowState.isFocused
-    ? "opacity-100"
-    : "opacity-titlebar-inactive";
+  const titlebarChromeOpacityClass = cn(
+    windowState.isFocused ? "opacity-100" : "opacity-titlebar-inactive",
+  );
 
   return (
     <main className="flex min-h-0 flex-1 flex-col bg-app-background text-app-foreground">

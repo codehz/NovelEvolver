@@ -9,10 +9,10 @@ const viewTitles: Record<ActivityViewId, string> = {
 };
 
 const demoTree = [
-  { icon: "icon-[codicon--folder-opened]", label: "手稿", open: true },
-  { icon: "icon-[codicon--file]", label: "第一章.md", depth: 1 },
-  { icon: "icon-[codicon--file]", label: "大纲.md", depth: 1 },
-  { icon: "icon-[codicon--folder]", label: "设定", open: false },
+  { icon: cn("icon-[codicon--folder-opened]"), label: "手稿", open: true },
+  { icon: cn("icon-[codicon--file]"), label: "第一章.md", depth: 1 },
+  { icon: cn("icon-[codicon--file]"), label: "大纲.md", depth: 1 },
+  { icon: cn("icon-[codicon--folder]"), label: "设定", open: false },
 ];
 
 export function PrimarySidebar({

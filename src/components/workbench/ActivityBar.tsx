@@ -10,9 +10,9 @@ type ActivityItem = {
 };
 
 const primaryItems: ActivityItem[] = [
-  { id: "explorer", label: "资源管理器", iconClass: "icon-[codicon--files]" },
-  { id: "search", label: "搜索", iconClass: "icon-[codicon--search]" },
-  { id: "scm", label: "源代码管理", iconClass: "icon-[codicon--source-control]" },
+  { id: "explorer", label: "资源管理器", iconClass: cn("icon-[codicon--files]") },
+  { id: "search", label: "搜索", iconClass: cn("icon-[codicon--search]") },
+  { id: "scm", label: "源代码管理", iconClass: cn("icon-[codicon--source-control]") },
 ];
 
 const activityButtonClass = cn(
@@ -22,8 +22,9 @@ const activityButtonClass = cn(
   "focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-badge-background",
 );
 
-const activityIconClass =
-  "inline-flex size-6 shrink-0 items-center justify-center text-[1.375rem] leading-none";
+const activityIconClass = cn(
+  "inline-flex size-6 shrink-0 items-center justify-center text-activity-bar-icon leading-none",
+);
 
 export function ActivityBar({
   activeView,
