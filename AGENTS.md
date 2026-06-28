@@ -17,9 +17,9 @@ Use Bun for local work because the repo is locked with `bun.lock`.
 Write TypeScript with 2-space indentation, semicolons, and double quotes, matching the current codebase. Use PascalCase for React components, camelCase for functions and variables, and descriptive IPC channel names like `window:get-state`. Keep renderer code in `src/`, Electron-only code in `electron/`, and prefer small local types over loosely typed objects. Let `oxlint` and `oxfmt` enforce import order and Tailwind class ordering.
 
 ## Styling & Design Tokens
-The renderer uses **Tailwind CSS v4** with theme tokens defined in `src/index.css` under `@theme` (for example `vscode-*` colors, spacing, and typography). When designing UI:
+The renderer uses **Tailwind CSS v4** with theme tokens defined in `src/index.css` under `@theme` (for example `app-*`, `titlebar-*`, `badge-*` colors, spacing, and typography). When designing UI:
 
-- Prefer **semantic tokens** (`text-vscode-foreground`, `bg-vscode-titlebar-background`, `h-titlebar`, etc.) over raw hex values or one-off utility combinations.
+- Prefer **semantic tokens** (`text-app-foreground`, `bg-titlebar-background`, `h-titlebar`, etc.) over raw hex values or one-off utility combinations.
 - **Do not add new ad-hoc CSS classes** in stylesheets for layout or appearance; express styling with Tailwind utilities wired to `@theme` tokens.
 - **Exception:** minimal global or component-scoped CSS is allowed only when integrating a **third-party component library** that cannot be styled via tokens/utilities, or for platform hooks (e.g. `-webkit-app-region`) already centralized in `index.css`.
 - New visual concepts should start by **extending `@theme`** with named tokens, then use those names in components.

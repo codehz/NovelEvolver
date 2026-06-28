@@ -1,57 +1,80 @@
-@import "tailwindcss";
+@layer theme, base, components, utilities;
 
+/* Catppuccin Mocha — design tokens only (no default Tailwind theme preset) */
 @theme {
   --app-region-drag: drag;
   --app-region-no-drag: no-drag;
-  --color-vscode-foreground: #cccccc;
-  --color-vscode-editor-background: #1e1e1e;
-  --color-vscode-titlebar-background: #181818;
-  --color-vscode-titlebar-foreground: #cccccc;
-  --color-vscode-titlebar-border: #2b2b2b;
-  --color-vscode-badge-background: #007acc;
-  --color-vscode-badge-foreground: #ffffff;
-  --color-vscode-window-button-hover: rgb(255 255 255 / 0.08);
-  --color-vscode-window-button-close-hover: #c42b1c;
-  --font-vscode:
+
+  --color-mocha-crust: #11111b;
+  --color-mocha-mantle: #181825;
+  --color-mocha-base: #1e1e2e;
+  --color-mocha-surface0: #313244;
+  --color-mocha-surface1: #45475a;
+  --color-mocha-surface2: #585b70;
+  --color-mocha-overlay0: #6c7086;
+  --color-mocha-overlay1: #7f849c;
+  --color-mocha-text: #cdd6f4;
+  --color-mocha-subtext0: #a6adc8;
+  --color-mocha-subtext1: #bac2de;
+  --color-mocha-blue: #89b4fa;
+  --color-mocha-red: #f38ba8;
+  --color-mocha-maroon: #eba0ac;
+
+  --color-app-foreground: var(--color-mocha-text);
+  --color-app-background: var(--color-mocha-base);
+  --color-titlebar-background: var(--color-mocha-mantle);
+  --color-titlebar-foreground: var(--color-mocha-text);
+  --color-titlebar-border: var(--color-mocha-surface0);
+  --color-badge-background: var(--color-mocha-blue);
+  --color-badge-foreground: var(--color-mocha-crust);
+  --color-window-button-hover: rgb(205 214 244 / 0.08);
+  --color-window-button-close-hover: var(--color-mocha-red);
+
+  --font-app:
     "Segoe WPC",
     "Segoe UI",
     "Helvetica Neue",
     Helvetica,
     Arial,
     sans-serif;
-  --text-vscode-titlebar: 0.75rem;
-  --text-vscode-badge: 0.6875rem;
+  --text-titlebar: 0.75rem;
+  --text-badge: 0.6875rem;
   --spacing-titlebar: 2.25rem;
   --spacing-titlebar-button: 3rem;
   --spacing-mac-traffic-light-offset: 4.5rem;
 }
 
-:root {
-  color: #cccccc;
-  background: #1e1e1e;
-  line-height: 1.5;
-  font-weight: 400;
-  font-synthesis: none;
-  text-rendering: optimizeLegibility;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-}
+@import "tailwindcss/preflight.css" layer(base);
+@import "tailwindcss/utilities.css" layer(utilities);
 
-html,
-body,
-#root {
-  margin: 0;
-  min-height: 100%;
-}
+@layer base {
+  :root {
+    color: var(--color-mocha-text);
+    background: var(--color-mocha-base);
+    line-height: 1.5;
+    font-weight: 400;
+    font-synthesis: none;
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
 
-body {
-  min-width: 320px;
-  overflow: hidden;
-  font-family: var(--font-vscode);
-}
+  html,
+  body,
+  #root {
+    margin: 0;
+    min-height: 100%;
+  }
 
-button {
-  font: inherit;
+  body {
+    min-width: 320px;
+    overflow: hidden;
+    font-family: var(--font-app);
+  }
+
+  button {
+    font: inherit;
+  }
 }
 
 @utility app-region-* {

@@ -25,27 +25,27 @@ function WindowControls({
     <div className="flex items-center self-stretch app-region-no-drag">
       <button
         aria-label="Minimize window"
-        className="inline-flex w-titlebar-button items-center justify-center border-0 bg-transparent text-vscode-titlebar-foreground transition-colors duration-150 hover:bg-vscode-window-button-hover focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-vscode-badge-background"
+        className="inline-flex w-titlebar-button items-center justify-center border-0 bg-transparent text-titlebar-foreground transition-colors duration-150 hover:bg-window-button-hover focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-badge-background"
         type="button"
         onClick={onMinimize}
       >
-        <span className="-translate-y-px text-lg leading-none">-</span>
+        <span className="text-lg -translate-y-px leading-none">-</span>
       </button>
       <button
         aria-label={isMaximized ? "Restore window" : "Maximize window"}
-        className="inline-flex w-titlebar-button items-center justify-center border-0 bg-transparent text-vscode-titlebar-foreground transition-colors duration-150 hover:bg-vscode-window-button-hover focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-vscode-badge-background"
+        className="inline-flex w-titlebar-button items-center justify-center border-0 bg-transparent text-titlebar-foreground transition-colors duration-150 hover:bg-window-button-hover focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-badge-background"
         type="button"
         onClick={onToggleMaximize}
       >
-        <span className="-translate-y-px text-sm leading-none">{isMaximized ? "❐" : "□"}</span>
+        <span className="text-sm -translate-y-px leading-none">{isMaximized ? "❐" : "□"}</span>
       </button>
       <button
         aria-label="Close window"
-        className="inline-flex w-titlebar-button items-center justify-center border-0 bg-transparent text-vscode-titlebar-foreground transition-colors duration-150 hover:bg-vscode-window-button-close-hover hover:text-vscode-badge-foreground focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-vscode-badge-background"
+        className="inline-flex w-titlebar-button items-center justify-center border-0 bg-transparent text-titlebar-foreground transition-colors duration-150 hover:bg-window-button-close-hover hover:text-badge-foreground focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-badge-background"
         type="button"
         onClick={onClose}
       >
-        <span className="-translate-y-px text-sm leading-none">×</span>
+        <span className="text-sm -translate-y-px leading-none">×</span>
       </button>
     </div>
   );
@@ -74,13 +74,13 @@ export default function App() {
   const isMac = windowState.platform === "darwin";
 
   return (
-    <main className="flex min-h-screen flex-col bg-vscode-editor-background font-vscode text-vscode-foreground">
-      <header className="flex h-titlebar items-center justify-between border-b border-vscode-titlebar-border bg-vscode-titlebar-background pl-3 select-none app-region-drag">
-        <div className={`flex min-w-0 items-center gap-2 ${isMac ? "pl-mac-traffic-light-offset" : ""}`}>
-          <div className="flex size-5 items-center justify-center rounded-sm bg-vscode-badge-background text-vscode-badge font-semibold text-vscode-badge-foreground app-region-no-drag">
+    <main className="flex min-h-screen flex-col bg-app-background font-app text-app-foreground">
+      <header className="pl-3 flex h-titlebar items-center justify-between border-b border-titlebar-border bg-titlebar-background select-none app-region-drag">
+        <div className={`min-w-0 gap-2 flex items-center ${isMac ? "pl-mac-traffic-light-offset" : ""}`}>
+          <div className="size-5 rounded-sm font-semibold flex items-center justify-center bg-badge-background text-badge text-badge-foreground app-region-no-drag">
             NE
           </div>
-          <p className="truncate text-vscode-titlebar font-medium text-vscode-titlebar-foreground">
+          <p className="font-medium truncate text-titlebar text-titlebar-foreground">
             NovelEvolver
           </p>
         </div>
@@ -101,7 +101,7 @@ export default function App() {
         )}
       </header>
 
-      <section className="flex-1 bg-vscode-editor-background">
+      <section className="flex-1 bg-app-background">
         <div className="size-full" />
       </section>
     </main>
