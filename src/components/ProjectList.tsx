@@ -25,6 +25,8 @@ export function ProjectList() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [opening, setOpening] = useState(false);
+  const [creating, setCreating] = useState(false);
+  const dialogBusy = opening || creating;
 
   const refresh = useCallback(async () => {
     setError(null);
@@ -41,6 +43,21 @@ export function ProjectList() {
   useEffect(() => {
     void refresh();
   }, [refresh]);
+
+  const handleCreateDialog = async () => {
+    setCreating(true);
+    setError(null);
+    try {
+      const project = await window.invokeIpc("projects:create-dialog");
+      if (project) {
+        await refresh();
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "创建项目失败");
+    } finally {
+      setCreating(false);
+    }
+  };
 
   const handleOpenDialog = async () => {
     setOpening(true);
@@ -81,19 +98,34 @@ export function ProjectList() {
     <div className="flex size-full min-h-0 flex-col gap-4 p-6">
       <div className="flex items-center justify-between gap-4">
         <h1 className="text-lg font-semibold text-app-foreground">项目</h1>
-        <button
-          className={cn(
-            "rounded-md bg-badge-background px-3 py-1.5 text-sm font-medium text-badge-foreground",
-            "hover:opacity-90 disabled:opacity-50",
-          )}
-          disabled={opening}
-          type="button"
-          onClick={() => {
-            void handleOpenDialog();
-          }}
-        >
-          {opening ? "选择中…" : "打开项目"}
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            className={cn(
+              "rounded-md border border-titlebar-border bg-titlebar-background px-3 py-1.5 text-sm font-medium text-app-foreground",
+              "hover:bg-ctp-surface0/40 disabled:opacity-50",
+            )}
+            disabled={dialogBusy}
+            type="button"
+            onClick={() => {
+              void handleCreateDialog();
+            }}
+          >
+            {creating ? "创建中…" : "新建项目"}
+          </button>
+          <button
+            className={cn(
+              "rounded-md bg-badge-background px-3 py-1.5 text-sm font-medium text-badge-foreground",
+              "hover:opacity-90 disabled:opacity-50",
+            )}
+            disabled={dialogBusy}
+            type="button"
+            onClick={() => {
+              void handleOpenDialog();
+            }}
+          >
+            {opening ? "选择中…" : "打开项目"}
+          </button>
+        </div>
       </div>
 
       {error ? (
@@ -105,7 +137,9 @@ export function ProjectList() {
       {loading ? (
         <p className="text-sm text-ctp-subtext0">加载中…</p>
       ) : projects.length === 0 ? (
-        <p className="text-sm text-ctp-subtext0">暂无项目，点击「打开项目」选择 .npk 文件。</p>
+        <p className="text-sm text-ctp-subtext0">
+          暂无项目，可「新建项目」或「打开项目」选择 .npk 文件。
+        </p>
       ) : (
         <ul className="grid min-h-0 flex-1 auto-rows-fr grid-cols-[repeat(auto-fill,minmax(14rem,1fr))] gap-3 overflow-auto">
           {projects.map((project) => {

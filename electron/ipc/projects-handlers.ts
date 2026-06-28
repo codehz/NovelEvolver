@@ -1,4 +1,7 @@
+import { existsSync } from "node:fs";
+
 import { dialog } from "electron";
+import { createSqliteRepository } from "nano-git/repository/sqlite";
 
 import type { ProjectsIpcMethodMap } from "../../shared/ipc/app-maps";
 import type { IpcMainMethodHandlers } from "../../shared/ipc/types";
@@ -26,6 +29,31 @@ export function createProjectsIpcMethodHandlers(
       if (!path.toLowerCase().endsWith(".npk")) {
         throw new Error("请选择 .npk 项目文件");
       }
+
+      return deps.getProjectsDb().upsertByPath(path, Date.now());
+    },
+    "projects:create-dialog": async (event) => {
+      const window = getSenderWindow(event);
+      const result = await dialog.showSaveDialog(window, {
+        title: "创建项目",
+        filters: [{ name: "NovelEvolver 项目", extensions: ["npk"] }],
+        buttonLabel: "创建",
+      });
+
+      if (result.canceled || !result.filePath) {
+        return null;
+      }
+
+      let path = result.filePath;
+      if (!path.toLowerCase().endsWith(".npk")) {
+        path = `${path}.npk`;
+      }
+
+      if (existsSync(path)) {
+        throw new Error("该路径已存在项目文件，请选择其他位置或文件名");
+      }
+
+      using _repo = createSqliteRepository(path);
 
       return deps.getProjectsDb().upsertByPath(path, Date.now());
     },
