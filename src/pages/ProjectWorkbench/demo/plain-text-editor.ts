@@ -1,8 +1,6 @@
 const PHYSICAL_LINE_SELECTOR = "[data-physical-line]";
 const PHYSICAL_LINE_CONTENT_SELECTOR = "[data-physical-line-content]";
 
-export const PLAIN_TEXT_EDITOR_LINE_CLASS = "plain-text-editor-line";
-
 export type PlainTextEditorLineClasses = {
   lineRowClass: string;
   lineContentClass: string;

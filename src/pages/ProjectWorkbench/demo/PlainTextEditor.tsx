@@ -5,7 +5,6 @@ import {
   applyPlainTextPaste,
   applyPhysicalEnter,
   normalizeEditorDom,
-  PLAIN_TEXT_EDITOR_LINE_CLASS,
   readCaretPositionFromEditor,
   readPhysicalLinesFromEditor,
   writePhysicalLinesToEditor,
@@ -15,10 +14,23 @@ import {
 const editorScrollClass = cn("min-h-0 min-w-0 flex-1 overflow-x-hidden overflow-y-auto");
 
 const editorSurfaceClass = cn(
-  "plain-text-editor-surface p-4 font-mono text-sm text-app-foreground outline-none",
+  "grid w-full auto-rows-[minmax(min-content,auto)] grid-cols-[max-content_minmax(0,1fr)]",
+  "content-start gap-x-pte-gutter counter-reset-pte-line",
+  "p-4 font-mono text-sm text-app-foreground outline-none",
 );
 
-const lineContentClass = cn("min-h-6 leading-6 wrap-break-word whitespace-pre-wrap");
+const plainTextEditorLineRowClass = cn(
+  "col-span-full grid min-h-pte-line grid-cols-subgrid items-baseline leading-pte-line",
+  "counter-increment-pte-line",
+  "before:col-start-1 before:self-baseline before:text-right before:leading-pte-line",
+  "before:whitespace-nowrap before:text-pte-line-number before:tabular-nums before:select-none",
+  "before:content-counter-pte-line",
+);
+
+const lineContentClass = cn(
+  "col-start-2 min-h-pte-line min-w-0 self-baseline leading-pte-line",
+  "wrap-break-word whitespace-pre-wrap",
+);
 
 export function PlainTextEditor({
   lines,
@@ -33,7 +45,7 @@ export function PlainTextEditor({
 
   const lineClasses = useMemo<PlainTextEditorLineClasses>(
     () => ({
-      lineRowClass: cn(PLAIN_TEXT_EDITOR_LINE_CLASS, "min-h-6"),
+      lineRowClass: plainTextEditorLineRowClass,
       lineContentClass,
     }),
     [],

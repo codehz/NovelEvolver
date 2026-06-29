@@ -54,6 +54,10 @@
     transparent
   );
   --spacing-workbench-scrollbar: 0.75rem;
+  --spacing-pte-line: 1.5rem;
+  --spacing-pte-gutter: 0.75rem;
+  --color-pte-line-number: var(--color-ctp-overlay0);
+  --counter-pte-line: pte-line;
   --font-display: "MiSans", sans-serif;
 }
 
@@ -124,43 +128,14 @@
   }
 }
 
-@layer components {
-  .plain-text-editor-surface {
-    display: grid;
-    width: 100%;
-    grid-template-columns: max-content minmax(0, 1fr);
-    grid-auto-rows: minmax(min-content, auto);
-    column-gap: 0.75rem;
-    align-content: start;
-    counter-reset: plain-text-editor-line;
-  }
+@utility counter-reset-* {
+  counter-reset: --value(--counter-*);
+}
 
-  .plain-text-editor-line {
-    display: grid;
-    grid-column: 1 / -1;
-    grid-template-columns: subgrid;
-    align-items: baseline;
-    min-height: 1.5rem;
-    line-height: 1.5rem;
-    counter-increment: plain-text-editor-line;
-  }
+@utility counter-increment-* {
+  counter-increment: --value(--counter-*);
+}
 
-  .plain-text-editor-line::before {
-    content: counter(plain-text-editor-line);
-    grid-column: 1;
-    align-self: baseline;
-    line-height: 1.5rem;
-    text-align: right;
-    font-variant-numeric: tabular-nums;
-    white-space: nowrap;
-    color: var(--color-ctp-overlay0);
-    user-select: none;
-  }
-
-  .plain-text-editor-line > [data-physical-line-content] {
-    grid-column: 2;
-    align-self: baseline;
-    min-width: 0;
-    line-height: 1.5rem;
-  }
+@utility content-counter-* {
+  --tw-content: counter(--value(--counter-*));
 }
