@@ -1,33 +1,17 @@
 import { type CSSProperties, type ReactNode, useEffect, useRef, useState } from "react";
 
 import { cn } from "@/lib/cn";
-import { ScrollbarController } from "@/lib/scrollbar";
+import {
+  ScrollbarController,
+  scrollbarHiddenViewportClass,
+  scrollbarStickyRailClass,
+  scrollbarThumbClassName,
+  scrollbarTrackClass,
+} from "@/lib/scrollbar";
 
 const scrollAreaRootClass = cn("min-h-0");
 
-const scrollAreaViewportClass = cn(
-  "scrollbar-hidden size-full min-h-0 overflow-x-hidden overflow-y-auto",
-);
-
 const scrollAreaContentClass = cn("relative");
-
-/** Pins the scrollbar rail to the scrollport while keeping it inside the scrollable viewport (wheel works over the track). */
-const scrollAreaStickyRailClass = cn("pointer-events-none sticky top-0 z-10 h-0 w-full");
-
-const scrollAreaTrackClass = cn(
-  "pointer-events-auto absolute top-0 right-0 z-10 w-workbench-scrollbar",
-);
-
-const scrollAreaThumbClass = cn(
-  "absolute inset-x-0 top-0 rounded-none bg-workbench-scrollbar-thumb opacity-0",
-  "transition-opacity delay-400 duration-300 ease-out",
-);
-
-/** Shown while pointer is in the scroll area, scrolling, or dragging (subdued). */
-const scrollAreaThumbPeekClass = cn("opacity-40 delay-0");
-
-/** Pointer over the thumb or actively dragging. */
-const scrollAreaThumbActiveClass = cn("bg-workbench-scrollbar-thumb-hover opacity-100 delay-0");
 
 export function ScrollArea({
   id,
@@ -60,6 +44,7 @@ export function ScrollArea({
       },
     });
     controllerRef.current = controller;
+    controller.refreshMetrics();
 
     return () => {
       controller.destroy();
@@ -83,23 +68,19 @@ export function ScrollArea({
         controllerRef.current?.onAreaPointerLeave();
       }}
     >
-      <div ref={viewportRef} className={scrollAreaViewportClass}>
+      <div ref={viewportRef} className={scrollbarHiddenViewportClass}>
         <div className={scrollAreaContentClass}>
           {thumb ? (
-            <div aria-hidden="true" className={scrollAreaStickyRailClass}>
+            <div aria-hidden="true" className={scrollbarStickyRailClass}>
               <div
-                className={scrollAreaTrackClass}
+                className={scrollbarTrackClass}
                 style={{ height: metrics?.clientHeight ?? 0 }}
                 onPointerDown={(event) => {
                   controllerRef.current?.onTrackPointerDown(event.nativeEvent);
                 }}
               >
                 <div
-                  className={cn(
-                    scrollAreaThumbClass,
-                    snapshot?.thumbShown && !snapshot?.thumbActive && scrollAreaThumbPeekClass,
-                    snapshot?.thumbActive && scrollAreaThumbActiveClass,
-                  )}
+                  className={scrollbarThumbClassName(snapshot!)}
                   style={{
                     height: thumb.thumbHeight,
                     transform: `translateY(${thumb.thumbOffset}px)`,

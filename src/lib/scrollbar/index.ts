@@ -13,3 +13,14 @@ export {
   type ScrollbarControllerOptions,
   type ScrollbarControllerSnapshot,
 } from "./scrollbar-controller";
+export {
+  scrollbarHiddenViewportClass,
+  scrollbarNativeHiddenClass,
+  scrollbarOverlayRootClass,
+  scrollbarStickyRailClass,
+  scrollbarThumbActiveClass,
+  scrollbarThumbClass,
+  scrollbarThumbClassName,
+  scrollbarThumbPeekClass,
+  scrollbarTrackClass,
+} from "./presentation";

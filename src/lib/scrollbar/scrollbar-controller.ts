@@ -81,7 +81,7 @@ export class ScrollbarController {
       this.resizeObserver.observe(this.viewport);
     }
 
-    this.refreshMetrics();
+    this.metrics = readScrollMetrics(this.viewport);
   }
 
   destroy(): void {
