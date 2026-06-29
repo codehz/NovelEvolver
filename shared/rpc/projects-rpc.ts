@@ -18,6 +18,8 @@ export type BranchInfo = {
  */
 export interface ProjectHandle extends RpcTarget {
   readonly head: BranchInfo;
+  readonly branches: BranchInfo[];
+  switchBranch(name: string): void;
 }
 
 export type ProjectHandleWithMetadata = {

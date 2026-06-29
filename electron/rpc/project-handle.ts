@@ -26,6 +26,17 @@ export class ProjectHandleImpl extends RpcTarget implements ProjectHandle {
     };
   }
 
+  get branches(): BranchInfo[] {
+    return this.#repo.listBranches().map((name) => ({
+      name,
+      commit: this.#repo.readBranch(name),
+    }));
+  }
+
+  switchBranch(name: string) {
+    this.#repo.refs.write("HEAD", `ref: refs/heads/${name}`);
+  }
+
   [Symbol.dispose](): void {
     this.#repo[Symbol.dispose]();
   }
