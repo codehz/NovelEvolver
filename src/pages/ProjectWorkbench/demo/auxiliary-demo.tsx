@@ -1,5 +1,5 @@
+import { ScrollArea } from "../../../components/ScrollArea";
 import { cn } from "../../../lib/cn";
-import { ScrollArea } from "../../ScrollArea";
 
 const demoMessages = [
   {

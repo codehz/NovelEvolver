@@ -1,7 +1,7 @@
 import type { CSSProperties, PointerEvent as ReactPointerEvent, ReactNode } from "react";
 
-import { cn } from "../../lib/cn";
-import { ScrollArea } from "../ScrollArea";
+import { ScrollArea } from "../../../components/ScrollArea";
+import { cn } from "../../../lib/cn";
 
 /** Layout flow height at the section seam (handle is overlaid, not counted in flex). */
 export const SIDEBAR_SECTION_RESIZE_STRIP_HEIGHT = 0;

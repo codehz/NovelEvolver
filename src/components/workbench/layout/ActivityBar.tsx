@@ -1,7 +1,7 @@
 import { Link } from "wouter";
 
-import { cn } from "../../lib/cn";
-import type { ActivityViewId } from "./types";
+import { cn } from "../../../lib/cn";
+import type { ActivityViewId } from "../types";
 
 type ActivityItem = {
   id: ActivityViewId;

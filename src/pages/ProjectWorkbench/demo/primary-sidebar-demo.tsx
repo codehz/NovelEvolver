@@ -1,9 +1,12 @@
 import { Fragment, useMemo, useState } from "react";
 
+import { ScrollArea } from "../../../components/ScrollArea";
+import {
+  SidebarSectionRowResizeHandle,
+  SidebarViewSection,
+  useSidebarPaneStack,
+} from "../../../components/workbench";
 import { cn } from "../../../lib/cn";
-import { ScrollArea } from "../../ScrollArea";
-import { SidebarSectionRowResizeHandle, SidebarViewSection } from "../SidebarViewSection";
-import { useSidebarPaneStack } from "../use-sidebar-pane-stack";
 
 type DemoTreeNode = {
   icon: string;

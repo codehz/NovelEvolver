@@ -59,6 +59,45 @@
                   "../../electron/*"
                 ],
                 "message": "Renderer must not import electron main/preload code; use shared/ for IPC types."
+              },
+              {
+                "group": [
+                  "**/components/workbench/layout/**",
+                  "**/components/workbench/titlebar/**",
+                  "**/components/workbench/sidebar/**"
+                ],
+                "message": "Import workbench via components/workbench (barrel), not internal subpaths."
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "files": ["src/components/workbench/**/*.ts", "src/components/workbench/**/*.tsx"],
+      "env": {
+        "browser": true
+      },
+      "rules": {
+        "no-restricted-imports": [
+          "error",
+          {
+            "paths": [
+              {
+                "name": "electron",
+                "message": "Renderer must not import electron; use window.electronAPI via preload."
+              }
+            ],
+            "patterns": [
+              {
+                "group": [
+                  "electron/*",
+                  "../electron",
+                  "../electron/*",
+                  "../../electron",
+                  "../../electron/*"
+                ],
+                "message": "Renderer must not import electron main/preload code; use shared/ for IPC types."
               }
             ]
           }

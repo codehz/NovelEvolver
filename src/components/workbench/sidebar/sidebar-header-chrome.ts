@@ -1,4 +1,4 @@
-import { cn } from "../../lib/cn";
+import { cn } from "../../../lib/cn";
 
 export const sidebarHeaderActionClass = cn(
   "inline-flex size-6 shrink-0 items-center justify-center rounded border-0 bg-transparent p-0",

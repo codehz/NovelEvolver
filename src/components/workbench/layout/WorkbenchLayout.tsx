@@ -6,13 +6,13 @@ import {
   type ReactNode,
 } from "react";
 
-import { cn } from "../../lib/cn";
+import { cn } from "../../../lib/cn";
+import { TitleBarAuxiliaryToggle } from "../titlebar/TitleBarAuxiliaryToggle";
+import { TitleBarPrimarySidebarToggle } from "../titlebar/TitleBarPrimarySidebarToggle";
+import type { ActivityViewId } from "../types";
 import { ActivityBar } from "./ActivityBar";
 import { AuxiliarySidebar } from "./AuxiliarySidebar";
 import { PrimarySidebar } from "./PrimarySidebar";
-import { TitleBarAuxiliaryToggle } from "./TitleBarAuxiliaryToggle";
-import { TitleBarPrimarySidebarToggle } from "./TitleBarPrimarySidebarToggle";
-import type { ActivityViewId } from "./types";
 
 const ACTIVITY_BAR_WIDTH = 48;
 const DEFAULT_PRIMARY_WIDTH = 256;
