@@ -1,17 +1,7 @@
-import {
-  type CSSProperties,
-  type PointerEvent as ReactPointerEvent,
-  type ReactNode,
-  useCallback,
-  useEffect,
-  useRef,
-  useState,
-} from "react";
+import { type CSSProperties, type ReactNode, useEffect, useRef, useState } from "react";
 
 import { cn } from "@/lib/cn";
-
-const SCROLLBAR_HIDE_DELAY_MS = 400;
-const MIN_THUMB_HEIGHT_PX = 24;
+import { ScrollbarController } from "@/lib/scrollbar";
 
 const scrollAreaRootClass = cn("min-h-0");
 
@@ -39,34 +29,6 @@ const scrollAreaThumbPeekClass = cn("opacity-40 delay-0");
 /** Pointer over the thumb or actively dragging. */
 const scrollAreaThumbActiveClass = cn("bg-workbench-scrollbar-thumb-hover opacity-100 delay-0");
 
-type ScrollMetrics = {
-  clientHeight: number;
-  scrollHeight: number;
-  scrollTop: number;
-};
-
-function computeThumb(metrics: ScrollMetrics) {
-  const { clientHeight, scrollHeight, scrollTop } = metrics;
-  if (scrollHeight <= clientHeight || clientHeight <= 0) {
-    return null;
-  }
-
-  const maxScroll = scrollHeight - clientHeight;
-  const thumbHeight = Math.max(MIN_THUMB_HEIGHT_PX, (clientHeight / scrollHeight) * clientHeight);
-  const trackRange = clientHeight - thumbHeight;
-  const thumbOffset = maxScroll > 0 ? (scrollTop / maxScroll) * trackRange : 0;
-
-  return { thumbHeight, thumbOffset };
-}
-
-function readMetrics(viewport: HTMLElement): ScrollMetrics {
-  return {
-    clientHeight: viewport.clientHeight,
-    scrollHeight: viewport.scrollHeight,
-    scrollTop: viewport.scrollTop,
-  };
-}
-
 export function ScrollArea({
   id,
   className,
@@ -82,38 +44,8 @@ export function ScrollArea({
   fill?: boolean;
 }) {
   const viewportRef = useRef<HTMLDivElement>(null);
-  const hideTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const dragStateRef = useRef<{ startY: number; startScrollTop: number } | null>(null);
-  const areaHoverRef = useRef(false);
-
-  const [metrics, setMetrics] = useState<ScrollMetrics | null>(null);
-  const [scrollbarShown, setScrollbarShown] = useState(false);
-  const [areaHover, setAreaHover] = useState(false);
-  const [thumbHover, setThumbHover] = useState(false);
-  const [dragging, setDragging] = useState(false);
-
-  const refreshMetrics = useCallback(() => {
-    const viewport = viewportRef.current;
-    if (!viewport) {
-      return;
-    }
-    setMetrics(readMetrics(viewport));
-  }, []);
-
-  const scheduleHide = useCallback(() => {
-    if (hideTimerRef.current) {
-      clearTimeout(hideTimerRef.current);
-    }
-    hideTimerRef.current = setTimeout(() => {
-      setScrollbarShown(false);
-      hideTimerRef.current = null;
-    }, SCROLLBAR_HIDE_DELAY_MS);
-  }, []);
-
-  const showScrollbar = useCallback(() => {
-    setScrollbarShown(true);
-    scheduleHide();
-  }, [scheduleHide]);
+  const controllerRef = useRef<ScrollbarController | null>(null);
+  const [, setRevision] = useState(0);
 
   useEffect(() => {
     const viewport = viewportRef.current;
@@ -121,155 +53,66 @@ export function ScrollArea({
       return;
     }
 
-    refreshMetrics();
-
-    const observer = new ResizeObserver(() => {
-      refreshMetrics();
+    const controller = new ScrollbarController({
+      viewport,
+      onChange: () => {
+        setRevision((n) => n + 1);
+      },
     });
-    observer.observe(viewport);
+    controllerRef.current = controller;
 
     return () => {
-      observer.disconnect();
-      if (hideTimerRef.current) {
-        clearTimeout(hideTimerRef.current);
-      }
+      controller.destroy();
+      controllerRef.current = null;
     };
-  }, [refreshMetrics]);
+  }, []);
 
-  const onViewportScroll = useCallback(() => {
-    refreshMetrics();
-    showScrollbar();
-  }, [refreshMetrics, showScrollbar]);
-
-  const thumb = metrics ? computeThumb(metrics) : null;
-  const thumbShown = Boolean(thumb && (areaHover || dragging || scrollbarShown));
-  const thumbActive = dragging || thumbHover;
-
-  const onTrackPointerDown = (event: ReactPointerEvent<HTMLDivElement>) => {
-    const viewport = viewportRef.current;
-    if (!viewport || !thumb || event.target !== event.currentTarget) {
-      return;
-    }
-
-    const trackRect = event.currentTarget.getBoundingClientRect();
-    const clickOffset = event.clientY - trackRect.top;
-    const maxScroll = viewport.scrollHeight - viewport.clientHeight;
-    const trackRange = viewport.clientHeight - thumb.thumbHeight;
-    const nextOffset = Math.min(Math.max(clickOffset - thumb.thumbHeight / 2, 0), trackRange);
-    const ratio = trackRange > 0 ? nextOffset / trackRange : 0;
-    viewport.scrollTop = ratio * maxScroll;
-    showScrollbar();
-  };
-
-  const onThumbPointerDown = (event: ReactPointerEvent<HTMLDivElement>) => {
-    const viewport = viewportRef.current;
-    if (!viewport) {
-      return;
-    }
-
-    event.preventDefault();
-    event.stopPropagation();
-    event.currentTarget.setPointerCapture(event.pointerId);
-    dragStateRef.current = {
-      startY: event.clientY,
-      startScrollTop: viewport.scrollTop,
-    };
-    setDragging(true);
-    setScrollbarShown(true);
-    if (hideTimerRef.current) {
-      clearTimeout(hideTimerRef.current);
-      hideTimerRef.current = null;
-    }
-  };
-
-  const onThumbPointerMove = (event: ReactPointerEvent<HTMLDivElement>) => {
-    const viewport = viewportRef.current;
-    const drag = dragStateRef.current;
-    if (!viewport || !drag || !thumb) {
-      return;
-    }
-
-    const maxScroll = viewport.scrollHeight - viewport.clientHeight;
-    const trackRange = viewport.clientHeight - thumb.thumbHeight;
-    if (trackRange <= 0 || maxScroll <= 0) {
-      return;
-    }
-
-    const deltaY = event.clientY - drag.startY;
-    const scrollDelta = (deltaY / trackRange) * maxScroll;
-    viewport.scrollTop = drag.startScrollTop + scrollDelta;
-    refreshMetrics();
-  };
-
-  const endThumbDrag = (event: ReactPointerEvent<HTMLDivElement>) => {
-    if (!dragStateRef.current) {
-      return;
-    }
-    dragStateRef.current = null;
-    setDragging(false);
-    if (event.currentTarget.hasPointerCapture(event.pointerId)) {
-      event.currentTarget.releasePointerCapture(event.pointerId);
-    }
-    if (!areaHoverRef.current) {
-      scheduleHide();
-    }
-  };
-
-  const onAreaMouseEnter = () => {
-    areaHoverRef.current = true;
-    setAreaHover(true);
-    if (hideTimerRef.current) {
-      clearTimeout(hideTimerRef.current);
-      hideTimerRef.current = null;
-    }
-  };
-
-  const onAreaMouseLeave = () => {
-    areaHoverRef.current = false;
-    setAreaHover(false);
-    setThumbHover(false);
-    if (!dragStateRef.current) {
-      scheduleHide();
-    }
-  };
+  const snapshot = controllerRef.current?.getSnapshot();
+  const thumb = snapshot?.thumb ?? null;
+  const metrics = snapshot?.metrics ?? null;
 
   return (
     <div
       className={cn(scrollAreaRootClass, fill && "h-0 flex-1", className)}
       id={id}
       style={style}
-      onMouseEnter={onAreaMouseEnter}
-      onMouseLeave={onAreaMouseLeave}
+      onMouseEnter={() => {
+        controllerRef.current?.onAreaPointerEnter();
+      }}
+      onMouseLeave={() => {
+        controllerRef.current?.onAreaPointerLeave();
+      }}
     >
-      <div ref={viewportRef} className={scrollAreaViewportClass} onScroll={onViewportScroll}>
+      <div ref={viewportRef} className={scrollAreaViewportClass}>
         <div className={scrollAreaContentClass}>
           {thumb ? (
             <div aria-hidden="true" className={scrollAreaStickyRailClass}>
               <div
                 className={scrollAreaTrackClass}
                 style={{ height: metrics?.clientHeight ?? 0 }}
-                onPointerDown={onTrackPointerDown}
+                onPointerDown={(event) => {
+                  controllerRef.current?.onTrackPointerDown(event.nativeEvent);
+                }}
               >
                 <div
                   className={cn(
                     scrollAreaThumbClass,
-                    thumbShown && !thumbActive && scrollAreaThumbPeekClass,
-                    thumbActive && scrollAreaThumbActiveClass,
+                    snapshot?.thumbShown && !snapshot?.thumbActive && scrollAreaThumbPeekClass,
+                    snapshot?.thumbActive && scrollAreaThumbActiveClass,
                   )}
                   style={{
                     height: thumb.thumbHeight,
                     transform: `translateY(${thumb.thumbOffset}px)`,
                   }}
                   onMouseEnter={() => {
-                    setThumbHover(true);
+                    controllerRef.current?.onThumbPointerEnter();
                   }}
                   onMouseLeave={() => {
-                    setThumbHover(false);
+                    controllerRef.current?.onThumbPointerLeave();
                   }}
-                  onPointerDown={onThumbPointerDown}
-                  onPointerMove={onThumbPointerMove}
-                  onPointerUp={endThumbDrag}
-                  onPointerCancel={endThumbDrag}
+                  onPointerDown={(event) => {
+                    controllerRef.current?.onThumbPointerDown(event.nativeEvent);
+                  }}
                 />
               </div>
             </div>
