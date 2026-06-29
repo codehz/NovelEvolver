@@ -29,7 +29,7 @@ const editorRootClass = cn("min-h-0 min-w-0 flex-1");
 const editorSurfaceClass = cn(
   "grid w-full auto-rows-[minmax(min-content,auto)] grid-cols-[max-content_minmax(0,1fr)]",
   "content-start gap-x-pte-gutter counter-reset-pte-line",
-  "p-4 font-mono text-sm text-app-foreground outline-none",
+  "px-3 font-mono text-sm text-app-foreground outline-none",
 );
 
 const plainTextEditorLineRowClass = cn(
