@@ -22,14 +22,13 @@ export function ProjectWorkbench() {
     initialData: null,
   });
 
-  const openProjectResult = projectQuery.data ?? null;
-  const metadata = openProjectResult?.metadata ?? null;
+  const project = projectQuery.data ?? null;
   const loading = validId ? projectQuery.loading : false;
   const error = !validId
     ? "无效的项目 ID"
     : projectQuery.error
       ? projectQuery.error
-      : projectQuery.hasLoaded && !metadata
+      : projectQuery.hasLoaded && !project?.metadata
         ? "未找到该项目，可能已从列表移除"
         : null;
 
@@ -39,8 +38,8 @@ export function ProjectWorkbench() {
       ? "加载中…"
       : error
         ? "项目"
-        : metadata
-          ? projectDisplayName(metadata.path)
+        : project?.metadata
+          ? projectDisplayName(project?.metadata.path)
           : "未找到项目";
 
   return (
@@ -67,9 +66,11 @@ export function ProjectWorkbench() {
             返回项目列表
           </Link>
         </div>
-      ) : metadata ? (
-        <ScopeProvider scope={ProjectScope} value={String(parsedId)}>
-          <WorkbenchLayout {...buildWorkbenchDemoSlots(projectDisplayName(metadata.path))} />
+      ) : project ? (
+        <ScopeProvider scope={ProjectScope} value={project.handle}>
+          <WorkbenchLayout
+            {...buildWorkbenchDemoSlots(projectDisplayName(project.metadata.path))}
+          />
         </ScopeProvider>
       ) : null}
     </div>

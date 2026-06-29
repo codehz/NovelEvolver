@@ -1,11 +1,13 @@
 import { createScope, molecule, use } from "bunshi";
 import { atom } from "jotai";
 
+import { ProjectHandle } from "@shared/rpc/projects-rpc";
+import { RpcStub } from "capnweb";
 import type { EditorCaretPosition, EditorSelectionSnapshot } from "./editor-caret";
 import type { WorkbenchDemoTab } from "./types";
 
 /** 每个项目工作台实例一条作用域链（多项目窗口互不干扰）。 */
-export const ProjectScope = createScope("");
+export const ProjectScope = createScope<RpcStub<ProjectHandle>>(null as never);
 
 /**
  * 每个编辑器组一条作用域（主/副分屏时用不同 value，例如 `"primary"` / `"secondary"`）。
