@@ -1,23 +1,24 @@
-import { useCallback, useEffect, useRef, type ClipboardEvent } from "react";
+import { useCallback, useEffect, useMemo, useRef, type ClipboardEvent } from "react";
 import { cn } from "@/lib/cn";
 import { setEditorCaretPosition } from "./editor-caret";
 import {
   applyPlainTextPaste,
+  applyPhysicalEnter,
   normalizeEditorDom,
   PLAIN_TEXT_EDITOR_LINE_CLASS,
   readCaretPositionFromEditor,
   readPhysicalLinesFromEditor,
   writePhysicalLinesToEditor,
+  type PlainTextEditorLineClasses,
 } from "./plain-text-editor";
 
+const editorScrollClass = cn("min-h-0 min-w-0 flex-1 overflow-x-hidden overflow-y-auto");
+
 const editorSurfaceClass = cn(
-  "plain-text-editor-surface min-h-0 flex-1 overflow-auto p-4 pl-12 font-mono text-sm text-app-foreground outline-none",
+  "plain-text-editor-surface p-4 font-mono text-sm text-app-foreground outline-none",
 );
 
-const physicalLineBlockClass = cn(
-  PLAIN_TEXT_EDITOR_LINE_CLASS,
-  "min-h-6 leading-6 wrap-break-word whitespace-pre-wrap",
-);
+const lineContentClass = cn("min-h-6 leading-6 wrap-break-word whitespace-pre-wrap");
 
 export function PlainTextEditor({
   lines,
@@ -30,17 +31,28 @@ export function PlainTextEditor({
   const linesRef = useRef(lines);
   const mountedRef = useRef(false);
 
+  const lineClasses = useMemo<PlainTextEditorLineClasses>(
+    () => ({
+      lineRowClass: cn(PLAIN_TEXT_EDITOR_LINE_CLASS, "min-h-6"),
+      lineContentClass,
+    }),
+    [],
+  );
+
   useEffect(() => {
     linesRef.current = lines;
   }, [lines]);
 
-  const syncDomFromLines = useCallback((nextLines: string[]) => {
-    const root = rootRef.current;
-    if (!root) {
-      return;
-    }
-    writePhysicalLinesToEditor(root, nextLines, physicalLineBlockClass);
-  }, []);
+  const syncDomFromLines = useCallback(
+    (nextLines: string[]) => {
+      const root = rootRef.current;
+      if (!root) {
+        return;
+      }
+      writePhysicalLinesToEditor(root, nextLines, lineClasses);
+    },
+    [lineClasses],
+  );
 
   useEffect(() => {
     if (!mountedRef.current) {
@@ -71,12 +83,12 @@ export function PlainTextEditor({
     if (!root) {
       return;
     }
-    normalizeEditorDom(root, physicalLineBlockClass);
+    normalizeEditorDom(root, lineClasses);
     const next = readPhysicalLinesFromEditor(root);
     linesRef.current = next;
     onLinesChange(next);
     publishCaretPosition();
-  }, [onLinesChange, publishCaretPosition]);
+  }, [lineClasses, onLinesChange, publishCaretPosition]);
 
   useEffect(() => {
     const onSelectionChange = () => {
@@ -89,36 +101,52 @@ export function PlainTextEditor({
   }, [publishCaretPosition]);
 
   return (
-    <div
-      ref={rootRef}
-      className={editorSurfaceClass}
-      contentEditable
-      role="textbox"
-      aria-multiline="true"
-      aria-label="纯文本编辑器"
-      suppressContentEditableWarning
-      onInput={() => {
-        commitFromDom();
-      }}
-      onBlur={() => {
-        commitFromDom();
-      }}
-      onPaste={(event: ClipboardEvent<HTMLDivElement>) => {
-        event.preventDefault();
-        const root = rootRef.current;
-        if (!root) {
-          return;
-        }
-        const pasted = event.clipboardData.getData("text/plain");
-        if (pasted.length === 0) {
-          return;
-        }
-        applyPlainTextPaste(root, pasted, physicalLineBlockClass);
-        const next = readPhysicalLinesFromEditor(root);
-        linesRef.current = next;
-        onLinesChange(next);
-        publishCaretPosition();
-      }}
-    />
+    <div className={editorScrollClass}>
+      <div
+        ref={rootRef}
+        className={editorSurfaceClass}
+        contentEditable
+        role="textbox"
+        aria-multiline="true"
+        aria-label="纯文本编辑器"
+        suppressContentEditableWarning
+        onKeyDown={(event) => {
+          if (event.key !== "Enter" || event.nativeEvent.isComposing) {
+            return;
+          }
+          event.preventDefault();
+          const root = rootRef.current;
+          if (!root) {
+            return;
+          }
+          const next = applyPhysicalEnter(root, lineClasses);
+          linesRef.current = next;
+          onLinesChange(next);
+          publishCaretPosition();
+        }}
+        onInput={() => {
+          commitFromDom();
+        }}
+        onBlur={() => {
+          commitFromDom();
+        }}
+        onPaste={(event: ClipboardEvent<HTMLDivElement>) => {
+          event.preventDefault();
+          const root = rootRef.current;
+          if (!root) {
+            return;
+          }
+          const pasted = event.clipboardData.getData("text/plain");
+          if (pasted.length === 0) {
+            return;
+          }
+          applyPlainTextPaste(root, pasted, lineClasses);
+          const next = readPhysicalLinesFromEditor(root);
+          linesRef.current = next;
+          onLinesChange(next);
+          publishCaretPosition();
+        }}
+      />
+    </div>
   );
 }
