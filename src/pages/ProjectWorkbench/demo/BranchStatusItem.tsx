@@ -1,12 +1,12 @@
 import { molecule, use, useMolecule } from "bunshi/react";
 import { nullthrow } from "foxact/nullthrow";
 import { createAsyncLoader, useAsyncLoader } from "@/lib/async-loader";
-import { resolvedProjectScope } from "./molecules";
+import { projectScope } from "./molecules";
 
 const branchFallbackLabel = "无分支";
 
 const headNameMol = molecule(() => {
-  const project = nullthrow(use(resolvedProjectScope));
+  const project = nullthrow(use(projectScope));
   return createAsyncLoader(() => project.handle.head.name);
 });
 

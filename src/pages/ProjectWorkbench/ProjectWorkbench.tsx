@@ -7,7 +7,7 @@ import { TitleBarTitle } from "@/components/TitleBarTitle";
 import { WorkbenchLayout } from "@/components/workbench";
 import { cn } from "@/lib/cn";
 import { projectDisplayName } from "@/lib/project-display-name";
-import { projectMolecule, projectScope, resolvedProjectScope } from "./demo/molecules";
+import { projectMolecule, projectIdScope, projectScope } from "./demo/molecules";
 import { buildWorkbenchDemoSlots } from "./demo/workbench-demo";
 
 export function ProjectWorkbench() {
@@ -16,7 +16,7 @@ export function ProjectWorkbench() {
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">
-      <ScopeProvider scope={projectScope} value={parsedId}>
+      <ScopeProvider scope={projectIdScope} value={parsedId}>
         <ErrorBoundary FallbackComponent={ErrorFallback}>
           <Suspense
             fallback={
@@ -59,7 +59,7 @@ function ProjectWorkbenchInner() {
   return (
     <>
       <TitleBarTitle>{displayName}</TitleBarTitle>
-      <ScopeProvider scope={resolvedProjectScope} value={project}>
+      <ScopeProvider scope={projectScope} value={project}>
         <WorkbenchLayout {...buildWorkbenchDemoSlots(displayName)} />
       </ScopeProvider>
     </>
