@@ -1,5 +1,6 @@
 import type { EditorState, Text } from "@codemirror/state";
 import { EditorSelection } from "@codemirror/state";
+
 import type {
   PlainTextEditorCaretPosition,
   PlainTextEditorLogicalPosition,

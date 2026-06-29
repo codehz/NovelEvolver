@@ -1,4 +1,5 @@
 import { EditorView } from "@codemirror/view";
+
 import { cn } from "@/lib/cn";
 
 const editorHostClass = cn("h-full min-h-0 min-w-0");

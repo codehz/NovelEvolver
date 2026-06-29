@@ -1,10 +1,11 @@
+import type { ProjectMetadata } from "@shared/project";
 import { useLocation } from "wouter";
 
-import type { ProjectMetadata } from "@shared/project";
 import { useAutoQueryRequest, useActionState } from "@/lib/app-query";
 import { projectsService } from "@/lib/app-rpc";
 import { cn } from "@/lib/cn";
 import { projectDisplayName } from "@/lib/project-display-name";
+
 import { TitleBarTitle } from "./TitleBarTitle";
 
 function formatLastOpened(timestamp: number): string {

@@ -1,8 +1,5 @@
 import { randomUUID } from "node:crypto";
 
-import { RpcSession } from "capnweb";
-import { BrowserWindow, type IpcMain, type IpcMainInvokeEvent } from "electron";
-
 import {
   APP_RPC_CONNECT_CHANNEL,
   APP_RPC_DISCONNECT_CHANNEL,
@@ -11,6 +8,9 @@ import {
   type AppRpcConnectResult,
   type AppRpcFrame,
 } from "@shared/rpc/transport";
+import { RpcSession } from "capnweb";
+import { BrowserWindow, type IpcMain, type IpcMainInvokeEvent } from "electron";
+
 import type { RpcMainDeps } from "./deps";
 import { ProjectsServiceImpl } from "./projects-service";
 import { AppRpcRootImpl } from "./root";

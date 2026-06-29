@@ -1,7 +1,9 @@
 import { useMolecule } from "bunshi/react";
 import { useAtom, useSetAtom } from "jotai";
 import { useCallback, useEffect } from "react";
+
 import { cn } from "@/lib/cn";
+
 import { EditorTabPane } from "./EditorTabPane";
 import { workbenchEditorMolecule } from "./molecules";
 import type { WorkbenchDemoTab } from "./types";

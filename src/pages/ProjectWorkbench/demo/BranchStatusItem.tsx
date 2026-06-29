@@ -1,6 +1,8 @@
 import { molecule, use, useMolecule } from "bunshi/react";
 import { nullthrow } from "foxact/nullthrow";
+
 import { createAsyncLoader, useAsyncLoader } from "@/lib/async-loader";
+
 import { projectScope } from "./molecules";
 
 const branchFallbackLabel = "无分支";

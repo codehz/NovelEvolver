@@ -1,6 +1,6 @@
+import type { WindowState } from "@shared/window";
 import { type ReactNode } from "react";
 
-import type { WindowState } from "@shared/window";
 import { windowService } from "@/lib/app-rpc";
 import { useWindowState } from "@/lib/app-rpc-react";
 import { cn } from "@/lib/cn";

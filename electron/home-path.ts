@@ -1,9 +1,8 @@
 import { homedir } from "node:os";
 
-import { app } from "electron";
-
 import { shortenHomePath } from "@shared/path-display";
 import type { ProjectMetadata } from "@shared/project";
+import { app } from "electron";
 
 let cachedHomeDir: string | null = null;
 

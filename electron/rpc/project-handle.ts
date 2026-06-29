@@ -1,7 +1,6 @@
+import type { BranchInfo, ProjectHandle } from "@shared/rpc/projects-rpc";
 import { RpcTarget } from "capnweb";
 import { createSqliteRepository } from "nano-git/repository/sqlite";
-
-import type { BranchInfo, ProjectHandle } from "@shared/rpc/projects-rpc";
 
 /**
  * Server-side RPC target wrapping a nano-git SQLite repository.

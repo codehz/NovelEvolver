@@ -1,9 +1,10 @@
+import { ProjectHandleWithMetadata } from "@shared/rpc/projects-rpc";
 import { createScope, molecule, use } from "bunshi";
+import { RpcPromise } from "capnweb";
 import { atom } from "jotai";
 
-import { ProjectHandleWithMetadata } from "@shared/rpc/projects-rpc";
-import { RpcPromise } from "capnweb";
 import { projectsService } from "@/lib/app-rpc";
+
 import type { EditorCaretPosition, EditorSelectionSnapshot } from "./editor-caret";
 import type { WorkbenchDemoTab } from "./types";
 

@@ -1,6 +1,3 @@
-import type { RpcTransport } from "capnweb";
-import type { WebContents } from "electron";
-
 import {
   APP_RPC_DISCONNECT_CHANNEL,
   APP_RPC_MESSAGE_CHANNEL,
@@ -8,6 +5,8 @@ import {
   isAppRpcMessageFrame,
   type AppRpcFrame,
 } from "@shared/rpc/transport";
+import type { RpcTransport } from "capnweb";
+import type { WebContents } from "electron";
 
 type Deferred<T> = {
   resolve: (value: T | PromiseLike<T>) => void;

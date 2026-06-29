@@ -1,6 +1,6 @@
+import { AutoTransition } from "@codehz/auto-transition";
 import { Route, Switch } from "wouter";
 
-import { AutoTransition } from "@codehz/auto-transition";
 import { ProjectList } from "@/components/ProjectList";
 import { ProjectWorkbench } from "@/pages/ProjectWorkbench";
 

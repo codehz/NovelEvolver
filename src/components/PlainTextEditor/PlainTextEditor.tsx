@@ -8,7 +8,9 @@ import {
   keymap,
 } from "@codemirror/view";
 import { useCallback, useEffect, useImperativeHandle, useLayoutEffect, useRef } from "react";
+
 import { cn } from "@/lib/cn";
+
 import {
   caretPositionFromState,
   editorSelectionFromSnapshot,

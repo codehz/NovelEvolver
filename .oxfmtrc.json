@@ -1,8 +1,15 @@
 {
   "$schema": "./node_modules/oxfmt/configuration_schema.json",
   "sortImports": {
-    "newlinesBetween": false,
-    "partitionByNewline": true
+    "newlinesBetween": true,
+    "groups": [
+      "builtin",
+      "external",
+      ["internal", "subpath"],
+      ["parent", "sibling", "index"],
+      "style",
+      "unknown"
+    ]
   },
   "sortTailwindcss": {
     "stylesheet": "./src/index.css"

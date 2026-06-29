@@ -1,4 +1,5 @@
 import { cn } from "@/lib/cn";
+
 import { sidebarHeaderActionClass, sidebarHeaderIconClass } from "../sidebar/sidebar-header-chrome";
 
 export function AuxiliarySidebar({

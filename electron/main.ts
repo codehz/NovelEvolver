@@ -1,4 +1,5 @@
 import { join } from "node:path";
+
 import { app, BrowserWindow, ipcMain } from "electron";
 
 import { ProjectsDatabase } from "./projects-db";

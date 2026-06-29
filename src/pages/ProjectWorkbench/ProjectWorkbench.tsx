@@ -8,6 +8,7 @@ import { TitleBarTitle } from "@/components/TitleBarTitle";
 import { WorkbenchLayout } from "@/components/workbench";
 import { cn } from "@/lib/cn";
 import { projectDisplayName } from "@/lib/project-display-name";
+
 import { projectMolecule, projectIdScope, projectScope } from "./demo/molecules";
 import { buildWorkbenchDemoSlots } from "./demo/workbench-demo";
 
