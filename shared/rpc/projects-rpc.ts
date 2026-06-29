@@ -22,7 +22,7 @@ export interface ProjectHandle extends RpcTarget {
 
 export type OpenProjectResult = {
   readonly handle: ProjectHandle;
-  readonly project: ProjectListItem;
+  readonly metadata: ProjectListItem;
 };
 
 export interface ProjectsService extends RpcTarget {

@@ -78,7 +78,7 @@ export class ProjectsServiceImpl extends RpcTarget implements ProjectsService {
     }
     return {
       handle: new ProjectHandleImpl(record.path),
-      project: projectWithDisplayPath(record),
+      metadata: projectWithDisplayPath(record),
     };
   }
 
