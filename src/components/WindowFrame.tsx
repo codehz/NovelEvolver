@@ -1,10 +1,10 @@
-import { useEffect, useState, type ReactNode } from "react";
+import { type ReactNode } from "react";
 
 import type { WindowState } from "@shared/window";
 import { windowService } from "@/lib/app-rpc";
+import { useWindowState } from "@/lib/app-rpc-react";
 import { cn } from "@/lib/cn";
 import { TitleBarActionsPortalTarget, TitleBarPortalTarget } from "@/lib/titlebar-portal";
-import { subscribeWindowState } from "@/lib/window-state-subscription";
 
 const windowControlButtonClass = cn(
   "inline-flex size-7 shrink-0 items-center justify-center rounded-full border-0 bg-transparent p-0 text-titlebar-foreground transition-colors duration-150 hover:bg-window-button-hover focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-badge-background active:bg-window-button-hover",
@@ -69,16 +69,7 @@ const fallbackWindowState: WindowState = {
 };
 
 export function WindowFrame({ children }: { children: ReactNode }) {
-  const [windowState, setWindowState] = useState<WindowState>(fallbackWindowState);
-
-  useEffect(() => {
-    return subscribeWindowState({
-      onState: setWindowState,
-      onError: () => {
-        setWindowState(fallbackWindowState);
-      },
-    });
-  }, []);
+  const windowState = useWindowState(fallbackWindowState);
 
   const isMac = windowState.platform === "darwin";
   const titlebarChromeOpacityClass = cn(
@@ -123,7 +114,7 @@ export function WindowFrame({ children }: { children: ReactNode }) {
                   void windowService.minimize();
                 }}
                 onToggleMaximize={() => {
-                  void windowService.toggleMaximize().then(setWindowState);
+                  void windowService.toggleMaximize();
                 }}
                 onClose={() => {
                   void windowService.close();
