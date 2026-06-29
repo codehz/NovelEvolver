@@ -1,6 +1,5 @@
 import { ScopeProvider, useMolecule } from "bunshi/react";
-import { useAtom, useAtomValue, useSetAtom } from "jotai";
-import { useEffect } from "react";
+import { useAtomValue, useSetAtom } from "jotai";
 
 import { PlainTextEditor } from "@/components/PlainTextEditor";
 import { editorTabMolecule, editorTabScope } from "./workbench-editor-molecules";
@@ -18,23 +17,15 @@ function EditorTabPlainTextEditor({
   active: boolean;
   defaultValue: string;
 }) {
-  const { caretPositionAtom, selectionSnapshotAtom, documentAtom } = useMolecule(editorTabMolecule);
-  const [document, setDocument] = useAtom(documentAtom);
+  const { caretPositionAtom, selectionSnapshotAtom } = useMolecule(editorTabMolecule);
   const selectionSnapshot = useAtomValue(selectionSnapshotAtom);
   const setCaretPosition = useSetAtom(caretPositionAtom);
   const setSelectionSnapshot = useSetAtom(selectionSnapshotAtom);
 
-  useEffect(() => {
-    if (document.length === 0 && defaultValue.length > 0) {
-      setDocument(defaultValue);
-    }
-  }, [defaultValue, document.length, setDocument]);
-
   return (
     <PlainTextEditor
       active={active}
-      value={document}
-      onChange={setDocument}
+      defaultValue={defaultValue}
       selectionSnapshot={selectionSnapshot}
       onSelectionSnapshotChange={setSelectionSnapshot}
       onCaretChange={setCaretPosition}

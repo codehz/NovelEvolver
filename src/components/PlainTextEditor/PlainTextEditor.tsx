@@ -54,8 +54,9 @@ export type PlainTextEditorHandle = {
 
 export type PlainTextEditorProps = {
   ref?: React.Ref<PlainTextEditorHandle>;
+  /** 仅用于初次挂载；之后由组件内部 DOM 持有文稿。 */
   defaultValue?: string;
-  value?: string;
+  /** 可选；父组件若不需要同步文稿，请勿传入以避免额外更新。 */
   onChange?: (next: string) => void;
   active?: boolean;
   selectionSnapshot?: PlainTextEditorSelectionSnapshot | null;
@@ -67,7 +68,6 @@ export type PlainTextEditorProps = {
 export function PlainTextEditor({
   ref,
   defaultValue = "",
-  value,
   onChange,
   active = false,
   selectionSnapshot = null,
@@ -75,7 +75,7 @@ export function PlainTextEditor({
   onCaretChange,
   "aria-label": ariaLabel = "纯文本编辑器",
 }: PlainTextEditorProps) {
-  const isControlled = value !== undefined;
+  const initialDefaultRef = useRef(defaultValue);
   const rootRef = useRef<HTMLDivElement>(null);
   const linesRef = useRef<string[]>([]);
   const seededRef = useRef(false);
@@ -109,25 +109,9 @@ export function PlainTextEditor({
       return;
     }
     seededRef.current = true;
-    const seedText = isControlled ? (value ?? "") : defaultValue;
-    linesRef.current = splitPlainTextDocument(seedText);
+    linesRef.current = splitPlainTextDocument(initialDefaultRef.current);
     syncDomFromLines(linesRef.current);
-  }, [defaultValue, isControlled, syncDomFromLines, value]);
-
-  useEffect(() => {
-    if (!isControlled) {
-      return;
-    }
-    const nextLines = splitPlainTextDocument(value ?? "");
-    const hasChanged =
-      nextLines.length !== linesRef.current.length ||
-      nextLines.some((line, index) => line !== linesRef.current[index]);
-    if (!hasChanged) {
-      return;
-    }
-    linesRef.current = nextLines;
-    syncDomFromLines(nextLines);
-  }, [isControlled, syncDomFromLines, value]);
+  }, [syncDomFromLines]);
 
   const publishCaretPosition = useCallback(() => {
     const root = rootRef.current;

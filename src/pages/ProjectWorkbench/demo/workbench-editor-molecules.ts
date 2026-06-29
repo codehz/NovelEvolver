@@ -36,11 +36,9 @@ export const editorTabMolecule = molecule(() => {
 
   const caretPositionAtom = atom<EditorCaretPosition>(defaultCaret);
   const selectionSnapshotAtom = atom<EditorSelectionSnapshot | null>(null);
-  const documentAtom = atom<string>("");
 
   return {
     caretPositionAtom,
     selectionSnapshotAtom,
-    documentAtom,
   };
 });
