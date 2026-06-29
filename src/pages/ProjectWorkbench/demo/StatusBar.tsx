@@ -1,7 +1,5 @@
-import { useMolecule } from "bunshi/react";
-import { useQueryRequest } from "@/lib/app-query";
+import { BranchStatusItem } from "./BranchStatusItem";
 import { formatEditorCaretPosition } from "./editor-caret";
-import { projectMolecule } from "./molecules";
 import { useActiveTabCaretPosition } from "./use-active-tab-caret";
 
 const leftStaticItems = [{ id: "sync", label: "同步", icon: "icon-[codicon--sync]" }];
@@ -12,18 +10,8 @@ const rightStaticItems = [
   { id: "language", label: "Markdown" },
 ];
 
-const branchFallbackLabel = "无分支";
-
 export function StatusBar() {
   const caret = useActiveTabCaretPosition();
-  const project = useMolecule(projectMolecule);
-  const branchQuery = useQueryRequest(() => project.handle.head, {
-    args: [],
-    deps: [project],
-    errorMessage: branchFallbackLabel,
-    initialData: null,
-  });
-  const branchLabel = branchQuery.data?.name ?? branchFallbackLabel;
 
   return (
     <footer
@@ -31,16 +19,7 @@ export function StatusBar() {
       className="flex h-workbench-status-bar shrink-0 items-stretch bg-workbench-status-bar text-xs text-workbench-status-bar-foreground"
     >
       <div className="flex min-w-0 flex-1 items-stretch overflow-hidden">
-        <button
-          className="flex shrink-0 items-center gap-1.5 px-2.5 hover:bg-window-button-hover"
-          type="button"
-          onClick={() => {
-            void branchQuery.refresh();
-          }}
-        >
-          <span aria-hidden="true" className="icon-[codicon--source-control]" />
-          <span>{branchLabel}</span>
-        </button>
+        <BranchStatusItem />
         {leftStaticItems.map((item) => (
           <button
             key={item.id}
