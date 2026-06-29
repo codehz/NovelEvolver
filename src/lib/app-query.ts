@@ -37,7 +37,7 @@ export type ActionState = {
   readonly pending: boolean;
   readonly setError: (message: string | null) => void;
   readonly wrap: <TData>(
-    action: (() => Promise<TData> | TData) | Promise<TData> | TData,
+    action: () => Promise<TData> | TData,
     options?: {
       readonly errorMessage?: RequestErrorMessage;
       readonly onError?: (error: unknown, message: string) => void | Promise<void>;
@@ -243,7 +243,7 @@ export function useActionState(): ActionState {
 
   const wrap = useCallback(
     async <TData>(
-      action: (() => Promise<TData> | TData) | Promise<TData> | TData,
+      action: () => Promise<TData> | TData,
       options?: {
         readonly errorMessage?: RequestErrorMessage;
         readonly onError?: (error: unknown, message: string) => void | Promise<void>;
@@ -253,10 +253,7 @@ export function useActionState(): ActionState {
       setError(null);
 
       try {
-        const result =
-          typeof action === "function"
-            ? await (action as () => Promise<TData> | TData)()
-            : await action;
+        const result = await action();
         return result;
       } catch (actionError) {
         const resolvedError = resolveRequestError(actionError, options?.errorMessage);
