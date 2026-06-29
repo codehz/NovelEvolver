@@ -41,12 +41,9 @@ type ResolvedWorkbenchLayout = {
 };
 
 const resizeHandleClass = cn(
-  "group absolute inset-y-0 z-20 flex w-3 -translate-x-1/2 cursor-col-resize touch-none items-center justify-center select-none",
-);
-
-const resizeHandleRailClass = cn(
-  "h-full w-1 bg-workbench-sidebar-title opacity-0 transition-opacity delay-0 duration-150",
-  "group-hover:opacity-100 group-hover:delay-300 group-focus-visible:opacity-100 group-focus-visible:delay-150",
+  "absolute inset-y-0 z-20 w-1 cursor-col-resize touch-none bg-workbench-sidebar-title select-none",
+  "opacity-0 transition-opacity delay-0 duration-150",
+  "hover:opacity-100 hover:delay-300 focus-visible:opacity-100 focus-visible:delay-150",
 );
 
 function resolveWorkbenchLayout(
@@ -135,13 +132,11 @@ function ResizeHandle({
     <div
       aria-label={ariaLabel}
       aria-orientation="vertical"
-      className={resizeHandleClass}
+      className={cn(resizeHandleClass, active && "opacity-100")}
       role="separator"
       style={{ left: position }}
       onPointerDown={onPointerDown}
-    >
-      <div className={cn(resizeHandleRailClass, active && "opacity-100")} />
-    </div>
+    />
   );
 }
 
@@ -350,7 +345,7 @@ export function WorkbenchLayout({
           <ResizeHandle
             active={activeResizeSide === "auxiliary"}
             ariaLabel="调整辅助侧边栏宽度"
-            position={containerWidth - resolvedLayout.auxiliaryWidth}
+            position={containerWidth - resolvedLayout.auxiliaryWidth - 1}
             onPointerDown={(event) => startResizeDrag("auxiliary", event)}
           />
         ) : null}
