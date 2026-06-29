@@ -123,3 +123,25 @@
     display: none;
   }
 }
+
+@layer components {
+  .plain-text-editor-surface {
+    counter-reset: novel-phy-line;
+  }
+
+  .plain-text-editor-line {
+    position: relative;
+    counter-increment: novel-phy-line;
+  }
+
+  .plain-text-editor-line::before {
+    position: absolute;
+    left: -3rem;
+    width: 2.5rem;
+    padding-right: 0.75rem;
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+    content: counter(novel-phy-line);
+    user-select: none;
+  }
+}

@@ -1,16 +1,19 @@
+import { useState } from "react";
 import { cn } from "@/lib/cn";
+import { PlainTextEditor } from "./PlainTextEditor";
 import type { WorkbenchDemoTab } from "./types";
 
-const demoLines = [
+const initialDocumentLines = [
   "# 第一章",
   "",
   "夜色落在稿纸上，编辑器骨架已经就位。",
   "左侧是活动栏与侧边栏，中间是文稿区域，右侧留给 AI 助手。",
   "",
-  "（以上为布局演示文本，暂无真实编辑能力。）",
+  "（以上为布局演示文本，可在此直接编辑。）",
 ];
 
 export function EditorArea({ tabs }: { tabs: WorkbenchDemoTab[] }) {
+  const [documentLines, setDocumentLines] = useState(initialDocumentLines);
   return (
     <section
       aria-label="编辑器"
@@ -52,23 +55,7 @@ export function EditorArea({ tabs }: { tabs: WorkbenchDemoTab[] }) {
         <span className="text-app-foreground">第一章.md</span>
       </div>
 
-      <div className="flex min-h-0 flex-1 overflow-auto font-mono text-sm leading-6">
-        <div
-          aria-hidden="true"
-          className="flex shrink-0 flex-col bg-workbench-editor px-3 py-4 text-right text-ctp-overlay0 select-none"
-        >
-          {demoLines.map((_, index) => (
-            <span key={index}>{index + 1}</span>
-          ))}
-        </div>
-        <div className="min-w-0 flex-1 p-4 text-app-foreground">
-          {demoLines.map((line, index) => (
-            <div key={index} className="min-h-6 whitespace-pre-wrap">
-              {line.length > 0 ? line : "\u00a0"}
-            </div>
-          ))}
-        </div>
-      </div>
+      <PlainTextEditor lines={documentLines} onLinesChange={setDocumentLines} />
     </section>
   );
 }

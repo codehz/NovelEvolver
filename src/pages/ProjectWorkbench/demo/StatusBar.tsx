@@ -1,16 +1,29 @@
+import { useSyncExternalStore } from "react";
+
+import {
+  formatEditorCaretPosition,
+  getEditorCaretPosition,
+  subscribeEditorCaretPosition,
+} from "./editor-caret";
+
 const leftItems = [
   { id: "branch", label: "main", icon: "icon-[codicon--source-control]" },
   { id: "sync", label: "同步", icon: "icon-[codicon--sync]" },
 ];
 
-const rightItems = [
+const rightStaticItems = [
   { id: "encoding", label: "UTF-8" },
   { id: "eol", label: "LF" },
   { id: "language", label: "Markdown" },
-  { id: "position", label: "Ln 1, Col 1" },
 ];
 
 export function StatusBar() {
+  const caret = useSyncExternalStore(
+    subscribeEditorCaretPosition,
+    getEditorCaretPosition,
+    getEditorCaretPosition,
+  );
+
   return (
     <footer
       aria-label="状态栏"
@@ -32,7 +45,7 @@ export function StatusBar() {
         </span>
       </div>
       <div className="flex shrink-0 items-stretch">
-        {rightItems.map((item) => (
+        {rightStaticItems.map((item) => (
           <button
             key={item.id}
             className="flex shrink-0 items-center px-2.5 hover:bg-window-button-hover"
@@ -41,6 +54,9 @@ export function StatusBar() {
             {item.label}
           </button>
         ))}
+        <span className="flex shrink-0 items-center px-2.5 tabular-nums">
+          {formatEditorCaretPosition(caret)}
+        </span>
       </div>
     </footer>
   );
