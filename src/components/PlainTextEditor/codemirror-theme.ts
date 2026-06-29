@@ -16,7 +16,7 @@ export const novelEvolverEditorTheme = EditorView.theme(
     },
     ".cm-scroller": {
       overflow: "auto",
-      fontFamily: "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace",
+      fontFamily: "var(--font-mono)",
       fontSize: "0.875rem",
       lineHeight: "var(--spacing-pte-line)",
     },

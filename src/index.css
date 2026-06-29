@@ -1,6 +1,7 @@
 @import "tailwindcss";
 @import "@catppuccin/tailwindcss/mocha.css";
 @import "misans/lib/Normal/MiSans-Regular.min.css";
+@import "@mogeko/maple-mono-cn/dist/font/result.css";
 
 @plugin "../tools/iconify.js";
 
@@ -70,6 +71,7 @@
   --color-pte-md-marker: var(--color-ctp-overlay1);
   --counter-pte-line: pte-line;
   --font-display: "MiSans", sans-serif;
+  --font-mono: "Maple Mono CN", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
 }
 
 @layer base {

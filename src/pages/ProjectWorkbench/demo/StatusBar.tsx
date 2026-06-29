@@ -18,7 +18,7 @@ export function StatusBar() {
   return (
     <footer
       aria-label="状态栏"
-      className="flex h-workbench-status-bar shrink-0 items-stretch bg-workbench-status-bar text-xs text-workbench-status-bar-foreground"
+      className="flex h-workbench-status-bar shrink-0 items-stretch bg-workbench-status-bar font-mono text-xs text-workbench-status-bar-foreground"
     >
       <div className="flex min-w-0 flex-1 items-stretch overflow-hidden">
         {leftItems.map((item) => (
