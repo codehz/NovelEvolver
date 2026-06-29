@@ -1,3 +1,5 @@
+import type { EditorLogicalPosition, EditorSelectionSnapshot } from "./editor-caret";
+
 const PHYSICAL_LINE_SELECTOR = "[data-physical-line]";
 const PHYSICAL_LINE_CONTENT_SELECTOR = "[data-physical-line-content]";
 
@@ -173,18 +175,9 @@ export function applyPhysicalEnter(
     return readPhysicalLinesFromEditor(root);
   }
 
-  const lines = readPhysicalLinesFromEditor(root);
-  const { lineIndex, offset } = getLogicalCaret(root, range);
-  const current = lines[lineIndex] ?? "";
-  const before = current.slice(0, offset);
-  const after = current.slice(offset);
-
-  const next = [...lines];
-  next[lineIndex] = before;
-  next.splice(lineIndex + 1, 0, after);
-
+  const { lines: next, focus } = replaceSelectionWithLines(root, [""], range);
   writePhysicalLinesToEditor(root, next, classes);
-  setLogicalCaret(root, lineIndex + 1, 0);
+  setLogicalCaret(root, focus.lineIndex, focus.offset);
   return next;
 }
 
@@ -208,26 +201,9 @@ export function applyPlainTextPaste(
     return;
   }
 
-  const lines = readPhysicalLinesFromEditor(root);
-  const { lineIndex, offset } = getLogicalCaret(root, range);
-  const current = lines[lineIndex] ?? "";
-  const before = current.slice(0, offset);
-  const after = current.slice(offset);
-
-  const next = [...lines];
-  if (inserted.length === 1) {
-    next[lineIndex] = before + inserted[0] + after;
-  } else {
-    const tail = (inserted.at(-1) ?? "") + after;
-    next[lineIndex] = before + (inserted[0] ?? "");
-    next.splice(lineIndex + 1, 0, ...inserted.slice(1, -1), tail);
-  }
-
+  const { lines: next, focus } = replaceSelectionWithLines(root, inserted, range);
   writePhysicalLinesToEditor(root, next, classes);
-  const focusLine = lineIndex + inserted.length - 1;
-  const focusOffset =
-    inserted.length === 1 ? before.length + inserted[0].length : (inserted.at(-1)?.length ?? 0);
-  setLogicalCaret(root, focusLine, focusOffset);
+  setLogicalCaret(root, focus.lineIndex, focus.offset);
 }
 
 function getLineIndexFromBlock(root: HTMLElement, block: HTMLElement): number {
@@ -295,30 +271,31 @@ function getLogicalCaret(root: HTMLElement, range: Range): { lineIndex: number; 
 export function readCaretPositionFromEditor(root: HTMLElement): {
   line: number;
   column: number;
+  selectionLength: number;
 } | null {
-  const selection = window.getSelection();
-  if (!selection || selection.rangeCount === 0) {
+  const snapshot = readSelectionSnapshotFromEditor(root);
+  if (!snapshot) {
     return null;
   }
 
-  const range = selection.getRangeAt(0);
-  if (!root.contains(range.startContainer)) {
-    return null;
-  }
-
-  const { lineIndex, offset } = getLogicalCaret(root, range);
-  return { line: lineIndex + 1, column: offset + 1 };
+  return {
+    line: snapshot.focus.lineIndex + 1,
+    column: snapshot.focus.offset + 1,
+    selectionLength: getSelectionLength(root, snapshot),
+  };
 }
 
 function setLogicalCaret(root: HTMLElement, lineIndex: number, offset: number): void {
-  const selection = window.getSelection();
-  if (!selection) {
-    return;
-  }
+  setLogicalSelection(root, {
+    anchor: { lineIndex, offset },
+    focus: { lineIndex, offset },
+  });
+}
 
+function createCollapsedRange(root: HTMLElement, lineIndex: number, offset: number): Range | null {
   const block = getPhysicalLineBlocks(root)[lineIndex];
   if (!block) {
-    return;
+    return null;
   }
 
   const content = getLineContentElement(block);
@@ -332,9 +309,7 @@ function setLogicalCaret(root: HTMLElement, lineIndex: number, offset: number): 
       const range = document.createRange();
       range.setStart(textNode, remaining);
       range.collapse(true);
-      selection.removeAllRanges();
-      selection.addRange(range);
-      return;
+      return range;
     }
     remaining -= length;
     textNode = walker.nextNode() as Text | null;
@@ -343,6 +318,130 @@ function setLogicalCaret(root: HTMLElement, lineIndex: number, offset: number): 
   const range = document.createRange();
   range.selectNodeContents(content);
   range.collapse(false);
+  return range;
+}
+
+export function readSelectionSnapshotFromEditor(root: HTMLElement): EditorSelectionSnapshot | null {
+  const selection = window.getSelection();
+  if (!selection || selection.rangeCount === 0) {
+    return null;
+  }
+
+  const range = selection.getRangeAt(0);
+  if (!root.contains(range.startContainer) || !root.contains(range.endContainer)) {
+    return null;
+  }
+
+  const anchorRange = document.createRange();
+  anchorRange.setStart(selection.anchorNode ?? range.startContainer, selection.anchorOffset);
+  anchorRange.collapse(true);
+
+  const focusRange = document.createRange();
+  focusRange.setStart(selection.focusNode ?? range.endContainer, selection.focusOffset);
+  focusRange.collapse(true);
+
+  return {
+    anchor: getLogicalCaret(root, anchorRange),
+    focus: getLogicalCaret(root, focusRange),
+  };
+}
+
+export function setLogicalSelection(root: HTMLElement, snapshot: EditorSelectionSnapshot): void {
+  const selection = window.getSelection();
+  if (!selection) {
+    return;
+  }
+
+  const anchorRange = createCollapsedRange(root, snapshot.anchor.lineIndex, snapshot.anchor.offset);
+  const focusRange = createCollapsedRange(root, snapshot.focus.lineIndex, snapshot.focus.offset);
+  if (!anchorRange || !focusRange) {
+    return;
+  }
+
+  const range = anchorRange.cloneRange();
+  range.setEnd(focusRange.endContainer, focusRange.endOffset);
   selection.removeAllRanges();
   selection.addRange(range);
+
+  if (selection.extend) {
+    selection.collapse(anchorRange.startContainer, anchorRange.startOffset);
+    selection.extend(focusRange.endContainer, focusRange.endOffset);
+  }
+}
+
+function compareLogicalPositions(a: EditorLogicalPosition, b: EditorLogicalPosition): number {
+  if (a.lineIndex !== b.lineIndex) {
+    return a.lineIndex - b.lineIndex;
+  }
+  return a.offset - b.offset;
+}
+
+function orderSelectionSnapshot(snapshot: EditorSelectionSnapshot): {
+  start: EditorLogicalPosition;
+  end: EditorLogicalPosition;
+} {
+  return compareLogicalPositions(snapshot.anchor, snapshot.focus) <= 0
+    ? { start: snapshot.anchor, end: snapshot.focus }
+    : { start: snapshot.focus, end: snapshot.anchor };
+}
+
+function getSelectionLength(root: HTMLElement, snapshot: EditorSelectionSnapshot): number {
+  const { start, end } = orderSelectionSnapshot(snapshot);
+  if (compareLogicalPositions(start, end) === 0) {
+    return 0;
+  }
+
+  const lines = readPhysicalLinesFromEditor(root);
+  if (start.lineIndex === end.lineIndex) {
+    return Math.max(0, end.offset - start.offset);
+  }
+
+  let length = Math.max(0, (lines[start.lineIndex] ?? "").length - start.offset);
+  for (let index = start.lineIndex + 1; index < end.lineIndex; index += 1) {
+    length += (lines[index] ?? "").length;
+  }
+  length += end.offset;
+  length += end.lineIndex - start.lineIndex;
+  return length;
+}
+
+function replaceSelectionWithLines(
+  root: HTMLElement,
+  inserted: string[],
+  range: Range,
+): { lines: string[]; focus: EditorLogicalPosition } {
+  const lines = readPhysicalLinesFromEditor(root);
+  const start = getLogicalCaret(root, range);
+  const endRange = range.cloneRange();
+  endRange.collapse(false);
+  const end = getLogicalCaret(root, endRange);
+  const ordered =
+    compareLogicalPositions(start, end) <= 0 ? { start, end } : { start: end, end: start };
+
+  const beforeLines = lines.slice(0, ordered.start.lineIndex);
+  const afterLines = lines.slice(ordered.end.lineIndex + 1);
+  const startLine = lines[ordered.start.lineIndex] ?? "";
+  const endLine = lines[ordered.end.lineIndex] ?? "";
+  const prefix = startLine.slice(0, ordered.start.offset);
+  const suffix = endLine.slice(ordered.end.offset);
+
+  if (inserted.length === 1) {
+    return {
+      lines: [...beforeLines, prefix + inserted[0] + suffix, ...afterLines],
+      focus: {
+        lineIndex: ordered.start.lineIndex,
+        offset: prefix.length + inserted[0].length,
+      },
+    };
+  }
+
+  const middle = inserted.slice(1, -1);
+  const merged = [prefix + (inserted[0] ?? ""), ...middle, (inserted.at(-1) ?? "") + suffix];
+  return {
+    lines: [...beforeLines, ...merged, ...afterLines],
+    focus: {
+      lineIndex: ordered.start.lineIndex + inserted.length - 1,
+      offset: inserted.at(-1)?.length ?? 0,
+    },
+  };
 }

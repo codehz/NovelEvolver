@@ -4,6 +4,7 @@ import {
   useCallback,
   useEffect,
   useImperativeHandle,
+  useLayoutEffect,
   useMemo,
   useRef,
   type ClipboardEvent,
@@ -16,6 +17,8 @@ import {
   normalizeEditorDom,
   readCaretPositionFromEditor,
   readPhysicalLinesFromEditor,
+  readSelectionSnapshotFromEditor,
+  setLogicalSelection,
   splitPlainTextDocument,
   writePhysicalLinesToEditor,
   type PlainTextEditorLineClasses,
@@ -45,27 +48,40 @@ const lineContentClass = cn(
 
 export type PlainTextEditorHandle = {
   focus: () => void;
+  restoreSelection: () => void;
   getValue: () => string;
   setValue: (value: string) => void;
-  getCaret: () => { line: number; column: number } | null;
+  getCaret: () => { line: number; column: number; selectionLength: number } | null;
 };
 
 type PlainTextEditorProps = {
   ref?: React.Ref<PlainTextEditorHandle>;
   defaultValue?: string;
   onChange?: (next: string) => void;
+  active?: boolean;
 };
 
-export function PlainTextEditor({ ref, defaultValue = "", onChange }: PlainTextEditorProps) {
-  const { caretPositionAtom, documentAtom } = useMolecule(editorTabMolecule);
+export function PlainTextEditor({
+  ref,
+  defaultValue = "",
+  onChange,
+  active = false,
+}: PlainTextEditorProps) {
+  const { caretPositionAtom, selectionSnapshotAtom, documentAtom } = useMolecule(editorTabMolecule);
   const setCaretPosition = useSetAtom(caretPositionAtom);
+  const setSelectionSnapshot = useSetAtom(selectionSnapshotAtom);
   const setDocument = useSetAtom(documentAtom);
+  const selectionSnapshot = useAtomValue(selectionSnapshotAtom);
   const storedDocument = useAtomValue(documentAtom);
 
   const rootRef = useRef<HTMLDivElement>(null);
   const linesRef = useRef<string[]>([]);
   const seededRef = useRef(false);
   const caretFrameRef = useRef<number | null>(null);
+  const selectionSnapshotRef = useRef(selectionSnapshot);
+  const wasActiveRef = useRef(active);
+
+  selectionSnapshotRef.current = selectionSnapshot;
 
   const lineClasses = useMemo<PlainTextEditorLineClasses>(
     () => ({
@@ -104,11 +120,15 @@ export function PlainTextEditor({ ref, defaultValue = "", onChange }: PlainTextE
     if (!root || document.activeElement !== root) {
       return;
     }
+    const snapshot = readSelectionSnapshotFromEditor(root);
+    if (snapshot) {
+      setSelectionSnapshot(snapshot);
+    }
     const position = readCaretPositionFromEditor(root);
     if (position) {
       setCaretPosition(position);
     }
-  }, [setCaretPosition]);
+  }, [setCaretPosition, setSelectionSnapshot]);
 
   const scheduleCaretPositionPublish = useCallback(() => {
     if (caretFrameRef.current !== null) {
@@ -169,12 +189,36 @@ export function PlainTextEditor({ ref, defaultValue = "", onChange }: PlainTextE
     [onChange, publishCaretPosition, setDocument],
   );
 
+  const restoreSelection = useCallback(() => {
+    const root = rootRef.current;
+    if (!root) {
+      return;
+    }
+    root.focus();
+    if (selectionSnapshotRef.current) {
+      setLogicalSelection(root, selectionSnapshotRef.current);
+      publishCaretPosition();
+      return;
+    }
+    publishCaretPosition();
+  }, [publishCaretPosition]);
+
+  useLayoutEffect(() => {
+    const shouldRestore = active && !wasActiveRef.current;
+    wasActiveRef.current = active;
+    if (!shouldRestore) {
+      return;
+    }
+    restoreSelection();
+  }, [active, restoreSelection]);
+
   useImperativeHandle(
     ref,
     () => ({
       focus: () => {
         rootRef.current?.focus();
       },
+      restoreSelection,
       getValue: () => joinPlainTextDocument(linesRef.current),
       setValue: (value: string) => {
         const nextLines = splitPlainTextDocument(value);
@@ -195,7 +239,7 @@ export function PlainTextEditor({ ref, defaultValue = "", onChange }: PlainTextE
         return readCaretPositionFromEditor(root);
       },
     }),
-    [lineClasses, publishCaretPosition, setDocument],
+    [lineClasses, publishCaretPosition, restoreSelection, setDocument],
   );
 
   return (

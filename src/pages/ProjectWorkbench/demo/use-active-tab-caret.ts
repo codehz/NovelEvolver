@@ -9,7 +9,7 @@ import {
   workbenchEditorMolecule,
 } from "./workbench-editor-molecules";
 
-const fallbackCaret: EditorCaretPosition = { line: 1, column: 1 };
+const fallbackCaret: EditorCaretPosition = { line: 1, column: 1, selectionLength: 0 };
 
 export function useActiveTabCaretPosition(): EditorCaretPosition {
   const { activeTabIdAtom } = useMolecule(workbenchEditorMolecule);

@@ -16,7 +16,7 @@ export function EditorTabPane({ tabId, active, defaultValue }: EditorTabPaneProp
         className={active ? "flex min-h-0 min-w-0 flex-1 flex-col" : "hidden"}
         aria-hidden={!active}
       >
-        <PlainTextEditor defaultValue={defaultValue} />
+        <PlainTextEditor active={active} defaultValue={defaultValue} />
       </div>
     </ScopeProvider>
   );
