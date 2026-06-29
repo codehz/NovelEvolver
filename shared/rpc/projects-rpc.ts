@@ -20,7 +20,7 @@ export interface ProjectHandle extends RpcTarget {
   readonly head: BranchInfo;
 }
 
-export type OpenProjectResult = {
+export type ProjectHandleWithMetadata = {
   readonly handle: ProjectHandle;
   readonly metadata: ProjectListItem;
 };
@@ -33,5 +33,5 @@ export interface ProjectsService extends RpcTarget {
   removeRecent(id: number): boolean;
 
   /** Open a project by its database id and return its metadata plus a live RPC handle. */
-  openProject(id: number): OpenProjectResult;
+  openProject(id: number): ProjectHandleWithMetadata;
 }

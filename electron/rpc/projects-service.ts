@@ -5,7 +5,7 @@ import { dialog, type BrowserWindow } from "electron";
 import { createSqliteRepository } from "nano-git/repository/sqlite";
 
 import type { ProjectListItem, ProjectRecord } from "@shared/project";
-import type { OpenProjectResult, ProjectsService } from "@shared/rpc/projects-rpc";
+import type { ProjectHandleWithMetadata, ProjectsService } from "@shared/rpc/projects-rpc";
 import { projectWithDisplayPath } from "../home-path";
 import type { RpcMainDeps } from "./deps";
 import { ProjectHandleImpl } from "./project-handle";
@@ -71,7 +71,7 @@ export class ProjectsServiceImpl extends RpcTarget implements ProjectsService {
     return this.#deps.getProjectsDb().upsertByPath(path, Date.now());
   }
 
-  openProject(id: number): OpenProjectResult {
+  openProject(id: number): ProjectHandleWithMetadata {
     const record = this.#deps.getProjectsDb().touchById(id, Date.now());
     if (!record) {
       throw new Error(`Project with id ${id} not found`);
