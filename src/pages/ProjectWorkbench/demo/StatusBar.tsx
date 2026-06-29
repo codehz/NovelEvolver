@@ -1,6 +1,5 @@
 import { BranchStatusItem } from "./BranchStatusItem";
-import { formatEditorCaretPosition } from "./editor-caret";
-import { useActiveTabCaretPosition } from "./use-active-tab-caret";
+import { CaretPositionIndicator } from "./CaretPositionIndicator";
 
 const leftStaticItems = [{ id: "sync", label: "同步", icon: "icon-[codicon--sync]" }];
 
@@ -11,8 +10,6 @@ const rightStaticItems = [
 ];
 
 export function StatusBar() {
-  const caret = useActiveTabCaretPosition();
-
   return (
     <footer
       aria-label="状态栏"
@@ -35,9 +32,7 @@ export function StatusBar() {
         </span>
       </div>
       <div className="flex shrink-0 items-stretch">
-        <span className="flex shrink-0 items-center px-2.5 tabular-nums">
-          {formatEditorCaretPosition(caret)}
-        </span>
+        <CaretPositionIndicator />
         {rightStaticItems.map((item) => (
           <button
             key={item.id}
