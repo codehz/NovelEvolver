@@ -8,7 +8,7 @@ import { projectsService } from "@/lib/app-rpc";
 import { cn } from "@/lib/cn";
 import { projectDisplayName } from "@/lib/project-display-name";
 import { buildWorkbenchDemoSlots } from "./demo/workbench-demo";
-import { projectWorkbenchScope } from "./demo/workbench-editor-molecules";
+import { ProjectScope } from "./demo/workbench-editor-molecules";
 
 export function ProjectWorkbench() {
   const { projectId } = useParams<{ projectId: string }>();
@@ -68,7 +68,7 @@ export function ProjectWorkbench() {
           </Link>
         </div>
       ) : project ? (
-        <ScopeProvider scope={projectWorkbenchScope} value={String(parsedId)}>
+        <ScopeProvider scope={ProjectScope} value={String(parsedId)}>
           <WorkbenchLayout {...buildWorkbenchDemoSlots(projectDisplayName(project.path))} />
         </ScopeProvider>
       ) : null}

@@ -5,7 +5,7 @@ import type { EditorCaretPosition, EditorSelectionSnapshot } from "./editor-care
 import type { WorkbenchDemoTab } from "./types";
 
 /** 每个项目工作台实例一条作用域链（多项目窗口互不干扰）。 */
-export const projectWorkbenchScope = createScope("");
+export const ProjectScope = createScope("");
 
 /**
  * 每个编辑器组一条作用域（主/副分屏时用不同 value，例如 `"primary"` / `"secondary"`）。
@@ -19,7 +19,7 @@ export const editorTabScope = createScope("");
 const defaultCaret: EditorCaretPosition = { line: 1, column: 1, selectionLength: 0 };
 
 export const workbenchEditorMolecule = molecule(() => {
-  use(projectWorkbenchScope);
+  use(ProjectScope);
   use(editorGroupScope);
 
   const tabsAtom = atom<WorkbenchDemoTab[]>([]);
