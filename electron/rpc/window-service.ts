@@ -1,42 +1,13 @@
-import { RpcTarget, type RpcStub } from "capnweb";
+import { RpcTarget } from "capnweb";
 import type { BrowserWindow } from "electron";
 
-import type {
-  WindowService,
-  WindowStateChangeListener,
-  WindowStateSubscription,
-} from "@shared/rpc/window-rpc";
+import type { WindowService } from "@shared/rpc/window-rpc";
 import type { WindowState } from "@shared/window";
 import type { RpcMainDeps } from "./deps";
 
 type WindowSubscriptionRecord = {
-  listener: RpcStub<WindowStateChangeListener>;
+  controller: ReadableStreamDefaultController<WindowState>;
 };
-
-export class WindowStateSubscriptionImpl extends RpcTarget implements WindowStateSubscription {
-  readonly #service: WindowServiceImpl;
-  readonly #id: number;
-  #unsubscribed = false;
-
-  constructor(service: WindowServiceImpl, id: number) {
-    super();
-    this.#service = service;
-    this.#id = id;
-  }
-
-  async unsubscribe(): Promise<void> {
-    if (this.#unsubscribed) {
-      return;
-    }
-
-    this.#unsubscribed = true;
-    this.#service.removeSubscription(this.#id);
-  }
-
-  [Symbol.dispose](): void {
-    void this.unsubscribe();
-  }
-}
 
 export class WindowServiceImpl extends RpcTarget implements WindowService {
   readonly #window: BrowserWindow;
@@ -77,22 +48,24 @@ export class WindowServiceImpl extends RpcTarget implements WindowService {
     this.#window.setTitle(title);
   }
 
-  async subscribeState(
-    listener: RpcStub<WindowStateChangeListener>,
-  ): Promise<WindowStateSubscription> {
+  async subscribeState(): Promise<ReadableStream<WindowState>> {
     const id = this.#nextSubscriptionId++;
-    const subscription = new WindowStateSubscriptionImpl(this, id);
+    const state = this.state;
 
-    this.#subscriptions.set(id, { listener });
+    return new ReadableStream<WindowState>({
+      start: (controller) => {
+        if (this.#disposed) {
+          controller.close();
+          return;
+        }
 
-    try {
-      await listener(this.state);
-    } catch {
-      this.removeSubscription(id);
-      throw new Error("Failed to establish window state subscription.");
-    }
-
-    return subscription;
+        this.#subscriptions.set(id, { controller });
+        controller.enqueue(state);
+      },
+      cancel: () => {
+        this.removeSubscription(id);
+      },
+    });
   }
 
   async emitStateChanged(): Promise<void> {
@@ -104,7 +77,7 @@ export class WindowServiceImpl extends RpcTarget implements WindowService {
 
     for (const [id, record] of this.#subscriptions) {
       try {
-        await record.listener(state);
+        record.controller.enqueue(state);
       } catch {
         this.removeSubscription(id);
       }
@@ -118,7 +91,11 @@ export class WindowServiceImpl extends RpcTarget implements WindowService {
     }
 
     this.#subscriptions.delete(id);
-    record.listener[Symbol.dispose]();
+    try {
+      record.controller.close();
+    } catch {
+      // Ignore controllers already closed or canceled by the consumer.
+    }
   }
 
   [Symbol.dispose](): void {

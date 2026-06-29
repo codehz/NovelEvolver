@@ -4,6 +4,7 @@ import type { WindowState } from "@shared/window";
 import { windowService } from "@/lib/app-rpc";
 import { cn } from "@/lib/cn";
 import { TitleBarActionsPortalTarget, TitleBarPortalTarget } from "@/lib/titlebar-portal";
+import { subscribeWindowState } from "@/lib/window-state-subscription";
 
 const windowControlButtonClass = cn(
   "inline-flex size-7 shrink-0 items-center justify-center rounded-full border-0 bg-transparent p-0 text-titlebar-foreground transition-colors duration-150 hover:bg-window-button-hover focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-badge-background active:bg-window-button-hover",
@@ -71,37 +72,12 @@ export function WindowFrame({ children }: { children: ReactNode }) {
   const [windowState, setWindowState] = useState<WindowState>(fallbackWindowState);
 
   useEffect(() => {
-    let disposed = false;
-    let unsubscribe: (() => void) | null = null;
-    const listener = (state: WindowState) => {
-      if (!disposed) {
-        setWindowState(state);
-      }
-    };
-
-    void windowService.state.then(setWindowState).catch(() => {
-      setWindowState(fallbackWindowState);
+    return subscribeWindowState({
+      onState: setWindowState,
+      onError: () => {
+        setWindowState(fallbackWindowState);
+      },
     });
-
-    void windowService
-      .subscribeState(listener)
-      .then((subscription) => {
-        unsubscribe = () => {
-          void subscription.unsubscribe().finally(() => {
-            subscription[Symbol.dispose]();
-          });
-        };
-      })
-      .catch(() => {
-        if (!disposed) {
-          setWindowState(fallbackWindowState);
-        }
-      });
-
-    return () => {
-      disposed = true;
-      unsubscribe?.();
-    };
   }, []);
 
   const isMac = windowState.platform === "darwin";
