@@ -18,7 +18,7 @@ export function StatusBar() {
   return (
     <footer
       aria-label="状态栏"
-      className="flex h-workbench-status-bar shrink-0 items-stretch bg-workbench-status-bar font-mono text-xs text-workbench-status-bar-foreground"
+      className="flex h-workbench-status-bar shrink-0 items-stretch bg-workbench-status-bar text-xs text-workbench-status-bar-foreground"
     >
       <div className="flex min-w-0 flex-1 items-stretch overflow-hidden">
         {leftItems.map((item) => (
@@ -36,6 +36,9 @@ export function StatusBar() {
         </span>
       </div>
       <div className="flex shrink-0 items-stretch">
+        <span className="flex shrink-0 items-center px-2.5 tabular-nums">
+          {formatEditorCaretPosition(caret)}
+        </span>
         {rightStaticItems.map((item) => (
           <button
             key={item.id}
@@ -45,9 +48,6 @@ export function StatusBar() {
             {item.label}
           </button>
         ))}
-        <span className="flex shrink-0 items-center px-2.5 tabular-nums">
-          {formatEditorCaretPosition(caret)}
-        </span>
       </div>
     </footer>
   );

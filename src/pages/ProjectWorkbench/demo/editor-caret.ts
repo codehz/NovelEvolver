@@ -10,7 +10,7 @@ export type EditorSelectionSnapshot = PlainTextEditorSelectionSnapshot;
 
 export function formatEditorCaretPosition(position: EditorCaretPosition): string {
   if (position.selectionLength === 0) {
-    return `Ln ${position.line}, Col ${position.column}`;
+    return `行 ${position.line}，列 ${position.column}`;
   }
-  return `Ln ${position.line}, Col ${position.column} (${position.selectionLength} selected)`;
+  return `行 ${position.line}，列 ${position.column}（已选择 ${position.selectionLength}）`;
 }
