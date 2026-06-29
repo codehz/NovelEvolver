@@ -60,6 +60,14 @@
   --color-pte-line-number: var(--color-ctp-overlay0);
   --color-pte-line-highlight: color-mix(in srgb, var(--color-ctp-surface0) 42%, transparent);
   --color-pte-selection: color-mix(in srgb, var(--color-ctp-overlay0) 28%, transparent);
+  --color-pte-md-heading: var(--color-ctp-mauve);
+  --color-pte-md-strong: var(--color-ctp-text);
+  --color-pte-md-emphasis: var(--color-ctp-subtext1);
+  --color-pte-md-muted: var(--color-ctp-overlay0);
+  --color-pte-md-link: var(--color-ctp-blue);
+  --color-pte-md-code: var(--color-ctp-green);
+  --color-pte-md-quote: var(--color-ctp-subtext0);
+  --color-pte-md-marker: var(--color-ctp-overlay1);
   --counter-pte-line: pte-line;
   --font-display: "MiSans", sans-serif;
 }
