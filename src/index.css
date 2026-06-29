@@ -47,6 +47,13 @@
   --color-workbench-status-bar: var(--color-ctp-crust);
   --color-workbench-status-bar-foreground: var(--color-ctp-text);
   --color-workbench-status-bar-muted: var(--color-ctp-subtext0);
+  --color-workbench-scrollbar-thumb: color-mix(in srgb, var(--color-ctp-overlay1) 72%, transparent);
+  --color-workbench-scrollbar-thumb-hover: color-mix(
+    in srgb,
+    var(--color-ctp-overlay2) 88%,
+    transparent
+  );
+  --spacing-workbench-scrollbar: 0.75rem;
   --font-display: "MiSans", sans-serif;
 }
 
@@ -106,4 +113,64 @@
 
 @utility app-region-* {
   -webkit-app-region: --value(--app-region-*);
+}
+
+@layer components {
+  /**
+ * SimpleBar base (unlayered). Overrides below must stay unlayered too:
+ * unlayered CSS wins over @layer, and simplebar.min.css was previously imported
+ * from the React component after index.css, which wiped out layered overrides.
+ */
+  @import "simplebar-react/dist/simplebar.min.css";
+
+  [data-simplebar].workbench-simplebar .simplebar-track.simplebar-vertical {
+    top: 0;
+    right: 0;
+    bottom: 0;
+    left: auto;
+    width: var(--spacing-workbench-scrollbar);
+    margin: 0;
+    padding: 0;
+  }
+
+  [data-simplebar].workbench-simplebar .simplebar-track.simplebar-horizontal {
+    right: 0;
+    bottom: 0;
+    left: 0;
+    top: auto;
+    height: var(--spacing-workbench-scrollbar);
+    margin: 0;
+    padding: 0;
+  }
+
+  [data-simplebar].workbench-simplebar .simplebar-scrollbar {
+    margin: 0;
+  }
+
+  [data-simplebar].workbench-simplebar .simplebar-scrollbar::before {
+    border-radius: 0;
+    inset: 0;
+    margin: 0;
+    background: var(--color-workbench-scrollbar-thumb);
+    opacity: 0;
+    transition:
+      opacity 0.15s ease 0.4s,
+      background-color 0.1s ease;
+  }
+
+  [data-simplebar].workbench-simplebar .simplebar-scrollbar.simplebar-visible::before {
+    opacity: 1;
+    transition-delay: 0s;
+  }
+
+  [data-simplebar].workbench-simplebar .simplebar-track:hover .simplebar-scrollbar::before,
+  [data-simplebar].workbench-simplebar.simplebar-dragging .simplebar-scrollbar::before {
+    background: var(--color-workbench-scrollbar-thumb-hover);
+    opacity: 1;
+    transition-delay: 0s;
+  }
+
+  [data-simplebar].workbench-simplebar .simplebar-track {
+    pointer-events: auto;
+  }
 }

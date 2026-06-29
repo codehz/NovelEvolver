@@ -3,6 +3,7 @@ import { Fragment, useMemo, useState } from "react";
 import { cn } from "../../../lib/cn";
 import { SidebarSectionRowResizeHandle, SidebarViewSection } from "../SidebarViewSection";
 import { useSidebarPaneStack } from "../use-sidebar-pane-stack";
+import { WorkbenchSimpleBar } from "../WorkbenchSimpleBar";
 
 type DemoTreeNode = {
   icon: string;
@@ -144,25 +145,29 @@ export function ExplorerSidebarDemo({ projectLabel }: { projectLabel: string }) 
 
 export function SearchSidebarDemo() {
   return (
-    <div className="flex flex-col gap-2 overflow-auto px-1">
-      <label className="flex flex-col gap-1 text-xs text-ctp-subtext0">
-        搜索
-        <span className="flex items-center gap-2 rounded border border-titlebar-border bg-workbench-editor px-2 py-1.5">
-          <span aria-hidden="true" className="icon-[codicon--search] text-sm" />
-          <span className="text-ctp-overlay0">搜索文件内容（演示）</span>
-        </span>
-      </label>
-      <p className="text-xs text-ctp-subtext0">输入关键词后将在此显示结果。</p>
-    </div>
+    <WorkbenchSimpleBar className="-m-2 min-h-0 flex-1" fill>
+      <div className="flex flex-col gap-2 px-1">
+        <label className="flex flex-col gap-1 text-xs text-ctp-subtext0">
+          搜索
+          <span className="flex items-center gap-2 rounded border border-titlebar-border bg-workbench-editor px-2 py-1.5">
+            <span aria-hidden="true" className="icon-[codicon--search] text-sm" />
+            <span className="text-ctp-overlay0">搜索文件内容（演示）</span>
+          </span>
+        </label>
+        <p className="text-xs text-ctp-subtext0">输入关键词后将在此显示结果。</p>
+      </div>
+    </WorkbenchSimpleBar>
   );
 }
 
 export function ScmSidebarDemo() {
   return (
-    <div className="flex flex-col items-center gap-2 overflow-auto px-2 py-6 text-center text-xs text-ctp-subtext0">
-      <span aria-hidden="true" className="icon-[codicon--source-control] text-2xl" />
-      <p>尚未配置版本控制。</p>
-      <p className="text-ctp-overlay0">布局演示占位。</p>
-    </div>
+    <WorkbenchSimpleBar className="-m-2 min-h-0 flex-1" fill>
+      <div className="flex flex-col items-center gap-2 px-2 py-6 text-center text-xs text-ctp-subtext0">
+        <span aria-hidden="true" className="icon-[codicon--source-control] text-2xl" />
+        <p>尚未配置版本控制。</p>
+        <p className="text-ctp-overlay0">布局演示占位。</p>
+      </div>
+    </WorkbenchSimpleBar>
   );
 }

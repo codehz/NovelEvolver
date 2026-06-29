@@ -1,4 +1,5 @@
 import { cn } from "../../../lib/cn";
+import { WorkbenchSimpleBar } from "../WorkbenchSimpleBar";
 
 const demoMessages = [
   {
@@ -18,22 +19,26 @@ const demoMessages = [
 export function AuxiliaryPanelDemo() {
   return (
     <>
-      <div className="flex min-h-0 flex-1 flex-col gap-3 overflow-auto p-3 text-sm">
-        {demoMessages.map((message, index) => (
-          <div
-            key={index}
-            className={cn(
-              "rounded-lg px-3 py-2",
-              message.role === "user" ? "ml-4 bg-workbench-tab-active" : "mr-4 bg-workbench-editor",
-            )}
-          >
-            <p className="mb-1 text-xs font-medium text-ctp-subtext0">
-              {message.role === "user" ? "你" : "助手"}
-            </p>
-            <p className="text-app-foreground">{message.text}</p>
-          </div>
-        ))}
-      </div>
+      <WorkbenchSimpleBar className="min-h-0 flex-1" fill>
+        <div className="flex flex-col gap-3 p-3 text-sm">
+          {demoMessages.map((message, index) => (
+            <div
+              key={index}
+              className={cn(
+                "rounded-lg px-3 py-2",
+                message.role === "user"
+                  ? "ml-4 bg-workbench-tab-active"
+                  : "mr-4 bg-workbench-editor",
+              )}
+            >
+              <p className="mb-1 text-xs font-medium text-ctp-subtext0">
+                {message.role === "user" ? "你" : "助手"}
+              </p>
+              <p className="text-app-foreground">{message.text}</p>
+            </div>
+          ))}
+        </div>
+      </WorkbenchSimpleBar>
 
       <footer className="shrink-0 p-3">
         <div className="flex items-end gap-2 rounded-lg bg-workbench-editor p-2">

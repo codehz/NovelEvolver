@@ -1,6 +1,7 @@
 import type { CSSProperties, PointerEvent as ReactPointerEvent, ReactNode } from "react";
 
 import { cn } from "../../lib/cn";
+import { WorkbenchSimpleBar } from "./WorkbenchSimpleBar";
 
 /** Layout flow height at the section seam (handle is overlaid, not counted in flex). */
 export const SIDEBAR_SECTION_RESIZE_STRIP_HEIGHT = 0;
@@ -97,13 +98,9 @@ export function SidebarViewSection({
         )}
       </div>
       {expanded ? (
-        <div
-          className={cn("min-h-0 overflow-auto", bodyFillsSection ? "h-0 flex-1" : undefined)}
-          id={panelId}
-          style={bodyStyle}
-        >
+        <WorkbenchSimpleBar fill={bodyFillsSection} id={panelId} style={bodyStyle}>
           {children}
-        </div>
+        </WorkbenchSimpleBar>
       ) : null}
     </section>
   );
