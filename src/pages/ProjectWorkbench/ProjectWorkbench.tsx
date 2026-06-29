@@ -7,7 +7,7 @@ import { TitleBarTitle } from "@/components/TitleBarTitle";
 import { WorkbenchLayout } from "@/components/workbench";
 import { cn } from "@/lib/cn";
 import { projectDisplayName } from "@/lib/project-display-name";
-import { projectMolecule, projectScope } from "./demo/molecules";
+import { projectMolecule, projectScope, resolvedProjectScope } from "./demo/molecules";
 import { buildWorkbenchDemoSlots } from "./demo/workbench-demo";
 
 export function ProjectWorkbench() {
@@ -59,7 +59,9 @@ function ProjectWorkbenchInner() {
   return (
     <>
       <TitleBarTitle>{displayName}</TitleBarTitle>
-      <WorkbenchLayout {...buildWorkbenchDemoSlots(displayName)} />
+      <ScopeProvider scope={resolvedProjectScope} value={project}>
+        <WorkbenchLayout {...buildWorkbenchDemoSlots(displayName)} />
+      </ScopeProvider>
     </>
   );
 }

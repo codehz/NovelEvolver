@@ -1,6 +1,9 @@
 import { createScope, molecule, use } from "bunshi";
 import { atom } from "jotai";
 
+import { ProjectHandleWithMetadata } from "@shared/rpc/projects-rpc";
+import { RpcPromise } from "capnweb";
+import { nullthrow } from "foxact/nullthrow";
 import { projectsService } from "@/lib/app-rpc";
 import type { EditorCaretPosition, EditorSelectionSnapshot } from "./editor-caret";
 import type { WorkbenchDemoTab } from "./types";
@@ -13,6 +16,12 @@ export const projectMolecule = molecule(() => {
   // use Promise.resolve to create a real Promise.
   return Promise.resolve(projectsService.openProject(id));
 });
+
+export const resolvedProjectScope = createScope<Awaited<
+  RpcPromise<ProjectHandleWithMetadata>
+> | null>(null);
+
+export const resolvedProjectMolecule = molecule(() => nullthrow(use(resolvedProjectScope)));
 
 /** 每个已打开标签页一条作用域（value = tab id），caret 与文稿按 tab 隔离。 */
 export const editorTabScope = createScope("");
