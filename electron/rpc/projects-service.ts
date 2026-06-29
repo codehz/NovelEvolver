@@ -71,7 +71,7 @@ export class ProjectsServiceImpl extends RpcTarget implements ProjectsService {
     return this.#deps.getProjectsDb().upsertByPath(path, Date.now());
   }
 
-  async openProject(id: number): Promise<OpenProjectResult> {
+  openProject(id: number): OpenProjectResult {
     const record = this.#deps.getProjectsDb().touchById(id, Date.now());
     if (!record) {
       throw new Error(`Project with id ${id} not found`);
@@ -82,11 +82,11 @@ export class ProjectsServiceImpl extends RpcTarget implements ProjectsService {
     };
   }
 
-  async recordOpen(id: number): Promise<ProjectRecord | null> {
+  recordOpen(id: number): ProjectRecord | null {
     return this.#deps.getProjectsDb().touchById(id, Date.now());
   }
 
-  async removeRecent(id: number): Promise<boolean> {
+  removeRecent(id: number): boolean {
     return this.#deps.getProjectsDb().removeById(id);
   }
 }

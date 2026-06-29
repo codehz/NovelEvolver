@@ -1,4 +1,5 @@
 import type { ProjectListItem, ProjectRecord } from "@shared/project";
+import type { RpcTarget } from "capnweb";
 
 /** Branch info for the HEAD of a project repository. */
 export type BranchInfo = {
@@ -15,7 +16,7 @@ export type BranchInfo = {
  * the server side so that property accessors like `head` make live queries
  * against the underlying nano-git repository.
  */
-export interface ProjectHandle {
+export interface ProjectHandle extends RpcTarget {
   readonly head: BranchInfo;
 }
 
@@ -24,13 +25,13 @@ export type OpenProjectResult = {
   readonly project: ProjectListItem;
 };
 
-export interface ProjectsService {
+export interface ProjectsService extends RpcTarget {
   readonly recents: ProjectListItem[];
   openProjectDialog(): Promise<ProjectRecord | null>;
   createProjectDialog(): Promise<ProjectRecord | null>;
-  recordOpen(id: number): Promise<ProjectRecord | null>;
-  removeRecent(id: number): Promise<boolean>;
+  recordOpen(id: number): ProjectRecord | null;
+  removeRecent(id: number): boolean;
 
   /** Open a project by its database id and return its metadata plus a live RPC handle. */
-  openProject(id: number): Promise<OpenProjectResult>;
+  openProject(id: number): OpenProjectResult;
 }

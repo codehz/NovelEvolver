@@ -21,11 +21,11 @@ export class WindowServiceImpl extends RpcTarget implements WindowService {
     return this.#deps.getWindowState(this.#window);
   }
 
-  async minimize(): Promise<void> {
+  minimize(): void {
     this.#window.minimize();
   }
 
-  async toggleMaximize(): Promise<WindowState> {
+  toggleMaximize(): WindowState {
     if (this.#window.isMaximized()) {
       this.#window.unmaximize();
     } else {
@@ -35,11 +35,11 @@ export class WindowServiceImpl extends RpcTarget implements WindowService {
     return this.state;
   }
 
-  async close(): Promise<void> {
+  close(): void {
     this.#window.close();
   }
 
-  async setTitle(title: string): Promise<void> {
+  setTitle(title: string): void {
     this.#window.setTitle(title);
   }
 
@@ -49,7 +49,7 @@ export class WindowServiceImpl extends RpcTarget implements WindowService {
     });
   }
 
-  async emitStateChanged(): Promise<void> {
+  emitStateChanged(): void {
     this.#stateSubscriptions.emit(this.state);
   }
 

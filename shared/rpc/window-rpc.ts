@@ -1,10 +1,11 @@
 import type { RpcSubscriptionStream } from "@shared/rpc/stream";
 import type { WindowState } from "@shared/window";
+import type { RpcTarget } from "capnweb";
 
-export interface WindowService {
-  minimize(): Promise<void>;
-  toggleMaximize(): Promise<WindowState>;
-  close(): Promise<void>;
-  setTitle(title: string): Promise<void>;
+export interface WindowService extends RpcTarget {
+  minimize(): void;
+  toggleMaximize(): WindowState;
+  close(): void;
+  setTitle(title: string): void;
   subscribeState(): RpcSubscriptionStream<WindowState>;
 }

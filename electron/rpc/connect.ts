@@ -51,7 +51,7 @@ export class ElectronRpcServer {
         return;
       }
 
-      void record.windowService.emitStateChanged();
+      record.windowService.emitStateChanged();
     };
 
     window.on("maximize", forwardWindowState);
