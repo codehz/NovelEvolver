@@ -57,7 +57,7 @@ export function ProjectList() {
       errorMessage: "从列表移除失败",
     });
     if (removed) {
-      projects.refresh();
+      await projects.refresh();
     }
   };
 

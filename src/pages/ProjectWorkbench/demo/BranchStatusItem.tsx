@@ -19,7 +19,7 @@ export function BranchStatusItem() {
       className="flex shrink-0 items-center gap-1.5 px-2.5 hover:bg-window-button-hover"
       type="button"
       onClick={() => {
-        headName.refresh();
+        void headName.refresh();
       }}
     >
       <span aria-hidden="true" className="icon-[codicon--source-control]" />

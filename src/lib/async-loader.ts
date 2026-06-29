@@ -5,15 +5,19 @@ export type AsyncState<T> = {
   error: unknown;
   isLoading: boolean;
   isValidating: boolean;
-  refresh: () => void;
+  refresh: () => Promise<void>;
 };
 
 type Listener = () => void;
+type Deferred = {
+  promise: Promise<void>;
+  resolve: () => void;
+};
 
 export interface AsyncLoader<T> {
   getState(this: void): AsyncState<T>;
   subscribe(this: void, listener: Listener): () => void;
-  refresh(this: void): void;
+  refresh(this: void): Promise<void>;
 }
 
 /**
@@ -28,7 +32,8 @@ export function createAsyncLoader<T>(asyncFn: () => Promise<T>): AsyncLoader<T> 
   const listeners = new Set<Listener>();
   let counter = 0;
   let pending = false;
-  let shouldRefresh = false;
+  let currentRunDeferred: Deferred | undefined;
+  let queuedRunDeferred: Deferred | undefined;
 
   let state: AsyncState<T> = {
     data: undefined,
@@ -55,10 +60,21 @@ export function createAsyncLoader<T>(asyncFn: () => Promise<T>): AsyncLoader<T> 
     }
   }
 
-  async function run() {
-    if (pending) {
-      return;
-    }
+  function createDeferred(): Deferred {
+    let resolve!: () => void;
+    const promise = new Promise<void>((resolvePromise) => {
+      resolve = resolvePromise;
+    });
+    return { promise, resolve };
+  }
+
+  function startRun(deferred: Deferred) {
+    currentRunDeferred = deferred;
+    void run(deferred);
+    return deferred.promise;
+  }
+
+  async function run(deferred: Deferred) {
     pending = true;
     counter++;
     const id = counter;
@@ -87,23 +103,28 @@ export function createAsyncLoader<T>(asyncFn: () => Promise<T>): AsyncLoader<T> 
       }
     } finally {
       pending = false;
-      if (shouldRefresh) {
-        shouldRefresh = false;
-        void run();
+      if (currentRunDeferred === deferred) {
+        currentRunDeferred = undefined;
+      }
+      deferred.resolve();
+      if (queuedRunDeferred) {
+        const nextDeferred = queuedRunDeferred;
+        queuedRunDeferred = undefined;
+        void startRun(nextDeferred);
       }
     }
   }
 
   function refresh() {
     if (pending) {
-      shouldRefresh = true;
-      return;
+      queuedRunDeferred ??= createDeferred();
+      return queuedRunDeferred.promise;
     }
-    void run();
+    return startRun(createDeferred());
   }
 
   // Start immediately
-  void run();
+  void startRun(createDeferred());
 
   return { getState, subscribe, refresh };
 }
