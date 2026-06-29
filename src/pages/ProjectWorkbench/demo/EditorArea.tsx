@@ -1,6 +1,6 @@
 import { useCallback, useRef } from "react";
 import { cn } from "@/lib/cn";
-import { PlainTextEditor } from "./PlainTextEditor";
+import { PlainTextEditor, type PlainTextEditorHandle } from "./PlainTextEditor";
 import type { WorkbenchDemoTab } from "./types";
 
 const initialDocumentLines = [
@@ -13,9 +13,10 @@ const initialDocumentLines = [
 ];
 
 export function EditorArea({ tabs }: { tabs: WorkbenchDemoTab[] }) {
-  const documentLinesRef = useRef(initialDocumentLines);
-  const handleLinesChange = useCallback((next: string[]) => {
-    documentLinesRef.current = next;
+  const editorRef = useRef<PlainTextEditorHandle>(null);
+  const documentValueRef = useRef(initialDocumentLines.join("\n"));
+  const handleDocumentChange = useCallback((next: string) => {
+    documentValueRef.current = next;
   }, []);
 
   return (
@@ -59,7 +60,11 @@ export function EditorArea({ tabs }: { tabs: WorkbenchDemoTab[] }) {
         <span className="text-app-foreground">第一章.md</span>
       </div>
 
-      <PlainTextEditor lines={documentLinesRef.current} onLinesChange={handleLinesChange} />
+      <PlainTextEditor
+        ref={editorRef}
+        defaultValue={documentValueRef.current}
+        onChange={handleDocumentChange}
+      />
     </section>
   );
 }

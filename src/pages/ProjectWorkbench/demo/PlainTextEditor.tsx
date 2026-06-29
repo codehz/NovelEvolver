@@ -1,12 +1,21 @@
-import { useCallback, useEffect, useMemo, useRef, type ClipboardEvent } from "react";
+import {
+  useCallback,
+  useEffect,
+  useImperativeHandle,
+  useMemo,
+  useRef,
+  type ClipboardEvent,
+} from "react";
 import { cn } from "@/lib/cn";
 import { setEditorCaretPosition } from "./editor-caret";
 import {
   applyPlainTextPaste,
   applyPhysicalEnter,
+  joinPlainTextDocument,
   normalizeEditorDom,
   readCaretPositionFromEditor,
   readPhysicalLinesFromEditor,
+  splitPlainTextDocument,
   writePhysicalLinesToEditor,
   type PlainTextEditorLineClasses,
 } from "./plain-text-editor";
@@ -32,15 +41,22 @@ const lineContentClass = cn(
   "wrap-break-word whitespace-pre-wrap",
 );
 
-export function PlainTextEditor({
-  lines,
-  onLinesChange,
-}: {
-  lines: string[];
-  onLinesChange: (next: string[]) => void;
-}) {
+export type PlainTextEditorHandle = {
+  focus: () => void;
+  getValue: () => string;
+  setValue: (value: string) => void;
+  getCaret: () => { line: number; column: number } | null;
+};
+
+type PlainTextEditorProps = {
+  ref?: React.Ref<PlainTextEditorHandle>;
+  defaultValue?: string;
+  onChange?: (next: string) => void;
+};
+
+export function PlainTextEditor({ ref, defaultValue = "", onChange }: PlainTextEditorProps) {
   const rootRef = useRef<HTMLDivElement>(null);
-  const linesRef = useRef(lines);
+  const linesRef = useRef(splitPlainTextDocument(defaultValue));
   const mountedRef = useRef(false);
   const caretFrameRef = useRef<number | null>(null);
 
@@ -51,10 +67,6 @@ export function PlainTextEditor({
     }),
     [],
   );
-
-  useEffect(() => {
-    linesRef.current = lines;
-  }, [lines]);
 
   const syncDomFromLines = useCallback(
     (nextLines: string[]) => {
@@ -70,15 +82,9 @@ export function PlainTextEditor({
   useEffect(() => {
     if (!mountedRef.current) {
       mountedRef.current = true;
-      syncDomFromLines(lines);
-      return;
+      syncDomFromLines(linesRef.current);
     }
-    const root = rootRef.current;
-    if (!root || document.activeElement === root) {
-      return;
-    }
-    syncDomFromLines(lines);
-  }, [lines, syncDomFromLines]);
+  }, [syncDomFromLines]);
 
   const publishCaretPosition = useCallback(() => {
     const root = rootRef.current;
@@ -121,10 +127,10 @@ export function PlainTextEditor({
       next.some((line, index) => line !== linesRef.current[index]);
     if (hasChanged) {
       linesRef.current = next;
-      onLinesChange(next);
+      onChange?.(joinPlainTextDocument(next));
     }
     publishCaretPosition();
-  }, [lineClasses, onLinesChange, publishCaretPosition]);
+  }, [lineClasses, onChange, publishCaretPosition]);
 
   useEffect(() => {
     const onSelectionChange = () => {
@@ -136,6 +142,34 @@ export function PlainTextEditor({
       clearScheduledCaretPublish();
     };
   }, [clearScheduledCaretPublish, scheduleCaretPositionPublish]);
+
+  useImperativeHandle(
+    ref,
+    () => ({
+      focus: () => {
+        rootRef.current?.focus();
+      },
+      getValue: () => joinPlainTextDocument(linesRef.current),
+      setValue: (value: string) => {
+        const nextLines = splitPlainTextDocument(value);
+        linesRef.current = nextLines;
+        const root = rootRef.current;
+        if (!root) {
+          return;
+        }
+        writePhysicalLinesToEditor(root, nextLines, lineClasses);
+        publishCaretPosition();
+      },
+      getCaret: () => {
+        const root = rootRef.current;
+        if (!root) {
+          return null;
+        }
+        return readCaretPositionFromEditor(root);
+      },
+    }),
+    [lineClasses, publishCaretPosition],
+  );
 
   return (
     <div className={editorScrollClass}>
@@ -158,7 +192,7 @@ export function PlainTextEditor({
           }
           const next = applyPhysicalEnter(root, lineClasses);
           linesRef.current = next;
-          onLinesChange(next);
+          onChange?.(joinPlainTextDocument(next));
           publishCaretPosition();
         }}
         onInput={() => {
@@ -180,7 +214,7 @@ export function PlainTextEditor({
           applyPlainTextPaste(root, pasted, lineClasses);
           const next = readPhysicalLinesFromEditor(root);
           linesRef.current = next;
-          onLinesChange(next);
+          onChange?.(joinPlainTextDocument(next));
           publishCaretPosition();
         }}
       />
