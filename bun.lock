@@ -23,6 +23,7 @@
         "nano-git": "^0.7.1",
         "react": "^19.2.7",
         "react-dom": "^19.2.7",
+        "react-error-boundary": "^6.1.2",
         "tailwind-merge": "^3.6.0",
         "wouter": "^3.10.0",
       },
@@ -590,6 +591,8 @@
     "react": ["react@19.2.7", "", {}, "sha512-HNe9WslTbXmFK8o8cmwgAeJFSBvt1bPdHCVKtaaV+WlAN36mpT4hcRpwbf3fY56ar2oIXzsBpOAiIRHAdY0OlQ=="],
 
     "react-dom": ["react-dom@19.2.7", "", { "dependencies": { "scheduler": "^0.27.0" }, "peerDependencies": { "react": "^19.2.7" } }, "sha512-t0BRVXvbiE/o20Hfw669rLbMCDWtYZLvmJigy2f0MxsXF+71pxhR3xOkspmsO8h3ZlNzyibAmtCa3l4lYKk6gQ=="],
+
+    "react-error-boundary": ["react-error-boundary@6.1.2", "", { "peerDependencies": { "react": "^18.0.0 || ^19.0.0" } }, "sha512-3DpCr5HVdZ0caUjYE/kIHBEJN0mNP3ZCgf16c48uJ5TbWjorKVp+YG8W3XqlJ7vJAVNw6wNIImyPXmFydwmyng=="],
 
     "regexparam": ["regexparam@3.0.0", "", {}, "sha512-RSYAtP31mvYLkAHrOlh25pCNQ5hWnT106VukGaaFfuJrZFkGRX5GhUAdPqpSDXxOhA2c4akmRuplv1mRqnBn6Q=="],
 

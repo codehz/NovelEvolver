@@ -1,11 +1,12 @@
 import { useMolecule } from "bunshi/react";
+import { use } from "react";
 import { useQueryRequest } from "@/lib/app-query";
 import { projectMolecule } from "./molecules";
 
 const branchFallbackLabel = "无分支";
 
 export function BranchStatusItem() {
-  const project = useMolecule(projectMolecule);
+  const project = use(useMolecule(projectMolecule));
   const branchQuery = useQueryRequest(() => project.handle.head, {
     args: [],
     deps: [project],
