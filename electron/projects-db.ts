@@ -1,14 +1,18 @@
 import { DatabaseSync } from "node:sqlite";
 
-import type { ProjectRecord } from "@shared/project";
-
 type ProjectRow = {
   id: number;
   path: string;
   last_opened_at: number;
 };
 
-function rowToRecord(row: ProjectRow): ProjectRecord {
+type ProjectDbRecord = {
+  id: number;
+  path: string;
+  lastOpenedAt: number;
+};
+
+function rowToRecord(row: ProjectRow): ProjectDbRecord {
   return {
     id: row.id,
     path: row.path,
@@ -30,7 +34,7 @@ export class ProjectsDatabase {
     `);
   }
 
-  list(): ProjectRecord[] {
+  list(): ProjectDbRecord[] {
     const rows = this.#db
       .prepare(`SELECT id, path, last_opened_at FROM projects ORDER BY last_opened_at DESC`)
       .all() as ProjectRow[];
@@ -38,7 +42,7 @@ export class ProjectsDatabase {
     return rows.map(rowToRecord);
   }
 
-  getById(id: number): ProjectRecord | null {
+  getById(id: number): ProjectDbRecord | null {
     const row = this.#db
       .prepare(`SELECT id, path, last_opened_at FROM projects WHERE id = ?`)
       .get(id) as ProjectRow | undefined;
@@ -46,7 +50,7 @@ export class ProjectsDatabase {
     return row ? rowToRecord(row) : null;
   }
 
-  upsertByPath(absolutePath: string, lastOpenedAt: number): ProjectRecord {
+  upsertByPath(absolutePath: string, lastOpenedAt: number): ProjectDbRecord {
     this.#db
       .prepare(
         `
@@ -68,7 +72,7 @@ export class ProjectsDatabase {
     return rowToRecord(row);
   }
 
-  touchById(id: number, lastOpenedAt: number): ProjectRecord | null {
+  touchById(id: number, lastOpenedAt: number): ProjectDbRecord | null {
     this.#db.prepare(`UPDATE projects SET last_opened_at = ? WHERE id = ?`).run(lastOpenedAt, id);
 
     const row = this.#db

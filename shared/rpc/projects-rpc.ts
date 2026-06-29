@@ -1,4 +1,4 @@
-import type { ProjectListItem, ProjectRecord } from "@shared/project";
+import type { ProjectMetadata } from "@shared/project";
 import type { RpcTarget } from "capnweb";
 
 /** Branch info for the HEAD of a project repository. */
@@ -22,14 +22,14 @@ export interface ProjectHandle extends RpcTarget {
 
 export type ProjectHandleWithMetadata = {
   readonly handle: ProjectHandle;
-  readonly metadata: ProjectListItem;
+  readonly metadata: ProjectMetadata;
 };
 
 export interface ProjectsService extends RpcTarget {
-  readonly recents: ProjectListItem[];
-  openProjectDialog(): Promise<ProjectRecord | null>;
-  createProjectDialog(): Promise<ProjectRecord | null>;
-  recordOpen(id: number): ProjectRecord | null;
+  readonly recents: ProjectMetadata[];
+  openProjectDialog(): Promise<ProjectMetadata | null>;
+  createProjectDialog(): Promise<ProjectMetadata | null>;
+  recordOpen(id: number): ProjectMetadata | null;
   removeRecent(id: number): boolean;
 
   /** Open a project by its database id and return its metadata plus a live RPC handle. */

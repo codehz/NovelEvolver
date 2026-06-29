@@ -4,9 +4,9 @@ import { RpcTarget } from "capnweb";
 import { dialog, type BrowserWindow } from "electron";
 import { createSqliteRepository } from "nano-git/repository/sqlite";
 
-import type { ProjectListItem, ProjectRecord } from "@shared/project";
+import type { ProjectMetadata } from "@shared/project";
 import type { ProjectHandleWithMetadata, ProjectsService } from "@shared/rpc/projects-rpc";
-import { projectWithDisplayPath } from "../home-path";
+import { toProjectMetadata } from "../home-path";
 import type { RpcMainDeps } from "./deps";
 import { ProjectHandleImpl } from "./project-handle";
 
@@ -20,14 +20,14 @@ export class ProjectsServiceImpl extends RpcTarget implements ProjectsService {
     this.#deps = deps;
   }
 
-  get recents(): ProjectListItem[] {
+  get recents(): ProjectMetadata[] {
     return this.#deps
       .getProjectsDb()
       .list()
-      .map((record) => projectWithDisplayPath(record));
+      .map((record) => toProjectMetadata(record));
   }
 
-  async openProjectDialog(): Promise<ProjectRecord | null> {
+  async openProjectDialog(): Promise<ProjectMetadata | null> {
     const result = await dialog.showOpenDialog(this.#window, {
       properties: ["openFile"],
       title: "打开项目文件",
@@ -43,10 +43,10 @@ export class ProjectsServiceImpl extends RpcTarget implements ProjectsService {
       throw new Error("请选择 .npk 项目文件");
     }
 
-    return this.#deps.getProjectsDb().upsertByPath(path, Date.now());
+    return toProjectMetadata(this.#deps.getProjectsDb().upsertByPath(path, Date.now()));
   }
 
-  async createProjectDialog(): Promise<ProjectRecord | null> {
+  async createProjectDialog(): Promise<ProjectMetadata | null> {
     const result = await dialog.showSaveDialog(this.#window, {
       title: "创建项目",
       filters: [{ name: "NovelEvolver 项目", extensions: ["npk"] }],
@@ -68,7 +68,7 @@ export class ProjectsServiceImpl extends RpcTarget implements ProjectsService {
 
     using _repo = createSqliteRepository(path);
 
-    return this.#deps.getProjectsDb().upsertByPath(path, Date.now());
+    return toProjectMetadata(this.#deps.getProjectsDb().upsertByPath(path, Date.now()));
   }
 
   openProject(id: number): ProjectHandleWithMetadata {
@@ -78,12 +78,13 @@ export class ProjectsServiceImpl extends RpcTarget implements ProjectsService {
     }
     return {
       handle: new ProjectHandleImpl(record.path),
-      metadata: projectWithDisplayPath(record),
+      metadata: toProjectMetadata(record),
     };
   }
 
-  recordOpen(id: number): ProjectRecord | null {
-    return this.#deps.getProjectsDb().touchById(id, Date.now());
+  recordOpen(id: number): ProjectMetadata | null {
+    const record = this.#deps.getProjectsDb().touchById(id, Date.now());
+    return record ? toProjectMetadata(record) : null;
   }
 
   removeRecent(id: number): boolean {

@@ -1,6 +1,6 @@
 import { useLocation } from "wouter";
 
-import type { ProjectListItem } from "@shared/project";
+import type { ProjectMetadata } from "@shared/project";
 import { useAutoQueryRequest, useActionState } from "@/lib/app-query";
 import { projectsService } from "@/lib/app-rpc";
 import { cn } from "@/lib/cn";
@@ -22,7 +22,7 @@ export function ProjectList() {
   const [, navigate] = useLocation();
   const projectsQuery = useAutoQueryRequest(() => projectsService.recents, {
     errorMessage: "加载项目列表失败",
-    initialData: [] as ProjectListItem[],
+    initialData: [] as ProjectMetadata[],
   });
   const actionState = useActionState();
 
