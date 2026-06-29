@@ -9,7 +9,6 @@ import {
 
 type RequestErrorMessage = string | ((error: unknown) => string);
 type QueryArgs = readonly [...unknown[]];
-type RequestArgs = readonly [...unknown[]];
 const emptyDependencyList: DependencyList = [];
 
 type QueryStateBase<TData> = {
@@ -22,20 +21,28 @@ type QueryStateBase<TData> = {
   readonly setError: (message: string | null) => void;
 };
 
-type RequestErrorState = Pick<QueryStateBase<unknown>, "clearError" | "error">;
-
 export type RequestRunResult<TData> =
   | {
       readonly data: TData;
       readonly ok: true;
     }
   | {
+      readonly error: string | null;
       readonly ok: false;
     };
 
-export type ActionRequestState<TData, TArgs extends RequestArgs> = QueryStateBase<TData> & {
+export type ActionState = {
+  readonly clearError: () => void;
+  readonly error: string | null;
   readonly pending: boolean;
-  readonly run: (...args: TArgs) => Promise<RequestRunResult<TData>>;
+  readonly setError: (message: string | null) => void;
+  readonly wrap: <TData>(
+    action: (() => Promise<TData> | TData) | Promise<TData> | TData,
+    options?: {
+      readonly errorMessage?: RequestErrorMessage;
+      readonly onError?: (error: unknown, message: string) => void | Promise<void>;
+    },
+  ) => Promise<TData>;
 };
 
 export type QueryRequestState<TData> = QueryStateBase<TData> & {
@@ -56,18 +63,13 @@ type QueryRequestOptions<TData, TArgs extends QueryArgs> = QueryRequestOptionsBa
   readonly args: TArgs | SkipToken;
 };
 
-type ActionRequestOptions<TData> = {
-  readonly errorMessage?: RequestErrorMessage;
-  readonly initialData?: TData;
-};
-
 type AsyncStateOptions<TData> = {
   readonly clearDataOnLoad?: boolean;
   readonly errorMessage?: RequestErrorMessage;
   readonly initialData?: TData;
 };
 
-type AsyncStateController<TData, TArgs extends RequestArgs> = QueryStateBase<TData> & {
+type AsyncStateController<TData, TArgs extends QueryArgs> = QueryStateBase<TData> & {
   readonly cancel: () => void;
   readonly execute: (...args: TArgs) => Promise<RequestRunResult<TData>>;
 };
@@ -75,6 +77,8 @@ type AsyncStateController<TData, TArgs extends RequestArgs> = QueryStateBase<TDa
 export type SkipToken = typeof skipToken;
 
 export const skipToken = Symbol("app-query.skip-token");
+
+const suspendedPromise: Promise<never> = new Promise(() => {});
 
 function resolveRequestError(error: unknown, fallback?: RequestErrorMessage): string {
   if (typeof fallback === "function") {
@@ -86,7 +90,7 @@ function resolveRequestError(error: unknown, fallback?: RequestErrorMessage): st
   return fallback ?? "请求失败";
 }
 
-function useAsyncState<TData, TArgs extends RequestArgs>(
+function useAsyncState<TData, TArgs extends QueryArgs>(
   request: (...args: TArgs) => Promise<TData> | TData,
   { clearDataOnLoad = false, errorMessage, initialData }: AsyncStateOptions<TData> = {},
 ): AsyncStateController<TData, TArgs> {
@@ -126,11 +130,12 @@ function useAsyncState<TData, TArgs extends RequestArgs>(
       return { data: result, ok: true };
     } catch (requestError) {
       if (!mountedRef.current || requestToken !== requestTokenRef.current) {
-        return { ok: false };
+        return { error: null, ok: false };
       }
-      setError(resolveRequestError(requestError, errorMessage));
+      const resolvedError = resolveRequestError(requestError, errorMessage);
+      setError(resolvedError);
       setHasLoaded(true);
-      return { ok: false };
+      return { error: resolvedError, ok: false };
     } finally {
       if (mountedRef.current && requestToken === requestTokenRef.current) {
         setLoading(false);
@@ -197,7 +202,7 @@ export function useQueryRequest<TData, TArgs extends QueryArgs>(
 
   const refresh = useCallback(() => {
     if (!resolvedArgs) {
-      return Promise.resolve({ ok: false } as const);
+      return Promise.resolve({ error: null, ok: false } as const);
     }
     return state.execute(...resolvedArgs);
   }, [resolvedArgs, state.execute]);
@@ -227,38 +232,49 @@ export function useAutoQueryRequest<TData>(
   });
 }
 
-export function useActionRequest<TData, TArgs extends RequestArgs>(
-  request: (...args: TArgs) => Promise<TData> | TData,
-  options: ActionRequestOptions<TData> = {},
-): ActionRequestState<TData, TArgs> {
-  const state = useAsyncState(request, options);
+export function useActionState(): ActionState {
+  const [pendingCount, setPendingCount] = useState(0);
+  const [error, setError] = useState<string | null>(null);
+  const pending = pendingCount > 0;
 
-  const run = useCallback(
-    (...args: TArgs) => {
-      return state.execute(...args);
+  const clearError = useCallback(() => {
+    setError(null);
+  }, []);
+
+  const wrap = useCallback(
+    async <TData>(
+      action: (() => Promise<TData> | TData) | Promise<TData> | TData,
+      options?: {
+        readonly errorMessage?: RequestErrorMessage;
+        readonly onError?: (error: unknown, message: string) => void | Promise<void>;
+      },
+    ): Promise<TData> => {
+      setPendingCount((count) => count + 1);
+      setError(null);
+
+      try {
+        const result =
+          typeof action === "function"
+            ? await (action as () => Promise<TData> | TData)()
+            : await action;
+        return result;
+      } catch (actionError) {
+        const resolvedError = resolveRequestError(actionError, options?.errorMessage);
+        setError(resolvedError);
+        await options?.onError?.(actionError, resolvedError);
+        return suspendedPromise;
+      } finally {
+        setPendingCount((count) => Math.max(0, count - 1));
+      }
     },
-    [state.execute],
+    [],
   );
 
   return {
-    clearError: state.clearError,
-    data: state.data,
-    error: state.error,
-    hasLoaded: state.hasLoaded,
-    loading: state.loading,
-    pending: state.loading,
-    reset: state.reset,
-    run,
-    setError: state.setError,
+    clearError,
+    error,
+    pending,
+    setError,
+    wrap,
   };
-}
-
-export function pickRequestError(requests: readonly RequestErrorState[]): string | null {
-  return requests.find((request) => request.error)?.error ?? null;
-}
-
-export function clearRequestErrors(requests: readonly RequestErrorState[]): void {
-  requests.forEach((request) => {
-    request.clearError();
-  });
 }

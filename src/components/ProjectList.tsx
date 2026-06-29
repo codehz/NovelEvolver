@@ -1,13 +1,7 @@
-import { useCallback } from "react";
 import { useLocation } from "wouter";
 
 import type { ProjectListItem } from "@shared/project";
-import {
-  clearRequestErrors,
-  pickRequestError,
-  useActionRequest,
-  useAutoQueryRequest,
-} from "@/lib/app-query";
+import { useAutoQueryRequest, useActionState } from "@/lib/app-query";
 import { projectsService } from "@/lib/app-rpc";
 import { cn } from "@/lib/cn";
 import { projectDisplayName } from "@/lib/project-display-name";
@@ -30,80 +24,50 @@ export function ProjectList() {
     errorMessage: "加载项目列表失败",
     initialData: [] as ProjectListItem[],
   });
-  const createProjectAction = useActionRequest(() => projectsService.createProjectDialog(), {
-    errorMessage: "创建项目失败",
-  });
-  const openProjectDialogAction = useActionRequest(() => projectsService.openProjectDialog(), {
-    errorMessage: "打开项目文件失败",
-  });
-  const openProjectAction = useActionRequest((id: number) => projectsService.recordOpen(id), {
-    errorMessage: "打开项目失败",
-  });
-  const removeProjectAction = useActionRequest((id: number) => projectsService.removeRecent(id), {
-    errorMessage: "从列表移除失败",
-  });
+  const actionState = useActionState();
 
   const projects = projectsQuery.data ?? [];
   const loading = projectsQuery.initialLoading;
-  const dialogBusy = createProjectAction.pending || openProjectDialogAction.pending;
-  const error = pickRequestError([
-    createProjectAction,
-    openProjectDialogAction,
-    openProjectAction,
-    removeProjectAction,
-    projectsQuery,
-  ]);
-
-  const clearError = useCallback(() => {
-    clearRequestErrors([
-      createProjectAction,
-      openProjectDialogAction,
-      openProjectAction,
-      removeProjectAction,
-      projectsQuery,
-    ]);
-  }, [
-    createProjectAction,
-    openProjectAction,
-    openProjectDialogAction,
-    projectsQuery,
-    removeProjectAction,
-  ]);
 
   const handleCreateDialog = async () => {
-    clearError();
-    const result = await createProjectAction.run();
-    if (result.ok && result.data) {
-      navigate(`/project/${result.data.id}`);
+    actionState.clearError();
+    const project = await actionState.wrap(() => projectsService.createProjectDialog(), {
+      errorMessage: "创建项目失败",
+    });
+    if (project) {
+      navigate(`/project/${project.id}`);
     }
   };
 
   const handleOpenDialog = async () => {
-    clearError();
-    const result = await openProjectDialogAction.run();
-    if (result.ok && result.data) {
-      navigate(`/project/${result.data.id}`);
+    actionState.clearError();
+    const project = await actionState.wrap(() => projectsService.openProjectDialog(), {
+      errorMessage: "打开项目文件失败",
+    });
+    if (project) {
+      navigate(`/project/${project.id}`);
     }
   };
 
   const handleOpenProject = async (id: number) => {
-    clearError();
-    const result = await openProjectAction.run(id);
-    if (!result.ok) {
-      return;
-    }
-    if (!result.data) {
-      openProjectAction.setError("未找到该项目");
+    actionState.clearError();
+    const project = await actionState.wrap(() => projectsService.recordOpen(id), {
+      errorMessage: "打开项目失败",
+    });
+    if (!project) {
+      actionState.setError("未找到该项目");
       await projectsQuery.refresh();
       return;
     }
-    navigate(`/project/${result.data.id}`);
+    navigate(`/project/${project.id}`);
   };
 
   const handleRemoveProject = async (id: number) => {
-    clearError();
-    const result = await removeProjectAction.run(id);
-    if (result.ok && result.data) {
+    actionState.clearError();
+    const removed = await actionState.wrap(() => projectsService.removeRecent(id), {
+      errorMessage: "从列表移除失败",
+    });
+    if (removed) {
       await projectsQuery.refresh();
     }
   };
@@ -119,33 +83,39 @@ export function ProjectList() {
               "rounded-md border border-titlebar-border bg-titlebar-background px-3 py-1.5 text-sm font-medium text-app-foreground",
               "hover:bg-ctp-surface0/40 disabled:opacity-50",
             )}
-            disabled={dialogBusy}
+            disabled={actionState.pending}
             type="button"
             onClick={() => {
               void handleCreateDialog();
             }}
           >
-            {createProjectAction.pending ? "创建中…" : "新建项目"}
+            {actionState.pending ? "创建中…" : "新建项目"}
           </button>
           <button
             className={cn(
               "rounded-md bg-badge-background px-3 py-1.5 text-sm font-medium text-badge-foreground",
               "hover:opacity-90 disabled:opacity-50",
             )}
-            disabled={dialogBusy}
+            disabled={actionState.pending}
             type="button"
             onClick={() => {
               void handleOpenDialog();
             }}
           >
-            {openProjectDialogAction.pending ? "选择中…" : "打开项目"}
+            {actionState.pending ? "处理中…" : "打开项目"}
           </button>
         </div>
       </div>
 
-      {error ? (
+      {projectsQuery.error ? (
         <p className="text-sm text-ctp-red" role="alert">
-          {error}
+          {projectsQuery.error}
+        </p>
+      ) : null}
+
+      {actionState.error ? (
+        <p className="text-sm text-ctp-red" role="alert">
+          {actionState.error}
         </p>
       ) : null}
 
