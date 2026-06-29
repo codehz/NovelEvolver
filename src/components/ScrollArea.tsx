@@ -21,8 +21,6 @@ const scrollAreaViewportClass = cn(
 
 const scrollAreaContentClass = cn("relative");
 
-const scrollAreaContentGutterClass = cn("pr-workbench-scrollbar");
-
 /** Pins the scrollbar rail to the scrollport while keeping it inside the scrollable viewport (wheel works over the track). */
 const scrollAreaStickyRailClass = cn("pointer-events-none sticky top-0 z-10 h-0 w-full");
 
@@ -75,7 +73,6 @@ export function ScrollArea({
   style,
   children,
   fill,
-  reserveScrollbarGutter,
 }: {
   id?: string;
   className?: string;
@@ -83,8 +80,6 @@ export function ScrollArea({
   children: ReactNode;
   /** When true, participate in flex column growth (sidebar section body). */
   fill?: boolean;
-  /** Reserve right padding matching the custom scrollbar width so content is not covered. */
-  reserveScrollbarGutter?: boolean;
 }) {
   const viewportRef = useRef<HTMLDivElement>(null);
   const hideTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -247,12 +242,7 @@ export function ScrollArea({
       onMouseLeave={onAreaMouseLeave}
     >
       <div ref={viewportRef} className={scrollAreaViewportClass} onScroll={onViewportScroll}>
-        <div
-          className={cn(
-            scrollAreaContentClass,
-            reserveScrollbarGutter && scrollAreaContentGutterClass,
-          )}
-        >
+        <div className={scrollAreaContentClass}>
           {thumb ? (
             <div aria-hidden="true" className={scrollAreaStickyRailClass}>
               <div

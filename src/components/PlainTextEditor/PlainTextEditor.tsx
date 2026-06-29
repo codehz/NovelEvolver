@@ -239,7 +239,7 @@ export function PlainTextEditor({
   );
 
   return (
-    <ScrollArea className={editorRootClass} fill reserveScrollbarGutter>
+    <ScrollArea className={editorRootClass} fill>
       <div
         ref={rootRef}
         className={editorSurfaceClass}
