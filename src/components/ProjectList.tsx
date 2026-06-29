@@ -51,15 +51,7 @@ export function ProjectList() {
 
   const handleOpenProject = async (id: number) => {
     actionState.clearError();
-    const project = await actionState.wrap(() => projectsService.recordOpen(id), {
-      errorMessage: "打开项目失败",
-    });
-    if (!project) {
-      actionState.setError("未找到该项目");
-      await projectsQuery.refresh();
-      return;
-    }
-    navigate(`/project/${project.id}`);
+    navigate(`/project/${id}`);
   };
 
   const handleRemoveProject = async (id: number) => {

@@ -5,7 +5,7 @@ import { dialog, type BrowserWindow } from "electron";
 import { createSqliteRepository } from "nano-git/repository/sqlite";
 
 import type { ProjectListItem, ProjectRecord } from "@shared/project";
-import type { ProjectHandle, ProjectsService } from "@shared/rpc/projects-rpc";
+import type { OpenProjectResult, ProjectsService } from "@shared/rpc/projects-rpc";
 import { projectWithDisplayPath } from "../home-path";
 import type { RpcMainDeps } from "./deps";
 import { ProjectHandleImpl } from "./project-handle";
@@ -25,11 +25,6 @@ export class ProjectsServiceImpl extends RpcTarget implements ProjectsService {
       .getProjectsDb()
       .list()
       .map((record) => projectWithDisplayPath(record));
-  }
-
-  async getRecent(id: number): Promise<ProjectListItem | null> {
-    const record = this.#deps.getProjectsDb().getById(id);
-    return record ? projectWithDisplayPath(record) : null;
   }
 
   async openProjectDialog(): Promise<ProjectRecord | null> {
@@ -76,12 +71,15 @@ export class ProjectsServiceImpl extends RpcTarget implements ProjectsService {
     return this.#deps.getProjectsDb().upsertByPath(path, Date.now());
   }
 
-  async openProject(id: number): Promise<ProjectHandle> {
-    const record = this.#deps.getProjectsDb().getById(id);
+  async openProject(id: number): Promise<OpenProjectResult> {
+    const record = this.#deps.getProjectsDb().touchById(id, Date.now());
     if (!record) {
       throw new Error(`Project with id ${id} not found`);
     }
-    return new ProjectHandleImpl(record.path);
+    return {
+      handle: new ProjectHandleImpl(record.path),
+      project: projectWithDisplayPath(record),
+    };
   }
 
   async recordOpen(id: number): Promise<ProjectRecord | null> {

@@ -14,7 +14,7 @@ export function ProjectWorkbench() {
   const { projectId } = useParams<{ projectId: string }>();
   const parsedId = projectId ? Number.parseInt(projectId, 10) : Number.NaN;
   const validId = Number.isFinite(parsedId) && parsedId > 0;
-  const projectQuery = useQueryRequest((id: number) => projectsService.getRecent(id), {
+  const projectQuery = useQueryRequest((id: number) => projectsService.openProject(id), {
     args: validId ? [parsedId] : skipToken,
     clearDataOnLoad: true,
     deps: [parsedId],
@@ -22,7 +22,8 @@ export function ProjectWorkbench() {
     initialData: null,
   });
 
-  const project = projectQuery.data ?? null;
+  const openProjectResult = projectQuery.data ?? null;
+  const project = openProjectResult?.project ?? null;
   const loading = validId ? projectQuery.loading : false;
   const error = !validId
     ? "无效的项目 ID"
