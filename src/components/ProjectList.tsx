@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import { useLocation } from "wouter";
 
 import type { ProjectListItem } from "@shared/project";
+import { getProjectsService } from "@/lib/app-rpc";
 import { cn } from "@/lib/cn";
 import { projectDisplayName } from "@/lib/project-display-name";
 import { TitleBarTitle } from "./TitleBarTitle";
@@ -29,7 +30,8 @@ export function ProjectList() {
   const refresh = useCallback(async () => {
     setError(null);
     try {
-      const list = await window.invokeIpc("projects:list");
+      const projectsService = await getProjectsService();
+      const list = await projectsService.listRecents();
       setProjects(list);
     } catch (err) {
       setError(err instanceof Error ? err.message : "加载项目列表失败");
@@ -46,7 +48,8 @@ export function ProjectList() {
     setCreating(true);
     setError(null);
     try {
-      const project = await window.invokeIpc("projects:create-dialog");
+      const projectsService = await getProjectsService();
+      const project = await projectsService.createProjectDialog();
       if (project) {
         navigate(`/project/${project.id}`);
       }
@@ -61,7 +64,8 @@ export function ProjectList() {
     setOpening(true);
     setError(null);
     try {
-      const project = await window.invokeIpc("projects:open-dialog");
+      const projectsService = await getProjectsService();
+      const project = await projectsService.openProjectDialog();
       if (project) {
         navigate(`/project/${project.id}`);
       }
@@ -75,7 +79,8 @@ export function ProjectList() {
   const handleOpenProject = async (id: number) => {
     setError(null);
     try {
-      const record = await window.invokeIpc("projects:record-open", id);
+      const projectsService = await getProjectsService();
+      const record = await projectsService.recordOpen(id);
       if (!record) {
         setError("未找到该项目");
         await refresh();
@@ -90,7 +95,8 @@ export function ProjectList() {
   const handleRemoveProject = async (id: number) => {
     setError(null);
     try {
-      await window.invokeIpc("projects:remove", id);
+      const projectsService = await getProjectsService();
+      await projectsService.removeRecent(id);
       await refresh();
     } catch (err) {
       setError(err instanceof Error ? err.message : "从列表移除失败");

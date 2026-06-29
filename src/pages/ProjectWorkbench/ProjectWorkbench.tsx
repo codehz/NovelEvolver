@@ -5,6 +5,7 @@ import { Link, useParams } from "wouter";
 import type { ProjectListItem } from "@shared/project";
 import { TitleBarTitle } from "@/components/TitleBarTitle";
 import { WorkbenchLayout } from "@/components/workbench";
+import { getProjectsService } from "@/lib/app-rpc";
 import { cn } from "@/lib/cn";
 import { projectDisplayName } from "@/lib/project-display-name";
 import { buildWorkbenchDemoSlots } from "./demo/workbench-demo";
@@ -30,8 +31,8 @@ export function ProjectWorkbench() {
     setLoading(true);
     setError(null);
 
-    void window
-      .invokeIpc("projects:get", parsedId)
+    void getProjectsService()
+      .then((projectsService) => projectsService.getRecent(parsedId))
       .then((record) => {
         if (cancelled) {
           return;

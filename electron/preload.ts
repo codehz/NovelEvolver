@@ -1,22 +1,42 @@
 import { contextBridge, ipcRenderer } from "electron";
 
-import type { AppIpcEventMap, AppIpcMethodMap } from "@shared/ipc/app-maps";
-import type { AppInvokeIpc, AppOnIpcEvent } from "@shared/ipc/renderer";
+import type { AppRpcTransportBridge } from "@shared/rpc/bridge";
+import {
+  APP_RPC_CONNECT_CHANNEL,
+  APP_RPC_DISCONNECT_CHANNEL,
+  APP_RPC_MESSAGE_CHANNEL,
+  type AppRpcFrame,
+} from "@shared/rpc/transport";
+import { WindowStateListener } from "@shared/rpc/window-rpc";
 
-const invokeIpc: AppInvokeIpc = (channel, ...args) =>
-  ipcRenderer.invoke(channel as string, ...args) as ReturnType<AppIpcMethodMap[typeof channel]>;
+const appRpcBridge: AppRpcTransportBridge = {
+  connect: () => ipcRenderer.invoke(APP_RPC_CONNECT_CHANNEL),
+  send: (frame) => ipcRenderer.invoke(APP_RPC_MESSAGE_CHANNEL, frame),
+  disconnect: (frame) => ipcRenderer.invoke(APP_RPC_DISCONNECT_CHANNEL, frame),
+  onMessage: (callback) => {
+    const handleMessage = (_event: Electron.IpcRendererEvent, frame: AppRpcFrame) => {
+      callback(frame);
+    };
 
-const onIpcEvent: AppOnIpcEvent = (channel, callback) => {
-  const listener = (_event: Electron.IpcRendererEvent, payload: AppIpcEventMap[typeof channel]) => {
-    callback(payload);
-  };
+    const handleDisconnect = (_event: Electron.IpcRendererEvent, frame: AppRpcFrame) => {
+      callback(frame);
+    };
 
-  ipcRenderer.on(channel as string, listener);
+    ipcRenderer.on(APP_RPC_MESSAGE_CHANNEL, handleMessage);
+    ipcRenderer.on(APP_RPC_DISCONNECT_CHANNEL, handleDisconnect);
 
-  return () => {
-    ipcRenderer.off(channel as string, listener);
-  };
+    return () => {
+      ipcRenderer.off(APP_RPC_MESSAGE_CHANNEL, handleMessage);
+      ipcRenderer.off(APP_RPC_DISCONNECT_CHANNEL, handleDisconnect);
+    };
+  },
 };
 
-contextBridge.exposeInMainWorld("invokeIpc", invokeIpc);
-contextBridge.exposeInMainWorld("onIpcEvent", onIpcEvent);
+class PreloadWindowStateListener extends WindowStateListener {
+  override onStateChanged(): void | Promise<void> {
+    return undefined;
+  }
+}
+
+contextBridge.exposeInMainWorld("appRpcBridge", appRpcBridge);
+contextBridge.exposeInMainWorld("StateListenerBase", PreloadWindowStateListener);

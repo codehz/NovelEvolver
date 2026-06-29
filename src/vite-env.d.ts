@@ -1,11 +1,14 @@
 /// <reference types="vite/client" />
 
-import type { AppInvokeIpc, AppOnIpcEvent } from "@shared/ipc/renderer";
+import type { AppRpcTransportBridge } from "@shared/rpc/bridge";
+import type { WindowStateListener } from "@shared/rpc/window-rpc";
 
 declare global {
   interface Window {
-    invokeIpc: AppInvokeIpc;
-    onIpcEvent: AppOnIpcEvent;
+    appRpcBridge: AppRpcTransportBridge;
+    StateListenerBase: {
+      new (): WindowStateListener & Disposable;
+    };
   }
 }
 

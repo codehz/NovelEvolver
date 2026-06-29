@@ -1,6 +1,7 @@
 import { useEffect, useState, type ReactNode } from "react";
 
 import type { WindowState } from "@shared/window";
+import { getWindowService } from "@/lib/app-rpc";
 import { cn } from "@/lib/cn";
 import { TitleBarActionsPortalTarget, TitleBarPortalTarget } from "@/lib/titlebar-portal";
 
@@ -70,19 +71,45 @@ export function WindowFrame({ children }: { children: ReactNode }) {
   const [windowState, setWindowState] = useState<WindowState>(fallbackWindowState);
 
   useEffect(() => {
-    window
-      .invokeIpc("window:get-state")
-      .then(setWindowState)
+    let disposed = false;
+    let unsubscribe: (() => void) | null = null;
+
+    class ListenerImpl extends window.StateListenerBase {
+      override onStateChanged(state: WindowState): void {
+        if (!disposed) {
+          setWindowState(state);
+        }
+      }
+    }
+
+    const listener = new ListenerImpl();
+
+    void getWindowService()
+      .then(async (windowService) => {
+        await windowService
+          .getState()
+          .then(setWindowState)
+          .catch(() => {
+            setWindowState(fallbackWindowState);
+          });
+
+        const subscription = await windowService.subscribeState(listener);
+        unsubscribe = () => {
+          void subscription.unsubscribe().finally(() => {
+            subscription[Symbol.dispose]();
+          });
+        };
+      })
       .catch(() => {
-        setWindowState(fallbackWindowState);
+        if (!disposed) {
+          setWindowState(fallbackWindowState);
+        }
       });
 
-    const disposeWindowStateListener = window.onIpcEvent("window:state-changed", (state) => {
-      setWindowState(state);
-    });
-
     return () => {
-      disposeWindowStateListener();
+      disposed = true;
+      unsubscribe?.();
+      listener[Symbol.dispose]?.();
     };
   }, []);
 
@@ -126,13 +153,15 @@ export function WindowFrame({ children }: { children: ReactNode }) {
               <WindowControls
                 isMaximized={windowState.isMaximized}
                 onMinimize={() => {
-                  void window.invokeIpc("window:minimize");
+                  void getWindowService().then((windowService) => windowService.minimize());
                 }}
                 onToggleMaximize={() => {
-                  void window.invokeIpc("window:toggle-maximize").then(setWindowState);
+                  void getWindowService()
+                    .then((windowService) => windowService.toggleMaximize())
+                    .then(setWindowState);
                 }}
                 onClose={() => {
-                  void window.invokeIpc("window:close");
+                  void getWindowService().then((windowService) => windowService.close());
                 }}
               />
             </div>

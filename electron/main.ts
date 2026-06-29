@@ -1,12 +1,13 @@
 import { join } from "node:path";
 import { app, BrowserWindow, ipcMain } from "electron";
 
-import { createAppIpcMethodHandlers, registerIpcMethods, sendWindowState } from "./ipc";
 import { ProjectsDatabase } from "./projects-db";
+import { ElectronRpcServer } from "./rpc/connect";
 
 const isDev = !app.isPackaged;
 
 let projectsDb: ProjectsDatabase | null = null;
+let rpcServer: ElectronRpcServer | null = null;
 
 function getProjectsDb(): ProjectsDatabase {
   if (!projectsDb) {
@@ -32,22 +33,7 @@ function createWindow() {
       enableBlinkFeatures: "OverlayScrollbars",
     },
   });
-
-  window.on("maximize", () => {
-    sendWindowState(window);
-  });
-
-  window.on("unmaximize", () => {
-    sendWindowState(window);
-  });
-
-  window.on("focus", () => {
-    sendWindowState(window);
-  });
-
-  window.on("blur", () => {
-    sendWindowState(window);
-  });
+  rpcServer?.attachWindow(window);
 
   if (isDev) {
     void window.loadURL("http://localhost:5173");
@@ -60,8 +46,15 @@ function createWindow() {
 void app.whenReady().then(() => {
   const dbPath = join(app.getPath("userData"), "projects.db");
   projectsDb = new ProjectsDatabase(dbPath);
-
-  registerIpcMethods(ipcMain, createAppIpcMethodHandlers({ getProjectsDb }));
+  rpcServer = new ElectronRpcServer({
+    getProjectsDb,
+    getWindowState: (window) => ({
+      isFocused: window.isFocused(),
+      isMaximized: window.isMaximized(),
+      platform: process.platform,
+    }),
+  });
+  rpcServer.register(ipcMain);
 
   createWindow();
 
@@ -81,4 +74,5 @@ app.on("window-all-closed", () => {
 app.on("will-quit", () => {
   projectsDb?.close();
   projectsDb = null;
+  rpcServer = null;
 });

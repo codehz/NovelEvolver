@@ -1,5 +1,6 @@
 import { useEffect, type ReactNode } from "react";
 
+import { getWindowService } from "@/lib/app-rpc";
 import { TitleBarPortalContent } from "@/lib/titlebar-portal";
 
 export const defaultWindowTitle = "NovelEvolver";
@@ -16,7 +17,7 @@ export function TitleBarTitle({ children }: { children: ReactNode }) {
   const nativeTitle = formatNativeWindowTitle(label);
 
   useEffect(() => {
-    void window.invokeIpc("window:set-title", nativeTitle);
+    void getWindowService().then((windowService) => windowService.setTitle(nativeTitle));
   }, [nativeTitle]);
 
   return <TitleBarPortalContent>{children}</TitleBarPortalContent>;
