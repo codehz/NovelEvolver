@@ -25,6 +25,17 @@ Two path aliases are configured in both `tsconfig.json` (`compilerOptions.paths`
   4. `createAppIpcMethodHandlers` spreads namespace handlers and uses `satisfies IpcMainMethodHandlers<AppIpcMethodMap>` so **an unmerged channel fails typecheck**.
   5. Keep `UncategorizedAppIpcMethodChannels` in `app-maps.ts` as `never` — if you add a channel outside existing prefixes, add a new prefix map + handler file (or extend the partition types); otherwise the partition assertion in `method-handlers.ts` fails.
 
+### RPC service type conventions
+
+- Shared RPC contracts live in `shared/rpc/`. Keep service/handle interfaces there, and keep Electron implementations in `electron/rpc/`.
+- Only interfaces representing a live remote object should `extends RpcTarget`. In the current design that includes the root object `AppRpcRoot`, service objects like `ProjectsService` / `WindowService`, and nested live handles like `ProjectHandle`.
+- Plain value objects must **not** `extends RpcTarget`. Use `type`/plain `interface` for snapshots and DTOs such as `BranchInfo` and `OpenProjectResult`.
+- If a method returns another live remote object, model that property/return type with an interface that `extends RpcTarget`, and implement it on the Electron side with a class that `extends RpcTarget`.
+- Prefer synchronous signatures unless the contract is semantically async at the API boundary. Do **not** add `Promise` just because the renderer receives a `RpcStub` — `RpcStub` already lifts remote calls to async usage.
+- Add `Promise` only when the logical result is genuinely asynchronous or streaming-oriented: dialogs, I/O that must be awaited before a value exists, transport/bridge APIs, or subscription factories that explicitly return stream-like handles.
+- When one call needs to return both metadata and a live RPC object, wrap them in a plain result object (for example `{ handle, metadata }`) instead of forcing everything into an RPC target.
+- Document lifecycle-sensitive handles with a short comment when needed, especially if the server keeps underlying resources open until session disposal.
+
 ## Build, Test, and Development Commands
 
 Use Bun for local work because the repo is locked with `bun.lock`.
