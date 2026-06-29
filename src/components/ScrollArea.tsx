@@ -1,12 +1,11 @@
-import { type CSSProperties, type ReactNode, useEffect, useRef, useState } from "react";
+import { type CSSProperties, type ReactNode } from "react";
 
 import { cn } from "@/lib/cn";
 import {
-  ScrollbarController,
   scrollbarHiddenViewportClass,
   scrollbarStickyRailClass,
-  scrollbarThumbClassName,
-  scrollbarTrackClass,
+  ScrollbarThumbTrack,
+  useScrollbarController,
 } from "@/lib/scrollbar";
 
 const scrollAreaRootClass = cn("min-h-0");
@@ -27,32 +26,17 @@ export function ScrollArea({
   /** When true, participate in flex column growth (sidebar section body). */
   fill?: boolean;
 }) {
-  const viewportRef = useRef<HTMLDivElement>(null);
-  const controllerRef = useRef<ScrollbarController | null>(null);
-  const [, setRevision] = useState(0);
+  const {
+    viewportRef,
+    snapshot,
+    onAreaPointerEnter,
+    onAreaPointerLeave,
+    onTrackPointerDown,
+    onThumbPointerEnter,
+    onThumbPointerLeave,
+    onThumbPointerDown,
+  } = useScrollbarController();
 
-  useEffect(() => {
-    const viewport = viewportRef.current;
-    if (!viewport) {
-      return;
-    }
-
-    const controller = new ScrollbarController({
-      viewport,
-      onChange: () => {
-        setRevision((n) => n + 1);
-      },
-    });
-    controllerRef.current = controller;
-    controller.refreshMetrics();
-
-    return () => {
-      controller.destroy();
-      controllerRef.current = null;
-    };
-  }, []);
-
-  const snapshot = controllerRef.current?.getSnapshot();
   const thumb = snapshot?.thumb ?? null;
   const metrics = snapshot?.metrics ?? null;
 
@@ -61,41 +45,22 @@ export function ScrollArea({
       className={cn(scrollAreaRootClass, fill && "h-0 flex-1", className)}
       id={id}
       style={style}
-      onMouseEnter={() => {
-        controllerRef.current?.onAreaPointerEnter();
-      }}
-      onMouseLeave={() => {
-        controllerRef.current?.onAreaPointerLeave();
-      }}
+      onMouseEnter={onAreaPointerEnter}
+      onMouseLeave={onAreaPointerLeave}
     >
       <div ref={viewportRef} className={scrollbarHiddenViewportClass}>
         <div className={scrollAreaContentClass}>
-          {thumb ? (
+          {thumb && metrics && snapshot ? (
             <div aria-hidden="true" className={scrollbarStickyRailClass}>
-              <div
-                className={scrollbarTrackClass}
-                style={{ height: metrics?.clientHeight ?? 0 }}
-                onPointerDown={(event) => {
-                  controllerRef.current?.onTrackPointerDown(event.nativeEvent);
-                }}
-              >
-                <div
-                  className={scrollbarThumbClassName(snapshot!)}
-                  style={{
-                    height: thumb.thumbHeight,
-                    transform: `translateY(${thumb.thumbOffset}px)`,
-                  }}
-                  onMouseEnter={() => {
-                    controllerRef.current?.onThumbPointerEnter();
-                  }}
-                  onMouseLeave={() => {
-                    controllerRef.current?.onThumbPointerLeave();
-                  }}
-                  onPointerDown={(event) => {
-                    controllerRef.current?.onThumbPointerDown(event.nativeEvent);
-                  }}
-                />
-              </div>
+              <ScrollbarThumbTrack
+                snapshot={snapshot}
+                metrics={metrics}
+                thumb={thumb}
+                onTrackPointerDown={onTrackPointerDown}
+                onThumbPointerEnter={onThumbPointerEnter}
+                onThumbPointerLeave={onThumbPointerLeave}
+                onThumbPointerDown={onThumbPointerDown}
+              />
             </div>
           ) : null}
           {children}

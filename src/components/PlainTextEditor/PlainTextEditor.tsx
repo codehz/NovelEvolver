@@ -15,7 +15,8 @@ import {
   isPlainTextEditorSelectionCollapsed,
   selectionSnapshotFromState,
 } from "./codemirror-selection";
-import { editorHostClass, plainTextEditorExtensions } from "./codemirror-theme";
+import { editorHostClass } from "./codemirror-theme";
+import { plainTextEditorViewExtensions } from "./codemirror-view-extensions";
 import type { PlainTextEditorCaretPosition, PlainTextEditorSelectionSnapshot } from "./types";
 
 const editorRootClass = cn("min-h-0 min-w-0 flex-1");
@@ -125,7 +126,7 @@ export function PlainTextEditor({
 
     const activeLineCompartment = activeLineCompartmentRef.current;
     const extensions: Extension[] = [
-      ...plainTextEditorExtensions,
+      ...plainTextEditorViewExtensions,
       history(),
       drawSelection(),
       keymap.of([...defaultKeymap, ...historyKeymap]),

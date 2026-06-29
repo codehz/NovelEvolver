@@ -1,22 +1,12 @@
 import { EditorView, ViewPlugin, type ViewUpdate } from "@codemirror/view";
 
+import { applyScrollbarThumbElement } from "./dom-presentation";
 import {
-  ScrollbarController,
   scrollbarNativeHiddenClass,
   scrollbarOverlayRootClass,
-  scrollbarThumbClassName,
   scrollbarTrackClass,
-} from "@/lib/scrollbar";
-
-function applyThumbPresentation(
-  thumb: HTMLDivElement,
-  snapshot: ReturnType<ScrollbarController["getSnapshot"]>,
-  thumbMetrics: NonNullable<ReturnType<ScrollbarController["getSnapshot"]>["thumb"]>,
-): void {
-  thumb.style.height = `${thumbMetrics.thumbHeight}px`;
-  thumb.style.transform = `translateY(${thumbMetrics.thumbOffset}px)`;
-  thumb.className = scrollbarThumbClassName(snapshot);
-}
+} from "./presentation";
+import { ScrollbarController } from "./scrollbar-controller";
 
 class CodeMirrorCustomScrollbarPlugin {
   private readonly view: EditorView;
@@ -111,11 +101,11 @@ class CodeMirrorCustomScrollbarPlugin {
 
     this.overlay.style.display = "";
     this.track.style.height = `${metrics.clientHeight}px`;
-    applyThumbPresentation(this.thumb, snapshot, thumb);
+    applyScrollbarThumbElement(this.thumb, snapshot, thumb);
   }
 }
 
-/** Custom overlay scrollbar synced to `view.scrollDOM` (not React). */
+/** Custom overlay scrollbar synced to CodeMirror `view.scrollDOM`. */
 export const codeMirrorCustomScrollbarExtension = ViewPlugin.define(
   (view) => new CodeMirrorCustomScrollbarPlugin(view),
 );

@@ -1,10 +1,9 @@
-import { EditorView, lineNumbers } from "@codemirror/view";
+import { EditorView } from "@codemirror/view";
 import { cn } from "@/lib/cn";
-import { codeMirrorCustomScrollbarExtension } from "./codemirror-custom-scrollbar";
 
 const editorHostClass = cn("h-full min-h-0 min-w-0");
 
-const novelEvolverEditorTheme = EditorView.theme(
+export const novelEvolverEditorTheme = EditorView.theme(
   {
     "&": {
       height: "100%",
@@ -63,12 +62,5 @@ const novelEvolverEditorTheme = EditorView.theme(
   },
   { dark: true },
 );
-
-export const plainTextEditorExtensions = [
-  novelEvolverEditorTheme,
-  lineNumbers(),
-  EditorView.lineWrapping,
-  codeMirrorCustomScrollbarExtension,
-];
 
 export { editorHostClass };

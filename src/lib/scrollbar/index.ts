@@ -13,6 +13,8 @@ export {
   type ScrollbarControllerOptions,
   type ScrollbarControllerSnapshot,
 } from "./scrollbar-controller";
+export { codeMirrorCustomScrollbarExtension } from "./codemirror-scrollbar";
+export { applyScrollbarThumbElement } from "./dom-presentation";
 export {
   scrollbarHiddenViewportClass,
   scrollbarNativeHiddenClass,
@@ -24,3 +26,8 @@ export {
   scrollbarThumbPeekClass,
   scrollbarTrackClass,
 } from "./presentation";
+export { ScrollbarThumbTrack, type ScrollbarThumbTrackProps } from "./ScrollbarThumbTrack";
+export {
+  useScrollbarController,
+  type ScrollbarControllerBindings,
+} from "./use-scrollbar-controller";
