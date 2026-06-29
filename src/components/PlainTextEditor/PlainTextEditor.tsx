@@ -16,6 +16,7 @@ import {
   normalizeEditorDom,
   readCaretPositionFromEditor,
   readPhysicalLinesFromEditor,
+  isPlainTextEditorSelectionCollapsed,
   readSelectionSnapshotFromEditor,
   setLogicalSelection,
   splitPlainTextDocument,
@@ -133,7 +134,11 @@ export function PlainTextEditor({
     if (snapshot) {
       onSelectionSnapshotChange?.(snapshot);
       if (highlightCurrentLine) {
-        syncCurrentLineHighlight(root, snapshot.focus.lineIndex, true);
+        if (isPlainTextEditorSelectionCollapsed(snapshot)) {
+          syncCurrentLineHighlight(root, snapshot.focus.lineIndex, true);
+        } else {
+          syncCurrentLineHighlight(root, null, false);
+        }
       }
     } else if (highlightCurrentLine) {
       syncCurrentLineHighlight(root, null, false);

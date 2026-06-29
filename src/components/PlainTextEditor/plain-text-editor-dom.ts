@@ -394,6 +394,12 @@ function orderSelectionSnapshot(snapshot: PlainTextEditorSelectionSnapshot): {
     : { start: snapshot.focus, end: snapshot.anchor };
 }
 
+export function isPlainTextEditorSelectionCollapsed(
+  snapshot: PlainTextEditorSelectionSnapshot,
+): boolean {
+  return compareLogicalPositions(snapshot.anchor, snapshot.focus) === 0;
+}
+
 function getSelectionLength(root: HTMLElement, snapshot: PlainTextEditorSelectionSnapshot): number {
   const { start, end } = orderSelectionSnapshot(snapshot);
   if (compareLogicalPositions(start, end) === 0) {
