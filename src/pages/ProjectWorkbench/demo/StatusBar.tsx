@@ -1,10 +1,5 @@
-import { useSyncExternalStore } from "react";
-
-import {
-  formatEditorCaretPosition,
-  getEditorCaretPosition,
-  subscribeEditorCaretPosition,
-} from "./editor-caret";
+import { formatEditorCaretPosition } from "./editor-caret";
+import { useActiveTabCaretPosition } from "./use-active-tab-caret";
 
 const leftItems = [
   { id: "branch", label: "main", icon: "icon-[codicon--source-control]" },
@@ -18,11 +13,7 @@ const rightStaticItems = [
 ];
 
 export function StatusBar() {
-  const caret = useSyncExternalStore(
-    subscribeEditorCaretPosition,
-    getEditorCaretPosition,
-    getEditorCaretPosition,
-  );
+  const caret = useActiveTabCaretPosition();
 
   return (
     <footer

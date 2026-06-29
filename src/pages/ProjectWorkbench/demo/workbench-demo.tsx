@@ -6,11 +6,6 @@ import { EditorArea } from "./EditorArea";
 import { ExplorerSidebarDemo, ScmSidebarDemo, SearchSidebarDemo } from "./primary-sidebar-demo";
 import { StatusBar } from "./StatusBar";
 
-const demoTabs = [
-  { id: "chapter-1", label: "第一章.md", active: true },
-  { id: "outline", label: "大纲.md", active: false },
-];
-
 export function buildWorkbenchDemoSlots(projectLabel: string): {
   primarySidebar: Partial<Record<ActivityViewId, ReactNode>>;
   editor: ReactNode;
@@ -23,7 +18,7 @@ export function buildWorkbenchDemoSlots(projectLabel: string): {
       search: <SearchSidebarDemo />,
       scm: <ScmSidebarDemo />,
     },
-    editor: <EditorArea tabs={demoTabs} />,
+    editor: <EditorArea />,
     auxiliary: <AuxiliaryPanelDemo />,
     statusBar: <StatusBar />,
   };

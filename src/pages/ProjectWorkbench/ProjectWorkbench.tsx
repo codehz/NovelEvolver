@@ -1,3 +1,4 @@
+import { ScopeProvider } from "bunshi/react";
 import { useEffect, useState } from "react";
 import { Link, useParams } from "wouter";
 
@@ -7,6 +8,7 @@ import { WorkbenchLayout } from "@/components/workbench";
 import { cn } from "@/lib/cn";
 import { projectDisplayName } from "@/lib/project-display-name";
 import { buildWorkbenchDemoSlots } from "./demo/workbench-demo";
+import { projectWorkbenchScope } from "./demo/workbench-editor-molecules";
 
 export function ProjectWorkbench() {
   const { projectId } = useParams<{ projectId: string }>();
@@ -92,7 +94,9 @@ export function ProjectWorkbench() {
           </Link>
         </div>
       ) : project ? (
-        <WorkbenchLayout {...buildWorkbenchDemoSlots(projectDisplayName(project.path))} />
+        <ScopeProvider scope={projectWorkbenchScope} value={String(parsedId)}>
+          <WorkbenchLayout {...buildWorkbenchDemoSlots(projectDisplayName(project.path))} />
+        </ScopeProvider>
       ) : null}
     </div>
   );

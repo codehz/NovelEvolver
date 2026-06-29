@@ -1,3 +1,5 @@
+import { useMolecule } from "bunshi/react";
+import { useAtomValue, useSetAtom } from "jotai";
 import {
   useCallback,
   useEffect,
@@ -7,7 +9,6 @@ import {
   type ClipboardEvent,
 } from "react";
 import { cn } from "@/lib/cn";
-import { setEditorCaretPosition } from "./editor-caret";
 import {
   applyPlainTextPaste,
   applyPhysicalEnter,
@@ -19,6 +20,7 @@ import {
   writePhysicalLinesToEditor,
   type PlainTextEditorLineClasses,
 } from "./plain-text-editor";
+import { editorTabMolecule } from "./workbench-editor-molecules";
 
 const editorScrollClass = cn("min-h-0 min-w-0 flex-1 overflow-x-hidden overflow-y-auto");
 
@@ -55,9 +57,14 @@ type PlainTextEditorProps = {
 };
 
 export function PlainTextEditor({ ref, defaultValue = "", onChange }: PlainTextEditorProps) {
+  const { caretPositionAtom, documentAtom } = useMolecule(editorTabMolecule);
+  const setCaretPosition = useSetAtom(caretPositionAtom);
+  const setDocument = useSetAtom(documentAtom);
+  const storedDocument = useAtomValue(documentAtom);
+
   const rootRef = useRef<HTMLDivElement>(null);
-  const linesRef = useRef(splitPlainTextDocument(defaultValue));
-  const mountedRef = useRef(false);
+  const linesRef = useRef<string[]>([]);
+  const seededRef = useRef(false);
   const caretFrameRef = useRef<number | null>(null);
 
   const lineClasses = useMemo<PlainTextEditorLineClasses>(
@@ -80,11 +87,17 @@ export function PlainTextEditor({ ref, defaultValue = "", onChange }: PlainTextE
   );
 
   useEffect(() => {
-    if (!mountedRef.current) {
-      mountedRef.current = true;
-      syncDomFromLines(linesRef.current);
+    if (seededRef.current) {
+      return;
     }
-  }, [syncDomFromLines]);
+    seededRef.current = true;
+    const seedText = storedDocument.length > 0 ? storedDocument : defaultValue;
+    if (storedDocument.length === 0 && defaultValue.length > 0) {
+      setDocument(defaultValue);
+    }
+    linesRef.current = splitPlainTextDocument(seedText);
+    syncDomFromLines(linesRef.current);
+  }, [defaultValue, setDocument, storedDocument, syncDomFromLines]);
 
   const publishCaretPosition = useCallback(() => {
     const root = rootRef.current;
@@ -93,9 +106,9 @@ export function PlainTextEditor({ ref, defaultValue = "", onChange }: PlainTextE
     }
     const position = readCaretPositionFromEditor(root);
     if (position) {
-      setEditorCaretPosition(position);
+      setCaretPosition(position);
     }
-  }, []);
+  }, [setCaretPosition]);
 
   const scheduleCaretPositionPublish = useCallback(() => {
     if (caretFrameRef.current !== null) {
@@ -127,10 +140,12 @@ export function PlainTextEditor({ ref, defaultValue = "", onChange }: PlainTextE
       next.some((line, index) => line !== linesRef.current[index]);
     if (hasChanged) {
       linesRef.current = next;
-      onChange?.(joinPlainTextDocument(next));
+      const joined = joinPlainTextDocument(next);
+      setDocument(joined);
+      onChange?.(joined);
     }
     publishCaretPosition();
-  }, [lineClasses, onChange, publishCaretPosition]);
+  }, [lineClasses, onChange, publishCaretPosition, setDocument]);
 
   useEffect(() => {
     const onSelectionChange = () => {
@@ -143,6 +158,17 @@ export function PlainTextEditor({ ref, defaultValue = "", onChange }: PlainTextE
     };
   }, [clearScheduledCaretPublish, scheduleCaretPositionPublish]);
 
+  const publishDocument = useCallback(
+    (nextLines: string[]) => {
+      linesRef.current = nextLines;
+      const joined = joinPlainTextDocument(nextLines);
+      setDocument(joined);
+      onChange?.(joined);
+      publishCaretPosition();
+    },
+    [onChange, publishCaretPosition, setDocument],
+  );
+
   useImperativeHandle(
     ref,
     () => ({
@@ -153,6 +179,7 @@ export function PlainTextEditor({ ref, defaultValue = "", onChange }: PlainTextE
       setValue: (value: string) => {
         const nextLines = splitPlainTextDocument(value);
         linesRef.current = nextLines;
+        setDocument(value);
         const root = rootRef.current;
         if (!root) {
           return;
@@ -168,7 +195,7 @@ export function PlainTextEditor({ ref, defaultValue = "", onChange }: PlainTextE
         return readCaretPositionFromEditor(root);
       },
     }),
-    [lineClasses, publishCaretPosition],
+    [lineClasses, publishCaretPosition, setDocument],
   );
 
   return (
@@ -191,9 +218,7 @@ export function PlainTextEditor({ ref, defaultValue = "", onChange }: PlainTextE
             return;
           }
           const next = applyPhysicalEnter(root, lineClasses);
-          linesRef.current = next;
-          onChange?.(joinPlainTextDocument(next));
-          publishCaretPosition();
+          publishDocument(next);
         }}
         onInput={() => {
           commitFromDom();
@@ -213,9 +238,7 @@ export function PlainTextEditor({ ref, defaultValue = "", onChange }: PlainTextE
           }
           applyPlainTextPaste(root, pasted, lineClasses);
           const next = readPhysicalLinesFromEditor(root);
-          linesRef.current = next;
-          onChange?.(joinPlainTextDocument(next));
-          publishCaretPosition();
+          publishDocument(next);
         }}
       />
     </div>
