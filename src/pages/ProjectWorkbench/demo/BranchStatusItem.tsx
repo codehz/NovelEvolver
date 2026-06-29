@@ -21,7 +21,7 @@ export function BranchStatusItem() {
       }}
     >
       <span aria-hidden="true" className="icon-[codicon--source-control]" />
-      <span>{headName.status === "hasData" ? headName.data : branchFallbackLabel}</span>
+      <span>{headName.data ?? branchFallbackLabel}</span>
     </button>
   );
 }

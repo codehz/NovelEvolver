@@ -1,9 +1,11 @@
 import { useSyncExternalStore } from "react";
 
-export type AsyncState<T> =
-  | { status: "loading" }
-  | { status: "hasData"; data: T }
-  | { status: "hasError"; error: unknown };
+export type AsyncState<T> = {
+  data: T | undefined;
+  error: unknown;
+  isLoading: boolean;
+  isValidating: boolean;
+};
 
 type Listener = () => void;
 
@@ -22,7 +24,12 @@ export interface AsyncLoader<T> {
  * @param asyncFn - The async function to execute.
  */
 export function createAsyncLoader<T>(asyncFn: () => Promise<T>): AsyncLoader<T> {
-  let state: AsyncState<T> = { status: "loading" };
+  let state: AsyncState<T> = {
+    data: undefined,
+    error: undefined,
+    isLoading: true,
+    isValidating: true,
+  };
   const listeners = new Set<Listener>();
   let counter = 0;
 
@@ -46,18 +53,26 @@ export function createAsyncLoader<T>(asyncFn: () => Promise<T>): AsyncLoader<T> 
   async function run() {
     counter++;
     const id = counter;
-    state = { status: "loading" };
+
+    const hasPrevData = state.data !== undefined;
+
+    state = {
+      data: state.data,
+      error: undefined,
+      isLoading: !hasPrevData,
+      isValidating: true,
+    };
     emit();
 
     try {
       const data = await asyncFn();
       if (id === counter) {
-        state = { status: "hasData", data };
+        state = { data, error: undefined, isLoading: false, isValidating: false };
         emit();
       }
     } catch (error) {
       if (id === counter) {
-        state = { status: "hasError", error };
+        state = { data: state.data, error, isLoading: false, isValidating: false };
         emit();
       }
     }
