@@ -32,6 +32,8 @@ export function createAsyncLoader<T>(asyncFn: () => Promise<T>): AsyncLoader<T> 
   };
   const listeners = new Set<Listener>();
   let counter = 0;
+  let pending = false;
+  let shouldRefresh = false;
 
   function getState() {
     return state;
@@ -51,6 +53,10 @@ export function createAsyncLoader<T>(asyncFn: () => Promise<T>): AsyncLoader<T> 
   }
 
   async function run() {
+    if (pending) {
+      return;
+    }
+    pending = true;
     counter++;
     const id = counter;
 
@@ -75,10 +81,20 @@ export function createAsyncLoader<T>(asyncFn: () => Promise<T>): AsyncLoader<T> 
         state = { data: state.data, error, isLoading: false, isValidating: false };
         emit();
       }
+    } finally {
+      pending = false;
+      if (shouldRefresh) {
+        shouldRefresh = false;
+        void run();
+      }
     }
   }
 
   function refresh() {
+    if (pending) {
+      shouldRefresh = true;
+      return;
+    }
     void run();
   }
 
