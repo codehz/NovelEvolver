@@ -7,6 +7,7 @@ import {
   useRef,
   type ClipboardEvent,
 } from "react";
+import { ScrollArea } from "@/components/ScrollArea";
 import { cn } from "@/lib/cn";
 import {
   applyPlainTextPaste,
@@ -23,7 +24,7 @@ import {
 } from "./plain-text-editor-dom";
 import type { PlainTextEditorCaretPosition, PlainTextEditorSelectionSnapshot } from "./types";
 
-const editorScrollClass = cn("min-h-0 min-w-0 flex-1 overflow-x-hidden overflow-y-auto");
+const editorRootClass = cn("min-h-0 min-w-0 flex-1");
 
 const editorSurfaceClass = cn(
   "grid w-full auto-rows-[minmax(min-content,auto)] grid-cols-[max-content_minmax(0,1fr)]",
@@ -238,7 +239,7 @@ export function PlainTextEditor({
   );
 
   return (
-    <div className={editorScrollClass}>
+    <ScrollArea className={editorRootClass} fill reserveScrollbarGutter>
       <div
         ref={rootRef}
         className={editorSurfaceClass}
@@ -280,6 +281,6 @@ export function PlainTextEditor({
           publishDocument(next);
         }}
       />
-    </div>
+    </ScrollArea>
   );
 }
