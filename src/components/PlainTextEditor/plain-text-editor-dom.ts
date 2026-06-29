@@ -175,7 +175,8 @@ export function applyPhysicalEnter(
     return readPhysicalLinesFromEditor(root);
   }
 
-  const { lines: next, focus } = replaceSelectionWithLines(root, [""], range);
+  // 两行片段才能走 replaceSelectionWithLines 的拆行逻辑；单元素 [""] 会合并到当前行。
+  const { lines: next, focus } = replaceSelectionWithLines(root, ["", ""], range);
   writePhysicalLinesToEditor(root, next, classes);
   setLogicalCaret(root, focus.lineIndex, focus.offset);
   return next;
