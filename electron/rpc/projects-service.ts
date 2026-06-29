@@ -5,9 +5,10 @@ import { dialog, type BrowserWindow } from "electron";
 import { createSqliteRepository } from "nano-git/repository/sqlite";
 
 import type { ProjectListItem, ProjectRecord } from "@shared/project";
-import type { ProjectsService } from "@shared/rpc/projects-rpc";
+import type { ProjectHandle, ProjectsService } from "@shared/rpc/projects-rpc";
 import { projectWithDisplayPath } from "../home-path";
 import type { RpcMainDeps } from "./deps";
+import { ProjectHandleImpl } from "./project-handle";
 
 export class ProjectsServiceImpl extends RpcTarget implements ProjectsService {
   readonly #window: BrowserWindow;
@@ -73,6 +74,14 @@ export class ProjectsServiceImpl extends RpcTarget implements ProjectsService {
     using _repo = createSqliteRepository(path);
 
     return this.#deps.getProjectsDb().upsertByPath(path, Date.now());
+  }
+
+  async openProject(id: number): Promise<ProjectHandle> {
+    const record = this.#deps.getProjectsDb().getById(id);
+    if (!record) {
+      throw new Error(`Project with id ${id} not found`);
+    }
+    return new ProjectHandleImpl(record.path);
   }
 
   async recordOpen(id: number): Promise<ProjectRecord | null> {

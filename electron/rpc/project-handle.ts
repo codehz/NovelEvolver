@@ -1,0 +1,32 @@
+import { RpcTarget } from "capnweb";
+import { createSqliteRepository } from "nano-git/repository/sqlite";
+
+import type { BranchInfo, ProjectHandle } from "@shared/rpc/projects-rpc";
+
+/**
+ * Server-side RPC target wrapping a nano-git SQLite repository.
+ *
+ * Each instance opens a SQLite-backed repository and keeps it alive so that
+ * property accessors (e.g. `head`) produce live results. When the RPC session
+ * ends the caller should call `[Symbol.dispose]()` to close the underlying
+ * SQLite connection.
+ */
+export class ProjectHandleImpl extends RpcTarget implements ProjectHandle {
+  readonly #repo: ReturnType<typeof createSqliteRepository>;
+
+  constructor(repoPath: string) {
+    super();
+    this.#repo = createSqliteRepository(repoPath);
+  }
+
+  get head(): BranchInfo {
+    return {
+      name: this.#repo.getCurrentBranch(),
+      commit: this.#repo.readRef("HEAD"),
+    };
+  }
+
+  [Symbol.dispose](): void {
+    this.#repo[Symbol.dispose]();
+  }
+}
