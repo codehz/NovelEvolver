@@ -3,8 +3,8 @@ import { useAtom, useSetAtom } from "jotai";
 import { useCallback, useEffect } from "react";
 import { cn } from "@/lib/cn";
 import { EditorTabPane } from "./EditorTabPane";
+import { workbenchEditorMolecule } from "./molecules";
 import type { WorkbenchDemoTab } from "./types";
-import { workbenchEditorMolecule } from "./workbench-editor-molecules";
 
 const initialDemoTabs: WorkbenchDemoTab[] = [
   { id: "chapter-1", label: "第一章.md", active: true },

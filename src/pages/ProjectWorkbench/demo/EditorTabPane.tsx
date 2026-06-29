@@ -2,7 +2,7 @@ import { ScopeProvider, useMolecule } from "bunshi/react";
 import { useAtomValue, useSetAtom } from "jotai";
 
 import { PlainTextEditor } from "@/components/PlainTextEditor";
-import { editorTabMolecule, editorTabScope } from "./workbench-editor-molecules";
+import { editorTabMolecule, editorTabScope } from "./molecules";
 
 type EditorTabPaneProps = {
   tabId: string;

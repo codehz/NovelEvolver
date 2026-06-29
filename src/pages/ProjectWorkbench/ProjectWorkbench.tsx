@@ -7,8 +7,8 @@ import { skipToken, useQueryRequest } from "@/lib/app-query";
 import { projectsService } from "@/lib/app-rpc";
 import { cn } from "@/lib/cn";
 import { projectDisplayName } from "@/lib/project-display-name";
+import { projectScope } from "./demo/molecules";
 import { buildWorkbenchDemoSlots } from "./demo/workbench-demo";
-import { projectScope } from "./demo/workbench-editor-molecules";
 
 export function ProjectWorkbench() {
   const { projectId } = useParams<{ projectId: string }>();

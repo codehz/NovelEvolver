@@ -1,8 +1,8 @@
 import { useMolecule } from "bunshi/react";
 import { useQueryRequest } from "@/lib/app-query";
 import { formatEditorCaretPosition } from "./editor-caret";
+import { projectMolecule } from "./molecules";
 import { useActiveTabCaretPosition } from "./use-active-tab-caret";
-import { projectMolecule } from "./workbench-editor-molecules";
 
 const leftStaticItems = [{ id: "sync", label: "同步", icon: "icon-[codicon--sync]" }];
 
