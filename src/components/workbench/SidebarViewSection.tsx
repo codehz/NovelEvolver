@@ -1,7 +1,7 @@
 import type { CSSProperties, PointerEvent as ReactPointerEvent, ReactNode } from "react";
 
 import { cn } from "../../lib/cn";
-import { WorkbenchSimpleBar } from "./WorkbenchSimpleBar";
+import { ScrollArea } from "../ScrollArea";
 
 /** Layout flow height at the section seam (handle is overlaid, not counted in flex). */
 export const SIDEBAR_SECTION_RESIZE_STRIP_HEIGHT = 0;
@@ -98,9 +98,9 @@ export function SidebarViewSection({
         )}
       </div>
       {expanded ? (
-        <WorkbenchSimpleBar fill={bodyFillsSection} id={panelId} style={bodyStyle}>
+        <ScrollArea fill={bodyFillsSection} id={panelId} style={bodyStyle}>
           {children}
-        </WorkbenchSimpleBar>
+        </ScrollArea>
       ) : null}
     </section>
   );

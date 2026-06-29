@@ -1,9 +1,9 @@
 import { Fragment, useMemo, useState } from "react";
 
 import { cn } from "../../../lib/cn";
+import { ScrollArea } from "../../ScrollArea";
 import { SidebarSectionRowResizeHandle, SidebarViewSection } from "../SidebarViewSection";
 import { useSidebarPaneStack } from "../use-sidebar-pane-stack";
-import { WorkbenchSimpleBar } from "../WorkbenchSimpleBar";
 
 type DemoTreeNode = {
   icon: string;
@@ -145,7 +145,7 @@ export function ExplorerSidebarDemo({ projectLabel }: { projectLabel: string }) 
 
 export function SearchSidebarDemo() {
   return (
-    <WorkbenchSimpleBar className="-m-2 min-h-0 flex-1" fill>
+    <ScrollArea className="-m-2 min-h-0 flex-1" fill>
       <div className="flex flex-col gap-2 px-1">
         <label className="flex flex-col gap-1 text-xs text-ctp-subtext0">
           搜索
@@ -156,18 +156,18 @@ export function SearchSidebarDemo() {
         </label>
         <p className="text-xs text-ctp-subtext0">输入关键词后将在此显示结果。</p>
       </div>
-    </WorkbenchSimpleBar>
+    </ScrollArea>
   );
 }
 
 export function ScmSidebarDemo() {
   return (
-    <WorkbenchSimpleBar className="-m-2 min-h-0 flex-1" fill>
+    <ScrollArea className="-m-2 min-h-0 flex-1" fill>
       <div className="flex flex-col items-center gap-2 px-2 py-6 text-center text-xs text-ctp-subtext0">
         <span aria-hidden="true" className="icon-[codicon--source-control] text-2xl" />
         <p>尚未配置版本控制。</p>
         <p className="text-ctp-overlay0">布局演示占位。</p>
       </div>
-    </WorkbenchSimpleBar>
+    </ScrollArea>
   );
 }

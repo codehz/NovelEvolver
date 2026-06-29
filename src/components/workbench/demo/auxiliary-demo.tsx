@@ -1,5 +1,5 @@
 import { cn } from "../../../lib/cn";
-import { WorkbenchSimpleBar } from "../WorkbenchSimpleBar";
+import { ScrollArea } from "../../ScrollArea";
 
 const demoMessages = [
   {
@@ -19,7 +19,7 @@ const demoMessages = [
 export function AuxiliaryPanelDemo() {
   return (
     <>
-      <WorkbenchSimpleBar className="min-h-0 flex-1" fill>
+      <ScrollArea className="min-h-0 flex-1" fill>
         <div className="flex flex-col gap-3 p-3 text-sm">
           {demoMessages.map((message, index) => (
             <div
@@ -38,7 +38,7 @@ export function AuxiliaryPanelDemo() {
             </div>
           ))}
         </div>
-      </WorkbenchSimpleBar>
+      </ScrollArea>
 
       <footer className="shrink-0 p-3">
         <div className="flex items-end gap-2 rounded-lg bg-workbench-editor p-2">
