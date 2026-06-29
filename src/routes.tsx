@@ -1,13 +1,16 @@
 import { Route, Switch } from "wouter";
 
+import { AutoTransition } from "@codehz/auto-transition";
 import { ProjectList } from "@/components/ProjectList";
 import { ProjectWorkbench } from "@/pages/ProjectWorkbench";
 
 export function AppRoutes() {
   return (
-    <Switch>
-      <Route path="/project/:projectId" component={ProjectWorkbench} />
-      <Route component={ProjectList} />
-    </Switch>
+    <AutoTransition as="div" className="contents">
+      <Switch>
+        <Route path="/project/:projectId" component={ProjectWorkbench} />
+        <Route component={ProjectList} />
+      </Switch>
+    </AutoTransition>
   );
 }

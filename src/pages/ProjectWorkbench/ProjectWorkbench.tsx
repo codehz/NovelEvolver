@@ -1,8 +1,9 @@
+import { AutoTransition } from "@codehz/auto-transition";
 import { ScopeProvider, useMolecule } from "bunshi/react";
-import { Link, useParams } from "wouter";
-
 import { Suspense, use } from "react";
 import { ErrorBoundary } from "react-error-boundary";
+import { Link, useParams } from "wouter";
+
 import { TitleBarTitle } from "@/components/TitleBarTitle";
 import { WorkbenchLayout } from "@/components/workbench";
 import { cn } from "@/lib/cn";
@@ -15,7 +16,7 @@ export function ProjectWorkbench() {
   const parsedId = projectId ? Number.parseInt(projectId, 10) : Number.NaN;
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col">
+    <AutoTransition as="div" patch className="flex min-h-0 flex-1 flex-col">
       <ScopeProvider scope={projectIdScope} value={parsedId}>
         <ErrorBoundary FallbackComponent={ErrorFallback}>
           <Suspense
@@ -29,7 +30,7 @@ export function ProjectWorkbench() {
           </Suspense>
         </ErrorBoundary>
       </ScopeProvider>
-    </div>
+    </AutoTransition>
   );
 }
 
