@@ -21,12 +21,5 @@
       "@shared/*": ["./shared/*"]
     }
   },
-  "include": [
-    "src",
-    "electron",
-    "shared",
-    "path-aliases.ts",
-    "vite.config.ts",
-    "tsdown.electron.mts"
-  ]
+  "include": ["src", "electron", "shared", "path-aliases.ts", "vite.config.ts"]
 }
