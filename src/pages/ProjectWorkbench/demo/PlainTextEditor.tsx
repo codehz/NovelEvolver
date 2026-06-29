@@ -42,6 +42,7 @@ export function PlainTextEditor({
   const rootRef = useRef<HTMLDivElement>(null);
   const linesRef = useRef(lines);
   const mountedRef = useRef(false);
+  const caretFrameRef = useRef<number | null>(null);
 
   const lineClasses = useMemo<PlainTextEditorLineClasses>(
     () => ({
@@ -90,6 +91,24 @@ export function PlainTextEditor({
     }
   }, []);
 
+  const scheduleCaretPositionPublish = useCallback(() => {
+    if (caretFrameRef.current !== null) {
+      return;
+    }
+    caretFrameRef.current = window.requestAnimationFrame(() => {
+      caretFrameRef.current = null;
+      publishCaretPosition();
+    });
+  }, [publishCaretPosition]);
+
+  const clearScheduledCaretPublish = useCallback(() => {
+    if (caretFrameRef.current === null) {
+      return;
+    }
+    window.cancelAnimationFrame(caretFrameRef.current);
+    caretFrameRef.current = null;
+  }, []);
+
   const commitFromDom = useCallback(() => {
     const root = rootRef.current;
     if (!root) {
@@ -97,20 +116,26 @@ export function PlainTextEditor({
     }
     normalizeEditorDom(root, lineClasses);
     const next = readPhysicalLinesFromEditor(root);
-    linesRef.current = next;
-    onLinesChange(next);
+    const hasChanged =
+      next.length !== linesRef.current.length ||
+      next.some((line, index) => line !== linesRef.current[index]);
+    if (hasChanged) {
+      linesRef.current = next;
+      onLinesChange(next);
+    }
     publishCaretPosition();
   }, [lineClasses, onLinesChange, publishCaretPosition]);
 
   useEffect(() => {
     const onSelectionChange = () => {
-      publishCaretPosition();
+      scheduleCaretPositionPublish();
     };
     document.addEventListener("selectionchange", onSelectionChange);
     return () => {
       document.removeEventListener("selectionchange", onSelectionChange);
+      clearScheduledCaretPublish();
     };
-  }, [publishCaretPosition]);
+  }, [clearScheduledCaretPublish, scheduleCaretPositionPublish]);
 
   return (
     <div className={editorScrollClass}>

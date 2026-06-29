@@ -14,6 +14,10 @@ function getLineContentElement(row: HTMLElement): HTMLElement {
   return row.querySelector<HTMLElement>(PHYSICAL_LINE_CONTENT_SELECTOR) ?? row;
 }
 
+function readPhysicalLinesFromBlocks(blocks: HTMLElement[]): string[] {
+  return blocks.map((block) => readLineTextFromRow(block));
+}
+
 function readLineTextFromRow(row: HTMLElement): string {
   const content = getLineContentElement(row);
   return content.textContent ?? "";
@@ -75,7 +79,7 @@ export function readPhysicalLinesFromEditor(root: HTMLElement): string[] {
     return splitPlainTextDocument(root.textContent ?? "");
   }
 
-  return blocks.map((block) => readLineTextFromRow(block));
+  return readPhysicalLinesFromBlocks(blocks);
 }
 
 export function normalizeEditorDom(root: HTMLElement, classes: PlainTextEditorLineClasses): void {
@@ -86,7 +90,7 @@ export function normalizeEditorDom(root: HTMLElement, classes: PlainTextEditorLi
     return;
   }
 
-  const lines = blocks.map((block) => readLineTextFromRow(block));
+  const lines = readPhysicalLinesFromBlocks(blocks);
   const needsStructure = blocks.some((block) => !isStructuredLineRow(block));
 
   if (needsStructure) {
@@ -111,7 +115,47 @@ export function writePhysicalLinesToEditor(
   lines: string[],
   classes: PlainTextEditorLineClasses,
 ): void {
-  root.replaceChildren(...lines.map((line) => createPhysicalLineRow(line, classes)));
+  const blocks = getPhysicalLineBlocks(root);
+  if (blocks.length === 0) {
+    root.replaceChildren(...lines.map((line) => createPhysicalLineRow(line, classes)));
+    return;
+  }
+
+  const currentLines = readPhysicalLinesFromBlocks(blocks);
+  let prefix = 0;
+  while (
+    prefix < currentLines.length &&
+    prefix < lines.length &&
+    currentLines[prefix] === lines[prefix]
+  ) {
+    prefix += 1;
+  }
+
+  let currentSuffix = currentLines.length - 1;
+  let nextSuffix = lines.length - 1;
+  while (
+    currentSuffix >= prefix &&
+    nextSuffix >= prefix &&
+    currentLines[currentSuffix] === lines[nextSuffix]
+  ) {
+    currentSuffix -= 1;
+    nextSuffix -= 1;
+  }
+
+  if (prefix > currentSuffix && prefix > nextSuffix) {
+    return;
+  }
+
+  const fragment = document.createDocumentFragment();
+  for (let index = prefix; index <= nextSuffix; index += 1) {
+    fragment.append(createPhysicalLineRow(lines[index] ?? "", classes));
+  }
+
+  const anchor = blocks[currentSuffix + 1] ?? null;
+  for (let index = prefix; index <= currentSuffix; index += 1) {
+    blocks[index]?.remove();
+  }
+  root.insertBefore(fragment, anchor);
 }
 
 export function applyPhysicalEnter(
@@ -130,7 +174,7 @@ export function applyPhysicalEnter(
   }
 
   const lines = readPhysicalLinesFromEditor(root);
-  const { lineIndex, offset } = getLogicalCaret(lines, root, range);
+  const { lineIndex, offset } = getLogicalCaret(root, range);
   const current = lines[lineIndex] ?? "";
   const before = current.slice(0, offset);
   const after = current.slice(offset);
@@ -165,7 +209,7 @@ export function applyPlainTextPaste(
   }
 
   const lines = readPhysicalLinesFromEditor(root);
-  const { lineIndex, offset } = getLogicalCaret(lines, root, range);
+  const { lineIndex, offset } = getLogicalCaret(root, range);
   const current = lines[lineIndex] ?? "";
   const before = current.slice(0, offset);
   const after = current.slice(offset);
@@ -186,15 +230,49 @@ export function applyPlainTextPaste(
   setLogicalCaret(root, focusLine, focusOffset);
 }
 
-function getLogicalCaret(
-  lines: string[],
-  root: HTMLElement,
-  range: Range,
-): { lineIndex: number; offset: number } {
+function getLineIndexFromBlock(root: HTMLElement, block: HTMLElement): number {
+  let index = 0;
+  let cursor = block.previousElementSibling;
+  while (cursor) {
+    if (cursor instanceof HTMLElement) {
+      index += 1;
+    }
+    cursor = cursor.previousElementSibling;
+  }
+  return index;
+}
+
+function getLineBlockFromNode(root: HTMLElement, node: Node): HTMLElement | null {
+  if (node instanceof HTMLElement) {
+    const block = node.closest<HTMLElement>(PHYSICAL_LINE_SELECTOR);
+    if (block?.parentElement === root) {
+      return block;
+    }
+  }
+
+  const parent = node.parentElement;
+  if (!parent) {
+    return null;
+  }
+
+  const block = parent.closest<HTMLElement>(PHYSICAL_LINE_SELECTOR);
+  return block?.parentElement === root ? block : null;
+}
+
+function getLogicalCaret(root: HTMLElement, range: Range): { lineIndex: number; offset: number } {
   const blocks = getPhysicalLineBlocks(root);
   if (blocks.length === 0) {
     const text = root.textContent ?? "";
     return { lineIndex: 0, offset: text.length };
+  }
+
+  const lineBlock = getLineBlockFromNode(root, range.startContainer);
+  if (lineBlock) {
+    const content = getLineContentElement(lineBlock);
+    const prefix = range.cloneRange();
+    prefix.selectNodeContents(content);
+    prefix.setEnd(range.startContainer, range.startOffset);
+    return { lineIndex: getLineIndexFromBlock(root, lineBlock), offset: prefix.toString().length };
   }
 
   for (let index = 0; index < blocks.length; index += 1) {
@@ -210,7 +288,8 @@ function getLogicalCaret(
     return { lineIndex: index, offset: prefix.toString().length };
   }
 
-  return { lineIndex: Math.max(0, lines.length - 1), offset: lines.at(-1)?.length ?? 0 };
+  const lastLine = readLineTextFromRow(blocks.at(-1) ?? root);
+  return { lineIndex: Math.max(0, blocks.length - 1), offset: lastLine.length };
 }
 
 export function readCaretPositionFromEditor(root: HTMLElement): {
@@ -227,8 +306,7 @@ export function readCaretPositionFromEditor(root: HTMLElement): {
     return null;
   }
 
-  const lines = readPhysicalLinesFromEditor(root);
-  const { lineIndex, offset } = getLogicalCaret(lines, root, range);
+  const { lineIndex, offset } = getLogicalCaret(root, range);
   return { line: lineIndex + 1, column: offset + 1 };
 }
 

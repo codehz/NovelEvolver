@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useCallback, useRef } from "react";
 import { cn } from "@/lib/cn";
 import { PlainTextEditor } from "./PlainTextEditor";
 import type { WorkbenchDemoTab } from "./types";
@@ -13,7 +13,11 @@ const initialDocumentLines = [
 ];
 
 export function EditorArea({ tabs }: { tabs: WorkbenchDemoTab[] }) {
-  const [documentLines, setDocumentLines] = useState(initialDocumentLines);
+  const documentLinesRef = useRef(initialDocumentLines);
+  const handleLinesChange = useCallback((next: string[]) => {
+    documentLinesRef.current = next;
+  }, []);
+
   return (
     <section
       aria-label="编辑器"
@@ -55,7 +59,7 @@ export function EditorArea({ tabs }: { tabs: WorkbenchDemoTab[] }) {
         <span className="text-app-foreground">第一章.md</span>
       </div>
 
-      <PlainTextEditor lines={documentLines} onLinesChange={setDocumentLines} />
+      <PlainTextEditor lines={documentLinesRef.current} onLinesChange={handleLinesChange} />
     </section>
   );
 }
