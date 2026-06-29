@@ -1,8 +1,8 @@
-import type { ProjectMetadata } from "@shared/project";
 import { useLocation } from "wouter";
 
-import { useAutoQueryRequest, useActionState } from "@/lib/app-query";
+import { useActionState } from "@/lib/app-query";
 import { projectsService } from "@/lib/app-rpc";
+import { createAsyncLoader, useAsyncLoader } from "@/lib/async-loader";
 import { cn } from "@/lib/cn";
 import { projectDisplayName } from "@/lib/project-display-name";
 
@@ -19,16 +19,12 @@ const projectCardActionClass = cn(
   "focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-badge-background",
 );
 
+const projectLoader = createAsyncLoader(() => projectsService.recents);
+
 export function ProjectList() {
   const [, navigate] = useLocation();
-  const projectsQuery = useAutoQueryRequest(() => projectsService.recents, {
-    errorMessage: "加载项目列表失败",
-    initialData: [] as ProjectMetadata[],
-  });
+  const [projects, refetch] = useAsyncLoader(projectLoader);
   const actionState = useActionState();
-
-  const projects = projectsQuery.data ?? [];
-  const loading = projectsQuery.initialLoading;
 
   const handleCreateDialog = async () => {
     actionState.clearError();
@@ -61,7 +57,7 @@ export function ProjectList() {
       errorMessage: "从列表移除失败",
     });
     if (removed) {
-      await projectsQuery.refresh();
+      refetch();
     }
   };
 
@@ -100,9 +96,9 @@ export function ProjectList() {
         </div>
       </div>
 
-      {projectsQuery.error ? (
+      {projects.error ? (
         <p className="text-sm text-ctp-red" role="alert">
-          {projectsQuery.error}
+          {projects.error as string}
         </p>
       ) : null}
 
@@ -112,15 +108,15 @@ export function ProjectList() {
         </p>
       ) : null}
 
-      {loading ? (
+      {projects.data == null ? (
         <p className="text-sm text-ctp-subtext0">加载中…</p>
-      ) : projects.length === 0 ? (
+      ) : projects.data.length === 0 ? (
         <p className="text-sm text-ctp-subtext0">
           暂无项目，可「新建项目」或「打开项目」选择 .npk 文件。
         </p>
       ) : (
         <ul className="grid min-h-0 flex-1 auto-rows-min grid-cols-[repeat(auto-fill,minmax(14rem,1fr))] content-start gap-3 overflow-auto">
-          {projects.map((project) => {
+          {projects.data.map((project) => {
             const name = projectDisplayName(project.path);
 
             return (
