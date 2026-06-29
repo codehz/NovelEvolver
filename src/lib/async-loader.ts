@@ -5,6 +5,7 @@ export type AsyncState<T> = {
   error: unknown;
   isLoading: boolean;
   isValidating: boolean;
+  refresh: () => void;
 };
 
 type Listener = () => void;
@@ -24,16 +25,18 @@ export interface AsyncLoader<T> {
  * @param asyncFn - The async function to execute.
  */
 export function createAsyncLoader<T>(asyncFn: () => Promise<T>): AsyncLoader<T> {
+  const listeners = new Set<Listener>();
+  let counter = 0;
+  let pending = false;
+  let shouldRefresh = false;
+
   let state: AsyncState<T> = {
     data: undefined,
     error: undefined,
     isLoading: true,
     isValidating: true,
+    refresh,
   };
-  const listeners = new Set<Listener>();
-  let counter = 0;
-  let pending = false;
-  let shouldRefresh = false;
 
   function getState() {
     return state;
@@ -67,18 +70,19 @@ export function createAsyncLoader<T>(asyncFn: () => Promise<T>): AsyncLoader<T> 
       error: undefined,
       isLoading: !hasPrevData,
       isValidating: true,
+      refresh,
     };
     emit();
 
     try {
       const data = await asyncFn();
       if (id === counter) {
-        state = { data, error: undefined, isLoading: false, isValidating: false };
+        state = { data, error: undefined, isLoading: false, isValidating: false, refresh };
         emit();
       }
     } catch (error) {
       if (id === counter) {
-        state = { data: state.data, error, isLoading: false, isValidating: false };
+        state = { data: state.data, error, isLoading: false, isValidating: false, refresh };
         emit();
       }
     } finally {
@@ -108,9 +112,8 @@ export function createAsyncLoader<T>(asyncFn: () => Promise<T>): AsyncLoader<T> 
  * Subscribes to an AsyncLoader via useSyncExternalStore.
  *
  * @param loader - The AsyncLoader created by createAsyncLoader.
- * @returns A tuple of [state, refresh].
+ * @returns The current AsyncState, which includes a `refresh` function.
  */
-export function useAsyncLoader<T>(loader: AsyncLoader<T>): [AsyncState<T>, () => void] {
-  const state = useSyncExternalStore(loader.subscribe, loader.getState);
-  return [state, loader.refresh];
+export function useAsyncLoader<T>(loader: AsyncLoader<T>): AsyncState<T> {
+  return useSyncExternalStore(loader.subscribe, loader.getState);
 }

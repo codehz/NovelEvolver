@@ -23,7 +23,7 @@ const projectLoader = createAsyncLoader(() => projectsService.recents);
 
 export function ProjectList() {
   const [, navigate] = useLocation();
-  const [projects, refetch] = useAsyncLoader(projectLoader);
+  const projects = useAsyncLoader(projectLoader);
   const actionState = useActionState();
 
   const handleCreateDialog = async () => {
@@ -57,7 +57,7 @@ export function ProjectList() {
       errorMessage: "从列表移除失败",
     });
     if (removed) {
-      refetch();
+      projects.refresh();
     }
   };
 
