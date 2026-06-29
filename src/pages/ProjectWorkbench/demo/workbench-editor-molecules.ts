@@ -1,13 +1,15 @@
 import { createScope, molecule, use } from "bunshi";
 import { atom } from "jotai";
 
-import { ProjectHandle } from "@shared/rpc/projects-rpc";
-import { RpcStub } from "capnweb";
+import { ProjectHandleWithMetadata } from "@shared/rpc/projects-rpc";
+import { RpcPromise } from "capnweb";
 import type { EditorCaretPosition, EditorSelectionSnapshot } from "./editor-caret";
 import type { WorkbenchDemoTab } from "./types";
 
 /** 每个项目工作台实例一条作用域链（多项目窗口互不干扰）。 */
-export const projectScope = createScope<RpcStub<ProjectHandle>>(null as never);
+export const projectScope = createScope<Awaited<RpcPromise<ProjectHandleWithMetadata>>>(
+  null as never,
+);
 
 /** 每个已打开标签页一条作用域（value = tab id），caret 与文稿按 tab 隔离。 */
 export const editorTabScope = createScope("");
@@ -25,6 +27,8 @@ export const workbenchEditorMolecule = molecule(() => {
     activeTabIdAtom,
   };
 });
+
+export const projectMolecule = molecule(() => use(projectScope));
 
 export const editorTabMolecule = molecule(() => {
   use(editorTabScope);

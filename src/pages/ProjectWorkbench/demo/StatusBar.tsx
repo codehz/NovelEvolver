@@ -1,9 +1,8 @@
-import type { RpcStub } from "capnweb";
-
-import type { ProjectHandle } from "@shared/rpc/projects-rpc";
+import { useMolecule } from "bunshi/react";
 import { useQueryRequest } from "@/lib/app-query";
 import { formatEditorCaretPosition } from "./editor-caret";
 import { useActiveTabCaretPosition } from "./use-active-tab-caret";
+import { projectMolecule } from "./workbench-editor-molecules";
 
 const leftStaticItems = [{ id: "sync", label: "同步", icon: "icon-[codicon--sync]" }];
 
@@ -15,9 +14,10 @@ const rightStaticItems = [
 
 const branchFallbackLabel = "无分支";
 
-export function StatusBar({ project }: { project: RpcStub<ProjectHandle> }) {
+export function StatusBar() {
   const caret = useActiveTabCaretPosition();
-  const branchQuery = useQueryRequest(() => project.head, {
+  const project = useMolecule(projectMolecule);
+  const branchQuery = useQueryRequest(() => project.handle.head, {
     args: [],
     deps: [project],
     errorMessage: branchFallbackLabel,

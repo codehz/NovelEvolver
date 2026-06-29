@@ -67,9 +67,9 @@ export function ProjectWorkbench() {
           </Link>
         </div>
       ) : project ? (
-        <ScopeProvider scope={projectScope} value={project.handle}>
+        <ScopeProvider scope={projectScope} value={project}>
           <WorkbenchLayout
-            {...buildWorkbenchDemoSlots(projectDisplayName(project.metadata.path), project.handle)}
+            {...buildWorkbenchDemoSlots(projectDisplayName(project.metadata.path))}
           />
         </ScopeProvider>
       ) : null}
