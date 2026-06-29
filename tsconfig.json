@@ -15,7 +15,18 @@
     "isolatedModules": true,
     "noEmit": true,
     "jsx": "react-jsx",
-    "types": ["vite/client", "node"]
+    "types": ["vite/client", "node"],
+    "paths": {
+      "@/*": ["./src/*"],
+      "@shared/*": ["./shared/*"]
+    }
   },
-  "include": ["src", "electron", "shared", "vite.config.ts", "tsdown.electron.mts"]
+  "include": [
+    "src",
+    "electron",
+    "shared",
+    "path-aliases.ts",
+    "vite.config.ts",
+    "tsdown.electron.mts"
+  ]
 }
