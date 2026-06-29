@@ -1,3 +1,4 @@
+import type { RpcSubscriptionStream } from "@shared/rpc/stream";
 import type { WindowState } from "@shared/window";
 
 export interface WindowService {
@@ -5,5 +6,5 @@ export interface WindowService {
   toggleMaximize(): Promise<WindowState>;
   close(): Promise<void>;
   setTitle(title: string): Promise<void>;
-  subscribeState(): Promise<ReadableStream<WindowState>>;
+  subscribeState(): RpcSubscriptionStream<WindowState>;
 }
