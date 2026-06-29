@@ -1,7 +1,13 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback } from "react";
 import { useLocation } from "wouter";
 
 import type { ProjectListItem } from "@shared/project";
+import {
+  clearRequestErrors,
+  pickRequestError,
+  useActionRequest,
+  useAutoQueryRequest,
+} from "@/lib/app-query";
 import { projectsService } from "@/lib/app-rpc";
 import { cn } from "@/lib/cn";
 import { projectDisplayName } from "@/lib/project-display-name";
@@ -20,81 +26,85 @@ const projectCardActionClass = cn(
 
 export function ProjectList() {
   const [, navigate] = useLocation();
-  const [projects, setProjects] = useState<ProjectListItem[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [opening, setOpening] = useState(false);
-  const [creating, setCreating] = useState(false);
-  const dialogBusy = opening || creating;
+  const projectsQuery = useAutoQueryRequest(() => projectsService.recents, {
+    errorMessage: "加载项目列表失败",
+    initialData: [] as ProjectListItem[],
+  });
+  const createProjectAction = useActionRequest(() => projectsService.createProjectDialog(), {
+    errorMessage: "创建项目失败",
+  });
+  const openProjectDialogAction = useActionRequest(() => projectsService.openProjectDialog(), {
+    errorMessage: "打开项目文件失败",
+  });
+  const openProjectAction = useActionRequest((id: number) => projectsService.recordOpen(id), {
+    errorMessage: "打开项目失败",
+  });
+  const removeProjectAction = useActionRequest((id: number) => projectsService.removeRecent(id), {
+    errorMessage: "从列表移除失败",
+  });
 
-  const refresh = useCallback(async () => {
-    setError(null);
-    try {
-      const list = await projectsService.recents;
-      setProjects(list);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "加载项目列表失败");
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+  const projects = projectsQuery.data ?? [];
+  const loading = projectsQuery.initialLoading;
+  const dialogBusy = createProjectAction.pending || openProjectDialogAction.pending;
+  const error = pickRequestError([
+    createProjectAction,
+    openProjectDialogAction,
+    openProjectAction,
+    removeProjectAction,
+    projectsQuery,
+  ]);
 
-  useEffect(() => {
-    void refresh();
-  }, [refresh]);
+  const clearError = useCallback(() => {
+    clearRequestErrors([
+      createProjectAction,
+      openProjectDialogAction,
+      openProjectAction,
+      removeProjectAction,
+      projectsQuery,
+    ]);
+  }, [
+    createProjectAction,
+    openProjectAction,
+    openProjectDialogAction,
+    projectsQuery,
+    removeProjectAction,
+  ]);
 
   const handleCreateDialog = async () => {
-    setCreating(true);
-    setError(null);
-    try {
-      const project = await projectsService.createProjectDialog();
-      if (project) {
-        navigate(`/project/${project.id}`);
-      }
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "创建项目失败");
-    } finally {
-      setCreating(false);
+    clearError();
+    const result = await createProjectAction.run();
+    if (result.ok && result.data) {
+      navigate(`/project/${result.data.id}`);
     }
   };
 
   const handleOpenDialog = async () => {
-    setOpening(true);
-    setError(null);
-    try {
-      const project = await projectsService.openProjectDialog();
-      if (project) {
-        navigate(`/project/${project.id}`);
-      }
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "打开项目文件失败");
-    } finally {
-      setOpening(false);
+    clearError();
+    const result = await openProjectDialogAction.run();
+    if (result.ok && result.data) {
+      navigate(`/project/${result.data.id}`);
     }
   };
 
   const handleOpenProject = async (id: number) => {
-    setError(null);
-    try {
-      const record = await projectsService.recordOpen(id);
-      if (!record) {
-        setError("未找到该项目");
-        await refresh();
-        return;
-      }
-      navigate(`/project/${record.id}`);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "打开项目失败");
+    clearError();
+    const result = await openProjectAction.run(id);
+    if (!result.ok) {
+      return;
     }
+    if (!result.data) {
+      openProjectAction.setError("未找到该项目");
+      await projectsQuery.refresh();
+      return;
+    }
+    navigate(`/project/${result.data.id}`);
   };
 
   const handleRemoveProject = async (id: number) => {
-    setError(null);
-    try {
-      await projectsService.removeRecent(id);
-      await refresh();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "从列表移除失败");
+    clearError();
+    const result = await removeProjectAction.run(id);
+    if (result.ok && result.data) {
+      await projectsQuery.refresh();
     }
   };
 
@@ -115,7 +125,7 @@ export function ProjectList() {
               void handleCreateDialog();
             }}
           >
-            {creating ? "创建中…" : "新建项目"}
+            {createProjectAction.pending ? "创建中…" : "新建项目"}
           </button>
           <button
             className={cn(
@@ -128,7 +138,7 @@ export function ProjectList() {
               void handleOpenDialog();
             }}
           >
-            {opening ? "选择中…" : "打开项目"}
+            {openProjectDialogAction.pending ? "选择中…" : "打开项目"}
           </button>
         </div>
       </div>

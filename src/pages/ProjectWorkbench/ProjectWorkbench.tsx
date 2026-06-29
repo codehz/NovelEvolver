@@ -1,10 +1,9 @@
 import { ScopeProvider } from "bunshi/react";
-import { useEffect, useState } from "react";
 import { Link, useParams } from "wouter";
 
-import type { ProjectListItem } from "@shared/project";
 import { TitleBarTitle } from "@/components/TitleBarTitle";
 import { WorkbenchLayout } from "@/components/workbench";
+import { skipToken, useQueryRequest } from "@/lib/app-query";
 import { projectsService } from "@/lib/app-rpc";
 import { cn } from "@/lib/cn";
 import { projectDisplayName } from "@/lib/project-display-name";
@@ -15,50 +14,23 @@ export function ProjectWorkbench() {
   const { projectId } = useParams<{ projectId: string }>();
   const parsedId = projectId ? Number.parseInt(projectId, 10) : Number.NaN;
   const validId = Number.isFinite(parsedId) && parsedId > 0;
+  const projectQuery = useQueryRequest((id: number) => projectsService.getRecent(id), {
+    args: validId ? [parsedId] : skipToken,
+    clearDataOnLoad: true,
+    deps: [parsedId],
+    errorMessage: "加载项目失败",
+    initialData: null,
+  });
 
-  const [project, setProject] = useState<ProjectListItem | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    if (!validId) {
-      setLoading(false);
-      setError("无效的项目 ID");
-      return;
-    }
-
-    let cancelled = false;
-    setLoading(true);
-    setError(null);
-
-    void projectsService
-      .getRecent(parsedId)
-      .then((record) => {
-        if (cancelled) {
-          return;
-        }
-        if (!record) {
-          setProject(null);
-          setError("未找到该项目，可能已从列表移除");
-          return;
-        }
-        setProject(record);
-      })
-      .catch((err) => {
-        if (!cancelled) {
-          setError(err instanceof Error ? err.message : "加载项目失败");
-        }
-      })
-      .finally(() => {
-        if (!cancelled) {
-          setLoading(false);
-        }
-      });
-
-    return () => {
-      cancelled = true;
-    };
-  }, [parsedId, validId]);
+  const project = projectQuery.data ?? null;
+  const loading = validId ? projectQuery.loading : false;
+  const error = !validId
+    ? "无效的项目 ID"
+    : projectQuery.error
+      ? projectQuery.error
+      : projectQuery.hasLoaded && !project
+        ? "未找到该项目，可能已从列表移除"
+        : null;
 
   const titleBarLabel = !validId
     ? "无效的项目"
