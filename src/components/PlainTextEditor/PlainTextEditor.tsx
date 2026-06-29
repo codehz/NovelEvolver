@@ -19,6 +19,7 @@ import {
   readSelectionSnapshotFromEditor,
   setLogicalSelection,
   splitPlainTextDocument,
+  syncCurrentLineHighlight,
   writePhysicalLinesToEditor,
   type PlainTextEditorLineClasses,
 } from "./plain-text-editor-dom";
@@ -29,12 +30,13 @@ const editorRootClass = cn("min-h-0 min-w-0 flex-1");
 const editorSurfaceClass = cn(
   "grid w-full auto-rows-[minmax(min-content,auto)] grid-cols-[max-content_minmax(0,1fr)]",
   "content-start gap-x-pte-gutter counter-reset-pte-line",
-  "px-3 font-mono text-sm text-app-foreground outline-none",
+  "font-mono text-sm text-app-foreground outline-none",
 );
 
 const plainTextEditorLineRowClass = cn(
-  "col-span-full grid min-h-pte-line grid-cols-subgrid items-baseline leading-pte-line",
+  "col-span-full grid min-h-pte-line grid-cols-subgrid items-baseline px-3 leading-pte-line",
   "counter-increment-pte-line",
+  "data-pte-current-line:bg-pte-line-highlight",
   "before:col-start-1 before:self-baseline before:text-right before:leading-pte-line",
   "before:whitespace-nowrap before:text-pte-line-number before:tabular-nums before:select-none",
   "before:content-counter-pte-line",
@@ -63,6 +65,7 @@ export type PlainTextEditorProps = {
   selectionSnapshot?: PlainTextEditorSelectionSnapshot | null;
   onSelectionSnapshotChange?: (snapshot: PlainTextEditorSelectionSnapshot | null) => void;
   onCaretChange?: (caret: PlainTextEditorCaretPosition) => void;
+  highlightCurrentLine?: boolean;
   "aria-label"?: string;
 };
 
@@ -74,6 +77,7 @@ export function PlainTextEditor({
   selectionSnapshot = null,
   onSelectionSnapshotChange,
   onCaretChange,
+  highlightCurrentLine = true,
   "aria-label": ariaLabel = "纯文本编辑器",
 }: PlainTextEditorProps) {
   const initialDefaultRef = useRef(defaultValue);
@@ -116,18 +120,29 @@ export function PlainTextEditor({
 
   const publishCaretPosition = useCallback(() => {
     const root = rootRef.current;
-    if (!root || document.activeElement !== root) {
+    if (!root) {
+      return;
+    }
+    if (document.activeElement !== root) {
+      if (highlightCurrentLine) {
+        syncCurrentLineHighlight(root, null, false);
+      }
       return;
     }
     const snapshot = readSelectionSnapshotFromEditor(root);
     if (snapshot) {
       onSelectionSnapshotChange?.(snapshot);
+      if (highlightCurrentLine) {
+        syncCurrentLineHighlight(root, snapshot.focus.lineIndex, true);
+      }
+    } else if (highlightCurrentLine) {
+      syncCurrentLineHighlight(root, null, false);
     }
     const position = readCaretPositionFromEditor(root);
     if (position) {
       onCaretChange?.(position);
     }
-  }, [onCaretChange, onSelectionSnapshotChange]);
+  }, [highlightCurrentLine, onCaretChange, onSelectionSnapshotChange]);
 
   const scheduleCaretPositionPublish = useCallback(() => {
     if (caretFrameRef.current !== null) {
@@ -265,6 +280,10 @@ export function PlainTextEditor({
         }}
         onBlur={() => {
           commitFromDom();
+          const root = rootRef.current;
+          if (root && highlightCurrentLine) {
+            syncCurrentLineHighlight(root, null, false);
+          }
         }}
         onPaste={(event: ClipboardEvent<HTMLDivElement>) => {
           event.preventDefault();

@@ -454,3 +454,18 @@ function replaceSelectionWithLines(
     },
   };
 }
+
+export function syncCurrentLineHighlight(
+  root: HTMLElement,
+  lineIndex: number | null,
+  enabled: boolean,
+): void {
+  const blocks = getPhysicalLineBlocks(root);
+  blocks.forEach((block, index) => {
+    if (enabled && lineIndex !== null && index === lineIndex) {
+      block.dataset.pteCurrentLine = "true";
+      return;
+    }
+    delete block.dataset.pteCurrentLine;
+  });
+}

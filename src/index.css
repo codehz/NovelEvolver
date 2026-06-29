@@ -57,6 +57,7 @@
   --spacing-pte-line: 1.5rem;
   --spacing-pte-gutter: 0.75rem;
   --color-pte-line-number: var(--color-ctp-overlay0);
+  --color-pte-line-highlight: color-mix(in srgb, var(--color-ctp-surface0) 42%, transparent);
   --counter-pte-line: pte-line;
   --font-display: "MiSans", sans-serif;
 }
