@@ -1,6 +1,6 @@
 import { useEffect, type ReactNode } from "react";
 
-import { TitleBarPortalContent } from "../lib/titlebar-portal";
+import { TitleBarPortalContent } from "@/lib/titlebar-portal";
 
 export const defaultWindowTitle = "NovelEvolver";
 

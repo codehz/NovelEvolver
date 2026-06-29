@@ -1,5 +1,5 @@
-import { cn } from "../../../lib/cn";
-import { TitleBarActionsPortalContent } from "../../../lib/titlebar-portal";
+import { cn } from "@/lib/cn";
+import { TitleBarActionsPortalContent } from "@/lib/titlebar-portal";
 
 const toggleButtonClass = cn(
   "inline-flex size-7 shrink-0 items-center justify-center rounded-full border-0 bg-transparent p-0",

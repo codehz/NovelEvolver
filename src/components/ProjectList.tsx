@@ -1,9 +1,9 @@
 import { useCallback, useEffect, useState } from "react";
 import { useLocation } from "wouter";
 
-import type { ProjectListItem } from "../../shared/project";
-import { cn } from "../lib/cn";
-import { projectDisplayName } from "../lib/project-display-name";
+import type { ProjectListItem } from "@shared/project";
+import { cn } from "@/lib/cn";
+import { projectDisplayName } from "@/lib/project-display-name";
 import { TitleBarTitle } from "./TitleBarTitle";
 
 function formatLastOpened(timestamp: number): string {

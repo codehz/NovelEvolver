@@ -8,7 +8,7 @@ import {
   useState,
 } from "react";
 
-import { cn } from "../lib/cn";
+import { cn } from "@/lib/cn";
 
 const SCROLLBAR_HIDE_DELAY_MS = 400;
 const MIN_THUMB_HEIGHT_PX = 24;

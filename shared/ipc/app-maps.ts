@@ -1,5 +1,5 @@
-import type { ProjectListItem, ProjectRecord } from "../project";
-import type { WindowState } from "../window";
+import type { ProjectListItem, ProjectRecord } from "@shared/project";
+import type { WindowState } from "@shared/window";
 
 export type AppIpcMethodMap = {
   "window:get-state": () => Promise<WindowState>;

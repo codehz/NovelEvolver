@@ -1,10 +1,6 @@
 import type { IpcMain, IpcMainInvokeEvent, WebContents } from "electron";
 
-import type {
-  IpcEventMapBase,
-  IpcMainMethodHandlers,
-  IpcMethodMapBase,
-} from "../../shared/ipc/types";
+import type { IpcEventMapBase, IpcMainMethodHandlers, IpcMethodMapBase } from "@shared/ipc/types";
 
 export function registerIpcMethods<M extends IpcMethodMapBase>(
   ipcMain: IpcMain,

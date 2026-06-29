@@ -1,6 +1,6 @@
 /// <reference types="vite/client" />
 
-import type { AppInvokeIpc, AppOnIpcEvent } from "../shared/ipc/renderer";
+import type { AppInvokeIpc, AppOnIpcEvent } from "@shared/ipc/renderer";
 
 declare global {
   interface Window {

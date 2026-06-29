@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 
-import { cn } from "../../../lib/cn";
+import { cn } from "@/lib/cn";
 import { sidebarHeaderActionClass, sidebarHeaderIconClass } from "../sidebar/sidebar-header-chrome";
 import type { ActivityViewId } from "../types";
 

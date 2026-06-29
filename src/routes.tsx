@@ -1,7 +1,7 @@
 import { Route, Switch } from "wouter";
 
-import { ProjectList } from "./components/ProjectList";
-import { ProjectWorkbench } from "./pages/ProjectWorkbench";
+import { ProjectList } from "@/components/ProjectList";
+import { ProjectWorkbench } from "@/pages/ProjectWorkbench";
 
 export function AppRoutes() {
   return (

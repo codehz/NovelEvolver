@@ -3,8 +3,8 @@ import { existsSync } from "node:fs";
 import { dialog } from "electron";
 import { createSqliteRepository } from "nano-git/repository/sqlite";
 
-import type { ProjectsIpcMethodMap } from "../../shared/ipc/app-maps";
-import type { IpcMainMethodHandlers } from "../../shared/ipc/types";
+import type { ProjectsIpcMethodMap } from "@shared/ipc/app-maps";
+import type { IpcMainMethodHandlers } from "@shared/ipc/types";
 import { projectWithDisplayPath } from "../home-path";
 import type { IpcMainDeps } from "./deps";
 import { getSenderWindow } from "./window-helpers";

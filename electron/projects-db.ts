@@ -1,6 +1,6 @@
 import { DatabaseSync } from "node:sqlite";
 
-import type { ProjectRecord } from "../shared/project";
+import type { ProjectRecord } from "@shared/project";
 
 type ProjectRow = {
   id: number;

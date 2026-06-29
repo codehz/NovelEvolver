@@ -1,5 +1,5 @@
-import type { WindowIpcMethodMap } from "../../shared/ipc/app-maps";
-import type { IpcMainMethodHandlers } from "../../shared/ipc/types";
+import type { WindowIpcMethodMap } from "@shared/ipc/app-maps";
+import type { IpcMainMethodHandlers } from "@shared/ipc/types";
 import { getSenderWindow, getWindowState } from "./window-helpers";
 
 export function createWindowIpcMethodHandlers(): IpcMainMethodHandlers<WindowIpcMethodMap> {

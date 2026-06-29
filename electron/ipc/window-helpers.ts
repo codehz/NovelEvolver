@@ -1,6 +1,6 @@
 import { BrowserWindow, type IpcMainInvokeEvent } from "electron";
 
-import type { WindowState } from "../../shared/window";
+import type { WindowState } from "@shared/window";
 import { sendIpcEvent } from "./register";
 
 export function getWindowState(window: BrowserWindow): WindowState {
