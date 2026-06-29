@@ -16,11 +16,11 @@ export class AppRpcRootImpl extends RpcTarget implements AppRpcRoot {
     this.#projectsService = projectsService;
   }
 
-  async getWindowService(): Promise<WindowService> {
+  get window(): WindowService {
     return this.#windowService;
   }
 
-  async getProjectsService(): Promise<ProjectsService> {
+  get projects(): ProjectsService {
     return this.#projectsService;
   }
 

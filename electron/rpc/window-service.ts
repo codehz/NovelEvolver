@@ -51,7 +51,7 @@ export class WindowServiceImpl extends RpcTarget implements WindowService {
     this.#deps = deps;
   }
 
-  async getState(): Promise<WindowState> {
+  get state(): WindowState {
     return this.#deps.getWindowState(this.#window);
   }
 
@@ -66,7 +66,7 @@ export class WindowServiceImpl extends RpcTarget implements WindowService {
       this.#window.maximize();
     }
 
-    return this.getState();
+    return this.state;
   }
 
   async close(): Promise<void> {
@@ -84,7 +84,7 @@ export class WindowServiceImpl extends RpcTarget implements WindowService {
     this.#subscriptions.set(id, { listener });
 
     try {
-      await listener.onStateChanged(await this.getState());
+      await listener.onStateChanged(this.state);
     } catch {
       this.removeSubscription(id);
       throw new Error("Failed to establish window state subscription.");
@@ -98,7 +98,7 @@ export class WindowServiceImpl extends RpcTarget implements WindowService {
       return;
     }
 
-    const state = await this.getState();
+    const state = this.state;
 
     for (const [id, record] of this.#subscriptions) {
       try {

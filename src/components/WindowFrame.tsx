@@ -1,7 +1,7 @@
 import { useEffect, useState, type ReactNode } from "react";
 
 import type { WindowState } from "@shared/window";
-import { getWindowService } from "@/lib/app-rpc";
+import { windowService } from "@/lib/app-rpc";
 import { cn } from "@/lib/cn";
 import { TitleBarActionsPortalTarget, TitleBarPortalTarget } from "@/lib/titlebar-portal";
 
@@ -84,16 +84,13 @@ export function WindowFrame({ children }: { children: ReactNode }) {
 
     const listener = new ListenerImpl();
 
-    void getWindowService()
-      .then(async (windowService) => {
-        await windowService
-          .getState()
-          .then(setWindowState)
-          .catch(() => {
-            setWindowState(fallbackWindowState);
-          });
+    void windowService.state.then(setWindowState).catch(() => {
+      setWindowState(fallbackWindowState);
+    });
 
-        const subscription = await windowService.subscribeState(listener);
+    void windowService
+      .subscribeState(listener)
+      .then((subscription) => {
         unsubscribe = () => {
           void subscription.unsubscribe().finally(() => {
             subscription[Symbol.dispose]();
@@ -153,15 +150,13 @@ export function WindowFrame({ children }: { children: ReactNode }) {
               <WindowControls
                 isMaximized={windowState.isMaximized}
                 onMinimize={() => {
-                  void getWindowService().then((windowService) => windowService.minimize());
+                  void windowService.minimize();
                 }}
                 onToggleMaximize={() => {
-                  void getWindowService()
-                    .then((windowService) => windowService.toggleMaximize())
-                    .then(setWindowState);
+                  void windowService.toggleMaximize().then(setWindowState);
                 }}
                 onClose={() => {
-                  void getWindowService().then((windowService) => windowService.close());
+                  void windowService.close();
                 }}
               />
             </div>

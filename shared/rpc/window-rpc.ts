@@ -3,7 +3,7 @@ import { RpcTarget } from "capnweb";
 import type { WindowState } from "@shared/window";
 
 export interface WindowService {
-  getState(): Promise<WindowState>;
+  readonly state: WindowState;
   minimize(): Promise<void>;
   toggleMaximize(): Promise<WindowState>;
   close(): Promise<void>;

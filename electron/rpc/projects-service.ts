@@ -19,7 +19,7 @@ export class ProjectsServiceImpl extends RpcTarget implements ProjectsService {
     this.#deps = deps;
   }
 
-  async listRecents(): Promise<ProjectListItem[]> {
+  get recents(): ProjectListItem[] {
     return this.#deps
       .getProjectsDb()
       .list()

@@ -1,7 +1,7 @@
 import type { ProjectListItem, ProjectRecord } from "@shared/project";
 
 export interface ProjectsService {
-  listRecents(): Promise<ProjectListItem[]>;
+  readonly recents: ProjectListItem[];
   getRecent(id: number): Promise<ProjectListItem | null>;
   openProjectDialog(): Promise<ProjectRecord | null>;
   createProjectDialog(): Promise<ProjectRecord | null>;

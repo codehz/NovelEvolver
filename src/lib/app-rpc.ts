@@ -10,10 +10,6 @@ type AppRpcClientState = {
   root: RpcStub<AppRpcRoot>;
 };
 
-let appRpcStatePromise: Promise<AppRpcClientState> | null = null;
-let windowServicePromise: Promise<unknown> | null = null;
-let projectsServicePromise: Promise<unknown> | null = null;
-
 async function createAppRpcClientState(): Promise<AppRpcClientState> {
   const bridge = window.appRpcBridge as AppRpcTransportBridge;
   const { sessionId } = await bridge.connect();
@@ -24,40 +20,12 @@ async function createAppRpcClientState(): Promise<AppRpcClientState> {
   return { transport, session, root };
 }
 
-async function getAppRpcState(): Promise<AppRpcClientState> {
-  appRpcStatePromise ??= createAppRpcClientState();
-  return appRpcStatePromise;
-}
+const appRpcState = await createAppRpcClientState();
 
-export async function getAppRpc(): Promise<RpcStub<AppRpcRoot>> {
-  const state = await getAppRpcState();
-  return state.root;
-}
-
-export async function getWindowService() {
-  if (!windowServicePromise) {
-    windowServicePromise = getAppRpc().then((root) => root.getWindowService());
-  }
-
-  return windowServicePromise as Promise<
-    Awaited<ReturnType<RpcStub<AppRpcRoot>["getWindowService"]>>
-  >;
-}
-
-export async function getProjectsService() {
-  if (!projectsServicePromise) {
-    projectsServicePromise = getAppRpc().then((root) => root.getProjectsService());
-  }
-
-  return projectsServicePromise as Promise<
-    Awaited<ReturnType<RpcStub<AppRpcRoot>["getProjectsService"]>>
-  >;
-}
+export const appRpc = appRpcState.root;
+export const windowService = appRpc.window;
+export const projectsService = appRpc.projects;
 
 window.addEventListener("beforeunload", () => {
-  if (!appRpcStatePromise) {
-    return;
-  }
-
-  void appRpcStatePromise.then((state) => state.transport.disconnect("Window unloaded."));
+  void appRpcState.transport.disconnect("Window unloaded.");
 });
