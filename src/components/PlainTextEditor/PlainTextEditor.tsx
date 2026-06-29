@@ -1,53 +1,24 @@
+import { defaultKeymap, history, historyKeymap } from "@codemirror/commands";
+import { Compartment, EditorState, type Extension } from "@codemirror/state";
 import {
-  useCallback,
-  useEffect,
-  useImperativeHandle,
-  useLayoutEffect,
-  useMemo,
-  useRef,
-  type ClipboardEvent,
-} from "react";
-import { ScrollArea } from "@/components/ScrollArea";
+  drawSelection,
+  EditorView,
+  highlightActiveLine,
+  highlightActiveLineGutter,
+  keymap,
+} from "@codemirror/view";
+import { useCallback, useEffect, useImperativeHandle, useLayoutEffect, useRef } from "react";
 import { cn } from "@/lib/cn";
 import {
-  applyPlainTextPaste,
-  applyPhysicalEnter,
-  joinPlainTextDocument,
-  normalizeEditorDom,
-  readCaretPositionFromEditor,
-  readPhysicalLinesFromEditor,
+  caretPositionFromState,
+  editorSelectionFromSnapshot,
   isPlainTextEditorSelectionCollapsed,
-  readSelectionSnapshotFromEditor,
-  setLogicalSelection,
-  splitPlainTextDocument,
-  syncCurrentLineHighlight,
-  writePhysicalLinesToEditor,
-  type PlainTextEditorLineClasses,
-} from "./plain-text-editor-dom";
+  selectionSnapshotFromState,
+} from "./codemirror-selection";
+import { editorHostClass, plainTextEditorExtensions } from "./codemirror-theme";
 import type { PlainTextEditorCaretPosition, PlainTextEditorSelectionSnapshot } from "./types";
 
 const editorRootClass = cn("min-h-0 min-w-0 flex-1");
-
-const editorSurfaceClass = cn(
-  "grid w-full auto-rows-[minmax(min-content,auto)] grid-cols-[max-content_minmax(0,1fr)]",
-  "content-start gap-x-pte-gutter counter-reset-pte-line",
-  "font-mono text-sm text-app-foreground outline-none",
-  "selection:bg-pte-selection",
-);
-
-const plainTextEditorLineRowClass = cn(
-  "col-span-full grid min-h-pte-line grid-cols-subgrid items-baseline px-3 leading-pte-line",
-  "counter-increment-pte-line",
-  "data-pte-current-line:bg-pte-line-highlight",
-  "before:col-start-1 before:self-baseline before:text-right before:leading-pte-line",
-  "before:whitespace-nowrap before:text-pte-line-number before:tabular-nums before:select-none",
-  "before:content-counter-pte-line",
-);
-
-const lineContentClass = cn(
-  "col-start-2 min-h-pte-line min-w-0 self-baseline leading-pte-line",
-  "wrap-break-word whitespace-pre-wrap",
-);
 
 export type PlainTextEditorHandle = {
   focus: () => void;
@@ -71,6 +42,13 @@ export type PlainTextEditorProps = {
   "aria-label"?: string;
 };
 
+function activeLineExtensions(highlight: boolean, collapsed: boolean): Extension[] {
+  if (!highlight || !collapsed) {
+    return [];
+  }
+  return [highlightActiveLine(), highlightActiveLineGutter()];
+}
+
 export function PlainTextEditor({
   ref,
   defaultValue = "",
@@ -83,143 +61,126 @@ export function PlainTextEditor({
   "aria-label": ariaLabel = "纯文本编辑器",
 }: PlainTextEditorProps) {
   const initialDefaultRef = useRef(defaultValue);
-  const rootRef = useRef<HTMLDivElement>(null);
-  const linesRef = useRef<string[]>([]);
-  const seededRef = useRef(false);
-  const caretFrameRef = useRef<number | null>(null);
+  const hostRef = useRef<HTMLDivElement>(null);
+  const viewRef = useRef<EditorView | null>(null);
   const selectionSnapshotRef = useRef(selectionSnapshot);
   const wasActiveRef = useRef(active);
+  const onChangeRef = useRef(onChange);
+  const onCaretChangeRef = useRef(onCaretChange);
+  const onSelectionSnapshotChangeRef = useRef(onSelectionSnapshotChange);
+  const highlightCurrentLineRef = useRef(highlightCurrentLine);
+  const activeLineCollapsedRef = useRef<boolean | null>(null);
+  const activeLineCompartmentRef = useRef(new Compartment());
 
   selectionSnapshotRef.current = selectionSnapshot;
+  onChangeRef.current = onChange;
+  onCaretChangeRef.current = onCaretChange;
+  onSelectionSnapshotChangeRef.current = onSelectionSnapshotChange;
+  highlightCurrentLineRef.current = highlightCurrentLine;
 
-  const lineClasses = useMemo<PlainTextEditorLineClasses>(
-    () => ({
-      lineRowClass: plainTextEditorLineRowClass,
-      lineContentClass,
-    }),
+  const syncActiveLineHighlight = useCallback(
+    (view: EditorView, snapshot: PlainTextEditorSelectionSnapshot) => {
+      if (!highlightCurrentLineRef.current) {
+        return;
+      }
+      const collapsed = isPlainTextEditorSelectionCollapsed(snapshot);
+      if (activeLineCollapsedRef.current === collapsed) {
+        return;
+      }
+      activeLineCollapsedRef.current = collapsed;
+      view.dispatch({
+        effects: activeLineCompartmentRef.current.reconfigure(
+          activeLineExtensions(true, collapsed),
+        ),
+      });
+    },
     [],
   );
 
-  const syncDomFromLines = useCallback(
-    (nextLines: string[]) => {
-      const root = rootRef.current;
-      if (!root) {
+  const publishSelectionState = useCallback(
+    (view: EditorView) => {
+      if (!view.hasFocus) {
+        if (highlightCurrentLineRef.current && activeLineCollapsedRef.current !== null) {
+          activeLineCollapsedRef.current = null;
+          view.dispatch({
+            effects: activeLineCompartmentRef.current.reconfigure([]),
+          });
+        }
         return;
       }
-      writePhysicalLinesToEditor(root, nextLines, lineClasses);
+
+      const snapshot = selectionSnapshotFromState(view.state);
+      onSelectionSnapshotChangeRef.current?.(snapshot);
+      onCaretChangeRef.current?.(caretPositionFromState(view.state));
+      syncActiveLineHighlight(view, snapshot);
     },
-    [lineClasses],
+    [syncActiveLineHighlight],
   );
 
   useEffect(() => {
-    if (seededRef.current) {
+    const host = hostRef.current;
+    if (!host) {
       return;
     }
-    seededRef.current = true;
-    linesRef.current = splitPlainTextDocument(initialDefaultRef.current);
-    syncDomFromLines(linesRef.current);
-  }, [syncDomFromLines]);
 
-  const publishCaretPosition = useCallback(() => {
-    const root = rootRef.current;
-    if (!root) {
-      return;
-    }
-    if (document.activeElement !== root) {
-      if (highlightCurrentLine) {
-        syncCurrentLineHighlight(root, null, false);
-      }
-      return;
-    }
-    const snapshot = readSelectionSnapshotFromEditor(root);
-    if (snapshot) {
-      onSelectionSnapshotChange?.(snapshot);
-      if (highlightCurrentLine) {
-        if (isPlainTextEditorSelectionCollapsed(snapshot)) {
-          syncCurrentLineHighlight(root, snapshot.focus.lineIndex, true);
-        } else {
-          syncCurrentLineHighlight(root, null, false);
+    const activeLineCompartment = activeLineCompartmentRef.current;
+    const extensions: Extension[] = [
+      ...plainTextEditorExtensions,
+      history(),
+      drawSelection(),
+      keymap.of([...defaultKeymap, ...historyKeymap]),
+      activeLineCompartment.of(activeLineExtensions(highlightCurrentLineRef.current, true)),
+      EditorView.updateListener.of((update) => {
+        if (update.docChanged) {
+          onChangeRef.current?.(update.state.doc.toString());
         }
-      }
-    } else if (highlightCurrentLine) {
-      syncCurrentLineHighlight(root, null, false);
-    }
-    const position = readCaretPositionFromEditor(root);
-    if (position) {
-      onCaretChange?.(position);
-    }
-  }, [highlightCurrentLine, onCaretChange, onSelectionSnapshotChange]);
+        if (update.docChanged || update.selectionSet || update.focusChanged) {
+          publishSelectionState(update.view);
+        }
+      }),
+      EditorView.contentAttributes.of({
+        "aria-label": ariaLabel,
+        "aria-multiline": "true",
+        role: "textbox",
+      }),
+    ];
 
-  const scheduleCaretPositionPublish = useCallback(() => {
-    if (caretFrameRef.current !== null) {
-      return;
-    }
-    caretFrameRef.current = window.requestAnimationFrame(() => {
-      caretFrameRef.current = null;
-      publishCaretPosition();
+    let state = EditorState.create({
+      doc: initialDefaultRef.current,
+      extensions,
     });
-  }, [publishCaretPosition]);
 
-  const clearScheduledCaretPublish = useCallback(() => {
-    if (caretFrameRef.current === null) {
-      return;
+    const initialSnapshot = selectionSnapshotRef.current;
+    if (initialSnapshot) {
+      state = state.update({
+        selection: editorSelectionFromSnapshot(state.doc, initialSnapshot),
+      }).state;
     }
-    window.cancelAnimationFrame(caretFrameRef.current);
-    caretFrameRef.current = null;
-  }, []);
 
-  const commitFromDom = useCallback(() => {
-    const root = rootRef.current;
-    if (!root) {
-      return;
-    }
-    normalizeEditorDom(root, lineClasses);
-    const next = readPhysicalLinesFromEditor(root);
-    const hasChanged =
-      next.length !== linesRef.current.length ||
-      next.some((line, index) => line !== linesRef.current[index]);
-    if (hasChanged) {
-      linesRef.current = next;
-      const joined = joinPlainTextDocument(next);
-      onChange?.(joined);
-    }
-    publishCaretPosition();
-  }, [lineClasses, onChange, publishCaretPosition]);
+    const view = new EditorView({ state, parent: host });
+    viewRef.current = view;
 
-  useEffect(() => {
-    const onSelectionChange = () => {
-      scheduleCaretPositionPublish();
-    };
-    document.addEventListener("selectionchange", onSelectionChange);
     return () => {
-      document.removeEventListener("selectionchange", onSelectionChange);
-      clearScheduledCaretPublish();
+      view.destroy();
+      viewRef.current = null;
+      activeLineCollapsedRef.current = null;
     };
-  }, [clearScheduledCaretPublish, scheduleCaretPositionPublish]);
-
-  const publishDocument = useCallback(
-    (nextLines: string[]) => {
-      linesRef.current = nextLines;
-      const joined = joinPlainTextDocument(nextLines);
-      onChange?.(joined);
-      publishCaretPosition();
-    },
-    [onChange, publishCaretPosition],
-  );
+  }, [ariaLabel, publishSelectionState]);
 
   const restoreSelection = useCallback(() => {
-    const root = rootRef.current;
-    if (!root) {
+    const view = viewRef.current;
+    if (!view) {
       return;
     }
-    root.focus();
-    if (selectionSnapshotRef.current) {
-      setLogicalSelection(root, selectionSnapshotRef.current);
-      publishCaretPosition();
-      return;
+    view.focus();
+    const snapshot = selectionSnapshotRef.current;
+    if (snapshot) {
+      view.dispatch({
+        selection: editorSelectionFromSnapshot(view.state.doc, snapshot),
+      });
     }
-    publishCaretPosition();
-  }, [publishCaretPosition]);
+    publishSelectionState(view);
+  }, [publishSelectionState]);
 
   useLayoutEffect(() => {
     const shouldRestore = active && !wasActiveRef.current;
@@ -234,78 +195,38 @@ export function PlainTextEditor({
     ref,
     () => ({
       focus: () => {
-        rootRef.current?.focus();
+        viewRef.current?.focus();
       },
       restoreSelection,
-      getValue: () => joinPlainTextDocument(linesRef.current),
+      getValue: () => viewRef.current?.state.doc.toString() ?? "",
       setValue: (nextValue: string) => {
-        const nextLines = splitPlainTextDocument(nextValue);
-        linesRef.current = nextLines;
-        const root = rootRef.current;
-        if (!root) {
+        const view = viewRef.current;
+        if (!view) {
           return;
         }
-        writePhysicalLinesToEditor(root, nextLines, lineClasses);
-        publishCaretPosition();
+        const current = view.state.doc.toString();
+        if (current === nextValue) {
+          return;
+        }
+        view.dispatch({
+          changes: { from: 0, to: view.state.doc.length, insert: nextValue },
+        });
+        publishSelectionState(view);
       },
       getCaret: () => {
-        const root = rootRef.current;
-        if (!root) {
+        const view = viewRef.current;
+        if (!view) {
           return null;
         }
-        return readCaretPositionFromEditor(root);
+        return caretPositionFromState(view.state);
       },
     }),
-    [lineClasses, publishCaretPosition, restoreSelection],
+    [publishSelectionState, restoreSelection],
   );
 
   return (
-    <ScrollArea className={editorRootClass} fill>
-      <div
-        ref={rootRef}
-        className={editorSurfaceClass}
-        contentEditable
-        role="textbox"
-        aria-multiline="true"
-        aria-label={ariaLabel}
-        suppressContentEditableWarning
-        onKeyDown={(event) => {
-          if (event.key !== "Enter" || event.nativeEvent.isComposing) {
-            return;
-          }
-          event.preventDefault();
-          const root = rootRef.current;
-          if (!root) {
-            return;
-          }
-          const next = applyPhysicalEnter(root, lineClasses);
-          publishDocument(next);
-        }}
-        onInput={() => {
-          commitFromDom();
-        }}
-        onBlur={() => {
-          commitFromDom();
-          const root = rootRef.current;
-          if (root && highlightCurrentLine) {
-            syncCurrentLineHighlight(root, null, false);
-          }
-        }}
-        onPaste={(event: ClipboardEvent<HTMLDivElement>) => {
-          event.preventDefault();
-          const root = rootRef.current;
-          if (!root) {
-            return;
-          }
-          const pasted = event.clipboardData.getData("text/plain");
-          if (pasted.length === 0) {
-            return;
-          }
-          applyPlainTextPaste(root, pasted, lineClasses);
-          const next = readPhysicalLinesFromEditor(root);
-          publishDocument(next);
-        }}
-      />
-    </ScrollArea>
+    <div className={editorRootClass}>
+      <div ref={hostRef} className={editorHostClass} />
+    </div>
   );
 }
