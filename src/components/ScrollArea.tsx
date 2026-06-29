@@ -13,14 +13,19 @@ import { cn } from "../lib/cn";
 const SCROLLBAR_HIDE_DELAY_MS = 400;
 const MIN_THUMB_HEIGHT_PX = 24;
 
-const scrollAreaRootClass = cn("relative min-h-0");
+const scrollAreaRootClass = cn("min-h-0");
 
 const scrollAreaViewportClass = cn(
   "scrollbar-hidden size-full min-h-0 overflow-x-hidden overflow-y-auto",
 );
 
+const scrollAreaContentClass = cn("relative");
+
+/** Pins the scrollbar rail to the scrollport while keeping it inside the scrollable viewport (wheel works over the track). */
+const scrollAreaStickyRailClass = cn("pointer-events-none sticky top-0 z-10 h-0 w-full");
+
 const scrollAreaTrackClass = cn(
-  "pointer-events-auto absolute inset-y-0 right-0 z-10 w-workbench-scrollbar",
+  "pointer-events-auto absolute top-0 right-0 z-10 w-workbench-scrollbar",
 );
 
 const scrollAreaThumbClass = cn(
@@ -237,33 +242,41 @@ export function ScrollArea({
       onMouseLeave={onAreaMouseLeave}
     >
       <div ref={viewportRef} className={scrollAreaViewportClass} onScroll={onViewportScroll}>
-        {children}
-      </div>
-      {thumb ? (
-        <div aria-hidden="true" className={scrollAreaTrackClass} onPointerDown={onTrackPointerDown}>
-          <div
-            className={cn(
-              scrollAreaThumbClass,
-              thumbShown && !thumbActive && scrollAreaThumbPeekClass,
-              thumbActive && scrollAreaThumbActiveClass,
-            )}
-            style={{
-              height: thumb.thumbHeight,
-              transform: `translateY(${thumb.thumbOffset}px)`,
-            }}
-            onMouseEnter={() => {
-              setThumbHover(true);
-            }}
-            onMouseLeave={() => {
-              setThumbHover(false);
-            }}
-            onPointerDown={onThumbPointerDown}
-            onPointerMove={onThumbPointerMove}
-            onPointerUp={endThumbDrag}
-            onPointerCancel={endThumbDrag}
-          />
+        <div className={scrollAreaContentClass}>
+          {thumb ? (
+            <div aria-hidden="true" className={scrollAreaStickyRailClass}>
+              <div
+                className={scrollAreaTrackClass}
+                style={{ height: metrics?.clientHeight ?? 0 }}
+                onPointerDown={onTrackPointerDown}
+              >
+                <div
+                  className={cn(
+                    scrollAreaThumbClass,
+                    thumbShown && !thumbActive && scrollAreaThumbPeekClass,
+                    thumbActive && scrollAreaThumbActiveClass,
+                  )}
+                  style={{
+                    height: thumb.thumbHeight,
+                    transform: `translateY(${thumb.thumbOffset}px)`,
+                  }}
+                  onMouseEnter={() => {
+                    setThumbHover(true);
+                  }}
+                  onMouseLeave={() => {
+                    setThumbHover(false);
+                  }}
+                  onPointerDown={onThumbPointerDown}
+                  onPointerMove={onThumbPointerMove}
+                  onPointerUp={endThumbDrag}
+                  onPointerCancel={endThumbDrag}
+                />
+              </div>
+            </div>
+          ) : null}
+          {children}
         </div>
-      ) : null}
+      </div>
     </div>
   );
 }
