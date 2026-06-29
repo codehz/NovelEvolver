@@ -1,5 +1,3 @@
-import { useMolecule } from "bunshi/react";
-import { useAtomValue, useSetAtom } from "jotai";
 import {
   useCallback,
   useEffect,
@@ -22,8 +20,8 @@ import {
   splitPlainTextDocument,
   writePhysicalLinesToEditor,
   type PlainTextEditorLineClasses,
-} from "./plain-text-editor";
-import { editorTabMolecule } from "./workbench-editor-molecules";
+} from "./plain-text-editor-dom";
+import type { PlainTextEditorCaretPosition, PlainTextEditorSelectionSnapshot } from "./types";
 
 const editorScrollClass = cn("min-h-0 min-w-0 flex-1 overflow-x-hidden overflow-y-auto");
 
@@ -51,29 +49,33 @@ export type PlainTextEditorHandle = {
   restoreSelection: () => void;
   getValue: () => string;
   setValue: (value: string) => void;
-  getCaret: () => { line: number; column: number; selectionLength: number } | null;
+  getCaret: () => PlainTextEditorCaretPosition | null;
 };
 
-type PlainTextEditorProps = {
+export type PlainTextEditorProps = {
   ref?: React.Ref<PlainTextEditorHandle>;
   defaultValue?: string;
+  value?: string;
   onChange?: (next: string) => void;
   active?: boolean;
+  selectionSnapshot?: PlainTextEditorSelectionSnapshot | null;
+  onSelectionSnapshotChange?: (snapshot: PlainTextEditorSelectionSnapshot | null) => void;
+  onCaretChange?: (caret: PlainTextEditorCaretPosition) => void;
+  "aria-label"?: string;
 };
 
 export function PlainTextEditor({
   ref,
   defaultValue = "",
+  value,
   onChange,
   active = false,
+  selectionSnapshot = null,
+  onSelectionSnapshotChange,
+  onCaretChange,
+  "aria-label": ariaLabel = "纯文本编辑器",
 }: PlainTextEditorProps) {
-  const { caretPositionAtom, selectionSnapshotAtom, documentAtom } = useMolecule(editorTabMolecule);
-  const setCaretPosition = useSetAtom(caretPositionAtom);
-  const setSelectionSnapshot = useSetAtom(selectionSnapshotAtom);
-  const setDocument = useSetAtom(documentAtom);
-  const selectionSnapshot = useAtomValue(selectionSnapshotAtom);
-  const storedDocument = useAtomValue(documentAtom);
-
+  const isControlled = value !== undefined;
   const rootRef = useRef<HTMLDivElement>(null);
   const linesRef = useRef<string[]>([]);
   const seededRef = useRef(false);
@@ -107,13 +109,25 @@ export function PlainTextEditor({
       return;
     }
     seededRef.current = true;
-    const seedText = storedDocument.length > 0 ? storedDocument : defaultValue;
-    if (storedDocument.length === 0 && defaultValue.length > 0) {
-      setDocument(defaultValue);
-    }
+    const seedText = isControlled ? (value ?? "") : defaultValue;
     linesRef.current = splitPlainTextDocument(seedText);
     syncDomFromLines(linesRef.current);
-  }, [defaultValue, setDocument, storedDocument, syncDomFromLines]);
+  }, [defaultValue, isControlled, syncDomFromLines, value]);
+
+  useEffect(() => {
+    if (!isControlled) {
+      return;
+    }
+    const nextLines = splitPlainTextDocument(value ?? "");
+    const hasChanged =
+      nextLines.length !== linesRef.current.length ||
+      nextLines.some((line, index) => line !== linesRef.current[index]);
+    if (!hasChanged) {
+      return;
+    }
+    linesRef.current = nextLines;
+    syncDomFromLines(nextLines);
+  }, [isControlled, syncDomFromLines, value]);
 
   const publishCaretPosition = useCallback(() => {
     const root = rootRef.current;
@@ -122,13 +136,13 @@ export function PlainTextEditor({
     }
     const snapshot = readSelectionSnapshotFromEditor(root);
     if (snapshot) {
-      setSelectionSnapshot(snapshot);
+      onSelectionSnapshotChange?.(snapshot);
     }
     const position = readCaretPositionFromEditor(root);
     if (position) {
-      setCaretPosition(position);
+      onCaretChange?.(position);
     }
-  }, [setCaretPosition, setSelectionSnapshot]);
+  }, [onCaretChange, onSelectionSnapshotChange]);
 
   const scheduleCaretPositionPublish = useCallback(() => {
     if (caretFrameRef.current !== null) {
@@ -161,11 +175,10 @@ export function PlainTextEditor({
     if (hasChanged) {
       linesRef.current = next;
       const joined = joinPlainTextDocument(next);
-      setDocument(joined);
       onChange?.(joined);
     }
     publishCaretPosition();
-  }, [lineClasses, onChange, publishCaretPosition, setDocument]);
+  }, [lineClasses, onChange, publishCaretPosition]);
 
   useEffect(() => {
     const onSelectionChange = () => {
@@ -182,11 +195,10 @@ export function PlainTextEditor({
     (nextLines: string[]) => {
       linesRef.current = nextLines;
       const joined = joinPlainTextDocument(nextLines);
-      setDocument(joined);
       onChange?.(joined);
       publishCaretPosition();
     },
-    [onChange, publishCaretPosition, setDocument],
+    [onChange, publishCaretPosition],
   );
 
   const restoreSelection = useCallback(() => {
@@ -220,10 +232,9 @@ export function PlainTextEditor({
       },
       restoreSelection,
       getValue: () => joinPlainTextDocument(linesRef.current),
-      setValue: (value: string) => {
-        const nextLines = splitPlainTextDocument(value);
+      setValue: (nextValue: string) => {
+        const nextLines = splitPlainTextDocument(nextValue);
         linesRef.current = nextLines;
-        setDocument(value);
         const root = rootRef.current;
         if (!root) {
           return;
@@ -239,7 +250,7 @@ export function PlainTextEditor({
         return readCaretPositionFromEditor(root);
       },
     }),
-    [lineClasses, publishCaretPosition, restoreSelection, setDocument],
+    [lineClasses, publishCaretPosition, restoreSelection],
   );
 
   return (
@@ -250,7 +261,7 @@ export function PlainTextEditor({
         contentEditable
         role="textbox"
         aria-multiline="true"
-        aria-label="纯文本编辑器"
+        aria-label={ariaLabel}
         suppressContentEditableWarning
         onKeyDown={(event) => {
           if (event.key !== "Enter" || event.nativeEvent.isComposing) {

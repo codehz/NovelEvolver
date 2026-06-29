@@ -1,4 +1,4 @@
-import type { EditorLogicalPosition, EditorSelectionSnapshot } from "./editor-caret";
+import type { PlainTextEditorLogicalPosition, PlainTextEditorSelectionSnapshot } from "./types";
 
 const PHYSICAL_LINE_SELECTOR = "[data-physical-line]";
 const PHYSICAL_LINE_CONTENT_SELECTOR = "[data-physical-line-content]";
@@ -321,7 +321,9 @@ function createCollapsedRange(root: HTMLElement, lineIndex: number, offset: numb
   return range;
 }
 
-export function readSelectionSnapshotFromEditor(root: HTMLElement): EditorSelectionSnapshot | null {
+export function readSelectionSnapshotFromEditor(
+  root: HTMLElement,
+): PlainTextEditorSelectionSnapshot | null {
   const selection = window.getSelection();
   if (!selection || selection.rangeCount === 0) {
     return null;
@@ -346,7 +348,10 @@ export function readSelectionSnapshotFromEditor(root: HTMLElement): EditorSelect
   };
 }
 
-export function setLogicalSelection(root: HTMLElement, snapshot: EditorSelectionSnapshot): void {
+export function setLogicalSelection(
+  root: HTMLElement,
+  snapshot: PlainTextEditorSelectionSnapshot,
+): void {
   const selection = window.getSelection();
   if (!selection) {
     return;
@@ -369,23 +374,26 @@ export function setLogicalSelection(root: HTMLElement, snapshot: EditorSelection
   }
 }
 
-function compareLogicalPositions(a: EditorLogicalPosition, b: EditorLogicalPosition): number {
+function compareLogicalPositions(
+  a: PlainTextEditorLogicalPosition,
+  b: PlainTextEditorLogicalPosition,
+): number {
   if (a.lineIndex !== b.lineIndex) {
     return a.lineIndex - b.lineIndex;
   }
   return a.offset - b.offset;
 }
 
-function orderSelectionSnapshot(snapshot: EditorSelectionSnapshot): {
-  start: EditorLogicalPosition;
-  end: EditorLogicalPosition;
+function orderSelectionSnapshot(snapshot: PlainTextEditorSelectionSnapshot): {
+  start: PlainTextEditorLogicalPosition;
+  end: PlainTextEditorLogicalPosition;
 } {
   return compareLogicalPositions(snapshot.anchor, snapshot.focus) <= 0
     ? { start: snapshot.anchor, end: snapshot.focus }
     : { start: snapshot.focus, end: snapshot.anchor };
 }
 
-function getSelectionLength(root: HTMLElement, snapshot: EditorSelectionSnapshot): number {
+function getSelectionLength(root: HTMLElement, snapshot: PlainTextEditorSelectionSnapshot): number {
   const { start, end } = orderSelectionSnapshot(snapshot);
   if (compareLogicalPositions(start, end) === 0) {
     return 0;
@@ -409,7 +417,7 @@ function replaceSelectionWithLines(
   root: HTMLElement,
   inserted: string[],
   range: Range,
-): { lines: string[]; focus: EditorLogicalPosition } {
+): { lines: string[]; focus: PlainTextEditorLogicalPosition } {
   const lines = readPhysicalLinesFromEditor(root);
   const start = getLogicalCaret(root, range);
   const endRange = range.cloneRange();

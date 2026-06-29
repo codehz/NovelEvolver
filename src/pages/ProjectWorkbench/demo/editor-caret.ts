@@ -1,18 +1,12 @@
-export type EditorCaretPosition = {
-  line: number;
-  column: number;
-  selectionLength: number;
-};
+import type {
+  PlainTextEditorCaretPosition,
+  PlainTextEditorLogicalPosition,
+  PlainTextEditorSelectionSnapshot,
+} from "@/components/PlainTextEditor";
 
-export type EditorLogicalPosition = {
-  lineIndex: number;
-  offset: number;
-};
-
-export type EditorSelectionSnapshot = {
-  anchor: EditorLogicalPosition;
-  focus: EditorLogicalPosition;
-};
+export type EditorCaretPosition = PlainTextEditorCaretPosition;
+export type EditorLogicalPosition = PlainTextEditorLogicalPosition;
+export type EditorSelectionSnapshot = PlainTextEditorSelectionSnapshot;
 
 export function formatEditorCaretPosition(position: EditorCaretPosition): string {
   if (position.selectionLength === 0) {

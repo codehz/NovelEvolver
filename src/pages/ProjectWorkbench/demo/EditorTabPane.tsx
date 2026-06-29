@@ -1,13 +1,46 @@
-import { ScopeProvider } from "bunshi/react";
+import { ScopeProvider, useMolecule } from "bunshi/react";
+import { useAtom, useAtomValue, useSetAtom } from "jotai";
+import { useEffect } from "react";
 
-import { PlainTextEditor } from "./PlainTextEditor";
-import { editorTabScope } from "./workbench-editor-molecules";
+import { PlainTextEditor } from "@/components/PlainTextEditor";
+import { editorTabMolecule, editorTabScope } from "./workbench-editor-molecules";
 
 type EditorTabPaneProps = {
   tabId: string;
   active: boolean;
   defaultValue: string;
 };
+
+function EditorTabPlainTextEditor({
+  active,
+  defaultValue,
+}: {
+  active: boolean;
+  defaultValue: string;
+}) {
+  const { caretPositionAtom, selectionSnapshotAtom, documentAtom } = useMolecule(editorTabMolecule);
+  const [document, setDocument] = useAtom(documentAtom);
+  const selectionSnapshot = useAtomValue(selectionSnapshotAtom);
+  const setCaretPosition = useSetAtom(caretPositionAtom);
+  const setSelectionSnapshot = useSetAtom(selectionSnapshotAtom);
+
+  useEffect(() => {
+    if (document.length === 0 && defaultValue.length > 0) {
+      setDocument(defaultValue);
+    }
+  }, [defaultValue, document.length, setDocument]);
+
+  return (
+    <PlainTextEditor
+      active={active}
+      value={document}
+      onChange={setDocument}
+      selectionSnapshot={selectionSnapshot}
+      onSelectionSnapshotChange={setSelectionSnapshot}
+      onCaretChange={setCaretPosition}
+    />
+  );
+}
 
 export function EditorTabPane({ tabId, active, defaultValue }: EditorTabPaneProps) {
   return (
@@ -16,7 +49,7 @@ export function EditorTabPane({ tabId, active, defaultValue }: EditorTabPaneProp
         className={active ? "flex min-h-0 min-w-0 flex-1 flex-col" : "hidden"}
         aria-hidden={!active}
       >
-        <PlainTextEditor active={active} defaultValue={defaultValue} />
+        <EditorTabPlainTextEditor active={active} defaultValue={defaultValue} />
       </div>
     </ScopeProvider>
   );
