@@ -3,14 +3,14 @@ import type { BrowserWindow } from "electron";
 
 import type {
   WindowService,
-  WindowStateListener,
+  WindowStateChangeListener,
   WindowStateSubscription,
 } from "@shared/rpc/window-rpc";
 import type { WindowState } from "@shared/window";
 import type { RpcMainDeps } from "./deps";
 
 type WindowSubscriptionRecord = {
-  listener: RpcStub<WindowStateListener>;
+  listener: RpcStub<WindowStateChangeListener>;
 };
 
 export class WindowStateSubscriptionImpl extends RpcTarget implements WindowStateSubscription {
@@ -77,14 +77,16 @@ export class WindowServiceImpl extends RpcTarget implements WindowService {
     this.#window.setTitle(title);
   }
 
-  async subscribeState(listener: RpcStub<WindowStateListener>): Promise<WindowStateSubscription> {
+  async subscribeState(
+    listener: RpcStub<WindowStateChangeListener>,
+  ): Promise<WindowStateSubscription> {
     const id = this.#nextSubscriptionId++;
     const subscription = new WindowStateSubscriptionImpl(this, id);
 
     this.#subscriptions.set(id, { listener });
 
     try {
-      await listener.onStateChanged(this.state);
+      await listener(this.state);
     } catch {
       this.removeSubscription(id);
       throw new Error("Failed to establish window state subscription.");
@@ -102,7 +104,7 @@ export class WindowServiceImpl extends RpcTarget implements WindowService {
 
     for (const [id, record] of this.#subscriptions) {
       try {
-        await record.listener.onStateChanged(state);
+        await record.listener(state);
       } catch {
         this.removeSubscription(id);
       }

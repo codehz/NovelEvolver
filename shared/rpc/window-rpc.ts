@@ -1,6 +1,6 @@
-import { RpcTarget } from "capnweb";
-
 import type { WindowState } from "@shared/window";
+
+export type WindowStateChangeListener = (state: WindowState) => void | Promise<void>;
 
 export interface WindowService {
   readonly state: WindowState;
@@ -8,11 +8,7 @@ export interface WindowService {
   toggleMaximize(): Promise<WindowState>;
   close(): Promise<void>;
   setTitle(title: string): Promise<void>;
-  subscribeState(listener: WindowStateListener): Promise<WindowStateSubscription>;
-}
-
-export abstract class WindowStateListener extends RpcTarget {
-  abstract onStateChanged(state: WindowState): void | Promise<void>;
+  subscribeState(listener: WindowStateChangeListener): Promise<WindowStateSubscription>;
 }
 
 export interface WindowStateSubscription {

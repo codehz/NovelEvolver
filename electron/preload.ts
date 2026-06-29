@@ -7,7 +7,6 @@ import {
   APP_RPC_MESSAGE_CHANNEL,
   type AppRpcFrame,
 } from "@shared/rpc/transport";
-import { WindowStateListener } from "@shared/rpc/window-rpc";
 
 const appRpcBridge: AppRpcTransportBridge = {
   connect: () => ipcRenderer.invoke(APP_RPC_CONNECT_CHANNEL),
@@ -32,11 +31,4 @@ const appRpcBridge: AppRpcTransportBridge = {
   },
 };
 
-class PreloadWindowStateListener extends WindowStateListener {
-  override onStateChanged(): void | Promise<void> {
-    return undefined;
-  }
-}
-
 contextBridge.exposeInMainWorld("appRpcBridge", appRpcBridge);
-contextBridge.exposeInMainWorld("StateListenerBase", PreloadWindowStateListener);

@@ -17,16 +17,11 @@ export function useWindowState(fallback: WindowState): WindowState {
   useEffect(() => {
     let disposed = false;
     let subscription: Awaited<ReturnType<typeof windowService.subscribeState>> | null = null;
-
-    class ListenerImpl extends window.StateListenerBase {
-      override onStateChanged(nextState: WindowState): void {
-        if (!disposed) {
-          setState(nextState);
-        }
+    const listener = (nextState: WindowState) => {
+      if (!disposed) {
+        setState(nextState);
       }
-    }
-
-    const listener = new ListenerImpl();
+    };
 
     void windowService
       .subscribeState(listener)
@@ -46,7 +41,6 @@ export function useWindowState(fallback: WindowState): WindowState {
 
     return () => {
       disposed = true;
-      listener[Symbol.dispose]?.();
       if (subscription) {
         void subscription.unsubscribe().finally(() => {
           subscription?.[Symbol.dispose]();

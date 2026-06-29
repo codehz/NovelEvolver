@@ -73,16 +73,11 @@ export function WindowFrame({ children }: { children: ReactNode }) {
   useEffect(() => {
     let disposed = false;
     let unsubscribe: (() => void) | null = null;
-
-    class ListenerImpl extends window.StateListenerBase {
-      override onStateChanged(state: WindowState): void {
-        if (!disposed) {
-          setWindowState(state);
-        }
+    const listener = (state: WindowState) => {
+      if (!disposed) {
+        setWindowState(state);
       }
-    }
-
-    const listener = new ListenerImpl();
+    };
 
     void windowService.state.then(setWindowState).catch(() => {
       setWindowState(fallbackWindowState);
@@ -106,7 +101,6 @@ export function WindowFrame({ children }: { children: ReactNode }) {
     return () => {
       disposed = true;
       unsubscribe?.();
-      listener[Symbol.dispose]?.();
     };
   }, []);
 
