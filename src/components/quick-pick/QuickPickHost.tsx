@@ -32,6 +32,7 @@ import {
   quickPickHighlightSurfaceTransition,
   quickPickListTransition,
 } from "./quick-pick-list-motion";
+import { useQuickPickRequestClose } from "./quick-pick-overlay-context";
 import { QuickPickOverlay } from "./QuickPickOverlay";
 import {
   QUICK_PICK_OPTION_INDEX_ATTR,
@@ -128,12 +129,32 @@ function QuickPickListOption({
 }
 
 function QuickPickListPanel({ session }: { session: QuickPickListSession }) {
-  const { requestId, options } = session;
+  const { requestId } = session;
   const titleId = useId();
+  const dismiss = useCallback(() => {
+    quickPickHostApi.dismiss(requestId);
+  }, [requestId]);
+
+  return (
+    <QuickPickOverlay titleId={titleId} onDismiss={dismiss}>
+      <QuickPickListPanelBody session={session} titleId={titleId} />
+    </QuickPickOverlay>
+  );
+}
+
+function QuickPickListPanelBody({
+  session,
+  titleId,
+}: {
+  session: QuickPickListSession;
+  titleId: string;
+}) {
+  const { requestId, options } = session;
   const listboxId = useId();
   const searchInputId = useId();
   const inputRef = useRef<HTMLInputElement>(null);
   const [query, setQuery] = useState("");
+  const requestClose = useQuickPickRequestClose();
 
   const filtered = useMemo(() => filterListItems(options.items, query), [options.items, query]);
   const extras = options.extras ?? [];
@@ -144,26 +165,26 @@ function QuickPickListPanel({ session }: { session: QuickPickListSession }) {
   );
   const itemCount = filtered.length + extras.length;
 
-  const dismiss = useCallback(() => {
-    quickPickHostApi.dismiss(requestId);
-  }, [requestId]);
-
   const resolveItem = useCallback(
     (id: string) => {
-      quickPickHostApi.resolveList(requestId, { kind: "item", id });
+      requestClose(() => {
+        quickPickHostApi.resolveList(requestId, { kind: "item", id });
+      });
     },
-    [requestId],
+    [requestClose, requestId],
   );
 
   const resolveExtra = useCallback(
     (extra: QuickPickExtraItem) => {
-      quickPickHostApi.resolveList(requestId, {
-        kind: "extra",
-        id: extra.id,
-        searchQuery: query,
+      requestClose(() => {
+        quickPickHostApi.resolveList(requestId, {
+          kind: "extra",
+          id: extra.id,
+          searchQuery: query,
+        });
       });
     },
-    [query, requestId],
+    [query, requestClose, requestId],
   );
 
   const { highlightIndex, setHighlightIndex, listRef, onSearchKeyDown, resetHighlight } =
@@ -201,7 +222,7 @@ function QuickPickListPanel({ session }: { session: QuickPickListSession }) {
   }, [requestId, resetHighlight]);
 
   return (
-    <QuickPickOverlay titleId={titleId} onDismiss={dismiss}>
+    <>
       <p className="sr-only" id={titleId}>
         {options.title}
       </p>
@@ -312,21 +333,37 @@ function QuickPickListPanel({ session }: { session: QuickPickListSession }) {
           )}
         </AutoTransition>
       </LayoutGroup>
-    </QuickPickOverlay>
+    </>
   );
 }
 
 function QuickPickInputPanel({ session }: { session: QuickPickInputSession }) {
-  const { requestId, options } = session;
+  const { requestId } = session;
   const titleId = useId();
+  const dismiss = useCallback(() => {
+    quickPickHostApi.dismiss(requestId);
+  }, [requestId]);
+
+  return (
+    <QuickPickOverlay titleId={titleId} onDismiss={dismiss}>
+      <QuickPickInputPanelBody session={session} titleId={titleId} />
+    </QuickPickOverlay>
+  );
+}
+
+function QuickPickInputPanelBody({
+  session,
+  titleId,
+}: {
+  session: QuickPickInputSession;
+  titleId: string;
+}) {
+  const { requestId, options } = session;
   const inputId = useId();
   const inputRef = useRef<HTMLInputElement>(null);
   const [value, setValue] = useState(options.initialValue ?? "");
   const [error, setError] = useState<string | null>(null);
-
-  const dismiss = useCallback(() => {
-    quickPickHostApi.dismiss(requestId);
-  }, [requestId]);
+  const requestClose = useQuickPickRequestClose();
 
   const submit = useCallback(() => {
     const trimmed = value.trim();
@@ -337,8 +374,10 @@ function QuickPickInputPanel({ session }: { session: QuickPickInputSession }) {
         return;
       }
     }
-    quickPickHostApi.resolveInput(requestId, trimmed);
-  }, [options, requestId, value]);
+    requestClose(() => {
+      quickPickHostApi.resolveInput(requestId, trimmed);
+    });
+  }, [options, requestClose, requestId, value]);
 
   useEffect(() => {
     setValue(options.initialValue ?? "");
@@ -353,7 +392,7 @@ function QuickPickInputPanel({ session }: { session: QuickPickInputSession }) {
   }, [options.initialValue, requestId]);
 
   return (
-    <QuickPickOverlay titleId={titleId} onDismiss={dismiss}>
+    <>
       <p className="sr-only" id={titleId}>
         {options.title}
       </p>
@@ -388,7 +427,7 @@ function QuickPickInputPanel({ session }: { session: QuickPickInputSession }) {
         ) : null}
       </div>
       {options.hint ? <p className={quickPickFooterHintClass}>{options.hint}</p> : null}
-    </QuickPickOverlay>
+    </>
   );
 }
 

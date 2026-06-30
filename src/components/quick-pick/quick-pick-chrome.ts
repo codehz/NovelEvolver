@@ -1,7 +1,7 @@
 import { cn } from "@/lib/cn";
 
 export const quickPickPanelClass = cn(
-  "fixed top-titlebar left-1/2 z-quick-pick w-quick-pick -translate-x-1/2 overflow-hidden rounded-lg bg-quick-pick-surface text-sm text-app-foreground shadow-quick-pick app-region-no-drag",
+  "quick-pick-popover fixed top-titlebar z-quick-pick w-quick-pick overflow-hidden rounded-lg bg-quick-pick-surface text-sm text-app-foreground shadow-quick-pick app-region-no-drag",
 );
 
 export const quickPickPanelHeightShellClass = cn("w-full overflow-hidden");

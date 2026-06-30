@@ -174,3 +174,29 @@
 @utility content-counter-* {
   --tw-content: counter(--value(--counter-*));
 }
+
+@layer components {
+  [popover].quick-pick-popover {
+    left: 50%;
+    margin: 0;
+    opacity: 0;
+    transform: translate(-50%, -0.5rem);
+    transition:
+      opacity 0.22s ease,
+      transform 0.22s cubic-bezier(0.33, 1, 0.68, 1),
+      overlay 0.22s allow-discrete,
+      display 0.22s allow-discrete;
+  }
+
+  [popover].quick-pick-popover:popover-open {
+    opacity: 1;
+    transform: translate(-50%, 0);
+  }
+
+  @starting-style {
+    [popover].quick-pick-popover:popover-open {
+      opacity: 0;
+      transform: translate(-50%, -0.5rem);
+    }
+  }
+}
