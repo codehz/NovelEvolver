@@ -17,7 +17,7 @@ export function NotificationCenterPanel({ titleId }: { titleId: string }) {
 
   return (
     <>
-      <header className="flex items-center justify-between px-3 py-2">
+      <header className="flex shrink-0 items-center justify-between px-3 py-2">
         <h2 id={titleId} className="font-medium text-app-foreground">
           {items.length === 0 ? "无新通知" : "通知"}
         </h2>
@@ -39,7 +39,7 @@ export function NotificationCenterPanel({ titleId }: { titleId: string }) {
         </button>
       </header>
       {items.length > 0 && (
-        <ScrollArea className="min-h-0 flex-1 overflow-y-auto">
+        <ScrollArea className="min-h-0 overflow-hidden">
           <AnimatePresence initial={false} mode="popLayout">
             {items.map((notification) => (
               <NotificationItem

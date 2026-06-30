@@ -6,7 +6,7 @@ export const notificationBellAnchorClass = cn(
 );
 
 export const notificationPanelClass = cn(
-  "flex max-h-notification-panel-max-height w-notification-panel flex-col overflow-hidden rounded-sm border border-notification-border bg-notification-surface text-xs text-app-foreground shadow-lg app-region-no-drag",
+  "grid max-h-notification-panel-max-height min-h-0 w-notification-panel grid-rows-[auto_minmax(0,1fr)] overflow-hidden rounded-sm border border-notification-border bg-notification-surface text-xs text-app-foreground shadow-lg app-region-no-drag",
 );
 
 export const notificationCenterPopoverPanelClass = cn(

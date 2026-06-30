@@ -79,6 +79,10 @@ export class ScrollbarController {
         this.refreshMetrics();
       });
       this.resizeObserver.observe(this.viewport);
+      const scrollContent = this.viewport.firstElementChild;
+      if (scrollContent instanceof HTMLElement) {
+        this.resizeObserver.observe(scrollContent);
+      }
     }
 
     this.metrics = readScrollMetrics(this.viewport);
