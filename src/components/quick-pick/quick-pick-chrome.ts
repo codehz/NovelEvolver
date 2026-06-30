@@ -1,10 +1,5 @@
 import { cn } from "@/lib/cn";
 
-/** 透明全屏层：点击外部关闭，无视觉遮罩。 */
-export const quickPickDismissLayerClass = cn(
-  "fixed inset-0 z-quick-pick bg-transparent app-region-no-drag",
-);
-
 export const quickPickPanelClass = cn(
   "fixed top-titlebar left-1/2 z-quick-pick w-quick-pick -translate-x-1/2 overflow-hidden rounded-lg bg-quick-pick-surface text-sm text-app-foreground shadow-quick-pick app-region-no-drag",
 );

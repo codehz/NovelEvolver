@@ -201,11 +201,7 @@ function QuickPickListPanel({ session }: { session: QuickPickListSession }) {
   }, [requestId, resetHighlight]);
 
   return (
-    <QuickPickOverlay
-      titleId={titleId}
-      dismissAriaLabel={options.dismissAriaLabel ?? "关闭"}
-      onDismiss={dismiss}
-    >
+    <QuickPickOverlay titleId={titleId} onDismiss={dismiss}>
       <p className="sr-only" id={titleId}>
         {options.title}
       </p>
@@ -357,11 +353,7 @@ function QuickPickInputPanel({ session }: { session: QuickPickInputSession }) {
   }, [options.initialValue, requestId]);
 
   return (
-    <QuickPickOverlay
-      titleId={titleId}
-      dismissAriaLabel={options.dismissAriaLabel ?? "关闭"}
-      onDismiss={dismiss}
-    >
+    <QuickPickOverlay titleId={titleId} onDismiss={dismiss}>
       <p className="sr-only" id={titleId}>
         {options.title}
       </p>
