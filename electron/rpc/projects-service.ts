@@ -87,7 +87,7 @@ export class ProjectsServiceImpl extends RpcTarget implements ProjectsService {
     return record ? toProjectMetadata(record) : null;
   }
 
-  removeRecent(id: number): boolean {
+  removeProject(id: number): boolean {
     const removed = this.#deps.getProjectsDb().removeById(id);
     if (removed) {
       try {

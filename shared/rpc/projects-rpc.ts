@@ -45,7 +45,7 @@ export interface ProjectsService extends RpcTarget {
   openProjectDialog(): Promise<ProjectMetadata | null>;
   createProjectDialog(): Promise<ProjectMetadata | null>;
   recordOpen(id: number): ProjectMetadata | null;
-  removeRecent(id: number): boolean;
+  removeProject(id: number): boolean;
 
   /** Open a project by its database id and return its metadata plus a live RPC handle. */
   openProject(id: number): ProjectHandleWithMetadata;

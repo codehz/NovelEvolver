@@ -40,7 +40,7 @@ export function ProjectList() {
   };
 
   const handleRemoveProject = async (id: number) => {
-    const removed = await notifyAction.wrap(() => projectsService.removeRecent(id), {
+    const removed = await notifyAction.wrap(() => projectsService.removeProject(id), {
       errorMessage: "从列表移除失败",
       toast: { source: "项目" },
     });
