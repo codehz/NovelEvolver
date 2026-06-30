@@ -41,7 +41,7 @@ export function NotificationItem({ notification, variant, ref }: NotificationIte
       ref={ref}
       className={cn(
         "flex gap-2 p-3",
-        variant === "center" && "border-b border-notification-border last:border-b-0",
+        variant === "center" && "border-t border-notification-border last:border-b-0",
         variant === "toast" && notificationToastClass,
       )}
       layout
