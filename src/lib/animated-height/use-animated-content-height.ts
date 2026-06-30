@@ -1,11 +1,11 @@
 import { animate } from "motion/react";
 import { useEffect, useRef, useState, type RefObject } from "react";
 
+/** `bounce: 0` — no overshoot; do not set stiffness/damping/mass or they override bounce. */
 const contentHeightSpring = {
   type: "spring" as const,
-  stiffness: 420,
-  damping: 32,
-  mass: 0.85,
+  bounce: 0,
+  duration: 0.32,
 };
 
 const MIN_MEASURED_HEIGHT_PX = 1;
