@@ -101,7 +101,7 @@ function TitleBar() {
   return (
     <header
       className={cn(
-        "flex h-titlebar min-w-0 items-stretch justify-between bg-titlebar-background pl-3 select-none app-region-drag",
+        "flex h-titlebar min-w-0 items-stretch justify-between pl-3 select-none app-region-drag",
         titlebarChromeTransitionClass,
         titlebarChromeOpacityClass,
       )}
@@ -146,7 +146,7 @@ function TitleBar() {
 
 function StatusBar() {
   return (
-    <footer className="relative flex h-workbench-status-bar shrink-0 items-stretch bg-workbench-status-bar text-xs text-workbench-status-bar-foreground">
+    <footer className="relative flex h-workbench-status-bar shrink-0 items-stretch text-xs text-workbench-status-bar-foreground">
       <StatusBarLeftPortalTarget
         as={Animatable}
         className="flex min-w-0 flex-1 items-stretch overflow-hidden"
@@ -159,9 +159,9 @@ function StatusBar() {
 
 export function WindowFrame({ children }: { children: ReactNode }) {
   return (
-    <main className="flex min-h-0 flex-1 flex-col bg-app-background text-app-foreground">
+    <main className={cn("flex min-h-0 flex-1 flex-col bg-window-chrome text-app-foreground")}>
       <TitleBar />
-      {children}
+      <div className="flex min-h-0 min-w-0 flex-1 flex-col bg-app-background">{children}</div>
       <StatusBar />
     </main>
   );

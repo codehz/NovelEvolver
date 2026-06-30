@@ -68,7 +68,7 @@ export function ProjectList() {
         <div className="flex items-center gap-2">
           <button
             className={cn(
-              "rounded-md border border-titlebar-border bg-titlebar-background px-3 py-1.5 text-sm font-medium text-app-foreground",
+              "rounded-md border border-titlebar-border bg-app-surface px-3 py-1.5 text-sm font-medium text-app-foreground",
               "hover:bg-ctp-surface0/40 disabled:opacity-50",
             )}
             disabled={actionState.pending}
@@ -123,7 +123,7 @@ export function ProjectList() {
                 <article
                   className={cn(
                     "group relative flex min-h-28 flex-col rounded-lg border border-titlebar-border",
-                    "bg-titlebar-background transition-colors hover:border-ctp-surface1 hover:bg-ctp-surface0/30",
+                    "bg-app-surface transition-colors hover:border-ctp-surface1 hover:bg-ctp-surface0/30",
                   )}
                 >
                   <button

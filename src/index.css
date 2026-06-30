@@ -12,7 +12,8 @@
 
   --color-app-foreground: var(--color-ctp-text);
   --color-app-background: var(--color-ctp-base);
-  --color-titlebar-background: var(--color-ctp-crust);
+  --color-app-surface: var(--color-ctp-mantle);
+  --color-window-chrome: var(--color-ctp-crust);
   --color-titlebar-foreground: var(--color-ctp-text);
   --color-titlebar-border: var(--color-ctp-surface0);
   --opacity-titlebar-inactive: 0.45;
@@ -46,7 +47,6 @@
   --color-workbench-tab-inactive: var(--color-workbench-sidebar);
   --color-workbench-tab-border: var(--color-ctp-surface0);
   --color-workbench-panel-header: var(--color-ctp-mantle);
-  --color-workbench-status-bar: var(--color-ctp-crust);
   --color-workbench-status-bar-foreground: var(--color-ctp-text);
   --color-workbench-status-bar-muted: var(--color-ctp-subtext0);
   --color-workbench-scrollbar-thumb: color-mix(in srgb, var(--color-ctp-overlay1) 72%, transparent);

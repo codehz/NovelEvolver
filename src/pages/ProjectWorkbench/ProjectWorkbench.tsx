@@ -44,7 +44,7 @@ function ErrorFallback({ error }: { error: unknown }) {
       </p>
       <Link
         className={cn(
-          "inline-flex items-center gap-1 rounded-md border border-titlebar-border bg-titlebar-background px-3 py-1.5 text-sm font-medium text-app-foreground",
+          "inline-flex items-center gap-1 rounded-md border border-titlebar-border bg-app-surface px-3 py-1.5 text-sm font-medium text-app-foreground",
           "hover:bg-ctp-surface0/40",
         )}
         href="/"
