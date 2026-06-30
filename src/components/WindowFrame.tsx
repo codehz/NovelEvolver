@@ -138,6 +138,21 @@ function TitleBar({ windowState }: { windowState: WindowState }) {
   );
 }
 
+function StatusBar() {
+  return (
+    <footer className="relative flex h-workbench-status-bar shrink-0 items-stretch bg-workbench-status-bar text-xs text-workbench-status-bar-foreground">
+      <StatusBarLeftPortalTarget
+        as={Animatable}
+        className="flex min-w-0 flex-1 items-stretch overflow-hidden"
+      />
+      <div className="flex shrink-0 items-stretch">
+        <StatusBarRightPortalTarget as={Animatable} className="contents" />
+        <StatusBarItemButton aria-label="通知" icon="icon-[codicon--bell]" />
+      </div>
+    </footer>
+  );
+}
+
 const fallbackWindowState: WindowState = {
   isFocused: true,
   isMaximized: false,
@@ -152,16 +167,7 @@ export function WindowFrame({ children }: { children: ReactNode }) {
       <TitleBar windowState={windowState} />
 
       <section className="flex min-h-0 flex-1 flex-col bg-app-background">{children}</section>
-      <footer className="relative flex h-workbench-status-bar shrink-0 items-stretch bg-workbench-status-bar text-xs text-workbench-status-bar-foreground">
-        <StatusBarLeftPortalTarget
-          as={Animatable}
-          className="flex min-w-0 flex-1 items-stretch overflow-hidden"
-        />
-        <div className="flex shrink-0 items-stretch">
-          <StatusBarRightPortalTarget as={Animatable} className="contents" />
-          <StatusBarItemButton aria-label="通知" icon="icon-[codicon--bell]" />
-        </div>
-      </footer>
+      <StatusBar />
     </main>
   );
 }
