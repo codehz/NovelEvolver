@@ -1,9 +1,8 @@
 import type { ResourceLibraryHandle, WorktreeHandle } from "@shared/rpc/projects-rpc";
 import { createScope, molecule, use, useMolecule } from "bunshi/react";
 import type { RpcPromise } from "capnweb";
-import { nullthrow } from "foxact/nullthrow";
 
-import { projectScope } from "../state/molecules";
+import { projectContextMolecule } from "../state/molecules";
 
 export const DEFAULT_BRANCH_NAME = "main";
 
@@ -14,7 +13,7 @@ const activeBranchNameMolecule = molecule(() => use(branchNameScope));
 
 /** 当前分支对应的虚拟 worktree RPC 引用（随 project × branchName scope 重建）。 */
 export const worktreeMolecule = molecule(() => {
-  const project = nullthrow(use(projectScope));
+  const project = use(projectContextMolecule);
   const branchName = use(branchNameScope);
   return project.handle.openWorktree(branchName);
 });

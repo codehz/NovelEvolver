@@ -1,29 +1,22 @@
 import type { BranchInfo } from "@shared/rpc/projects-rpc";
 import { molecule, use, useMolecule } from "bunshi/react";
-import { nullthrow } from "foxact/nullthrow";
 
 import { createAsyncLoader, useAsyncLoader } from "@/lib/async-loader";
 
-import { projectScope } from "../state/molecules";
+import { projectContextMolecule } from "../state/molecules";
 
 export type BranchPickerSnapshot = {
   branches: BranchInfo[];
   headName: string | null;
 };
 
-const projectContextMol = molecule(() => nullthrow(use(projectScope)));
-
 const branchPickerSnapshotMol = molecule(() => {
-  const project = use(projectContextMol);
+  const project = use(projectContextMolecule);
   return createAsyncLoader(async (): Promise<BranchPickerSnapshot> => {
     const [branches, head] = await Promise.all([project.handle.branches, project.handle.head]);
     return { branches, headName: head.name };
   });
 });
-
-export function useProjectContext() {
-  return useMolecule(projectContextMol);
-}
 
 export function useBranchPickerSnapshot() {
   return useAsyncLoader(useMolecule(branchPickerSnapshotMol));

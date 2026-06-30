@@ -4,7 +4,8 @@ import { useCallback } from "react";
 import { isQuickPickDismissedError, quickPickApi, type QuickPickListItem } from "@/lib/quick-pick";
 
 import { useWorkbenchEditorActions } from "../editor/use-workbench-editor-actions";
-import { useBranchPickerSnapshot, useProjectContext } from "./branch-data";
+import { useProjectContext } from "../state/molecules";
+import { useBranchPickerSnapshot } from "./branch-data";
 import { useActiveBranchName } from "./branch-scopes";
 import { useSetActiveBranchName } from "./BranchScopeProvider";
 

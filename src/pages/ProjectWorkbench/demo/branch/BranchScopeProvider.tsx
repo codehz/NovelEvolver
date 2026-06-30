@@ -2,7 +2,7 @@ import { ScopeProvider } from "bunshi/react";
 import { nullthrow } from "foxact/nullthrow";
 import { createContext, Suspense, use, useContext, useMemo, useState, type ReactNode } from "react";
 
-import { useProjectContext } from "./branch-data";
+import { useProjectContext } from "../state/molecules";
 import { branchNameScope, DEFAULT_BRANCH_NAME } from "./branch-scopes";
 
 type BranchScopeContextValue = {
