@@ -59,8 +59,6 @@ export function NotificationCenterPanel({
     };
   }, [anchorRef, open, setOpen]);
 
-  const sorted = [...items].sort((a, b) => b.createdAt - a.createdAt);
-
   return (
     <AnimatePresence>
       {open && (
@@ -73,6 +71,7 @@ export function NotificationCenterPanel({
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: 4 }}
           transition={{ type: "spring", stiffness: 400, damping: 30, mass: 0.8 }}
+          layout
         >
           <motion.header
             layout
@@ -84,12 +83,12 @@ export function NotificationCenterPanel({
             <button
               className={cn(
                 "inline-flex shrink-0 items-center justify-center rounded-sm px-1 text-base",
-                sorted.length > 0
+                items.length > 0
                   ? "text-notification-action hover:bg-window-button-hover"
                   : "cursor-not-allowed text-workbench-status-bar-muted opacity-50",
               )}
               type="button"
-              disabled={sorted.length === 0}
+              disabled={items.length === 0}
               onClick={() => {
                 notificationApi.closeAll();
               }}
@@ -100,7 +99,7 @@ export function NotificationCenterPanel({
           </motion.header>
           <ScrollArea className="min-h-0 flex-1 overflow-y-auto">
             <AnimatePresence initial={false} mode="popLayout">
-              {sorted.length === 0 ? (
+              {items.length === 0 ? (
                 <motion.p
                   key="empty"
                   initial={{ opacity: 0, y: -8 }}
@@ -112,7 +111,7 @@ export function NotificationCenterPanel({
                   没有通知
                 </motion.p>
               ) : (
-                sorted.map((notification) => (
+                items.map((notification) => (
                   <NotificationItem
                     key={notification.id}
                     notification={notification}
