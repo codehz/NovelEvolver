@@ -16,8 +16,9 @@ import { cn } from "@/lib/cn";
 
 import { branchSwitcherOpenAtom, useBranchPickerSnapshot, useProjectContext } from "./branch-data";
 import {
-  branchPickerBackdropClass,
+  branchPickerDismissLayerClass,
   branchPickerInputClass,
+  branchPickerInputWrapClass,
   branchPickerListClass,
   branchPickerPanelClass,
   branchPickerRowClass,
@@ -151,14 +152,10 @@ export function BranchSwitcher() {
     <AnimatePresence>
       {open && (
         <>
-          <motion.button
+          <button
             aria-label="关闭分支切换器"
-            className={branchPickerBackdropClass}
+            className={branchPickerDismissLayerClass}
             type="button"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.12 }}
             onClick={close}
           />
           <motion.div
@@ -173,27 +170,29 @@ export function BranchSwitcher() {
             <p className="sr-only" id={titleId}>
               分支切换器
             </p>
-            <label className="sr-only" htmlFor={`${titleId}-input`}>
-              搜索或选择分支
-            </label>
-            <input
-              ref={inputRef}
-              id={`${titleId}-input`}
-              className={branchPickerInputClass}
-              type="search"
-              role="combobox"
-              aria-expanded
-              aria-controls={listboxId}
-              aria-autocomplete="list"
-              autoComplete="off"
-              spellCheck={false}
-              placeholder="选择要切换的分支…"
-              value={query}
-              onChange={(event) => {
-                setQuery(event.target.value);
-              }}
-              onKeyDown={onInputKeyDown}
-            />
+            <div className={branchPickerInputWrapClass}>
+              <label className="sr-only" htmlFor={`${titleId}-input`}>
+                搜索或选择分支
+              </label>
+              <input
+                ref={inputRef}
+                id={`${titleId}-input`}
+                className={branchPickerInputClass}
+                type="text"
+                role="combobox"
+                aria-expanded
+                aria-controls={listboxId}
+                aria-autocomplete="list"
+                autoComplete="off"
+                spellCheck={false}
+                placeholder="选择要切换的分支…"
+                value={query}
+                onChange={(event) => {
+                  setQuery(event.target.value);
+                }}
+                onKeyDown={onInputKeyDown}
+              />
+            </div>
             <ul
               ref={listRef}
               id={listboxId}
