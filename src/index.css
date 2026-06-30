@@ -35,6 +35,20 @@
   --spacing-workbench-tab: 2.125rem;
   --spacing-workbench-status-bar: 1.375rem;
 
+  --color-notification-surface: var(--color-ctp-mantle);
+  --color-notification-border: var(--color-ctp-surface0);
+  --color-notification-info: var(--color-ctp-blue);
+  --color-notification-warning: var(--color-ctp-yellow);
+  --color-notification-error: var(--color-ctp-red);
+  --color-notification-action: var(--color-ctp-mauve);
+  --spacing-notification-panel: 26rem;
+  --spacing-notification-panel-max-height: 22rem;
+  --spacing-notification-stack-offset: 0.5rem;
+  --spacing-notification-above-statusbar: calc(
+    var(--spacing-workbench-status-bar) + var(--spacing-notification-stack-offset)
+  );
+  --z-index-notification: 40;
+
   --color-workbench-activity-bar: var(--color-ctp-crust);
   --color-workbench-activity-bar-foreground: var(--color-ctp-overlay0);
   --color-workbench-activity-bar-active: var(--color-ctp-mauve);

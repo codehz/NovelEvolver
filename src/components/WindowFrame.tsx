@@ -5,7 +5,7 @@ import { ForwardedRef, type ReactNode } from "react";
 import { chromatic, type SlotOptions } from "slot-text";
 import { SlotText } from "slot-text/react";
 
-import { StatusBarItemButton } from "@/components/workbench";
+import { NotificationBellButton, NotificationToastStack } from "@/components/notifications";
 import { windowService } from "@/lib/app-rpc";
 import { useWindowState } from "@/lib/app-rpc-react";
 import { cn } from "@/lib/cn";
@@ -152,7 +152,7 @@ function StatusBar() {
         className="flex min-w-0 flex-1 items-stretch overflow-hidden"
       />
       <StatusBarRightPortalTarget as={Animatable} className="flex shrink-0 items-stretch" />
-      <StatusBarItemButton aria-label="通知" icon="icon-[codicon--bell]" />
+      <NotificationBellButton />
     </footer>
   );
 }
@@ -163,6 +163,7 @@ export function WindowFrame({ children }: { children: ReactNode }) {
       <TitleBar />
       <div className="flex min-h-0 min-w-0 flex-1 flex-col bg-app-background">{children}</div>
       <StatusBar />
+      <NotificationToastStack />
     </main>
   );
 }

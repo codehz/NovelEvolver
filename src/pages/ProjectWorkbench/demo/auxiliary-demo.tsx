@@ -1,6 +1,8 @@
 import { ScrollArea } from "@/components/ScrollArea";
 import { cn } from "@/lib/cn";
 
+import { NotificationDemoToolbar } from "./NotificationDemoToolbar";
+
 const demoMessages = [
   {
     role: "assistant" as const,
@@ -39,6 +41,8 @@ export function AuxiliaryPanelDemo() {
           ))}
         </div>
       </ScrollArea>
+
+      <NotificationDemoToolbar />
 
       <footer className="shrink-0 p-3">
         <div className="flex items-end gap-2 rounded-lg bg-workbench-editor p-2">
