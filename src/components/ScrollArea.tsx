@@ -1,6 +1,5 @@
 import { type CSSProperties, type ReactNode } from "react";
 
-import { useIsAnimatedShellHeightAnimating } from "@/lib/animated-height";
 import { cn } from "@/lib/cn";
 import {
   scrollbarHiddenViewportClass,
@@ -27,9 +26,7 @@ export function ScrollArea({
   /** When true, participate in flex column growth (sidebar section body). */
   fill?: boolean;
 }) {
-  const shellHeightAnimating = useIsAnimatedShellHeightAnimating();
   const {
-    scrollHostRef,
     viewportRef,
     snapshot,
     onAreaPointerEnter,
@@ -38,14 +35,13 @@ export function ScrollArea({
     onThumbPointerEnter,
     onThumbPointerLeave,
     onThumbPointerDown,
-  } = useScrollbarController({ shellHeightAnimating });
+  } = useScrollbarController();
 
   const thumb = snapshot?.thumb ?? null;
   const metrics = snapshot?.metrics ?? null;
 
   return (
     <div
-      ref={scrollHostRef}
       className={cn(scrollAreaRootClass, fill && "h-0 flex-1", className)}
       id={id}
       style={style}

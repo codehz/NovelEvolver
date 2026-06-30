@@ -11,8 +11,6 @@ import {
 
 export type ScrollbarControllerOptions = {
   viewport: HTMLElement;
-  /** Flex-sized scrollport root (parent of viewport); observed when ResizeObserver misses inline height animation on ancestors. */
-  scrollHost?: HTMLElement | null;
   hideDelayMs?: number;
   minThumbHeightPx?: number;
   onChange: () => void;
@@ -54,7 +52,6 @@ export class ScrollbarController {
   private hideTimer: ReturnType<typeof setTimeout> | null = null;
   private resizeObserver: ResizeObserver | null = null;
   private documentDragListenersActive = false;
-  private shellHeightAnimating = false;
 
   private readonly onViewportScroll = () => {
     this.refreshMetrics();
@@ -79,16 +76,9 @@ export class ScrollbarController {
 
     if (typeof ResizeObserver === "function") {
       this.resizeObserver = new ResizeObserver(() => {
-        if (this.shellHeightAnimating) {
-          return;
-        }
         this.refreshMetrics();
       });
       this.resizeObserver.observe(this.viewport);
-      const scrollHost = options.scrollHost;
-      if (scrollHost instanceof HTMLElement) {
-        this.resizeObserver.observe(scrollHost);
-      }
       const scrollContent = this.viewport.firstElementChild;
       if (scrollContent instanceof HTMLElement) {
         this.resizeObserver.observe(scrollContent);
@@ -110,19 +100,6 @@ export class ScrollbarController {
   }
 
   getSnapshot(): ScrollbarControllerSnapshot {
-    if (this.shellHeightAnimating) {
-      return {
-        metrics: this.metrics,
-        thumb: null,
-        areaHover: this.areaHover,
-        thumbHover: false,
-        dragging: this.dragging,
-        scrollbarPeek: false,
-        thumbShown: false,
-        thumbActive: false,
-      };
-    }
-
     const thumb = this.metrics ? computeScrollThumb(this.metrics, this.minThumbHeightPx) : null;
     const thumbShown = Boolean(thumb && (this.areaHover || this.dragging || this.scrollbarPeek));
     const thumbActive = this.dragging || this.thumbHover;
@@ -139,22 +116,7 @@ export class ScrollbarController {
     };
   }
 
-  setShellHeightAnimating(active: boolean): void {
-    if (this.shellHeightAnimating === active) {
-      return;
-    }
-    this.shellHeightAnimating = active;
-    if (!active) {
-      this.refreshMetrics();
-      return;
-    }
-    this.onChange();
-  }
-
   refreshMetrics(): void {
-    if (this.shellHeightAnimating) {
-      return;
-    }
     this.metrics = readScrollMetrics(this.viewport);
     this.onChange();
   }

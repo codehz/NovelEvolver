@@ -1,8 +1,4 @@
 export {
-  AnimatedShellHeightProvider,
-  useIsAnimatedShellHeightAnimating,
-} from "./shell-height-sync";
-export {
   alwaysMeasurable,
   popoverOpenIsMeasurable,
   useAnimatedContentHeight,
