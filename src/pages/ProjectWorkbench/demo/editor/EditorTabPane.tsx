@@ -5,7 +5,7 @@ import { useCallback } from "react";
 import { PlainTextEditor } from "@/components/PlainTextEditor";
 
 import { useResourceAutosave } from "../../resource-library/use-resource-autosave";
-import { useResourceLibraryHandle } from "../../resource-library/use-resource-library-handle";
+import { useResourceLibrary } from "../branch/branch-scopes";
 import { editorTabMolecule, editorTabScope } from "../state/molecules";
 
 type EditorTabPaneProps = {
@@ -28,22 +28,16 @@ function EditorTabPlainTextEditor({
   const selectionSnapshot = useAtomValue(selectionSnapshotAtom);
   const setCaretPosition = useSetAtom(caretPositionAtom);
   const setSelectionSnapshot = useSetAtom(selectionSnapshotAtom);
-  const library = useResourceLibraryHandle();
+  const resources = useResourceLibrary();
 
   const writeFile = useCallback(
     async (path: string, content: string) => {
-      if (library.status !== "ready") {
-        throw new Error("资源库未就绪");
-      }
-      await library.resources.writeFile(path, content);
+      await resources.writeFile(path, content);
     },
-    [library],
+    [resources],
   );
 
-  const scheduleSave = useResourceAutosave(
-    resourcePath,
-    library.status === "ready" ? writeFile : undefined,
-  );
+  const scheduleSave = useResourceAutosave(resourcePath, writeFile);
 
   return (
     <PlainTextEditor

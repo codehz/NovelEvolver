@@ -4,9 +4,9 @@ import { cn } from "@/lib/cn";
 import { notificationApi } from "@/lib/notifications";
 import { isQuickPickDismissedError, quickPickApi } from "@/lib/quick-pick";
 
+import { useResourceLibrary } from "../demo/branch/branch-scopes";
 import { useWorkbenchEditorActions } from "../demo/editor/use-workbench-editor-actions";
 import { ResourceLibraryTree } from "./ResourceLibraryTree";
-import { useResourceLibraryHandle } from "./use-resource-library-handle";
 
 const toolbarClass = cn("flex shrink-0 gap-1 border-b border-workbench-tab-border p-1");
 
@@ -16,7 +16,7 @@ const toolbarButtonClass = cn(
 );
 
 export function ResourceLibrarySectionBody() {
-  const library = useResourceLibraryHandle();
+  const resources = useResourceLibrary();
   const { openResourceTab } = useWorkbenchEditorActions();
   const [treeRevision, setTreeRevision] = useState(0);
 
@@ -26,29 +26,20 @@ export function ResourceLibrarySectionBody() {
 
   const listDirectory = useCallback(
     async (path: string) => {
-      if (library.status !== "ready") {
-        return [];
-      }
-      return library.resources.ls(path);
+      return resources.ls(path);
     },
-    [library],
+    [resources],
   );
 
   const onOpenFile = useCallback(
     (path: string) => {
-      if (library.status !== "ready") {
-        return;
-      }
-      void openResourceTab(path, (p) => library.resources.readFile(p));
+      void openResourceTab(path, (p) => resources.readFile(p));
     },
-    [library, openResourceTab],
+    [openResourceTab, resources],
   );
 
   const createAtRoot = useCallback(
     async (kind: "file" | "folder") => {
-      if (library.status !== "ready") {
-        return;
-      }
       try {
         const name = await quickPickApi.showInput({
           title: kind === "file" ? "新建文件" : "新建文件夹",
@@ -59,13 +50,13 @@ export function ResourceLibrarySectionBody() {
         });
         const path = name.trim();
         if (kind === "folder") {
-          await library.resources.createFolder(path);
+          await resources.createFolder(path);
         } else {
-          await library.resources.writeFile(path, "");
+          await resources.writeFile(path, "");
         }
         bumpTree();
         if (kind === "file") {
-          void openResourceTab(path, (p) => library.resources.readFile(p));
+          void openResourceTab(path, (p) => resources.readFile(p));
         }
       } catch (error) {
         if (isQuickPickDismissedError(error)) {
@@ -76,20 +67,8 @@ export function ResourceLibrarySectionBody() {
         });
       }
     },
-    [bumpTree, library, openResourceTab],
+    [bumpTree, openResourceTab, resources],
   );
-
-  if (library.status === "idle" || library.status === "loading") {
-    return <p className="px-2 py-1 text-xs text-ctp-subtext0">连接资源库…</p>;
-  }
-
-  if (library.status === "unavailable" || library.status === "error") {
-    return (
-      <p className="px-2 py-1 text-xs text-ctp-subtext0" role="status">
-        {library.message}
-      </p>
-    );
-  }
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">

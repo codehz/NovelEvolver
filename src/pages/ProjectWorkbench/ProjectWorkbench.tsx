@@ -9,6 +9,7 @@ import { cn } from "@/lib/cn";
 import { projectDisplayName } from "@/lib/project-display-name";
 import { useTitleBarTitle } from "@/lib/titlebar-title";
 
+import { BranchScopeProvider } from "./demo/branch/BranchScopeProvider";
 import { projectMolecule, projectIdScope, projectScope } from "./demo/state/molecules";
 import { WorkbenchDemoStatusBar } from "./demo/statusbar/WorkbenchDemoStatusBar";
 import { buildWorkbenchDemoSlots } from "./demo/workbench-demo";
@@ -62,8 +63,10 @@ function ProjectWorkbenchInner() {
   useTitleBarTitle(displayName);
   return (
     <ScopeProvider scope={projectScope} value={project}>
-      <WorkbenchLayout {...buildWorkbenchDemoSlots(displayName)} />
-      <WorkbenchDemoStatusBar />
+      <BranchScopeProvider>
+        <WorkbenchLayout {...buildWorkbenchDemoSlots(displayName)} />
+        <WorkbenchDemoStatusBar />
+      </BranchScopeProvider>
     </ScopeProvider>
   );
 }

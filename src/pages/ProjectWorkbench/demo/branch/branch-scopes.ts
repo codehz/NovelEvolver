@@ -1,0 +1,40 @@
+import type { ResourceLibraryHandle, WorktreeHandle } from "@shared/rpc/projects-rpc";
+import { createScope, molecule, use } from "bunshi";
+import { useMolecule } from "bunshi/react";
+import type { RpcPromise } from "capnweb";
+import { nullthrow } from "foxact/nullthrow";
+
+import { projectScope } from "../state/molecules";
+
+export const DEFAULT_BRANCH_NAME = "main";
+
+/** 当前工作台所操作的分支名（与仓库 HEAD 同步，由 BranchScopeProvider 与切换逻辑维护）。 */
+export const branchNameScope = createScope<string>(DEFAULT_BRANCH_NAME);
+
+const activeBranchNameMolecule = molecule(() => use(branchNameScope));
+
+/** 当前分支对应的虚拟 worktree RPC 引用（随 project × branchName scope 重建）。 */
+export const worktreeMolecule = molecule(() => {
+  const project = nullthrow(use(projectScope));
+  const branchName = use(branchNameScope);
+  return project.handle.openWorktree(branchName);
+});
+
+/** 当前分支资源库根（`openWorktree(...).resources` 级联，不在此 await）。 */
+export const resourceLibraryMolecule = molecule(() => {
+  const project = nullthrow(use(projectScope));
+  const branchName = use(branchNameScope);
+  return project.handle.openWorktree(branchName).resources;
+});
+
+export function useActiveBranchName(): string {
+  return useMolecule(activeBranchNameMolecule);
+}
+
+export function useWorktree(): RpcPromise<WorktreeHandle> {
+  return useMolecule(worktreeMolecule);
+}
+
+export function useResourceLibrary(): RpcPromise<ResourceLibraryHandle> {
+  return useMolecule(resourceLibraryMolecule);
+}

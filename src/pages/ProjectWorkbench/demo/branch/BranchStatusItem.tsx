@@ -3,16 +3,13 @@ import { useAtomValue } from "jotai";
 import { StatusBarItemButton } from "@/components/workbench";
 import { quickPickOpenAtom } from "@/lib/quick-pick";
 
-import { useEffectiveHeadName } from "./branch-data";
 import { useBranchQuickPick } from "./branch-quick-pick";
-
-const branchFallbackLabel = "无分支";
+import { useActiveBranchName } from "./branch-scopes";
 
 export function BranchStatusItem() {
-  const headName = useEffectiveHeadName();
+  const branchName = useActiveBranchName();
   const quickPickOpen = useAtomValue(quickPickOpenAtom);
   const openBranchQuickPick = useBranchQuickPick();
-  const label = headName ?? branchFallbackLabel;
 
   return (
     <StatusBarItemButton
@@ -23,7 +20,7 @@ export function BranchStatusItem() {
         void openBranchQuickPick();
       }}
     >
-      {label}
+      {branchName}
     </StatusBarItemButton>
   );
 }
