@@ -59,68 +59,71 @@ export function NotificationCenterPanel({
     };
   }, [anchorRef, open, setOpen]);
 
-  if (!open) {
-    return null;
-  }
-
   const sorted = [...items].sort((a, b) => b.createdAt - a.createdAt);
 
   return (
-    <motion.div
-      ref={panelRef}
-      aria-labelledby={titleId}
-      className={cn(centerPanelPositionClass, notificationPanelClass)}
-      role="dialog"
-      layout
-    >
-      <motion.header
-        layout
-        className="flex items-center justify-between border-b border-notification-border px-3 py-2"
-      >
-        <h2 id={titleId} className="font-medium text-app-foreground">
-          通知
-        </h2>
-        <button
-          className={cn(
-            "inline-flex shrink-0 items-center justify-center rounded-sm px-1 text-base",
-            sorted.length > 0
-              ? "text-notification-action hover:bg-window-button-hover"
-              : "cursor-not-allowed text-workbench-status-bar-muted opacity-50",
-          )}
-          type="button"
-          disabled={sorted.length === 0}
-          onClick={() => {
-            notificationApi.closeAll();
-          }}
-          aria-label="全部清除"
+    <AnimatePresence>
+      {open && (
+        <motion.div
+          ref={panelRef}
+          aria-labelledby={titleId}
+          className={cn(centerPanelPositionClass, notificationPanelClass)}
+          role="dialog"
+          initial={{ opacity: 0, y: 4 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: 4 }}
+          transition={{ type: "spring", stiffness: 400, damping: 30, mass: 0.8 }}
         >
-          <span aria-hidden="true" className="icon-[codicon--clear-all]" />
-        </button>
-      </motion.header>
-      <ScrollArea className="min-h-0 flex-1 overflow-y-auto">
-        <AnimatePresence initial={false} mode="popLayout">
-          {sorted.length === 0 ? (
-            <motion.p
-              key="empty"
-              initial={{ opacity: 0, y: -8 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -8 }}
-              transition={{ type: "spring", stiffness: 400, damping: 30, mass: 0.8 }}
-              className="px-3 py-6 text-center text-workbench-status-bar-muted"
+          <motion.header
+            layout
+            className="flex items-center justify-between border-b border-notification-border px-3 py-2"
+          >
+            <h2 id={titleId} className="font-medium text-app-foreground">
+              通知
+            </h2>
+            <button
+              className={cn(
+                "inline-flex shrink-0 items-center justify-center rounded-sm px-1 text-base",
+                sorted.length > 0
+                  ? "text-notification-action hover:bg-window-button-hover"
+                  : "cursor-not-allowed text-workbench-status-bar-muted opacity-50",
+              )}
+              type="button"
+              disabled={sorted.length === 0}
+              onClick={() => {
+                notificationApi.closeAll();
+              }}
+              aria-label="全部清除"
             >
-              没有通知
-            </motion.p>
-          ) : (
-            sorted.map((notification) => (
-              <NotificationItem
-                key={notification.id}
-                notification={notification}
-                variant="center"
-              />
-            ))
-          )}
-        </AnimatePresence>
-      </ScrollArea>
-    </motion.div>
+              <span aria-hidden="true" className="icon-[codicon--clear-all]" />
+            </button>
+          </motion.header>
+          <ScrollArea className="min-h-0 flex-1 overflow-y-auto">
+            <AnimatePresence initial={false} mode="popLayout">
+              {sorted.length === 0 ? (
+                <motion.p
+                  key="empty"
+                  initial={{ opacity: 0, y: -8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -8 }}
+                  transition={{ type: "spring", stiffness: 400, damping: 30, mass: 0.8 }}
+                  className="px-3 py-6 text-center text-workbench-status-bar-muted"
+                >
+                  没有通知
+                </motion.p>
+              ) : (
+                sorted.map((notification) => (
+                  <NotificationItem
+                    key={notification.id}
+                    notification={notification}
+                    variant="center"
+                  />
+                ))
+              )}
+            </AnimatePresence>
+          </ScrollArea>
+        </motion.div>
+      )}
+    </AnimatePresence>
   );
 }
