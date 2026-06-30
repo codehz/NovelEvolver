@@ -1,8 +1,17 @@
 import { cn } from "@/lib/cn";
 import type { NotificationSeverity } from "@/lib/notifications";
 
+export const notificationBellAnchorClass = cn(
+  "notification-bell-anchor relative flex shrink-0 items-stretch self-stretch",
+);
+
 export const notificationPanelClass = cn(
   "flex max-h-notification-panel-max-height w-notification-panel flex-col overflow-hidden rounded-sm border border-notification-border bg-notification-surface text-xs text-app-foreground shadow-lg app-region-no-drag",
+);
+
+export const notificationCenterPopoverPanelClass = cn(
+  "notification-center-popover m-0 min-w-notification-panel",
+  notificationPanelClass,
 );
 
 export const notificationToastClass = cn(

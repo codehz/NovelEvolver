@@ -7,7 +7,7 @@ import { toastNotificationsAtom } from "@/lib/notifications";
 import { NotificationItem } from "./NotificationItem";
 
 const toastStackClass = cn(
-  "pointer-events-none fixed right-3 bottom-notification-above-statusbar z-notification flex min-w-notification-panel flex-col gap-2",
+  "pointer-events-none fixed right-notification-edge-inset bottom-notification-above-statusbar z-notification flex min-w-notification-panel flex-col gap-2",
 );
 
 export function NotificationToastStack() {

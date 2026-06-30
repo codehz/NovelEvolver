@@ -43,6 +43,7 @@
   --color-notification-action: var(--color-ctp-mauve);
   --spacing-notification-panel: 26rem;
   --spacing-notification-panel-max-height: 22rem;
+  --spacing-notification-edge-inset: 0.75rem;
   --spacing-notification-stack-offset: 0.5rem;
   --spacing-notification-above-statusbar: calc(
     var(--spacing-workbench-status-bar) + var(--spacing-notification-stack-offset)
@@ -176,6 +177,38 @@
 }
 
 @layer components {
+  .notification-bell-anchor {
+    anchor-name: --notification-bell;
+  }
+
+  [popover].notification-center-popover {
+    position: fixed;
+    inset: unset;
+    position-anchor: --notification-bell;
+    bottom: calc(anchor(top) + var(--spacing-notification-edge-inset));
+    right: calc(anchor(right) + var(--spacing-notification-edge-inset));
+    margin: 0;
+    opacity: 0;
+    transform: translateY(4px);
+    transition:
+      opacity 0.22s ease,
+      transform 0.22s cubic-bezier(0.33, 1, 0.68, 1),
+      overlay 0.22s allow-discrete,
+      display 0.22s allow-discrete;
+  }
+
+  [popover].notification-center-popover:popover-open {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  @starting-style {
+    [popover].notification-center-popover:popover-open {
+      opacity: 0;
+      transform: translateY(4px);
+    }
+  }
+
   [popover].quick-pick-popover {
     left: 50%;
     margin: 0;
