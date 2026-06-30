@@ -7,13 +7,9 @@ import {
   type RefObject,
 } from "react";
 
-export const FLOATING_PICKER_OPTION_INDEX_ATTR = "data-floating-picker-index";
+export const QUICK_PICK_OPTION_INDEX_ATTR = "data-quick-pick-option-index";
 
-export function moveFloatingPickerHighlight(
-  current: number,
-  delta: number,
-  length: number,
-): number {
+function moveHighlight(current: number, delta: number, length: number): number {
   if (length === 0) {
     return -1;
   }
@@ -23,25 +19,17 @@ export function moveFloatingPickerHighlight(
   return (current + delta + length) % length;
 }
 
-export type UseFloatingPickerNavigationOptions = {
+export function useQuickPickListNavigation(options: {
   itemCount: number;
-  open: boolean;
   onActivate: (index: number) => void;
-};
-
-export type UseFloatingPickerNavigationResult = {
+}): {
   highlightIndex: number;
   setHighlightIndex: (index: number | ((current: number) => number)) => void;
   listRef: RefObject<HTMLUListElement | null>;
-  onInputKeyDown: (event: ReactKeyboardEvent<HTMLInputElement>) => void;
+  onSearchKeyDown: (event: ReactKeyboardEvent<HTMLInputElement>) => void;
   resetHighlight: () => void;
-};
-
-export function useFloatingPickerNavigation({
-  itemCount,
-  open,
-  onActivate,
-}: UseFloatingPickerNavigationOptions): UseFloatingPickerNavigationResult {
+} {
+  const { itemCount, onActivate } = options;
   const listRef = useRef<HTMLUListElement>(null);
   const [highlightIndex, setHighlightIndex] = useState(0);
 
@@ -62,26 +50,25 @@ export function useFloatingPickerNavigation({
   }, [itemCount]);
 
   useEffect(() => {
-    if (!open || highlightIndex < 0) {
+    if (highlightIndex < 0) {
       return;
     }
-    const list = listRef.current;
-    const option = list?.querySelector<HTMLElement>(
-      `[${FLOATING_PICKER_OPTION_INDEX_ATTR}="${highlightIndex}"]`,
+    const option = listRef.current?.querySelector<HTMLElement>(
+      `[${QUICK_PICK_OPTION_INDEX_ATTR}="${highlightIndex}"]`,
     );
     option?.scrollIntoView({ block: "nearest" });
-  }, [highlightIndex, open]);
+  }, [highlightIndex]);
 
-  const onInputKeyDown = useCallback(
+  const onSearchKeyDown = useCallback(
     (event: ReactKeyboardEvent<HTMLInputElement>) => {
       if (event.key === "ArrowDown") {
         event.preventDefault();
-        setHighlightIndex((index) => moveFloatingPickerHighlight(index, 1, itemCount));
+        setHighlightIndex((index) => moveHighlight(index, 1, itemCount));
         return;
       }
       if (event.key === "ArrowUp") {
         event.preventDefault();
-        setHighlightIndex((index) => moveFloatingPickerHighlight(index, -1, itemCount));
+        setHighlightIndex((index) => moveHighlight(index, -1, itemCount));
         return;
       }
       if (event.key === "Enter") {
@@ -98,7 +85,7 @@ export function useFloatingPickerNavigation({
     highlightIndex,
     setHighlightIndex,
     listRef,
-    onInputKeyDown,
+    onSearchKeyDown,
     resetHighlight,
   };
 }

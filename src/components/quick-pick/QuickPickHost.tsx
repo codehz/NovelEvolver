@@ -1,25 +1,33 @@
 import { useAtomValue } from "jotai";
-import { useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useId, useMemo, useRef, useState, type ReactNode } from "react";
 
-import {
-  FloatingPickerListbox,
-  FloatingPickerOption,
-  FloatingPickerSearchField,
-  FloatingPickerShell,
-  floatingPickerEmptyStateClass,
-  floatingPickerInputClass,
-  floatingPickerInputWrapClass,
-  useFloatingPickerNavigation,
-} from "@/components/floating-picker";
 import { cn } from "@/lib/cn";
 import {
   activeQuickPickSessionAtom,
-  quickPickHostApi,
   type QuickPickExtraItem,
+  type QuickPickInputSession,
   type QuickPickListItem,
   type QuickPickListSession,
-  type QuickPickInputSession,
 } from "@/lib/quick-pick";
+import { quickPickHostApi } from "@/lib/quick-pick/api";
+
+import {
+  quickPickEmptyClass,
+  quickPickFooterHintClass,
+  quickPickListClass,
+  quickPickRowButtonClass,
+  quickPickRowEmphasisClass,
+  quickPickRowHighlightClass,
+  quickPickSearchInputClass,
+  quickPickSearchWrapClass,
+  quickPickTextInputClass,
+  quickPickTextInputWrapClass,
+} from "./quick-pick-chrome";
+import { QuickPickOverlay } from "./QuickPickOverlay";
+import {
+  QUICK_PICK_OPTION_INDEX_ATTR,
+  useQuickPickListNavigation,
+} from "./use-quick-pick-list-navigation";
 
 function filterListItems(items: QuickPickListItem[], query: string): QuickPickListItem[] {
   const normalized = query.trim().toLowerCase();
@@ -33,10 +41,44 @@ function filterListItems(items: QuickPickListItem[], query: string): QuickPickLi
   });
 }
 
+function QuickPickListOption({
+  index,
+  highlighted,
+  emphasized,
+  onHighlight,
+  onSelect,
+  children,
+}: {
+  index: number;
+  highlighted: boolean;
+  emphasized?: boolean;
+  onHighlight: () => void;
+  onSelect: () => void;
+  children: ReactNode;
+}) {
+  return (
+    <li role="option" aria-selected={highlighted} {...{ [QUICK_PICK_OPTION_INDEX_ATTR]: index }}>
+      <button
+        type="button"
+        className={cn(
+          quickPickRowButtonClass,
+          highlighted && quickPickRowHighlightClass,
+          emphasized && quickPickRowEmphasisClass,
+        )}
+        onMouseEnter={onHighlight}
+        onClick={onSelect}
+      >
+        {children}
+      </button>
+    </li>
+  );
+}
+
 function QuickPickListPanel({ session }: { session: QuickPickListSession }) {
   const { requestId, options } = session;
   const titleId = useId();
   const listboxId = useId();
+  const searchInputId = useId();
   const inputRef = useRef<HTMLInputElement>(null);
   const [query, setQuery] = useState("");
 
@@ -66,10 +108,9 @@ function QuickPickListPanel({ session }: { session: QuickPickListSession }) {
     [query, requestId],
   );
 
-  const { highlightIndex, setHighlightIndex, listRef, onInputKeyDown, resetHighlight } =
-    useFloatingPickerNavigation({
+  const { highlightIndex, setHighlightIndex, listRef, onSearchKeyDown, resetHighlight } =
+    useQuickPickListNavigation({
       itemCount,
-      open: true,
       onActivate: (index) => {
         if (index < filtered.length) {
           const item = filtered[index];
@@ -99,31 +140,49 @@ function QuickPickListPanel({ session }: { session: QuickPickListSession }) {
   }, [requestId, resetHighlight]);
 
   return (
-    <FloatingPickerShell
-      open
-      onClose={dismiss}
+    <QuickPickOverlay
       titleId={titleId}
       dismissAriaLabel={options.dismissAriaLabel ?? "关闭"}
+      onDismiss={dismiss}
     >
       <p className="sr-only" id={titleId}>
         {options.title}
       </p>
-      <FloatingPickerSearchField
-        titleId={titleId}
-        listboxId={listboxId}
-        inputRef={inputRef}
-        label={options.searchLabel ?? options.title}
-        placeholder={options.searchPlaceholder ?? ""}
-        value={query}
-        onChange={setQuery}
-        onKeyDown={onInputKeyDown}
-      />
-      <FloatingPickerListbox listboxId={listboxId} listRef={listRef} ariaLabel={options.title}>
+      <div className={quickPickSearchWrapClass}>
+        <label className="sr-only" htmlFor={searchInputId}>
+          {options.searchLabel ?? options.title}
+        </label>
+        <input
+          ref={inputRef}
+          id={searchInputId}
+          className={quickPickSearchInputClass}
+          type="text"
+          role="combobox"
+          aria-expanded
+          aria-controls={listboxId}
+          aria-autocomplete="list"
+          autoComplete="off"
+          spellCheck={false}
+          placeholder={options.searchPlaceholder ?? ""}
+          value={query}
+          onChange={(event) => {
+            setQuery(event.target.value);
+          }}
+          onKeyDown={onSearchKeyDown}
+        />
+      </div>
+      <ul
+        ref={listRef}
+        id={listboxId}
+        className={quickPickListClass}
+        role="listbox"
+        aria-label={options.title}
+      >
         {filtered.length === 0 && extras.length === 0 ? (
-          <li className={floatingPickerEmptyStateClass}>{options.emptyMessage ?? "无匹配项"}</li>
+          <li className={quickPickEmptyClass}>{options.emptyMessage ?? "无匹配项"}</li>
         ) : null}
         {filtered.map((item, index) => (
-          <FloatingPickerOption
+          <QuickPickListOption
             key={item.id}
             index={index}
             highlighted={highlightIndex === index}
@@ -148,12 +207,12 @@ function QuickPickListPanel({ session }: { session: QuickPickListSession }) {
                 {item.detail}
               </span>
             ) : null}
-          </FloatingPickerOption>
+          </QuickPickListOption>
         ))}
         {extras.map((extra, extraIndex) => {
           const listIndex = filtered.length + extraIndex;
           return (
-            <FloatingPickerOption
+            <QuickPickListOption
               key={extra.id}
               index={listIndex}
               highlighted={highlightIndex === listIndex}
@@ -166,17 +225,18 @@ function QuickPickListPanel({ session }: { session: QuickPickListSession }) {
             >
               <span aria-hidden="true" className="icon-[codicon--add] size-4 shrink-0" />
               <span className="min-w-0 flex-1 truncate font-medium">{extra.label}</span>
-            </FloatingPickerOption>
+            </QuickPickListOption>
           );
         })}
-      </FloatingPickerListbox>
-    </FloatingPickerShell>
+      </ul>
+    </QuickPickOverlay>
   );
 }
 
 function QuickPickInputPanel({ session }: { session: QuickPickInputSession }) {
   const { requestId, options } = session;
   const titleId = useId();
+  const inputId = useId();
   const inputRef = useRef<HTMLInputElement>(null);
   const [value, setValue] = useState(options.initialValue ?? "");
   const [error, setError] = useState<string | null>(null);
@@ -209,19 +269,16 @@ function QuickPickInputPanel({ session }: { session: QuickPickInputSession }) {
     };
   }, [options.initialValue, requestId]);
 
-  const inputId = useId();
-
   return (
-    <FloatingPickerShell
-      open
-      onClose={dismiss}
+    <QuickPickOverlay
       titleId={titleId}
       dismissAriaLabel={options.dismissAriaLabel ?? "关闭"}
+      onDismiss={dismiss}
     >
       <p className="sr-only" id={titleId}>
         {options.title}
       </p>
-      <div className={floatingPickerInputWrapClass}>
+      <div className={quickPickTextInputWrapClass}>
         <label className="sr-only" htmlFor={inputId}>
           {options.inputLabel ?? options.title}
         </label>
@@ -232,7 +289,7 @@ function QuickPickInputPanel({ session }: { session: QuickPickInputSession }) {
           autoComplete="off"
           spellCheck={false}
           placeholder={options.placeholder ?? ""}
-          className={floatingPickerInputClass}
+          className={quickPickTextInputClass}
           value={value}
           onChange={(event) => {
             setValue(event.target.value);
@@ -251,12 +308,8 @@ function QuickPickInputPanel({ session }: { session: QuickPickInputSession }) {
           </p>
         ) : null}
       </div>
-      {options.hint ? (
-        <p className="shrink-0 border-t border-badge-background px-3 py-2 text-xs text-workbench-status-bar-muted">
-          {options.hint}
-        </p>
-      ) : null}
-    </FloatingPickerShell>
+      {options.hint ? <p className={quickPickFooterHintClass}>{options.hint}</p> : null}
+    </QuickPickOverlay>
   );
 }
 
