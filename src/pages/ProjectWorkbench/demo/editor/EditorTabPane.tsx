@@ -3,7 +3,7 @@ import { useAtomValue, useSetAtom } from "jotai";
 
 import { PlainTextEditor } from "@/components/PlainTextEditor";
 
-import { editorTabMolecule, editorTabScope } from "./molecules";
+import { editorTabMolecule, editorTabScope } from "../state/molecules";
 
 type EditorTabPaneProps = {
   tabId: string;

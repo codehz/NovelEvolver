@@ -1,7 +1,7 @@
 import { StatusBarItemInfo } from "@/components/workbench";
 
-import { formatEditorCaretPosition } from "./editor-caret";
-import { useActiveTabCaretPosition } from "./use-active-tab-caret";
+import { useActiveTabCaretPosition } from "../editor/use-active-tab-caret";
+import { formatEditorCaretPosition } from "../state/editor-caret";
 
 export function CaretPositionIndicator() {
   const caret = useActiveTabCaretPosition();

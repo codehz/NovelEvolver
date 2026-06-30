@@ -4,9 +4,9 @@ import { useCallback, useEffect } from "react";
 
 import { cn } from "@/lib/cn";
 
+import { workbenchEditorMolecule } from "../state/molecules";
+import type { WorkbenchDemoTab } from "../state/types";
 import { EditorTabPane } from "./EditorTabPane";
-import { workbenchEditorMolecule } from "./molecules";
-import type { WorkbenchDemoTab } from "./types";
 
 const initialDemoTabs: WorkbenchDemoTab[] = [
   { id: "chapter-1", label: "第一章.md", active: true },

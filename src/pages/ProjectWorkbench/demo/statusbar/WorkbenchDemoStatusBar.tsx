@@ -1,7 +1,7 @@
 import { StatusBarItemButton, StatusBarMessage } from "@/components/workbench";
 import { StatusBarLeftPortalContent, StatusBarRightPortalContent } from "@/lib/statusbar-portal";
 
-import { BranchStatusItem } from "./BranchStatusItem";
+import { BranchStatusItem } from "../branch/BranchStatusItem";
 import { CaretPositionIndicator } from "./CaretPositionIndicator";
 
 const leftStaticItems = [{ id: "sync", label: "同步", icon: "icon-[codicon--sync]" }];

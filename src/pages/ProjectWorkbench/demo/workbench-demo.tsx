@@ -2,9 +2,13 @@ import type { ReactNode } from "react";
 
 import type { ActivityViewId } from "@/components/workbench";
 
-import { AuxiliaryPanelDemo } from "./auxiliary-demo";
-import { EditorArea } from "./EditorArea";
-import { ExplorerSidebarDemo, ScmSidebarDemo, SearchSidebarDemo } from "./primary-sidebar-demo";
+import { EditorArea } from "./editor/EditorArea";
+import { AuxiliaryPanelDemo } from "./sidebars/auxiliary-demo";
+import {
+  ExplorerSidebarDemo,
+  ScmSidebarDemo,
+  SearchSidebarDemo,
+} from "./sidebars/primary-sidebar-demo";
 export function buildWorkbenchDemoSlots(projectLabel: string): {
   primarySidebar: Partial<Record<ActivityViewId, ReactNode>>;
   editor: ReactNode;

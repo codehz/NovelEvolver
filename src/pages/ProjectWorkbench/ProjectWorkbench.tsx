@@ -9,10 +9,10 @@ import { cn } from "@/lib/cn";
 import { projectDisplayName } from "@/lib/project-display-name";
 import { useTitleBarTitle } from "@/lib/titlebar-title";
 
-import { BranchSwitcher } from "./demo/BranchSwitcher";
-import { projectMolecule, projectIdScope, projectScope } from "./demo/molecules";
+import { BranchSwitcher } from "./demo/branch/BranchSwitcher";
+import { projectMolecule, projectIdScope, projectScope } from "./demo/state/molecules";
+import { WorkbenchDemoStatusBar } from "./demo/statusbar/WorkbenchDemoStatusBar";
 import { buildWorkbenchDemoSlots } from "./demo/workbench-demo";
-import { WorkbenchDemoStatusBar } from "./demo/WorkbenchDemoStatusBar";
 
 export function ProjectWorkbench() {
   const { projectId } = useParams<{ projectId: string }>();

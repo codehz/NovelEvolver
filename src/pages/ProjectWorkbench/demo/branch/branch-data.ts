@@ -5,7 +5,7 @@ import { atom } from "jotai";
 
 import { createAsyncLoader, useAsyncLoader } from "@/lib/async-loader";
 
-import { projectScope } from "./molecules";
+import { projectScope } from "../state/molecules";
 
 export const branchSwitcherOpenAtom = atom(false);
 
