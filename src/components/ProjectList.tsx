@@ -5,8 +5,7 @@ import { projectsService } from "@/lib/app-rpc";
 import { createAsyncLoader, useAsyncLoader } from "@/lib/async-loader";
 import { cn } from "@/lib/cn";
 import { projectDisplayName } from "@/lib/project-display-name";
-
-import { TitleBarTitle } from "./TitleBarTitle";
+import { defaultWindowTitle, useTitleBarTitle } from "@/lib/titlebar-title";
 
 function formatLastOpened(timestamp: number): string {
   return new Date(timestamp).toLocaleString();
@@ -22,6 +21,7 @@ const projectCardActionClass = cn(
 const projectLoader = createAsyncLoader(() => projectsService.recents);
 
 export function ProjectList() {
+  useTitleBarTitle(defaultWindowTitle);
   const [, navigate] = useLocation();
   const projects = useAsyncLoader(projectLoader);
   const actionState = useActionState();
@@ -63,7 +63,6 @@ export function ProjectList() {
 
   return (
     <div className="flex min-h-0 flex-1 flex-col gap-4 p-6">
-      <TitleBarTitle>NovelEvolver</TitleBarTitle>
       <div className="flex items-center justify-between gap-4">
         <h1 className="text-lg font-semibold text-app-foreground">项目</h1>
         <div className="flex items-center gap-2">

@@ -4,10 +4,10 @@ import { Suspense, use } from "react";
 import { ErrorBoundary } from "react-error-boundary";
 import { Link, useParams } from "wouter";
 
-import { TitleBarTitle } from "@/components/TitleBarTitle";
 import { WorkbenchLayout } from "@/components/workbench";
 import { cn } from "@/lib/cn";
 import { projectDisplayName } from "@/lib/project-display-name";
+import { useTitleBarTitle } from "@/lib/titlebar-title";
 
 import { projectMolecule, projectIdScope, projectScope } from "./demo/molecules";
 import { StatusBar } from "./demo/StatusBar";
@@ -59,13 +59,11 @@ function ErrorFallback({ error }: { error: unknown }) {
 function ProjectWorkbenchInner() {
   const project = use(useMolecule(projectMolecule));
   const displayName = projectDisplayName(project.metadata.path);
+  useTitleBarTitle(displayName);
   return (
-    <>
-      <TitleBarTitle>{displayName}</TitleBarTitle>
-      <ScopeProvider scope={projectScope} value={project}>
-        <WorkbenchLayout {...buildWorkbenchDemoSlots(displayName)} />
-        <StatusBar />
-      </ScopeProvider>
-    </>
+    <ScopeProvider scope={projectScope} value={project}>
+      <WorkbenchLayout {...buildWorkbenchDemoSlots(displayName)} />
+      <StatusBar />
+    </ScopeProvider>
   );
 }

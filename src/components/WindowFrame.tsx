@@ -1,12 +1,14 @@
 import { AutoTransition } from "@codehz/auto-transition";
 import type { WindowState } from "@shared/window";
+import { useAtomValue } from "jotai";
 import { ForwardedRef, type ReactNode } from "react";
 
 import { windowService } from "@/lib/app-rpc";
 import { useWindowState } from "@/lib/app-rpc-react";
 import { cn } from "@/lib/cn";
 import { StatusBarLeftPortalTarget, StatusBarRightPortalTarget } from "@/lib/statusbar-portal";
-import { TitleBarActionsPortalTarget, TitleBarPortalTarget } from "@/lib/titlebar-portal";
+import { TitleBarActionsPortalTarget } from "@/lib/titlebar-portal";
+import { titleBarTitleAtom } from "@/lib/titlebar-title";
 
 const windowControlButtonClass = cn(
   "inline-flex size-7 shrink-0 items-center justify-center rounded-full border-0 bg-transparent p-0 text-titlebar-foreground transition-colors duration-150 hover:bg-window-button-hover focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-badge-background active:bg-window-button-hover",
@@ -71,6 +73,7 @@ const fallbackWindowState: WindowState = {
 };
 
 export function WindowFrame({ children }: { children: ReactNode }) {
+  const titleBarTitle = useAtomValue(titleBarTitleAtom);
   const windowState = useWindowState(fallbackWindowState);
 
   const isMac = windowState.platform === "darwin";
@@ -97,11 +100,9 @@ export function WindowFrame({ children }: { children: ReactNode }) {
             <div className="flex size-5 items-center justify-center rounded-sm bg-badge-background text-badge font-semibold text-badge-foreground app-region-no-drag">
               NE
             </div>
-            <TitleBarPortalTarget
-              as="p"
-              data-fallback="NovelEvolver"
-              className="truncate text-titlebar font-medium text-titlebar-foreground empty:before:content-[attr(data-fallback)]"
-            />
+            <p className="truncate text-titlebar font-medium text-titlebar-foreground">
+              {titleBarTitle}
+            </p>
           </div>
 
           {isMac ? (
