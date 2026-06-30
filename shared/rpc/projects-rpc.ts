@@ -9,10 +9,41 @@ export type BranchInfo = {
   commit: string | null;
 };
 
+export type ResourceNode = {
+  name: string;
+  type: "file" | "folder";
+};
+
+/**
+ * File operations under the branch worktree's `resources/` directory.
+ *
+ * All `path` arguments are relative to that directory; `""` denotes the library root.
+ * `readFile` / `writeFile` use UTF-8 text. `unlink` removes files or folders recursively.
+ */
+export interface ResourceLibraryHandle extends RpcTarget {
+  /** List entries in a folder. `path` `""` lists the library root. */
+  ls(path: string): ResourceNode[];
+
+  /** Read a file as UTF-8 text. */
+  readFile(path: string): string;
+
+  /** Write a file as UTF-8 text (creates parent folders as needed). */
+  writeFile(path: string, content: string): void;
+
+  /** Create a folder (and missing parents). */
+  createFolder(path: string): void;
+
+  /** Remove a file or folder recursively. Cannot target `""` (the library root). */
+  unlink(path: string): void;
+
+  move(from: string, to: string): void;
+}
+
 /** Live RPC handle for a branch-scoped virtual worktree (SQLite-backed in app userData). */
 export interface WorktreeHandle extends RpcTarget {
   /** Baseline tree SHA-1 recorded when the worktree was first created for this branch. */
   readonly baseTree: string;
+  readonly resources: ResourceLibraryHandle;
   // TODO: design more api
 }
 
