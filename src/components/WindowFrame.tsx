@@ -85,7 +85,14 @@ function WindowTitle() {
 
 const titlebarChromeTransitionClass = cn("transition-opacity duration-200 ease-out");
 
-function TitleBar({ windowState }: { windowState: WindowState }) {
+const fallbackWindowState: WindowState = {
+  isFocused: true,
+  isMaximized: false,
+  platform: "unknown",
+};
+
+function TitleBar() {
+  const windowState = useWindowState(fallbackWindowState);
   const isMac = windowState.platform === "darwin";
   const titlebarChromeOpacityClass = cn(
     windowState.isFocused ? "opacity-100" : "opacity-titlebar-inactive",
@@ -153,19 +160,10 @@ function StatusBar() {
   );
 }
 
-const fallbackWindowState: WindowState = {
-  isFocused: true,
-  isMaximized: false,
-  platform: "unknown",
-};
-
 export function WindowFrame({ children }: { children: ReactNode }) {
-  const windowState = useWindowState(fallbackWindowState);
-
   return (
     <main className="flex min-h-0 flex-1 flex-col bg-app-background text-app-foreground">
-      <TitleBar windowState={windowState} />
-
+      <TitleBar />
       <section className="flex min-h-0 flex-1 flex-col bg-app-background">{children}</section>
       <StatusBar />
     </main>
