@@ -8,7 +8,18 @@ const panelHeightSpring = {
   mass: 0.85,
 };
 
-export function useQuickPickPanelHeightAnimation(contentRef: RefObject<HTMLElement | null>): {
+const MIN_MEASURED_HEIGHT_PX = 1;
+
+function measureContentHeight(content: HTMLElement): number {
+  const boxHeight = content.getBoundingClientRect().height;
+  const scrollHeight = content.scrollHeight;
+  return Math.ceil(Math.max(boxHeight, scrollHeight));
+}
+
+export function useQuickPickPanelHeightAnimation(
+  contentRef: RefObject<HTMLElement | null>,
+  panelRef: RefObject<HTMLElement | null>,
+): {
   shellHeightPx: number | undefined;
 } {
   const [shellHeightPx, setShellHeightPx] = useState<number | undefined>(undefined);
@@ -18,11 +29,12 @@ export function useQuickPickPanelHeightAnimation(contentRef: RefObject<HTMLEleme
 
   useEffect(() => {
     const content = contentRef.current;
-    if (content == null) {
+    const panel = panelRef.current;
+    if (content == null || panel == null) {
       return;
     }
 
-    const measureTargetHeight = () => Math.ceil(content.getBoundingClientRect().height);
+    const isPanelMeasurable = () => panel.matches(":popover-open");
 
     const applyHeight = (next: number) => {
       displayedHeightRef.current = next;
@@ -30,8 +42,10 @@ export function useQuickPickPanelHeightAnimation(contentRef: RefObject<HTMLEleme
     };
 
     const animateTo = (target: number) => {
-      console.log("animateTo", target);
       if (!hasInitializedRef.current) {
+        if (target < MIN_MEASURED_HEIGHT_PX) {
+          return;
+        }
         hasInitializedRef.current = true;
         applyHeight(target);
         return;
@@ -55,23 +69,36 @@ export function useQuickPickPanelHeightAnimation(contentRef: RefObject<HTMLEleme
       });
     };
 
-    const onResize = () => {
-      animateTo(measureTargetHeight());
+    const remeasure = () => {
+      if (!isPanelMeasurable()) {
+        return;
+      }
+      animateTo(measureContentHeight(content));
     };
 
     const observer = new ResizeObserver(() => {
-      onResize();
+      remeasure();
     });
 
+    const onToggle = (event: ToggleEvent) => {
+      if (event.newState === "open") {
+        requestAnimationFrame(() => {
+          remeasure();
+        });
+      }
+    };
+
     observer.observe(content);
-    onResize();
+    panel.addEventListener("toggle", onToggle);
+    remeasure();
 
     return () => {
+      panel.removeEventListener("toggle", onToggle);
       observer.disconnect();
       animationRef.current?.stop();
       animationRef.current = null;
     };
-  }, [contentRef]);
+  }, [contentRef, panelRef]);
 
   return { shellHeightPx };
 }

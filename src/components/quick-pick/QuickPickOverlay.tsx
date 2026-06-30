@@ -48,7 +48,7 @@ export function QuickPickOverlay({
   const contentRef = useRef<HTMLDivElement>(null);
   const pendingAfterCloseRef = useRef<(() => void) | null>(null);
   const isClosingRef = useRef(false);
-  const { shellHeightPx } = useQuickPickPanelHeightAnimation(contentRef);
+  const { shellHeightPx } = useQuickPickPanelHeightAnimation(contentRef, panelRef);
 
   const requestClose = useCallback((afterClose: () => void) => {
     const panel = panelRef.current;
