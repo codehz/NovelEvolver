@@ -152,6 +152,15 @@ export function WindowFrame({ children }: { children: ReactNode }) {
         />
         <div className="flex shrink-0 items-stretch">
           <StatusBarRightPortalTarget as={Animatable} className="contents" />
+          <button
+            aria-label="通知"
+            className={cn(
+              "flex shrink-0 items-center justify-center px-2.5 hover:bg-window-button-hover",
+            )}
+            type="button"
+          >
+            <span aria-hidden="true" className="icon-[codicon--bell]" />
+          </button>
         </div>
       </footer>
     </main>
