@@ -10,8 +10,8 @@ import { projectDisplayName } from "@/lib/project-display-name";
 import { useTitleBarTitle } from "@/lib/titlebar-title";
 
 import { projectMolecule, projectIdScope, projectScope } from "./demo/molecules";
-import { StatusBar } from "./demo/StatusBar";
 import { buildWorkbenchDemoSlots } from "./demo/workbench-demo";
+import { WorkbenchDemoStatusBar } from "./demo/WorkbenchDemoStatusBar";
 
 export function ProjectWorkbench() {
   const { projectId } = useParams<{ projectId: string }>();
@@ -63,7 +63,7 @@ function ProjectWorkbenchInner() {
   return (
     <ScopeProvider scope={projectScope} value={project}>
       <WorkbenchLayout {...buildWorkbenchDemoSlots(displayName)} />
-      <StatusBar />
+      <WorkbenchDemoStatusBar />
     </ScopeProvider>
   );
 }

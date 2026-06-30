@@ -12,7 +12,7 @@ const rightStaticItems = [
   { id: "language", label: "Markdown" },
 ];
 
-export function StatusBar() {
+export function WorkbenchDemoStatusBar() {
   return (
     <>
       <StatusBarLeftPortalContent>
