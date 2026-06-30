@@ -2,6 +2,7 @@
 @import "@catppuccin/tailwindcss/mocha.css";
 @import "misans/lib/Normal/MiSans-Regular.min.css";
 @import "@mogeko/maple-mono-cn/dist/font/result.css";
+@import "slot-text/style.css";
 
 @plugin "../tools/iconify.js";
 

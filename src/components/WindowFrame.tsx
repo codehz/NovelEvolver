@@ -2,6 +2,8 @@ import { AutoTransition } from "@codehz/auto-transition";
 import type { WindowState } from "@shared/window";
 import { useAtomValue } from "jotai";
 import { ForwardedRef, type ReactNode } from "react";
+import { chromatic, type SlotOptions } from "slot-text";
+import { SlotText } from "slot-text/react";
 
 import { windowService } from "@/lib/app-rpc";
 import { useWindowState } from "@/lib/app-rpc-react";
@@ -64,6 +66,22 @@ function WindowControls({
   );
 }
 
+const windowTitleSlotTextOptions: SlotOptions = {
+  skipUnchanged: false,
+  color: chromatic({ from: 190 }),
+  direction: "down",
+};
+
+function WindowTitle() {
+  const titleBarTitle = useAtomValue(titleBarTitleAtom);
+
+  return (
+    <p className="truncate text-titlebar font-medium text-titlebar-foreground">
+      <SlotText text={titleBarTitle} options={windowTitleSlotTextOptions} />
+    </p>
+  );
+}
+
 const titlebarChromeTransitionClass = cn("transition-opacity duration-200 ease-out");
 
 const fallbackWindowState: WindowState = {
@@ -73,7 +91,6 @@ const fallbackWindowState: WindowState = {
 };
 
 export function WindowFrame({ children }: { children: ReactNode }) {
-  const titleBarTitle = useAtomValue(titleBarTitleAtom);
   const windowState = useWindowState(fallbackWindowState);
 
   const isMac = windowState.platform === "darwin";
@@ -100,9 +117,7 @@ export function WindowFrame({ children }: { children: ReactNode }) {
             <div className="flex size-5 items-center justify-center rounded-sm bg-badge-background text-badge font-semibold text-badge-foreground app-region-no-drag">
               NE
             </div>
-            <p className="truncate text-titlebar font-medium text-titlebar-foreground">
-              {titleBarTitle}
-            </p>
+            <WindowTitle />
           </div>
 
           {isMac ? (
