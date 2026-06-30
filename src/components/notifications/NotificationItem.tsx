@@ -35,12 +35,16 @@ export type NotificationItemProps = {
 
 export function NotificationItem({ notification, variant, ref }: NotificationItemProps) {
   const { id, severity, message, source, actions, progress } = notification;
+  const hasSource = source != null && source.length > 0;
+  const hasProgressBar = severity === "progress" && progress != null;
+  const isCompactRow = !hasSource && !hasProgressBar && actions.length === 0;
 
   return (
     <motion.article
       ref={ref}
       className={cn(
         "flex gap-2 p-3",
+        isCompactRow ? "items-center" : "items-start",
         variant === "center" && "border-t border-notification-border last:border-b-0",
         variant === "toast" && notificationToastClass,
       )}
@@ -51,14 +55,17 @@ export function NotificationItem({ notification, variant, ref }: NotificationIte
     >
       <span
         aria-hidden="true"
-        className={cn("mt-0.5 shrink-0 text-base", notificationSeverityIconClass[severity])}
+        className={cn(
+          "inline-flex size-6 shrink-0 items-center justify-center text-base",
+          notificationSeverityIconClass[severity],
+        )}
       />
       <div className="flex min-w-0 flex-1 flex-col gap-1.5">
         <div className="min-w-0">
-          {source != null && source.length > 0 ? (
-            <p className="text-workbench-status-bar-muted">{source}</p>
-          ) : null}
-          <p className="wrap-break-word text-app-foreground">{message}</p>
+          {hasSource ? <p className="text-workbench-status-bar-muted">{source}</p> : null}
+          <p className={cn("wrap-break-word text-app-foreground", isCompactRow && "leading-6")}>
+            {message}
+          </p>
           {severity === "progress" && progress != null ? (
             <div className="mt-1.5 h-1 overflow-hidden rounded-full bg-notification-border">
               <div
@@ -85,18 +92,16 @@ export function NotificationItem({ notification, variant, ref }: NotificationIte
           </div>
         ) : null}
       </div>
-      <div className="flex shrink-0 flex-col gap-0.5">
-        <button
-          aria-label="关闭通知"
-          className={notificationCloseButtonClass}
-          type="button"
-          onClick={() => {
-            notificationApi.close(id);
-          }}
-        >
-          <span aria-hidden="true" className="icon-[codicon--close] text-sm" />
-        </button>
-      </div>
+      <button
+        aria-label="关闭通知"
+        className={notificationCloseButtonClass}
+        type="button"
+        onClick={() => {
+          notificationApi.close(id);
+        }}
+      >
+        <span aria-hidden="true" className="icon-[codicon--close] text-sm" />
+      </button>
     </motion.article>
   );
 }
