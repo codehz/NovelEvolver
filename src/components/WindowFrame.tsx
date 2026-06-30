@@ -29,7 +29,7 @@ function WindowControls({
   onClose: () => void;
 }) {
   return (
-    <div className="flex shrink-0 items-center gap-1 self-stretch">
+    <>
       <button
         aria-label="Minimize window"
         className={cn(windowControlButtonClass)}
@@ -63,7 +63,7 @@ function WindowControls({
       >
         <span aria-hidden="true" className="icon-[codicon--close] text-sm" />
       </button>
-    </div>
+    </>
   );
 }
 
@@ -99,46 +99,45 @@ function TitleBar() {
   );
 
   return (
-    <header className="flex h-titlebar items-stretch bg-titlebar-background pl-3 select-none app-region-drag">
+    <header
+      className={cn(
+        "flex h-titlebar min-w-0 items-stretch justify-between bg-titlebar-background pl-3 select-none app-region-drag",
+        titlebarChromeTransitionClass,
+        titlebarChromeOpacityClass,
+      )}
+    >
       <div
         className={cn(
-          "flex min-w-0 flex-1 items-stretch justify-between",
-          titlebarChromeTransitionClass,
-          titlebarChromeOpacityClass,
+          "flex min-w-0 items-center gap-2 self-center",
+          isMac && "pl-mac-traffic-light-offset",
         )}
       >
-        <div
-          className={cn(
-            "flex min-w-0 items-center gap-2 self-center",
-            isMac && "pl-mac-traffic-light-offset",
-          )}
-        >
-          <div className="flex size-5 items-center justify-center rounded-sm bg-badge-background text-badge font-semibold text-badge-foreground app-region-no-drag">
-            NE
-          </div>
-          <WindowTitle />
+        <div className="flex size-5 items-center justify-center rounded-sm bg-badge-background text-badge font-semibold text-badge-foreground app-region-no-drag">
+          NE
         </div>
+        <WindowTitle />
+      </div>
 
-        {isMac ? (
-          <div className="flex shrink-0 items-center self-stretch pr-2 app-region-no-drag">
-            <TitleBarActionsPortalTarget as={Animatable} className="flex items-center" />
-          </div>
-        ) : (
-          <div className="flex shrink-0 items-center gap-1 self-stretch px-1 app-region-no-drag">
-            <TitleBarActionsPortalTarget as={Animatable} className="flex items-center" />
-            <WindowControls
-              isMaximized={windowState.isMaximized}
-              onMinimize={() => {
-                void windowService.minimize();
-              }}
-              onToggleMaximize={() => {
-                void windowService.toggleMaximize();
-              }}
-              onClose={() => {
-                void windowService.close();
-              }}
-            />
-          </div>
+      <div
+        className={cn(
+          "flex shrink-0 items-center self-stretch app-region-no-drag",
+          isMac ? "pr-2" : "gap-1 px-1",
+        )}
+      >
+        <TitleBarActionsPortalTarget as={Animatable} className="flex items-center" />
+        {!isMac && (
+          <WindowControls
+            isMaximized={windowState.isMaximized}
+            onMinimize={() => {
+              void windowService.minimize();
+            }}
+            onToggleMaximize={() => {
+              void windowService.toggleMaximize();
+            }}
+            onClose={() => {
+              void windowService.close();
+            }}
+          />
         )}
       </div>
     </header>
@@ -152,10 +151,8 @@ function StatusBar() {
         as={Animatable}
         className="flex min-w-0 flex-1 items-stretch overflow-hidden"
       />
-      <div className="flex shrink-0 items-stretch">
-        <StatusBarRightPortalTarget as={Animatable} className="contents" />
-        <StatusBarItemButton aria-label="通知" icon="icon-[codicon--bell]" />
-      </div>
+      <StatusBarRightPortalTarget as={Animatable} className="flex shrink-0 items-stretch" />
+      <StatusBarItemButton aria-label="通知" icon="icon-[codicon--bell]" />
     </footer>
   );
 }
@@ -164,7 +161,7 @@ export function WindowFrame({ children }: { children: ReactNode }) {
   return (
     <main className="flex min-h-0 flex-1 flex-col bg-app-background text-app-foreground">
       <TitleBar />
-      <section className="flex min-h-0 flex-1 flex-col bg-app-background">{children}</section>
+      {children}
       <StatusBar />
     </main>
   );
