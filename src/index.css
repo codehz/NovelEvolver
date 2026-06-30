@@ -41,6 +41,7 @@
   --color-notification-warning: var(--color-ctp-yellow);
   --color-notification-error: var(--color-ctp-red);
   --color-notification-action: var(--color-ctp-mauve);
+  --shadow-notification-item-divider: inset 0 1px 0 0 var(--color-notification-border);
   --spacing-notification-panel: 26rem;
   --spacing-notification-panel-max-height: 22rem;
   --spacing-notification-edge-inset: 0.75rem;

@@ -23,6 +23,8 @@ export const notificationToastClass = cn(
   "pointer-events-auto w-notification-panel rounded-sm border border-notification-border bg-notification-surface text-xs text-app-foreground shadow-lg app-region-no-drag",
 );
 
+export const notificationCenterItemDividerClass = cn("shadow-notification-item-divider");
+
 export const notificationSeverityIconClass: Record<NotificationSeverity, string> = {
   info: cn("icon-[codicon--info] text-notification-info"),
   warning: cn("icon-[codicon--warning] text-notification-warning"),

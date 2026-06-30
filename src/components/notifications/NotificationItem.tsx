@@ -7,6 +7,7 @@ import { notificationApi } from "@/lib/notifications";
 
 import {
   notificationActionButtonClass,
+  notificationCenterItemDividerClass,
   notificationCloseButtonClass,
   notificationSeverityIconClass,
   notificationToastClass,
@@ -45,7 +46,7 @@ export function NotificationItem({ notification, variant, ref }: NotificationIte
       className={cn(
         "flex gap-2 p-3",
         isCompactRow ? "items-center" : "items-start",
-        variant === "center" && "border-t border-notification-border last:border-b-0",
+        variant === "center" && notificationCenterItemDividerClass,
         variant === "toast" && notificationToastClass,
       )}
       layout="position"
