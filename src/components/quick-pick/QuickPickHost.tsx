@@ -32,7 +32,7 @@ import {
   quickPickHighlightSurfaceTransition,
   quickPickListTransition,
 } from "./quick-pick-list-motion";
-import { useQuickPickRequestClose } from "./quick-pick-overlay-context";
+import { useQuickPickRequestClose } from "./quick-pick-popover";
 import { QuickPickOverlay } from "./QuickPickOverlay";
 import {
   QUICK_PICK_OPTION_INDEX_ATTR,
