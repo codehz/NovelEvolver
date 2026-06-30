@@ -1,9 +1,9 @@
 import { useLocation } from "wouter";
 
-import { useActionState } from "@/lib/app-query";
 import { projectsService } from "@/lib/app-rpc";
 import { createAsyncLoader, useAsyncLoader } from "@/lib/async-loader";
 import { cn } from "@/lib/cn";
+import { useNotifyAction } from "@/lib/notifications";
 import { projectDisplayName } from "@/lib/project-display-name";
 import { defaultWindowTitle, useTitleBarTitle } from "@/lib/titlebar-title";
 
@@ -24,12 +24,12 @@ export function ProjectList() {
   useTitleBarTitle(defaultWindowTitle);
   const [, navigate] = useLocation();
   const projects = useAsyncLoader(projectLoader);
-  const actionState = useActionState();
+  const notifyAction = useNotifyAction();
 
   const handleCreateDialog = async () => {
-    actionState.clearError();
-    const project = await actionState.wrap(() => projectsService.createProjectDialog(), {
+    const project = await notifyAction.wrap(() => projectsService.createProjectDialog(), {
       errorMessage: "创建项目失败",
+      toast: { source: "项目" },
     });
     if (project) {
       navigate(`/project/${project.id}`);
@@ -37,9 +37,9 @@ export function ProjectList() {
   };
 
   const handleOpenDialog = async () => {
-    actionState.clearError();
-    const project = await actionState.wrap(() => projectsService.openProjectDialog(), {
+    const project = await notifyAction.wrap(() => projectsService.openProjectDialog(), {
       errorMessage: "打开项目文件失败",
+      toast: { source: "项目" },
     });
     if (project) {
       navigate(`/project/${project.id}`);
@@ -47,14 +47,13 @@ export function ProjectList() {
   };
 
   const handleOpenProject = async (id: number) => {
-    actionState.clearError();
     navigate(`/project/${id}`);
   };
 
   const handleRemoveProject = async (id: number) => {
-    actionState.clearError();
-    const removed = await actionState.wrap(() => projectsService.removeRecent(id), {
+    const removed = await notifyAction.wrap(() => projectsService.removeRecent(id), {
       errorMessage: "从列表移除失败",
+      toast: { source: "项目" },
     });
     if (removed) {
       await projects.refresh();
@@ -71,26 +70,26 @@ export function ProjectList() {
               "rounded-md border border-titlebar-border bg-app-surface px-3 py-1.5 text-sm font-medium text-app-foreground",
               "hover:bg-ctp-surface0/40 disabled:opacity-50",
             )}
-            disabled={actionState.pending}
+            disabled={notifyAction.pending}
             type="button"
             onClick={() => {
               void handleCreateDialog();
             }}
           >
-            {actionState.pending ? "创建中…" : "新建项目"}
+            {notifyAction.pending ? "创建中…" : "新建项目"}
           </button>
           <button
             className={cn(
               "rounded-md bg-badge-background px-3 py-1.5 text-sm font-medium text-badge-foreground",
               "hover:opacity-90 disabled:opacity-50",
             )}
-            disabled={actionState.pending}
+            disabled={notifyAction.pending}
             type="button"
             onClick={() => {
               void handleOpenDialog();
             }}
           >
-            {actionState.pending ? "处理中…" : "打开项目"}
+            {notifyAction.pending ? "处理中…" : "打开项目"}
           </button>
         </div>
       </div>
@@ -98,12 +97,6 @@ export function ProjectList() {
       {projects.error ? (
         <p className="text-sm text-ctp-red" role="alert">
           {projects.error as string}
-        </p>
-      ) : null}
-
-      {actionState.error ? (
-        <p className="text-sm text-ctp-red" role="alert">
-          {actionState.error}
         </p>
       ) : null}
 
