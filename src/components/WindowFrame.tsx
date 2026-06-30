@@ -85,6 +85,59 @@ function WindowTitle() {
 
 const titlebarChromeTransitionClass = cn("transition-opacity duration-200 ease-out");
 
+function TitleBar({ windowState }: { windowState: WindowState }) {
+  const isMac = windowState.platform === "darwin";
+  const titlebarChromeOpacityClass = cn(
+    windowState.isFocused ? "opacity-100" : "opacity-titlebar-inactive",
+  );
+
+  return (
+    <header className="flex h-titlebar items-stretch bg-titlebar-background pl-3 select-none app-region-drag">
+      <div
+        className={cn(
+          "flex min-w-0 flex-1 items-stretch justify-between",
+          titlebarChromeTransitionClass,
+          titlebarChromeOpacityClass,
+        )}
+      >
+        <div
+          className={cn(
+            "flex min-w-0 items-center gap-2 self-center",
+            isMac && "pl-mac-traffic-light-offset",
+          )}
+        >
+          <div className="flex size-5 items-center justify-center rounded-sm bg-badge-background text-badge font-semibold text-badge-foreground app-region-no-drag">
+            NE
+          </div>
+          <WindowTitle />
+        </div>
+
+        {isMac ? (
+          <div className="flex shrink-0 items-center self-stretch pr-2 app-region-no-drag">
+            <TitleBarActionsPortalTarget as={Animatable} className="flex items-center" />
+          </div>
+        ) : (
+          <div className="flex shrink-0 items-center gap-1 self-stretch px-1 app-region-no-drag">
+            <TitleBarActionsPortalTarget as={Animatable} className="flex items-center" />
+            <WindowControls
+              isMaximized={windowState.isMaximized}
+              onMinimize={() => {
+                void windowService.minimize();
+              }}
+              onToggleMaximize={() => {
+                void windowService.toggleMaximize();
+              }}
+              onClose={() => {
+                void windowService.close();
+              }}
+            />
+          </div>
+        )}
+      </div>
+    </header>
+  );
+}
+
 const fallbackWindowState: WindowState = {
   isFocused: true,
   isMaximized: false,
@@ -94,56 +147,9 @@ const fallbackWindowState: WindowState = {
 export function WindowFrame({ children }: { children: ReactNode }) {
   const windowState = useWindowState(fallbackWindowState);
 
-  const isMac = windowState.platform === "darwin";
-  const titlebarChromeOpacityClass = cn(
-    windowState.isFocused ? "opacity-100" : "opacity-titlebar-inactive",
-  );
-
   return (
     <main className="flex min-h-0 flex-1 flex-col bg-app-background text-app-foreground">
-      <header className="flex h-titlebar items-stretch bg-titlebar-background pl-3 select-none app-region-drag">
-        <div
-          className={cn(
-            "flex min-w-0 flex-1 items-stretch justify-between",
-            titlebarChromeTransitionClass,
-            titlebarChromeOpacityClass,
-          )}
-        >
-          <div
-            className={cn(
-              "flex min-w-0 items-center gap-2 self-center",
-              isMac && "pl-mac-traffic-light-offset",
-            )}
-          >
-            <div className="flex size-5 items-center justify-center rounded-sm bg-badge-background text-badge font-semibold text-badge-foreground app-region-no-drag">
-              NE
-            </div>
-            <WindowTitle />
-          </div>
-
-          {isMac ? (
-            <div className="flex shrink-0 items-center self-stretch pr-2 app-region-no-drag">
-              <TitleBarActionsPortalTarget as={Animatable} className="flex items-center" />
-            </div>
-          ) : (
-            <div className="flex shrink-0 items-center gap-1 self-stretch px-1 app-region-no-drag">
-              <TitleBarActionsPortalTarget as={Animatable} className="flex items-center" />
-              <WindowControls
-                isMaximized={windowState.isMaximized}
-                onMinimize={() => {
-                  void windowService.minimize();
-                }}
-                onToggleMaximize={() => {
-                  void windowService.toggleMaximize();
-                }}
-                onClose={() => {
-                  void windowService.close();
-                }}
-              />
-            </div>
-          )}
-        </div>
-      </header>
+      <TitleBar windowState={windowState} />
 
       <section className="flex min-h-0 flex-1 flex-col bg-app-background">{children}</section>
       <footer className="relative flex h-workbench-status-bar shrink-0 items-stretch bg-workbench-status-bar text-xs text-workbench-status-bar-foreground">
