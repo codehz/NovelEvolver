@@ -11,15 +11,15 @@ export type BranchPickerSnapshot = {
   headName: string | null;
 };
 
+const projectContextMol = molecule(() => nullthrow(use(projectScope)));
+
 const branchPickerSnapshotMol = molecule(() => {
-  const project = nullthrow(use(projectScope));
+  const project = use(projectContextMol);
   return createAsyncLoader(async (): Promise<BranchPickerSnapshot> => {
     const [branches, head] = await Promise.all([project.handle.branches, project.handle.head]);
     return { branches, headName: head.name };
   });
 });
-
-const projectContextMol = molecule(() => nullthrow(use(projectScope)));
 
 export function useProjectContext() {
   return useMolecule(projectContextMol);
