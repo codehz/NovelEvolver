@@ -1,3 +1,6 @@
+import { motion, type MotionProps } from "motion/react";
+import type { Ref } from "react";
+
 import { cn } from "@/lib/cn";
 import type { AppNotification } from "@/lib/notifications";
 import { notificationApi } from "@/lib/notifications";
@@ -6,22 +9,38 @@ import {
   notificationActionButtonClass,
   notificationCloseButtonClass,
   notificationSeverityIconClass,
+  notificationToastClass,
 } from "./notification-chrome";
+
+const variantMotionMap: Record<"toast" | "center", MotionProps> = {
+  toast: {
+    layout: true,
+    initial: { opacity: 0, y: -12, scale: 0.95 },
+    animate: { opacity: 1, y: 0, scale: 1 },
+    exit: { opacity: 0, scale: 0.95 },
+    transition: { type: "spring", stiffness: 400, damping: 30, mass: 0.8 },
+  },
+  center: {},
+};
 
 export type NotificationItemProps = {
   notification: AppNotification;
   variant: "toast" | "center";
+  ref?: Ref<HTMLElement>;
 };
 
-export function NotificationItem({ notification, variant }: NotificationItemProps) {
+export function NotificationItem({ notification, variant, ref }: NotificationItemProps) {
   const { id, severity, message, source, actions, progress } = notification;
 
   return (
-    <article
+    <motion.article
+      ref={ref}
       className={cn(
         "flex gap-2 p-3",
         variant === "center" && "border-b border-notification-border last:border-b-0",
+        variant === "toast" && notificationToastClass,
       )}
+      {...variantMotionMap[variant]}
       role={severity === "error" ? "alert" : "status"}
     >
       <span
@@ -72,6 +91,6 @@ export function NotificationItem({ notification, variant }: NotificationItemProp
           <span aria-hidden="true" className="icon-[codicon--close] text-sm" />
         </button>
       </div>
-    </article>
+    </motion.article>
   );
 }
