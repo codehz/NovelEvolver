@@ -30,6 +30,7 @@ export function NotificationCenterPanel({
     if (!open) {
       return;
     }
+    notificationApi.dismissAllToasts();
     function onPointerDown(event: MouseEvent) {
       const target = event.target;
       if (!(target instanceof Node)) {

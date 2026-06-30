@@ -8,12 +8,15 @@ import {
 } from "./action-handlers";
 import {
   closeAllNotifications,
+  dismissAllToasts as dismissAllToastsFn,
   notificationsAtom,
   patchNotification,
   setNotificationLifecycle,
+  toastMutedAtom,
 } from "./store";
 import type {
   AppNotification,
+  NotificationLifecycle,
   NotificationSeverity,
   ShowNotificationInput,
   ShowNotificationOptions,
@@ -81,8 +84,10 @@ function resolveAutoHideMs(input: ShowNotificationInput, sticky: boolean): numbe
 function show(input: ShowNotificationInput): string {
   const id = createId();
   const sticky = input.sticky ?? false;
-  const autoMs = resolveAutoHideMs(input, sticky);
+  const isMuted = defaultStore.get(toastMutedAtom);
+  const autoMs = isMuted ? null : resolveAutoHideMs(input, sticky);
   const actions = buildStoredActions(id, input.actions);
+  const lifecycle: NotificationLifecycle = isMuted ? "dismissed" : "toast";
   const notification: AppNotification = {
     id,
     severity: input.severity,
@@ -90,7 +95,7 @@ function show(input: ShowNotificationInput): string {
     source: input.source,
     actions,
     createdAt: Date.now(),
-    lifecycle: "toast",
+    lifecycle,
     progress: input.progress,
     sticky,
     dedupeKey: input.dedupeKey,
@@ -114,7 +119,7 @@ function show(input: ShowNotificationInput): string {
         progress: input.progress,
         sticky,
         actions: buildStoredActions(existing.id, input.actions),
-        lifecycle: existing.lifecycle === "dismissed" ? "toast" : existing.lifecycle,
+        lifecycle: existing.lifecycle === "dismissed" && !isMuted ? "toast" : existing.lifecycle,
         autoHideMs: autoMs ?? undefined,
       };
       defaultStore.set(notificationsAtom, (list) => patchNotification(list, existing.id, patch));
@@ -196,6 +201,16 @@ export const notificationApi = {
       clearActionHandlersForNotification(n.id);
     }
     defaultStore.set(notificationsAtom, closeAllNotifications);
+  },
+
+  dismissAllToasts(): void {
+    const list = defaultStore.get(notificationsAtom);
+    for (const n of list) {
+      if (n.lifecycle === "toast") {
+        clearAutoHideTimer(n.id);
+      }
+    }
+    defaultStore.set(notificationsAtom, (list) => dismissAllToastsFn(list));
   },
 
   runAction(notificationId: string, actionId: string): void {

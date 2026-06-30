@@ -3,6 +3,7 @@ export {
   activeNotificationsAtom,
   notificationCenterOpenAtom,
   notificationsAtom,
+  toastMutedAtom,
   toastNotificationsAtom,
 } from "./store";
 export type {

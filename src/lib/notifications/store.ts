@@ -37,6 +37,12 @@ export function removeNotification(list: AppNotification[], id: string): AppNoti
   return list.filter((n) => n.id !== id);
 }
 
+export const toastMutedAtom = atom((get) => get(notificationCenterOpenAtom));
+
 export function closeAllNotifications(list: AppNotification[]): AppNotification[] {
   return list.map((n) => (n.lifecycle === "closed" ? n : { ...n, lifecycle: "closed" as const }));
+}
+
+export function dismissAllToasts(list: AppNotification[]): AppNotification[] {
+  return list.map((n) => (n.lifecycle === "toast" ? { ...n, lifecycle: "dismissed" as const } : n));
 }
