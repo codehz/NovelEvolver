@@ -2,7 +2,7 @@ import { cn } from "@/lib/cn";
 import type { NotificationSeverity } from "@/lib/notifications";
 
 export const notificationBellAnchorClass = cn(
-  "notification-bell-anchor relative flex shrink-0 items-stretch self-stretch",
+  "relative flex shrink-0 items-stretch self-stretch anchor-name-notification-bell",
 );
 
 export const notificationPanelClass = cn(
@@ -10,7 +10,12 @@ export const notificationPanelClass = cn(
 );
 
 export const notificationCenterPopoverPanelClass = cn(
-  "notification-center-popover m-0 min-w-notification-panel",
+  "fixed inset-[unset] m-0 min-w-notification-panel position-anchor-notification-bell",
+  "bottom-[calc(anchor(top)+var(--spacing-notification-edge-inset))]",
+  "right-[calc(anchor(right)+var(--spacing-notification-edge-inset))]",
+  "translate-y-1 opacity-0 transition transition-discrete duration-220 ease-[cubic-bezier(0.33,1,0.68,1)]",
+  "open:translate-y-0 open:opacity-100",
+  "open:starting:translate-y-1 open:starting:opacity-0",
   notificationPanelClass,
 );
 

@@ -1,7 +1,10 @@
 import { cn } from "@/lib/cn";
 
 export const quickPickPanelClass = cn(
-  "quick-pick-popover fixed top-titlebar z-quick-pick w-quick-pick overflow-hidden rounded-lg bg-quick-pick-surface text-sm text-app-foreground shadow-quick-pick app-region-no-drag",
+  "fixed top-titlebar left-1/2 z-quick-pick m-0 w-quick-pick overflow-hidden rounded-lg bg-quick-pick-surface text-sm text-app-foreground shadow-quick-pick app-region-no-drag",
+  "-translate-x-1/2 -translate-y-2 opacity-0 transition transition-discrete duration-220 ease-[cubic-bezier(0.33,1,0.68,1)]",
+  "open:-translate-x-1/2 open:translate-y-0 open:opacity-100",
+  "open:starting:-translate-x-1/2 open:starting:-translate-y-2 open:starting:opacity-0",
 );
 
 export const quickPickPanelHeightShellClass = cn("w-full overflow-hidden");
