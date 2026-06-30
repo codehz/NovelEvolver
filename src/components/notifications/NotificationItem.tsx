@@ -14,13 +14,17 @@ import {
 
 const variantMotionMap: Record<"toast" | "center", MotionProps> = {
   toast: {
-    layout: true,
     initial: { opacity: 0, y: -12, scale: 0.95 },
     animate: { opacity: 1, y: 0, scale: 1 },
     exit: { opacity: 0, scale: 0.95 },
     transition: { type: "spring", stiffness: 400, damping: 30, mass: 0.8 },
   },
-  center: {},
+  center: {
+    initial: { opacity: 0, height: 0, marginBlock: 0 },
+    animate: { opacity: 1, height: "auto", marginBlock: 0 },
+    exit: { opacity: 0, height: 0, marginBlock: 0 },
+    transition: { type: "spring", stiffness: 400, damping: 30, mass: 0.8 },
+  },
 };
 
 export type NotificationItemProps = {
@@ -40,6 +44,8 @@ export function NotificationItem({ notification, variant, ref }: NotificationIte
         variant === "center" && "border-b border-notification-border last:border-b-0",
         variant === "toast" && notificationToastClass,
       )}
+      layout
+      layoutId={notification.id}
       {...variantMotionMap[variant]}
       role={severity === "error" ? "alert" : "status"}
     >
