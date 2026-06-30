@@ -20,9 +20,9 @@ const variantMotionMap: Record<"toast" | "center", MotionProps> = {
     transition: { type: "spring", stiffness: 400, damping: 30, mass: 0.8 },
   },
   center: {
-    initial: { opacity: 0, height: 0, marginBlock: 0 },
-    animate: { opacity: 1, height: "auto", marginBlock: 0 },
-    exit: { opacity: 0, height: 0, marginBlock: 0 },
+    initial: { opacity: 0, marginBlock: 0 },
+    animate: { opacity: 1, marginBlock: 0 },
+    exit: { opacity: 0, marginBlock: 0 },
     transition: { type: "spring", stiffness: 400, damping: 30, mass: 0.8 },
   },
 };
