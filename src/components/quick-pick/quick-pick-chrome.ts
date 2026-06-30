@@ -20,10 +20,16 @@ export const quickPickListClass = cn(
 );
 
 export const quickPickRowButtonClass = cn(
-  "flex w-full cursor-default items-center gap-2 rounded-sm px-2 py-1 text-left text-xs leading-tight outline-none",
+  "relative flex w-full cursor-default items-center gap-2 rounded-sm px-2 py-1 text-left text-xs leading-tight outline-none",
 );
 
-export const quickPickRowHighlightClass = cn("bg-quick-pick-highlight");
+export const quickPickRowHighlightSurfaceClass = cn(
+  "pointer-events-none absolute inset-0 rounded-sm bg-quick-pick-highlight",
+);
+
+export const quickPickRowButtonContentClass = cn(
+  "relative z-10 flex w-full min-w-0 items-center gap-2",
+);
 
 export const quickPickRowEmphasisClass = cn("text-workbench-sidebar-title");
 

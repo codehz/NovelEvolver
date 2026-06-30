@@ -1,5 +1,5 @@
 import { useAtomValue } from "jotai";
-import { AnimatePresence, motion } from "motion/react";
+import { AnimatePresence, LayoutGroup, motion } from "motion/react";
 import { useCallback, useEffect, useId, useMemo, useRef, useState, type ReactNode } from "react";
 
 import { cn } from "@/lib/cn";
@@ -18,14 +18,17 @@ import {
   quickPickListClass,
   quickPickListDividerClass,
   quickPickRowButtonClass,
+  quickPickRowButtonContentClass,
   quickPickRowEmphasisClass,
-  quickPickRowHighlightClass,
+  quickPickRowHighlightSurfaceClass,
   quickPickSearchInputClass,
   quickPickSearchWrapClass,
   quickPickTextInputClass,
   quickPickTextInputWrapClass,
 } from "./quick-pick-chrome";
 import {
+  QUICK_PICK_HIGHLIGHT_LAYOUT_ID,
+  quickPickHighlightSurfaceTransition,
   quickPickListDividerMotion,
   quickPickListEmptyMotion,
   quickPickListRowMotion,
@@ -113,15 +116,18 @@ function QuickPickListOption({
     >
       <button
         type="button"
-        className={cn(
-          quickPickRowButtonClass,
-          highlighted && quickPickRowHighlightClass,
-          emphasized && quickPickRowEmphasisClass,
-        )}
+        className={cn(quickPickRowButtonClass, emphasized && quickPickRowEmphasisClass)}
         onMouseEnter={onHighlight}
         onClick={onSelect}
       >
-        {children}
+        {highlighted ? (
+          <motion.span
+            layoutId={QUICK_PICK_HIGHLIGHT_LAYOUT_ID}
+            className={quickPickRowHighlightSurfaceClass}
+            transition={quickPickHighlightSurfaceTransition}
+          />
+        ) : null}
+        <span className={quickPickRowButtonContentClass}>{children}</span>
       </button>
     </motion.li>
   );
@@ -232,93 +238,95 @@ function QuickPickListPanel({ session }: { session: QuickPickListSession }) {
           onKeyDown={onSearchKeyDown}
         />
       </div>
-      <ul
-        ref={listRef}
-        id={listboxId}
-        className={quickPickListClass}
-        role="listbox"
-        aria-label={options.title}
-      >
-        <AnimatePresence mode="popLayout" initial={false}>
-          {itemCount === 0 ? (
-            <motion.li
-              key="quick-pick-empty"
-              className={quickPickEmptyClass}
-              {...quickPickListEmptyMotion}
-            >
-              {options.emptyMessage ?? "无匹配项"}
-            </motion.li>
-          ) : (
-            (() => {
-              let optionIndex = 0;
-              return listRows.map((row) => {
-                if (row.kind === "divider") {
-                  return (
-                    <motion.li
-                      key={quickPickListRowKey(row)}
-                      className={quickPickListDividerClass}
-                      role="separator"
-                      aria-hidden
-                      style={{ transformOrigin: "center" }}
-                      {...quickPickListDividerMotion}
-                    />
-                  );
-                }
-                const index = optionIndex;
-                optionIndex += 1;
-                if (row.kind === "item") {
-                  const { item } = row;
+      <LayoutGroup id={`${listboxId}-highlight`}>
+        <ul
+          ref={listRef}
+          id={listboxId}
+          className={quickPickListClass}
+          role="listbox"
+          aria-label={options.title}
+        >
+          <AnimatePresence mode="popLayout" initial={false}>
+            {itemCount === 0 ? (
+              <motion.li
+                key="quick-pick-empty"
+                className={quickPickEmptyClass}
+                {...quickPickListEmptyMotion}
+              >
+                {options.emptyMessage ?? "无匹配项"}
+              </motion.li>
+            ) : (
+              (() => {
+                let optionIndex = 0;
+                return listRows.map((row) => {
+                  if (row.kind === "divider") {
+                    return (
+                      <motion.li
+                        key={quickPickListRowKey(row)}
+                        className={quickPickListDividerClass}
+                        role="separator"
+                        aria-hidden
+                        style={{ transformOrigin: "center" }}
+                        {...quickPickListDividerMotion}
+                      />
+                    );
+                  }
+                  const index = optionIndex;
+                  optionIndex += 1;
+                  if (row.kind === "item") {
+                    const { item } = row;
+                    return (
+                      <QuickPickListOption
+                        key={quickPickListRowKey(row)}
+                        index={index}
+                        highlighted={highlightIndex === index}
+                        emphasized={item.emphasized}
+                        onHighlight={() => {
+                          setHighlightIndex(index);
+                        }}
+                        onSelect={() => {
+                          resolveItem(item.id);
+                        }}
+                      >
+                        <span
+                          aria-hidden="true"
+                          className={cn(
+                            "icon-[codicon--check] size-4 shrink-0",
+                            item.emphasized ? "opacity-100" : "opacity-0",
+                          )}
+                        />
+                        <span className="min-w-0 flex-1 truncate font-medium">{item.label}</span>
+                        {item.detail ? (
+                          <span className="shrink-0 font-mono text-xs text-workbench-status-bar-muted">
+                            {item.detail}
+                          </span>
+                        ) : null}
+                      </QuickPickListOption>
+                    );
+                  }
+                  const { extra } = row;
                   return (
                     <QuickPickListOption
                       key={quickPickListRowKey(row)}
                       index={index}
                       highlighted={highlightIndex === index}
-                      emphasized={item.emphasized}
                       onHighlight={() => {
                         setHighlightIndex(index);
                       }}
                       onSelect={() => {
-                        resolveItem(item.id);
+                        resolveExtra(extra);
                       }}
                     >
-                      <span
-                        aria-hidden="true"
-                        className={cn(
-                          "icon-[codicon--check] size-4 shrink-0",
-                          item.emphasized ? "opacity-100" : "opacity-0",
-                        )}
-                      />
-                      <span className="min-w-0 flex-1 truncate font-medium">{item.label}</span>
-                      {item.detail ? (
-                        <span className="shrink-0 font-mono text-xs text-workbench-status-bar-muted">
-                          {item.detail}
-                        </span>
-                      ) : null}
+                      <span aria-hidden="true" className="icon-[codicon--add] size-4 shrink-0" />
+                      <span className="min-w-0 flex-1 truncate font-medium">{extra.label}</span>
                     </QuickPickListOption>
                   );
-                }
-                const { extra } = row;
-                return (
-                  <QuickPickListOption
-                    key={quickPickListRowKey(row)}
-                    index={index}
-                    highlighted={highlightIndex === index}
-                    onHighlight={() => {
-                      setHighlightIndex(index);
-                    }}
-                    onSelect={() => {
-                      resolveExtra(extra);
-                    }}
-                  >
-                    <span aria-hidden="true" className="icon-[codicon--add] size-4 shrink-0" />
-                    <span className="min-w-0 flex-1 truncate font-medium">{extra.label}</span>
-                  </QuickPickListOption>
-                );
-              });
-            })()
-          )}
-        </AnimatePresence>
-      </ul>
+                });
+              })()
+            )}
+          </AnimatePresence>
+        </ul>
+      </LayoutGroup>
     </QuickPickOverlay>
   );
 }

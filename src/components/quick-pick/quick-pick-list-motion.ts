@@ -29,3 +29,8 @@ export const quickPickListEmptyMotion: MotionProps = {
   exit: { opacity: 0 },
   transition: { duration: 0.15 },
 };
+
+/** 列表键盘/鼠标高亮层，在选项之间通过 layoutId 共享布局动画。 */
+export const QUICK_PICK_HIGHLIGHT_LAYOUT_ID = "quick-pick-list-highlight";
+
+export const quickPickHighlightSurfaceTransition = listSpring;
