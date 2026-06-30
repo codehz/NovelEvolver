@@ -1,5 +1,5 @@
 import { AnimatePresence, motion } from "motion/react";
-import { type ReactNode } from "react";
+import { useEffect, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 
 import { cn } from "@/lib/cn";
@@ -38,6 +38,22 @@ export function FloatingPickerShell({
   position = "centered",
   panelClassName,
 }: FloatingPickerShellProps) {
+  useEffect(() => {
+    if (!open) {
+      return;
+    }
+    function onKeyDown(event: KeyboardEvent) {
+      if (event.key === "Escape") {
+        event.preventDefault();
+        onClose();
+      }
+    }
+    document.addEventListener("keydown", onKeyDown);
+    return () => {
+      document.removeEventListener("keydown", onKeyDown);
+    };
+  }, [open, onClose]);
+
   if (typeof document === "undefined") {
     return null;
   }

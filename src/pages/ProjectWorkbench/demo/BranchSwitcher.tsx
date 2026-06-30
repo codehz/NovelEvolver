@@ -1,24 +1,14 @@
 import type { BranchInfo } from "@shared/rpc/projects-rpc";
 import { useAtom } from "jotai";
-import {
-  useCallback,
-  useEffect,
-  useId,
-  useMemo,
-  useRef,
-  useState,
-  type KeyboardEvent as ReactKeyboardEvent,
-} from "react";
+import { useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
 
 import {
+  FloatingPickerListbox,
+  FloatingPickerOption,
+  FloatingPickerSearchField,
   FloatingPickerShell,
   floatingPickerEmptyStateClass,
-  floatingPickerInputClass,
-  floatingPickerInputWrapClass,
-  floatingPickerListClass,
-  floatingPickerRowClass,
-  floatingPickerRowEmphasisClass,
-  floatingPickerRowHighlightClass,
+  useFloatingPickerNavigation,
 } from "@/components/floating-picker";
 import { cn } from "@/lib/cn";
 
@@ -35,24 +25,12 @@ function filterBranches(branches: BranchInfo[], query: string): BranchInfo[] {
   });
 }
 
-function moveHighlightIndex(current: number, delta: number, length: number): number {
-  if (length === 0) {
-    return -1;
-  }
-  if (current < 0) {
-    return delta > 0 ? 0 : length - 1;
-  }
-  return (current + delta + length) % length;
-}
-
 export function BranchSwitcher() {
   const [open, setOpen] = useAtom(branchSwitcherOpenAtom);
   const snapshot = useBranchPickerSnapshot();
   const project = useProjectContext();
   const inputRef = useRef<HTMLInputElement>(null);
-  const listRef = useRef<HTMLUListElement>(null);
   const [query, setQuery] = useState("");
-  const [highlightIndex, setHighlightIndex] = useState(0);
   const titleId = useId();
   const listboxId = useId();
 
@@ -62,31 +40,45 @@ export function BranchSwitcher() {
   const filtered = useMemo(() => filterBranches(branches, query), [branches, query]);
   const refreshSnapshot = snapshot.refresh;
 
-  const close = useCallback(() => {
-    setOpen(false);
-    setQuery("");
-    setHighlightIndex(0);
-  }, [setOpen]);
-
   const selectBranch = useCallback(
     async (name: string) => {
       if (name === headName) {
-        close();
         return;
       }
       await project.handle.switchBranch(name);
       await refreshSnapshot();
-      close();
     },
-    [close, headName, project.handle, refreshSnapshot],
+    [headName, project.handle, refreshSnapshot],
   );
+
+  const { highlightIndex, setHighlightIndex, listRef, onInputKeyDown, resetHighlight } =
+    useFloatingPickerNavigation({
+      itemCount: filtered.length,
+      open,
+      onActivate: (index) => {
+        const branch = filtered[index];
+        if (branch?.name) {
+          void selectBranch(branch.name).then(() => {
+            setOpen(false);
+            setQuery("");
+            resetHighlight();
+          });
+        }
+      },
+    });
+
+  const close = useCallback(() => {
+    setOpen(false);
+    setQuery("");
+    resetHighlight();
+  }, [resetHighlight, setOpen]);
 
   useEffect(() => {
     if (!open) {
       return;
     }
     setQuery("");
-    setHighlightIndex(0);
+    resetHighlight();
     void refreshSnapshot();
     const frame = requestAnimationFrame(() => {
       inputRef.current?.focus();
@@ -94,53 +86,7 @@ export function BranchSwitcher() {
     return () => {
       cancelAnimationFrame(frame);
     };
-  }, [open, refreshSnapshot]);
-
-  useEffect(() => {
-    setHighlightIndex((index) => {
-      if (filtered.length === 0) {
-        return -1;
-      }
-      if (index < 0 || index >= filtered.length) {
-        return 0;
-      }
-      return index;
-    });
-  }, [filtered.length, query]);
-
-  useEffect(() => {
-    if (!open || highlightIndex < 0) {
-      return;
-    }
-    const list = listRef.current;
-    const option = list?.querySelector<HTMLElement>(`[data-branch-index="${highlightIndex}"]`);
-    option?.scrollIntoView({ block: "nearest" });
-  }, [highlightIndex, open]);
-
-  const onInputKeyDown = (event: ReactKeyboardEvent<HTMLInputElement>) => {
-    if (event.key === "ArrowDown") {
-      event.preventDefault();
-      setHighlightIndex((index) => moveHighlightIndex(index, 1, filtered.length));
-      return;
-    }
-    if (event.key === "ArrowUp") {
-      event.preventDefault();
-      setHighlightIndex((index) => moveHighlightIndex(index, -1, filtered.length));
-      return;
-    }
-    if (event.key === "Enter") {
-      event.preventDefault();
-      const branch = filtered[highlightIndex];
-      if (branch?.name) {
-        void selectBranch(branch.name);
-      }
-      return;
-    }
-    if (event.key === "Escape") {
-      event.preventDefault();
-      close();
-    }
-  };
+  }, [open, refreshSnapshot, resetHighlight]);
 
   return (
     <FloatingPickerShell
@@ -152,36 +98,17 @@ export function BranchSwitcher() {
       <p className="sr-only" id={titleId}>
         分支切换器
       </p>
-      <div className={floatingPickerInputWrapClass}>
-        <label className="sr-only" htmlFor={`${titleId}-input`}>
-          搜索或选择分支
-        </label>
-        <input
-          ref={inputRef}
-          id={`${titleId}-input`}
-          className={floatingPickerInputClass}
-          type="text"
-          role="combobox"
-          aria-expanded
-          aria-controls={listboxId}
-          aria-autocomplete="list"
-          autoComplete="off"
-          spellCheck={false}
-          placeholder="选择要切换的分支…"
-          value={query}
-          onChange={(event) => {
-            setQuery(event.target.value);
-          }}
-          onKeyDown={onInputKeyDown}
-        />
-      </div>
-      <ul
-        ref={listRef}
-        id={listboxId}
-        className={floatingPickerListClass}
-        role="listbox"
-        aria-label="分支列表"
-      >
+      <FloatingPickerSearchField
+        titleId={titleId}
+        listboxId={listboxId}
+        inputRef={inputRef}
+        label="搜索或选择分支"
+        placeholder="选择要切换的分支…"
+        value={query}
+        onChange={setQuery}
+        onKeyDown={onInputKeyDown}
+      />
+      <FloatingPickerListbox listboxId={listboxId} listRef={listRef} ariaLabel="分支列表">
         {snapshot.isLoading && filtered.length === 0 ? (
           <li className={floatingPickerEmptyStateClass}>加载分支…</li>
         ) : null}
@@ -193,46 +120,42 @@ export function BranchSwitcher() {
           const isCurrent = name !== "" && name === headName;
           const highlighted = index === highlightIndex;
           return (
-            <li
+            <FloatingPickerOption
               key={name || `branch-${index}`}
-              data-branch-index={index}
-              role="option"
-              aria-selected={highlighted}
+              index={index}
+              highlighted={highlighted}
+              emphasized={isCurrent}
+              onHighlight={() => {
+                setHighlightIndex(index);
+              }}
+              onSelect={() => {
+                if (!branch.name) {
+                  return;
+                }
+                if (branch.name === headName) {
+                  close();
+                  return;
+                }
+                void selectBranch(branch.name).then(close);
+              }}
             >
-              <button
-                type="button"
+              <span
+                aria-hidden="true"
                 className={cn(
-                  floatingPickerRowClass,
-                  highlighted && floatingPickerRowHighlightClass,
-                  isCurrent && floatingPickerRowEmphasisClass,
+                  "icon-[codicon--check] size-4 shrink-0",
+                  isCurrent ? "opacity-100" : "opacity-0",
                 )}
-                onMouseEnter={() => {
-                  setHighlightIndex(index);
-                }}
-                onClick={() => {
-                  if (branch.name) {
-                    void selectBranch(branch.name);
-                  }
-                }}
-              >
-                <span
-                  aria-hidden="true"
-                  className={cn(
-                    "icon-[codicon--check] size-4 shrink-0",
-                    isCurrent ? "opacity-100" : "opacity-0",
-                  )}
-                />
-                <span className="min-w-0 flex-1 truncate font-medium">{name}</span>
-                {branch.commit ? (
-                  <span className="shrink-0 font-mono text-xs text-workbench-status-bar-muted">
-                    {branch.commit.slice(0, 7)}
-                  </span>
-                ) : null}
-              </button>
-            </li>
+              />
+              <span className="min-w-0 flex-1 truncate font-medium">{name}</span>
+              {branch.commit ? (
+                <span className="shrink-0 font-mono text-xs text-workbench-status-bar-muted">
+                  {branch.commit.slice(0, 7)}
+                </span>
+              ) : null}
+            </FloatingPickerOption>
           );
         })}
-      </ul>
+      </FloatingPickerListbox>
     </FloatingPickerShell>
   );
 }
