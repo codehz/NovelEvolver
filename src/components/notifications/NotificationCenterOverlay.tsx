@@ -1,6 +1,6 @@
 import { useRef, type ReactNode } from "react";
 
-import { useAnimatedContentHeight } from "@/lib/animated-height";
+import { AnimatedShellHeightProvider, useAnimatedContentHeight } from "@/lib/animated-height";
 
 import {
   notificationCenterPopoverPanelClass,
@@ -21,7 +21,10 @@ export function NotificationCenterPopoverPanel({
 }) {
   const panelRef = useRef<HTMLDivElement>(null);
   const contentRef = useRef<HTMLDivElement>(null);
-  const { heightPx: shellHeightPx } = useAnimatedContentHeight(contentRef, panelRef);
+  const { heightPx: shellHeightPx, isHeightAnimating } = useAnimatedContentHeight(
+    contentRef,
+    panelRef,
+  );
 
   return (
     <NotificationCenterPopoverTarget
@@ -37,7 +40,9 @@ export function NotificationCenterPopoverPanel({
         style={shellHeightPx != null ? { height: shellHeightPx } : undefined}
       >
         <div ref={contentRef} className={notificationPanelContentClass}>
-          <NotificationCenterPopoverContent>{children}</NotificationCenterPopoverContent>
+          <AnimatedShellHeightProvider isShellHeightAnimating={isHeightAnimating}>
+            <NotificationCenterPopoverContent>{children}</NotificationCenterPopoverContent>
+          </AnimatedShellHeightProvider>
         </div>
       </div>
     </NotificationCenterPopoverTarget>

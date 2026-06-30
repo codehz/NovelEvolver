@@ -37,8 +37,10 @@ export function useAnimatedContentHeight(
   options?: UseAnimatedContentHeightOptions,
 ): {
   heightPx: number | undefined;
+  isHeightAnimating: boolean;
 } {
   const [heightPx, setHeightPx] = useState<number | undefined>(undefined);
+  const [isHeightAnimating, setIsHeightAnimating] = useState(false);
   const displayedHeightRef = useRef(0);
   const hasInitializedRef = useRef(false);
   const animationRef = useRef<ReturnType<typeof animate> | null>(null);
@@ -71,10 +73,12 @@ export function useAnimatedContentHeight(
 
       if (Math.abs(target - displayedHeightRef.current) < 0.5) {
         applyHeight(target);
+        setIsHeightAnimating(false);
         return;
       }
 
       animationRef.current?.stop();
+      setIsHeightAnimating(true);
       animationRef.current = animate(displayedHeightRef.current, target, {
         ...contentHeightSpring,
         onUpdate: (value) => {
@@ -83,6 +87,7 @@ export function useAnimatedContentHeight(
         onComplete: () => {
           applyHeight(target);
           animationRef.current = null;
+          setIsHeightAnimating(false);
         },
       });
     };
@@ -119,8 +124,9 @@ export function useAnimatedContentHeight(
       observer.disconnect();
       animationRef.current?.stop();
       animationRef.current = null;
+      setIsHeightAnimating(false);
     };
   }, [contentRef, containerRef, isMeasurable, remeasureOnContainerToggle]);
 
-  return { heightPx };
+  return { heightPx, isHeightAnimating };
 }

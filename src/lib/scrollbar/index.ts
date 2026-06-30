@@ -30,4 +30,5 @@ export { ScrollbarThumbTrack, type ScrollbarThumbTrackProps } from "./ScrollbarT
 export {
   useScrollbarController,
   type ScrollbarControllerBindings,
+  type UseScrollbarControllerOptions,
 } from "./use-scrollbar-controller";

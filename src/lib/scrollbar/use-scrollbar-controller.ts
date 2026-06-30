@@ -1,8 +1,16 @@
-import { useEffect, useRef, useState, type PointerEvent, type RefObject } from "react";
+import {
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+  type PointerEvent,
+  type RefObject,
+} from "react";
 
 import { ScrollbarController, type ScrollbarControllerSnapshot } from "./scrollbar-controller";
 
 export type ScrollbarControllerBindings = {
+  scrollHostRef: RefObject<HTMLDivElement | null>;
   viewportRef: RefObject<HTMLDivElement | null>;
   snapshot: ScrollbarControllerSnapshot | null;
   onAreaPointerEnter: () => void;
@@ -13,10 +21,19 @@ export type ScrollbarControllerBindings = {
   onThumbPointerDown: (event: PointerEvent<HTMLElement>) => void;
 };
 
-export function useScrollbarController(): ScrollbarControllerBindings {
+export type UseScrollbarControllerOptions = {
+  /** While true, hides the custom thumb and pauses metric refresh until it becomes false. */
+  shellHeightAnimating?: boolean;
+};
+
+export function useScrollbarController(
+  options?: UseScrollbarControllerOptions,
+): ScrollbarControllerBindings {
+  const scrollHostRef = useRef<HTMLDivElement>(null);
   const viewportRef = useRef<HTMLDivElement>(null);
   const controllerRef = useRef<ScrollbarController | null>(null);
   const [, setRevision] = useState(0);
+  const shellHeightAnimating = options?.shellHeightAnimating ?? false;
 
   useEffect(() => {
     const viewport = viewportRef.current;
@@ -26,6 +43,7 @@ export function useScrollbarController(): ScrollbarControllerBindings {
 
     const controller = new ScrollbarController({
       viewport,
+      scrollHost: scrollHostRef.current,
       onChange: () => {
         setRevision((n) => n + 1);
       },
@@ -39,9 +57,14 @@ export function useScrollbarController(): ScrollbarControllerBindings {
     };
   }, []);
 
+  useLayoutEffect(() => {
+    controllerRef.current?.setShellHeightAnimating(shellHeightAnimating);
+  }, [shellHeightAnimating]);
+
   const snapshot = controllerRef.current?.getSnapshot() ?? null;
 
   return {
+    scrollHostRef,
     viewportRef,
     snapshot,
     onAreaPointerEnter: () => {
