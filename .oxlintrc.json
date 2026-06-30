@@ -41,6 +41,11 @@
               {
                 "name": "electron",
                 "message": "Renderer must not import electron; use window.electronAPI via preload."
+              },
+              {
+                "name": "react",
+                "importNames": ["forwardRef"],
+                "message": "React 19 uses ref as prop; use ref prop directly instead of forwardRef."
               }
             ],
             "patterns": [
@@ -80,6 +85,11 @@
               {
                 "name": "electron",
                 "message": "Renderer must not import electron; use window.electronAPI via preload."
+              },
+              {
+                "name": "react",
+                "importNames": ["forwardRef"],
+                "message": "React 19 uses ref as prop; use ref prop directly instead of forwardRef."
               }
             ],
             "patterns": [
