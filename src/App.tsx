@@ -2,6 +2,7 @@ import { Router } from "wouter";
 import { useHashLocation } from "wouter/use-hash-location";
 
 import { WindowFrame } from "@/components/WindowFrame";
+import { StatusBarLeftPortalProvider, StatusBarRightPortalProvider } from "@/lib/statusbar-portal";
 import { TitleBarActionsPortalProvider, TitleBarPortalProvider } from "@/lib/titlebar-portal";
 import { AppRoutes } from "@/routes";
 
@@ -10,11 +11,15 @@ export default function App() {
     <div className="flex min-h-0 flex-1 flex-col">
       <TitleBarPortalProvider>
         <TitleBarActionsPortalProvider>
-          <Router hook={useHashLocation}>
-            <WindowFrame>
-              <AppRoutes />
-            </WindowFrame>
-          </Router>
+          <StatusBarLeftPortalProvider>
+            <StatusBarRightPortalProvider>
+              <Router hook={useHashLocation}>
+                <WindowFrame>
+                  <AppRoutes />
+                </WindowFrame>
+              </Router>
+            </StatusBarRightPortalProvider>
+          </StatusBarLeftPortalProvider>
         </TitleBarActionsPortalProvider>
       </TitleBarPortalProvider>
     </div>

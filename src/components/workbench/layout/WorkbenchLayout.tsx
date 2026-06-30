@@ -145,15 +145,9 @@ export type WorkbenchLayoutProps = {
   primarySidebar: Partial<Record<ActivityViewId, ReactNode>>;
   editor: ReactNode;
   auxiliary?: ReactNode;
-  statusBar?: ReactNode;
 };
 
-export function WorkbenchLayout({
-  primarySidebar,
-  editor,
-  auxiliary,
-  statusBar,
-}: WorkbenchLayoutProps) {
+export function WorkbenchLayout({ primarySidebar, editor, auxiliary }: WorkbenchLayoutProps) {
   const [activeView, setActiveView] = useState<ActivityViewId>("explorer");
   const [layoutPreferences, setLayoutPreferences] = useState<LayoutPreferences>({
     primaryVisible: true,
@@ -351,7 +345,6 @@ export function WorkbenchLayout({
           />
         ) : null}
       </div>
-      {statusBar}
     </div>
   );
 }

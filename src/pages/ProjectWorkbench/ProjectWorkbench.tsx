@@ -10,6 +10,7 @@ import { cn } from "@/lib/cn";
 import { projectDisplayName } from "@/lib/project-display-name";
 
 import { projectMolecule, projectIdScope, projectScope } from "./demo/molecules";
+import { StatusBar } from "./demo/StatusBar";
 import { buildWorkbenchDemoSlots } from "./demo/workbench-demo";
 
 export function ProjectWorkbench() {
@@ -63,6 +64,7 @@ function ProjectWorkbenchInner() {
       <TitleBarTitle>{displayName}</TitleBarTitle>
       <ScopeProvider scope={projectScope} value={project}>
         <WorkbenchLayout {...buildWorkbenchDemoSlots(displayName)} />
+        <StatusBar />
       </ScopeProvider>
     </>
   );

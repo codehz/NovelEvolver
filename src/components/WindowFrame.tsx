@@ -4,6 +4,7 @@ import { type ReactNode } from "react";
 import { windowService } from "@/lib/app-rpc";
 import { useWindowState } from "@/lib/app-rpc-react";
 import { cn } from "@/lib/cn";
+import { StatusBarLeftPortalTarget, StatusBarRightPortalTarget } from "@/lib/statusbar-portal";
 import { TitleBarActionsPortalTarget, TitleBarPortalTarget } from "@/lib/titlebar-portal";
 
 const windowControlButtonClass = cn(
@@ -126,6 +127,10 @@ export function WindowFrame({ children }: { children: ReactNode }) {
       </header>
 
       <section className="flex min-h-0 flex-1 flex-col bg-app-background">{children}</section>
+      <footer className="flex h-workbench-status-bar shrink-0 items-stretch bg-workbench-status-bar text-xs text-workbench-status-bar-foreground">
+        <StatusBarLeftPortalTarget className="flex min-w-0 flex-1 items-stretch overflow-hidden" />
+        <StatusBarRightPortalTarget className="flex shrink-0 items-stretch" />
+      </footer>
     </main>
   );
 }

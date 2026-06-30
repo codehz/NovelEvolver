@@ -1,3 +1,5 @@
+import { StatusBarLeftPortalContent, StatusBarRightPortalContent } from "@/lib/statusbar-portal";
+
 import { BranchStatusItem } from "./BranchStatusItem";
 import { CaretPositionIndicator } from "./CaretPositionIndicator";
 
@@ -11,11 +13,8 @@ const rightStaticItems = [
 
 export function StatusBar() {
   return (
-    <footer
-      aria-label="状态栏"
-      className="flex h-workbench-status-bar shrink-0 items-stretch bg-workbench-status-bar text-xs text-workbench-status-bar-foreground"
-    >
-      <div className="flex min-w-0 flex-1 items-stretch overflow-hidden">
+    <>
+      <StatusBarLeftPortalContent>
         <BranchStatusItem />
         {leftStaticItems.map((item) => (
           <button
@@ -30,8 +29,8 @@ export function StatusBar() {
         <span className="flex min-w-0 flex-1 items-center truncate px-2.5 text-workbench-status-bar-muted">
           布局演示 — 状态栏占位
         </span>
-      </div>
-      <div className="flex shrink-0 items-stretch">
+      </StatusBarLeftPortalContent>
+      <StatusBarRightPortalContent>
         <CaretPositionIndicator />
         {rightStaticItems.map((item) => (
           <button
@@ -42,7 +41,7 @@ export function StatusBar() {
             {item.label}
           </button>
         ))}
-      </div>
-    </footer>
+      </StatusBarRightPortalContent>
+    </>
   );
 }
