@@ -1,3 +1,4 @@
+import { StatusBarItemButton, StatusBarMessage } from "@/components/workbench";
 import { StatusBarLeftPortalContent, StatusBarRightPortalContent } from "@/lib/statusbar-portal";
 
 import { BranchStatusItem } from "./BranchStatusItem";
@@ -17,29 +18,16 @@ export function StatusBar() {
       <StatusBarLeftPortalContent>
         <BranchStatusItem />
         {leftStaticItems.map((item) => (
-          <button
-            key={item.id}
-            className="flex shrink-0 items-center gap-1.5 px-2.5 hover:bg-window-button-hover"
-            type="button"
-          >
-            <span aria-hidden="true" className={item.icon} />
-            <span>{item.label}</span>
-          </button>
+          <StatusBarItemButton key={item.id} icon={item.icon}>
+            {item.label}
+          </StatusBarItemButton>
         ))}
-        <span className="flex min-w-0 flex-1 items-center truncate px-2.5 text-workbench-status-bar-muted">
-          布局演示 — 状态栏占位
-        </span>
+        <StatusBarMessage>布局演示 — 状态栏占位</StatusBarMessage>
       </StatusBarLeftPortalContent>
       <StatusBarRightPortalContent>
         <CaretPositionIndicator />
         {rightStaticItems.map((item) => (
-          <button
-            key={item.id}
-            className="flex shrink-0 items-center px-2.5 hover:bg-window-button-hover"
-            type="button"
-          >
-            {item.label}
-          </button>
+          <StatusBarItemButton key={item.id}>{item.label}</StatusBarItemButton>
         ))}
       </StatusBarRightPortalContent>
     </>

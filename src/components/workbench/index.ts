@@ -13,3 +13,17 @@ export {
   type SidebarPaneStackLayout,
   type SidebarPaneStackResizeHandle,
 } from "./sidebar/use-sidebar-pane-stack";
+export {
+  statusBarIconOnlyButtonClass,
+  statusBarItemButtonClass,
+  statusBarItemButtonWithIconClass,
+  statusBarItemInfoClass,
+  statusBarItemInfoNumericClass,
+  statusBarMessageClass,
+} from "./statusbar/statusbar-chrome";
+export {
+  StatusBarItemButton,
+  type StatusBarItemButtonProps,
+} from "./statusbar/StatusBarItemButton";
+export { StatusBarItemInfo, type StatusBarItemInfoProps } from "./statusbar/StatusBarItemInfo";
+export { StatusBarMessage, type StatusBarMessageProps } from "./statusbar/StatusBarMessage";

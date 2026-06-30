@@ -5,6 +5,7 @@ import { ForwardedRef, type ReactNode } from "react";
 import { chromatic, type SlotOptions } from "slot-text";
 import { SlotText } from "slot-text/react";
 
+import { StatusBarItemButton } from "@/components/workbench";
 import { windowService } from "@/lib/app-rpc";
 import { useWindowState } from "@/lib/app-rpc-react";
 import { cn } from "@/lib/cn";
@@ -152,15 +153,7 @@ export function WindowFrame({ children }: { children: ReactNode }) {
         />
         <div className="flex shrink-0 items-stretch">
           <StatusBarRightPortalTarget as={Animatable} className="contents" />
-          <button
-            aria-label="通知"
-            className={cn(
-              "flex shrink-0 items-center justify-center px-2.5 hover:bg-window-button-hover",
-            )}
-            type="button"
-          >
-            <span aria-hidden="true" className="icon-[codicon--bell]" />
-          </button>
+          <StatusBarItemButton aria-label="通知" icon="icon-[codicon--bell]" />
         </div>
       </footer>
     </main>

@@ -1,6 +1,7 @@
 import { molecule, use, useMolecule } from "bunshi/react";
 import { nullthrow } from "foxact/nullthrow";
 
+import { StatusBarItemButton } from "@/components/workbench";
 import { createAsyncLoader, useAsyncLoader } from "@/lib/async-loader";
 
 import { projectScope } from "./molecules";
@@ -15,15 +16,13 @@ const headNameMol = molecule(() => {
 export function BranchStatusItem() {
   const headName = useAsyncLoader(useMolecule(headNameMol));
   return (
-    <button
-      className="flex shrink-0 items-center gap-1.5 px-2.5 hover:bg-window-button-hover"
-      type="button"
+    <StatusBarItemButton
+      icon="icon-[codicon--source-control]"
       onClick={() => {
         void headName.refresh();
       }}
     >
-      <span aria-hidden="true" className="icon-[codicon--source-control]" />
-      <span>{headName.data ?? branchFallbackLabel}</span>
-    </button>
+      {headName.data ?? branchFallbackLabel}
+    </StatusBarItemButton>
   );
 }
