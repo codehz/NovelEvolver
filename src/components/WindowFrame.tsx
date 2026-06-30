@@ -1,5 +1,6 @@
+import { AutoTransition } from "@codehz/auto-transition";
 import type { WindowState } from "@shared/window";
-import { type ReactNode } from "react";
+import { ForwardedRef, type ReactNode } from "react";
 
 import { windowService } from "@/lib/app-rpc";
 import { useWindowState } from "@/lib/app-rpc-react";
@@ -98,17 +99,18 @@ export function WindowFrame({ children }: { children: ReactNode }) {
             </div>
             <TitleBarPortalTarget
               as="p"
-              className="truncate text-titlebar font-medium text-titlebar-foreground"
+              data-fallback="NovelEvolver"
+              className="truncate text-titlebar font-medium text-titlebar-foreground empty:before:content-[attr(data-fallback)]"
             />
           </div>
 
           {isMac ? (
             <div className="flex shrink-0 items-center self-stretch pr-2 app-region-no-drag">
-              <TitleBarActionsPortalTarget className="flex items-center" />
+              <TitleBarActionsPortalTarget as={Animatable} className="flex items-center" />
             </div>
           ) : (
             <div className="flex shrink-0 items-center gap-1 self-stretch px-1 app-region-no-drag">
-              <TitleBarActionsPortalTarget className="flex items-center" />
+              <TitleBarActionsPortalTarget as={Animatable} className="flex items-center" />
               <WindowControls
                 isMaximized={windowState.isMaximized}
                 onMinimize={() => {
@@ -127,10 +129,31 @@ export function WindowFrame({ children }: { children: ReactNode }) {
       </header>
 
       <section className="flex min-h-0 flex-1 flex-col bg-app-background">{children}</section>
-      <footer className="flex h-workbench-status-bar shrink-0 items-stretch bg-workbench-status-bar text-xs text-workbench-status-bar-foreground">
-        <StatusBarLeftPortalTarget className="flex min-w-0 flex-1 items-stretch overflow-hidden" />
-        <StatusBarRightPortalTarget className="flex shrink-0 items-stretch" />
+      <footer className="relative flex h-workbench-status-bar shrink-0 items-stretch bg-workbench-status-bar text-xs text-workbench-status-bar-foreground">
+        <StatusBarLeftPortalTarget
+          as={Animatable}
+          className="flex min-w-0 flex-1 items-stretch overflow-hidden"
+        />
+        <div className="flex shrink-0 items-stretch">
+          <StatusBarRightPortalTarget as={Animatable} className="contents" />
+        </div>
       </footer>
     </main>
+  );
+}
+
+function Animatable({
+  ref,
+  className,
+  ["data-foxact-magic-portal-target"]: target,
+}: {
+  ref: ForwardedRef<HTMLDivElement>;
+  className?: string;
+  "data-foxact-magic-portal-target"?: string;
+}) {
+  return (
+    <AutoTransition patch>
+      <div data-foxact-magic-portal-target={target} ref={ref} className={className} />
+    </AutoTransition>
   );
 }
