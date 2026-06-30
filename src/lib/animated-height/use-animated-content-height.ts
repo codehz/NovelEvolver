@@ -1,7 +1,7 @@
 import { animate } from "motion/react";
 import { useEffect, useRef, useState, type RefObject } from "react";
 
-const panelHeightSpring = {
+const contentHeightSpring = {
   type: "spring" as const,
   stiffness: 420,
   damping: 32,
@@ -16,29 +16,47 @@ function measureContentHeight(content: HTMLElement): number {
   return Math.ceil(Math.max(boxHeight, scrollHeight));
 }
 
-export function useQuickPickPanelHeightAnimation(
+export function popoverOpenIsMeasurable(container: HTMLElement): boolean {
+  return container.matches(":popover-open");
+}
+
+export function alwaysMeasurable(_container: HTMLElement): boolean {
+  return true;
+}
+
+export type UseAnimatedContentHeightOptions = {
+  /** When measurement and height updates are allowed. Defaults to `:popover-open` on `container`. */
+  isMeasurable?: (container: HTMLElement) => boolean;
+  /** Remeasure when the container fires `toggle` with `newState === "open"`. Default `true`. */
+  remeasureOnContainerToggle?: boolean;
+};
+
+export function useAnimatedContentHeight(
   contentRef: RefObject<HTMLElement | null>,
-  panelRef: RefObject<HTMLElement | null>,
+  containerRef: RefObject<HTMLElement | null>,
+  options?: UseAnimatedContentHeightOptions,
 ): {
-  shellHeightPx: number | undefined;
+  heightPx: number | undefined;
 } {
-  const [shellHeightPx, setShellHeightPx] = useState<number | undefined>(undefined);
+  const [heightPx, setHeightPx] = useState<number | undefined>(undefined);
   const displayedHeightRef = useRef(0);
   const hasInitializedRef = useRef(false);
   const animationRef = useRef<ReturnType<typeof animate> | null>(null);
+  const isMeasurable = options?.isMeasurable ?? popoverOpenIsMeasurable;
+  const remeasureOnContainerToggle = options?.remeasureOnContainerToggle ?? true;
 
   useEffect(() => {
     const content = contentRef.current;
-    const panel = panelRef.current;
-    if (content == null || panel == null) {
+    const container = containerRef.current;
+    if (content == null || container == null) {
       return;
     }
 
-    const isPanelMeasurable = () => panel.matches(":popover-open");
+    const isContainerMeasurable = () => isMeasurable(container);
 
     const applyHeight = (next: number) => {
       displayedHeightRef.current = next;
-      setShellHeightPx(next);
+      setHeightPx(next);
     };
 
     const animateTo = (target: number) => {
@@ -58,7 +76,7 @@ export function useQuickPickPanelHeightAnimation(
 
       animationRef.current?.stop();
       animationRef.current = animate(displayedHeightRef.current, target, {
-        ...panelHeightSpring,
+        ...contentHeightSpring,
         onUpdate: (value) => {
           applyHeight(value);
         },
@@ -70,7 +88,7 @@ export function useQuickPickPanelHeightAnimation(
     };
 
     const remeasure = () => {
-      if (!isPanelMeasurable()) {
+      if (!isContainerMeasurable()) {
         return;
       }
       animateTo(measureContentHeight(content));
@@ -89,16 +107,20 @@ export function useQuickPickPanelHeightAnimation(
     };
 
     observer.observe(content);
-    panel.addEventListener("toggle", onToggle);
+    if (remeasureOnContainerToggle) {
+      container.addEventListener("toggle", onToggle);
+    }
     remeasure();
 
     return () => {
-      panel.removeEventListener("toggle", onToggle);
+      if (remeasureOnContainerToggle) {
+        container.removeEventListener("toggle", onToggle);
+      }
       observer.disconnect();
       animationRef.current?.stop();
       animationRef.current = null;
     };
-  }, [contentRef, panelRef]);
+  }, [contentRef, containerRef, isMeasurable, remeasureOnContainerToggle]);
 
-  return { shellHeightPx };
+  return { heightPx };
 }

@@ -1,5 +1,7 @@
 import { useRef } from "react";
 
+import { useAnimatedContentHeight } from "@/lib/animated-height";
+
 import {
   quickPickPanelClass,
   quickPickPanelContentClass,
@@ -10,7 +12,6 @@ import {
   QuickPickPopoverProvider,
   QuickPickPopoverTarget,
 } from "./quick-pick-popover";
-import { useQuickPickPanelHeightAnimation } from "./use-quick-pick-panel-height-animation";
 
 export function QuickPickOverlay({
   titleId,
@@ -23,7 +24,7 @@ export function QuickPickOverlay({
 }) {
   const panelRef = useRef<HTMLDivElement>(null);
   const contentRef = useRef<HTMLDivElement>(null);
-  const { shellHeightPx } = useQuickPickPanelHeightAnimation(contentRef, panelRef);
+  const { heightPx: shellHeightPx } = useAnimatedContentHeight(contentRef, panelRef);
 
   return (
     <QuickPickPopoverProvider onDismiss={onDismiss}>
