@@ -44,6 +44,7 @@
   --spacing-notification-panel: 26rem;
   --spacing-notification-panel-max-height: 22rem;
   --spacing-notification-edge-inset: 0.75rem;
+  --spacing-notification-above-statusbar: 2.215rem;
   --anchor-notification-bell: --notification-bell;
   --spacing-notification-stack-offset: 0.5rem;
   --z-index-notification: 40;
