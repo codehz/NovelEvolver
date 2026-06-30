@@ -6,7 +6,7 @@ import { atom } from "jotai";
 import { projectsService } from "@/lib/app-rpc";
 
 import type { EditorCaretPosition, EditorSelectionSnapshot } from "./editor-caret";
-import type { WorkbenchDemoTab } from "./types";
+import type { WorkbenchEditorTab } from "./types";
 
 export const projectIdScope = createScope<number>(-1);
 
@@ -29,7 +29,7 @@ const defaultCaret: EditorCaretPosition = { line: 1, column: 1, selectionLength:
 export const workbenchEditorMolecule = molecule(() => {
   use(projectScope);
 
-  const tabsAtom = atom<WorkbenchDemoTab[]>([]);
+  const tabsAtom = atom<WorkbenchEditorTab[]>([]);
   const activeTabIdAtom = atom<string | null>(null);
 
   return {

@@ -1,5 +1,6 @@
 import type { BranchInfo, ProjectHandle, WorktreeHandle } from "@shared/rpc/projects-rpc";
 import { RpcTarget } from "capnweb";
+import type { SHA1 } from "nano-git";
 import { createSqliteRepository } from "nano-git/repository/sqlite";
 
 import type { WorktreesStore } from "../worktrees-store";
@@ -45,16 +46,17 @@ export class ProjectHandleImpl extends RpcTarget implements ProjectHandle {
 
   openWorktree(name: string): WorktreeHandle {
     const commit = this.#repo.readBranch(name);
+    let baseTree: SHA1;
     if (!commit) {
-      throw new Error(`Branch "${name}" has no commits yet.`);
+      baseTree = this.#repo.createTree([]);
+    } else {
+      const object = this.#repo.catFile(commit);
+      if (object.type !== "commit") {
+        throw new Error(`Expected commit at ${commit}, got ${object.type}.`);
+      }
+      baseTree = object.tree;
     }
 
-    const object = this.#repo.catFile(commit);
-    if (object.type !== "commit") {
-      throw new Error(`Expected commit at ${commit}, got ${object.type}.`);
-    }
-
-    const baseTree = object.tree;
     if (!this.#worktreesStore.hasWorktree(this.#projectId, name)) {
       this.#worktreesStore.createWorktree(this.#projectId, name, baseTree);
     }

@@ -5,6 +5,7 @@ import { useCallback } from "react";
 import { notificationApi } from "@/lib/notifications";
 import { isQuickPickDismissedError, quickPickApi, type QuickPickListItem } from "@/lib/quick-pick";
 
+import { useWorkbenchEditorActions } from "../editor/use-workbench-editor-actions";
 import {
   createDemoBranchInfo,
   demoCreatedBranchesAtom,
@@ -32,6 +33,7 @@ function branchToListItem(branch: BranchInfo, effectiveHeadName: string | null):
 export function useBranchQuickPick() {
   const snapshot = useBranchPickerSnapshot();
   const project = useProjectContext();
+  const { clearAllTabs } = useWorkbenchEditorActions();
   const [demoCreated, setDemoCreated] = useAtom(demoCreatedBranchesAtom);
   const [demoHeadOverride, setDemoHeadOverride] = useAtom(demoHeadOverrideAtom);
   const setDemoHeadOverrideOnly = useSetAtom(demoHeadOverrideAtom);
@@ -47,6 +49,7 @@ export function useBranchQuickPick() {
       if (name === effectiveHeadName) {
         return;
       }
+      clearAllTabs();
       if (isDemoOnlyBranch(name, serverBranches)) {
         setDemoHeadOverrideOnly(name);
         return;
@@ -62,6 +65,7 @@ export function useBranchQuickPick() {
       if (validationError != null) {
         return validationError;
       }
+      clearAllTabs();
       setDemoCreated((prev) => [...prev, createDemoBranchInfo(name)]);
       setDemoHeadOverride(name);
       notificationApi.info(`已创建并切换到分支「${name}」（演示，未写入仓库）`, {
@@ -113,6 +117,7 @@ export function useBranchQuickPick() {
       throw error;
     }
   }, [
+    clearAllTabs,
     demoCreated,
     demoHeadOverride,
     project.handle,

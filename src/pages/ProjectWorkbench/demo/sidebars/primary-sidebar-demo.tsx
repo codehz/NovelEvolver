@@ -8,6 +8,8 @@ import {
 } from "@/components/workbench";
 import { cn } from "@/lib/cn";
 
+import { ResourceLibrarySectionBody } from "../../resource-library/ResourceLibrarySection";
+
 type DemoTreeNode = {
   icon: string;
   label: string;
@@ -20,15 +22,6 @@ const manuscriptTree: DemoTreeNode[] = [
   { icon: cn("icon-[codicon--file]"), label: "第一章.md", depth: 1, active: true },
   { icon: cn("icon-[codicon--file]"), label: "第二章.md", depth: 1 },
   { icon: cn("icon-[codicon--file]"), label: "番外·序.md", depth: 1 },
-];
-
-const referenceTree: DemoTreeNode[] = [
-  { icon: cn("icon-[codicon--folder-opened]"), label: "设定" },
-  { icon: cn("icon-[codicon--file]"), label: "世界观.md", depth: 1 },
-  { icon: cn("icon-[codicon--file]"), label: "人物卡.md", depth: 1 },
-  { icon: cn("icon-[codicon--folder]"), label: "素材" },
-  { icon: cn("icon-[codicon--file]"), label: "地名参考.md", depth: 1 },
-  { icon: cn("icon-[codicon--file]"), label: "大纲.md", depth: 1 },
 ];
 
 const timelineTree: DemoTreeNode[] = [
@@ -82,12 +75,12 @@ export function ExplorerSidebarDemo({ projectLabel }: { projectLabel: string }) 
       },
       {
         id: "reference",
-        title: "辅助资料",
-        ariaLabel: "辅助资料",
+        title: "资源库",
+        ariaLabel: "资源库",
         panelId: "explorer-reference-panel",
         expanded: referenceExpanded,
         defaultBodyHeight: DEFAULT_REFERENCE_BODY_HEIGHT,
-        body: <ExplorerTreeBody nodes={referenceTree} title="辅助资料" />,
+        body: <ResourceLibrarySectionBody />,
         onToggleExpanded: () => setReferenceExpanded((value) => !value),
       },
       {

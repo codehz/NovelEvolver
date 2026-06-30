@@ -60,8 +60,9 @@ export interface ProjectHandle extends RpcTarget {
   switchBranch(name: string): void;
   /**
    * Opens the virtual worktree for `name` (branch name). Persisted under key
-   * `<project-id>:<branch-name>`. Creates on first use from the branch tip tree;
-   * later calls reopen the same entry without rebasing to a moved tip.
+   * `<project-id>:<branch-name>`. Creates on first use from the branch tip tree,
+   * or from an empty tree when the branch has no commits yet; later calls reopen
+   * the same entry without rebasing to a moved tip.
    */
   openWorktree(name: string): WorktreeHandle;
 }
