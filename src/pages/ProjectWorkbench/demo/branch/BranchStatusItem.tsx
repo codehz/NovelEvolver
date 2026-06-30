@@ -2,15 +2,15 @@ import { useAtomValue, useSetAtom } from "jotai";
 
 import { StatusBarItemButton } from "@/components/workbench";
 
-import { branchSwitcherOpenAtom, useBranchPickerSnapshot } from "./branch-data";
+import { branchSwitcherOpenAtom, useEffectiveHeadName } from "./branch-data";
 
 const branchFallbackLabel = "无分支";
 
 export function BranchStatusItem() {
-  const snapshot = useBranchPickerSnapshot();
+  const headName = useEffectiveHeadName();
   const switcherOpen = useAtomValue(branchSwitcherOpenAtom);
   const setSwitcherOpen = useSetAtom(branchSwitcherOpenAtom);
-  const label = snapshot.data?.headName ?? branchFallbackLabel;
+  const label = headName ?? branchFallbackLabel;
 
   return (
     <StatusBarItemButton
