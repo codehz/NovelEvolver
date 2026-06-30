@@ -58,12 +58,9 @@ export function NotificationCenterPanel({
           transition={{ type: "spring", stiffness: 400, damping: 30, mass: 0.8 }}
           layout
         >
-          <motion.header
-            layout
-            className="flex items-center justify-between border-b border-notification-border px-3 py-2"
-          >
+          <motion.header layout className="flex items-center justify-between px-3 py-2">
             <h2 id={titleId} className="font-medium text-app-foreground">
-              通知
+              {items.length === 0 ? "无新通知" : "通知"}
             </h2>
             <button
               className={cn(
@@ -82,30 +79,19 @@ export function NotificationCenterPanel({
               <span aria-hidden="true" className="icon-[codicon--clear-all]" />
             </button>
           </motion.header>
-          <ScrollArea className="min-h-0 flex-1 overflow-y-auto">
-            <AnimatePresence initial={false} mode="popLayout">
-              {items.length === 0 ? (
-                <motion.p
-                  key="empty"
-                  initial={{ opacity: 0, y: -8 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -8 }}
-                  transition={{ type: "spring", stiffness: 400, damping: 30, mass: 0.8 }}
-                  className="px-3 py-6 text-center text-workbench-status-bar-muted"
-                >
-                  没有通知
-                </motion.p>
-              ) : (
-                items.map((notification) => (
+          {items.length > 0 && (
+            <ScrollArea className="min-h-0 flex-1 overflow-y-auto">
+              <AnimatePresence initial={false} mode="popLayout">
+                {items.map((notification) => (
                   <NotificationItem
                     key={notification.id}
                     notification={notification}
                     variant="center"
                   />
-                ))
-              )}
-            </AnimatePresence>
-          </ScrollArea>
+                ))}
+              </AnimatePresence>
+            </ScrollArea>
+          )}
         </motion.div>
       )}
     </AnimatePresence>
