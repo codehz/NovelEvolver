@@ -7,8 +7,6 @@ import { createAsyncLoader, useAsyncLoader } from "@/lib/async-loader";
 
 import { projectScope } from "../state/molecules";
 
-export const branchSwitcherOpenAtom = atom(false);
-
 /** 演示：本地创建的分支（未接后端）。 */
 export const demoCreatedBranchesAtom = atom<BranchInfo[]>([]);
 

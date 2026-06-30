@@ -6,6 +6,7 @@ import { chromatic, type SlotOptions } from "slot-text";
 import { SlotText } from "slot-text/react";
 
 import { NotificationBellButton, NotificationToastStack } from "@/components/notifications";
+import { QuickPickHost } from "@/components/quick-pick";
 import { windowService } from "@/lib/app-rpc";
 import { useWindowState } from "@/lib/app-rpc-react";
 import { cn } from "@/lib/cn";
@@ -164,6 +165,7 @@ export function WindowFrame({ children }: { children: ReactNode }) {
       <div className="flex min-h-0 min-w-0 flex-1 flex-col bg-app-background">{children}</div>
       <StatusBar />
       <NotificationToastStack />
+      <QuickPickHost />
     </main>
   );
 }
