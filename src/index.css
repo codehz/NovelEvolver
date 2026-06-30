@@ -36,7 +36,7 @@
   --spacing-workbench-status-bar: 1.375rem;
 
   --color-notification-surface: var(--color-ctp-mantle);
-  --color-notification-border: var(--color-ctp-surface0);
+  --color-notification-border: var(--color-ctp-mauve);
   --color-notification-info: var(--color-ctp-blue);
   --color-notification-warning: var(--color-ctp-yellow);
   --color-notification-error: var(--color-ctp-red);
