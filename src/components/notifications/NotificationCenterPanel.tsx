@@ -38,7 +38,7 @@ export function NotificationCenterPanel({ titleId }: { titleId: string }) {
           <span aria-hidden="true" className="icon-[codicon--clear-all]" />
         </button>
       </header>
-      <ScrollArea className="min-h-0 overflow-hidden">
+      <ScrollArea fill className="min-h-0 overflow-hidden">
         <AnimatePresence initial={false} mode="popLayout">
           {items.map((notification) => (
             <NotificationItem key={notification.id} notification={notification} variant="center" />
