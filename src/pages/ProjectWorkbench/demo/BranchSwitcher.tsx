@@ -1,6 +1,5 @@
 import type { BranchInfo } from "@shared/rpc/projects-rpc";
 import { useAtom } from "jotai";
-import { AnimatePresence, motion } from "motion/react";
 import {
   useCallback,
   useEffect,
@@ -10,21 +9,20 @@ import {
   useState,
   type KeyboardEvent as ReactKeyboardEvent,
 } from "react";
-import { createPortal } from "react-dom";
 
+import {
+  FloatingPickerShell,
+  floatingPickerEmptyStateClass,
+  floatingPickerInputClass,
+  floatingPickerInputWrapClass,
+  floatingPickerListClass,
+  floatingPickerRowClass,
+  floatingPickerRowEmphasisClass,
+  floatingPickerRowHighlightClass,
+} from "@/components/floating-picker";
 import { cn } from "@/lib/cn";
 
 import { branchSwitcherOpenAtom, useBranchPickerSnapshot, useProjectContext } from "./branch-data";
-import {
-  branchPickerDismissLayerClass,
-  branchPickerInputClass,
-  branchPickerInputWrapClass,
-  branchPickerListClass,
-  branchPickerPanelClass,
-  branchPickerRowClass,
-  branchPickerRowCurrentClass,
-  branchPickerRowHighlightClass,
-} from "./branch-switcher-chrome";
 
 function filterBranches(branches: BranchInfo[], query: string): BranchInfo[] {
   const normalized = query.trim().toLowerCase();
@@ -144,117 +142,97 @@ export function BranchSwitcher() {
     }
   };
 
-  if (typeof document === "undefined") {
-    return null;
-  }
-
-  return createPortal(
-    <AnimatePresence>
-      {open && (
-        <>
-          <button
-            aria-label="关闭分支切换器"
-            className={branchPickerDismissLayerClass}
-            type="button"
-            onClick={close}
-          />
-          <motion.div
-            aria-labelledby={titleId}
-            className={branchPickerPanelClass}
-            role="dialog"
-            initial={{ opacity: 0, y: -8 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -8 }}
-            transition={{ type: "spring", stiffness: 420, damping: 32, mass: 0.85 }}
-          >
-            <p className="sr-only" id={titleId}>
-              分支切换器
-            </p>
-            <div className={branchPickerInputWrapClass}>
-              <label className="sr-only" htmlFor={`${titleId}-input`}>
-                搜索或选择分支
-              </label>
-              <input
-                ref={inputRef}
-                id={`${titleId}-input`}
-                className={branchPickerInputClass}
-                type="text"
-                role="combobox"
-                aria-expanded
-                aria-controls={listboxId}
-                aria-autocomplete="list"
-                autoComplete="off"
-                spellCheck={false}
-                placeholder="选择要切换的分支…"
-                value={query}
-                onChange={(event) => {
-                  setQuery(event.target.value);
-                }}
-                onKeyDown={onInputKeyDown}
-              />
-            </div>
-            <ul
-              ref={listRef}
-              id={listboxId}
-              className={branchPickerListClass}
-              role="listbox"
-              aria-label="分支列表"
+  return (
+    <FloatingPickerShell
+      open={open}
+      onClose={close}
+      titleId={titleId}
+      dismissAriaLabel="关闭分支切换器"
+    >
+      <p className="sr-only" id={titleId}>
+        分支切换器
+      </p>
+      <div className={floatingPickerInputWrapClass}>
+        <label className="sr-only" htmlFor={`${titleId}-input`}>
+          搜索或选择分支
+        </label>
+        <input
+          ref={inputRef}
+          id={`${titleId}-input`}
+          className={floatingPickerInputClass}
+          type="text"
+          role="combobox"
+          aria-expanded
+          aria-controls={listboxId}
+          aria-autocomplete="list"
+          autoComplete="off"
+          spellCheck={false}
+          placeholder="选择要切换的分支…"
+          value={query}
+          onChange={(event) => {
+            setQuery(event.target.value);
+          }}
+          onKeyDown={onInputKeyDown}
+        />
+      </div>
+      <ul
+        ref={listRef}
+        id={listboxId}
+        className={floatingPickerListClass}
+        role="listbox"
+        aria-label="分支列表"
+      >
+        {snapshot.isLoading && filtered.length === 0 ? (
+          <li className={floatingPickerEmptyStateClass}>加载分支…</li>
+        ) : null}
+        {!snapshot.isLoading && filtered.length === 0 ? (
+          <li className={floatingPickerEmptyStateClass}>无匹配分支</li>
+        ) : null}
+        {filtered.map((branch, index) => {
+          const name = branch.name ?? "";
+          const isCurrent = name !== "" && name === headName;
+          const highlighted = index === highlightIndex;
+          return (
+            <li
+              key={name || `branch-${index}`}
+              data-branch-index={index}
+              role="option"
+              aria-selected={highlighted}
             >
-              {snapshot.isLoading && filtered.length === 0 ? (
-                <li className="px-3 py-2 text-workbench-status-bar-muted">加载分支…</li>
-              ) : null}
-              {!snapshot.isLoading && filtered.length === 0 ? (
-                <li className="px-3 py-2 text-workbench-status-bar-muted">无匹配分支</li>
-              ) : null}
-              {filtered.map((branch, index) => {
-                const name = branch.name ?? "";
-                const isCurrent = name !== "" && name === headName;
-                const highlighted = index === highlightIndex;
-                return (
-                  <li
-                    key={name || `branch-${index}`}
-                    data-branch-index={index}
-                    role="option"
-                    aria-selected={highlighted}
-                  >
-                    <button
-                      type="button"
-                      className={cn(
-                        branchPickerRowClass,
-                        highlighted && branchPickerRowHighlightClass,
-                        isCurrent && branchPickerRowCurrentClass,
-                      )}
-                      onMouseEnter={() => {
-                        setHighlightIndex(index);
-                      }}
-                      onClick={() => {
-                        if (branch.name) {
-                          void selectBranch(branch.name);
-                        }
-                      }}
-                    >
-                      <span
-                        aria-hidden="true"
-                        className={cn(
-                          "icon-[codicon--check] size-4 shrink-0",
-                          isCurrent ? "opacity-100" : "opacity-0",
-                        )}
-                      />
-                      <span className="min-w-0 flex-1 truncate font-medium">{name}</span>
-                      {branch.commit ? (
-                        <span className="shrink-0 font-mono text-xs text-workbench-status-bar-muted">
-                          {branch.commit.slice(0, 7)}
-                        </span>
-                      ) : null}
-                    </button>
-                  </li>
-                );
-              })}
-            </ul>
-          </motion.div>
-        </>
-      )}
-    </AnimatePresence>,
-    document.body,
+              <button
+                type="button"
+                className={cn(
+                  floatingPickerRowClass,
+                  highlighted && floatingPickerRowHighlightClass,
+                  isCurrent && floatingPickerRowEmphasisClass,
+                )}
+                onMouseEnter={() => {
+                  setHighlightIndex(index);
+                }}
+                onClick={() => {
+                  if (branch.name) {
+                    void selectBranch(branch.name);
+                  }
+                }}
+              >
+                <span
+                  aria-hidden="true"
+                  className={cn(
+                    "icon-[codicon--check] size-4 shrink-0",
+                    isCurrent ? "opacity-100" : "opacity-0",
+                  )}
+                />
+                <span className="min-w-0 flex-1 truncate font-medium">{name}</span>
+                {branch.commit ? (
+                  <span className="shrink-0 font-mono text-xs text-workbench-status-bar-muted">
+                    {branch.commit.slice(0, 7)}
+                  </span>
+                ) : null}
+              </button>
+            </li>
+          );
+        })}
+      </ul>
+    </FloatingPickerShell>
   );
 }

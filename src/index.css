@@ -49,12 +49,12 @@
   );
   --z-index-notification: 40;
 
-  --color-branch-picker-surface: var(--color-ctp-mantle);
-  --color-branch-picker-highlight: color-mix(in srgb, var(--color-ctp-surface0) 55%, transparent);
-  --shadow-branch-picker: 0 8px 24px color-mix(in srgb, var(--color-ctp-crust) 55%, transparent);
-  --spacing-branch-picker: 36rem;
-  --spacing-branch-picker-max-height: 20rem;
-  --z-index-branch-picker: 50;
+  --color-floating-picker-surface: var(--color-ctp-mantle);
+  --color-floating-picker-highlight: color-mix(in srgb, var(--color-ctp-surface0) 55%, transparent);
+  --shadow-floating-picker: 0 8px 24px color-mix(in srgb, var(--color-ctp-crust) 55%, transparent);
+  --spacing-floating-picker: 36rem;
+  --spacing-floating-picker-max-height: 20rem;
+  --z-index-floating-picker: 50;
 
   --color-workbench-activity-bar: var(--color-ctp-crust);
   --color-workbench-activity-bar-foreground: var(--color-ctp-overlay0);
