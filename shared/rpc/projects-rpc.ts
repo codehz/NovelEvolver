@@ -9,6 +9,13 @@ export type BranchInfo = {
   commit: string | null;
 };
 
+/** Live RPC handle for a branch-scoped virtual worktree (SQLite-backed in app userData). */
+export interface WorktreeHandle extends RpcTarget {
+  /** Baseline tree SHA-1 recorded when the worktree was first created for this branch. */
+  readonly baseTree: string;
+  // TODO: design more api
+}
+
 /**
  * RPC handle for an open project's repository.
  *
@@ -20,6 +27,12 @@ export interface ProjectHandle extends RpcTarget {
   readonly head: BranchInfo;
   readonly branches: BranchInfo[];
   switchBranch(name: string): void;
+  /**
+   * Opens the virtual worktree for `name` (branch name). Persisted under key
+   * `<project-id>:<branch-name>`. Creates on first use from the branch tip tree;
+   * later calls reopen the same entry without rebasing to a moved tip.
+   */
+  openWorktree(name: string): WorktreeHandle;
 }
 
 export type ProjectHandleWithMetadata = {

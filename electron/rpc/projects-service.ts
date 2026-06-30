@@ -77,7 +77,7 @@ export class ProjectsServiceImpl extends RpcTarget implements ProjectsService {
       throw new Error(`Project with id ${id} not found`);
     }
     return {
-      handle: new ProjectHandleImpl(record.path),
+      handle: new ProjectHandleImpl(record.id, record.path, this.#deps.getWorktreesStore()),
       metadata: toProjectMetadata(record),
     };
   }
@@ -88,6 +88,14 @@ export class ProjectsServiceImpl extends RpcTarget implements ProjectsService {
   }
 
   removeRecent(id: number): boolean {
-    return this.#deps.getProjectsDb().removeById(id);
+    const removed = this.#deps.getProjectsDb().removeById(id);
+    if (removed) {
+      try {
+        this.#deps.getWorktreesStore().deleteWorktreesForProject(id);
+      } catch (error) {
+        console.error(`Failed to delete worktrees for project ${id}:`, error);
+      }
+    }
+    return removed;
   }
 }

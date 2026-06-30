@@ -1,6 +1,9 @@
-import type { BranchInfo, ProjectHandle } from "@shared/rpc/projects-rpc";
+import type { BranchInfo, ProjectHandle, WorktreeHandle } from "@shared/rpc/projects-rpc";
 import { RpcTarget } from "capnweb";
 import { createSqliteRepository } from "nano-git/repository/sqlite";
+
+import type { WorktreesStore } from "../worktrees-store";
+import { WorktreeHandleImpl } from "./worktree-handle";
 
 /**
  * Server-side RPC target wrapping a nano-git SQLite repository.
@@ -11,11 +14,15 @@ import { createSqliteRepository } from "nano-git/repository/sqlite";
  * SQLite connection.
  */
 export class ProjectHandleImpl extends RpcTarget implements ProjectHandle {
+  readonly #projectId: number;
   readonly #repo: ReturnType<typeof createSqliteRepository>;
+  readonly #worktreesStore: WorktreesStore;
 
-  constructor(repoPath: string) {
+  constructor(projectId: number, repoPath: string, worktreesStore: WorktreesStore) {
     super();
+    this.#projectId = projectId;
     this.#repo = createSqliteRepository(repoPath);
+    this.#worktreesStore = worktreesStore;
   }
 
   get head(): BranchInfo {
@@ -34,6 +41,26 @@ export class ProjectHandleImpl extends RpcTarget implements ProjectHandle {
 
   switchBranch(name: string) {
     this.#repo.refs.write("HEAD", `ref: refs/heads/${name}`);
+  }
+
+  openWorktree(name: string): WorktreeHandle {
+    const commit = this.#repo.readBranch(name);
+    if (!commit) {
+      throw new Error(`Branch "${name}" has no commits yet.`);
+    }
+
+    const object = this.#repo.catFile(commit);
+    if (object.type !== "commit") {
+      throw new Error(`Expected commit at ${commit}, got ${object.type}.`);
+    }
+
+    const baseTree = object.tree;
+    if (!this.#worktreesStore.hasWorktree(this.#projectId, name)) {
+      this.#worktreesStore.createWorktree(this.#projectId, name, baseTree);
+    }
+
+    const worktree = this.#worktreesStore.openWorktree(this.#repo.objects, this.#projectId, name);
+    return new WorktreeHandleImpl(worktree);
   }
 
   [Symbol.dispose](): void {

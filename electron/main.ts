@@ -4,10 +4,12 @@ import { app, BrowserWindow, ipcMain } from "electron";
 
 import { ProjectsDatabase } from "./projects-db";
 import { ElectronRpcServer } from "./rpc/connect";
+import { WorktreesStore } from "./worktrees-store";
 
 const isDev = !app.isPackaged;
 
 let projectsDb: ProjectsDatabase | null = null;
+let worktreesStore: WorktreesStore | null = null;
 let rpcServer: ElectronRpcServer | null = null;
 
 function getProjectsDb(): ProjectsDatabase {
@@ -16,6 +18,14 @@ function getProjectsDb(): ProjectsDatabase {
   }
 
   return projectsDb;
+}
+
+function getWorktreesStore(): WorktreesStore {
+  if (!worktreesStore) {
+    throw new Error("Worktrees store is not initialized.");
+  }
+
+  return worktreesStore;
 }
 
 function createWindow() {
@@ -45,10 +55,12 @@ function createWindow() {
 }
 
 void app.whenReady().then(() => {
-  const dbPath = join(app.getPath("userData"), "projects.db");
-  projectsDb = new ProjectsDatabase(dbPath);
+  const userData = app.getPath("userData");
+  projectsDb = new ProjectsDatabase(join(userData, "projects.db"));
+  worktreesStore = new WorktreesStore(join(userData, "worktrees.db"));
   rpcServer = new ElectronRpcServer({
     getProjectsDb,
+    getWorktreesStore,
     getWindowState: (window) => ({
       isFocused: window.isFocused(),
       isMaximized: window.isMaximized(),
@@ -73,6 +85,8 @@ app.on("window-all-closed", () => {
 });
 
 app.on("will-quit", () => {
+  worktreesStore?.close();
+  worktreesStore = null;
   projectsDb?.close();
   projectsDb = null;
   rpcServer = null;
