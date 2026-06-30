@@ -1,9 +1,9 @@
-import { ScopeProvider } from "bunshi/react";
+import { ScopeProvider, useMolecule } from "bunshi/react";
 import { nullthrow } from "foxact/nullthrow";
-import { createContext, Suspense, use, useContext, useMemo, useState, type ReactNode } from "react";
+import { useAtom } from "jotai";
+import { createContext, use, useMemo, type ReactNode } from "react";
 
-import { useProjectContext } from "../state/molecules";
-import { branchNameScope, DEFAULT_BRANCH_NAME } from "./branch-scopes";
+import { activeBranchAtomMolecule, branchNameScope } from "./branch-scopes";
 
 type BranchScopeContextValue = {
   setActiveBranchName: (name: string) => void;
@@ -11,40 +11,24 @@ type BranchScopeContextValue = {
 
 const BranchScopeContext = createContext<BranchScopeContextValue | null>(null);
 
-function BranchScopeProviderInner({ children }: { children: ReactNode }) {
-  const project = useProjectContext();
-  const head = use(Promise.resolve(project.handle.head));
-  const [branchName, setBranchName] = useState(() => head.name ?? DEFAULT_BRANCH_NAME);
+export function BranchScopeProvider({ children }: { children: ReactNode }) {
+  const [branchName, setBranchName] = useAtom(useMolecule(activeBranchAtomMolecule));
   const contextValue = useMemo(
     (): BranchScopeContextValue => ({
-      setActiveBranchName: setBranchName,
+      setActiveBranchName: setBranchName as never as (name: string) => void,
     }),
     [],
   );
 
   return (
-    <BranchScopeContext.Provider value={contextValue}>
-      <ScopeProvider scope={branchNameScope} value={branchName}>
+    <BranchScopeContext value={contextValue}>
+      <ScopeProvider key={branchName} scope={branchNameScope} value={branchName}>
         {children}
       </ScopeProvider>
-    </BranchScopeContext.Provider>
-  );
-}
-
-export function BranchScopeProvider({ children }: { children: ReactNode }) {
-  return (
-    <Suspense
-      fallback={
-        <div className="flex flex-1 items-center justify-center p-6">
-          <p className="text-sm text-ctp-subtext0">加载分支…</p>
-        </div>
-      }
-    >
-      <BranchScopeProviderInner>{children}</BranchScopeProviderInner>
-    </Suspense>
+    </BranchScopeContext>
   );
 }
 
 export function useSetActiveBranchName(): (name: string) => void {
-  return nullthrow(useContext(BranchScopeContext)).setActiveBranchName;
+  return nullthrow(use(BranchScopeContext)).setActiveBranchName;
 }

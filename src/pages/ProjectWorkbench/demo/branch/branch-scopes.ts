@@ -1,10 +1,16 @@
 import type { ResourceLibraryHandle, WorktreeHandle } from "@shared/rpc/projects-rpc";
 import { createScope, molecule, use, useMolecule } from "bunshi/react";
 import type { RpcPromise } from "capnweb";
+import { atom } from "jotai";
 
-import { projectContextMolecule } from "../state/molecules";
+import { projectMolecule } from "../state/molecules";
 
 export const DEFAULT_BRANCH_NAME = "main";
+
+export const activeBranchAtomMolecule = molecule(() => {
+  const project = use(projectMolecule);
+  return atom(Promise.resolve(project.handle.head.name));
+});
 
 /** 当前工作台所操作的分支名（与仓库 HEAD 同步，由 BranchScopeProvider 与切换逻辑维护）。 */
 export const branchNameScope = createScope<string>(DEFAULT_BRANCH_NAME);
@@ -13,7 +19,7 @@ const activeBranchNameMolecule = molecule(() => use(branchNameScope));
 
 /** 当前分支对应的虚拟 worktree RPC 引用（随 project × branchName scope 重建）。 */
 export const worktreeMolecule = molecule(() => {
-  const project = use(projectContextMolecule);
+  const project = use(projectMolecule);
   const branchName = use(branchNameScope);
   return project.handle.openWorktree(branchName);
 });

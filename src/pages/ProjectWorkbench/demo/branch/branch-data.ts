@@ -3,7 +3,7 @@ import { molecule, use, useMolecule } from "bunshi/react";
 
 import { createAsyncLoader, useAsyncLoader } from "@/lib/async-loader";
 
-import { projectContextMolecule } from "../state/molecules";
+import { projectMolecule } from "../state/molecules";
 
 export type BranchPickerSnapshot = {
   branches: BranchInfo[];
@@ -11,7 +11,7 @@ export type BranchPickerSnapshot = {
 };
 
 const branchPickerSnapshotMol = molecule(() => {
-  const project = use(projectContextMolecule);
+  const project = use(projectMolecule);
   return createAsyncLoader(async (): Promise<BranchPickerSnapshot> => {
     const [branches, head] = await Promise.all([project.handle.branches, project.handle.head]);
     return { branches, headName: head.name };

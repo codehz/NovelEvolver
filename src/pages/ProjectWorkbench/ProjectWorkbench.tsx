@@ -7,10 +7,11 @@ import { Link, useParams } from "wouter";
 import { WorkbenchLayout } from "@/components/workbench";
 import { cn } from "@/lib/cn";
 import { projectDisplayName } from "@/lib/project-display-name";
+import { convertRpcPromise } from "@/lib/rpc-utils";
 import { useTitleBarTitle } from "@/lib/titlebar-title";
 
 import { BranchScopeProvider } from "./demo/branch/BranchScopeProvider";
-import { projectMolecule, projectIdScope, projectScope } from "./demo/state/molecules";
+import { projectIdScope, projectMolecule } from "./demo/state/molecules";
 import { WorkbenchDemoStatusBar } from "./demo/statusbar/WorkbenchDemoStatusBar";
 import { buildWorkbenchDemoSlots } from "./demo/workbench-demo";
 
@@ -57,16 +58,16 @@ function ErrorFallback({ error }: { error: unknown }) {
   );
 }
 
+const projectPromiseMolecule = convertRpcPromise(projectMolecule);
+
 function ProjectWorkbenchInner() {
-  const project = use(useMolecule(projectMolecule));
+  const project = use(useMolecule(projectPromiseMolecule));
   const displayName = projectDisplayName(project.metadata.path);
   useTitleBarTitle(displayName);
   return (
-    <ScopeProvider scope={projectScope} value={project}>
-      <BranchScopeProvider>
-        <WorkbenchLayout {...buildWorkbenchDemoSlots(displayName)} />
-        <WorkbenchDemoStatusBar />
-      </BranchScopeProvider>
-    </ScopeProvider>
+    <BranchScopeProvider>
+      <WorkbenchLayout {...buildWorkbenchDemoSlots(displayName)} />
+      <WorkbenchDemoStatusBar />
+    </BranchScopeProvider>
   );
 }
