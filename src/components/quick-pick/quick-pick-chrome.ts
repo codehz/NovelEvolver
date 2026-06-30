@@ -29,6 +29,9 @@ export const quickPickRowEmphasisClass = cn("text-workbench-sidebar-title");
 
 export const quickPickEmptyClass = cn("rounded-sm px-2 py-1 text-workbench-status-bar-muted");
 
+/** 列表主项与额外项之间的分隔线，颜色与输入框边框一致。 */
+export const quickPickListDividerClass = cn("border-t border-badge-background");
+
 export const quickPickTextInputWrapClass = cn("shrink-0 px-2 pt-2");
 
 export const quickPickTextInputClass = quickPickSearchInputClass;

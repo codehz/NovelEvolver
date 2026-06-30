@@ -15,6 +15,7 @@ import {
   quickPickEmptyClass,
   quickPickFooterHintClass,
   quickPickListClass,
+  quickPickListDividerClass,
   quickPickRowButtonClass,
   quickPickRowEmphasisClass,
   quickPickRowHighlightClass,
@@ -39,6 +40,37 @@ function filterListItems(items: QuickPickListItem[], query: string): QuickPickLi
     const detail = item.detail?.toLowerCase() ?? "";
     return label.includes(normalized) || detail.includes(normalized);
   });
+}
+
+type QuickPickListRow =
+  | { kind: "item"; item: QuickPickListItem }
+  | { kind: "extra"; extra: QuickPickExtraItem }
+  | { kind: "divider" };
+
+function buildQuickPickListRows(
+  filtered: QuickPickListItem[],
+  extras: QuickPickExtraItem[],
+  hasSearchQuery: boolean,
+): QuickPickListRow[] {
+  const showDivider = extras.length > 0 && filtered.length > 0;
+  if (!hasSearchQuery) {
+    const rows: QuickPickListRow[] = extras.map((extra) => ({ kind: "extra", extra }));
+    if (showDivider) {
+      rows.push({ kind: "divider" });
+    }
+    for (const item of filtered) {
+      rows.push({ kind: "item", item });
+    }
+    return rows;
+  }
+  const rows: QuickPickListRow[] = filtered.map((item) => ({ kind: "item", item }));
+  if (showDivider) {
+    rows.push({ kind: "divider" });
+  }
+  for (const extra of extras) {
+    rows.push({ kind: "extra", extra });
+  }
+  return rows;
 }
 
 function QuickPickListOption({
@@ -84,6 +116,11 @@ function QuickPickListPanel({ session }: { session: QuickPickListSession }) {
 
   const filtered = useMemo(() => filterListItems(options.items, query), [options.items, query]);
   const extras = options.extras ?? [];
+  const hasSearchQuery = query.trim() !== "";
+  const listRows = useMemo(
+    () => buildQuickPickListRows(filtered, extras, hasSearchQuery),
+    [extras, filtered, hasSearchQuery],
+  );
   const itemCount = filtered.length + extras.length;
 
   const dismiss = useCallback(() => {
@@ -112,18 +149,21 @@ function QuickPickListPanel({ session }: { session: QuickPickListSession }) {
     useQuickPickListNavigation({
       itemCount,
       onActivate: (index) => {
-        if (index < filtered.length) {
-          const item = filtered[index];
-          if (item != null) {
-            resolveItem(item.id);
-            resetHighlight();
+        let optionIndex = 0;
+        for (const row of listRows) {
+          if (row.kind === "divider") {
+            continue;
           }
-          return;
-        }
-        const extra = extras[index - filtered.length];
-        if (extra != null) {
-          resolveExtra(extra);
-          resetHighlight();
+          if (optionIndex === index) {
+            if (row.kind === "item") {
+              resolveItem(row.item.id);
+            } else {
+              resolveExtra(row.extra);
+            }
+            resetHighlight();
+            return;
+          }
+          optionIndex += 1;
         }
       },
     });
@@ -178,56 +218,74 @@ function QuickPickListPanel({ session }: { session: QuickPickListSession }) {
         role="listbox"
         aria-label={options.title}
       >
-        {filtered.length === 0 && extras.length === 0 ? (
+        {itemCount === 0 ? (
           <li className={quickPickEmptyClass}>{options.emptyMessage ?? "无匹配项"}</li>
         ) : null}
-        {filtered.map((item, index) => (
-          <QuickPickListOption
-            key={item.id}
-            index={index}
-            highlighted={highlightIndex === index}
-            emphasized={item.emphasized}
-            onHighlight={() => {
-              setHighlightIndex(index);
-            }}
-            onSelect={() => {
-              resolveItem(item.id);
-            }}
-          >
-            <span
-              aria-hidden="true"
-              className={cn(
-                "icon-[codicon--check] size-4 shrink-0",
-                item.emphasized ? "opacity-100" : "opacity-0",
-              )}
-            />
-            <span className="min-w-0 flex-1 truncate font-medium">{item.label}</span>
-            {item.detail ? (
-              <span className="shrink-0 font-mono text-xs text-workbench-status-bar-muted">
-                {item.detail}
-              </span>
-            ) : null}
-          </QuickPickListOption>
-        ))}
-        {extras.map((extra, extraIndex) => {
-          const listIndex = filtered.length + extraIndex;
-          return (
-            <QuickPickListOption
-              key={extra.id}
-              index={listIndex}
-              highlighted={highlightIndex === listIndex}
-              onHighlight={() => {
-                setHighlightIndex(listIndex);
-              }}
-              onSelect={() => {
-                resolveExtra(extra);
-              }}
-            >
-              <span aria-hidden="true" className="icon-[codicon--add] size-4 shrink-0" />
-              <span className="min-w-0 flex-1 truncate font-medium">{extra.label}</span>
-            </QuickPickListOption>
-          );
-        })}
+        {(() => {
+          let optionIndex = 0;
+          return listRows.map((row, rowIndex) => {
+            if (row.kind === "divider") {
+              return (
+                <li
+                  key={`divider-${rowIndex}`}
+                  className={quickPickListDividerClass}
+                  role="separator"
+                  aria-hidden
+                />
+              );
+            }
+            const index = optionIndex;
+            optionIndex += 1;
+            if (row.kind === "item") {
+              const { item } = row;
+              return (
+                <QuickPickListOption
+                  key={item.id}
+                  index={index}
+                  highlighted={highlightIndex === index}
+                  emphasized={item.emphasized}
+                  onHighlight={() => {
+                    setHighlightIndex(index);
+                  }}
+                  onSelect={() => {
+                    resolveItem(item.id);
+                  }}
+                >
+                  <span
+                    aria-hidden="true"
+                    className={cn(
+                      "icon-[codicon--check] size-4 shrink-0",
+                      item.emphasized ? "opacity-100" : "opacity-0",
+                    )}
+                  />
+                  <span className="min-w-0 flex-1 truncate font-medium">{item.label}</span>
+                  {item.detail ? (
+                    <span className="shrink-0 font-mono text-xs text-workbench-status-bar-muted">
+                      {item.detail}
+                    </span>
+                  ) : null}
+                </QuickPickListOption>
+              );
+            }
+            const { extra } = row;
+            return (
+              <QuickPickListOption
+                key={extra.id}
+                index={index}
+                highlighted={highlightIndex === index}
+                onHighlight={() => {
+                  setHighlightIndex(index);
+                }}
+                onSelect={() => {
+                  resolveExtra(extra);
+                }}
+              >
+                <span aria-hidden="true" className="icon-[codicon--add] size-4 shrink-0" />
+                <span className="min-w-0 flex-1 truncate font-medium">{extra.label}</span>
+              </QuickPickListOption>
+            );
+          });
+        })()}
       </ul>
     </QuickPickOverlay>
   );
