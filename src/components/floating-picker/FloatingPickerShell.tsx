@@ -54,10 +54,6 @@ export function FloatingPickerShell({
     };
   }, [open, onClose]);
 
-  if (typeof document === "undefined") {
-    return null;
-  }
-
   const positionClass = position === "centered" ? floatingPickerPanelCenteredClass : null;
 
   return createPortal(
