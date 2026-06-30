@@ -48,7 +48,7 @@ export function NotificationItem({ notification, variant, ref }: NotificationIte
         variant === "center" && "border-t border-notification-border last:border-b-0",
         variant === "toast" && notificationToastClass,
       )}
-      layout
+      layout="position"
       layoutId={notification.id}
       {...variantMotionMap[variant]}
       role={severity === "error" ? "alert" : "status"}
