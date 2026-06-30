@@ -5,7 +5,6 @@ import { createAsyncLoader, useAsyncLoader } from "@/lib/async-loader";
 import { cn } from "@/lib/cn";
 import { useNotifyAction } from "@/lib/notifications";
 import { projectDisplayName } from "@/lib/project-display-name";
-import { defaultWindowTitle, useTitleBarTitle } from "@/lib/titlebar-title";
 
 function formatLastOpened(timestamp: number): string {
   return new Date(timestamp).toLocaleString();
@@ -21,7 +20,6 @@ const projectCardActionClass = cn(
 const projectLoader = createAsyncLoader(() => projectsService.recents);
 
 export function ProjectList() {
-  useTitleBarTitle(defaultWindowTitle);
   const [, navigate] = useLocation();
   const projects = useAsyncLoader(projectLoader);
   const notifyAction = useNotifyAction();
