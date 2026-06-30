@@ -9,6 +9,7 @@ import { cn } from "@/lib/cn";
 import { projectDisplayName } from "@/lib/project-display-name";
 import { useTitleBarTitle } from "@/lib/titlebar-title";
 
+import { BranchSwitcher } from "./demo/BranchSwitcher";
 import { projectMolecule, projectIdScope, projectScope } from "./demo/molecules";
 import { buildWorkbenchDemoSlots } from "./demo/workbench-demo";
 import { WorkbenchDemoStatusBar } from "./demo/WorkbenchDemoStatusBar";
@@ -63,6 +64,7 @@ function ProjectWorkbenchInner() {
   return (
     <ScopeProvider scope={projectScope} value={project}>
       <WorkbenchLayout {...buildWorkbenchDemoSlots(displayName)} />
+      <BranchSwitcher />
       <WorkbenchDemoStatusBar />
     </ScopeProvider>
   );

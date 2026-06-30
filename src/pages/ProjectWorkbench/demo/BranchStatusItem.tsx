@@ -1,28 +1,27 @@
-import { molecule, use, useMolecule } from "bunshi/react";
-import { nullthrow } from "foxact/nullthrow";
+import { useAtomValue, useSetAtom } from "jotai";
 
 import { StatusBarItemButton } from "@/components/workbench";
-import { createAsyncLoader, useAsyncLoader } from "@/lib/async-loader";
 
-import { projectScope } from "./molecules";
+import { branchSwitcherOpenAtom, useBranchPickerSnapshot } from "./branch-data";
 
 const branchFallbackLabel = "无分支";
 
-const headNameMol = molecule(() => {
-  const project = nullthrow(use(projectScope));
-  return createAsyncLoader(() => project.handle.head.name);
-});
-
 export function BranchStatusItem() {
-  const headName = useAsyncLoader(useMolecule(headNameMol));
+  const snapshot = useBranchPickerSnapshot();
+  const switcherOpen = useAtomValue(branchSwitcherOpenAtom);
+  const setSwitcherOpen = useSetAtom(branchSwitcherOpenAtom);
+  const label = snapshot.data?.headName ?? branchFallbackLabel;
+
   return (
     <StatusBarItemButton
       icon="icon-[codicon--source-control]"
+      aria-haspopup="dialog"
+      aria-expanded={switcherOpen}
       onClick={() => {
-        void headName.refresh();
+        setSwitcherOpen(true);
       }}
     >
-      {headName.data ?? branchFallbackLabel}
+      {label}
     </StatusBarItemButton>
   );
 }

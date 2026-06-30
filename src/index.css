@@ -49,6 +49,13 @@
   );
   --z-index-notification: 40;
 
+  --color-branch-picker-surface: var(--color-ctp-mantle);
+  --color-branch-picker-border: var(--color-ctp-surface1);
+  --color-branch-picker-highlight: color-mix(in srgb, var(--color-ctp-surface0) 55%, transparent);
+  --spacing-branch-picker: 36rem;
+  --spacing-branch-picker-max-height: 20rem;
+  --z-index-branch-picker: 50;
+
   --color-workbench-activity-bar: var(--color-ctp-crust);
   --color-workbench-activity-bar-foreground: var(--color-ctp-overlay0);
   --color-workbench-activity-bar-active: var(--color-ctp-mauve);
