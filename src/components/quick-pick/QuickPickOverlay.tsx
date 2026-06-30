@@ -1,8 +1,14 @@
 import { AnimatePresence, motion } from "motion/react";
-import { useEffect, type ReactNode } from "react";
+import { useEffect, useRef, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 
-import { quickPickDismissLayerClass, quickPickPanelClass } from "./quick-pick-chrome";
+import {
+  quickPickDismissLayerClass,
+  quickPickPanelClass,
+  quickPickPanelContentClass,
+  quickPickPanelHeightShellClass,
+} from "./quick-pick-chrome";
+import { useQuickPickPanelHeightAnimation } from "./use-quick-pick-panel-height-animation";
 
 const panelMotion = {
   initial: { opacity: 0, y: -8 },
@@ -35,6 +41,9 @@ export function QuickPickOverlay({
     };
   }, [onDismiss]);
 
+  const contentRef = useRef<HTMLDivElement>(null);
+  const { shellHeightPx } = useQuickPickPanelHeightAnimation(contentRef);
+
   return createPortal(
     <AnimatePresence>
       <>
@@ -53,7 +62,14 @@ export function QuickPickOverlay({
           exit={panelMotion.exit}
           transition={panelMotion.transition}
         >
-          {children}
+          <div
+            className={quickPickPanelHeightShellClass}
+            style={shellHeightPx != null ? { height: shellHeightPx } : undefined}
+          >
+            <div ref={contentRef} className={quickPickPanelContentClass}>
+              {children}
+            </div>
+          </div>
         </motion.div>
       </>
     </AnimatePresence>,

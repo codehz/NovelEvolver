@@ -6,8 +6,12 @@ export const quickPickDismissLayerClass = cn(
 );
 
 export const quickPickPanelClass = cn(
-  "fixed top-titlebar left-1/2 z-quick-pick flex max-h-quick-pick-max-height w-quick-pick -translate-x-1/2 flex-col overflow-hidden rounded-lg bg-quick-pick-surface text-sm text-app-foreground shadow-quick-pick app-region-no-drag",
+  "fixed top-titlebar left-1/2 z-quick-pick w-quick-pick -translate-x-1/2 overflow-hidden rounded-lg bg-quick-pick-surface text-sm text-app-foreground shadow-quick-pick app-region-no-drag",
 );
+
+export const quickPickPanelHeightShellClass = cn("w-full overflow-hidden");
+
+export const quickPickPanelContentClass = cn("flex max-h-quick-pick-max-height w-full flex-col");
 
 export const quickPickSearchWrapClass = cn("shrink-0 px-2 pt-2 pb-1.5");
 
