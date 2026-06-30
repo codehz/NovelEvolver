@@ -6,10 +6,19 @@ import { cn } from "@/lib/cn";
 import { activeNotificationsAtom, notificationApi } from "@/lib/notifications";
 
 import { ScrollArea } from "../ScrollArea";
+import { notificationIconButtonClass } from "./notification-chrome";
+import { useNotificationCenterRequestClose } from "./notification-popover";
 import { NotificationItem } from "./NotificationItem";
 
-export function NotificationCenterPanel({ titleId }: { titleId: string }) {
+export function NotificationCenterPanel({
+  titleId,
+  onDismiss,
+}: {
+  titleId: string;
+  onDismiss: () => void;
+}) {
   const items = useAtomValue(activeNotificationsAtom);
+  const requestClose = useNotificationCenterRequestClose();
 
   useEffect(() => {
     notificationApi.dismissAllToasts();
@@ -21,22 +30,35 @@ export function NotificationCenterPanel({ titleId }: { titleId: string }) {
         <h2 id={titleId} className="font-medium text-app-foreground">
           {items.length === 0 ? "无新通知" : "通知"}
         </h2>
-        <button
-          className={cn(
-            "inline-flex shrink-0 items-center justify-center rounded-sm px-1 text-base",
-            items.length > 0
-              ? "text-notification-action hover:bg-window-button-hover"
-              : "cursor-not-allowed text-workbench-status-bar-muted opacity-50",
-          )}
-          type="button"
-          disabled={items.length === 0}
-          onClick={() => {
-            notificationApi.closeAll();
-          }}
-          aria-label="全部清除"
-        >
-          <span aria-hidden="true" className="icon-[codicon--clear-all]" />
-        </button>
+        <div className="flex shrink-0 items-center gap-0.5">
+          <button
+            className={cn(
+              notificationIconButtonClass,
+              items.length > 0
+                ? "text-notification-action"
+                : "cursor-not-allowed text-workbench-status-bar-muted opacity-50",
+            )}
+            type="button"
+            disabled={items.length === 0}
+            onClick={() => {
+              notificationApi.closeAll();
+              requestClose(onDismiss);
+            }}
+            aria-label="全部清除"
+          >
+            <span aria-hidden="true" className="icon-[codicon--clear-all] text-sm" />
+          </button>
+          <button
+            className={cn(notificationIconButtonClass, "text-notification-action")}
+            type="button"
+            onClick={() => {
+              requestClose(onDismiss);
+            }}
+            aria-label="关闭"
+          >
+            <span aria-hidden="true" className="icon-[codicon--chevron-down] text-sm" />
+          </button>
+        </div>
       </header>
       <ScrollArea fill className="min-h-0 overflow-hidden">
         <AnimatePresence initial={false} mode="popLayout">

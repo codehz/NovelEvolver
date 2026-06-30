@@ -8,7 +8,7 @@ import { notificationApi } from "@/lib/notifications";
 import {
   notificationActionButtonClass,
   notificationCenterItemDividerClass,
-  notificationCloseButtonClass,
+  notificationIconButtonClass,
   notificationSeverityIconClass,
   notificationToastClass,
 } from "./notification-chrome";
@@ -44,7 +44,7 @@ export function NotificationItem({ notification, variant, ref }: NotificationIte
     <motion.article
       ref={ref}
       className={cn(
-        "flex gap-2 p-3",
+        "group flex gap-2 p-3",
         isCompactRow ? "items-center" : "items-start",
         variant === "center" && notificationCenterItemDividerClass,
         variant === "toast" && notificationToastClass,
@@ -95,7 +95,11 @@ export function NotificationItem({ notification, variant, ref }: NotificationIte
       </div>
       <button
         aria-label="关闭通知"
-        className={notificationCloseButtonClass}
+        className={cn(
+          notificationIconButtonClass,
+          "text-notification-action opacity-0 transition-opacity duration-150",
+          "group-focus-within:opacity-100 group-hover:opacity-100 focus-visible:opacity-100",
+        )}
         type="button"
         onClick={() => {
           notificationApi.close(id);

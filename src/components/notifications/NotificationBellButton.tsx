@@ -50,7 +50,7 @@ function NotificationCenterOpenShell({ onDismiss }: { onDismiss: () => void }) {
         }}
       />
       <NotificationCenterPopoverPanel titleId={titleId}>
-        <NotificationCenterPanel titleId={titleId} />
+        <NotificationCenterPanel titleId={titleId} onDismiss={onDismiss} />
       </NotificationCenterPopoverPanel>
     </>
   );

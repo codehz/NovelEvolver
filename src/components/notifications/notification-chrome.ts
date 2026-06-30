@@ -42,6 +42,7 @@ export const notificationActionButtonClass = cn(
   "shrink-0 rounded-sm px-1.5 py-0.5 text-notification-action hover:bg-window-button-hover",
 );
 
-export const notificationCloseButtonClass = cn(
-  "inline-flex size-6 shrink-0 items-center justify-center rounded-sm text-workbench-status-bar-muted hover:bg-window-button-hover hover:text-app-foreground",
+/** Square icon-only control (panel header, list dismiss, etc.). */
+export const notificationIconButtonClass = cn(
+  "inline-flex size-6 shrink-0 items-center justify-center rounded-sm hover:bg-window-button-hover",
 );
