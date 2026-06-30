@@ -80,17 +80,22 @@ export function NotificationCenterPanel({
         <h2 id={titleId} className="font-medium text-app-foreground">
           通知
         </h2>
-        {sorted.length > 0 ? (
-          <button
-            className="text-notification-action hover:underline"
-            type="button"
-            onClick={() => {
-              notificationApi.closeAll();
-            }}
-          >
-            全部清除
-          </button>
-        ) : null}
+        <button
+          className={cn(
+            "inline-flex shrink-0 items-center justify-center rounded-sm px-1 text-base",
+            sorted.length > 0
+              ? "text-notification-action hover:bg-window-button-hover"
+              : "cursor-not-allowed text-workbench-status-bar-muted opacity-50",
+          )}
+          type="button"
+          disabled={sorted.length === 0}
+          onClick={() => {
+            notificationApi.closeAll();
+          }}
+          aria-label="全部清除"
+        >
+          <span aria-hidden="true" className="icon-[codicon--clear-all]" />
+        </button>
       </motion.header>
       <ScrollArea className="min-h-0 flex-1 overflow-y-auto">
         <AnimatePresence initial={false} mode="popLayout">
