@@ -14,7 +14,7 @@ import { notificationPanelClass } from "./notification-chrome";
 import { NotificationItem } from "./NotificationItem";
 
 const centerPanelPositionClass = cn(
-  "absolute right-0 bottom-full z-notification mb-1 min-w-notification-panel",
+  "absolute right-1 bottom-full z-notification mb-1 min-w-notification-panel",
 );
 
 export function NotificationCenterPanel({
