@@ -33,28 +33,13 @@ export function NotificationCenterPanel({
       return;
     }
     notificationApi.dismissAllToasts();
-    function onPointerDown(event: MouseEvent) {
-      const target = event.target;
-      if (!(target instanceof Node)) {
-        return;
-      }
-      if (panelRef.current?.contains(target)) {
-        return;
-      }
-      if (anchorRef.current?.contains(target)) {
-        return;
-      }
-      setOpen(false);
-    }
     function onKeyDown(event: KeyboardEvent) {
       if (event.key === "Escape") {
         setOpen(false);
       }
     }
-    document.addEventListener("mousedown", onPointerDown);
     document.addEventListener("keydown", onKeyDown);
     return () => {
-      document.removeEventListener("mousedown", onPointerDown);
       document.removeEventListener("keydown", onKeyDown);
     };
   }, [anchorRef, open, setOpen]);
