@@ -87,10 +87,10 @@ function CreatingTreeRow({
     <li role="none">
       <div
         className={cn(
-          "flex w-full items-center gap-0.5 py-0.5 pr-1 text-app-foreground",
+          "flex w-full items-center gap-1 py-0.5 text-app-foreground",
           "bg-workbench-tab-active/60",
         )}
-        style={{ paddingLeft: `${depth * 12 + 8}px` }}
+        style={{ paddingLeft: `${depth * 12 + 4}px` }}
       >
         <span aria-hidden="true" className="flex w-4 shrink-0 items-center justify-center" />
         <span aria-hidden="true" className={cn(icon, "shrink-0 text-base")} />
