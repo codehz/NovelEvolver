@@ -2,10 +2,10 @@ import { AutoTransition } from "@codehz/auto-transition";
 import { useAtomValue } from "jotai";
 import { ForwardedRef, type ReactNode } from "react";
 import { chromatic, type SlotOptions } from "slot-text";
-import { SlotText } from "slot-text/react";
 
 import { NotificationBellButton, NotificationToastStack } from "#app/components/notifications";
 import { QuickPickHost } from "#app/components/quick-pick";
+import { SlotText } from "#app/components/SlotText";
 import { windowService } from "#app/lib/app-rpc";
 import { useWindowState } from "#app/lib/app-rpc-react";
 import { cn } from "#app/lib/cn";

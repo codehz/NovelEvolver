@@ -2,8 +2,8 @@ import { AutoTransition, effects, preset } from "@codehz/auto-transition";
 import { useMolecule } from "bunshi/react";
 import { useSetAtom } from "jotai";
 import { Fragment, useCallback } from "react";
-import { SlotText } from "slot-text/react";
 
+import { SlotText } from "#app/components/SlotText";
 import { cn } from "#app/lib/cn";
 import { resourceBaseName, resourceLibraryDirPathPrefixes } from "#shared/resource-library-path";
 

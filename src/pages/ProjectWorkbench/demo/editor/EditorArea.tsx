@@ -1,6 +1,6 @@
 import { AutoTransition } from "@codehz/auto-transition";
-import { SlotText } from "slot-text/react";
 
+import { SlotText } from "#app/components/SlotText";
 import { cn } from "#app/lib/cn";
 
 import { EditorBreadcrumb } from "./EditorBreadcrumb";
