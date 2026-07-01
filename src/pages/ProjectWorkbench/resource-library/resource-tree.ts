@@ -50,3 +50,18 @@ export function setNodeAtPath(
     return node;
   });
 }
+
+export function findNode(nodes: ResourceTreeNode[], path: string): ResourceTreeNode | null {
+  for (const node of nodes) {
+    if (node.path === path) {
+      return node;
+    }
+    if (node.children) {
+      const found = findNode(node.children, path);
+      if (found) {
+        return found;
+      }
+    }
+  }
+  return null;
+}

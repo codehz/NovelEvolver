@@ -1,39 +1,12 @@
-import type { ResourceNode } from "@shared/rpc/projects-rpc";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useMolecule } from "bunshi/react";
+import { useAtomValue } from "jotai";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 import { cn } from "@/lib/cn";
 
-import { nodesToTreeChildren, setNodeAtPath, type ResourceTreeNode } from "./resource-tree";
-
-type FlatTreeItem = { node: ResourceTreeNode; depth: number };
-
-function flattenTree(nodes: ResourceTreeNode[], depth: number = 0): FlatTreeItem[] {
-  const result: FlatTreeItem[] = [];
-  for (const node of nodes) {
-    result.push({ node, depth });
-    if (node.type === "folder" && node.expanded && node.children && node.children.length > 0) {
-      result.push(...flattenTree(node.children, depth + 1));
-    }
-  }
-  return result;
-}
-
-export type CreatingState = {
-  id: number;
-  kind: "file" | "folder";
-  parentPath: string;
-};
-
-type ResourceLibraryTreeProps = {
-  listDirectory: (path: string) => Promise<ResourceNode[]>;
-  onOpenFile: (path: string) => void;
-  creating: CreatingState | null;
-  onCreateConfirm: (kind: "file" | "folder", name: string) => void;
-  onCreateCancel: () => void;
-  selectedPath: string | null;
-  onSelect: (path: string, type: "file" | "folder") => void;
-  expandPath: string | null;
-};
+import type { ResourceTreeNode } from "./resource-tree";
+import { resourceLibraryTreeMolecule } from "./state/resource-tree-molecule";
+import { useResourceLibraryTreeActions } from "./state/use-resource-library-tree-actions";
 
 function CreatingTreeRow({
   kind,
@@ -127,16 +100,12 @@ function ResourceTreeRow({
   node,
   depth,
   selectedPath,
-  onToggleFolder,
-  onOpenFile,
-  onSelect,
+  onActivate,
 }: {
   node: ResourceTreeNode;
   depth: number;
   selectedPath: string | null;
-  onToggleFolder: (path: string) => void;
-  onOpenFile: (path: string) => void;
-  onSelect: (path: string, type: "file" | "folder") => void;
+  onActivate: (path: string, type: "file" | "folder") => void;
 }) {
   const isFolder = node.type === "folder";
   const icon = isFolder
@@ -155,14 +124,7 @@ function ResourceTreeRow({
         )}
         style={{ paddingLeft: `${depth * 12 + 4}px` }}
         type="button"
-        onClick={() => {
-          onSelect(node.path, node.type);
-          if (isFolder) {
-            onToggleFolder(node.path);
-            return;
-          }
-          onOpenFile(node.path);
-        }}
+        onClick={() => onActivate(node.path, node.type)}
       >
         <span aria-hidden="true" className="flex w-4 shrink-0 items-center justify-center text-sm">
           {isFolder &&
@@ -180,189 +142,23 @@ function ResourceTreeRow({
   );
 }
 
-export function ResourceLibraryTree({
-  listDirectory,
-  onOpenFile,
-  creating,
-  onCreateConfirm,
-  onCreateCancel,
-  selectedPath,
-  onSelect,
-  expandPath,
-}: ResourceLibraryTreeProps) {
-  const [roots, setRoots] = useState<ResourceTreeNode[]>([]);
-  const [rootLoading, setRootLoading] = useState(true);
-  const [rootError, setRootError] = useState<string | null>(null);
-
-  const loadChildren = useCallback(
-    async (path: string) => {
-      setRoots((current) => setNodeAtPath(current, path, (node) => ({ ...node, loading: true })));
-      try {
-        const entries = await listDirectory(path);
-        setRoots((current) =>
-          setNodeAtPath(current, path, (node) => ({
-            ...node,
-            loading: false,
-            children: nodesToTreeChildren(path, entries),
-          })),
-        );
-      } catch (error) {
-        setRoots((current) =>
-          setNodeAtPath(current, path, (node) => ({ ...node, loading: false })),
-        );
-        setRootError(error instanceof Error ? error.message : String(error));
-      }
-    },
-    [listDirectory],
+export function ResourceLibraryTree() {
+  const { treeDataAtom, flatRenderItemsAtom, selectedPathAtom } = useMolecule(
+    resourceLibraryTreeMolecule,
   );
+  const data = useAtomValue(treeDataAtom);
+  const renderItems = useAtomValue(flatRenderItemsAtom);
+  const selectedPath = useAtomValue(selectedPathAtom);
+  const { activateNode, cancelCreating, confirmCreating } = useResourceLibraryTreeActions();
 
-  useEffect(() => {
-    let canceled = false;
-    setRootLoading(true);
-    setRootError(null);
-    void listDirectory("")
-      .then((entries) => {
-        if (!canceled) {
-          setRoots(nodesToTreeChildren("", entries));
-        }
-      })
-      .catch((error) => {
-        if (!canceled) {
-          setRootError(error instanceof Error ? error.message : String(error));
-          setRoots([]);
-        }
-      })
-      .finally(() => {
-        if (!canceled) {
-          setRootLoading(false);
-        }
-      });
-    return () => {
-      canceled = true;
-    };
-  }, [listDirectory]);
-
-  const expandFolder = useCallback(
-    (path: string) => {
-      if (path === "") {
-        return;
-      }
-      setRoots((current) => {
-        const node = findNode(current, path);
-        if (!node || node.type !== "folder") {
-          return current;
-        }
-        if (node.children === null) {
-          void loadChildren(path);
-        }
-        if (node.expanded) {
-          return current;
-        }
-        return setNodeAtPath(current, path, (n) => ({ ...n, expanded: true }));
-      });
-    },
-    [loadChildren],
-  );
-
-  useEffect(() => {
-    if (!expandPath || rootLoading) return;
-    expandFolder(expandPath);
-  }, [expandPath, rootLoading, expandFolder]);
-
-  useEffect(() => {
-    if (!creating || rootLoading) return;
-    expandFolder(creating.parentPath);
-  }, [creating, rootLoading, expandFolder]);
-
-  const onToggleFolder = useCallback(
-    (path: string) => {
-      setRoots((current) => {
-        const node = findNode(current, path);
-        if (!node || node.type !== "folder") {
-          return current;
-        }
-        const nextExpanded = !node.expanded;
-        const updated = setNodeAtPath(current, path, (n) => ({
-          ...n,
-          expanded: nextExpanded,
-        }));
-        if (nextExpanded && node.children === null) {
-          void loadChildren(path);
-        }
-        return updated;
-      });
-    },
-    [loadChildren],
-  );
-
-  const flatItems = useMemo(() => flattenTree(roots), [roots]);
-
-  const renderItems = useMemo(() => {
-    const items: Array<
-      | { key: string; kind: "node"; node: ResourceTreeNode; depth: number }
-      | { key: string; kind: "creating"; creating: CreatingState; depth: number }
-    > = flatItems.map(({ node, depth }) => ({
-      key: node.path,
-      kind: "node" as const,
-      node,
-      depth,
-    }));
-
-    if (creating) {
-      const prefix = creating.parentPath === "" ? "" : `${creating.parentPath}/`;
-      let insertAt = 0;
-      let depth = 0;
-
-      if (creating.kind === "folder") {
-        // 新建文件夹：插入到父级之后、所有子项之前
-        if (creating.parentPath !== "") {
-          const parentIdx = flatItems.findIndex((item) => item.node.path === creating.parentPath);
-          insertAt = parentIdx >= 0 ? parentIdx + 1 : 0;
-          depth = parentIdx >= 0 ? flatItems[parentIdx].depth + 1 : 0;
-        }
-      } else {
-        // 新建文件：插入到最后一个目录子项之后、第一个文件之前
-        let lastDirIdx = -1;
-        for (let i = 0; i < flatItems.length; i++) {
-          if (flatItems[i].node.type !== "folder") continue;
-          const p = flatItems[i].node.path;
-          const isDirectChild =
-            creating.parentPath === ""
-              ? !p.includes("/")
-              : p.startsWith(prefix) && !p.slice(prefix.length).includes("/");
-          if (isDirectChild) {
-            lastDirIdx = i;
-          }
-        }
-        if (lastDirIdx >= 0) {
-          insertAt = lastDirIdx + 1;
-          depth = flatItems[lastDirIdx].depth;
-        } else if (creating.parentPath !== "") {
-          const parentIdx = flatItems.findIndex((item) => item.node.path === creating.parentPath);
-          insertAt = parentIdx >= 0 ? parentIdx + 1 : 0;
-          depth = parentIdx >= 0 ? flatItems[parentIdx].depth + 1 : 0;
-        }
-      }
-
-      items.splice(insertAt, 0, {
-        key: `creating-${creating.id}`,
-        kind: "creating",
-        creating,
-        depth,
-      });
-    }
-
-    return items;
-  }, [flatItems, creating]);
-
-  if (rootLoading) {
+  if (data.status === "loading" || data.status === "idle") {
     return <p className="px-2 py-1 text-xs text-ctp-subtext0">加载资源库…</p>;
   }
 
-  if (rootError) {
+  if (data.status === "error") {
     return (
       <p className="px-2 py-1 text-xs text-ctp-red" role="alert">
-        {rootError}
+        {data.error}
       </p>
     );
   }
@@ -379,8 +175,8 @@ export function ResourceLibraryTree({
             key={item.key}
             depth={item.depth}
             kind={item.creating.kind}
-            onCancel={onCreateCancel}
-            onConfirm={(name) => onCreateConfirm(item.creating.kind, name)}
+            onCancel={cancelCreating}
+            onConfirm={(name) => void confirmCreating(item.creating.kind, name)}
           />
         ) : (
           <ResourceTreeRow
@@ -388,27 +184,10 @@ export function ResourceLibraryTree({
             depth={item.depth}
             node={item.node}
             selectedPath={selectedPath}
-            onOpenFile={onOpenFile}
-            onSelect={onSelect}
-            onToggleFolder={onToggleFolder}
+            onActivate={activateNode}
           />
         ),
       )}
     </ul>
   );
-}
-
-function findNode(nodes: ResourceTreeNode[], path: string): ResourceTreeNode | null {
-  for (const node of nodes) {
-    if (node.path === path) {
-      return node;
-    }
-    if (node.children) {
-      const found = findNode(node.children, path);
-      if (found) {
-        return found;
-      }
-    }
-  }
-  return null;
 }
