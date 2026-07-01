@@ -1,6 +1,8 @@
+import { AutoTransition } from "@codehz/auto-transition";
 import { useMolecule } from "bunshi/react";
 import { useSetAtom } from "jotai";
-import { useCallback } from "react";
+import { Fragment, useCallback } from "react";
+import { SlotText } from "slot-text/react";
 
 import { cn } from "#app/lib/cn";
 import { resourceBaseName, resourceLibraryDirPathPrefixes } from "#shared/resource-library-path";
@@ -56,11 +58,11 @@ export function EditorBreadcrumb({ resourcePath }: { resourcePath: string | null
   const segments = buildBreadcrumbSegments(resourcePath);
 
   return (
-    <nav aria-label="资源路径" className="flex min-w-0 items-center gap-1">
+    <AutoTransition as="nav" aria-label="资源路径" className="flex min-w-0 items-center gap-1">
       {segments.map((segment, index) => {
         const isLast = index === segments.length - 1;
         return (
-          <span key={segment.path} className="flex min-w-0 items-center gap-1">
+          <Fragment key={isLast ? "LAST" : index}>
             {index > 0 ? (
               <span
                 aria-hidden="true"
@@ -80,14 +82,17 @@ export function EditorBreadcrumb({ resourcePath }: { resourcePath: string | null
                   reveal(segment.path);
                 }}
               >
-                {segment.label}
+                <SlotText text={segment.label} />
               </button>
             ) : (
-              <span className="max-w-48 truncate text-xs text-app-foreground">{segment.label}</span>
+              <SlotText
+                text={segment.label}
+                className="max-w-48 truncate text-xs text-app-foreground"
+              />
             )}
-          </span>
+          </Fragment>
         );
       })}
-    </nav>
+    </AutoTransition>
   );
 }
