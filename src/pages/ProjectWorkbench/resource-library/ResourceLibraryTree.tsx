@@ -242,18 +242,37 @@ export function ResourceLibraryTree({
     };
   }, [listDirectory]);
 
+  const expandFolder = useCallback(
+    (path: string) => {
+      if (path === "") {
+        return;
+      }
+      setRoots((current) => {
+        const node = findNode(current, path);
+        if (!node || node.type !== "folder") {
+          return current;
+        }
+        if (node.children === null) {
+          void loadChildren(path);
+        }
+        if (node.expanded) {
+          return current;
+        }
+        return setNodeAtPath(current, path, (n) => ({ ...n, expanded: true }));
+      });
+    },
+    [loadChildren],
+  );
+
   useEffect(() => {
     if (!expandPath || rootLoading) return;
-    setRoots((current) => {
-      const node = findNode(current, expandPath);
-      if (!node || node.type !== "folder") return current;
-      if (node.expanded) return current;
-      if (node.children === null) {
-        void loadChildren(expandPath);
-      }
-      return setNodeAtPath(current, expandPath, (n) => ({ ...n, expanded: true }));
-    });
-  }, [expandPath, rootLoading, loadChildren]);
+    expandFolder(expandPath);
+  }, [expandPath, rootLoading, expandFolder]);
+
+  useEffect(() => {
+    if (!creating || rootLoading) return;
+    expandFolder(creating.parentPath);
+  }, [creating, rootLoading, expandFolder]);
 
   const onToggleFolder = useCallback(
     (path: string) => {
