@@ -1,4 +1,8 @@
-import { remapResourcePath } from "#shared/resource-library-path";
+import {
+  remapResourcePath,
+  resourceBaseName,
+  resourceParentPath,
+} from "#shared/resource-library-path";
 import type { ResourceNode } from "#shared/rpc/projects-rpc";
 
 import type { ResourceTreeNode } from "../resource-tree";
@@ -79,6 +83,35 @@ function remapNodeVisualIds(
     next[remapResourcePath(path, from, to, nodeType)] = visualId;
   }
   return next;
+}
+
+type PathMutation = {
+  from: string;
+  to: string;
+  nodeType: ResourceNode["type"];
+};
+
+function applyPathMutation(
+  state: ResourceTreeDataState,
+  mutation: PathMutation,
+): ResourceTreeDataState {
+  return {
+    ...state,
+    expandedPaths: remapExpandedPaths(
+      state.expandedPaths,
+      mutation.from,
+      mutation.to,
+      mutation.nodeType,
+    ),
+    listings: remapListings(state.listings, mutation.from, mutation.to, mutation.nodeType),
+    nodeVisualIds: remapNodeVisualIds(
+      state.nodeVisualIds,
+      mutation.from,
+      mutation.to,
+      mutation.nodeType,
+    ),
+    reloadPaths: remapReloadPaths(state.reloadPaths, mutation.from, mutation.to, mutation.nodeType),
+  };
 }
 
 function dropListingSubtree(
@@ -310,54 +343,19 @@ export function resourceTreeDataReducer(
         reloadPaths: appendReloadPath(state.reloadPaths, action.path),
       };
     case "remapPaths":
-      return {
-        ...state,
-        expandedPaths: remapExpandedPaths(
-          state.expandedPaths,
-          action.from,
-          action.to,
-          action.nodeType,
-        ),
-        listings: remapListings(state.listings, action.from, action.to, action.nodeType),
-        nodeVisualIds: remapNodeVisualIds(
-          state.nodeVisualIds,
-          action.from,
-          action.to,
-          action.nodeType,
-        ),
-        reloadPaths: remapReloadPaths(state.reloadPaths, action.from, action.to, action.nodeType),
-      };
+      return applyPathMutation(state, action);
     case "commitRename": {
-      const sourceName = action.sourcePath.split("/").at(-1);
-      const nextName = action.newPath.split("/").at(-1);
-      if (sourceName === undefined || nextName === undefined) {
+      const sourceName = resourceBaseName(action.sourcePath);
+      const nextName = resourceBaseName(action.newPath);
+      if (sourceName === "" || nextName === "") {
         return state;
       }
-      const remappedState: ResourceTreeDataState = {
-        ...state,
-        expandedPaths: remapExpandedPaths(
-          state.expandedPaths,
-          action.sourcePath,
-          action.newPath,
-          action.nodeType,
-        ),
-        listings: remapListings(state.listings, action.sourcePath, action.newPath, action.nodeType),
-        nodeVisualIds: remapNodeVisualIds(
-          state.nodeVisualIds,
-          action.sourcePath,
-          action.newPath,
-          action.nodeType,
-        ),
-        reloadPaths: remapReloadPaths(
-          state.reloadPaths,
-          action.sourcePath,
-          action.newPath,
-          action.nodeType,
-        ),
-      };
-      const parentPath = action.sourcePath.includes("/")
-        ? action.sourcePath.slice(0, action.sourcePath.lastIndexOf("/"))
-        : "";
+      const remappedState = applyPathMutation(state, {
+        from: action.sourcePath,
+        to: action.newPath,
+        nodeType: action.nodeType,
+      });
+      const parentPath = resourceParentPath(action.sourcePath);
       return {
         ...remappedState,
         listings: renameEntryInListing(
@@ -370,36 +368,17 @@ export function resourceTreeDataReducer(
       };
     }
     case "commitMove": {
-      const sourceName = action.sourcePath.split("/").at(-1);
-      if (sourceName === undefined) {
+      const sourceName = resourceBaseName(action.sourcePath);
+      if (sourceName === "") {
         return state;
       }
       const newPath = childPath(action.targetPath, sourceName);
-      const remappedState: ResourceTreeDataState = {
-        ...state,
-        expandedPaths: remapExpandedPaths(
-          state.expandedPaths,
-          action.sourcePath,
-          newPath,
-          action.nodeType,
-        ),
-        listings: remapListings(state.listings, action.sourcePath, newPath, action.nodeType),
-        nodeVisualIds: remapNodeVisualIds(
-          state.nodeVisualIds,
-          action.sourcePath,
-          newPath,
-          action.nodeType,
-        ),
-        reloadPaths: remapReloadPaths(
-          state.reloadPaths,
-          action.sourcePath,
-          newPath,
-          action.nodeType,
-        ),
-      };
-      const sourceParentPath = action.sourcePath.includes("/")
-        ? action.sourcePath.slice(0, action.sourcePath.lastIndexOf("/"))
-        : "";
+      const remappedState = applyPathMutation(state, {
+        from: action.sourcePath,
+        to: newPath,
+        nodeType: action.nodeType,
+      });
+      const sourceParentPath = resourceParentPath(action.sourcePath);
       const nextSourceListings = updateListingEntries(
         remappedState.listings,
         sourceParentPath,
