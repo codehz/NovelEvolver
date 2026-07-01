@@ -1,111 +1,22 @@
 import { useMolecule } from "bunshi/react";
 import { useAtomValue } from "jotai";
-import { useCallback, useEffect, useRef, useState } from "react";
 
 import { cn } from "#app/lib/cn";
 
 import type { ResourceTreeNode } from "./resource-tree";
+import { ResourceTreeInlineInput } from "./ResourceTreeInlineInput";
 import { resourceLibraryTreeMolecule } from "./state/resource-tree-molecule";
+import type { FlatRenderItem } from "./state/tree-data-reducer";
 import { useResourceLibraryTreeActions } from "./state/use-resource-library-tree-actions";
 
-function CreatingTreeRow({
-  kind,
+function TreeNodeRow({
   depth,
-  onConfirm,
-  onCancel,
-  initialValue = "",
-}: {
-  kind: "file" | "folder";
-  depth: number;
-  onConfirm: (name: string) => void;
-  onCancel: () => void;
-  initialValue?: string;
-}) {
-  const inputRef = useRef<HTMLInputElement>(null);
-  const [value, setValue] = useState(initialValue);
-  const resolvedRef = useRef(false);
-
-  useEffect(() => {
-    const frame = requestAnimationFrame(() => {
-      inputRef.current?.focus();
-      inputRef.current?.select();
-    });
-    return () => {
-      cancelAnimationFrame(frame);
-    };
-  }, []);
-
-  const submit = useCallback(() => {
-    if (resolvedRef.current) {
-      return;
-    }
-    resolvedRef.current = true;
-    const trimmed = value.trim();
-    if (trimmed === "") {
-      onCancel();
-      return;
-    }
-    onConfirm(trimmed);
-  }, [onCancel, onConfirm, value]);
-
-  const cancel = useCallback(() => {
-    if (resolvedRef.current) {
-      return;
-    }
-    resolvedRef.current = true;
-    onCancel();
-  }, [onCancel]);
-
-  const icon = kind === "folder" ? cn("icon-[codicon--folder]") : cn("icon-[codicon--file]");
-
-  return (
-    <li role="none">
-      <div
-        className={cn(
-          "flex w-full items-center gap-1 py-0.5 text-app-foreground",
-          "bg-workbench-tab-active/60",
-        )}
-        style={{ paddingLeft: `${depth * 12 + 4}px` }}
-      >
-        <span aria-hidden="true" className="flex w-4 shrink-0 items-center justify-center" />
-        <span aria-hidden="true" className={cn(icon, "shrink-0 text-base")} />
-        <input
-          ref={inputRef}
-          aria-label={kind === "file" ? "新文件名" : "新文件夹名"}
-          autoComplete="off"
-          className={cn(
-            "min-w-0 flex-1 rounded-sm border border-badge-background bg-workbench-editor px-1 py-0 text-xs leading-tight text-app-foreground outline-none app-region-no-drag",
-          )}
-          placeholder={kind === "file" ? "例如 设定/世界观.md" : "例如 设定/资料"}
-          spellCheck={false}
-          type="text"
-          value={value}
-          onBlur={() => submit()}
-          onChange={(event) => setValue(event.target.value)}
-          onKeyDown={(event) => {
-            if (event.key === "Enter") {
-              event.preventDefault();
-              submit();
-            } else if (event.key === "Escape") {
-              event.preventDefault();
-              event.stopPropagation();
-              cancel();
-            }
-          }}
-        />
-      </div>
-    </li>
-  );
-}
-
-function ResourceTreeRow({
   node,
-  depth,
   selectedPath,
   onActivate,
 }: {
-  node: ResourceTreeNode;
   depth: number;
+  node: ResourceTreeNode;
   selectedPath: string | null;
   onActivate: (path: string, type: "file" | "folder") => void;
 }) {
@@ -144,13 +55,69 @@ function ResourceTreeRow({
   );
 }
 
-export function ResourceLibraryTree() {
-  const { treeDataAtom, flatRenderItemsAtom, selectedPathAtom } = useMolecule(
-    resourceLibraryTreeMolecule,
+function TreeEditingRow({
+  item,
+  onCancelCreating,
+  onConfirmCreating,
+  onCancelRenaming,
+  onConfirmRenaming,
+}: {
+  item: Extract<FlatRenderItem, { kind: "editing" }>;
+  onCancelCreating: () => void;
+  onConfirmCreating: (kind: "file" | "folder", parentPath: string, name: string) => Promise<void>;
+  onCancelRenaming: () => void;
+  onConfirmRenaming: (path: string, kind: "file" | "folder", name: string) => Promise<void>;
+}) {
+  const { editing, depth } = item;
+  const initialValue = editing.mode === "renaming" ? editing.currentName : "";
+
+  return (
+    <li role="none">
+      <div
+        className={cn(
+          "flex w-full items-center gap-1 py-0.5 text-app-foreground",
+          "bg-workbench-tab-active/60",
+        )}
+        style={{ paddingLeft: `${depth * 12 + 4}px` }}
+      >
+        <span aria-hidden="true" className="flex w-4 shrink-0 items-center justify-center" />
+        <span
+          aria-hidden="true"
+          className={cn(
+            editing.kind === "folder" ? "icon-[codicon--folder]" : "icon-[codicon--file]",
+            "shrink-0 text-base",
+          )}
+        />
+        <ResourceTreeInlineInput
+          initialValue={initialValue}
+          kind={editing.kind}
+          onCancel={() => {
+            if (editing.mode === "creating") {
+              onCancelCreating();
+              return;
+            }
+            onCancelRenaming();
+          }}
+          onConfirm={(name) => {
+            if (editing.mode === "creating") {
+              void onConfirmCreating(editing.kind, editing.parentPath, name);
+              return;
+            }
+            void onConfirmRenaming(editing.path, editing.kind, name);
+          }}
+        />
+      </div>
+    </li>
   );
-  const data = useAtomValue(treeDataAtom);
-  const renderItems = useAtomValue(flatRenderItemsAtom);
-  const selectedPath = useAtomValue(selectedPathAtom);
+}
+
+function ResourceLibraryTreeContent({
+  renderItems,
+  selectedPath,
+}: {
+  renderItems: FlatRenderItem[];
+  selectedPath: string | null;
+}) {
   const {
     activateNode,
     cancelCreating,
@@ -159,6 +126,50 @@ export function ResourceLibraryTree() {
     cancelRenaming,
     confirmRenaming,
   } = useResourceLibraryTreeActions();
+
+  return (
+    <ul
+      className="flex flex-col outline-none"
+      role="tree"
+      tabIndex={0}
+      onKeyDown={(event) => {
+        if (event.key === "F2") {
+          event.preventDefault();
+          startRenaming();
+        }
+      }}
+    >
+      {renderItems.map((item) =>
+        item.kind === "node" ? (
+          <TreeNodeRow
+            key={item.key}
+            depth={item.depth}
+            node={item.node}
+            selectedPath={selectedPath}
+            onActivate={activateNode}
+          />
+        ) : (
+          <TreeEditingRow
+            key={item.key}
+            item={item}
+            onCancelCreating={cancelCreating}
+            onCancelRenaming={cancelRenaming}
+            onConfirmCreating={confirmCreating}
+            onConfirmRenaming={confirmRenaming}
+          />
+        ),
+      )}
+    </ul>
+  );
+}
+
+export function ResourceLibraryTree() {
+  const { treeDataAtom, flatRenderItemsAtom, selectedPathAtom } = useMolecule(
+    resourceLibraryTreeMolecule,
+  );
+  const data = useAtomValue(treeDataAtom);
+  const renderItems = useAtomValue(flatRenderItemsAtom);
+  const selectedPath = useAtomValue(selectedPathAtom);
 
   if (data.status === "loading" || data.status === "idle") {
     return <p className="px-2 py-1 text-xs text-ctp-subtext0">加载资源库…</p>;
@@ -176,56 +187,5 @@ export function ResourceLibraryTree() {
     return <p className="px-2 py-1 text-xs text-ctp-subtext0">资源库为空。</p>;
   }
 
-  return (
-    <ul
-      className="flex flex-col outline-none"
-      role="tree"
-      tabIndex={0}
-      onKeyDown={(event) => {
-        if (event.key === "F2") {
-          event.preventDefault();
-          startRenaming();
-        }
-      }}
-    >
-      {renderItems.map((item) => {
-        if (item.kind === "creating") {
-          return (
-            <CreatingTreeRow
-              key={item.key}
-              depth={item.depth}
-              kind={item.creating.kind}
-              onCancel={cancelCreating}
-              onConfirm={(name) =>
-                void confirmCreating(item.creating.kind, item.creating.parentPath, name)
-              }
-            />
-          );
-        }
-        if (item.kind === "renaming") {
-          return (
-            <CreatingTreeRow
-              key={item.key}
-              depth={item.depth}
-              kind={item.renaming.kind}
-              initialValue={item.currentName}
-              onCancel={cancelRenaming}
-              onConfirm={(name) =>
-                void confirmRenaming(item.renaming.path, item.renaming.kind, name)
-              }
-            />
-          );
-        }
-        return (
-          <ResourceTreeRow
-            key={item.key}
-            depth={item.depth}
-            node={item.node}
-            selectedPath={selectedPath}
-            onActivate={activateNode}
-          />
-        );
-      })}
-    </ul>
-  );
+  return <ResourceLibraryTreeContent renderItems={renderItems} selectedPath={selectedPath} />;
 }

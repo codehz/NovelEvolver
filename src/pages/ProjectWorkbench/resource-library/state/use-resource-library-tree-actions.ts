@@ -23,13 +23,6 @@ export function useResourceLibraryTreeActions() {
   const dispatchUi = useSetAtom(treeUiAtom);
   const creatingIdRef = useRef(0);
 
-  const select = useCallback(
-    (path: string, type: "file" | "folder") => {
-      dispatchUi({ type: "select", path, nodeType: type });
-    },
-    [dispatchUi],
-  );
-
   const startCreating = useCallback(
     (kind: "file" | "folder") => {
       const ui = store.get(treeUiAtom);
@@ -53,13 +46,6 @@ export function useResourceLibraryTreeActions() {
   const cancelCreating = useCallback(() => {
     dispatchUi({ type: "cancelCreating" });
   }, [dispatchUi]);
-
-  const toggleFolder = useCallback(
-    (path: string) => {
-      dispatchData({ type: "toggleFolder", path });
-    },
-    [dispatchData],
-  );
 
   const confirmCreating = useCallback(
     async (kind: "file" | "folder", parentPath: string, name: string) => {
@@ -152,13 +138,6 @@ export function useResourceLibraryTreeActions() {
     [dispatchData, dispatchUi, resources],
   );
 
-  const onOpenFile = useCallback(
-    (path: string) => {
-      void openResourceTab(path, (p) => resources.readFile(p));
-    },
-    [openResourceTab, resources],
-  );
-
   const activateNode = useCallback(
     (path: string, type: "file" | "folder") => {
       dispatchUi({ type: "select", path, nodeType: type });
@@ -172,15 +151,12 @@ export function useResourceLibraryTreeActions() {
   );
 
   return {
-    select,
     startCreating,
     cancelCreating,
     confirmCreating,
     startRenaming,
     cancelRenaming,
     confirmRenaming,
-    toggleFolder,
-    onOpenFile,
     activateNode,
   };
 }

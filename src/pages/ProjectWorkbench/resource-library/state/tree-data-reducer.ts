@@ -167,8 +167,23 @@ export function flattenVisibleResourceTree(
 
 export type FlatRenderItem =
   | { key: string; kind: "node"; node: ResourceTreeNode; depth: number }
-  | { key: string; kind: "creating"; creating: CreatingState; depth: number }
-  | { key: string; kind: "renaming"; renaming: RenamingState; depth: number; currentName: string };
+  | {
+      key: string;
+      kind: "editing";
+      editing:
+        | {
+            mode: "creating";
+            kind: CreatingState["kind"];
+            parentPath: string;
+          }
+        | {
+            mode: "renaming";
+            kind: RenamingState["kind"];
+            path: string;
+            currentName: string;
+          };
+      depth: number;
+    };
 
 export function buildFlatRenderItems(
   flatItems: Array<{ node: ResourceTreeNode; depth: number }>,
@@ -189,13 +204,16 @@ export function buildFlatRenderItems(
     );
     if (renameIdx >= 0) {
       const nodeItem = items[renameIdx] as { kind: "node"; node: ResourceTreeNode; depth: number };
-      const currentName = nodeItem.node.name;
       items.splice(renameIdx, 1, {
         key: `renaming-${renaming.path}`,
-        kind: "renaming",
-        renaming,
+        kind: "editing",
+        editing: {
+          mode: "renaming",
+          kind: renaming.kind,
+          path: renaming.path,
+          currentName: nodeItem.node.name,
+        },
         depth: nodeItem.depth,
-        currentName,
       });
     }
     // If renaming but node not found in flat items (e.g. not expanded), just return — cancel.
@@ -240,8 +258,12 @@ export function buildFlatRenderItems(
 
   items.splice(insertAt, 0, {
     key: `creating-${creating.id}`,
-    kind: "creating",
-    creating,
+    kind: "editing",
+    editing: {
+      mode: "creating",
+      kind: creating.kind,
+      parentPath: creating.parentPath,
+    },
     depth,
   });
 
