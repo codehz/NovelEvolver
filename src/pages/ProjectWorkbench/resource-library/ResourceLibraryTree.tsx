@@ -74,7 +74,7 @@ function CreatingTreeRow({
           className={cn(
             "min-w-0 flex-1 rounded-sm border border-badge-background bg-workbench-editor px-1 py-0 text-xs leading-tight text-app-foreground outline-none app-region-no-drag",
           )}
-          placeholder={kind === "file" ? "例如 设定/世界观.md" : "例如 设定"}
+          placeholder={kind === "file" ? "例如 设定/世界观.md" : "例如 设定/资料"}
           spellCheck={false}
           type="text"
           value={value}
@@ -176,7 +176,9 @@ export function ResourceLibraryTree() {
             depth={item.depth}
             kind={item.creating.kind}
             onCancel={cancelCreating}
-            onConfirm={(name) => void confirmCreating(item.creating.kind, name)}
+            onConfirm={(name) =>
+              void confirmCreating(item.creating.kind, item.creating.parentPath, name)
+            }
           />
         ) : (
           <ResourceTreeRow

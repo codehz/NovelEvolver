@@ -14,7 +14,8 @@ export type ResourceTreeSelection = {
 export type ResourceTreeUiState = {
   selected: ResourceTreeSelection | null;
   creating: CreatingState | null;
-  expandRequest: string | null;
+  /** 待展开目录队列（按顺序处理，用于多级新建后的逐级加载）。 */
+  expandPathQueue: string[];
 };
 
 export type DirListingState =
@@ -35,7 +36,7 @@ export type ResourceTreeDataState = {
 export const initialResourceTreeUiState: ResourceTreeUiState = {
   selected: null,
   creating: null,
-  expandRequest: null,
+  expandPathQueue: [],
 };
 
 export const initialResourceTreeDataState: ResourceTreeDataState = {

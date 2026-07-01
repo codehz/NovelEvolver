@@ -1,34 +1,10 @@
+import { assertValidResourceRelativePath } from "@shared/resource-library-path";
 import type { VirtualWorktree } from "nano-git/worktree/core";
+
+export { assertValidResourceRelativePath } from "@shared/resource-library-path";
 
 /** Worktree-relative directory name for the per-branch resource library. */
 export const RESOURCES_DIR = "resources";
-
-/**
- * Validates a path relative to the resource library root.
- * `""` is the library root; non-empty paths follow Git-style virtual path rules.
- */
-export function assertValidResourceRelativePath(relativePath: string): void {
-  if (relativePath === "") {
-    return;
-  }
-  if (relativePath.startsWith("/")) {
-    throw new Error(`Path must not start with '/': ${relativePath}`);
-  }
-  if (relativePath.endsWith("/")) {
-    throw new Error(`Path must not end with '/': ${relativePath}`);
-  }
-  if (relativePath.includes("//")) {
-    throw new Error(`Path must not contain consecutive slashes: ${relativePath}`);
-  }
-  for (const segment of relativePath.split("/")) {
-    if (segment === "." || segment === "..") {
-      throw new Error(`Path must not contain '.' or '..': ${relativePath}`);
-    }
-    if (segment === "") {
-      throw new Error(`Path must not contain empty segments: ${relativePath}`);
-    }
-  }
-}
 
 /** Maps an RPC path (relative to `resources/`) to a virtual worktree path. */
 export function toWorktreePath(relativePath: string): string {

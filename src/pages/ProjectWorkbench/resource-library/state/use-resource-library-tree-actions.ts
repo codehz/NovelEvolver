@@ -1,3 +1,4 @@
+import { expandDirsAfterCreate, joinResourceChildPath } from "@shared/resource-library-path";
 import { useMolecule } from "bunshi/react";
 import { useAtomValue, useSetAtom } from "jotai";
 import { useCallback, useRef } from "react";
@@ -8,11 +9,6 @@ import { useResourceLibrary } from "../../demo/branch/branch-scopes";
 import { useWorkbenchEditorActions } from "../../demo/editor/use-workbench-editor-actions";
 import { resourceLibraryTreeMolecule } from "./resource-tree-molecule";
 import { parentPathForCreating } from "./tree-ui-reducer";
-
-function resourcePathDir(path: string): string {
-  const index = path.lastIndexOf("/");
-  return index >= 0 ? path.slice(0, index) : "";
-}
 
 export function useResourceLibraryTreeActions() {
   const resources = useResourceLibrary();
@@ -61,9 +57,17 @@ export function useResourceLibraryTreeActions() {
   );
 
   const confirmCreating = useCallback(
-    async (kind: "file" | "folder", name: string) => {
+    async (kind: "file" | "folder", parentPath: string, name: string) => {
       dispatchUi({ type: "cancelCreating" });
-      const path = name.trim();
+      let path: string;
+      try {
+        path = joinResourceChildPath(parentPath, name);
+      } catch (error) {
+        notificationApi.error(error instanceof Error ? error.message : "路径无效", {
+          source: "资源库",
+        });
+        return;
+      }
       if (path === "") {
         return;
       }
@@ -73,11 +77,12 @@ export function useResourceLibraryTreeActions() {
         } else {
           await resources.writeFile(path, "");
         }
-        const parent = resourcePathDir(path);
-        dispatchData({ type: "invalidatePath", path: parent });
-        if (parent !== "") {
-          dispatchUi({ type: "requestExpand", path: parent });
-        }
+        dispatchData({ type: "invalidatePath", path: parentPath });
+        dispatchUi({
+          type: "enqueueExpandPaths",
+          paths: expandDirsAfterCreate(path, kind),
+        });
+        dispatchUi({ type: "select", path, nodeType: kind });
         if (kind === "file") {
           void openResourceTab(path, (p) => resources.readFile(p));
         }

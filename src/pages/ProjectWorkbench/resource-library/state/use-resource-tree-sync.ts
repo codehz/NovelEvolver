@@ -73,26 +73,29 @@ export function useResourceTreeSync(): void {
     })();
   }, [reloadHead, dispatchData, loadDirectory]);
 
+  const expandHead = ui.expandPathQueue[0];
   useEffect(() => {
-    if (!ui.expandRequest || data.status !== "ready") {
+    if (expandHead === undefined || data.status !== "ready") {
       return;
     }
-    const path = ui.expandRequest;
-    dispatchUi({ type: "clearExpandRequest" });
-    if (path === "") {
+    if (!folderExistsInTree(data, expandHead)) {
       return;
     }
-    if (!folderExistsInTree(data, path)) {
+    if (!(expandHead in data.expandedPaths)) {
+      dispatchData({ type: "setNodeExpanded", path: expandHead, expanded: true });
+    }
+    const listing = data.listings[expandHead];
+    if (listing?.status === "ready") {
+      dispatchUi({ type: "shiftExpandQueue" });
       return;
     }
-    if (!(path in data.expandedPaths)) {
-      dispatchData({ type: "setNodeExpanded", path, expanded: true });
+    if (listing?.status === "loading") {
+      return;
     }
-    const listing = data.listings[path];
-    if (listing === undefined || listing.status === "idle") {
-      void loadDirectory(path, "child");
-    }
-  }, [ui.expandRequest, data, dispatchData, dispatchUi, loadDirectory]);
+    void loadDirectory(expandHead, "child").then(() => {
+      dispatchUi({ type: "shiftExpandQueue" });
+    });
+  }, [expandHead, data, dispatchData, dispatchUi, loadDirectory]);
 
   useEffect(() => {
     if (!ui.creating || data.status !== "ready") {

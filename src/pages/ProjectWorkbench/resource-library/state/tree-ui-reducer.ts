@@ -8,7 +8,23 @@ export type ResourceTreeUiAction =
   | { type: "startCreating"; creating: CreatingState }
   | { type: "cancelCreating" }
   | { type: "requestExpand"; path: string }
-  | { type: "clearExpandRequest" };
+  | { type: "enqueueExpandPaths"; paths: string[] }
+  | { type: "shiftExpandQueue" };
+
+function appendExpandPath(queue: string[], path: string): string[] {
+  if (path === "" || queue.includes(path)) {
+    return queue;
+  }
+  return [...queue, path];
+}
+
+function appendExpandPaths(queue: string[], paths: string[]): string[] {
+  let next = queue;
+  for (const path of paths) {
+    next = appendExpandPath(next, path);
+  }
+  return next;
+}
 
 export function resourceTreeUiReducer(
   state: ResourceTreeUiState,
@@ -24,8 +40,10 @@ export function resourceTreeUiReducer(
       return {
         ...state,
         creating: action.creating,
-        expandRequest:
-          action.creating.parentPath !== "" ? action.creating.parentPath : state.expandRequest,
+        expandPathQueue:
+          action.creating.parentPath !== ""
+            ? appendExpandPath(state.expandPathQueue, action.creating.parentPath)
+            : state.expandPathQueue,
       };
     case "cancelCreating":
       return {
@@ -35,12 +53,17 @@ export function resourceTreeUiReducer(
     case "requestExpand":
       return {
         ...state,
-        expandRequest: action.path,
+        expandPathQueue: appendExpandPath(state.expandPathQueue, action.path),
       };
-    case "clearExpandRequest":
+    case "enqueueExpandPaths":
       return {
         ...state,
-        expandRequest: null,
+        expandPathQueue: appendExpandPaths(state.expandPathQueue, action.paths),
+      };
+    case "shiftExpandQueue":
+      return {
+        ...state,
+        expandPathQueue: state.expandPathQueue.slice(1),
       };
     default:
       return state;
