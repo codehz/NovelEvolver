@@ -129,13 +129,12 @@ export function useResourceLibraryTreeActions() {
         await resources.move(editing.path, newPath);
         rebindResourcePaths(editing.path, newPath, editing.kind);
         dispatchData({
-          type: "remapPaths",
-          from: editing.path,
-          to: newPath,
+          type: "commitRename",
+          sourcePath: editing.path,
+          newPath,
           nodeType: editing.kind,
         });
         dispatchUi({ type: "remapPaths", from: editing.path, to: newPath, nodeType: editing.kind });
-        dispatchData({ type: "queueReloadPath", path: parentPath });
         dispatchUi({ type: "select", path: newPath, nodeType: editing.kind });
       } catch (error) {
         notificationApi.error(error instanceof Error ? error.message : "重命名失败", {
@@ -164,12 +163,13 @@ export function useResourceLibraryTreeActions() {
       try {
         await resources.move(sourcePath, newPath);
         rebindResourcePaths(sourcePath, newPath, sourceType);
-        dispatchData({ type: "remapPaths", from: sourcePath, to: newPath, nodeType: sourceType });
+        dispatchData({
+          type: "commitMove",
+          sourcePath,
+          targetPath,
+          nodeType: sourceType,
+        });
         dispatchUi({ type: "remapPaths", from: sourcePath, to: newPath, nodeType: sourceType });
-        // 刷新目标目录（显示新条目）与源父目录（移除旧条目）。
-        const sourceParentPath = resourceParentPath(sourcePath);
-        dispatchData({ type: "invalidatePath", path: sourceParentPath });
-        dispatchData({ type: "queueReloadPath", path: targetPath });
         dispatchUi({ type: "select", path: newPath, nodeType: sourceType });
       } catch (error) {
         notificationApi.error(error instanceof Error ? error.message : "移动失败", {

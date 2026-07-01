@@ -50,6 +50,7 @@ export function ResourceLibraryTreeRow({
   const isEditing = editing !== null;
   const rowClasses = cn(
     "flex min-h-6 w-full items-center gap-1 text-left text-app-foreground",
+    "motion-safe:transition-[padding-left] motion-safe:duration-220 motion-safe:ease-[cubic-bezier(0.22,1,0.36,1)]",
     isDropHighlighted(item, drag)
       ? "bg-resource-drop-target"
       : drag === null && (isSelected || isEditing)

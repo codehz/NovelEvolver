@@ -1,3 +1,4 @@
+import { AutoTransition, effects, preset } from "@codehz/auto-transition";
 import { useMolecule } from "bunshi/react";
 import { useAtomValue, useSetAtom, useStore } from "jotai";
 import { useCallback } from "react";
@@ -9,6 +10,13 @@ import { resourceLibraryTreeMolecule } from "./state/resource-tree-molecule";
 import type { FlatRenderItem } from "./state/tree-data-reducer";
 import type { ResourceTreeDragState } from "./state/types";
 import { useResourceLibraryTreeActions } from "./state/use-resource-library-tree-actions";
+
+const resourceTreeListTransition = preset({
+  move: effects.flip(),
+  timing: {
+    move: { duration: 220, easing: "cubic-bezier(0.22, 1, 0.36, 1)" },
+  },
+});
 
 function ResourceLibraryTreeContent({
   renderItems,
@@ -56,10 +64,13 @@ function ResourceLibraryTreeContent({
   const isRootDropTarget = drag !== null && drag.targetPath === "";
 
   return (
-    <ul
+    <AutoTransition
+      as="ul"
       className={cn("flex flex-col outline-none", isRootDropTarget && "bg-resource-drop-target")}
+      exitLayout="flow"
       role="tree"
       tabIndex={0}
+      transition={resourceTreeListTransition}
       onKeyDown={(event) => {
         if (event.key === "F2") {
           event.preventDefault();
@@ -87,7 +98,7 @@ function ResourceLibraryTreeContent({
           onDragEnd={handleDragEnd}
         />
       ))}
-    </ul>
+    </AutoTransition>
   );
 }
 

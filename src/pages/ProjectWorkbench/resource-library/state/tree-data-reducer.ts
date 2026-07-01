@@ -18,6 +18,8 @@ export type ResourceTreeDataAction =
   | { type: "invalidatePath"; path: string }
   | { type: "queueReloadPath"; path: string }
   | { type: "remapPaths"; from: string; to: string; nodeType: ResourceNode["type"] }
+  | { type: "commitRename"; sourcePath: string; newPath: string; nodeType: ResourceNode["type"] }
+  | { type: "commitMove"; sourcePath: string; targetPath: string; nodeType: ResourceNode["type"] }
   | { type: "shiftReloadQueue" };
 
 function remapExpandedPaths(
@@ -66,6 +68,19 @@ function remapReloadPaths(
   return next;
 }
 
+function remapNodeVisualIds(
+  nodeVisualIds: ResourceTreeDataState["nodeVisualIds"],
+  from: string,
+  to: string,
+  nodeType: ResourceNode["type"],
+): ResourceTreeDataState["nodeVisualIds"] {
+  const next: ResourceTreeDataState["nodeVisualIds"] = {};
+  for (const [path, visualId] of Object.entries(nodeVisualIds)) {
+    next[remapResourcePath(path, from, to, nodeType)] = visualId;
+  }
+  return next;
+}
+
 function dropListingSubtree(
   listings: ResourceTreeDataState["listings"],
   path: string,
@@ -94,6 +109,108 @@ function setListingLoading(
   return { ...listings, [path]: { status: "loading" } };
 }
 
+function childPath(parentPath: string, name: string): string {
+  return parentPath === "" ? name : `${parentPath}/${name}`;
+}
+
+function ensureVisualIdsForEntries(
+  state: ResourceTreeDataState,
+  parentPath: string,
+  entries: ResourceNode[],
+): Pick<ResourceTreeDataState, "nodeVisualIds" | "nextVisualId"> {
+  const directChildPaths = new Set(entries.map((entry) => childPath(parentPath, entry.name)));
+  const nextNodeVisualIds: ResourceTreeDataState["nodeVisualIds"] = {};
+
+  for (const [path, visualId] of Object.entries(state.nodeVisualIds)) {
+    const isDirectChild =
+      parentPath === ""
+        ? !path.includes("/")
+        : path.startsWith(`${parentPath}/`) && !path.slice(parentPath.length + 1).includes("/");
+    if (isDirectChild && !directChildPaths.has(path)) {
+      continue;
+    }
+    nextNodeVisualIds[path] = visualId;
+  }
+
+  let nextVisualId = state.nextVisualId;
+  for (const entry of entries) {
+    const path = childPath(parentPath, entry.name);
+    if (nextNodeVisualIds[path] !== undefined) {
+      continue;
+    }
+    nextNodeVisualIds[path] = `resource-node-${nextVisualId}`;
+    nextVisualId += 1;
+  }
+
+  return { nodeVisualIds: nextNodeVisualIds, nextVisualId };
+}
+
+function sortEntries(entries: ResourceNode[]): ResourceNode[] {
+  return [...entries].sort((a, b) => {
+    if (a.type === b.type) {
+      return a.name.localeCompare(b.name);
+    }
+    return a.type === "folder" ? -1 : 1;
+  });
+}
+
+function updateListingEntries(
+  listings: ResourceTreeDataState["listings"],
+  path: string,
+  update: (entries: ResourceNode[]) => ResourceNode[],
+): ResourceTreeDataState["listings"] {
+  const current = listings[path];
+  if (current?.status !== "ready") {
+    return listings;
+  }
+  return {
+    ...listings,
+    [path]: {
+      status: "ready",
+      entries: sortEntries(update(current.entries)),
+    },
+  };
+}
+
+function renameEntryInListing(
+  listings: ResourceTreeDataState["listings"],
+  path: string,
+  sourceName: string,
+  nextName: string,
+  nodeType: ResourceNode["type"],
+): ResourceTreeDataState["listings"] {
+  return updateListingEntries(listings, path, (entries) =>
+    entries.map((entry) =>
+      entry.name === sourceName && entry.type === nodeType ? { ...entry, name: nextName } : entry,
+    ),
+  );
+}
+
+function upsertMovedEntryIntoListing(
+  listings: ResourceTreeDataState["listings"],
+  path: string,
+  entry: ResourceNode,
+): ResourceTreeDataState["listings"] {
+  const current = listings[path];
+  if (current?.status === "ready") {
+    return updateListingEntries(listings, path, (entries) => {
+      if (
+        entries.some((candidate) => candidate.name === entry.name && candidate.type === entry.type)
+      ) {
+        return entries;
+      }
+      return [...entries, entry];
+    });
+  }
+  return {
+    ...listings,
+    [path]: {
+      status: "ready",
+      entries: [entry],
+    },
+  };
+}
+
 export function resourceTreeDataReducer(
   state: ResourceTreeDataState,
   action: ResourceTreeDataAction,
@@ -110,6 +227,7 @@ export function resourceTreeDataReducer(
         error: null,
         expandedPaths: {},
         listings: { "": { status: "ready", entries: action.entries } },
+        ...ensureVisualIdsForEntries(initialResourceTreeDataState, "", action.entries),
         reloadPaths: [],
       };
     case "reloadRootSuccess":
@@ -121,6 +239,7 @@ export function resourceTreeDataReducer(
           ...state.listings,
           "": { status: "ready", entries: action.entries },
         },
+        ...ensureVisualIdsForEntries(state, "", action.entries),
       };
     case "initError":
       return {
@@ -140,6 +259,7 @@ export function resourceTreeDataReducer(
           ...state.listings,
           [action.path]: { status: "ready", entries: action.entries },
         },
+        ...ensureVisualIdsForEntries(state, action.path, action.entries),
       };
     case "setNodeExpanded": {
       const nextExpanded = { ...state.expandedPaths };
@@ -199,8 +319,109 @@ export function resourceTreeDataReducer(
           action.nodeType,
         ),
         listings: remapListings(state.listings, action.from, action.to, action.nodeType),
+        nodeVisualIds: remapNodeVisualIds(
+          state.nodeVisualIds,
+          action.from,
+          action.to,
+          action.nodeType,
+        ),
         reloadPaths: remapReloadPaths(state.reloadPaths, action.from, action.to, action.nodeType),
       };
+    case "commitRename": {
+      const sourceName = action.sourcePath.split("/").at(-1);
+      const nextName = action.newPath.split("/").at(-1);
+      if (sourceName === undefined || nextName === undefined) {
+        return state;
+      }
+      const remappedState: ResourceTreeDataState = {
+        ...state,
+        expandedPaths: remapExpandedPaths(
+          state.expandedPaths,
+          action.sourcePath,
+          action.newPath,
+          action.nodeType,
+        ),
+        listings: remapListings(state.listings, action.sourcePath, action.newPath, action.nodeType),
+        nodeVisualIds: remapNodeVisualIds(
+          state.nodeVisualIds,
+          action.sourcePath,
+          action.newPath,
+          action.nodeType,
+        ),
+        reloadPaths: remapReloadPaths(
+          state.reloadPaths,
+          action.sourcePath,
+          action.newPath,
+          action.nodeType,
+        ),
+      };
+      const parentPath = action.sourcePath.includes("/")
+        ? action.sourcePath.slice(0, action.sourcePath.lastIndexOf("/"))
+        : "";
+      return {
+        ...remappedState,
+        listings: renameEntryInListing(
+          remappedState.listings,
+          parentPath,
+          sourceName,
+          nextName,
+          action.nodeType,
+        ),
+      };
+    }
+    case "commitMove": {
+      const sourceName = action.sourcePath.split("/").at(-1);
+      if (sourceName === undefined) {
+        return state;
+      }
+      const newPath = childPath(action.targetPath, sourceName);
+      const remappedState: ResourceTreeDataState = {
+        ...state,
+        expandedPaths: remapExpandedPaths(
+          state.expandedPaths,
+          action.sourcePath,
+          newPath,
+          action.nodeType,
+        ),
+        listings: remapListings(state.listings, action.sourcePath, newPath, action.nodeType),
+        nodeVisualIds: remapNodeVisualIds(
+          state.nodeVisualIds,
+          action.sourcePath,
+          newPath,
+          action.nodeType,
+        ),
+        reloadPaths: remapReloadPaths(
+          state.reloadPaths,
+          action.sourcePath,
+          newPath,
+          action.nodeType,
+        ),
+      };
+      const sourceParentPath = action.sourcePath.includes("/")
+        ? action.sourcePath.slice(0, action.sourcePath.lastIndexOf("/"))
+        : "";
+      const nextSourceListings = updateListingEntries(
+        remappedState.listings,
+        sourceParentPath,
+        (entries) => entries.filter((entry) => entry.name !== sourceName),
+      );
+      const nextListings = upsertMovedEntryIntoListing(nextSourceListings, action.targetPath, {
+        name: sourceName,
+        type: action.nodeType,
+      });
+      const nextExpandedPaths: ResourceTreeDataState["expandedPaths"] =
+        action.targetPath === ""
+          ? remappedState.expandedPaths
+          : {
+              ...remappedState.expandedPaths,
+              [action.targetPath]: true,
+            };
+      return {
+        ...remappedState,
+        expandedPaths: nextExpandedPaths,
+        listings: nextListings,
+      };
+    }
     case "shiftReloadQueue":
       return {
         ...state,
@@ -233,6 +454,7 @@ export function flattenVisibleResourceTree(
 
 export type FlatRenderItem = {
   key: string;
+  visualId: string | null;
   depth: number;
   type: ResourceNode["type"];
   path: string | null;
@@ -247,7 +469,8 @@ export function buildFlatRenderItems(
   editing: ResourceTreeEditingState | null,
 ): FlatRenderItem[] {
   const items: FlatRenderItem[] = flatItems.map(({ node, depth }) => ({
-    key: node.path,
+    key: node.visualId,
+    visualId: node.visualId,
     depth,
     type: node.type,
     path: node.path,
@@ -306,6 +529,7 @@ export function buildFlatRenderItems(
 
   items.splice(insertAt, 0, {
     key: `creating-${editing.id}`,
+    visualId: null,
     depth,
     type: editing.kind,
     path: null,

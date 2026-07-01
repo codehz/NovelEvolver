@@ -41,8 +41,10 @@ function buildNodesAtParent(
 ): ResourceTreeNode[] {
   return sortEntries(entries).map((entry) => {
     const path = childPath(parentPath, entry.name);
+    const visualId = state.nodeVisualIds[path] ?? path;
     if (entry.type !== "folder") {
       return {
+        visualId,
         path,
         name: entry.name,
         type: "file" as const,
@@ -64,6 +66,7 @@ function buildNodesAtParent(
       children = buildNodesAtParent(path, childEntries, state);
     }
     return {
+      visualId,
       path,
       name: entry.name,
       type: "folder" as const,

@@ -1,6 +1,7 @@
 import type { ResourceNode } from "#shared/rpc/projects-rpc";
 
 export type ResourceTreeNode = {
+  visualId: string;
   path: string;
   name: string;
   type: ResourceNode["type"];
@@ -18,14 +19,18 @@ export function nodesToTreeChildren(path: string, nodes: ResourceNode[]): Resour
     if (a.type === b.type) return 0;
     return a.type === "folder" ? -1 : 1;
   });
-  return sorted.map((node) => ({
-    path: childPath(path, node.name),
-    name: node.name,
-    type: node.type,
-    expanded: false,
-    loading: false,
-    children: node.type === "folder" ? null : [],
-  }));
+  return sorted.map((node) => {
+    const nodePath = childPath(path, node.name);
+    return {
+      visualId: nodePath,
+      path: nodePath,
+      name: node.name,
+      type: node.type,
+      expanded: false,
+      loading: false,
+      children: node.type === "folder" ? null : [],
+    };
+  });
 }
 
 export function setNodeAtPath(

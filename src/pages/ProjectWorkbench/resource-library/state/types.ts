@@ -47,6 +47,8 @@ export type ResourceTreeDataState = {
   error: string | null;
   expandedPaths: Record<string, true>;
   listings: Record<string, DirListingState>;
+  nodeVisualIds: Record<string, string>;
+  nextVisualId: number;
   reloadPaths: string[];
 };
 
@@ -62,5 +64,7 @@ export const initialResourceTreeDataState: ResourceTreeDataState = {
   error: null,
   expandedPaths: {},
   listings: {},
+  nodeVisualIds: {},
+  nextVisualId: 1,
   reloadPaths: [],
 };
