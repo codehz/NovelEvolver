@@ -23,14 +23,13 @@ function ResourceLibraryTreeContent({
 }) {
   const { activateNode, startRenaming, cancelEditing, submitEditing, deleteNode, moveNode } =
     useResourceLibraryTreeActions();
-  const { treeUiAtom, revealRequestAtom } = useMolecule(resourceLibraryTreeMolecule);
+  const { treeUiAtom, onRevealRequest } = useMolecule(resourceLibraryTreeMolecule);
   const dispatchUi = useSetAtom(treeUiAtom);
-  const revealRequest = useAtomValue(revealRequestAtom);
   const store = useStore();
   const hasLayoutRef = useRef(false);
   const previousKeysRef = useRef<Set<string>>(new Set());
-  const handledRevealNonceRef = useRef<number | null>(null);
   const listRef = useRef<HTMLUListElement>(null);
+  const pendingRevealRef = useRef<string | null>(null);
 
   const enterKeySet = useMemo(() => {
     const next = new Set<string>();
@@ -50,30 +49,40 @@ function ResourceLibraryTreeContent({
     previousKeysRef.current = new Set(renderItems.map((item) => item.key));
   }, [renderItems]);
 
-  // 面包屑点击后定位到目标节点：选中 + 滚动到行。
-  // 父级展开是异步逐级加载的，所以依赖 renderItems 重试，直到目标行出现。
+  const revealPath = useCallback(
+    (targetPath: string) => {
+      // 根路径：滚动到列表顶部即可。
+      if (targetPath === "") {
+        pendingRevealRef.current = null;
+        listRef.current?.scrollIntoView({ block: "start" });
+        return;
+      }
+      const item = renderItems.find((candidate) => candidate.path === targetPath);
+      if (item === undefined) {
+        pendingRevealRef.current = targetPath; // 父级尚未展开/加载，等待重试
+        return;
+      }
+      pendingRevealRef.current = null;
+      dispatchUi({ type: "select", path: targetPath, nodeType: item.type });
+      const row = listRef.current?.querySelector<HTMLElement>(
+        `[data-row-path="${CSS.escape(targetPath)}"]`,
+      );
+      row?.scrollIntoView({ block: "nearest" });
+    },
+    [renderItems, dispatchUi],
+  );
+
+  // 注册一条命令通道：breadcrumb 调用 revealInTree(path) 即触发此回调。
   useLayoutEffect(() => {
-    if (revealRequest === null || revealRequest.nonce === handledRevealNonceRef.current) {
-      return;
+    return onRevealRequest(revealPath);
+  }, [onRevealRequest, revealPath]);
+
+  // breadcrumb 定位请求：父级目录异步加载后重试 pending 的 reveal。
+  useLayoutEffect(() => {
+    if (pendingRevealRef.current !== null) {
+      revealPath(pendingRevealRef.current);
     }
-    const targetPath = revealRequest.path;
-    // 根路径：滚动到列表顶部即可。
-    if (targetPath === "") {
-      handledRevealNonceRef.current = revealRequest.nonce;
-      listRef.current?.scrollIntoView({ block: "start" });
-      return;
-    }
-    const item = renderItems.find((candidate) => candidate.path === targetPath);
-    if (item === undefined) {
-      return; // 父级尚未展开/加载，等待 renderItems 更新后重试
-    }
-    handledRevealNonceRef.current = revealRequest.nonce;
-    dispatchUi({ type: "select", path: targetPath, nodeType: item.type });
-    const row = listRef.current?.querySelector<HTMLElement>(
-      `[data-row-path="${CSS.escape(targetPath)}"]`,
-    );
-    row?.scrollIntoView({ block: "nearest" });
-  }, [revealRequest, renderItems, dispatchUi]);
+  }, [renderItems, revealPath]);
 
   const handleDragStart = useCallback(
     (sourcePath: string, sourceType: "file" | "folder") => {

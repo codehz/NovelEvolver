@@ -12,11 +12,7 @@ import {
 import { initialResourceTreeUiState, resourceTreeUiReducer } from "./tree-ui-reducer";
 import { initialResourceTreeDataState } from "./types";
 
-/** 面包屑点击后发出的"定位到某资源节点"请求；nonce 用于触发重复点击。 */
-export type RevealResourceRequest = {
-  path: string;
-  nonce: number;
-};
+type RevealHandler = (path: string) => void;
 
 export const resourceLibraryTreeMolecule = molecule(() => {
   use(projectIdScope);
@@ -34,13 +30,21 @@ export const resourceLibraryTreeMolecule = molecule(() => {
 
   const selectedPathAtom = atom((get) => get(treeUiAtom).selected?.path ?? null);
 
-  const revealRequestAtom = atom<RevealResourceRequest | null>(null);
+  const revealHandlers = new Set<RevealHandler>();
 
   return {
     treeDataAtom,
     treeUiAtom,
     flatRenderItemsAtom,
     selectedPathAtom,
-    revealRequestAtom,
+    /** Register a handler for reveal-request commands. Returns an unsubscribe function. */
+    onRevealRequest: (handler: RevealHandler): (() => void) => {
+      revealHandlers.add(handler);
+      return () => revealHandlers.delete(handler);
+    },
+    /** Command the tree to select and scroll to the given resource path. */
+    revealInTree: (path: string): void => {
+      revealHandlers.forEach((handler) => handler(path));
+    },
   };
 });

@@ -1,6 +1,6 @@
 import { useMolecule } from "bunshi/react";
 import { useSetAtom } from "jotai";
-import { useCallback, useRef } from "react";
+import { useCallback } from "react";
 
 import { cn } from "#app/lib/cn";
 import { resourceBaseName, resourceLibraryDirPathPrefixes } from "#shared/resource-library-path";
@@ -34,10 +34,8 @@ function buildBreadcrumbSegments(resourcePath: string): BreadcrumbSegment[] {
 }
 
 export function EditorBreadcrumb({ resourcePath }: { resourcePath: string | null }) {
-  const { revealRequestAtom, treeUiAtom } = useMolecule(resourceLibraryTreeMolecule);
-  const setRevealRequest = useSetAtom(revealRequestAtom);
+  const { revealInTree, treeUiAtom } = useMolecule(resourceLibraryTreeMolecule);
   const dispatchUi = useSetAtom(treeUiAtom);
-  const nonceRef = useRef(0);
 
   const reveal = useCallback(
     (path: string) => {
@@ -46,10 +44,9 @@ export function EditorBreadcrumb({ resourcePath }: { resourcePath: string | null
       if (parentPrefixes.length > 0) {
         dispatchUi({ type: "enqueueExpandPaths", paths: parentPrefixes });
       }
-      nonceRef.current += 1;
-      setRevealRequest({ path, nonce: nonceRef.current });
+      revealInTree(path);
     },
-    [dispatchUi, setRevealRequest],
+    [dispatchUi, revealInTree],
   );
 
   if (resourcePath === null) {
