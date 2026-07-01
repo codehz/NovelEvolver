@@ -1,6 +1,6 @@
 import { useMolecule } from "bunshi/react";
 import { useAtomValue, useSetAtom, useStore } from "jotai";
-import { useCallback, useMemo } from "react";
+import { useCallback, useLayoutEffect, useMemo, useRef } from "react";
 
 import { cn } from "#app/lib/cn";
 
@@ -25,6 +25,26 @@ function ResourceLibraryTreeContent({
   const { treeUiAtom } = useMolecule(resourceLibraryTreeMolecule);
   const dispatchUi = useSetAtom(treeUiAtom);
   const store = useStore();
+  const hasLayoutRef = useRef(false);
+  const previousKeysRef = useRef<Set<string>>(new Set());
+
+  const enterKeySet = useMemo(() => {
+    const next = new Set<string>();
+    if (!hasLayoutRef.current) {
+      return next;
+    }
+    for (const item of renderItems) {
+      if (!previousKeysRef.current.has(item.key)) {
+        next.add(item.key);
+      }
+    }
+    return next;
+  }, [renderItems]);
+
+  useLayoutEffect(() => {
+    hasLayoutRef.current = true;
+    previousKeysRef.current = new Set(renderItems.map((item) => item.key));
+  }, [renderItems]);
 
   const handleDragStart = useCallback(
     (sourcePath: string, sourceType: "file" | "folder") => {
@@ -89,6 +109,7 @@ function ResourceLibraryTreeContent({
       {renderItems.map((item, index) => (
         <ResourceLibraryTreeRow
           key={item.key}
+          animateEnter={enterKeySet.has(item.key)}
           drag={drag}
           height={RESOURCE_LIBRARY_TREE_ROW_HEIGHT_PX}
           item={item}

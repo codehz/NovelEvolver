@@ -2,7 +2,11 @@ import { motion } from "motion/react";
 
 import { cn } from "#app/lib/cn";
 
-import { resourceLibraryTreeRowYTransition } from "./resource-library-tree-motion";
+import {
+  RESOURCE_LIBRARY_TREE_ENTER_Y_OFFSET_PX,
+  resourceLibraryTreeRowEnterOpacityTransition,
+  resourceLibraryTreeRowYTransition,
+} from "./resource-library-tree-motion";
 import { ResourceTreeInlineInput } from "./ResourceTreeInlineInput";
 import type { FlatRenderItem } from "./state/tree-data-reducer";
 import type { ResourceTreeDragState } from "./state/types";
@@ -12,6 +16,7 @@ type ResourceLibraryTreeRowProps = {
   item: FlatRenderItem;
   y: number;
   height: number;
+  animateEnter: boolean;
   selectedPath: string | null;
   drag: ResourceTreeDragState | null;
   onActivate: (path: string, type: "file" | "folder") => void;
@@ -43,6 +48,7 @@ export function ResourceLibraryTreeRow({
   item,
   y,
   height,
+  animateEnter,
   selectedPath,
   drag,
   onActivate,
@@ -110,9 +116,14 @@ export function ResourceLibraryTreeRow({
       className="absolute inset-x-0"
       role="none"
       style={{ top: 0, height }}
-      initial={false}
-      animate={{ y }}
-      transition={resourceLibraryTreeRowYTransition}
+      initial={
+        animateEnter ? { y: y - RESOURCE_LIBRARY_TREE_ENTER_Y_OFFSET_PX, opacity: 0 } : false
+      }
+      animate={{ y, opacity: 1 }}
+      transition={{
+        y: resourceLibraryTreeRowYTransition,
+        opacity: resourceLibraryTreeRowEnterOpacityTransition,
+      }}
     >
       {isEditing ? (
         <div className={rowClasses} style={rowStyle}>
