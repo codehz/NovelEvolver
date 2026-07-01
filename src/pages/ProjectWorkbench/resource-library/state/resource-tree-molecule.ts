@@ -6,7 +6,7 @@ import { branchNameScope } from "../../demo/branch/branch-scopes";
 import { projectIdScope } from "../../demo/state/molecules";
 import {
   buildFlatRenderItems,
-  flattenResourceTree,
+  flattenVisibleResourceTree,
   resourceTreeDataReducer,
 } from "./tree-data-reducer";
 import { initialResourceTreeUiState, resourceTreeUiReducer } from "./tree-ui-reducer";
@@ -22,7 +22,7 @@ export const resourceLibraryTreeMolecule = molecule(() => {
   const flatRenderItemsAtom = atom((get) => {
     const data = get(treeDataAtom);
     const ui = get(treeUiAtom);
-    const flat = flattenResourceTree(data.roots);
+    const flat = flattenVisibleResourceTree(data);
     return buildFlatRenderItems(flat, ui.creating);
   });
 

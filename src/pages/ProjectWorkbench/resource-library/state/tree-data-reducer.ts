@@ -1,11 +1,7 @@
 import type { ResourceNode } from "@shared/rpc/projects-rpc";
 
-import {
-  findNode,
-  nodesToTreeChildren,
-  setNodeAtPath,
-  type ResourceTreeNode,
-} from "../resource-tree";
+import type { ResourceTreeNode } from "../resource-tree";
+import { buildVisibleResourceTree } from "./tree-cache";
 import type { CreatingState, ResourceTreeDataState } from "./types";
 import { initialResourceTreeDataState } from "./types";
 
@@ -21,6 +17,34 @@ export type ResourceTreeDataAction =
   | { type: "invalidatePath"; path: string }
   | { type: "shiftReloadQueue" };
 
+function dropListingSubtree(
+  listings: ResourceTreeDataState["listings"],
+  path: string,
+): ResourceTreeDataState["listings"] {
+  const next = { ...listings };
+  for (const key of Object.keys(next)) {
+    if (key === path || (path !== "" && key.startsWith(`${path}/`))) {
+      delete next[key];
+    }
+  }
+  return next;
+}
+
+function setListingLoading(
+  listings: ResourceTreeDataState["listings"],
+  path: string,
+  loading: boolean,
+): ResourceTreeDataState["listings"] {
+  if (!loading) {
+    const current = listings[path];
+    if (current?.status === "loading") {
+      return { ...listings, [path]: { status: "idle" } };
+    }
+    return listings;
+  }
+  return { ...listings, [path]: { status: "loading" } };
+}
+
 export function resourceTreeDataReducer(
   state: ResourceTreeDataState,
   action: ResourceTreeDataAction,
@@ -33,61 +57,63 @@ export function resourceTreeDataReducer(
       };
     case "initSuccess":
       return {
-        roots: nodesToTreeChildren("", action.entries),
         status: "ready",
         error: null,
+        expandedPaths: {},
+        listings: { "": { status: "ready", entries: action.entries } },
         reloadPaths: [],
       };
     case "reloadRootSuccess":
       return {
         ...state,
-        roots: mergeRootsPreservingExpanded(state.roots, action.entries),
         status: "ready",
         error: null,
+        listings: {
+          ...state.listings,
+          "": { status: "ready", entries: action.entries },
+        },
       };
     case "initError":
       return {
-        roots: [],
+        ...initialResourceTreeDataState,
         status: "error",
         error: action.message,
-        reloadPaths: [],
       };
     case "setNodeLoading":
       return {
         ...state,
-        roots: setNodeAtPath(state.roots, action.path, (node) => ({
-          ...node,
-          loading: action.loading,
-        })),
+        listings: setListingLoading(state.listings, action.path, action.loading),
       };
     case "setNodeChildren":
       return {
         ...state,
-        roots: setNodeAtPath(state.roots, action.path, (node) => ({
-          ...node,
-          loading: false,
-          children: nodesToTreeChildren(action.path, action.entries),
-        })),
+        listings: {
+          ...state.listings,
+          [action.path]: { status: "ready", entries: action.entries },
+        },
       };
-    case "setNodeExpanded":
-      return {
-        ...state,
-        roots: setNodeAtPath(state.roots, action.path, (node) => ({
-          ...node,
-          expanded: action.expanded,
-        })),
-      };
-    case "toggleFolder": {
-      const node = findNode(state.roots, action.path);
-      if (!node || node.type !== "folder") {
-        return state;
+    case "setNodeExpanded": {
+      const nextExpanded = { ...state.expandedPaths };
+      if (action.expanded) {
+        nextExpanded[action.path] = true;
+      } else {
+        delete nextExpanded[action.path];
       }
       return {
         ...state,
-        roots: setNodeAtPath(state.roots, action.path, (n) => ({
-          ...n,
-          expanded: !n.expanded,
-        })),
+        expandedPaths: nextExpanded,
+      };
+    }
+    case "toggleFolder": {
+      const nextExpanded = { ...state.expandedPaths };
+      if (action.path in nextExpanded) {
+        delete nextExpanded[action.path];
+      } else {
+        nextExpanded[action.path] = true;
+      }
+      return {
+        ...state,
+        expandedPaths: nextExpanded,
       };
     }
     case "invalidatePath": {
@@ -100,19 +126,12 @@ export function resourceTreeDataReducer(
             : [...state.reloadPaths, ""],
         };
       }
-      const expanded = findNode(state.roots, path)?.expanded ?? false;
-      const nextRoots = setNodeAtPath(state.roots, path, (node) => ({
-        ...node,
-        children: null,
-        loading: false,
-        expanded,
-      }));
       const queue = state.reloadPaths.includes(path)
         ? state.reloadPaths
         : [...state.reloadPaths, path];
       return {
         ...state,
-        roots: nextRoots,
+        listings: dropListingSubtree(state.listings, path),
         reloadPaths: queue,
       };
     }
@@ -138,6 +157,12 @@ export function flattenResourceTree(
     }
   }
   return result;
+}
+
+export function flattenVisibleResourceTree(
+  state: ResourceTreeDataState,
+): Array<{ node: ResourceTreeNode; depth: number }> {
+  return flattenResourceTree(buildVisibleResourceTree(state));
 }
 
 export type FlatRenderItem =
@@ -200,33 +225,4 @@ export function buildFlatRenderItems(
   });
 
   return items;
-}
-
-function mergeRootsPreservingExpanded(
-  previous: ResourceTreeNode[],
-  entries: ResourceNode[],
-): ResourceTreeNode[] {
-  const byPath = new Map<string, ResourceTreeNode>();
-  const indexPrevious = (nodes: ResourceTreeNode[]) => {
-    for (const node of nodes) {
-      byPath.set(node.path, node);
-      if (node.children) {
-        indexPrevious(node.children);
-      }
-    }
-  };
-  indexPrevious(previous);
-  const fresh = nodesToTreeChildren("", entries);
-  return fresh.map((node) => {
-    const prev = byPath.get(node.path);
-    if (!prev || node.type !== "folder" || prev.type !== "folder") {
-      return node;
-    }
-    return {
-      ...node,
-      expanded: prev.expanded,
-      loading: prev.loading,
-      children: prev.children,
-    };
-  });
 }

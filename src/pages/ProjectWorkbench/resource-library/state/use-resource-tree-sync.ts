@@ -3,24 +3,8 @@ import { useAtomValue, useSetAtom } from "jotai";
 import { useCallback, useEffect, useRef } from "react";
 
 import { useResourceLibrary } from "../../demo/branch/branch-scopes";
-import { findNode, type ResourceTreeNode } from "../resource-tree";
 import { resourceLibraryTreeMolecule } from "./resource-tree-molecule";
-
-function collectFoldersNeedingLoad(roots: ResourceTreeNode[]): string[] {
-  const paths: string[] = [];
-  const walk = (nodes: ResourceTreeNode[]) => {
-    for (const node of nodes) {
-      if (node.type === "folder" && node.expanded && node.children === null && !node.loading) {
-        paths.push(node.path);
-      }
-      if (node.children) {
-        walk(node.children);
-      }
-    }
-  };
-  walk(roots);
-  return paths;
-}
+import { collectExpandedPathsNeedingLoad, folderExistsInTree } from "./tree-cache";
 
 export function useResourceTreeSync(): void {
   const resources = useResourceLibrary();
@@ -98,17 +82,17 @@ export function useResourceTreeSync(): void {
     if (path === "") {
       return;
     }
-    const node = findNode(data.roots, path);
-    if (!node || node.type !== "folder") {
+    if (!folderExistsInTree(data, path)) {
       return;
     }
-    if (!node.expanded) {
+    if (!(path in data.expandedPaths)) {
       dispatchData({ type: "setNodeExpanded", path, expanded: true });
     }
-    if (node.children === null && !node.loading) {
+    const listing = data.listings[path];
+    if (listing === undefined || listing.status === "idle") {
       void loadDirectory(path, "child");
     }
-  }, [ui.expandRequest, data.status, data.roots, dispatchData, dispatchUi, loadDirectory]);
+  }, [ui.expandRequest, data, dispatchData, dispatchUi, loadDirectory]);
 
   useEffect(() => {
     if (!ui.creating || data.status !== "ready") {
@@ -125,8 +109,8 @@ export function useResourceTreeSync(): void {
     if (data.status !== "ready") {
       return;
     }
-    for (const path of collectFoldersNeedingLoad(data.roots)) {
+    for (const path of collectExpandedPathsNeedingLoad(data)) {
       void loadDirectory(path, "child");
     }
-  }, [data.roots, data.status, loadDirectory]);
+  }, [data, loadDirectory]);
 }

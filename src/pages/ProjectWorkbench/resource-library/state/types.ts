@@ -1,7 +1,5 @@
 import type { ResourceNode } from "@shared/rpc/projects-rpc";
 
-import type { ResourceTreeNode } from "../resource-tree";
-
 export type CreatingState = {
   id: number;
   kind: "file" | "folder";
@@ -19,11 +17,18 @@ export type ResourceTreeUiState = {
   expandRequest: string | null;
 };
 
+export type DirListingState =
+  | { status: "idle" }
+  | { status: "loading" }
+  | { status: "ready"; entries: ResourceNode[] }
+  | { status: "error"; message: string };
+
+/** 规范化树状态：展开集合 + 各目录 ls 缓存（path `""` 为根）。 */
 export type ResourceTreeDataState = {
-  roots: ResourceTreeNode[];
   status: "idle" | "loading" | "ready" | "error";
   error: string | null;
-  /** 目录 path → 需要重新 ls 并合并展开态 */
+  expandedPaths: Record<string, true>;
+  listings: Record<string, DirListingState>;
   reloadPaths: string[];
 };
 
@@ -34,8 +39,9 @@ export const initialResourceTreeUiState: ResourceTreeUiState = {
 };
 
 export const initialResourceTreeDataState: ResourceTreeDataState = {
-  roots: [],
   status: "idle",
   error: null,
+  expandedPaths: {},
+  listings: {},
   reloadPaths: [],
 };
