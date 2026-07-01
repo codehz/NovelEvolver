@@ -293,24 +293,38 @@ export function ResourceLibraryTree({
       const prefix = creating.parentPath === "" ? "" : `${creating.parentPath}/`;
       let insertAt = 0;
       let depth = 0;
-      if (creating.parentPath !== "") {
-        // Find the last direct child of parentPath to determine insert position
-        let lastChildIdx = -1;
+
+      if (creating.kind === "folder") {
+        // 新建文件夹：插入到父级之后、所有子项之前
+        if (creating.parentPath !== "") {
+          const parentIdx = flatItems.findIndex((item) => item.node.path === creating.parentPath);
+          insertAt = parentIdx >= 0 ? parentIdx + 1 : 0;
+          depth = parentIdx >= 0 ? flatItems[parentIdx].depth + 1 : 0;
+        }
+      } else {
+        // 新建文件：插入到最后一个目录子项之后、第一个文件之前
+        let lastDirIdx = -1;
         for (let i = 0; i < flatItems.length; i++) {
+          if (flatItems[i].node.type !== "folder") continue;
           const p = flatItems[i].node.path;
-          if (p.startsWith(prefix) && !p.slice(prefix.length).includes("/")) {
-            lastChildIdx = i;
+          const isDirectChild =
+            creating.parentPath === ""
+              ? !p.includes("/")
+              : p.startsWith(prefix) && !p.slice(prefix.length).includes("/");
+          if (isDirectChild) {
+            lastDirIdx = i;
           }
         }
-        if (lastChildIdx >= 0) {
-          insertAt = lastChildIdx + 1;
-          depth = flatItems[lastChildIdx].depth;
-        } else {
+        if (lastDirIdx >= 0) {
+          insertAt = lastDirIdx + 1;
+          depth = flatItems[lastDirIdx].depth;
+        } else if (creating.parentPath !== "") {
           const parentIdx = flatItems.findIndex((item) => item.node.path === creating.parentPath);
           insertAt = parentIdx >= 0 ? parentIdx + 1 : 0;
           depth = parentIdx >= 0 ? flatItems[parentIdx].depth + 1 : 0;
         }
       }
+
       items.splice(insertAt, 0, {
         key: `creating-${creating.id}`,
         kind: "creating",

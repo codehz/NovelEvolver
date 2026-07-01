@@ -14,7 +14,11 @@ export function childPath(parentPath: string, name: string): string {
 }
 
 export function nodesToTreeChildren(path: string, nodes: ResourceNode[]): ResourceTreeNode[] {
-  return nodes.map((node) => ({
+  const sorted = [...nodes].sort((a, b) => {
+    if (a.type === b.type) return 0;
+    return a.type === "folder" ? -1 : 1;
+  });
+  return sorted.map((node) => ({
     path: childPath(path, node.name),
     name: node.name,
     type: node.type,
