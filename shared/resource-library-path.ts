@@ -6,6 +6,15 @@
  * Validates a path relative to the resource library root.
  * `""` is the library root; non-empty paths follow Git-style virtual path rules.
  */
+function throwIfInvalidSegmentName(segment: string, relativePath: string): void {
+  if (segment === "." || segment === "..") {
+    throw new Error(`Path must not contain '.' or '..': ${relativePath}`);
+  }
+  if (segment === "") {
+    throw new Error(`Path must not contain empty segments: ${relativePath}`);
+  }
+}
+
 export function assertValidResourceRelativePath(relativePath: string): void {
   if (relativePath === "") {
     return;
@@ -20,12 +29,47 @@ export function assertValidResourceRelativePath(relativePath: string): void {
     throw new Error(`Path must not contain consecutive slashes: ${relativePath}`);
   }
   for (const segment of relativePath.split("/")) {
-    if (segment === "." || segment === "..") {
-      throw new Error(`Path must not contain '.' or '..': ${relativePath}`);
-    }
-    if (segment === "") {
-      throw new Error(`Path must not contain empty segments: ${relativePath}`);
-    }
+    throwIfInvalidSegmentName(segment, relativePath);
+  }
+}
+
+/** `ls` target: library root (`""`) or a folder path. */
+export function assertResourceLibraryListPath(relativePath: string): void {
+  assertValidResourceRelativePath(relativePath);
+}
+
+/** File read/write/delete source: must name a concrete file, not the library root. */
+export function assertResourceLibraryFilePath(relativePath: string): void {
+  assertValidResourceRelativePath(relativePath);
+  if (relativePath === "") {
+    throw new Error("File path must not be empty.");
+  }
+}
+
+/** Folder creation target: must not be the library root. */
+export function assertResourceLibraryFolderCreatePath(relativePath: string): void {
+  assertValidResourceRelativePath(relativePath);
+  if (relativePath === "") {
+    throw new Error("Folder path must not be empty.");
+  }
+}
+
+/** `unlink` / `move` source or destination (except move may target nested paths). */
+export function assertResourceLibraryRemovablePath(relativePath: string): void {
+  assertValidResourceRelativePath(relativePath);
+  if (relativePath === "") {
+    throw new Error("Cannot target the resource library root.");
+  }
+}
+
+export function assertResourceLibraryMovePaths(from: string, to: string): void {
+  assertResourceLibraryRemovablePath(from);
+  assertValidResourceRelativePath(to);
+  if (to === "") {
+    throw new Error("Cannot move an entry to the resource library root.");
+  }
+  if (from === to) {
+    throw new Error("Source and destination paths must differ.");
   }
 }
 
