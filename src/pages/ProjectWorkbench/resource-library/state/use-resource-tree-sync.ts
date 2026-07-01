@@ -98,15 +98,15 @@ export function useResourceTreeSync(): void {
   }, [expandHead, data, dispatchData, dispatchUi, loadDirectory]);
 
   useEffect(() => {
-    if (!ui.creating || data.status !== "ready") {
+    if (ui.editing?.mode !== "creating" || data.status !== "ready") {
       return;
     }
-    const parentPath = ui.creating.parentPath;
+    const parentPath = ui.editing.parentPath;
     if (parentPath === "") {
       return;
     }
     dispatchUi({ type: "requestExpand", path: parentPath });
-  }, [ui.creating, data.status, dispatchUi]);
+  }, [ui.editing, data.status, dispatchUi]);
 
   useEffect(() => {
     if (data.status !== "ready") {

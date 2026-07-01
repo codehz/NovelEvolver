@@ -1,15 +1,19 @@
 import type { ResourceNode } from "#shared/rpc/projects-rpc";
 
 export type CreatingState = {
+  mode: "creating";
   id: number;
   kind: "file" | "folder";
   parentPath: string;
 };
 
 export type RenamingState = {
+  mode: "renaming";
   path: string;
   kind: "file" | "folder";
 };
+
+export type ResourceTreeEditingState = CreatingState | RenamingState;
 
 export type ResourceTreeSelection = {
   path: string;
@@ -18,8 +22,7 @@ export type ResourceTreeSelection = {
 
 export type ResourceTreeUiState = {
   selected: ResourceTreeSelection | null;
-  creating: CreatingState | null;
-  renaming: RenamingState | null;
+  editing: ResourceTreeEditingState | null;
   /** 待展开目录队列（按顺序处理，用于多级新建后的逐级加载）。 */
   expandPathQueue: string[];
 };
@@ -41,8 +44,7 @@ export type ResourceTreeDataState = {
 
 export const initialResourceTreeUiState: ResourceTreeUiState = {
   selected: null,
-  creating: null,
-  renaming: null,
+  editing: null,
   expandPathQueue: [],
 };
 

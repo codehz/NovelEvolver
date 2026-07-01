@@ -3,110 +3,87 @@ import { useAtomValue } from "jotai";
 
 import { cn } from "#app/lib/cn";
 
-import type { ResourceTreeNode } from "./resource-tree";
 import { ResourceTreeInlineInput } from "./ResourceTreeInlineInput";
 import { resourceLibraryTreeMolecule } from "./state/resource-tree-molecule";
 import type { FlatRenderItem } from "./state/tree-data-reducer";
 import { useResourceLibraryTreeActions } from "./state/use-resource-library-tree-actions";
 
-function TreeNodeRow({
-  depth,
-  node,
+function TreeRow({
+  item,
   selectedPath,
   onActivate,
+  onCancelEditing,
+  onSubmitEditing,
 }: {
-  depth: number;
-  node: ResourceTreeNode;
+  item: FlatRenderItem;
   selectedPath: string | null;
   onActivate: (path: string, type: "file" | "folder") => void;
+  onCancelEditing: () => void;
+  onSubmitEditing: (editing: NonNullable<FlatRenderItem["editing"]>, name: string) => Promise<void>;
 }) {
-  const isFolder = node.type === "folder";
+  const isFolder = item.type === "folder";
   const icon = isFolder
-    ? node.expanded
+    ? item.expanded
       ? cn("icon-[codicon--folder-opened]")
       : cn("icon-[codicon--folder]")
     : cn("icon-[codicon--file]");
-  const isSelected = selectedPath === node.path;
-
-  return (
-    <li role="none">
-      <button
-        className={cn(
-          "flex w-full items-center gap-1 py-0.5 text-left text-app-foreground",
-          isSelected ? "bg-workbench-tab-active" : "hover:bg-workbench-tab-active/60",
-        )}
-        style={{ paddingLeft: `${depth * 12 + 4}px` }}
-        type="button"
-        onClick={() => onActivate(node.path, node.type)}
-      >
-        <span aria-hidden="true" className="flex w-4 shrink-0 items-center justify-center text-sm">
-          {isFolder &&
-            (node.expanded ? (
-              <span className={cn("icon-[codicon--chevron-down]")} />
-            ) : (
-              <span className={cn("icon-[codicon--chevron-right]")} />
-            ))}
-        </span>
-        <span aria-hidden="true" className={cn(icon, "shrink-0 text-base")} />
-        <span className="truncate">{node.name}</span>
-        {node.loading ? <span className="ml-auto text-xs text-ctp-overlay0">…</span> : null}
-      </button>
-    </li>
+  const isSelected = item.path !== null && selectedPath === item.path;
+  const isEditing = item.editing !== null;
+  const rowClasses = cn(
+    "flex min-h-6 w-full items-center gap-1 text-left text-app-foreground",
+    isSelected || isEditing ? "bg-workbench-tab-active" : "hover:bg-workbench-tab-active/60",
   );
-}
-
-function TreeEditingRow({
-  item,
-  onCancelCreating,
-  onConfirmCreating,
-  onCancelRenaming,
-  onConfirmRenaming,
-}: {
-  item: Extract<FlatRenderItem, { kind: "editing" }>;
-  onCancelCreating: () => void;
-  onConfirmCreating: (kind: "file" | "folder", parentPath: string, name: string) => Promise<void>;
-  onCancelRenaming: () => void;
-  onConfirmRenaming: (path: string, kind: "file" | "folder", name: string) => Promise<void>;
-}) {
-  const { editing, depth } = item;
-  const initialValue = editing.mode === "renaming" ? editing.currentName : "";
+  const rowContent = (
+    <>
+      <span aria-hidden="true" className="flex w-4 shrink-0 items-center justify-center text-sm">
+        {isFolder &&
+          (item.expanded ? (
+            <span className={cn("icon-[codicon--chevron-down]")} />
+          ) : (
+            <span className={cn("icon-[codicon--chevron-right]")} />
+          ))}
+      </span>
+      <span aria-hidden="true" className={cn(icon, "shrink-0 text-base")} />
+      {item.editing ? (
+        <ResourceTreeInlineInput
+          initialValue={item.editing.mode === "renaming" ? item.name : ""}
+          kind={item.editing.kind}
+          mode={item.editing.mode}
+          onCancel={onCancelEditing}
+          onConfirm={(name) => {
+            void onSubmitEditing(item.editing!, name);
+          }}
+        />
+      ) : (
+        <>
+          <span className="truncate text-xs leading-5">{item.name}</span>
+          {item.loading ? <span className="ml-auto text-xs text-ctp-overlay0">…</span> : null}
+        </>
+      )}
+    </>
+  );
 
   return (
     <li role="none">
-      <div
-        className={cn(
-          "flex w-full items-center gap-1 py-0.5 text-app-foreground",
-          "bg-workbench-tab-active/60",
-        )}
-        style={{ paddingLeft: `${depth * 12 + 4}px` }}
-      >
-        <span aria-hidden="true" className="flex w-4 shrink-0 items-center justify-center" />
-        <span
-          aria-hidden="true"
-          className={cn(
-            editing.kind === "folder" ? "icon-[codicon--folder]" : "icon-[codicon--file]",
-            "shrink-0 text-base",
-          )}
-        />
-        <ResourceTreeInlineInput
-          initialValue={initialValue}
-          kind={editing.kind}
-          onCancel={() => {
-            if (editing.mode === "creating") {
-              onCancelCreating();
+      {item.editing ? (
+        <div className={rowClasses} style={{ paddingLeft: `${item.depth * 12 + 4}px` }}>
+          {rowContent}
+        </div>
+      ) : (
+        <button
+          className={rowClasses}
+          style={{ paddingLeft: `${item.depth * 12 + 4}px` }}
+          type="button"
+          onClick={() => {
+            if (item.path === null) {
               return;
             }
-            onCancelRenaming();
+            onActivate(item.path, item.type);
           }}
-          onConfirm={(name) => {
-            if (editing.mode === "creating") {
-              void onConfirmCreating(editing.kind, editing.parentPath, name);
-              return;
-            }
-            void onConfirmRenaming(editing.path, editing.kind, name);
-          }}
-        />
-      </div>
+        >
+          {rowContent}
+        </button>
+      )}
     </li>
   );
 }
@@ -118,14 +95,8 @@ function ResourceLibraryTreeContent({
   renderItems: FlatRenderItem[];
   selectedPath: string | null;
 }) {
-  const {
-    activateNode,
-    cancelCreating,
-    confirmCreating,
-    startRenaming,
-    cancelRenaming,
-    confirmRenaming,
-  } = useResourceLibraryTreeActions();
+  const { activateNode, startRenaming, cancelEditing, submitEditing } =
+    useResourceLibraryTreeActions();
 
   return (
     <ul
@@ -139,26 +110,16 @@ function ResourceLibraryTreeContent({
         }
       }}
     >
-      {renderItems.map((item) =>
-        item.kind === "node" ? (
-          <TreeNodeRow
-            key={item.key}
-            depth={item.depth}
-            node={item.node}
-            selectedPath={selectedPath}
-            onActivate={activateNode}
-          />
-        ) : (
-          <TreeEditingRow
-            key={item.key}
-            item={item}
-            onCancelCreating={cancelCreating}
-            onCancelRenaming={cancelRenaming}
-            onConfirmCreating={confirmCreating}
-            onConfirmRenaming={confirmRenaming}
-          />
-        ),
-      )}
+      {renderItems.map((item) => (
+        <TreeRow
+          key={item.key}
+          item={item}
+          selectedPath={selectedPath}
+          onActivate={activateNode}
+          onCancelEditing={cancelEditing}
+          onSubmitEditing={submitEditing}
+        />
+      ))}
     </ul>
   );
 }

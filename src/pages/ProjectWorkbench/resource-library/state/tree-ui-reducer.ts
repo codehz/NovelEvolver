@@ -1,14 +1,12 @@
 import type { ResourceNode } from "#shared/rpc/projects-rpc";
 
-import type { CreatingState, RenamingState, ResourceTreeUiState } from "./types";
+import type { ResourceTreeEditingState, ResourceTreeUiState } from "./types";
 import { initialResourceTreeUiState } from "./types";
 
 export type ResourceTreeUiAction =
   | { type: "select"; path: string; nodeType: ResourceNode["type"] }
-  | { type: "startCreating"; creating: CreatingState }
-  | { type: "cancelCreating" }
-  | { type: "startRenaming"; renaming: RenamingState }
-  | { type: "cancelRenaming" }
+  | { type: "startEditing"; editing: ResourceTreeEditingState }
+  | { type: "cancelEditing" }
   | { type: "requestExpand"; path: string }
   | { type: "enqueueExpandPaths"; paths: string[] }
   | { type: "shiftExpandQueue" };
@@ -38,29 +36,19 @@ export function resourceTreeUiReducer(
         ...state,
         selected: { path: action.path, type: action.nodeType },
       };
-    case "startCreating":
+    case "startEditing":
       return {
         ...state,
-        creating: action.creating,
+        editing: action.editing,
         expandPathQueue:
-          action.creating.parentPath !== ""
-            ? appendExpandPath(state.expandPathQueue, action.creating.parentPath)
+          action.editing.mode === "creating" && action.editing.parentPath !== ""
+            ? appendExpandPath(state.expandPathQueue, action.editing.parentPath)
             : state.expandPathQueue,
       };
-    case "cancelCreating":
+    case "cancelEditing":
       return {
         ...state,
-        creating: null,
-      };
-    case "startRenaming":
-      return {
-        ...state,
-        renaming: action.renaming,
-      };
-    case "cancelRenaming":
-      return {
-        ...state,
-        renaming: null,
+        editing: null,
       };
     case "requestExpand":
       return {

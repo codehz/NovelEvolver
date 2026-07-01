@@ -23,7 +23,7 @@ export const resourceLibraryTreeMolecule = molecule(() => {
     const data = get(treeDataAtom);
     const ui = get(treeUiAtom);
     const flat = flattenVisibleResourceTree(data);
-    return buildFlatRenderItems(flat, ui.creating, ui.renaming);
+    return buildFlatRenderItems(flat, ui.editing);
   });
 
   const selectedPathAtom = atom((get) => get(treeUiAtom).selected?.path ?? null);

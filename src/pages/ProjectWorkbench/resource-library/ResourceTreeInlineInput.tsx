@@ -3,6 +3,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { cn } from "#app/lib/cn";
 
 type ResourceTreeInlineInputProps = {
+  mode: "creating" | "renaming";
   kind: "file" | "folder";
   initialValue?: string;
   onCancel: () => void;
@@ -10,6 +11,7 @@ type ResourceTreeInlineInputProps = {
 };
 
 export function ResourceTreeInlineInput({
+  mode,
   kind,
   initialValue = "",
   onCancel,
@@ -53,12 +55,26 @@ export function ResourceTreeInlineInput({
   return (
     <input
       ref={inputRef}
-      aria-label={kind === "file" ? "新文件名" : "新文件夹名"}
+      aria-label={
+        mode === "creating"
+          ? kind === "file"
+            ? "新文件名"
+            : "新文件夹名"
+          : kind === "file"
+            ? "重命名文件"
+            : "重命名文件夹"
+      }
       autoComplete="off"
       className={cn(
-        "min-w-0 flex-1 rounded-sm border border-badge-background bg-workbench-editor px-1 py-0 text-xs leading-tight text-app-foreground outline-none app-region-no-drag",
+        "h-5 min-w-0 flex-1 rounded-sm border border-badge-background bg-workbench-editor px-1 text-xs leading-none text-app-foreground outline-none app-region-no-drag",
       )}
-      placeholder={kind === "file" ? "例如 设定/世界观.md" : "例如 设定/资料"}
+      placeholder={
+        mode === "creating"
+          ? kind === "file"
+            ? "例如 设定/世界观.md"
+            : "例如 设定/资料"
+          : undefined
+      }
       spellCheck={false}
       type="text"
       value={value}

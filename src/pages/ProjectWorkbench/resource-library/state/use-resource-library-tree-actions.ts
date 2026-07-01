@@ -13,6 +13,7 @@ import { useResourceLibrary } from "../../demo/branch/branch-scopes";
 import { useWorkbenchEditorActions } from "../../demo/editor/use-workbench-editor-actions";
 import { resourceLibraryTreeMolecule } from "./resource-tree-molecule";
 import { parentPathForCreating } from "./tree-ui-reducer";
+import type { ResourceTreeEditingState } from "./types";
 
 export function useResourceLibraryTreeActions() {
   const resources = useResourceLibrary();
@@ -29,8 +30,9 @@ export function useResourceLibraryTreeActions() {
       const parentPath = parentPathForCreating(ui.selected);
       creatingIdRef.current += 1;
       dispatchUi({
-        type: "startCreating",
-        creating: {
+        type: "startEditing",
+        editing: {
+          mode: "creating",
           id: creatingIdRef.current,
           kind,
           parentPath,
@@ -43,16 +45,12 @@ export function useResourceLibraryTreeActions() {
     [dispatchUi, store],
   );
 
-  const cancelCreating = useCallback(() => {
-    dispatchUi({ type: "cancelCreating" });
-  }, [dispatchUi]);
-
-  const confirmCreating = useCallback(
-    async (kind: "file" | "folder", parentPath: string, name: string) => {
-      dispatchUi({ type: "cancelCreating" });
+  const submitCreating = useCallback(
+    async (editing: Extract<ResourceTreeEditingState, { mode: "creating" }>, name: string) => {
+      dispatchUi({ type: "cancelEditing" });
       let path: string;
       try {
-        path = joinResourceChildPath(parentPath, name);
+        path = joinResourceChildPath(editing.parentPath, name);
       } catch (error) {
         notificationApi.error(error instanceof Error ? error.message : "路径无效", {
           source: "资源库",
@@ -63,18 +61,18 @@ export function useResourceLibraryTreeActions() {
         return;
       }
       try {
-        if (kind === "folder") {
+        if (editing.kind === "folder") {
           await resources.createFolder(path);
         } else {
           await resources.writeFile(path, "");
         }
-        dispatchData({ type: "invalidatePath", path: parentPath });
+        dispatchData({ type: "invalidatePath", path: editing.parentPath });
         dispatchUi({
           type: "enqueueExpandPaths",
-          paths: expandDirsAfterCreate(path, kind),
+          paths: expandDirsAfterCreate(path, editing.kind),
         });
-        dispatchUi({ type: "select", path, nodeType: kind });
-        if (kind === "file") {
+        dispatchUi({ type: "select", path, nodeType: editing.kind });
+        if (editing.kind === "file") {
           void openResourceTab(path, (p) => resources.readFile(p));
         }
       } catch (error) {
@@ -88,31 +86,32 @@ export function useResourceLibraryTreeActions() {
 
   const startRenaming = useCallback(() => {
     const ui = store.get(treeUiAtom);
-    if (ui.selected === null || ui.creating !== null || ui.renaming !== null) {
+    if (ui.selected === null || ui.editing !== null) {
       return;
     }
     dispatchUi({
-      type: "startRenaming",
-      renaming: {
+      type: "startEditing",
+      editing: {
+        mode: "renaming",
         path: ui.selected.path,
         kind: ui.selected.type,
       },
     });
   }, [dispatchUi, store]);
 
-  const cancelRenaming = useCallback(() => {
-    dispatchUi({ type: "cancelRenaming" });
+  const cancelEditing = useCallback(() => {
+    dispatchUi({ type: "cancelEditing" });
   }, [dispatchUi]);
 
-  const confirmRenaming = useCallback(
-    async (oldPath: string, kind: "file" | "folder", name: string) => {
-      dispatchUi({ type: "cancelRenaming" });
+  const submitRenaming = useCallback(
+    async (editing: Extract<ResourceTreeEditingState, { mode: "renaming" }>, name: string) => {
+      dispatchUi({ type: "cancelEditing" });
       const normalized = normalizeResourceNameInput(name);
       if (normalized === "") {
         return;
       }
-      const lastSlash = oldPath.lastIndexOf("/");
-      const parentPath = lastSlash >= 0 ? oldPath.slice(0, lastSlash) : "";
+      const lastSlash = editing.path.lastIndexOf("/");
+      const parentPath = lastSlash >= 0 ? editing.path.slice(0, lastSlash) : "";
       let newPath: string;
       try {
         newPath = joinResourceChildPath(parentPath, normalized);
@@ -122,13 +121,13 @@ export function useResourceLibraryTreeActions() {
         });
         return;
       }
-      if (newPath === "" || newPath === oldPath) {
+      if (newPath === "" || newPath === editing.path) {
         return;
       }
       try {
-        await resources.move(oldPath, newPath);
+        await resources.move(editing.path, newPath);
         dispatchData({ type: "invalidatePath", path: parentPath });
-        dispatchUi({ type: "select", path: newPath, nodeType: kind });
+        dispatchUi({ type: "select", path: newPath, nodeType: editing.kind });
       } catch (error) {
         notificationApi.error(error instanceof Error ? error.message : "重命名失败", {
           source: "资源库",
@@ -150,13 +149,22 @@ export function useResourceLibraryTreeActions() {
     [dispatchData, dispatchUi, openResourceTab, resources],
   );
 
+  const submitEditing = useCallback(
+    async (editing: ResourceTreeEditingState, name: string) => {
+      if (editing.mode === "creating") {
+        await submitCreating(editing, name);
+        return;
+      }
+      await submitRenaming(editing, name);
+    },
+    [submitCreating, submitRenaming],
+  );
+
   return {
     startCreating,
-    cancelCreating,
-    confirmCreating,
     startRenaming,
-    cancelRenaming,
-    confirmRenaming,
+    cancelEditing,
+    submitEditing,
     activateNode,
   };
 }
