@@ -6,8 +6,7 @@ import { isQuickPickDismissedError, quickPickApi, type QuickPickListItem } from 
 import { useWorkbenchEditorActions } from "../editor/use-workbench-editor-actions";
 import { useProjectContext } from "../state/molecules";
 import { useBranchPickerSnapshot } from "./branch-data";
-import { useActiveBranchName } from "./branch-scopes";
-import { useSetActiveBranchName } from "./BranchScopeProvider";
+import { useActiveBranchName, useSetActiveBranchAtom } from "./branch-scopes";
 
 function branchToListItem(branch: BranchInfo, activeBranchName: string): QuickPickListItem {
   const name = branch.name ?? "";
@@ -23,7 +22,7 @@ export function useBranchQuickPick() {
   const snapshot = useBranchPickerSnapshot();
   const project = useProjectContext();
   const activeBranchName = useActiveBranchName();
-  const setActiveBranchName = useSetActiveBranchName();
+  const setActiveBranchName = useSetActiveBranchAtom();
   const { clearAllTabs } = useWorkbenchEditorActions();
 
   const run = useCallback(async () => {

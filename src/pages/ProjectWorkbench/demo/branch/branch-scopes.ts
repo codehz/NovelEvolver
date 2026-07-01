@@ -1,7 +1,7 @@
 import type { ResourceLibraryHandle, WorktreeHandle } from "@shared/rpc/projects-rpc";
 import { createScope, molecule, use, useMolecule } from "bunshi/react";
 import type { RpcPromise } from "capnweb";
-import { atom } from "jotai";
+import { atom, useSetAtom } from "jotai";
 
 import { projectMolecule } from "../state/molecules";
 
@@ -9,8 +9,13 @@ export const DEFAULT_BRANCH_NAME = "main";
 
 export const activeBranchAtomMolecule = molecule(() => {
   const project = use(projectMolecule);
-  return atom(Promise.resolve(project.handle.head.name));
+  return atom(Promise.resolve(project.handle.head.name) as Promise<string> | string);
 });
+
+/** 返回 activeBranchAtom 的 setter，用于在切换分支后更新 atom 值。 */
+export function useSetActiveBranchAtom() {
+  return useSetAtom(useMolecule(activeBranchAtomMolecule));
+}
 
 /** 当前工作台所操作的分支名（与仓库 HEAD 同步，由 BranchScopeProvider 与切换逻辑维护）。 */
 export const branchNameScope = createScope<string>(DEFAULT_BRANCH_NAME);
