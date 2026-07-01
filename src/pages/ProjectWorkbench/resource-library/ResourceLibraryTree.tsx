@@ -84,11 +84,12 @@ function CreatingTreeRow({
     <li role="none">
       <div
         className={cn(
-          "flex w-full items-center gap-1.5 py-0.5 pr-1 text-app-foreground",
+          "flex w-full items-center gap-0.5 py-0.5 pr-1 text-app-foreground",
           "bg-workbench-tab-active/60",
         )}
-        style={{ paddingLeft: `${depth * 12}px` }}
+        style={{ paddingLeft: `${depth * 12 + 8}px` }}
       >
+        <span aria-hidden="true" className="flex w-4 shrink-0 items-center justify-center" />
         <span aria-hidden="true" className={cn(icon, "shrink-0 text-base")} />
         <input
           ref={inputRef}
@@ -141,10 +142,10 @@ function ResourceTreeRow({
     <li role="none">
       <button
         className={cn(
-          "flex w-full items-center gap-1.5 py-0.5 text-left text-app-foreground",
+          "flex w-full items-center gap-1 py-0.5 text-left text-app-foreground",
           "hover:bg-workbench-tab-active/60",
         )}
-        style={{ paddingLeft: `${depth * 12 + 8}px` }}
+        style={{ paddingLeft: `${depth * 12 + 4}px` }}
         type="button"
         onClick={() => {
           if (isFolder) {
@@ -154,6 +155,14 @@ function ResourceTreeRow({
           onOpenFile(node.path);
         }}
       >
+        <span aria-hidden="true" className="flex w-4 shrink-0 items-center justify-center text-sm">
+          {isFolder &&
+            (node.expanded ? (
+              <span className={cn("icon-[codicon--chevron-down]")} />
+            ) : (
+              <span className={cn("icon-[codicon--chevron-right]")} />
+            ))}
+        </span>
         <span aria-hidden="true" className={cn(icon, "shrink-0 text-base")} />
         <span className="truncate">{node.name}</span>
         {node.loading ? <span className="ml-auto text-xs text-ctp-overlay0">…</span> : null}
