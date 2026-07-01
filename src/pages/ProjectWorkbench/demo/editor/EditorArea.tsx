@@ -1,3 +1,5 @@
+import { AutoTransition } from "@codehz/auto-transition";
+
 import { cn } from "#app/lib/cn";
 
 import { EditorBreadcrumb } from "./EditorBreadcrumb";
@@ -11,9 +13,10 @@ export function EditorArea() {
   const activeTab = tabs.find((tab) => tab.active) ?? tabs[0];
 
   return (
-    <section
+    <AutoTransition
+      as="section"
       aria-label="编辑器"
-      className="flex min-h-0 min-w-0 flex-1 flex-col bg-workbench-editor"
+      className="relative flex min-h-0 min-w-0 flex-1 flex-col bg-workbench-editor"
     >
       {tabs.length > 0 ? (
         <div
@@ -66,7 +69,7 @@ export function EditorArea() {
         </div>
       )}
 
-      <div className="flex min-h-0 min-w-0 flex-1 flex-col">
+      <div key={+(tabs.length === 0)} className="flex min-h-0 min-w-0 flex-1 flex-col">
         {tabs.length === 0 ? (
           <EditorEmptyState />
         ) : (
@@ -81,6 +84,6 @@ export function EditorArea() {
           ))
         )}
       </div>
-    </section>
+    </AutoTransition>
   );
 }
