@@ -16,6 +16,11 @@ export const resourceLibraryTreeRowEnterOpacityTransition: Transition = {
   ease: treeEase,
 };
 
+export const resourceLibraryTreePaddingLeftTransition: Transition = {
+  duration: RESOURCE_LIBRARY_TREE_Y_DURATION_MS / 1000,
+  ease: treeEase,
+};
+
 /** 退出仅淡出；禁止在 exit 中设置 y（绝对定位 + 列表高度不同步会导致错位）。 */
 export const resourceLibraryTreeRowExitOpacityTransition: Transition = {
   duration: RESOURCE_LIBRARY_TREE_Y_DURATION_MS / 1000,

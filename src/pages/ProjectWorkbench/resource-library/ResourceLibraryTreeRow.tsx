@@ -2,7 +2,10 @@ import { motion } from "motion/react";
 
 import { cn } from "#app/lib/cn";
 
-import { resourceLibraryTreeRowVariants } from "./resource-library-tree-motion";
+import {
+  resourceLibraryTreePaddingLeftTransition,
+  resourceLibraryTreeRowVariants,
+} from "./resource-library-tree-motion";
 import { ResourceTreeInlineInput } from "./ResourceTreeInlineInput";
 import type { FlatRenderItem } from "./state/tree-data-reducer";
 import type { ResourceTreeDragState } from "./state/types";
@@ -59,14 +62,16 @@ export function ResourceLibraryTreeRow({
   const isEditing = editing !== null;
   const rowClasses = cn(
     "flex size-full items-center gap-1 overflow-hidden text-left text-app-foreground",
-    "motion-safe:transition-[padding-left] motion-safe:duration-220 motion-safe:ease-[cubic-bezier(0.22,1,0.36,1)]",
     isDropHighlighted(item, drag)
       ? "bg-resource-drop-target"
       : drag === null && (isSelected || isEditing)
         ? "bg-workbench-tab-active"
         : drag === null && "hover:bg-workbench-tab-active/60",
   );
-  const rowStyle = { paddingLeft: `${item.depth * 12 + 4}px` };
+  const rowAnimate = {
+    paddingLeft: item.depth * 12 + 4,
+    transition: resourceLibraryTreePaddingLeftTransition,
+  };
   const pointerHandlers = useTreeRowPointerDrag({
     disabled: isEditing,
     sourcePath: item.path,
@@ -122,20 +127,20 @@ export function ResourceLibraryTreeRow({
       exit="exit"
     >
       {isEditing ? (
-        <div className={rowClasses} style={rowStyle}>
+        <motion.div className={rowClasses} animate={rowAnimate}>
           {rowContent}
-        </div>
+        </motion.div>
       ) : (
-        <button
+        <motion.button
           className={rowClasses}
           data-row-path={item.path ?? undefined}
           data-row-type={item.type}
-          style={rowStyle}
           type="button"
+          animate={rowAnimate}
           {...pointerHandlers}
         >
           {rowContent}
-        </button>
+        </motion.button>
       )}
     </motion.li>
   );
