@@ -219,29 +219,23 @@ function renameEntryInListing(
   );
 }
 
-function upsertMovedEntryIntoListing(
+function upsertMovedEntryIntoReadyListing(
   listings: ResourceTreeDataState["listings"],
   path: string,
   entry: ResourceNode,
 ): ResourceTreeDataState["listings"] {
   const current = listings[path];
-  if (current?.status === "ready") {
-    return updateListingEntries(listings, path, (entries) => {
-      if (
-        entries.some((candidate) => candidate.name === entry.name && candidate.type === entry.type)
-      ) {
-        return entries;
-      }
-      return [...entries, entry];
-    });
+  if (current?.status !== "ready") {
+    return listings;
   }
-  return {
-    ...listings,
-    [path]: {
-      status: "ready",
-      entries: [entry],
-    },
-  };
+  return updateListingEntries(listings, path, (entries) => {
+    if (
+      entries.some((candidate) => candidate.name === entry.name && candidate.type === entry.type)
+    ) {
+      return entries;
+    }
+    return [...entries, entry];
+  });
 }
 
 export function resourceTreeDataReducer(
@@ -384,7 +378,7 @@ export function resourceTreeDataReducer(
         sourceParentPath,
         (entries) => entries.filter((entry) => entry.name !== sourceName),
       );
-      const nextListings = upsertMovedEntryIntoListing(nextSourceListings, action.targetPath, {
+      const nextListings = upsertMovedEntryIntoReadyListing(nextSourceListings, action.targetPath, {
         name: sourceName,
         type: action.nodeType,
       });
