@@ -7,6 +7,12 @@ export {
   SIDEBAR_SECTION_RESIZE_STRIP_HEIGHT,
 } from "./sidebar/SidebarViewSection";
 export {
+  SidebarSectionActionsPortalContent,
+  SidebarSectionActionsPortalProvider,
+  SidebarSectionActionsPortalTarget,
+} from "./sidebar/sidebar-section-actions-portal";
+export { sidebarHeaderActionClass, sidebarHeaderIconClass } from "./sidebar/sidebar-header-chrome";
+export {
   useSidebarPaneStack,
   MIN_SIDEBAR_SECTION_BODY_HEIGHT,
   type SidebarPaneStackPane,

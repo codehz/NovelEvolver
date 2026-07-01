@@ -3,6 +3,11 @@ import type { CSSProperties, PointerEvent as ReactPointerEvent, ReactNode } from
 import { ScrollArea } from "@/components/ScrollArea";
 import { cn } from "@/lib/cn";
 
+import {
+  SidebarSectionActionsPortalProvider,
+  SidebarSectionActionsPortalTarget,
+} from "./sidebar-section-actions-portal";
+
 /** Layout flow height at the section seam (handle is overlaid, not counted in flex). */
 export const SIDEBAR_SECTION_RESIZE_STRIP_HEIGHT = 0;
 export const SIDEBAR_SECTION_HEADER_HEIGHT_PX = 24;
@@ -13,16 +18,6 @@ const sectionHeaderButtonClass = cn(
 );
 
 const sectionHeaderChevronClass = cn(
-  "inline-flex size-3 shrink-0 items-center justify-center text-sm leading-none",
-);
-
-const sectionHeaderActionClass = cn(
-  "inline-flex size-5 shrink-0 items-center justify-center rounded border-0 bg-transparent p-0",
-  "text-workbench-sidebar-title",
-  "focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-badge-background",
-);
-
-const sectionHeaderActionIconClass = cn(
   "inline-flex size-3 shrink-0 items-center justify-center text-sm leading-none",
 );
 
@@ -62,47 +57,40 @@ export function SidebarViewSection({
   headerActions?: ReactNode;
 }) {
   return (
-    <section
-      aria-label={ariaLabel}
-      className={cn("flex min-h-0 flex-col", bodyFillsSection && expanded && "min-h-0 flex-1")}
-      style={sectionStyle}
-    >
-      <div className="flex shrink-0 items-center pr-3">
-        <button
-          aria-controls={panelId}
-          aria-expanded={expanded}
-          className={sectionHeaderButtonClass}
-          type="button"
-          onClick={onToggleExpanded}
-        >
-          <span
-            aria-hidden="true"
-            className={cn(
-              sectionHeaderChevronClass,
-              expanded ? "icon-[codicon--chevron-down]" : "icon-[codicon--chevron-right]",
-            )}
-          />
-          <span className="truncate">{title}</span>
-        </button>
-        {headerActions ?? (
+    <SidebarSectionActionsPortalProvider>
+      <section
+        aria-label={ariaLabel}
+        className={cn("flex min-h-0 flex-col", bodyFillsSection && expanded && "min-h-0 flex-1")}
+        style={sectionStyle}
+      >
+        <div className="flex shrink-0 items-center pr-3">
           <button
-            aria-label={`${title} 视图操作`}
-            className={sectionHeaderActionClass}
+            aria-controls={panelId}
+            aria-expanded={expanded}
+            className={sectionHeaderButtonClass}
             type="button"
+            onClick={onToggleExpanded}
           >
             <span
               aria-hidden="true"
-              className={cn(sectionHeaderActionIconClass, "icon-[codicon--ellipsis]")}
+              className={cn(
+                sectionHeaderChevronClass,
+                expanded ? "icon-[codicon--chevron-down]" : "icon-[codicon--chevron-right]",
+              )}
             />
+            <span className="truncate">{title}</span>
           </button>
-        )}
-      </div>
-      {expanded ? (
-        <ScrollArea fill={bodyFillsSection} id={panelId} style={bodyStyle}>
-          {children}
-        </ScrollArea>
-      ) : null}
-    </section>
+          {headerActions ?? (
+            <SidebarSectionActionsPortalTarget as="div" className="flex shrink-0 items-center" />
+          )}
+        </div>
+        {expanded ? (
+          <ScrollArea fill={bodyFillsSection} id={panelId} style={bodyStyle}>
+            {children}
+          </ScrollArea>
+        ) : null}
+      </section>
+    </SidebarSectionActionsPortalProvider>
   );
 }
 

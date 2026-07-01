@@ -1,5 +1,10 @@
 import { useCallback, useState } from "react";
 
+import {
+  SidebarSectionActionsPortalContent,
+  sidebarHeaderActionClass,
+  sidebarHeaderIconClass,
+} from "@/components/workbench";
 import { cn } from "@/lib/cn";
 import { notificationApi } from "@/lib/notifications";
 import { isQuickPickDismissedError, quickPickApi } from "@/lib/quick-pick";
@@ -7,13 +12,6 @@ import { isQuickPickDismissedError, quickPickApi } from "@/lib/quick-pick";
 import { useResourceLibrary } from "../demo/branch/branch-scopes";
 import { useWorkbenchEditorActions } from "../demo/editor/use-workbench-editor-actions";
 import { ResourceLibraryTree } from "./ResourceLibraryTree";
-
-const toolbarClass = cn("flex shrink-0 gap-1 border-b border-workbench-tab-border p-1");
-
-const toolbarButtonClass = cn(
-  "inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-xs text-ctp-subtext0",
-  "hover:bg-workbench-tab-active/60",
-);
 
 export function ResourceLibrarySectionBody() {
   const resources = useResourceLibrary();
@@ -71,30 +69,38 @@ export function ResourceLibrarySectionBody() {
   );
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col">
-      <div className={toolbarClass}>
+    <>
+      <SidebarSectionActionsPortalContent>
         <button
-          className={toolbarButtonClass}
+          aria-label="新建文件"
+          className={sidebarHeaderActionClass}
+          title="新建文件"
           type="button"
           onClick={() => void createAtRoot("file")}
         >
-          <span aria-hidden="true" className="icon-[codicon--new-file] text-sm" />
-          新建文件
+          <span
+            aria-hidden="true"
+            className={cn(sidebarHeaderIconClass, "icon-[codicon--new-file]")}
+          />
         </button>
         <button
-          className={toolbarButtonClass}
+          aria-label="新建文件夹"
+          className={sidebarHeaderActionClass}
+          title="新建文件夹"
           type="button"
           onClick={() => void createAtRoot("folder")}
         >
-          <span aria-hidden="true" className="icon-[codicon--new-folder] text-sm" />
-          新建文件夹
+          <span
+            aria-hidden="true"
+            className={cn(sidebarHeaderIconClass, "icon-[codicon--new-folder]")}
+          />
         </button>
-      </div>
+      </SidebarSectionActionsPortalContent>
       <ResourceLibraryTree
         key={treeRevision}
         listDirectory={listDirectory}
         onOpenFile={onOpenFile}
       />
-    </div>
+    </>
   );
 }
