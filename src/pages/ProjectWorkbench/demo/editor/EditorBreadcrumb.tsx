@@ -1,4 +1,4 @@
-import { AutoTransition } from "@codehz/auto-transition";
+import { AutoTransition, effects, preset } from "@codehz/auto-transition";
 import { useMolecule } from "bunshi/react";
 import { useSetAtom } from "jotai";
 import { Fragment, useCallback } from "react";
@@ -58,7 +58,12 @@ export function EditorBreadcrumb({ resourcePath }: { resourcePath: string | null
   const segments = buildBreadcrumbSegments(resourcePath);
 
   return (
-    <AutoTransition as="nav" aria-label="资源路径" className="flex min-w-0 items-center gap-1">
+    <AutoTransition
+      as="nav"
+      aria-label="资源路径"
+      className="flex min-w-0 items-center gap-1"
+      transition={breadcrumbTransitionPreset}
+    >
       {segments.map((segment, index) => {
         const isLast = index === segments.length - 1;
         return (
@@ -96,3 +101,14 @@ export function EditorBreadcrumb({ resourcePath }: { resourcePath: string | null
     </AutoTransition>
   );
 }
+
+const breadcrumbTransitionPreset = preset({
+  move: effects.flip(),
+  timing: {
+    move: {
+      easing:
+        "linear(0, 0.013 1%, 0.051 2.2%, 0.404 9.8%, 0.51 12.6%, 0.602 15.5%, 0.683 18.7%, 0.754 22.2%, 0.813 26%, 0.861 30.2%, 0.9 34.8%, 0.931 40%, 0.972 52.7%, 0.992 70.2%, 1)",
+      duration: 600,
+    },
+  },
+});
