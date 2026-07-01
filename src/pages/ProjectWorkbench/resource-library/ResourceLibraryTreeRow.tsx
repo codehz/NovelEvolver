@@ -1,5 +1,14 @@
+import type { CSSProperties } from "react";
+
 import { cn } from "#app/lib/cn";
 
+import {
+  RESOURCE_LIBRARY_TREE_EASING,
+  RESOURCE_LIBRARY_TREE_ENTER_DURATION_MS,
+  RESOURCE_LIBRARY_TREE_EXIT_DURATION_MS,
+  RESOURCE_LIBRARY_TREE_MOVE_DURATION_MS,
+  type ResourceLibraryTreeRowPhase,
+} from "./resource-library-tree-motion";
 import { ResourceTreeInlineInput } from "./ResourceTreeInlineInput";
 import type { FlatRenderItem } from "./state/tree-data-reducer";
 import type { ResourceTreeDragState } from "./state/types";
@@ -7,6 +16,9 @@ import { useTreeRowPointerDrag } from "./use-tree-row-pointer-drag";
 
 type ResourceLibraryTreeRowProps = {
   item: FlatRenderItem;
+  phase: ResourceLibraryTreeRowPhase;
+  top: number;
+  height: number;
   selectedPath: string | null;
   drag: ResourceTreeDragState | null;
   onActivate: (path: string, type: "file" | "folder") => void;
@@ -36,6 +48,9 @@ function getRowIcon(item: FlatRenderItem) {
 
 export function ResourceLibraryTreeRow({
   item,
+  phase,
+  top,
+  height,
   selectedPath,
   drag,
   onActivate,
@@ -48,8 +63,9 @@ export function ResourceLibraryTreeRow({
   const isSelected = item.path !== null && selectedPath === item.path;
   const editing = item.editing;
   const isEditing = editing !== null;
+  const isExiting = phase === "exiting";
   const rowClasses = cn(
-    "flex min-h-6 w-full items-center gap-1 text-left text-app-foreground",
+    "flex size-full items-center gap-1 overflow-hidden text-left text-app-foreground",
     "motion-safe:transition-[padding-left] motion-safe:duration-220 motion-safe:ease-[cubic-bezier(0.22,1,0.36,1)]",
     isDropHighlighted(item, drag)
       ? "bg-resource-drop-target"
@@ -58,8 +74,14 @@ export function ResourceLibraryTreeRow({
         : drag === null && "hover:bg-workbench-tab-active/60",
   );
   const rowStyle = { paddingLeft: `${item.depth * 12 + 4}px` };
+  const wrapperStyle: CSSProperties = {
+    top,
+    height,
+    transitionDuration: `${phase === "exiting" ? RESOURCE_LIBRARY_TREE_EXIT_DURATION_MS : phase === "enter-from" ? RESOURCE_LIBRARY_TREE_ENTER_DURATION_MS : RESOURCE_LIBRARY_TREE_MOVE_DURATION_MS}ms`,
+    transitionTimingFunction: RESOURCE_LIBRARY_TREE_EASING,
+  };
   const pointerHandlers = useTreeRowPointerDrag({
-    disabled: isEditing,
+    disabled: isEditing || isExiting,
     sourcePath: item.path,
     sourceType: item.type,
     onActivate,
@@ -99,8 +121,17 @@ export function ResourceLibraryTreeRow({
   );
 
   return (
-    <li role="none">
-      {isEditing ? (
+    <li
+      aria-hidden={isExiting || undefined}
+      className={cn(
+        "absolute inset-x-0 motion-safe:transition-[top,opacity,transform]",
+        phase === "enter-from" && "-translate-y-1.5 opacity-0",
+        phase === "exiting" && "z-10 -translate-y-1 opacity-0",
+      )}
+      role="none"
+      style={wrapperStyle}
+    >
+      {isEditing || isExiting ? (
         <div className={rowClasses} style={rowStyle}>
           {rowContent}
         </div>
