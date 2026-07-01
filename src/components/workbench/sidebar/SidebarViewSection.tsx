@@ -43,7 +43,6 @@ export function SidebarViewSection({
   sectionStyle,
   bodyStyle,
   bodyFillsSection,
-  headerActions,
 }: {
   title: string;
   ariaLabel: string;
@@ -54,7 +53,6 @@ export function SidebarViewSection({
   sectionStyle?: CSSProperties;
   bodyStyle?: CSSProperties;
   bodyFillsSection?: boolean;
-  headerActions?: ReactNode;
 }) {
   return (
     <SidebarSectionActionsPortalProvider>
@@ -80,9 +78,7 @@ export function SidebarViewSection({
             />
             <span className="truncate">{title}</span>
           </button>
-          {headerActions ?? (
-            <SidebarSectionActionsPortalTarget as="div" className="flex shrink-0 items-center" />
-          )}
+          <SidebarSectionActionsPortalTarget as="div" className="flex shrink-0 items-center" />
         </div>
         {expanded ? (
           <ScrollArea fill={bodyFillsSection} id={panelId} style={bodyStyle}>
