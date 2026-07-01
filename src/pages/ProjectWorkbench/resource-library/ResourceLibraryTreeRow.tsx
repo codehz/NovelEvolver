@@ -3,7 +3,7 @@ import { motion } from "motion/react";
 import { cn } from "#app/lib/cn";
 
 import {
-  resourceLibraryTreePaddingLeftTransition,
+  resourceLibraryTreeRowPaddingVariants,
   resourceLibraryTreeRowVariants,
 } from "./resource-library-tree-motion";
 import { ResourceTreeInlineInput } from "./ResourceTreeInlineInput";
@@ -68,10 +68,6 @@ export function ResourceLibraryTreeRow({
         ? "bg-workbench-tab-active"
         : drag === null && "hover:bg-workbench-tab-active/60",
   );
-  const rowAnimate = {
-    paddingLeft: item.depth * 12 + 4,
-    transition: resourceLibraryTreePaddingLeftTransition,
-  };
   const pointerHandlers = useTreeRowPointerDrag({
     disabled: isEditing,
     sourcePath: item.path,
@@ -127,7 +123,13 @@ export function ResourceLibraryTreeRow({
       exit="exit"
     >
       {isEditing ? (
-        <motion.div className={rowClasses} animate={rowAnimate}>
+        <motion.div
+          className={rowClasses}
+          variants={resourceLibraryTreeRowPaddingVariants}
+          custom={item.depth}
+          initial={false}
+          animate="visible"
+        >
           {rowContent}
         </motion.div>
       ) : (
@@ -136,7 +138,10 @@ export function ResourceLibraryTreeRow({
           data-row-path={item.path ?? undefined}
           data-row-type={item.type}
           type="button"
-          animate={rowAnimate}
+          variants={resourceLibraryTreeRowPaddingVariants}
+          custom={item.depth}
+          initial={false}
+          animate="visible"
           {...pointerHandlers}
         >
           {rowContent}
