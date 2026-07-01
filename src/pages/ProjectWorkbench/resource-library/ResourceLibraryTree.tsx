@@ -23,11 +23,14 @@ function ResourceLibraryTreeContent({
 }) {
   const { activateNode, startRenaming, cancelEditing, submitEditing, deleteNode, moveNode } =
     useResourceLibraryTreeActions();
-  const { treeUiAtom } = useMolecule(resourceLibraryTreeMolecule);
+  const { treeUiAtom, revealRequestAtom } = useMolecule(resourceLibraryTreeMolecule);
   const dispatchUi = useSetAtom(treeUiAtom);
+  const revealRequest = useAtomValue(revealRequestAtom);
   const store = useStore();
   const hasLayoutRef = useRef(false);
   const previousKeysRef = useRef<Set<string>>(new Set());
+  const handledRevealNonceRef = useRef<number | null>(null);
+  const listRef = useRef<HTMLUListElement>(null);
 
   const enterKeySet = useMemo(() => {
     const next = new Set<string>();
@@ -46,6 +49,31 @@ function ResourceLibraryTreeContent({
     hasLayoutRef.current = true;
     previousKeysRef.current = new Set(renderItems.map((item) => item.key));
   }, [renderItems]);
+
+  // 面包屑点击后定位到目标节点：选中 + 滚动到行。
+  // 父级展开是异步逐级加载的，所以依赖 renderItems 重试，直到目标行出现。
+  useLayoutEffect(() => {
+    if (revealRequest === null || revealRequest.nonce === handledRevealNonceRef.current) {
+      return;
+    }
+    const targetPath = revealRequest.path;
+    // 根路径：滚动到列表顶部即可。
+    if (targetPath === "") {
+      handledRevealNonceRef.current = revealRequest.nonce;
+      listRef.current?.scrollIntoView({ block: "start" });
+      return;
+    }
+    const item = renderItems.find((candidate) => candidate.path === targetPath);
+    if (item === undefined) {
+      return; // 父级尚未展开/加载，等待 renderItems 更新后重试
+    }
+    handledRevealNonceRef.current = revealRequest.nonce;
+    dispatchUi({ type: "select", path: targetPath, nodeType: item.type });
+    const row = listRef.current?.querySelector<HTMLElement>(
+      `[data-row-path="${CSS.escape(targetPath)}"]`,
+    );
+    row?.scrollIntoView({ block: "nearest" });
+  }, [revealRequest, renderItems, dispatchUi]);
 
   const handleDragStart = useCallback(
     (sourcePath: string, sourceType: "file" | "folder") => {
@@ -87,6 +115,7 @@ function ResourceLibraryTreeContent({
 
   return (
     <ul
+      ref={listRef}
       className={cn("outline-none", isRootDropTarget && "bg-resource-drop-target")}
       role="tree"
       style={{

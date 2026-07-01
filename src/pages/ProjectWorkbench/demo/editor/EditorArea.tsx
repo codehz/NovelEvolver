@@ -1,5 +1,6 @@
 import { cn } from "#app/lib/cn";
 
+import { EditorBreadcrumb } from "./EditorBreadcrumb";
 import { EditorEmptyState } from "./EditorEmptyState";
 import { EditorTabPane } from "./EditorTabPane";
 import { useWorkbenchEditorActions } from "./use-workbench-editor-actions";
@@ -60,16 +61,7 @@ export function EditorArea() {
       ) : null}
 
       <div className="flex h-8 shrink-0 items-center gap-1 bg-workbench-editor px-3 text-xs text-ctp-subtext0">
-        {activeTab ? (
-          <>
-            <span className="icon-[codicon--chevron-right] text-sm" />
-            <span>资源库</span>
-            <span className="icon-[codicon--chevron-right] text-sm" />
-            <span className="text-app-foreground">{activeTab.label}</span>
-          </>
-        ) : (
-          <span className="text-ctp-overlay0">未打开文件</span>
-        )}
+        <EditorBreadcrumb resourcePath={activeTab?.resourcePath ?? null} />
       </div>
 
       <div className="flex min-h-0 min-w-0 flex-1 flex-col">
