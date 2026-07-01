@@ -1,4 +1,5 @@
 import { AutoTransition } from "@codehz/auto-transition";
+import { SlotText } from "slot-text/react";
 
 import { cn } from "#app/lib/cn";
 
@@ -19,7 +20,8 @@ export function EditorArea() {
       className="relative flex min-h-0 min-w-0 flex-1 flex-col bg-workbench-editor"
     >
       {tabs.length > 0 ? (
-        <div
+        <AutoTransition
+          as="div"
           className="flex h-workbench-tab shrink-0 items-stretch bg-workbench-tab-bar"
           role="tablist"
         >
@@ -46,7 +48,7 @@ export function EditorArea() {
               tabIndex={0}
             >
               <span aria-hidden="true" className="icon-[codicon--file] text-sm" />
-              <span className="truncate">{tab.label}</span>
+              <SlotText className="truncate" text={tab.label} />
               <button
                 aria-label={`关闭 ${tab.label}`}
                 className="ml-1 rounded p-0.5 hover:bg-window-button-hover"
@@ -60,7 +62,7 @@ export function EditorArea() {
               </button>
             </div>
           ))}
-        </div>
+        </AutoTransition>
       ) : null}
 
       {activeTab && (
