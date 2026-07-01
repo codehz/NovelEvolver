@@ -163,6 +163,10 @@ export function useResourceLibraryTreeActions() {
       return;
     }
     const { path } = ui.selected;
+    const name = path.includes("/") ? path.slice(path.lastIndexOf("/") + 1) : path;
+    if (!confirm(`确定要删除「${name}」吗？`)) {
+      return;
+    }
     if (path === "") {
       return;
     }
