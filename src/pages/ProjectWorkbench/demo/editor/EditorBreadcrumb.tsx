@@ -35,7 +35,7 @@ function buildBreadcrumbSegments(resourcePath: string): BreadcrumbSegment[] {
   return segments;
 }
 
-export function EditorBreadcrumb({ resourcePath }: { resourcePath: string | null }) {
+export function EditorBreadcrumb({ resourcePath }: { resourcePath: string }) {
   const { revealInTree, treeUiAtom } = useMolecule(resourceLibraryTreeMolecule);
   const dispatchUi = useSetAtom(treeUiAtom);
 
@@ -50,10 +50,6 @@ export function EditorBreadcrumb({ resourcePath }: { resourcePath: string | null
     },
     [dispatchUi, revealInTree],
   );
-
-  if (resourcePath === null) {
-    return <span className="text-ctp-overlay0">未打开文件</span>;
-  }
 
   const segments = buildBreadcrumbSegments(resourcePath);
 
