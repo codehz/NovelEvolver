@@ -1,3 +1,4 @@
+import { remapResourcePath, resourceParentPath } from "#shared/resource-library-path";
 import type { ResourceNode } from "#shared/rpc/projects-rpc";
 
 import type { ResourceTreeEditingState, ResourceTreeUiState } from "./types";
@@ -15,19 +16,6 @@ export type ResourceTreeUiAction =
   | { type: "dragMove"; targetPath: string | null }
   | { type: "dragEnd" };
 
-function remapPath(path: string, from: string, to: string, nodeType: ResourceNode["type"]): string {
-  if (nodeType === "file") {
-    return path === from ? to : path;
-  }
-  if (path === from) {
-    return to;
-  }
-  if (path.startsWith(`${from}/`)) {
-    return `${to}${path.slice(from.length)}`;
-  }
-  return path;
-}
-
 function remapEditingState(
   editing: ResourceTreeUiState["editing"],
   from: string,
@@ -38,10 +26,10 @@ function remapEditingState(
     return null;
   }
   if (editing.mode === "creating") {
-    const parentPath = remapPath(editing.parentPath, from, to, nodeType);
+    const parentPath = remapResourcePath(editing.parentPath, from, to, nodeType);
     return parentPath === editing.parentPath ? editing : { ...editing, parentPath };
   }
-  const path = remapPath(editing.path, from, to, nodeType);
+  const path = remapResourcePath(editing.path, from, to, nodeType);
   return path === editing.path ? editing : { ...editing, path };
 }
 
@@ -102,13 +90,18 @@ export function resourceTreeUiReducer(
             ? null
             : {
                 ...state.selected,
-                path: remapPath(state.selected.path, action.from, action.to, action.nodeType),
+                path: remapResourcePath(
+                  state.selected.path,
+                  action.from,
+                  action.to,
+                  action.nodeType,
+                ),
               },
         editing: remapEditingState(state.editing, action.from, action.to, action.nodeType),
         expandPathQueue: appendExpandPaths(
           [],
           state.expandPathQueue.map((path) =>
-            remapPath(path, action.from, action.to, action.nodeType),
+            remapResourcePath(path, action.from, action.to, action.nodeType),
           ),
         ),
       };
@@ -147,8 +140,7 @@ export function parentPathForCreating(selected: ResourceTreeUiState["selected"])
   if (selected.type === "folder") {
     return selected.path;
   }
-  const lastSlash = selected.path.lastIndexOf("/");
-  return lastSlash >= 0 ? selected.path.slice(0, lastSlash) : "";
+  return resourceParentPath(selected.path);
 }
 
 export { initialResourceTreeUiState };

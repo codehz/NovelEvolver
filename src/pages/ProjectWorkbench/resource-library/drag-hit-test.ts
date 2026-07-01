@@ -1,7 +1,4 @@
-function parentPath(path: string): string {
-  const lastSlash = path.lastIndexOf("/");
-  return lastSlash >= 0 ? path.slice(0, lastSlash) : "";
-}
+import { resourceParentPath } from "#shared/resource-library-path";
 
 /**
  * 判断将 `sourcePath`（类型 `sourceType`）移动到 `targetPath` 是否合法。
@@ -23,7 +20,7 @@ export function isInvalidDropTarget(
   if (sourceType === "folder" && targetPath.startsWith(`${sourcePath}/`)) {
     return true;
   }
-  const sourceParent = parentPath(sourcePath);
+  const sourceParent = resourceParentPath(sourcePath);
   if (targetPath === sourceParent) {
     return true;
   }
@@ -44,7 +41,7 @@ export function resolveDropTargetFromRow(
   sourcePath: string,
   sourceType: "file" | "folder",
 ): string | null {
-  const candidate = targetRowType === "folder" ? targetRowPath : parentPath(targetRowPath);
+  const candidate = targetRowType === "folder" ? targetRowPath : resourceParentPath(targetRowPath);
   if (isInvalidDropTarget(sourcePath, sourceType, candidate)) {
     return null;
   }

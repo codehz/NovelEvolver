@@ -7,6 +7,8 @@ import {
   expandDirsAfterCreate,
   joinResourceChildPath,
   normalizeResourceNameInput,
+  resourceBaseName,
+  resourceParentPath,
 } from "#shared/resource-library-path";
 
 import { useResourceLibrary } from "../../demo/branch/branch-scopes";
@@ -110,8 +112,7 @@ export function useResourceLibraryTreeActions() {
       if (normalized === "") {
         return;
       }
-      const lastSlash = editing.path.lastIndexOf("/");
-      const parentPath = lastSlash >= 0 ? editing.path.slice(0, lastSlash) : "";
+      const parentPath = resourceParentPath(editing.path);
       let newPath: string;
       try {
         newPath = joinResourceChildPath(parentPath, normalized);
@@ -147,8 +148,7 @@ export function useResourceLibraryTreeActions() {
 
   const moveNode = useCallback(
     async (sourcePath: string, sourceType: "file" | "folder", targetPath: string) => {
-      const lastSlash = sourcePath.lastIndexOf("/");
-      const baseName = lastSlash >= 0 ? sourcePath.slice(lastSlash + 1) : sourcePath;
+      const baseName = resourceBaseName(sourcePath);
       let newPath: string;
       try {
         newPath = joinResourceChildPath(targetPath, baseName);
@@ -167,7 +167,7 @@ export function useResourceLibraryTreeActions() {
         dispatchData({ type: "remapPaths", from: sourcePath, to: newPath, nodeType: sourceType });
         dispatchUi({ type: "remapPaths", from: sourcePath, to: newPath, nodeType: sourceType });
         // 刷新目标目录（显示新条目）与源父目录（移除旧条目）。
-        const sourceParentPath = lastSlash >= 0 ? sourcePath.slice(0, lastSlash) : "";
+        const sourceParentPath = resourceParentPath(sourcePath);
         dispatchData({ type: "invalidatePath", path: sourceParentPath });
         dispatchData({ type: "queueReloadPath", path: targetPath });
         dispatchUi({ type: "select", path: newPath, nodeType: sourceType });
@@ -198,7 +198,7 @@ export function useResourceLibraryTreeActions() {
       return;
     }
     const { path } = ui.selected;
-    const name = path.includes("/") ? path.slice(path.lastIndexOf("/") + 1) : path;
+    const name = resourceBaseName(path);
     if (!confirm(`确定要删除「${name}」吗？`)) {
       return;
     }
@@ -212,7 +212,7 @@ export function useResourceLibraryTreeActions() {
           closeTab(tab.id);
         }
       }
-      const parentPath = path.includes("/") ? path.slice(0, path.lastIndexOf("/")) : "";
+      const parentPath = resourceParentPath(path);
       dispatchData({ type: "invalidatePath", path: parentPath });
       dispatchUi({ type: "select", path: parentPath, nodeType: "folder" });
     } catch (error) {

@@ -1,3 +1,4 @@
+import { remapResourcePath } from "#shared/resource-library-path";
 import type { ResourceNode } from "#shared/rpc/projects-rpc";
 
 import type { ResourceTreeNode } from "../resource-tree";
@@ -19,19 +20,6 @@ export type ResourceTreeDataAction =
   | { type: "remapPaths"; from: string; to: string; nodeType: ResourceNode["type"] }
   | { type: "shiftReloadQueue" };
 
-function remapPath(path: string, from: string, to: string, nodeType: ResourceNode["type"]): string {
-  if (nodeType === "file") {
-    return path === from ? to : path;
-  }
-  if (path === from) {
-    return to;
-  }
-  if (path.startsWith(`${from}/`)) {
-    return `${to}${path.slice(from.length)}`;
-  }
-  return path;
-}
-
 function remapExpandedPaths(
   expandedPaths: ResourceTreeDataState["expandedPaths"],
   from: string,
@@ -40,7 +28,7 @@ function remapExpandedPaths(
 ): ResourceTreeDataState["expandedPaths"] {
   const next: ResourceTreeDataState["expandedPaths"] = {};
   for (const path of Object.keys(expandedPaths)) {
-    next[remapPath(path, from, to, nodeType)] = true;
+    next[remapResourcePath(path, from, to, nodeType)] = true;
   }
   return next;
 }
@@ -53,7 +41,7 @@ function remapListings(
 ): ResourceTreeDataState["listings"] {
   const next: ResourceTreeDataState["listings"] = {};
   for (const [path, listing] of Object.entries(listings)) {
-    next[remapPath(path, from, to, nodeType)] = listing;
+    next[remapResourcePath(path, from, to, nodeType)] = listing;
   }
   return next;
 }
@@ -70,7 +58,7 @@ function remapReloadPaths(
 ): string[] {
   const next: string[] = [];
   for (const path of reloadPaths) {
-    const mapped = remapPath(path, from, to, nodeType);
+    const mapped = remapResourcePath(path, from, to, nodeType);
     if (!next.includes(mapped)) {
       next.push(mapped);
     }

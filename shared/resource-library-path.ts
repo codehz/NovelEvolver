@@ -78,6 +78,43 @@ export function normalizeResourceNameInput(name: string): string {
   return name.trim().replace(/^\/+|\/+$/g, "");
 }
 
+/** Parent directory of a resource path; top-level entries map to the library root (`""`). */
+export function resourceParentPath(path: string): string {
+  const lastSlash = path.lastIndexOf("/");
+  return lastSlash >= 0 ? path.slice(0, lastSlash) : "";
+}
+
+/** Basename of a resource path; the library root returns `""`. */
+export function resourceBaseName(path: string): string {
+  if (path === "") {
+    return "";
+  }
+  const lastSlash = path.lastIndexOf("/");
+  return lastSlash >= 0 ? path.slice(lastSlash + 1) : path;
+}
+
+/**
+ * Remaps a path after moving/renaming an entry.
+ * Files only rewrite exact matches; folders rewrite both the folder path and descendant paths.
+ */
+export function remapResourcePath(
+  path: string,
+  from: string,
+  to: string,
+  nodeType: "file" | "folder",
+): string {
+  if (nodeType === "file") {
+    return path === from ? to : path;
+  }
+  if (path === from) {
+    return to;
+  }
+  if (path.startsWith(`${from}/`)) {
+    return `${to}${path.slice(from.length)}`;
+  }
+  return path;
+}
+
 /**
  * Joins a parent directory (relative to library root) with a user-entered name or nested relative path.
  */
@@ -117,9 +154,9 @@ export function expandDirsAfterCreate(fullPath: string, kind: "file" | "folder")
   if (kind === "folder") {
     return resourceLibraryDirPathPrefixes(fullPath);
   }
-  const lastSlash = fullPath.lastIndexOf("/");
-  if (lastSlash === -1) {
+  const parentPath = resourceParentPath(fullPath);
+  if (parentPath === "") {
     return [];
   }
-  return resourceLibraryDirPathPrefixes(fullPath.slice(0, lastSlash));
+  return resourceLibraryDirPathPrefixes(parentPath);
 }
