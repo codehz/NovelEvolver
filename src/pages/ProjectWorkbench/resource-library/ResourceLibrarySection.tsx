@@ -2,10 +2,8 @@ import { useCallback, useState } from "react";
 
 import {
   SidebarSectionActionsPortalContent,
-  sidebarHeaderActionClass,
-  sidebarHeaderIconClass,
+  SidebarHeaderActionButton,
 } from "@/components/workbench";
-import { cn } from "@/lib/cn";
 import { notificationApi } from "@/lib/notifications";
 import { isQuickPickDismissedError, quickPickApi } from "@/lib/quick-pick";
 
@@ -71,30 +69,16 @@ export function ResourceLibrarySectionBody() {
   return (
     <>
       <SidebarSectionActionsPortalContent>
-        <button
-          aria-label="新建文件"
-          className={sidebarHeaderActionClass}
-          title="新建文件"
-          type="button"
+        <SidebarHeaderActionButton
+          label="新建文件"
+          icon="icon-[codicon--new-file]"
           onClick={() => void createAtRoot("file")}
-        >
-          <span
-            aria-hidden="true"
-            className={cn(sidebarHeaderIconClass, "icon-[codicon--new-file]")}
-          />
-        </button>
-        <button
-          aria-label="新建文件夹"
-          className={sidebarHeaderActionClass}
-          title="新建文件夹"
-          type="button"
+        />
+        <SidebarHeaderActionButton
+          label="新建文件夹"
+          icon="icon-[codicon--new-folder]"
           onClick={() => void createAtRoot("folder")}
-        >
-          <span
-            aria-hidden="true"
-            className={cn(sidebarHeaderIconClass, "icon-[codicon--new-folder]")}
-          />
-        </button>
+        />
       </SidebarSectionActionsPortalContent>
       <ResourceLibraryTree
         key={treeRevision}
