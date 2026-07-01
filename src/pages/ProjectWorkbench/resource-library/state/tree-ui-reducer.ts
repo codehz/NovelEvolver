@@ -10,7 +10,10 @@ export type ResourceTreeUiAction =
   | { type: "requestExpand"; path: string }
   | { type: "enqueueExpandPaths"; paths: string[] }
   | { type: "remapPaths"; from: string; to: string; nodeType: ResourceNode["type"] }
-  | { type: "shiftExpandQueue" };
+  | { type: "shiftExpandQueue" }
+  | { type: "dragStart"; sourcePath: string; sourceType: ResourceNode["type"] }
+  | { type: "dragMove"; targetPath: string | null }
+  | { type: "dragEnd" };
 
 function remapPath(path: string, from: string, to: string, nodeType: ResourceNode["type"]): string {
   if (nodeType === "file") {
@@ -113,6 +116,24 @@ export function resourceTreeUiReducer(
       return {
         ...state,
         expandPathQueue: state.expandPathQueue.slice(1),
+      };
+    case "dragStart":
+      return {
+        ...state,
+        drag: { sourcePath: action.sourcePath, sourceType: action.sourceType, targetPath: null },
+      };
+    case "dragMove":
+      if (state.drag === null) {
+        return state;
+      }
+      return {
+        ...state,
+        drag: { ...state.drag, targetPath: action.targetPath },
+      };
+    case "dragEnd":
+      return {
+        ...state,
+        drag: null,
       };
     default:
       return state;

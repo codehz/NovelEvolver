@@ -145,6 +145,41 @@ export function useResourceLibraryTreeActions() {
     [dispatchData, dispatchUi, rebindResourcePaths, resources],
   );
 
+  const moveNode = useCallback(
+    async (sourcePath: string, sourceType: "file" | "folder", targetPath: string) => {
+      const lastSlash = sourcePath.lastIndexOf("/");
+      const baseName = lastSlash >= 0 ? sourcePath.slice(lastSlash + 1) : sourcePath;
+      let newPath: string;
+      try {
+        newPath = joinResourceChildPath(targetPath, baseName);
+      } catch (error) {
+        notificationApi.error(error instanceof Error ? error.message : "路径无效", {
+          source: "资源库",
+        });
+        return;
+      }
+      if (newPath === "" || newPath === sourcePath) {
+        return;
+      }
+      try {
+        await resources.move(sourcePath, newPath);
+        rebindResourcePaths(sourcePath, newPath, sourceType);
+        dispatchData({ type: "remapPaths", from: sourcePath, to: newPath, nodeType: sourceType });
+        dispatchUi({ type: "remapPaths", from: sourcePath, to: newPath, nodeType: sourceType });
+        // 刷新目标目录（显示新条目）与源父目录（移除旧条目）。
+        const sourceParentPath = lastSlash >= 0 ? sourcePath.slice(0, lastSlash) : "";
+        dispatchData({ type: "invalidatePath", path: sourceParentPath });
+        dispatchData({ type: "queueReloadPath", path: targetPath });
+        dispatchUi({ type: "select", path: newPath, nodeType: sourceType });
+      } catch (error) {
+        notificationApi.error(error instanceof Error ? error.message : "移动失败", {
+          source: "资源库",
+        });
+      }
+    },
+    [dispatchData, dispatchUi, rebindResourcePaths, resources],
+  );
+
   const activateNode = useCallback(
     (path: string, type: "file" | "folder") => {
       dispatchUi({ type: "select", path, nodeType: type });
@@ -205,5 +240,6 @@ export function useResourceLibraryTreeActions() {
     submitEditing,
     activateNode,
     deleteNode,
+    moveNode,
   };
 }

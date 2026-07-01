@@ -68,6 +68,7 @@
   --color-workbench-tab-active: var(--color-ctp-base);
   --color-workbench-tab-inactive: var(--color-workbench-sidebar);
   --color-workbench-tab-border: var(--color-ctp-surface0);
+  --color-resource-drop-target: color-mix(in srgb, var(--color-ctp-mauve) 20%, transparent);
   --color-workbench-panel-header: var(--color-ctp-mantle);
   --color-workbench-status-bar-foreground: var(--color-ctp-text);
   --color-workbench-status-bar-muted: var(--color-ctp-subtext0);

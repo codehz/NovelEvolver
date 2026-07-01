@@ -20,9 +20,17 @@ export type ResourceTreeSelection = {
   type: ResourceNode["type"];
 };
 
+export type ResourceTreeDragState = {
+  sourcePath: string;
+  sourceType: ResourceNode["type"];
+  /** 当前命中目标 path；`""` 表示根目录，`null` 表示无有效目标。 */
+  targetPath: string | null;
+};
+
 export type ResourceTreeUiState = {
   selected: ResourceTreeSelection | null;
   editing: ResourceTreeEditingState | null;
+  drag: ResourceTreeDragState | null;
   /** 待展开目录队列（按顺序处理，用于多级新建后的逐级加载）。 */
   expandPathQueue: string[];
 };
@@ -45,6 +53,7 @@ export type ResourceTreeDataState = {
 export const initialResourceTreeUiState: ResourceTreeUiState = {
   selected: null,
   editing: null,
+  drag: null,
   expandPathQueue: [],
 };
 
