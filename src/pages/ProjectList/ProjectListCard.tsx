@@ -1,7 +1,6 @@
-import type { ProjectMetadata } from "@shared/project";
-
-import { cn } from "@/lib/cn";
-import { projectDisplayName } from "@/lib/project-display-name";
+import { cn } from "#app/lib/cn";
+import { projectDisplayName } from "#app/lib/project-display-name";
+import type { ProjectMetadata } from "#shared/project";
 
 import { formatLastOpened } from "./format-last-opened";
 

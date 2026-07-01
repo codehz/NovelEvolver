@@ -1,10 +1,11 @@
 import { existsSync } from "node:fs";
 
-import type { ProjectMetadata } from "@shared/project";
-import type { ProjectHandleWithMetadata, ProjectsService } from "@shared/rpc/projects-rpc";
 import { RpcTarget } from "capnweb";
 import { dialog, type BrowserWindow } from "electron";
 import { createSqliteRepository } from "nano-git/repository/sqlite";
+
+import type { ProjectMetadata } from "#shared/project";
+import type { ProjectHandleWithMetadata, ProjectsService } from "#shared/rpc/projects-rpc";
 
 import { toProjectMetadata } from "../home-path";
 import type { RpcMainDeps } from "./deps";

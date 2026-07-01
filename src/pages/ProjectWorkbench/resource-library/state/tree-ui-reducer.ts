@@ -1,4 +1,4 @@
-import type { ResourceNode } from "@shared/rpc/projects-rpc";
+import type { ResourceNode } from "#shared/rpc/projects-rpc";
 
 import type { CreatingState, ResourceTreeUiState } from "./types";
 import { initialResourceTreeUiState } from "./types";

@@ -1,9 +1,9 @@
-import type { ProjectMetadata } from "@shared/project";
 import { useLocation } from "wouter";
 
-import { projectsService } from "@/lib/app-rpc";
-import { createAsyncLoader, useAsyncLoader } from "@/lib/async-loader";
-import { useNotifyAction } from "@/lib/notifications";
+import { projectsService } from "#app/lib/app-rpc";
+import { createAsyncLoader, useAsyncLoader } from "#app/lib/async-loader";
+import { useNotifyAction } from "#app/lib/notifications";
+import type { ProjectMetadata } from "#shared/project";
 
 import { ProjectListCard } from "./ProjectListCard";
 import { ProjectListHeader } from "./ProjectListHeader";

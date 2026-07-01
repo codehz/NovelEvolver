@@ -1,4 +1,4 @@
-import { createPopover } from "@/components/popover";
+import { createPopover } from "#app/components/popover";
 
 export const [
   NotificationCenterPopoverProvider,

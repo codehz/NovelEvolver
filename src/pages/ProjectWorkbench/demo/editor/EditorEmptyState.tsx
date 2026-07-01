@@ -1,4 +1,4 @@
-import { cn } from "@/lib/cn";
+import { cn } from "#app/lib/cn";
 
 const emptyStateClass = cn(
   "flex min-h-0 flex-1 flex-col items-center justify-center gap-3 px-6 text-center",

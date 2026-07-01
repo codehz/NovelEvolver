@@ -2,7 +2,7 @@ import { useMolecule } from "bunshi/react";
 import { useAtomValue } from "jotai";
 import { useCallback, useEffect, useRef, useState } from "react";
 
-import { cn } from "@/lib/cn";
+import { cn } from "#app/lib/cn";
 
 import type { ResourceTreeNode } from "./resource-tree";
 import { resourceLibraryTreeMolecule } from "./state/resource-tree-molecule";

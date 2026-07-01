@@ -1,7 +1,8 @@
-import type { ResourceLibraryHandle, WorktreeHandle } from "@shared/rpc/projects-rpc";
 import { createScope, molecule, use, useMolecule } from "bunshi/react";
 import type { RpcPromise } from "capnweb";
 import { atom, useSetAtom } from "jotai";
+
+import type { ResourceLibraryHandle, WorktreeHandle } from "#shared/rpc/projects-rpc";
 
 import { projectMolecule } from "../state/molecules";
 

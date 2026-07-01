@@ -1,18 +1,18 @@
 import { AutoTransition } from "@codehz/auto-transition";
-import type { WindowState } from "@shared/window";
 import { useAtomValue } from "jotai";
 import { ForwardedRef, type ReactNode } from "react";
 import { chromatic, type SlotOptions } from "slot-text";
 import { SlotText } from "slot-text/react";
 
-import { NotificationBellButton, NotificationToastStack } from "@/components/notifications";
-import { QuickPickHost } from "@/components/quick-pick";
-import { windowService } from "@/lib/app-rpc";
-import { useWindowState } from "@/lib/app-rpc-react";
-import { cn } from "@/lib/cn";
-import { StatusBarLeftPortalTarget, StatusBarRightPortalTarget } from "@/lib/statusbar-portal";
-import { TitleBarActionsPortalTarget } from "@/lib/titlebar-portal";
-import { titleBarTitleAtom } from "@/lib/titlebar-title";
+import { NotificationBellButton, NotificationToastStack } from "#app/components/notifications";
+import { QuickPickHost } from "#app/components/quick-pick";
+import { windowService } from "#app/lib/app-rpc";
+import { useWindowState } from "#app/lib/app-rpc-react";
+import { cn } from "#app/lib/cn";
+import { StatusBarLeftPortalTarget, StatusBarRightPortalTarget } from "#app/lib/statusbar-portal";
+import { TitleBarActionsPortalTarget } from "#app/lib/titlebar-portal";
+import { titleBarTitleAtom } from "#app/lib/titlebar-title";
+import type { WindowState } from "#shared/window";
 
 const windowControlButtonClass = cn(
   "inline-flex size-7 shrink-0 items-center justify-center rounded-full border-0 bg-transparent p-0 text-titlebar-foreground transition-colors duration-150 hover:bg-window-button-hover focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-badge-background active:bg-window-button-hover",

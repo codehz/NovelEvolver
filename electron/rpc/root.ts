@@ -1,7 +1,8 @@
-import type { AppRpcRoot } from "@shared/rpc/app-rpc";
-import type { ProjectsService } from "@shared/rpc/projects-rpc";
-import type { WindowService } from "@shared/rpc/window-rpc";
 import { RpcTarget } from "capnweb";
+
+import type { AppRpcRoot } from "#shared/rpc/app-rpc";
+import type { ProjectsService } from "#shared/rpc/projects-rpc";
+import type { WindowService } from "#shared/rpc/window-rpc";
 
 import type { ProjectsServiceImpl } from "./projects-service";
 import type { WindowServiceImpl } from "./window-service";

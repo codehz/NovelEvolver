@@ -1,6 +1,6 @@
 import { Link } from "wouter";
 
-import { cn } from "@/lib/cn";
+import { cn } from "#app/lib/cn";
 
 import type { ActivityViewId } from "../types";
 

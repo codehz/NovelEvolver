@@ -1,8 +1,8 @@
 import { useAtom, useAtomValue } from "jotai";
 import { useCallback, useId, useRef } from "react";
 
-import { StatusBarItemButton } from "@/components/workbench";
-import { activeNotificationsAtom, notificationCenterOpenAtom } from "@/lib/notifications";
+import { StatusBarItemButton } from "#app/components/workbench";
+import { activeNotificationsAtom, notificationCenterOpenAtom } from "#app/lib/notifications";
 
 import { notificationBellAnchorClass } from "./notification-chrome";
 import {

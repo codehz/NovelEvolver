@@ -1,4 +1,4 @@
-import { StatusBarItemInfo } from "@/components/workbench";
+import { StatusBarItemInfo } from "#app/components/workbench";
 
 import { useActiveTabCaretPosition } from "../editor/use-active-tab-caret";
 import { formatEditorCaretPosition } from "../state/editor-caret";

@@ -1,5 +1,5 @@
-import { StatusBarItemButton, StatusBarMessage } from "@/components/workbench";
-import { StatusBarLeftPortalContent, StatusBarRightPortalContent } from "@/lib/statusbar-portal";
+import { StatusBarItemButton, StatusBarMessage } from "#app/components/workbench";
+import { StatusBarLeftPortalContent, StatusBarRightPortalContent } from "#app/lib/statusbar-portal";
 
 import { BranchStatusItem } from "../branch/BranchStatusItem";
 import { CaretPositionIndicator } from "./CaretPositionIndicator";

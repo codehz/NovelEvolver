@@ -2,8 +2,8 @@ import { useAtomValue } from "jotai";
 import { AnimatePresence } from "motion/react";
 import { useEffect } from "react";
 
-import { cn } from "@/lib/cn";
-import { activeNotificationsAtom, notificationApi } from "@/lib/notifications";
+import { cn } from "#app/lib/cn";
+import { activeNotificationsAtom, notificationApi } from "#app/lib/notifications";
 
 import { ScrollArea } from "../ScrollArea";
 import { notificationIconButtonClass } from "./notification-chrome";

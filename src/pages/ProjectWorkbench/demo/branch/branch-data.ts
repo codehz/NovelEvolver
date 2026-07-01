@@ -1,7 +1,7 @@
-import type { BranchInfo } from "@shared/rpc/projects-rpc";
 import { molecule, use, useMolecule } from "bunshi/react";
 
-import { createAsyncLoader, useAsyncLoader } from "@/lib/async-loader";
+import { createAsyncLoader, useAsyncLoader } from "#app/lib/async-loader";
+import type { BranchInfo } from "#shared/rpc/projects-rpc";
 
 import { projectMolecule } from "../state/molecules";
 

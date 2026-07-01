@@ -1,6 +1,7 @@
-import type { RpcStreamSubscribe } from "@shared/rpc/stream";
-import type { WindowState } from "@shared/window";
 import { useEffect, useState } from "react";
+
+import type { RpcStreamSubscribe } from "#shared/rpc/stream";
+import type { WindowState } from "#shared/window";
 
 import { windowService } from "./app-rpc";
 

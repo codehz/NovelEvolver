@@ -1,7 +1,7 @@
 import {
   SidebarSectionActionsPortalContent,
   SidebarHeaderActionButton,
-} from "@/components/workbench";
+} from "#app/components/workbench";
 
 import { ResourceLibraryTree } from "./ResourceLibraryTree";
 import { useResourceLibraryTreeActions } from "./state/use-resource-library-tree-actions";

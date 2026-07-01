@@ -1,6 +1,7 @@
-import type { AppRpcRoot } from "@shared/rpc/app-rpc";
-import type { AppRpcTransportBridge } from "@shared/rpc/bridge";
 import { RpcSession, type RpcStub } from "capnweb";
+
+import type { AppRpcRoot } from "#shared/rpc/app-rpc";
+import type { AppRpcTransportBridge } from "#shared/rpc/bridge";
 
 import { RendererRpcTransport } from "./app-rpc-transport";
 

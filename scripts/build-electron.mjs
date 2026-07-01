@@ -9,8 +9,8 @@ const distDir = path.join(projectRoot, "dist-electron");
 const watch = process.argv.includes("--watch");
 
 const alias = {
-  "@": path.join(projectRoot, "src"),
-  "@shared": path.join(projectRoot, "shared"),
+  "#app": path.join(projectRoot, "src"),
+  "#shared": path.join(projectRoot, "shared"),
 };
 
 function aliasPlugin() {

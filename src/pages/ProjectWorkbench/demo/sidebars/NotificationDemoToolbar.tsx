@@ -1,5 +1,5 @@
-import { cn } from "@/lib/cn";
-import { notificationApi } from "@/lib/notifications";
+import { cn } from "#app/lib/cn";
+import { notificationApi } from "#app/lib/notifications";
 
 const toolbarClass = cn(
   "flex shrink-0 flex-wrap gap-1 border-t border-workbench-tab-border bg-workbench-panel-header p-2",

@@ -8,10 +8,10 @@
 
 Two path aliases are configured in both `tsconfig.json` (`compilerOptions.paths`) and `path-aliases.ts` (`resolve.alias`, consumed by Vite):
 
-- `@/*` → `./src/*` — for imports reaching `src/lib`, `src/components`, `src/pages`, `src/routes`, `App`, etc. from outside `src/` or across feature folders.
-- `@shared/*` → `./shared/*` — for importing shared types and utilities from `electron/` or `src/` renderer code.
+- `#app/*` → `./src/*` — for imports reaching `src/lib`, `src/components`, `src/pages`, `src/routes`, `App`, etc. from outside `src/` or across feature folders.
+- `#shared/*` → `./shared/*` — for importing shared types and utilities from `electron/` or `src/` renderer code.
 
-**Rules:** Prefer aliases over deep relative paths (`../../../lib/cn` → `@/lib/cn`). Keep single-dot relative imports within the same feature folder (e.g. `workbench/layout` importing `./ActivityBar`, `electron/ipc` importing `./deps`). Do not add a `@electron` alias — Electron internals stay as relative (`../home-path`, `./ipc`). For the workbench barrel (`src/components/workbench/index.ts`), always import via `@/components/workbench` from outside the workbench folder; inside workbench keep subdirectory-relative imports.
+**Rules:** Prefer aliases over deep relative paths (`../../../lib/cn` → `#app/lib/cn`). Keep single-dot relative imports within the same feature folder (e.g. `workbench/layout` importing `./ActivityBar`, `electron/ipc` importing `./deps`). Do not add a `#electron` alias — Electron internals stay as relative (`../home-path`, `./ipc`). For the workbench barrel (`src/components/workbench/index.ts`), always import via `#app/components/workbench` from outside the workbench folder; inside workbench keep subdirectory-relative imports.
 
 ### Electron IPC layout & type safety
 

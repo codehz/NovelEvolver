@@ -1,10 +1,13 @@
 import { Router } from "wouter";
 import { useHashLocation } from "wouter/use-hash-location";
 
-import { WindowFrame } from "@/components/WindowFrame";
-import { StatusBarLeftPortalProvider, StatusBarRightPortalProvider } from "@/lib/statusbar-portal";
-import { TitleBarActionsPortalProvider } from "@/lib/titlebar-portal";
-import { AppRoutes } from "@/routes";
+import { WindowFrame } from "#app/components/WindowFrame";
+import {
+  StatusBarLeftPortalProvider,
+  StatusBarRightPortalProvider,
+} from "#app/lib/statusbar-portal";
+import { TitleBarActionsPortalProvider } from "#app/lib/titlebar-portal";
+import { AppRoutes } from "#app/routes";
 
 export default function App() {
   return (

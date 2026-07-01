@@ -1,5 +1,6 @@
-import { assertValidResourceRelativePath } from "@shared/resource-library-path";
 import type { VirtualWorktree } from "nano-git/worktree/core";
+
+import { assertValidResourceRelativePath } from "#shared/resource-library-path";
 
 export {
   assertResourceLibraryFilePath,
@@ -8,7 +9,7 @@ export {
   assertResourceLibraryMovePaths,
   assertResourceLibraryRemovablePath,
   assertValidResourceRelativePath,
-} from "@shared/resource-library-path";
+} from "#shared/resource-library-path";
 
 /** Worktree-relative directory name for the per-branch resource library. */
 export const RESOURCES_DIR = "resources";

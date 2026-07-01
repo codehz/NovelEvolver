@@ -1,7 +1,11 @@
-import type { BranchInfo } from "@shared/rpc/projects-rpc";
 import { useCallback } from "react";
 
-import { isQuickPickDismissedError, quickPickApi, type QuickPickListItem } from "@/lib/quick-pick";
+import {
+  isQuickPickDismissedError,
+  quickPickApi,
+  type QuickPickListItem,
+} from "#app/lib/quick-pick";
+import type { BranchInfo } from "#shared/rpc/projects-rpc";
 
 import { useWorkbenchEditorActions } from "../editor/use-workbench-editor-actions";
 import { useProjectContext } from "../state/molecules";

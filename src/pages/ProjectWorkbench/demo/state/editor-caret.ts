@@ -2,7 +2,7 @@ import type {
   PlainTextEditorCaretPosition,
   PlainTextEditorLogicalPosition,
   PlainTextEditorSelectionSnapshot,
-} from "@/components/PlainTextEditor";
+} from "#app/components/PlainTextEditor";
 
 export type EditorCaretPosition = PlainTextEditorCaretPosition;
 export type EditorLogicalPosition = PlainTextEditorLogicalPosition;

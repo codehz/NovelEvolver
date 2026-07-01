@@ -2,7 +2,7 @@ import { ScopeProvider, useMolecule } from "bunshi/react";
 import { useAtomValue, useSetAtom } from "jotai";
 import { useCallback } from "react";
 
-import { PlainTextEditor } from "@/components/PlainTextEditor";
+import { PlainTextEditor } from "#app/components/PlainTextEditor";
 
 import { useResourceAutosave } from "../../resource-library/use-resource-autosave";
 import { useResourceLibrary } from "../branch/branch-scopes";

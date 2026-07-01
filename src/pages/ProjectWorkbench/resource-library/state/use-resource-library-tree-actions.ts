@@ -1,9 +1,9 @@
-import { expandDirsAfterCreate, joinResourceChildPath } from "@shared/resource-library-path";
 import { useMolecule } from "bunshi/react";
 import { useAtomValue, useSetAtom } from "jotai";
 import { useCallback, useRef } from "react";
 
-import { notificationApi } from "@/lib/notifications";
+import { notificationApi } from "#app/lib/notifications";
+import { expandDirsAfterCreate, joinResourceChildPath } from "#shared/resource-library-path";
 
 import { useResourceLibrary } from "../../demo/branch/branch-scopes";
 import { useWorkbenchEditorActions } from "../../demo/editor/use-workbench-editor-actions";

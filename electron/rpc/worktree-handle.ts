@@ -1,6 +1,7 @@
-import type { ResourceLibraryHandle, WorktreeHandle } from "@shared/rpc/projects-rpc";
 import { RpcTarget } from "capnweb";
 import type { VirtualWorktree } from "nano-git/worktree/core";
+
+import type { ResourceLibraryHandle, WorktreeHandle } from "#shared/rpc/projects-rpc";
 
 import { ResourceLibraryHandleImpl } from "./resource-library-handle";
 

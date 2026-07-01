@@ -1,5 +1,5 @@
-import { ScrollArea } from "@/components/ScrollArea";
-import { cn } from "@/lib/cn";
+import { ScrollArea } from "#app/components/ScrollArea";
+import { cn } from "#app/lib/cn";
 
 import { NotificationDemoToolbar } from "./NotificationDemoToolbar";
 

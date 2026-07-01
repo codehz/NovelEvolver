@@ -17,8 +17,8 @@
     "jsx": "react-jsx",
     "types": ["vite/client", "node"],
     "paths": {
-      "@/*": ["./src/*"],
-      "@shared/*": ["./shared/*"]
+      "#app/*": ["./src/*"],
+      "#shared/*": ["./shared/*"]
     }
   },
   "include": ["src", "electron", "shared", "path-aliases.ts", "vite.config.ts"]

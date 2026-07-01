@@ -1,6 +1,6 @@
 import { useRef, type ReactNode } from "react";
 
-import { useAnimatedContentHeight } from "@/lib/animated-height";
+import { useAnimatedContentHeight } from "#app/lib/animated-height";
 
 import {
   notificationCenterPopoverPanelClass,

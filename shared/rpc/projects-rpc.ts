@@ -1,5 +1,6 @@
-import type { ProjectMetadata } from "@shared/project";
 import type { RpcTarget } from "capnweb";
+
+import type { ProjectMetadata } from "#shared/project";
 
 /** Branch info for the HEAD of a project repository. */
 export type BranchInfo = {

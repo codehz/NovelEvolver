@@ -1,7 +1,8 @@
-import type { BranchInfo, ProjectHandle, WorktreeHandle } from "@shared/rpc/projects-rpc";
 import { RpcTarget } from "capnweb";
 import type { SHA1 } from "nano-git";
 import { createSqliteRepository } from "nano-git/repository/sqlite";
+
+import type { BranchInfo, ProjectHandle, WorktreeHandle } from "#shared/rpc/projects-rpc";
 
 import type { WorktreesStore } from "../worktrees-store";
 import { WorktreeHandleImpl } from "./worktree-handle";

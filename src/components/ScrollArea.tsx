@@ -1,12 +1,12 @@
 import { type CSSProperties, type ReactNode } from "react";
 
-import { cn } from "@/lib/cn";
+import { cn } from "#app/lib/cn";
 import {
   scrollbarHiddenViewportClass,
   scrollbarStickyRailClass,
   ScrollbarThumbTrack,
   useScrollbarController,
-} from "@/lib/scrollbar";
+} from "#app/lib/scrollbar";
 
 const scrollAreaRootClass = cn("min-h-0");
 

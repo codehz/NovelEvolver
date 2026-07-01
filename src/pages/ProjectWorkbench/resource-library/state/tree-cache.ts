@@ -1,4 +1,4 @@
-import type { ResourceNode } from "@shared/rpc/projects-rpc";
+import type { ResourceNode } from "#shared/rpc/projects-rpc";
 
 import { childPath, type ResourceTreeNode } from "../resource-tree";
 import type { DirListingState, ResourceTreeDataState } from "./types";

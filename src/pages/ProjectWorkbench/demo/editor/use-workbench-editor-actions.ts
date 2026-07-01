@@ -2,7 +2,7 @@ import { useMolecule } from "bunshi/react";
 import { useAtom, useSetAtom } from "jotai";
 import { useCallback } from "react";
 
-import { notificationApi } from "@/lib/notifications";
+import { notificationApi } from "#app/lib/notifications";
 
 import { workbenchEditorMolecule } from "../state/molecules";
 import { resourceTabId, resourceTabLabel, type WorkbenchEditorTab } from "../state/types";

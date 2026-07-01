@@ -1,6 +1,7 @@
-import type { ResourceLibraryHandle, ResourceNode } from "@shared/rpc/projects-rpc";
 import { RpcTarget } from "capnweb";
 import type { VirtualWorktree } from "nano-git/worktree/core";
+
+import type { ResourceLibraryHandle, ResourceNode } from "#shared/rpc/projects-rpc";
 
 import {
   assertResourceLibraryFilePath,

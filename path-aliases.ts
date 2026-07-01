@@ -5,6 +5,6 @@ const projectRoot = path.dirname(fileURLToPath(import.meta.url));
 
 /** Bundler resolve.alias — keep in sync with tsconfig `compilerOptions.paths`. */
 export const pathAlias = {
-  "@": path.join(projectRoot, "src"),
-  "@shared": path.join(projectRoot, "shared"),
+  "#app": path.join(projectRoot, "src"),
+  "#shared": path.join(projectRoot, "shared"),
 } satisfies Record<string, string>;

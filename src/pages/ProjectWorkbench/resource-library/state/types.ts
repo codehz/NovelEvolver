@@ -1,4 +1,4 @@
-import type { ResourceNode } from "@shared/rpc/projects-rpc";
+import type { ResourceNode } from "#shared/rpc/projects-rpc";
 
 export type CreatingState = {
   id: number;

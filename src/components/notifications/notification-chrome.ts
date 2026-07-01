@@ -1,5 +1,5 @@
-import { cn } from "@/lib/cn";
-import type { NotificationSeverity } from "@/lib/notifications";
+import { cn } from "#app/lib/cn";
+import type { NotificationSeverity } from "#app/lib/notifications";
 
 export const notificationBellAnchorClass = cn(
   "relative flex shrink-0 items-stretch self-stretch anchor-name-notification-bell",

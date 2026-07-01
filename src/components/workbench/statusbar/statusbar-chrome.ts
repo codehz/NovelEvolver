@@ -1,4 +1,4 @@
-import { cn } from "@/lib/cn";
+import { cn } from "#app/lib/cn";
 
 /** Interactive status bar segment (encoding, branch, sync, etc.). */
 export const statusBarItemButtonClass = cn(

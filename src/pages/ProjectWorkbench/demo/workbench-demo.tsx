@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 
-import type { ActivityViewId } from "@/components/workbench";
+import type { ActivityViewId } from "#app/components/workbench";
 
 import { EditorArea } from "./editor/EditorArea";
 import { AuxiliaryPanelDemo } from "./sidebars/auxiliary-demo";

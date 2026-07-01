@@ -1,8 +1,8 @@
 import { useAtomValue } from "jotai";
 import { AnimatePresence } from "motion/react";
 
-import { cn } from "@/lib/cn";
-import { toastNotificationsAtom } from "@/lib/notifications";
+import { cn } from "#app/lib/cn";
+import { toastNotificationsAtom } from "#app/lib/notifications";
 
 import { NotificationItem } from "./NotificationItem";
 

@@ -4,11 +4,11 @@ import { Suspense, use } from "react";
 import { ErrorBoundary } from "react-error-boundary";
 import { Link, useParams } from "wouter";
 
-import { WorkbenchLayout } from "@/components/workbench";
-import { cn } from "@/lib/cn";
-import { projectDisplayName } from "@/lib/project-display-name";
-import { convertRpcPromise } from "@/lib/rpc-utils";
-import { useTitleBarTitle } from "@/lib/titlebar-title";
+import { WorkbenchLayout } from "#app/components/workbench";
+import { cn } from "#app/lib/cn";
+import { projectDisplayName } from "#app/lib/project-display-name";
+import { convertRpcPromise } from "#app/lib/rpc-utils";
+import { useTitleBarTitle } from "#app/lib/titlebar-title";
 
 import { BranchScopeProvider } from "./demo/branch/BranchScopeProvider";
 import { projectIdScope, projectMolecule } from "./demo/state/molecules";
