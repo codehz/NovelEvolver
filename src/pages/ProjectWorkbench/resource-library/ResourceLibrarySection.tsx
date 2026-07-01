@@ -16,9 +16,16 @@ export function ResourceLibrarySectionBody() {
   const [treeRevision, setTreeRevision] = useState(0);
   const [creating, setCreating] = useState<CreatingState | null>(null);
   const creatingIdRef = useRef(0);
+  const [selectedPath, setSelectedPath] = useState<string | null>(null);
+  const selectedTypeRef = useRef<"file" | "folder" | null>(null);
 
   const bumpTree = useCallback(() => {
     setTreeRevision((value) => value + 1);
+  }, []);
+
+  const handleSelect = useCallback((path: string, type: "file" | "folder") => {
+    setSelectedPath(path);
+    selectedTypeRef.current = type;
   }, []);
 
   const listDirectory = useCallback(
@@ -35,10 +42,22 @@ export function ResourceLibrarySectionBody() {
     [openResourceTab, resources],
   );
 
-  const startCreating = useCallback((kind: "file" | "folder") => {
-    creatingIdRef.current += 1;
-    setCreating({ id: creatingIdRef.current, kind, parentPath: "" });
-  }, []);
+  const startCreating = useCallback(
+    (kind: "file" | "folder") => {
+      let parentPath = "";
+      if (selectedPath !== null) {
+        if (selectedTypeRef.current === "folder") {
+          parentPath = selectedPath;
+        } else {
+          const lastSlash = selectedPath.lastIndexOf("/");
+          parentPath = lastSlash >= 0 ? selectedPath.slice(0, lastSlash) : "";
+        }
+      }
+      creatingIdRef.current += 1;
+      setCreating({ id: creatingIdRef.current, kind, parentPath });
+    },
+    [selectedPath],
+  );
 
   const cancelCreating = useCallback(() => {
     setCreating(null);
@@ -91,6 +110,8 @@ export function ResourceLibrarySectionBody() {
         creating={creating}
         onCreateConfirm={(kind, name) => void confirmCreating(kind, name)}
         onCreateCancel={cancelCreating}
+        selectedPath={selectedPath}
+        onSelect={handleSelect}
       />
     </>
   );

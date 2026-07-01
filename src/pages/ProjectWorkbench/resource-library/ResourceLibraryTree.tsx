@@ -30,6 +30,8 @@ type ResourceLibraryTreeProps = {
   creating: CreatingState | null;
   onCreateConfirm: (kind: "file" | "folder", name: string) => void;
   onCreateCancel: () => void;
+  selectedPath: string | null;
+  onSelect: (path: string, type: "file" | "folder") => void;
 };
 
 function CreatingTreeRow({
@@ -123,13 +125,17 @@ function CreatingTreeRow({
 function ResourceTreeRow({
   node,
   depth,
+  selectedPath,
   onToggleFolder,
   onOpenFile,
+  onSelect,
 }: {
   node: ResourceTreeNode;
   depth: number;
+  selectedPath: string | null;
   onToggleFolder: (path: string) => void;
   onOpenFile: (path: string) => void;
+  onSelect: (path: string, type: "file" | "folder") => void;
 }) {
   const isFolder = node.type === "folder";
   const icon = isFolder
@@ -137,17 +143,19 @@ function ResourceTreeRow({
       ? cn("icon-[codicon--folder-opened]")
       : cn("icon-[codicon--folder]")
     : cn("icon-[codicon--file]");
+  const isSelected = selectedPath === node.path;
 
   return (
     <li role="none">
       <button
         className={cn(
           "flex w-full items-center gap-1 py-0.5 text-left text-app-foreground",
-          "hover:bg-workbench-tab-active/60",
+          isSelected ? "bg-workbench-tab-active" : "hover:bg-workbench-tab-active/60",
         )}
         style={{ paddingLeft: `${depth * 12 + 4}px` }}
         type="button"
         onClick={() => {
+          onSelect(node.path, node.type);
           if (isFolder) {
             onToggleFolder(node.path);
             return;
@@ -177,6 +185,8 @@ export function ResourceLibraryTree({
   creating,
   onCreateConfirm,
   onCreateCancel,
+  selectedPath,
+  onSelect,
 }: ResourceLibraryTreeProps) {
   const [roots, setRoots] = useState<ResourceTreeNode[]>([]);
   const [rootLoading, setRootLoading] = useState(true);
@@ -329,7 +339,9 @@ export function ResourceLibraryTree({
             key={item.key}
             depth={item.depth}
             node={item.node}
+            selectedPath={selectedPath}
             onOpenFile={onOpenFile}
+            onSelect={onSelect}
             onToggleFolder={onToggleFolder}
           />
         ),
