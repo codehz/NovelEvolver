@@ -22,7 +22,7 @@ export function BranchScopeProvider({ children }: { children: ReactNode }) {
 
   return (
     <BranchScopeContext value={contextValue}>
-      <ScopeProvider key={branchName} scope={branchNameScope} value={branchName}>
+      <ScopeProvider scope={branchNameScope} value={branchName}>
         {children}
       </ScopeProvider>
     </BranchScopeContext>
