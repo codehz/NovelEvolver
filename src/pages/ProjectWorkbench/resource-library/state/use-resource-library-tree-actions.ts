@@ -26,6 +26,32 @@ export function useResourceLibraryTreeActions() {
   const dispatchUi = useSetAtom(treeUiAtom);
   const creatingIdRef = useRef(0);
 
+  const ensureDirectoryLoaded = useCallback(
+    async (path: string) => {
+      const listing = store.get(treeDataAtom).listings[path];
+      if (listing?.status === "ready") {
+        return;
+      }
+      if (path !== "") {
+        dispatchData({ type: "setNodeLoading", path, loading: true });
+      }
+      try {
+        const entries = await resources.ls(path);
+        if (path === "") {
+          dispatchData({ type: "reloadRootSuccess", entries });
+        } else {
+          dispatchData({ type: "setNodeChildren", path, entries });
+        }
+      } catch (error) {
+        if (path !== "") {
+          dispatchData({ type: "setNodeLoading", path, loading: false });
+        }
+        throw error;
+      }
+    },
+    [dispatchData, resources, store, treeDataAtom],
+  );
+
   const startCreating = useCallback(
     (kind: "file" | "folder") => {
       const ui = store.get(treeUiAtom);
@@ -161,6 +187,7 @@ export function useResourceLibraryTreeActions() {
         return;
       }
       try {
+        await ensureDirectoryLoaded(targetPath);
         await resources.move(sourcePath, newPath);
         rebindResourcePaths(sourcePath, newPath, sourceType);
         dispatchData({
@@ -177,7 +204,7 @@ export function useResourceLibraryTreeActions() {
         });
       }
     },
-    [dispatchData, dispatchUi, rebindResourcePaths, resources],
+    [dispatchData, dispatchUi, ensureDirectoryLoaded, rebindResourcePaths, resources],
   );
 
   const activateNode = useCallback(
