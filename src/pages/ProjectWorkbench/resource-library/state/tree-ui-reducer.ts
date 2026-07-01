@@ -9,7 +9,38 @@ export type ResourceTreeUiAction =
   | { type: "cancelEditing" }
   | { type: "requestExpand"; path: string }
   | { type: "enqueueExpandPaths"; paths: string[] }
+  | { type: "remapPaths"; from: string; to: string; nodeType: ResourceNode["type"] }
   | { type: "shiftExpandQueue" };
+
+function remapPath(path: string, from: string, to: string, nodeType: ResourceNode["type"]): string {
+  if (nodeType === "file") {
+    return path === from ? to : path;
+  }
+  if (path === from) {
+    return to;
+  }
+  if (path.startsWith(`${from}/`)) {
+    return `${to}${path.slice(from.length)}`;
+  }
+  return path;
+}
+
+function remapEditingState(
+  editing: ResourceTreeUiState["editing"],
+  from: string,
+  to: string,
+  nodeType: ResourceNode["type"],
+): ResourceTreeUiState["editing"] {
+  if (editing === null) {
+    return null;
+  }
+  if (editing.mode === "creating") {
+    const parentPath = remapPath(editing.parentPath, from, to, nodeType);
+    return parentPath === editing.parentPath ? editing : { ...editing, parentPath };
+  }
+  const path = remapPath(editing.path, from, to, nodeType);
+  return path === editing.path ? editing : { ...editing, path };
+}
 
 function appendExpandPath(queue: string[], path: string): string[] {
   if (path === "" || queue.includes(path)) {
@@ -59,6 +90,24 @@ export function resourceTreeUiReducer(
       return {
         ...state,
         expandPathQueue: appendExpandPaths(state.expandPathQueue, action.paths),
+      };
+    case "remapPaths":
+      return {
+        ...state,
+        selected:
+          state.selected === null
+            ? null
+            : {
+                ...state.selected,
+                path: remapPath(state.selected.path, action.from, action.to, action.nodeType),
+              },
+        editing: remapEditingState(state.editing, action.from, action.to, action.nodeType),
+        expandPathQueue: appendExpandPaths(
+          [],
+          state.expandPathQueue.map((path) =>
+            remapPath(path, action.from, action.to, action.nodeType),
+          ),
+        ),
       };
     case "shiftExpandQueue":
       return {

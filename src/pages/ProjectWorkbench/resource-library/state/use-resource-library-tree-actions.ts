@@ -17,7 +17,7 @@ import type { ResourceTreeEditingState } from "./types";
 
 export function useResourceLibraryTreeActions() {
   const resources = useResourceLibrary();
-  const { openResourceTab } = useWorkbenchEditorActions();
+  const { openResourceTab, rebindResourcePaths } = useWorkbenchEditorActions();
   const { treeDataAtom, treeUiAtom } = useMolecule(resourceLibraryTreeMolecule);
   const store = useStore();
   const dispatchData = useSetAtom(treeDataAtom);
@@ -66,7 +66,7 @@ export function useResourceLibraryTreeActions() {
         } else {
           await resources.writeFile(path, "");
         }
-        dispatchData({ type: "invalidatePath", path: editing.parentPath });
+        dispatchData({ type: "queueReloadPath", path: editing.parentPath });
         dispatchUi({
           type: "enqueueExpandPaths",
           paths: expandDirsAfterCreate(path, editing.kind),
@@ -126,7 +126,15 @@ export function useResourceLibraryTreeActions() {
       }
       try {
         await resources.move(editing.path, newPath);
-        dispatchData({ type: "invalidatePath", path: parentPath });
+        rebindResourcePaths(editing.path, newPath, editing.kind);
+        dispatchData({
+          type: "remapPaths",
+          from: editing.path,
+          to: newPath,
+          nodeType: editing.kind,
+        });
+        dispatchUi({ type: "remapPaths", from: editing.path, to: newPath, nodeType: editing.kind });
+        dispatchData({ type: "queueReloadPath", path: parentPath });
         dispatchUi({ type: "select", path: newPath, nodeType: editing.kind });
       } catch (error) {
         notificationApi.error(error instanceof Error ? error.message : "重命名失败", {
@@ -134,7 +142,7 @@ export function useResourceLibraryTreeActions() {
         });
       }
     },
-    [dispatchData, dispatchUi, resources],
+    [dispatchData, dispatchUi, rebindResourcePaths, resources],
   );
 
   const activateNode = useCallback(

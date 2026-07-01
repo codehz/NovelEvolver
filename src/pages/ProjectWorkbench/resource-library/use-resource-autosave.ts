@@ -26,9 +26,7 @@ export function useResourceAutosave(
 
   return useCallback((content: string) => {
     latestRef.current = content;
-    const path = pathRef.current;
-    const write = writeRef.current;
-    if (path == null || path === "" || write == null) {
+    if (pathRef.current == null || pathRef.current === "" || writeRef.current == null) {
       return;
     }
     if (timerRef.current != null) {
@@ -36,6 +34,11 @@ export function useResourceAutosave(
     }
     timerRef.current = setTimeout(() => {
       timerRef.current = null;
+      const path = pathRef.current;
+      const write = writeRef.current;
+      if (path == null || path === "" || write == null) {
+        return;
+      }
       void write(path, latestRef.current).catch((error) => {
         notificationApi.error(error instanceof Error ? error.message : "自动保存失败", {
           source: "资源库",

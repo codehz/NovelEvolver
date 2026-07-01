@@ -15,7 +15,68 @@ export type ResourceTreeDataAction =
   | { type: "setNodeExpanded"; path: string; expanded: boolean }
   | { type: "toggleFolder"; path: string }
   | { type: "invalidatePath"; path: string }
+  | { type: "queueReloadPath"; path: string }
+  | { type: "remapPaths"; from: string; to: string; nodeType: ResourceNode["type"] }
   | { type: "shiftReloadQueue" };
+
+function remapPath(path: string, from: string, to: string, nodeType: ResourceNode["type"]): string {
+  if (nodeType === "file") {
+    return path === from ? to : path;
+  }
+  if (path === from) {
+    return to;
+  }
+  if (path.startsWith(`${from}/`)) {
+    return `${to}${path.slice(from.length)}`;
+  }
+  return path;
+}
+
+function remapExpandedPaths(
+  expandedPaths: ResourceTreeDataState["expandedPaths"],
+  from: string,
+  to: string,
+  nodeType: ResourceNode["type"],
+): ResourceTreeDataState["expandedPaths"] {
+  const next: ResourceTreeDataState["expandedPaths"] = {};
+  for (const path of Object.keys(expandedPaths)) {
+    next[remapPath(path, from, to, nodeType)] = true;
+  }
+  return next;
+}
+
+function remapListings(
+  listings: ResourceTreeDataState["listings"],
+  from: string,
+  to: string,
+  nodeType: ResourceNode["type"],
+): ResourceTreeDataState["listings"] {
+  const next: ResourceTreeDataState["listings"] = {};
+  for (const [path, listing] of Object.entries(listings)) {
+    next[remapPath(path, from, to, nodeType)] = listing;
+  }
+  return next;
+}
+
+function appendReloadPath(queue: string[], path: string): string[] {
+  return queue.includes(path) ? queue : [...queue, path];
+}
+
+function remapReloadPaths(
+  reloadPaths: string[],
+  from: string,
+  to: string,
+  nodeType: ResourceNode["type"],
+): string[] {
+  const next: string[] = [];
+  for (const path of reloadPaths) {
+    const mapped = remapPath(path, from, to, nodeType);
+    if (!next.includes(mapped)) {
+      next.push(mapped);
+    }
+  }
+  return next;
+}
 
 function dropListingSubtree(
   listings: ResourceTreeDataState["listings"],
@@ -135,6 +196,23 @@ export function resourceTreeDataReducer(
         reloadPaths: queue,
       };
     }
+    case "queueReloadPath":
+      return {
+        ...state,
+        reloadPaths: appendReloadPath(state.reloadPaths, action.path),
+      };
+    case "remapPaths":
+      return {
+        ...state,
+        expandedPaths: remapExpandedPaths(
+          state.expandedPaths,
+          action.from,
+          action.to,
+          action.nodeType,
+        ),
+        listings: remapListings(state.listings, action.from, action.to, action.nodeType),
+        reloadPaths: remapReloadPaths(state.reloadPaths, action.from, action.to, action.nodeType),
+      };
     case "shiftReloadQueue":
       return {
         ...state,
