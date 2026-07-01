@@ -33,12 +33,11 @@ export class ResourceLibraryHandleImpl extends RpcTarget implements ResourceLibr
   }
 
   ls(path: string): ResourceNode[] {
-    debugLog("ls", { path });
     assertResourceLibraryListPath(path);
     ensureResourcesDirectory(this.#worktree);
     const dirPath = toWorktreePath(path);
     this.#assertDirectory(dirPath, path);
-    const nodes: ResourceNode[] = this.#worktree
+    return this.#worktree
       .readdir(dirPath)
       .filter((entry) => entry.kind === "blob" || entry.kind === "tree")
       .map(
@@ -47,8 +46,6 @@ export class ResourceLibraryHandleImpl extends RpcTarget implements ResourceLibr
           type: entry.kind === "tree" ? "folder" : "file",
         }),
       );
-    debugLog("ls:done", { path, count: nodes.length });
-    return nodes;
   }
 
   readFile(path: string): string {
