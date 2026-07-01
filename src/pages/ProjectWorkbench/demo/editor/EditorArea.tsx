@@ -1,11 +1,14 @@
 import { cn } from "#app/lib/cn";
 
+import { EditorBreadcrumb } from "./EditorBreadcrumb";
 import { EditorEmptyState } from "./EditorEmptyState";
 import { EditorTabPane } from "./EditorTabPane";
 import { useWorkbenchEditorActions } from "./use-workbench-editor-actions";
 
 export function EditorArea() {
   const { tabs, activateTab, closeTab } = useWorkbenchEditorActions();
+
+  const activeTab = tabs.find((tab) => tab.active) ?? tabs[0];
 
   return (
     <section
@@ -56,6 +59,10 @@ export function EditorArea() {
           ))}
         </div>
       ) : null}
+
+      <div className="flex h-8 shrink-0 items-center gap-1 bg-workbench-editor px-3 text-xs text-ctp-subtext0">
+        <EditorBreadcrumb resourcePath={activeTab?.resourcePath ?? null} />
+      </div>
 
       <div className="flex min-h-0 min-w-0 flex-1 flex-col">
         {tabs.length === 0 ? (
