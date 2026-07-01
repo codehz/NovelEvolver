@@ -1,9 +1,22 @@
 import type { ResourceNode } from "@shared/rpc/projects-rpc";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { cn } from "@/lib/cn";
 
 import { nodesToTreeChildren, setNodeAtPath, type ResourceTreeNode } from "./resource-tree";
+
+type FlatTreeItem = { node: ResourceTreeNode; depth: number };
+
+function flattenTree(nodes: ResourceTreeNode[], depth: number = 0): FlatTreeItem[] {
+  const result: FlatTreeItem[] = [];
+  for (const node of nodes) {
+    result.push({ node, depth });
+    if (node.type === "folder" && node.expanded && node.children && node.children.length > 0) {
+      result.push(...flattenTree(node.children, depth + 1));
+    }
+  }
+  return result;
+}
 
 export type CreatingState = {
   id: number;
@@ -71,7 +84,7 @@ function CreatingTreeRow({
     <li role="none">
       <div
         className={cn(
-          "flex w-full items-center gap-1.5 rounded px-1 py-0.5 text-app-foreground",
+          "flex w-full items-center gap-1.5 px-1 py-0.5 text-app-foreground",
           "bg-workbench-tab-active/60",
         )}
         style={{ paddingLeft: `${depth * 12 + 4}px` }}
@@ -125,40 +138,27 @@ function ResourceTreeRow({
     : cn("icon-[codicon--file]");
 
   return (
-    <>
-      <li role="none">
-        <button
-          className={cn(
-            "flex w-full items-center gap-1.5 rounded px-1 py-0.5 text-left text-app-foreground",
-            "hover:bg-workbench-tab-active/60",
-          )}
-          style={{ paddingLeft: `${depth * 12 + 4}px` }}
-          type="button"
-          onClick={() => {
-            if (isFolder) {
-              onToggleFolder(node.path);
-              return;
-            }
-            onOpenFile(node.path);
-          }}
-        >
-          <span aria-hidden="true" className={cn(icon, "shrink-0 text-base")} />
-          <span className="truncate">{node.name}</span>
-          {node.loading ? <span className="ml-auto text-xs text-ctp-overlay0">…</span> : null}
-        </button>
-      </li>
-      {isFolder && node.expanded && node.children
-        ? node.children.map((child) => (
-            <ResourceTreeRow
-              key={child.path}
-              depth={depth + 1}
-              node={child}
-              onOpenFile={onOpenFile}
-              onToggleFolder={onToggleFolder}
-            />
-          ))
-        : null}
-    </>
+    <li role="none">
+      <button
+        className={cn(
+          "flex w-full items-center gap-1.5 px-1 py-0.5 text-left text-app-foreground",
+          "hover:bg-workbench-tab-active/60",
+        )}
+        style={{ paddingLeft: `${depth * 12 + 4}px` }}
+        type="button"
+        onClick={() => {
+          if (isFolder) {
+            onToggleFolder(node.path);
+            return;
+          }
+          onOpenFile(node.path);
+        }}
+      >
+        <span aria-hidden="true" className={cn(icon, "shrink-0 text-base")} />
+        <span className="truncate">{node.name}</span>
+        {node.loading ? <span className="ml-auto text-xs text-ctp-overlay0">…</span> : null}
+      </button>
+    </li>
   );
 }
 
@@ -242,6 +242,52 @@ export function ResourceLibraryTree({
     [loadChildren],
   );
 
+  const flatItems = useMemo(() => flattenTree(roots), [roots]);
+
+  const renderItems = useMemo(() => {
+    const items: Array<
+      | { key: string; kind: "node"; node: ResourceTreeNode; depth: number }
+      | { key: string; kind: "creating"; creating: CreatingState; depth: number }
+    > = flatItems.map(({ node, depth }) => ({
+      key: node.path,
+      kind: "node" as const,
+      node,
+      depth,
+    }));
+
+    if (creating) {
+      const prefix = creating.parentPath === "" ? "" : `${creating.parentPath}/`;
+      let insertAt = 0;
+      let depth = 0;
+      if (creating.parentPath !== "") {
+        // Find the last direct child of parentPath to determine insert position
+        let lastChildIdx = -1;
+        for (let i = 0; i < flatItems.length; i++) {
+          const p = flatItems[i].node.path;
+          if (p.startsWith(prefix) && !p.slice(prefix.length).includes("/")) {
+            lastChildIdx = i;
+          }
+        }
+        if (lastChildIdx >= 0) {
+          insertAt = lastChildIdx + 1;
+          depth = flatItems[lastChildIdx].depth;
+        } else {
+          const parentIdx = flatItems.findIndex((item) => item.node.path === creating.parentPath);
+          insertAt = parentIdx >= 0 ? parentIdx + 1 : 0;
+          depth = parentIdx >= 0 ? flatItems[parentIdx].depth + 1 : 0;
+        }
+      }
+      items.splice(insertAt, 0, {
+        key: `creating-${creating.id}`,
+        kind: "creating",
+        creating,
+        depth,
+      });
+    }
+
+    return items;
+  }, [flatItems, creating]);
+
   if (rootLoading) {
     return <p className="px-2 py-1 text-xs text-ctp-subtext0">加载资源库…</p>;
   }
@@ -254,30 +300,31 @@ export function ResourceLibraryTree({
     );
   }
 
-  if (roots.length === 0 && creating == null) {
+  if (renderItems.length === 0) {
     return <p className="px-2 py-1 text-xs text-ctp-subtext0">资源库为空。</p>;
   }
 
   return (
     <ul className="flex flex-col gap-0.5 p-1" role="tree">
-      {creating != null ? (
-        <CreatingTreeRow
-          key={`creating-${creating.id}`}
-          depth={0}
-          kind={creating.kind}
-          onCancel={onCreateCancel}
-          onConfirm={(name) => onCreateConfirm(creating.kind, name)}
-        />
-      ) : null}
-      {roots.map((node) => (
-        <ResourceTreeRow
-          key={node.path}
-          depth={0}
-          node={node}
-          onOpenFile={onOpenFile}
-          onToggleFolder={onToggleFolder}
-        />
-      ))}
+      {renderItems.map((item) =>
+        item.kind === "creating" ? (
+          <CreatingTreeRow
+            key={item.key}
+            depth={item.depth}
+            kind={item.creating.kind}
+            onCancel={onCreateCancel}
+            onConfirm={(name) => onCreateConfirm(item.creating.kind, name)}
+          />
+        ) : (
+          <ResourceTreeRow
+            key={item.key}
+            depth={item.depth}
+            node={item.node}
+            onOpenFile={onOpenFile}
+            onToggleFolder={onToggleFolder}
+          />
+        ),
+      )}
     </ul>
   );
 }
