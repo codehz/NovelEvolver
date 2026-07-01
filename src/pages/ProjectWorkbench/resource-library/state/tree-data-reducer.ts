@@ -2,7 +2,7 @@ import type { ResourceNode } from "#shared/rpc/projects-rpc";
 
 import type { ResourceTreeNode } from "../resource-tree";
 import { buildVisibleResourceTree } from "./tree-cache";
-import type { CreatingState, ResourceTreeDataState } from "./types";
+import type { CreatingState, RenamingState, ResourceTreeDataState } from "./types";
 import { initialResourceTreeDataState } from "./types";
 
 export type ResourceTreeDataAction =
@@ -167,11 +167,13 @@ export function flattenVisibleResourceTree(
 
 export type FlatRenderItem =
   | { key: string; kind: "node"; node: ResourceTreeNode; depth: number }
-  | { key: string; kind: "creating"; creating: CreatingState; depth: number };
+  | { key: string; kind: "creating"; creating: CreatingState; depth: number }
+  | { key: string; kind: "renaming"; renaming: RenamingState; depth: number; currentName: string };
 
 export function buildFlatRenderItems(
   flatItems: Array<{ node: ResourceTreeNode; depth: number }>,
   creating: CreatingState | null,
+  renaming: RenamingState | null,
 ): FlatRenderItem[] {
   const items: FlatRenderItem[] = flatItems.map(({ node, depth }) => ({
     key: node.path,
@@ -179,6 +181,25 @@ export function buildFlatRenderItems(
     node,
     depth,
   }));
+
+  // Handle renaming: replace the node at renaming.path with an inline edit row.
+  if (renaming) {
+    const renameIdx = items.findIndex(
+      (item) => item.kind === "node" && item.node.path === renaming.path,
+    );
+    if (renameIdx >= 0) {
+      const nodeItem = items[renameIdx] as { kind: "node"; node: ResourceTreeNode; depth: number };
+      const currentName = nodeItem.node.name;
+      items.splice(renameIdx, 1, {
+        key: `renaming-${renaming.path}`,
+        kind: "renaming",
+        renaming,
+        depth: nodeItem.depth,
+        currentName,
+      });
+    }
+    // If renaming but node not found in flat items (e.g. not expanded), just return — cancel.
+  }
 
   if (!creating) {
     return items;

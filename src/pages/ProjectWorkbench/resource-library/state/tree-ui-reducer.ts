@@ -1,12 +1,14 @@
 import type { ResourceNode } from "#shared/rpc/projects-rpc";
 
-import type { CreatingState, ResourceTreeUiState } from "./types";
+import type { CreatingState, RenamingState, ResourceTreeUiState } from "./types";
 import { initialResourceTreeUiState } from "./types";
 
 export type ResourceTreeUiAction =
   | { type: "select"; path: string; nodeType: ResourceNode["type"] }
   | { type: "startCreating"; creating: CreatingState }
   | { type: "cancelCreating" }
+  | { type: "startRenaming"; renaming: RenamingState }
+  | { type: "cancelRenaming" }
   | { type: "requestExpand"; path: string }
   | { type: "enqueueExpandPaths"; paths: string[] }
   | { type: "shiftExpandQueue" };
@@ -49,6 +51,16 @@ export function resourceTreeUiReducer(
       return {
         ...state,
         creating: null,
+      };
+    case "startRenaming":
+      return {
+        ...state,
+        renaming: action.renaming,
+      };
+    case "cancelRenaming":
+      return {
+        ...state,
+        renaming: null,
       };
     case "requestExpand":
       return {

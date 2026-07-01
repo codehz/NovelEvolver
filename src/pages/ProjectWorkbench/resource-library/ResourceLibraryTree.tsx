@@ -13,14 +13,16 @@ function CreatingTreeRow({
   depth,
   onConfirm,
   onCancel,
+  initialValue = "",
 }: {
   kind: "file" | "folder";
   depth: number;
   onConfirm: (name: string) => void;
   onCancel: () => void;
+  initialValue?: string;
 }) {
   const inputRef = useRef<HTMLInputElement>(null);
-  const [value, setValue] = useState("");
+  const [value, setValue] = useState(initialValue);
   const resolvedRef = useRef(false);
 
   useEffect(() => {
@@ -149,7 +151,14 @@ export function ResourceLibraryTree() {
   const data = useAtomValue(treeDataAtom);
   const renderItems = useAtomValue(flatRenderItemsAtom);
   const selectedPath = useAtomValue(selectedPathAtom);
-  const { activateNode, cancelCreating, confirmCreating } = useResourceLibraryTreeActions();
+  const {
+    activateNode,
+    cancelCreating,
+    confirmCreating,
+    startRenaming,
+    cancelRenaming,
+    confirmRenaming,
+  } = useResourceLibraryTreeActions();
 
   if (data.status === "loading" || data.status === "idle") {
     return <p className="px-2 py-1 text-xs text-ctp-subtext0">加载资源库…</p>;
@@ -168,19 +177,46 @@ export function ResourceLibraryTree() {
   }
 
   return (
-    <ul className="flex flex-col" role="tree">
-      {renderItems.map((item) =>
-        item.kind === "creating" ? (
-          <CreatingTreeRow
-            key={item.key}
-            depth={item.depth}
-            kind={item.creating.kind}
-            onCancel={cancelCreating}
-            onConfirm={(name) =>
-              void confirmCreating(item.creating.kind, item.creating.parentPath, name)
-            }
-          />
-        ) : (
+    <ul
+      className="flex flex-col outline-none"
+      role="tree"
+      tabIndex={0}
+      onKeyDown={(event) => {
+        if (event.key === "F2") {
+          event.preventDefault();
+          startRenaming();
+        }
+      }}
+    >
+      {renderItems.map((item) => {
+        if (item.kind === "creating") {
+          return (
+            <CreatingTreeRow
+              key={item.key}
+              depth={item.depth}
+              kind={item.creating.kind}
+              onCancel={cancelCreating}
+              onConfirm={(name) =>
+                void confirmCreating(item.creating.kind, item.creating.parentPath, name)
+              }
+            />
+          );
+        }
+        if (item.kind === "renaming") {
+          return (
+            <CreatingTreeRow
+              key={item.key}
+              depth={item.depth}
+              kind={item.renaming.kind}
+              initialValue={item.currentName}
+              onCancel={cancelRenaming}
+              onConfirm={(name) =>
+                void confirmRenaming(item.renaming.path, item.renaming.kind, name)
+              }
+            />
+          );
+        }
+        return (
           <ResourceTreeRow
             key={item.key}
             depth={item.depth}
@@ -188,8 +224,8 @@ export function ResourceLibraryTree() {
             selectedPath={selectedPath}
             onActivate={activateNode}
           />
-        ),
-      )}
+        );
+      })}
     </ul>
   );
 }

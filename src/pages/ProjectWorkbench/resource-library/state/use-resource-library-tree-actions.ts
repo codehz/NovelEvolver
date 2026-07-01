@@ -3,7 +3,11 @@ import { useAtomValue, useSetAtom } from "jotai";
 import { useCallback, useRef } from "react";
 
 import { notificationApi } from "#app/lib/notifications";
-import { expandDirsAfterCreate, joinResourceChildPath } from "#shared/resource-library-path";
+import {
+  expandDirsAfterCreate,
+  joinResourceChildPath,
+  normalizeResourceNameInput,
+} from "#shared/resource-library-path";
 
 import { useResourceLibrary } from "../../demo/branch/branch-scopes";
 import { useWorkbenchEditorActions } from "../../demo/editor/use-workbench-editor-actions";
@@ -95,6 +99,57 @@ export function useResourceLibraryTreeActions() {
     [dispatchData, dispatchUi, openResourceTab, resources],
   );
 
+  const startRenaming = useCallback(() => {
+    if (ui.selected === null || ui.creating !== null || ui.renaming !== null) {
+      return;
+    }
+    dispatchUi({
+      type: "startRenaming",
+      renaming: {
+        path: ui.selected.path,
+        kind: ui.selected.type,
+      },
+    });
+  }, [dispatchUi, ui.creating, ui.renaming, ui.selected]);
+
+  const cancelRenaming = useCallback(() => {
+    dispatchUi({ type: "cancelRenaming" });
+  }, [dispatchUi]);
+
+  const confirmRenaming = useCallback(
+    async (oldPath: string, kind: "file" | "folder", name: string) => {
+      dispatchUi({ type: "cancelRenaming" });
+      const normalized = normalizeResourceNameInput(name);
+      if (normalized === "") {
+        return;
+      }
+      const lastSlash = oldPath.lastIndexOf("/");
+      const parentPath = lastSlash >= 0 ? oldPath.slice(0, lastSlash) : "";
+      let newPath: string;
+      try {
+        newPath = joinResourceChildPath(parentPath, normalized);
+      } catch (error) {
+        notificationApi.error(error instanceof Error ? error.message : "路径无效", {
+          source: "资源库",
+        });
+        return;
+      }
+      if (newPath === "" || newPath === oldPath) {
+        return;
+      }
+      try {
+        await resources.move(oldPath, newPath);
+        dispatchData({ type: "invalidatePath", path: parentPath });
+        dispatchUi({ type: "select", path: newPath, nodeType: kind });
+      } catch (error) {
+        notificationApi.error(error instanceof Error ? error.message : "重命名失败", {
+          source: "资源库",
+        });
+      }
+    },
+    [dispatchData, dispatchUi, resources],
+  );
+
   const onOpenFile = useCallback(
     (path: string) => {
       void openResourceTab(path, (p) => resources.readFile(p));
@@ -119,6 +174,9 @@ export function useResourceLibraryTreeActions() {
     startCreating,
     cancelCreating,
     confirmCreating,
+    startRenaming,
+    cancelRenaming,
+    confirmRenaming,
     toggleFolder,
     onOpenFile,
     activateNode,

@@ -6,6 +6,11 @@ export type CreatingState = {
   parentPath: string;
 };
 
+export type RenamingState = {
+  path: string;
+  kind: "file" | "folder";
+};
+
 export type ResourceTreeSelection = {
   path: string;
   type: ResourceNode["type"];
@@ -14,6 +19,7 @@ export type ResourceTreeSelection = {
 export type ResourceTreeUiState = {
   selected: ResourceTreeSelection | null;
   creating: CreatingState | null;
+  renaming: RenamingState | null;
   /** 待展开目录队列（按顺序处理，用于多级新建后的逐级加载）。 */
   expandPathQueue: string[];
 };
@@ -36,6 +42,7 @@ export type ResourceTreeDataState = {
 export const initialResourceTreeUiState: ResourceTreeUiState = {
   selected: null,
   creating: null,
+  renaming: null,
   expandPathQueue: [],
 };
 
