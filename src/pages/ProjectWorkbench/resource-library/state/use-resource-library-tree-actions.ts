@@ -17,7 +17,7 @@ import type { ResourceTreeEditingState } from "./types";
 
 export function useResourceLibraryTreeActions() {
   const resources = useResourceLibrary();
-  const { openResourceTab, rebindResourcePaths } = useWorkbenchEditorActions();
+  const { openResourceTab, rebindResourcePaths, closeTab, tabs } = useWorkbenchEditorActions();
   const { treeDataAtom, treeUiAtom } = useMolecule(resourceLibraryTreeMolecule);
   const store = useStore();
   const dispatchData = useSetAtom(treeDataAtom);
@@ -157,6 +157,32 @@ export function useResourceLibraryTreeActions() {
     [dispatchData, dispatchUi, openResourceTab, resources],
   );
 
+  const deleteNode = useCallback(async () => {
+    const ui = store.get(treeUiAtom);
+    if (ui.selected === null) {
+      return;
+    }
+    const { path } = ui.selected;
+    if (path === "") {
+      return;
+    }
+    try {
+      await resources.unlink(path);
+      for (const tab of tabs) {
+        if (tab.kind === "resource" && tab.resourcePath === path) {
+          closeTab(tab.id);
+        }
+      }
+      const parentPath = path.includes("/") ? path.slice(0, path.lastIndexOf("/")) : "";
+      dispatchData({ type: "invalidatePath", path: parentPath });
+      dispatchUi({ type: "select", path: parentPath, nodeType: "folder" });
+    } catch (error) {
+      notificationApi.error(error instanceof Error ? error.message : "删除失败", {
+        source: "资源库",
+      });
+    }
+  }, [closeTab, dispatchData, dispatchUi, resources, store, tabs]);
+
   const submitEditing = useCallback(
     async (editing: ResourceTreeEditingState, name: string) => {
       if (editing.mode === "creating") {
@@ -174,5 +200,6 @@ export function useResourceLibraryTreeActions() {
     cancelEditing,
     submitEditing,
     activateNode,
+    deleteNode,
   };
 }

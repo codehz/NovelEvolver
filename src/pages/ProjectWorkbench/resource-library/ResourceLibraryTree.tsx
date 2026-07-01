@@ -95,7 +95,7 @@ function ResourceLibraryTreeContent({
   renderItems: FlatRenderItem[];
   selectedPath: string | null;
 }) {
-  const { activateNode, startRenaming, cancelEditing, submitEditing } =
+  const { activateNode, startRenaming, cancelEditing, submitEditing, deleteNode } =
     useResourceLibraryTreeActions();
 
   return (
@@ -107,6 +107,9 @@ function ResourceLibraryTreeContent({
         if (event.key === "F2") {
           event.preventDefault();
           startRenaming();
+        } else if (event.key === "Delete") {
+          event.preventDefault();
+          void deleteNode();
         }
       }}
     >
