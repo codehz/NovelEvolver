@@ -7,6 +7,7 @@ import { PlainTextEditor } from "#app/components/PlainTextEditor";
 import { useResourceAutosave } from "../../resource-library/use-resource-autosave";
 import { useResourceLibrary } from "../branch/branch-scopes";
 import { editorTabMolecule, editorTabScope } from "../state/molecules";
+import { EditorBreadcrumb } from "./EditorBreadcrumb";
 
 type EditorTabPaneProps = {
   tabId: string;
@@ -58,6 +59,9 @@ export function EditorTabPane({ tabId, active, defaultValue, resourcePath }: Edi
         className={active ? "flex min-h-0 min-w-0 flex-1 flex-col" : "hidden"}
         aria-hidden={!active}
       >
+        <div className="flex h-8 shrink-0 items-center gap-1 bg-workbench-editor px-3 text-xs text-ctp-subtext0">
+          <EditorBreadcrumb resourcePath={resourcePath ?? null} />
+        </div>
         <EditorTabPlainTextEditor
           active={active}
           defaultValue={defaultValue}
