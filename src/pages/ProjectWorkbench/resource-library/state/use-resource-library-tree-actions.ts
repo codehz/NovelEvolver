@@ -1,5 +1,5 @@
 import { useMolecule } from "bunshi/react";
-import { useAtomValue, useSetAtom } from "jotai";
+import { useSetAtom, useStore } from "jotai";
 import { useCallback, useRef } from "react";
 
 import { notificationApi } from "#app/lib/notifications";
@@ -18,7 +18,7 @@ export function useResourceLibraryTreeActions() {
   const resources = useResourceLibrary();
   const { openResourceTab } = useWorkbenchEditorActions();
   const { treeDataAtom, treeUiAtom } = useMolecule(resourceLibraryTreeMolecule);
-  const ui = useAtomValue(treeUiAtom);
+  const store = useStore();
   const dispatchData = useSetAtom(treeDataAtom);
   const dispatchUi = useSetAtom(treeUiAtom);
   const creatingIdRef = useRef(0);
@@ -32,6 +32,7 @@ export function useResourceLibraryTreeActions() {
 
   const startCreating = useCallback(
     (kind: "file" | "folder") => {
+      const ui = store.get(treeUiAtom);
       const parentPath = parentPathForCreating(ui.selected);
       creatingIdRef.current += 1;
       dispatchUi({
@@ -46,7 +47,7 @@ export function useResourceLibraryTreeActions() {
         dispatchUi({ type: "requestExpand", path: parentPath });
       }
     },
-    [dispatchUi, ui.selected],
+    [dispatchUi, store],
   );
 
   const cancelCreating = useCallback(() => {
@@ -100,6 +101,7 @@ export function useResourceLibraryTreeActions() {
   );
 
   const startRenaming = useCallback(() => {
+    const ui = store.get(treeUiAtom);
     if (ui.selected === null || ui.creating !== null || ui.renaming !== null) {
       return;
     }
@@ -110,7 +112,7 @@ export function useResourceLibraryTreeActions() {
         kind: ui.selected.type,
       },
     });
-  }, [dispatchUi, ui.creating, ui.renaming, ui.selected]);
+  }, [dispatchUi, store]);
 
   const cancelRenaming = useCallback(() => {
     dispatchUi({ type: "cancelRenaming" });
