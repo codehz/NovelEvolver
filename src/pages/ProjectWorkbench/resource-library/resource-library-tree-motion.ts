@@ -15,3 +15,9 @@ export const resourceLibraryTreeRowEnterOpacityTransition: Transition = {
   duration: RESOURCE_LIBRARY_TREE_Y_DURATION_MS / 1000,
   ease: treeEase,
 };
+
+/** 退出仅淡出，不带动 y，避免与绝对定位列表高度不同步。 */
+export const resourceLibraryTreeRowExitOpacityTransition: Transition = {
+  duration: RESOURCE_LIBRARY_TREE_Y_DURATION_MS / 1000,
+  ease: treeEase,
+};

@@ -4,7 +4,7 @@ import { cn } from "#app/lib/cn";
 
 import {
   RESOURCE_LIBRARY_TREE_ENTER_Y_OFFSET_PX,
-  resourceLibraryTreeRowEnterOpacityTransition,
+  resourceLibraryTreeRowExitOpacityTransition,
   resourceLibraryTreeRowYTransition,
 } from "./resource-library-tree-motion";
 import { ResourceTreeInlineInput } from "./ResourceTreeInlineInput";
@@ -120,9 +120,10 @@ export function ResourceLibraryTreeRow({
         animateEnter ? { y: y - RESOURCE_LIBRARY_TREE_ENTER_Y_OFFSET_PX, opacity: 0 } : false
       }
       animate={{ y, opacity: 1 }}
+      exit={{ opacity: 0 }}
       transition={{
         y: resourceLibraryTreeRowYTransition,
-        opacity: resourceLibraryTreeRowEnterOpacityTransition,
+        opacity: resourceLibraryTreeRowExitOpacityTransition,
       }}
     >
       {isEditing ? (

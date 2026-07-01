@@ -1,5 +1,6 @@
 import { useMolecule } from "bunshi/react";
 import { useAtomValue, useSetAtom, useStore } from "jotai";
+import { AnimatePresence } from "motion/react";
 import { useCallback, useLayoutEffect, useMemo, useRef } from "react";
 
 import { cn } from "#app/lib/cn";
@@ -106,23 +107,25 @@ function ResourceLibraryTreeContent({
         }
       }}
     >
-      {renderItems.map((item, index) => (
-        <ResourceLibraryTreeRow
-          key={item.key}
-          animateEnter={enterKeySet.has(item.key)}
-          drag={drag}
-          height={RESOURCE_LIBRARY_TREE_ROW_HEIGHT_PX}
-          item={item}
-          selectedPath={selectedPath}
-          y={index * RESOURCE_LIBRARY_TREE_ROW_HEIGHT_PX}
-          onActivate={activateNode}
-          onCancelEditing={cancelEditing}
-          onDragEnd={handleDragEnd}
-          onDragMove={handleDragMove}
-          onDragStart={handleDragStart}
-          onSubmitEditing={submitEditing}
-        />
-      ))}
+      <AnimatePresence initial={false}>
+        {renderItems.map((item, index) => (
+          <ResourceLibraryTreeRow
+            key={item.key}
+            animateEnter={enterKeySet.has(item.key)}
+            drag={drag}
+            height={RESOURCE_LIBRARY_TREE_ROW_HEIGHT_PX}
+            item={item}
+            selectedPath={selectedPath}
+            y={index * RESOURCE_LIBRARY_TREE_ROW_HEIGHT_PX}
+            onActivate={activateNode}
+            onCancelEditing={cancelEditing}
+            onDragEnd={handleDragEnd}
+            onDragMove={handleDragMove}
+            onDragStart={handleDragStart}
+            onSubmitEditing={submitEditing}
+          />
+        ))}
+      </AnimatePresence>
     </ul>
   );
 }
