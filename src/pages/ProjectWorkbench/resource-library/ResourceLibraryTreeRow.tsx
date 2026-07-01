@@ -80,12 +80,15 @@ export function ResourceLibraryTreeRow({
   const rowContent = (
     <>
       <span aria-hidden="true" className="flex w-4 shrink-0 items-center justify-center text-sm">
-        {item.type === "folder" &&
-          (item.expanded ? (
-            <span className={cn("icon-[codicon--chevron-down]")} />
-          ) : (
-            <span className={cn("icon-[codicon--chevron-right]")} />
-          ))}
+        {item.type === "folder" && (
+          <span
+            className={cn(
+              "icon-[codicon--chevron-right]",
+              "motion-safe:transition-transform motion-safe:duration-220 motion-safe:ease-[cubic-bezier(0.22,1,0.36,1)]",
+              item.expanded && "rotate-90",
+            )}
+          />
+        )}
       </span>
       <span aria-hidden="true" className={cn(getRowIcon(item), "shrink-0 text-base")} />
       {editing ? (
