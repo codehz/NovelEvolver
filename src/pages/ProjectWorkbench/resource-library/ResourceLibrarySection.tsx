@@ -18,6 +18,7 @@ export function ResourceLibrarySectionBody() {
   const creatingIdRef = useRef(0);
   const [selectedPath, setSelectedPath] = useState<string | null>(null);
   const selectedTypeRef = useRef<"file" | "folder" | null>(null);
+  const [expandPath, setExpandPath] = useState<string | null>(null);
 
   const bumpTree = useCallback(() => {
     setTreeRevision((value) => value + 1);
@@ -48,6 +49,7 @@ export function ResourceLibrarySectionBody() {
       if (selectedPath !== null) {
         if (selectedTypeRef.current === "folder") {
           parentPath = selectedPath;
+          setExpandPath(selectedPath);
         } else {
           const lastSlash = selectedPath.lastIndexOf("/");
           parentPath = lastSlash >= 0 ? selectedPath.slice(0, lastSlash) : "";
@@ -112,6 +114,7 @@ export function ResourceLibrarySectionBody() {
         onCreateCancel={cancelCreating}
         selectedPath={selectedPath}
         onSelect={handleSelect}
+        expandPath={expandPath}
       />
     </>
   );

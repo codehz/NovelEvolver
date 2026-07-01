@@ -32,6 +32,7 @@ type ResourceLibraryTreeProps = {
   onCreateCancel: () => void;
   selectedPath: string | null;
   onSelect: (path: string, type: "file" | "folder") => void;
+  expandPath: string | null;
 };
 
 function CreatingTreeRow({
@@ -187,6 +188,7 @@ export function ResourceLibraryTree({
   onCreateCancel,
   selectedPath,
   onSelect,
+  expandPath,
 }: ResourceLibraryTreeProps) {
   const [roots, setRoots] = useState<ResourceTreeNode[]>([]);
   const [rootLoading, setRootLoading] = useState(true);
@@ -239,6 +241,19 @@ export function ResourceLibraryTree({
       canceled = true;
     };
   }, [listDirectory]);
+
+  useEffect(() => {
+    if (!expandPath || rootLoading) return;
+    setRoots((current) => {
+      const node = findNode(current, expandPath);
+      if (!node || node.type !== "folder") return current;
+      if (node.expanded) return current;
+      if (node.children === null) {
+        void loadChildren(expandPath);
+      }
+      return setNodeAtPath(current, expandPath, (n) => ({ ...n, expanded: true }));
+    });
+  }, [expandPath, rootLoading, loadChildren]);
 
   const onToggleFolder = useCallback(
     (path: string) => {
