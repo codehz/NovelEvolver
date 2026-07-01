@@ -1,20 +1,21 @@
-import { useCallback, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 
 import {
   SidebarSectionActionsPortalContent,
   SidebarHeaderActionButton,
 } from "@/components/workbench";
 import { notificationApi } from "@/lib/notifications";
-import { isQuickPickDismissedError, quickPickApi } from "@/lib/quick-pick";
 
 import { useResourceLibrary } from "../demo/branch/branch-scopes";
 import { useWorkbenchEditorActions } from "../demo/editor/use-workbench-editor-actions";
-import { ResourceLibraryTree } from "./ResourceLibraryTree";
+import { ResourceLibraryTree, type CreatingState } from "./ResourceLibraryTree";
 
 export function ResourceLibrarySectionBody() {
   const resources = useResourceLibrary();
   const { openResourceTab } = useWorkbenchEditorActions();
   const [treeRevision, setTreeRevision] = useState(0);
+  const [creating, setCreating] = useState<CreatingState | null>(null);
+  const creatingIdRef = useRef(0);
 
   const bumpTree = useCallback(() => {
     setTreeRevision((value) => value + 1);
@@ -34,17 +35,23 @@ export function ResourceLibrarySectionBody() {
     [openResourceTab, resources],
   );
 
-  const createAtRoot = useCallback(
-    async (kind: "file" | "folder") => {
+  const startCreating = useCallback((kind: "file" | "folder") => {
+    creatingIdRef.current += 1;
+    setCreating({ id: creatingIdRef.current, kind, parentPath: "" });
+  }, []);
+
+  const cancelCreating = useCallback(() => {
+    setCreating(null);
+  }, []);
+
+  const confirmCreating = useCallback(
+    async (kind: "file" | "folder", name: string) => {
+      setCreating(null);
+      const path = name.trim();
+      if (path === "") {
+        return;
+      }
       try {
-        const name = await quickPickApi.showInput({
-          title: kind === "file" ? "新建文件" : "新建文件夹",
-          inputLabel: "相对路径",
-          placeholder: kind === "file" ? "例如 设定/世界观.md" : "例如 设定",
-          dismissAriaLabel: "关闭",
-          validate: (value) => (value.trim() === "" ? "名称不能为空" : null),
-        });
-        const path = name.trim();
         if (kind === "folder") {
           await resources.createFolder(path);
         } else {
@@ -55,9 +62,6 @@ export function ResourceLibrarySectionBody() {
           void openResourceTab(path, (p) => resources.readFile(p));
         }
       } catch (error) {
-        if (isQuickPickDismissedError(error)) {
-          return;
-        }
         notificationApi.error(error instanceof Error ? error.message : "创建失败", {
           source: "资源库",
         });
@@ -72,18 +76,21 @@ export function ResourceLibrarySectionBody() {
         <SidebarHeaderActionButton
           label="新建文件"
           icon="icon-[codicon--new-file]"
-          onClick={() => void createAtRoot("file")}
+          onClick={() => startCreating("file")}
         />
         <SidebarHeaderActionButton
           label="新建文件夹"
           icon="icon-[codicon--new-folder]"
-          onClick={() => void createAtRoot("folder")}
+          onClick={() => startCreating("folder")}
         />
       </SidebarSectionActionsPortalContent>
       <ResourceLibraryTree
         key={treeRevision}
         listDirectory={listDirectory}
         onOpenFile={onOpenFile}
+        creating={creating}
+        onCreateConfirm={(kind, name) => void confirmCreating(kind, name)}
+        onCreateCancel={cancelCreating}
       />
     </>
   );
