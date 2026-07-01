@@ -84,10 +84,10 @@ function CreatingTreeRow({
     <li role="none">
       <div
         className={cn(
-          "flex w-full items-center gap-1.5 px-1 py-0.5 text-app-foreground",
+          "flex w-full items-center gap-1.5 py-0.5 pr-1 text-app-foreground",
           "bg-workbench-tab-active/60",
         )}
-        style={{ paddingLeft: `${depth * 12 + 4}px` }}
+        style={{ paddingLeft: `${depth * 12}px` }}
       >
         <span aria-hidden="true" className={cn(icon, "shrink-0 text-base")} />
         <input
@@ -141,10 +141,10 @@ function ResourceTreeRow({
     <li role="none">
       <button
         className={cn(
-          "flex w-full items-center gap-1.5 px-1 py-0.5 text-left text-app-foreground",
+          "flex w-full items-center gap-1.5 py-0.5 text-left text-app-foreground",
           "hover:bg-workbench-tab-active/60",
         )}
-        style={{ paddingLeft: `${depth * 12 + 4}px` }}
+        style={{ paddingLeft: `${depth * 12 + 8}px` }}
         type="button"
         onClick={() => {
           if (isFolder) {
@@ -305,7 +305,7 @@ export function ResourceLibraryTree({
   }
 
   return (
-    <ul className="flex flex-col gap-0.5 p-1" role="tree">
+    <ul className="flex flex-col" role="tree">
       {renderItems.map((item) =>
         item.kind === "creating" ? (
           <CreatingTreeRow
