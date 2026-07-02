@@ -40,13 +40,13 @@
     "react": "^19.2.7",
     "react-dom": "^19.2.7",
     "react-error-boundary": "^6.1.2",
-    "slot-text": "^0.3.1",
+    "slot-text": "^0.3.2",
     "tailwind-merge": "^3.6.0",
     "wouter": "^3.10.0"
   },
   "devDependencies": {
     "@tailwindcss/vite": "^4.3.2",
-    "@types/node": "^26.0.1",
+    "@types/node": "^26.1.0",
     "@types/react": "^19.2.17",
     "@types/react-dom": "^19.2.3",
     "@vitejs/plugin-react": "^6.0.3",

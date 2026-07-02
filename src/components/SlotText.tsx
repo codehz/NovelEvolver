@@ -15,7 +15,7 @@ export function SlotText({
   const initial = useRef({ text, options });
   const controller = useRef<SlotTextController>(null);
   useEffect(() => {
-    if (controller.current) {
+    if (controller.current && controller.current.value !== text) {
       controller.current.set(text, options);
     }
   }, [text, options]);
@@ -27,5 +27,6 @@ export function SlotText({
     ));
     return () => local.destroy();
   }, []);
-  return <span ref={mergeRefs(ref, refCallback)} {...props}></span>;
+
+  return <span ref={useCallback(mergeRefs(ref, refCallback), [ref])} {...props} />;
 }
