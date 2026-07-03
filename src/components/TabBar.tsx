@@ -47,7 +47,7 @@ export function TabBar({ tabs, onActivate, onClose, renderIcon, className }: Tab
         <div
           key={tab.id}
           className={cn(
-            "flex max-w-xs cursor-pointer items-center gap-2 px-3 text-sm",
+            "group flex max-w-xs cursor-pointer items-center pr-1.5 pl-3 text-sm",
             tab.active
               ? "bg-workbench-tab-active text-app-foreground"
               : "bg-workbench-tab-inactive text-ctp-subtext0",
@@ -64,20 +64,24 @@ export function TabBar({ tabs, onActivate, onClose, renderIcon, className }: Tab
           tabIndex={0}
         >
           {renderIcon?.(tab) ?? (
-            <span aria-hidden="true" className="icon-[codicon--file] text-sm" />
+            <span aria-hidden="true" className="mr-2 icon-[codicon--file] text-sm" />
           )}
           <SlotText className="truncate" text={tab.label} />
           {onClose && (
             <button
               aria-label={`关闭 ${tab.label}`}
-              className="ml-1 rounded p-0.5 hover:bg-window-button-hover"
+              className={cn(
+                "ml-1 inline-flex items-center justify-center rounded p-0.5 text-[17px] text-ctp-mauve opacity-0 transition-opacity",
+                "group-hover:opacity-100 hover:bg-window-button-hover",
+                tab.active && "opacity-100",
+              )}
               type="button"
               onClick={(event) => {
                 event.stopPropagation();
                 onClose(tab.id);
               }}
             >
-              <span aria-hidden="true" className="icon-[codicon--close] text-xs" />
+              <span aria-hidden="true" className="icon-[codicon--close]" />
             </button>
           )}
         </div>
