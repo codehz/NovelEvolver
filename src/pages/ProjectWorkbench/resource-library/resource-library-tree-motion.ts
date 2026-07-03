@@ -57,7 +57,7 @@ export const resourceLibraryTreeRowVariants: Variants = {
 
 export const resourceLibraryTreeRowPaddingVariants: Variants = {
   visible: (depth: number) => ({
-    paddingLeft: depth * 12 + 4,
+    paddingLeft: depth * 8 + 10,
     transition: {
       paddingLeft: resourceLibraryTreePaddingLeftTransition,
     },
