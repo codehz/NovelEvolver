@@ -33,7 +33,7 @@ export const quickPickRowButtonContentClass = cn(
   "relative z-10 flex w-full min-w-0 items-center gap-2",
 );
 
-export const quickPickRowEmphasisClass = cn("text-workbench-sidebar-title");
+export const quickPickRowEmphasisClass = cn("text-quick-pick-emphasis");
 
 export const quickPickEmptyClass = cn("rounded-sm px-2 py-1 text-workbench-status-bar-muted");
 

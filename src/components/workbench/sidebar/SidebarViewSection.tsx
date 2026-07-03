@@ -13,12 +13,12 @@ export const SIDEBAR_SECTION_RESIZE_STRIP_HEIGHT = 0;
 export const SIDEBAR_SECTION_HEADER_HEIGHT_PX = 24;
 
 const sectionHeaderButtonClass = cn(
-  "flex h-6 min-w-0 flex-1 items-center gap-1 bg-workbench-panel-header pr-1.5 pl-1 text-left text-xs font-semibold tracking-wide text-workbench-sidebar-title uppercase",
+  "flex h-6 min-w-0 flex-1 items-center gap-1 bg-workbench-panel-header pr-1.5 pl-1 text-left text-xs font-semibold tracking-wide uppercase",
   "focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-badge-background",
 );
 
 const sectionHeaderChevronClass = cn(
-  "inline-flex size-3 shrink-0 items-center justify-center leading-none",
+  "text-workbench-sidebar-action inline-flex shrink-0 items-center justify-center text-sm leading-none",
 );
 
 const sectionResizeSeamClass = cn("relative z-20 h-0 shrink-0");
@@ -29,7 +29,7 @@ const sectionResizeHandleClass = cn(
 );
 
 const sectionResizeRailClass = cn(
-  "h-1 w-full shrink-0 bg-workbench-sidebar-title opacity-0 transition-opacity delay-0 duration-150",
+  "bg-workbench-resize-handle h-1 w-full shrink-0 opacity-0 transition-opacity delay-0 duration-150",
   "group-hover:opacity-100 group-hover:delay-300 group-focus-visible:opacity-100 group-focus-visible:delay-150",
 );
 

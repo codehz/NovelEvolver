@@ -42,7 +42,7 @@ type ResolvedWorkbenchLayout = {
 };
 
 const resizeHandleClass = cn(
-  "absolute inset-y-0 z-20 w-1 cursor-col-resize touch-none bg-workbench-sidebar-title select-none",
+  "bg-workbench-resize-handle absolute inset-y-0 z-20 w-1 cursor-col-resize touch-none select-none",
   "opacity-0 transition-opacity delay-0 duration-150",
   "hover:opacity-100 hover:delay-300 focus-visible:opacity-100 focus-visible:delay-150",
 );

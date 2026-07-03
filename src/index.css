@@ -53,6 +53,7 @@
 
   --color-quick-pick-surface: var(--color-ctp-mantle);
   --color-quick-pick-highlight: color-mix(in srgb, var(--color-ctp-surface0) 55%, transparent);
+  --color-quick-pick-emphasis: var(--color-ctp-mauve);
   --shadow-quick-pick: 0 8px 24px color-mix(in srgb, var(--color-ctp-crust) 55%, transparent);
   --spacing-quick-pick: 36rem;
   --spacing-quick-pick-max-height: 20rem;
@@ -63,6 +64,8 @@
   --color-workbench-activity-bar-active: var(--color-ctp-mauve);
   --color-workbench-sidebar: var(--color-ctp-mantle);
   --color-workbench-sidebar-title: var(--color-ctp-mauve);
+  --color-workbench-sidebar-action: var(--color-ctp-mauve);
+  --color-workbench-resize-handle: var(--color-ctp-mauve);
   --color-workbench-editor: var(--color-ctp-base);
   --color-workbench-editor-gutter: var(--color-ctp-mantle);
   --color-workbench-tab-bar: var(--color-ctp-crust);
