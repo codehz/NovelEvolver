@@ -1,25 +1,11 @@
-import { AutoTransition, effects, preset } from "@codehz/auto-transition";
+import { AutoTransition } from "@codehz/auto-transition";
 
-import { SlotText } from "#app/components/SlotText";
-import { cn } from "#app/lib/cn";
+import { TabBar, type TabItem } from "#app/components/TabBar";
 
 import { EditorBreadcrumb } from "./EditorBreadcrumb";
 import { EditorEmptyState } from "./EditorEmptyState";
 import { EditorTabPane } from "./EditorTabPane";
 import { useWorkbenchEditorActions } from "./use-workbench-editor-actions";
-
-const tabEase = "cubic-bezier(0.22, 1, 0.36, 1)";
-
-const tabTransition = preset({
-  enter: [effects.fade(0), effects.translate({ x: 0, y: 6 })],
-  exit: [effects.fade(0), effects.translate({ x: 0, y: 6 })],
-  move: effects.flip(),
-  timing: {
-    enter: { duration: 220, easing: tabEase },
-    exit: { duration: 180, easing: tabEase },
-    move: { duration: 280, easing: tabEase },
-  },
-});
 
 export function EditorArea() {
   const { tabs, activateTab, closeTab } = useWorkbenchEditorActions();
@@ -32,52 +18,7 @@ export function EditorArea() {
       aria-label="编辑器"
       className="relative flex min-h-0 min-w-0 flex-1 flex-col bg-workbench-editor"
     >
-      {tabs.length > 0 ? (
-        <AutoTransition
-          as="div"
-          className="flex h-workbench-tab shrink-0 items-stretch bg-workbench-tab-bar"
-          role="tablist"
-          transition={tabTransition}
-        >
-          {tabs.map((tab) => (
-            <div
-              key={tab.id}
-              className={cn(
-                "flex max-w-xs cursor-pointer items-center gap-2 px-3 text-sm",
-                tab.active
-                  ? "bg-workbench-tab-active text-app-foreground"
-                  : "bg-workbench-tab-inactive text-ctp-subtext0",
-              )}
-              role="tab"
-              aria-selected={tab.active}
-              onClick={() => {
-                activateTab(tab.id);
-              }}
-              onKeyDown={(event) => {
-                if (event.key === "Enter" || event.key === " ") {
-                  event.preventDefault();
-                  activateTab(tab.id);
-                }
-              }}
-              tabIndex={0}
-            >
-              <span aria-hidden="true" className="icon-[codicon--file] text-sm" />
-              <SlotText className="truncate" text={tab.label} />
-              <button
-                aria-label={`关闭 ${tab.label}`}
-                className="ml-1 rounded p-0.5 hover:bg-window-button-hover"
-                type="button"
-                onClick={(event) => {
-                  event.stopPropagation();
-                  closeTab(tab.id);
-                }}
-              >
-                <span aria-hidden="true" className="icon-[codicon--close] text-xs" />
-              </button>
-            </div>
-          ))}
-        </AutoTransition>
-      ) : null}
+      <TabBar tabs={tabs as TabItem[]} onActivate={activateTab} onClose={closeTab} />
 
       {activeTab && (
         <div className="flex h-8 shrink-0 items-center gap-1 bg-workbench-editor px-3 text-xs text-ctp-subtext0">
