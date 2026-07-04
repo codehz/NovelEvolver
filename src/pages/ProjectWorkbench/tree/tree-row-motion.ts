@@ -1,6 +1,7 @@
 import type { Transition, Variants } from "motion/react";
 
 export const TREE_ROW_HEIGHT_PX = 24;
+export const TREE_DROP_INDICATOR_HEIGHT_PX = 4;
 export const TREE_ROW_Y_DURATION_MS = 220;
 export const TREE_ROW_ENTER_Y_OFFSET_PX = 6;
 

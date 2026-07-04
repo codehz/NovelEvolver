@@ -9,11 +9,7 @@ import type { TreeRowDomData } from "../tree/tree-row-dom";
 import { treeRowPaddingVariants, treeRowVariants } from "../tree/tree-row-motion";
 import { TreeInlineInput } from "../tree/TreeInlineInput";
 import { useTreeRowPointerDrag } from "../tree/use-tree-row-pointer-drag";
-import type {
-  ManuscriptEditingState,
-  ManuscriptDragState,
-  ManuscriptMoveTarget,
-} from "./state/types";
+import type { ManuscriptEditingState, ManuscriptMoveTarget } from "./state/types";
 
 type ManuscriptTreeRowProps = {
   id: string | null;
@@ -27,7 +23,7 @@ type ManuscriptTreeRowProps = {
   animateEnter: boolean;
   selected: boolean;
   editing: ManuscriptEditingState | null;
-  drag: ManuscriptDragState | null;
+  dragging: boolean;
   listRef: RefObject<HTMLUListElement | null>;
   resolveDropTarget: (input: {
     start: { rowId: string; rowType: ManuscriptNode["type"] };
@@ -51,14 +47,6 @@ function rowIcon(type: ManuscriptNode["type"], expanded: boolean) {
   return cn("icon-[codicon--book]");
 }
 
-function isDropHighlighted(id: string | null, drag: ManuscriptDragState | null): boolean {
-  return (
-    id !== null &&
-    drag?.resolved?.preview.kind === "highlight-row" &&
-    drag.resolved.preview.rowId === id
-  );
-}
-
 export function ManuscriptTreeRow({
   id,
   title,
@@ -71,7 +59,7 @@ export function ManuscriptTreeRow({
   animateEnter,
   selected,
   editing,
-  drag,
+  dragging,
   listRef,
   resolveDropTarget,
   onActivate,
@@ -92,11 +80,9 @@ export function ManuscriptTreeRow({
         : "重命名章节";
   const rowClasses = cn(
     "flex size-full items-center gap-1 overflow-hidden text-left text-app-foreground",
-    isDropHighlighted(id, drag)
-      ? "bg-tree-drop-target"
-      : drag === null && (selected || isEditing)
-        ? "bg-workbench-tab-active"
-        : drag === null && "hover:bg-workbench-tab-active/60",
+    !dragging && (selected || isEditing)
+      ? "bg-workbench-tab-active"
+      : !dragging && "hover:bg-workbench-tab-active/60",
   );
   const pointerHandlers = useTreeRowPointerDrag({
     disabled: isEditing || id === null,
@@ -148,7 +134,7 @@ export function ManuscriptTreeRow({
 
   return (
     <motion.li
-      className="absolute inset-x-0"
+      className="absolute inset-x-0 z-10"
       role="none"
       style={{ top: 0, height }}
       variants={treeRowVariants}

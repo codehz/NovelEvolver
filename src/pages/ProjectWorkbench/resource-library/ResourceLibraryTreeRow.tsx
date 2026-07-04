@@ -1,5 +1,4 @@
 import { motion } from "motion/react";
-import { useCallback } from "react";
 
 import { cn } from "#app/lib/cn";
 
@@ -8,9 +7,7 @@ import type { TreeRowDomData } from "../tree/tree-row-dom";
 import { treeRowPaddingVariants, treeRowVariants } from "../tree/tree-row-motion";
 import { TreeInlineInput } from "../tree/TreeInlineInput";
 import { useTreeRowPointerDrag } from "../tree/use-tree-row-pointer-drag";
-import { resolveDropTargetFromRow } from "./drag-hit-test";
 import type { FlatRenderItem } from "./state/tree-data-reducer";
-import type { ResourceTreeDragState } from "./state/types";
 
 type ResourceLibraryTreeRowProps = {
   item: FlatRenderItem;
@@ -19,7 +16,15 @@ type ResourceLibraryTreeRowProps = {
   height: number;
   animateEnter: boolean;
   selectedPath: string | null;
-  drag: ResourceTreeDragState | null;
+  dragging: boolean;
+  resolveDropTarget: (input: {
+    start: { rowId: string; rowType: "file" | "folder" };
+    hoveredRow: TreeRowDomData<"file" | "folder"> | null;
+    hoverZone: TreeRowHoverZone | null;
+    listRect: DOMRect | null;
+    clientX: number;
+    clientY: number;
+  }) => TreeResolvedDrop<string> | null;
   onActivate: (path: string, type: "file" | "folder") => void;
   onCancelEditing: () => void;
   onSubmitEditing: (editing: NonNullable<FlatRenderItem["editing"]>, name: string) => Promise<void>;
@@ -27,15 +32,6 @@ type ResourceLibraryTreeRowProps = {
   onDragMove: (resolved: TreeResolvedDrop<string> | null) => void;
   onDragEnd: () => void;
 };
-
-function isDropHighlighted(item: FlatRenderItem, drag: ResourceTreeDragState | null) {
-  return (
-    drag !== null &&
-    drag.resolved?.preview.kind === "highlight-row" &&
-    item.path !== null &&
-    (item.path === drag.resolved.target || item.path.startsWith(`${drag.resolved.target}/`))
-  );
-}
 
 function getRowIcon(item: FlatRenderItem) {
   if (item.type === "folder") {
@@ -51,7 +47,8 @@ export function ResourceLibraryTreeRow({
   height,
   animateEnter,
   selectedPath,
-  drag,
+  dragging,
+  resolveDropTarget,
   onActivate,
   onCancelEditing,
   onSubmitEditing,
@@ -78,49 +75,9 @@ export function ResourceLibraryTreeRow({
       : undefined;
   const rowClasses = cn(
     "flex size-full items-center gap-1 overflow-hidden text-left text-app-foreground",
-    isDropHighlighted(item, drag)
-      ? "bg-tree-drop-target"
-      : drag === null && (isSelected || isEditing)
-        ? "bg-workbench-tab-active"
-        : drag === null && "hover:bg-workbench-tab-active/60",
-  );
-  const resolveDropTarget = useCallback(
-    ({
-      start,
-      hoveredRow,
-      hoverZone: _hoverZone,
-      listRect: _listRect,
-      clientX: _clientX,
-      clientY: _clientY,
-    }: {
-      start: { rowId: string; rowType: "file" | "folder" };
-      hoveredRow: TreeRowDomData<"file" | "folder"> | null;
-      hoverZone: TreeRowHoverZone | null;
-      listRect: DOMRect | null;
-      clientX: number;
-      clientY: number;
-    }): TreeResolvedDrop<string> | null => {
-      if (hoveredRow === null) {
-        return { preview: { kind: "highlight-root" }, target: "" };
-      }
-      const targetPath = resolveDropTargetFromRow(
-        hoveredRow.rowId,
-        hoveredRow.rowType,
-        start.rowId,
-        start.rowType,
-      );
-      if (targetPath === null) {
-        return null;
-      }
-      return {
-        preview:
-          targetPath === ""
-            ? { kind: "highlight-root" as const }
-            : { kind: "highlight-row" as const, rowId: targetPath },
-        target: targetPath,
-      };
-    },
-    [],
+    !dragging && (isSelected || isEditing)
+      ? "bg-workbench-tab-active"
+      : !dragging && "hover:bg-workbench-tab-active/60",
   );
   const pointerHandlers = useTreeRowPointerDrag({
     disabled: isEditing,
@@ -175,7 +132,7 @@ export function ResourceLibraryTreeRow({
 
   return (
     <motion.li
-      className="absolute inset-x-0"
+      className="absolute inset-x-0 z-10"
       role="none"
       style={{ top: 0, height }}
       variants={treeRowVariants}

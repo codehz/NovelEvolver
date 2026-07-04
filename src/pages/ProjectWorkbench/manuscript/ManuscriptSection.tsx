@@ -11,7 +11,7 @@ import type { ManuscriptNode } from "#shared/rpc/projects-rpc";
 import { FlatTreeList } from "../tree/FlatTreeList";
 import type { TreeResolvedDrop, TreeRowHoverZone } from "../tree/tree-drag";
 import type { TreeRowDomData } from "../tree/tree-row-dom";
-import { TREE_ROW_HEIGHT_PX } from "../tree/tree-row-motion";
+import { TREE_DROP_INDICATOR_HEIGHT_PX, TREE_ROW_HEIGHT_PX } from "../tree/tree-row-motion";
 import { findManuscriptChildIndex, findManuscriptParentId } from "./manuscript-tree";
 import { ManuscriptTreeRow } from "./ManuscriptTreeRow";
 import { manuscriptTreeMolecule } from "./state/manuscript-tree-molecule";
@@ -94,6 +94,12 @@ export function ManuscriptSectionBody() {
         return null;
       }
 
+      const createInsertPreview = (visualIndex: number) => ({
+        kind: "insert" as const,
+        top: visualIndex * TREE_ROW_HEIGHT_PX - TREE_DROP_INDICATOR_HEIGHT_PX / 2,
+        height: TREE_DROP_INDICATOR_HEIGHT_PX,
+      });
+
       const resolveInsert = (rowId: string, visualIndex: number, placeAfter: boolean) => {
         const parentId = findManuscriptParentId(outline, rowId);
         if (parentId === null) {
@@ -104,7 +110,7 @@ export function ManuscriptSectionBody() {
           return null;
         }
         return {
-          preview: { kind: "insert-line" as const, index: visualIndex },
+          preview: createInsertPreview(visualIndex),
           target: {
             kind: "insert" as const,
             parentId,
@@ -131,7 +137,7 @@ export function ManuscriptSectionBody() {
       if (hoveredRow === null) {
         const rootIndex = listRect !== null && clientY <= listRect.top ? 0 : renderItems.length;
         return {
-          preview: { kind: "insert-line", index: rootIndex },
+          preview: createInsertPreview(rootIndex),
           target: {
             kind: "insert",
             parentId: "root",
@@ -155,7 +161,11 @@ export function ManuscriptSectionBody() {
         return hoveredNode.type !== "folder"
           ? null
           : {
-              preview: { kind: "highlight-row", rowId: hoveredNode.id },
+              preview: {
+                kind: "highlight",
+                top: hoveredRow.rowIndex * TREE_ROW_HEIGHT_PX,
+                height: TREE_ROW_HEIGHT_PX,
+              },
               target: { kind: "into", parentId: hoveredNode.id },
             };
       }
@@ -221,7 +231,7 @@ export function ManuscriptSectionBody() {
               height={layout.height}
               selected={item.id !== null && item.id === state.selectedId}
               editing={item.editing}
-              drag={state.drag}
+              dragging={state.drag !== null}
               listRef={listRef}
               resolveDropTarget={resolveDropTarget}
               onActivate={activateNode}

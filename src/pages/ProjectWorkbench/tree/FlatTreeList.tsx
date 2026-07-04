@@ -6,6 +6,7 @@ import { cn } from "#app/lib/cn";
 
 import type { TreeDropPreview } from "./tree-drag";
 import { TREE_ROW_HEIGHT_PX } from "./tree-row-motion";
+import { TreeDropIndicator } from "./TreeDropIndicator";
 
 type TreeRowLayout = {
   animateEnter: boolean;
@@ -72,11 +73,7 @@ export function FlatTreeList<TItem>({
   return (
     <ul
       ref={listRef}
-      className={cn(
-        "outline-none",
-        dropPreview?.kind === "highlight-root" && "bg-tree-drop-target",
-        className,
-      )}
+      className={cn("isolate outline-none", className)}
       role="tree"
       style={{ height: listHeight, position: "relative" }}
       tabIndex={0}
@@ -98,6 +95,9 @@ export function FlatTreeList<TItem>({
       }}
     >
       <AnimatePresence initial={false}>
+        {dropPreview !== null ? <TreeDropIndicator preview={dropPreview} /> : null}
+      </AnimatePresence>
+      <AnimatePresence initial={false}>
         {items.map((item, index) => {
           const key = keys[index]!;
           return (
@@ -111,13 +111,6 @@ export function FlatTreeList<TItem>({
           );
         })}
       </AnimatePresence>
-      {dropPreview?.kind === "insert-line" ? (
-        <div
-          aria-hidden="true"
-          className="pointer-events-none absolute inset-x-0 z-10 h-1 -translate-y-1/2 bg-tree-drop-indicator"
-          style={{ top: dropPreview.index * rowHeight }}
-        />
-      ) : null}
     </ul>
   );
 }

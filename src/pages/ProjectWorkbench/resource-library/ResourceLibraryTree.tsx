@@ -3,8 +3,11 @@ import { useAtomValue, useSetAtom, useStore } from "jotai";
 import { useCallback, useLayoutEffect, useRef } from "react";
 
 import { FlatTreeList } from "../tree/FlatTreeList";
-import type { TreeResolvedDrop } from "../tree/tree-drag";
+import type { TreeResolvedDrop, TreeRowHoverZone } from "../tree/tree-drag";
 import { queryTreeRowById } from "../tree/tree-row-dom";
+import type { TreeRowDomData } from "../tree/tree-row-dom";
+import { TREE_ROW_HEIGHT_PX } from "../tree/tree-row-motion";
+import { resolveDropTargetFromRow } from "./drag-hit-test";
 import { ResourceLibraryTreeRow } from "./ResourceLibraryTreeRow";
 import { resourceLibraryTreeMolecule } from "./state/resource-tree-molecule";
 import type { FlatRenderItem } from "./state/tree-data-reducer";
@@ -75,6 +78,68 @@ function ResourceLibraryTreeContent({
     [dispatchUi],
   );
 
+  const resolveDropTarget = useCallback(
+    ({
+      start,
+      hoveredRow,
+      hoverZone: _hoverZone,
+      listRect: _listRect,
+      clientX: _clientX,
+      clientY: _clientY,
+    }: {
+      start: { rowId: string; rowType: "file" | "folder" };
+      hoveredRow: TreeRowDomData<"file" | "folder"> | null;
+      hoverZone: TreeRowHoverZone | null;
+      listRect: DOMRect | null;
+      clientX: number;
+      clientY: number;
+    }): TreeResolvedDrop<string> | null => {
+      const listHeight = renderItems.length * TREE_ROW_HEIGHT_PX;
+      if (hoveredRow === null) {
+        return {
+          preview: { kind: "highlight", top: 0, height: listHeight },
+          target: "",
+        };
+      }
+      const targetPath = resolveDropTargetFromRow(
+        hoveredRow.rowId,
+        hoveredRow.rowType,
+        start.rowId,
+        start.rowType,
+      );
+      if (targetPath === null) {
+        return null;
+      }
+      if (targetPath === "") {
+        return {
+          preview: { kind: "highlight", top: 0, height: listHeight },
+          target: "",
+        };
+      }
+      const targetIndex = renderItems.findIndex((item) => item.path === targetPath);
+      const targetItem = targetIndex >= 0 ? renderItems[targetIndex] : null;
+      if (targetItem === null || targetItem.type !== "folder") {
+        return null;
+      }
+      let endIndex = targetIndex;
+      while (
+        endIndex + 1 < renderItems.length &&
+        renderItems[endIndex + 1]!.depth > targetItem.depth
+      ) {
+        endIndex += 1;
+      }
+      return {
+        preview: {
+          kind: "highlight",
+          top: targetIndex * TREE_ROW_HEIGHT_PX,
+          height: (endIndex - targetIndex + 1) * TREE_ROW_HEIGHT_PX,
+        },
+        target: targetPath,
+      };
+    },
+    [renderItems],
+  );
+
   const handleDragEnd = useCallback(() => {
     // 从 store 读取最新 drag，避免闭包捕获渲染快照导致的陈旧值。
     const currentDrag = store.get(treeUiAtom).drag;
@@ -108,10 +173,11 @@ function ResourceLibraryTreeContent({
       renderRow={(item, index, layout) => (
         <ResourceLibraryTreeRow
           animateEnter={layout.animateEnter}
-          drag={drag}
+          dragging={drag !== null}
           height={layout.height}
           index={index}
           item={item}
+          resolveDropTarget={resolveDropTarget}
           selectedPath={selectedPath}
           y={layout.y}
           onActivate={activateNode}
