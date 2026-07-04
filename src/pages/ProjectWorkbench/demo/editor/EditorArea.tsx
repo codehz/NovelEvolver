@@ -16,12 +16,12 @@ export function EditorArea() {
     <AutoTransition
       as="section"
       aria-label="编辑器"
-      className="relative flex min-h-0 min-w-0 flex-1 flex-col bg-workbench-editor"
+      className="relative flex min-h-0 min-w-0 flex-1 flex-col bg-app-background"
     >
       <TabBar tabs={tabs as TabItem[]} onActivate={activateTab} onClose={closeTab} />
 
       {activeTab && (
-        <div className="flex h-8 shrink-0 items-center gap-1 bg-workbench-editor px-3 text-xs text-ctp-subtext0">
+        <div className="flex h-8 shrink-0 items-center gap-1 bg-app-background px-3 text-xs text-ctp-subtext0">
           <EditorBreadcrumb tab={activeTab} />
         </div>
       )}

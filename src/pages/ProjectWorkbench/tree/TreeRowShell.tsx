@@ -66,8 +66,8 @@ export function TreeRowShell<RowType extends string, DropTarget>({
   const rowClasses = cn(
     "flex size-full items-center gap-1 overflow-hidden text-left text-app-foreground",
     !dragging && (selected || isEditing)
-      ? "bg-workbench-tab-active"
-      : !dragging && "hover:bg-workbench-tab-active/60",
+      ? "bg-app-background"
+      : !dragging && "hover:bg-app-background/60",
   );
   const pointerHandlers = useTreeRowPointerDrag<RowType, DropTarget>({
     disabled: isEditing || rowId === null,

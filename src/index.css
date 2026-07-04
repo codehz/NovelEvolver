@@ -51,14 +51,6 @@
   --spacing-quick-pick-max-height: 20rem;
   --z-index-quick-pick: 50;
 
-  --color-workbench-sidebar: var(--color-ctp-mantle);
-  --color-workbench-editor: var(--color-ctp-base);
-  --color-workbench-editor-gutter: var(--color-ctp-mantle);
-  --color-workbench-tab-bar: var(--color-ctp-crust);
-  --color-workbench-tab-active: var(--color-ctp-base);
-  --color-workbench-tab-active-text: var(--color-ctp-mauve);
-  --color-workbench-tab-inactive: var(--color-workbench-sidebar);
-  --color-workbench-tab-border: var(--color-ctp-surface0);
   --spacing-scrollbar: 0.75rem;
   --spacing-pte-line: 1.5rem;
   --spacing-pte-gutter: 0.75rem;

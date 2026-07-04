@@ -14,7 +14,7 @@ export const quickPickPanelContentClass = cn("flex max-h-quick-pick-max-height w
 export const quickPickSearchWrapClass = cn("shrink-0 px-2 pt-2 pb-1.5");
 
 export const quickPickSearchInputClass = cn(
-  "w-full rounded-sm border border-badge-background bg-workbench-editor px-2 py-1 text-xs leading-tight text-app-foreground outline-none app-region-no-drag placeholder:text-app-muted",
+  "w-full rounded-sm border border-badge-background bg-app-background px-2 py-1 text-xs leading-tight text-app-foreground outline-none app-region-no-drag placeholder:text-app-muted",
 );
 
 export const quickPickListClass = cn(

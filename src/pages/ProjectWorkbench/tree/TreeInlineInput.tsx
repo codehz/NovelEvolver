@@ -58,7 +58,7 @@ export function TreeInlineInput({
       aria-label={ariaLabel}
       autoComplete="off"
       className={cn(
-        "h-5 min-w-0 flex-1 rounded-sm border border-badge-background bg-workbench-editor px-1 text-xs leading-none text-app-foreground outline-none app-region-no-drag",
+        "h-5 min-w-0 flex-1 rounded-sm border border-badge-background bg-app-background px-1 text-xs leading-none text-app-foreground outline-none app-region-no-drag",
       )}
       placeholder={placeholder}
       spellCheck={false}

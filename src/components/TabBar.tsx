@@ -39,7 +39,7 @@ export function TabBar({ tabs, onActivate, onClose, renderIcon, className }: Tab
   return (
     <AutoTransition
       as="div"
-      className={cn("flex h-workbench-tab shrink-0 items-stretch bg-workbench-tab-bar", className)}
+      className={cn("flex h-workbench-tab shrink-0 items-stretch bg-window-chrome", className)}
       role="tablist"
       transition={tabTransition}
     >
@@ -49,8 +49,8 @@ export function TabBar({ tabs, onActivate, onClose, renderIcon, className }: Tab
           className={cn(
             "group relative flex max-w-xs cursor-pointer items-center pr-1.5 pl-3 text-sm",
             tab.active
-              ? "bg-workbench-tab-active text-workbench-tab-active-text before:absolute before:inset-x-0 before:top-0 before:h-px before:bg-ctp-mauve before:content-['']"
-              : "bg-workbench-tab-inactive text-ctp-subtext0",
+              ? "bg-app-background text-ctp-mauve before:absolute before:inset-x-0 before:top-0 before:h-px before:bg-ctp-mauve before:content-['']"
+              : "bg-app-surface text-ctp-subtext0",
           )}
           role="tab"
           aria-selected={tab.active}

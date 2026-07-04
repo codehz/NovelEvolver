@@ -38,7 +38,7 @@ function ExplorerTreeBody({ nodes, title }: { nodes: DemoTreeNode[]; title: stri
           className={cn(
             "flex items-center gap-1.5 rounded px-1 py-0.5 text-app-foreground",
             node.depth ? "pl-5" : undefined,
-            node.active && "bg-workbench-tab-active",
+            node.active && "bg-app-background",
           )}
           role="treeitem"
         >
@@ -139,7 +139,7 @@ export function SearchSidebarDemo() {
       <div className="flex flex-col gap-2 px-1">
         <label className="flex flex-col gap-1 text-xs text-ctp-subtext0">
           搜索
-          <span className="flex items-center gap-2 rounded border border-titlebar-border bg-workbench-editor px-2 py-1.5">
+          <span className="flex items-center gap-2 rounded border border-titlebar-border bg-app-background px-2 py-1.5">
             <span aria-hidden="true" className="icon-[codicon--search] text-sm" />
             <span className="text-ctp-overlay0">搜索文件内容（演示）</span>
           </span>
