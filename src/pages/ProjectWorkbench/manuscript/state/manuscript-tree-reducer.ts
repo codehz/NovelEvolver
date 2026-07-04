@@ -1,7 +1,12 @@
 import type { ManuscriptNode, ManuscriptOutline } from "#shared/rpc/projects-rpc";
 
-import { findManuscriptParentId, isManuscriptDescendant } from "../manuscript-tree";
-import type { ManuscriptTreeState } from "./types";
+import type { TreeResolvedDrop } from "../../tree/tree-drag";
+import {
+  findManuscriptChildIndex,
+  findManuscriptParentId,
+  isManuscriptDescendant,
+} from "../manuscript-tree";
+import type { ManuscriptMoveTarget, ManuscriptTreeState } from "./types";
 import { initialManuscriptTreeState } from "./types";
 
 export type ManuscriptTreeAction =
@@ -16,7 +21,7 @@ export type ManuscriptTreeAction =
   | { type: "startRenaming"; id: string; kind: ManuscriptNode["type"] }
   | { type: "cancelEditing" }
   | { type: "dragStart"; sourceId: string; sourceType: ManuscriptNode["type"] }
-  | { type: "dragMove"; targetParentId: string | null }
+  | { type: "dragMove"; resolved: TreeResolvedDrop<ManuscriptMoveTarget> | null }
   | { type: "dragEnd" };
 
 function pruneSelection(
@@ -33,7 +38,7 @@ function pruneSelection(
   return findManuscriptParentId(outline, selectedId);
 }
 
-function isValidDragTarget(
+function canMoveIntoParent(
   outline: ManuscriptOutline | null,
   sourceId: string,
   sourceType: ManuscriptNode["type"],
@@ -57,6 +62,45 @@ function isValidDragTarget(
     return false;
   }
   return true;
+}
+
+function isValidDragTarget(
+  outline: ManuscriptOutline | null,
+  sourceId: string,
+  sourceType: ManuscriptNode["type"],
+  target: ManuscriptMoveTarget,
+): boolean {
+  if (outline === null) {
+    return false;
+  }
+  if (target.kind === "into") {
+    return canMoveIntoParent(outline, sourceId, sourceType, target.parentId);
+  }
+  const targetParent = outline.nodes[target.parentId];
+  if (targetParent?.type !== "folder") {
+    return false;
+  }
+  if (
+    sourceType === "folder" &&
+    (sourceId === target.parentId || isManuscriptDescendant(outline, sourceId, target.parentId))
+  ) {
+    return false;
+  }
+  if (target.index < 0 || target.index > targetParent.children.length) {
+    return false;
+  }
+  const sourceParentId = findManuscriptParentId(outline, sourceId);
+  if (sourceParentId === null) {
+    return false;
+  }
+  if (sourceParentId !== target.parentId) {
+    return true;
+  }
+  const sourceIndex = findManuscriptChildIndex(outline, sourceParentId, sourceId);
+  if (sourceIndex < 0) {
+    return false;
+  }
+  return target.index !== sourceIndex && target.index !== sourceIndex + 1;
 }
 
 export function manuscriptTreeReducer(
@@ -142,7 +186,7 @@ export function manuscriptTreeReducer(
         drag: {
           sourceId: action.sourceId,
           sourceType: action.sourceType,
-          targetParentId: null,
+          resolved: null,
         },
       };
     case "dragMove":
@@ -153,15 +197,15 @@ export function manuscriptTreeReducer(
         ...state,
         drag: {
           ...state.drag,
-          targetParentId:
-            action.targetParentId !== null &&
+          resolved:
+            action.resolved !== null &&
             isValidDragTarget(
               state.outline,
               state.drag.sourceId,
               state.drag.sourceType,
-              action.targetParentId,
+              action.resolved.target,
             )
-              ? action.targetParentId
+              ? action.resolved
               : null,
         },
       };

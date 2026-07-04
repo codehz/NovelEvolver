@@ -42,6 +42,18 @@ export function findManuscriptParentId(outline: ManuscriptOutline, id: string): 
   return null;
 }
 
+export function findManuscriptChildIndex(
+  outline: ManuscriptOutline,
+  parentId: string,
+  childId: string,
+): number {
+  const parent = outline.nodes[parentId];
+  if (parent?.type !== "folder") {
+    return -1;
+  }
+  return parent.children.indexOf(childId);
+}
+
 export function collectManuscriptChapterIds(outline: ManuscriptOutline, id: string): string[] {
   const node = outline.nodes[id];
   if (node === undefined) {

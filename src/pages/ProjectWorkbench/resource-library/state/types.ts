@@ -1,5 +1,7 @@
 import type { ResourceNode } from "#shared/rpc/projects-rpc";
 
+import type { TreeResolvedDrop } from "../../tree/tree-drag";
+
 export type CreatingState = {
   mode: "creating";
   id: number;
@@ -23,8 +25,7 @@ export type ResourceTreeSelection = {
 export type ResourceTreeDragState = {
   sourcePath: string;
   sourceType: ResourceNode["type"];
-  /** 当前命中目标 path；`""` 表示根目录，`null` 表示无有效目标。 */
-  targetPath: string | null;
+  resolved: TreeResolvedDrop<string> | null;
 };
 
 export type ResourceTreeUiState = {

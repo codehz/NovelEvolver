@@ -1,5 +1,7 @@
 import type { ManuscriptNode, ManuscriptOutline } from "#shared/rpc/projects-rpc";
 
+import type { TreeResolvedDrop } from "../../tree/tree-drag";
+
 export type ManuscriptCreatingState = {
   mode: "creating";
   id: number;
@@ -15,10 +17,14 @@ export type ManuscriptRenamingState = {
 
 export type ManuscriptEditingState = ManuscriptCreatingState | ManuscriptRenamingState;
 
+export type ManuscriptMoveTarget =
+  | { kind: "into"; parentId: string }
+  | { kind: "insert"; parentId: string; index: number };
+
 export type ManuscriptDragState = {
   sourceId: string;
   sourceType: ManuscriptNode["type"];
-  targetParentId: string | null;
+  resolved: TreeResolvedDrop<ManuscriptMoveTarget> | null;
 };
 
 export type ManuscriptTreeState = {

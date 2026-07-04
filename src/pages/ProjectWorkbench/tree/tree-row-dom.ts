@@ -1,8 +1,10 @@
-const treeRowSelector = "[data-tree-row-id]";
+const treeRowSelector = "[data-tree-row-id][data-tree-row-index]";
 
 export type TreeRowDomData<RowType extends string = string> = {
   rowId: string;
   rowType: RowType;
+  rowIndex: number;
+  rect: DOMRect;
 };
 
 export function findTreeRowDataAtPoint<RowType extends string = string>(
@@ -15,12 +17,19 @@ export function findTreeRowDataAtPoint<RowType extends string = string>(
   }
   const rowId = target.dataset.treeRowId;
   const rowType = target.dataset.treeRowType;
-  if (rowId === undefined || rowType === undefined) {
+  const rowIndexText = target.dataset.treeRowIndex;
+  if (rowId === undefined || rowType === undefined || rowIndexText === undefined) {
+    return null;
+  }
+  const rowIndex = Number(rowIndexText);
+  if (!Number.isFinite(rowIndex)) {
     return null;
   }
   return {
     rowId,
     rowType: rowType as RowType,
+    rowIndex,
+    rect: target.getBoundingClientRect(),
   };
 }
 

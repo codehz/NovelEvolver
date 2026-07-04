@@ -1,6 +1,7 @@
 import { remapResourcePath, resourceParentPath } from "#shared/resource-library-path";
 import type { ResourceNode } from "#shared/rpc/projects-rpc";
 
+import type { TreeResolvedDrop } from "../../tree/tree-drag";
 import type { ResourceTreeEditingState, ResourceTreeUiState } from "./types";
 import { initialResourceTreeUiState } from "./types";
 
@@ -13,7 +14,7 @@ export type ResourceTreeUiAction =
   | { type: "remapPaths"; from: string; to: string; nodeType: ResourceNode["type"] }
   | { type: "shiftExpandQueue" }
   | { type: "dragStart"; sourcePath: string; sourceType: ResourceNode["type"] }
-  | { type: "dragMove"; targetPath: string | null }
+  | { type: "dragMove"; resolved: TreeResolvedDrop<string> | null }
   | { type: "dragEnd" };
 
 function remapEditingState(
@@ -113,7 +114,7 @@ export function resourceTreeUiReducer(
     case "dragStart":
       return {
         ...state,
-        drag: { sourcePath: action.sourcePath, sourceType: action.sourceType, targetPath: null },
+        drag: { sourcePath: action.sourcePath, sourceType: action.sourceType, resolved: null },
       };
     case "dragMove":
       if (state.drag === null) {
@@ -121,7 +122,7 @@ export function resourceTreeUiReducer(
       }
       return {
         ...state,
-        drag: { ...state.drag, targetPath: action.targetPath },
+        drag: { ...state.drag, resolved: action.resolved },
       };
     case "dragEnd":
       return {

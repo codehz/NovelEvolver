@@ -3,6 +3,7 @@ import { useAtomValue, useSetAtom, useStore } from "jotai";
 import { useCallback, useLayoutEffect, useRef } from "react";
 
 import { FlatTreeList } from "../tree/FlatTreeList";
+import type { TreeResolvedDrop } from "../tree/tree-drag";
 import { queryTreeRowById } from "../tree/tree-row-dom";
 import { ResourceLibraryTreeRow } from "./ResourceLibraryTreeRow";
 import { resourceLibraryTreeMolecule } from "./state/resource-tree-molecule";
@@ -68,8 +69,8 @@ function ResourceLibraryTreeContent({
   );
 
   const handleDragMove = useCallback(
-    (targetPath: string | null) => {
-      dispatchUi({ type: "dragMove", targetPath });
+    (resolved: TreeResolvedDrop<string> | null) => {
+      dispatchUi({ type: "dragMove", resolved });
     },
     [dispatchUi],
   );
@@ -80,15 +81,13 @@ function ResourceLibraryTreeContent({
     dispatchUi({ type: "dragEnd" });
     if (
       currentDrag === null ||
-      currentDrag.targetPath === null ||
-      currentDrag.targetPath === currentDrag.sourcePath
+      currentDrag.resolved === null ||
+      currentDrag.resolved.target === currentDrag.sourcePath
     ) {
       return;
     }
-    void moveNode(currentDrag.sourcePath, currentDrag.sourceType, currentDrag.targetPath);
+    void moveNode(currentDrag.sourcePath, currentDrag.sourceType, currentDrag.resolved.target);
   }, [dispatchUi, moveNode, store, treeUiAtom]);
-
-  const isRootDropTarget = drag !== null && drag.targetPath === "";
 
   if (renderItems.length === 0) {
     return <p className="px-2 py-1 text-xs text-ctp-subtext0">资源库为空。</p>;
@@ -99,18 +98,19 @@ function ResourceLibraryTreeContent({
       items={renderItems}
       getItemKey={(item) => item.key}
       listRef={listRef}
-      rootDropTarget={isRootDropTarget}
+      dropPreview={drag?.resolved?.preview ?? null}
       dragging={drag !== null}
       onRequestRename={startRenaming}
       onRequestDelete={deleteNode}
       onCancelDrag={() => {
         dispatchUi({ type: "dragEnd" });
       }}
-      renderRow={(item, _index, layout) => (
+      renderRow={(item, index, layout) => (
         <ResourceLibraryTreeRow
           animateEnter={layout.animateEnter}
           drag={drag}
           height={layout.height}
+          index={index}
           item={item}
           selectedPath={selectedPath}
           y={layout.y}

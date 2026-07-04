@@ -3,7 +3,8 @@ import { useCallback } from "react";
 
 import { cn } from "#app/lib/cn";
 
-import { findTreeRowDataAtPoint } from "../tree/tree-row-dom";
+import type { TreeResolvedDrop, TreeRowHoverZone } from "../tree/tree-drag";
+import type { TreeRowDomData } from "../tree/tree-row-dom";
 import { treeRowPaddingVariants, treeRowVariants } from "../tree/tree-row-motion";
 import { TreeInlineInput } from "../tree/TreeInlineInput";
 import { useTreeRowPointerDrag } from "../tree/use-tree-row-pointer-drag";
@@ -13,6 +14,7 @@ import type { ResourceTreeDragState } from "./state/types";
 
 type ResourceLibraryTreeRowProps = {
   item: FlatRenderItem;
+  index: number;
   y: number;
   height: number;
   animateEnter: boolean;
@@ -22,17 +24,16 @@ type ResourceLibraryTreeRowProps = {
   onCancelEditing: () => void;
   onSubmitEditing: (editing: NonNullable<FlatRenderItem["editing"]>, name: string) => Promise<void>;
   onDragStart: (sourcePath: string, sourceType: "file" | "folder") => void;
-  onDragMove: (targetPath: string | null) => void;
+  onDragMove: (resolved: TreeResolvedDrop<string> | null) => void;
   onDragEnd: () => void;
 };
 
 function isDropHighlighted(item: FlatRenderItem, drag: ResourceTreeDragState | null) {
   return (
     drag !== null &&
-    drag.targetPath !== null &&
-    drag.targetPath !== "" &&
+    drag.resolved?.preview.kind === "highlight-row" &&
     item.path !== null &&
-    (item.path === drag.targetPath || item.path.startsWith(`${drag.targetPath}/`))
+    (item.path === drag.resolved.target || item.path.startsWith(`${drag.resolved.target}/`))
   );
 }
 
@@ -45,6 +46,7 @@ function getRowIcon(item: FlatRenderItem) {
 
 export function ResourceLibraryTreeRow({
   item,
+  index,
   y,
   height,
   animateEnter,
@@ -77,18 +79,46 @@ export function ResourceLibraryTreeRow({
   const rowClasses = cn(
     "flex size-full items-center gap-1 overflow-hidden text-left text-app-foreground",
     isDropHighlighted(item, drag)
-      ? "bg-resource-drop-target"
+      ? "bg-tree-drop-target"
       : drag === null && (isSelected || isEditing)
         ? "bg-workbench-tab-active"
         : drag === null && "hover:bg-workbench-tab-active/60",
   );
   const resolveDropTarget = useCallback(
-    (start: { rowId: string; rowType: "file" | "folder" }, clientX: number, clientY: number) => {
-      const target = findTreeRowDataAtPoint<"file" | "folder">(clientX, clientY);
-      if (target === null) {
-        return "";
+    ({
+      start,
+      hoveredRow,
+      hoverZone: _hoverZone,
+      listRect: _listRect,
+      clientX: _clientX,
+      clientY: _clientY,
+    }: {
+      start: { rowId: string; rowType: "file" | "folder" };
+      hoveredRow: TreeRowDomData<"file" | "folder"> | null;
+      hoverZone: TreeRowHoverZone | null;
+      listRect: DOMRect | null;
+      clientX: number;
+      clientY: number;
+    }): TreeResolvedDrop<string> | null => {
+      if (hoveredRow === null) {
+        return { preview: { kind: "highlight-root" }, target: "" };
       }
-      return resolveDropTargetFromRow(target.rowId, target.rowType, start.rowId, start.rowType);
+      const targetPath = resolveDropTargetFromRow(
+        hoveredRow.rowId,
+        hoveredRow.rowType,
+        start.rowId,
+        start.rowType,
+      );
+      if (targetPath === null) {
+        return null;
+      }
+      return {
+        preview:
+          targetPath === ""
+            ? { kind: "highlight-root" as const }
+            : { kind: "highlight-row" as const, rowId: targetPath },
+        target: targetPath,
+      };
     },
     [],
   );
@@ -168,6 +198,7 @@ export function ResourceLibraryTreeRow({
         <motion.button
           className={rowClasses}
           data-tree-row-id={item.path ?? undefined}
+          data-tree-row-index={item.path === null ? undefined : index}
           data-tree-row-type={item.type}
           type="button"
           variants={treeRowPaddingVariants}

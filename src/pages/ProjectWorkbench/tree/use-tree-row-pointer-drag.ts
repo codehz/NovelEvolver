@@ -1,5 +1,9 @@
 import { useCallback, useRef } from "react";
-import type { PointerEventHandler } from "react";
+import type { PointerEventHandler, RefObject } from "react";
+
+import type { TreeResolvedDrop, TreeRowHoverZone } from "./tree-drag";
+import type { TreeRowDomData } from "./tree-row-dom";
+import { findTreeRowDataAtPoint } from "./tree-row-dom";
 
 /** 拖动识别阈值（px）：位移超过此值才从"按下"进入"拖动中"。 */
 const DRAG_THRESHOLD = 4;
@@ -12,23 +16,41 @@ type TreeRowPointerStartState<RowType extends string> = {
   rowType: RowType;
 };
 
+type TreeDropResolveInput<RowType extends string> = {
+  start: TreeRowPointerStartState<RowType>;
+  hoveredRow: TreeRowDomData<RowType> | null;
+  hoverZone: TreeRowHoverZone | null;
+  listRect: DOMRect | null;
+  clientX: number;
+  clientY: number;
+};
+
 type UseTreeRowPointerDragOptions<RowType extends string, DropTarget> = {
   disabled: boolean;
   dragSource: { rowId: string; rowType: RowType } | null;
+  listRef?: RefObject<HTMLElement | null>;
   onActivate: () => void;
   onDragStart: () => void;
-  onDragMove: (target: DropTarget | null) => void;
+  onDragMove: (target: TreeResolvedDrop<DropTarget> | null) => void;
   onDragEnd: () => void;
-  resolveDropTarget: (
-    start: TreeRowPointerStartState<RowType>,
-    clientX: number,
-    clientY: number,
-  ) => DropTarget | null;
+  resolveDropTarget: (input: TreeDropResolveInput<RowType>) => TreeResolvedDrop<DropTarget> | null;
 };
+
+function resolveHoverZone(clientY: number, rect: DOMRect): TreeRowHoverZone {
+  const offsetY = clientY - rect.top;
+  if (offsetY < rect.height * 0.25) {
+    return "before";
+  }
+  if (offsetY > rect.height * 0.75) {
+    return "after";
+  }
+  return "inside";
+}
 
 export function useTreeRowPointerDrag<RowType extends string, DropTarget>({
   disabled,
   dragSource,
+  listRef,
   onActivate,
   onDragStart,
   onDragMove,
@@ -76,9 +98,19 @@ export function useTreeRowPointerDrag<RowType extends string, DropTarget>({
         draggingRef.current = true;
         onDragStart();
       }
-      onDragMove(resolveDropTarget(start, event.clientX, event.clientY));
+      const hoveredRow = findTreeRowDataAtPoint<RowType>(event.clientX, event.clientY);
+      onDragMove(
+        resolveDropTarget({
+          start,
+          hoveredRow,
+          hoverZone: hoveredRow === null ? null : resolveHoverZone(event.clientY, hoveredRow.rect),
+          listRect: listRef?.current?.getBoundingClientRect() ?? null,
+          clientX: event.clientX,
+          clientY: event.clientY,
+        }),
+      );
     },
-    [onDragMove, onDragStart, resolveDropTarget],
+    [listRef, onDragMove, onDragStart, resolveDropTarget],
   );
 
   const onPointerUp = useCallback<PointerEventHandler<HTMLButtonElement>>(

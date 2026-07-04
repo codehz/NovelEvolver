@@ -1,14 +1,19 @@
 import { motion } from "motion/react";
-import { useCallback } from "react";
+import type { RefObject } from "react";
 
 import { cn } from "#app/lib/cn";
 import type { ManuscriptNode } from "#shared/rpc/projects-rpc";
 
-import { findTreeRowDataAtPoint } from "../tree/tree-row-dom";
+import type { TreeResolvedDrop, TreeRowHoverZone } from "../tree/tree-drag";
+import type { TreeRowDomData } from "../tree/tree-row-dom";
 import { treeRowPaddingVariants, treeRowVariants } from "../tree/tree-row-motion";
 import { TreeInlineInput } from "../tree/TreeInlineInput";
 import { useTreeRowPointerDrag } from "../tree/use-tree-row-pointer-drag";
-import type { ManuscriptEditingState, ManuscriptDragState } from "./state/types";
+import type {
+  ManuscriptEditingState,
+  ManuscriptDragState,
+  ManuscriptMoveTarget,
+} from "./state/types";
 
 type ManuscriptTreeRowProps = {
   id: string | null;
@@ -16,17 +21,26 @@ type ManuscriptTreeRowProps = {
   type: ManuscriptNode["type"];
   depth: number;
   expanded: boolean;
+  index: number;
   y: number;
   height: number;
   animateEnter: boolean;
   selected: boolean;
   editing: ManuscriptEditingState | null;
   drag: ManuscriptDragState | null;
+  listRef: RefObject<HTMLUListElement | null>;
+  resolveDropTarget: (input: {
+    start: { rowId: string; rowType: ManuscriptNode["type"] };
+    hoveredRow: TreeRowDomData<ManuscriptNode["type"]> | null;
+    hoverZone: TreeRowHoverZone | null;
+    listRect: DOMRect | null;
+    clientY: number;
+  }) => TreeResolvedDrop<ManuscriptMoveTarget> | null;
   onActivate: (id: string, type: ManuscriptNode["type"], title: string) => void;
   onCancelEditing: () => void;
   onSubmitEditing: (editing: ManuscriptEditingState, title: string) => Promise<void>;
   onDragStart: (id: string, type: ManuscriptNode["type"]) => void;
-  onDragMove: (targetParentId: string | null) => void;
+  onDragMove: (resolved: TreeResolvedDrop<ManuscriptMoveTarget> | null) => void;
   onDragEnd: () => void;
 };
 
@@ -38,7 +52,11 @@ function rowIcon(type: ManuscriptNode["type"], expanded: boolean) {
 }
 
 function isDropHighlighted(id: string | null, drag: ManuscriptDragState | null): boolean {
-  return id !== null && drag !== null && drag.targetParentId === id;
+  return (
+    id !== null &&
+    drag?.resolved?.preview.kind === "highlight-row" &&
+    drag.resolved.preview.rowId === id
+  );
 }
 
 export function ManuscriptTreeRow({
@@ -47,12 +65,15 @@ export function ManuscriptTreeRow({
   type,
   depth,
   expanded,
+  index,
   y,
   height,
   animateEnter,
   selected,
   editing,
   drag,
+  listRef,
+  resolveDropTarget,
   onActivate,
   onCancelEditing,
   onSubmitEditing,
@@ -72,28 +93,15 @@ export function ManuscriptTreeRow({
   const rowClasses = cn(
     "flex size-full items-center gap-1 overflow-hidden text-left text-app-foreground",
     isDropHighlighted(id, drag)
-      ? "bg-resource-drop-target"
+      ? "bg-tree-drop-target"
       : drag === null && (selected || isEditing)
         ? "bg-workbench-tab-active"
         : drag === null && "hover:bg-workbench-tab-active/60",
   );
-  const resolveDropTarget = useCallback(
-    (
-      _start: { rowId: string; rowType: ManuscriptNode["type"] },
-      clientX: number,
-      clientY: number,
-    ) => {
-      const target = findTreeRowDataAtPoint<ManuscriptNode["type"]>(clientX, clientY);
-      if (target === null) {
-        return "root";
-      }
-      return target.rowType === "folder" ? target.rowId : null;
-    },
-    [],
-  );
   const pointerHandlers = useTreeRowPointerDrag({
     disabled: isEditing || id === null,
     dragSource: id === null ? null : { rowId: id, rowType: type },
+    listRef,
     onActivate: () => {
       if (id !== null) {
         onActivate(id, type, title);
@@ -163,6 +171,7 @@ export function ManuscriptTreeRow({
         <motion.button
           className={rowClasses}
           data-tree-row-id={id}
+          data-tree-row-index={index}
           data-tree-row-type={type}
           type="button"
           variants={treeRowPaddingVariants}

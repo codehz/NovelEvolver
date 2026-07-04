@@ -125,9 +125,9 @@ export function useManuscriptTreeActions() {
   }, [closeManuscriptTabs, dispatch, manuscript, store, treeAtom]);
 
   const moveNode = useCallback(
-    async (sourceId: string, targetParentId: string) => {
+    async (sourceId: string, targetParentId: string, index?: number) => {
       try {
-        const outline = await manuscript.moveNode(sourceId, targetParentId);
+        const outline = await manuscript.moveNode(sourceId, targetParentId, index);
         dispatch({ type: "setOutline", outline });
         dispatch({ type: "expand", id: targetParentId });
       } catch (error) {

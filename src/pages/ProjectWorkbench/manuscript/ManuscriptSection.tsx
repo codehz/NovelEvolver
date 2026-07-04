@@ -1,17 +1,21 @@
 import { useMolecule } from "bunshi/react";
 import { useAtomValue, useSetAtom, useStore } from "jotai";
-import { useMemo } from "react";
+import { useCallback, useMemo, useRef } from "react";
 
 import {
   SidebarHeaderActionButton,
   SidebarSectionActionsPortalContent,
 } from "#app/components/workbench";
+import type { ManuscriptNode } from "#shared/rpc/projects-rpc";
 
 import { FlatTreeList } from "../tree/FlatTreeList";
+import type { TreeResolvedDrop, TreeRowHoverZone } from "../tree/tree-drag";
+import type { TreeRowDomData } from "../tree/tree-row-dom";
 import { TREE_ROW_HEIGHT_PX } from "../tree/tree-row-motion";
+import { findManuscriptChildIndex, findManuscriptParentId } from "./manuscript-tree";
 import { ManuscriptTreeRow } from "./ManuscriptTreeRow";
 import { manuscriptTreeMolecule } from "./state/manuscript-tree-molecule";
-import type { ManuscriptEditingState } from "./state/types";
+import type { ManuscriptEditingState, ManuscriptMoveTarget } from "./state/types";
 import { useManuscriptTreeActions } from "./state/use-manuscript-tree-actions";
 import { useManuscriptTreeSync } from "./state/use-manuscript-tree-sync";
 
@@ -32,6 +36,7 @@ export function ManuscriptSectionBody() {
   const flatItems = useAtomValue(flatItemsAtom);
   const dispatch = useSetAtom(treeAtom);
   const store = useStore();
+  const listRef = useRef<HTMLUListElement>(null);
   const {
     startCreating,
     startRenaming,
@@ -66,7 +71,107 @@ export function ManuscriptSectionBody() {
     }
     return items;
   }, [flatItems, state.editing]);
-  const isRootDropTarget = state.drag !== null && state.drag.targetParentId === "root";
+  const resolveDropTarget = useCallback(
+    ({
+      start: _start,
+      hoveredRow,
+      hoverZone,
+      listRect,
+      clientY,
+    }: {
+      start: { rowId: string; rowType: ManuscriptNode["type"] };
+      hoveredRow: TreeRowDomData<ManuscriptNode["type"]> | null;
+      hoverZone: TreeRowHoverZone | null;
+      listRect: DOMRect | null;
+      clientY: number;
+    }): TreeResolvedDrop<ManuscriptMoveTarget> | null => {
+      const outline = store.get(treeAtom).outline;
+      if (outline === null) {
+        return null;
+      }
+      const rootNode = outline.nodes[outline.rootId];
+      if (rootNode?.type !== "folder") {
+        return null;
+      }
+
+      const resolveInsert = (rowId: string, visualIndex: number, placeAfter: boolean) => {
+        const parentId = findManuscriptParentId(outline, rowId);
+        if (parentId === null) {
+          return null;
+        }
+        const childIndex = findManuscriptChildIndex(outline, parentId, rowId);
+        if (childIndex < 0) {
+          return null;
+        }
+        return {
+          preview: { kind: "insert-line" as const, index: visualIndex },
+          target: {
+            kind: "insert" as const,
+            parentId,
+            index: childIndex + (placeAfter ? 1 : 0),
+          },
+        };
+      };
+
+      const findSubtreeEndIndex = (startIndex: number) => {
+        const startItem = renderItems[startIndex];
+        if (startItem === undefined) {
+          return startIndex;
+        }
+        let endIndex = startIndex;
+        while (
+          endIndex + 1 < renderItems.length &&
+          renderItems[endIndex + 1]!.depth > startItem.depth
+        ) {
+          endIndex += 1;
+        }
+        return endIndex;
+      };
+
+      if (hoveredRow === null) {
+        const rootIndex = listRect !== null && clientY <= listRect.top ? 0 : renderItems.length;
+        return {
+          preview: { kind: "insert-line", index: rootIndex },
+          target: {
+            kind: "insert",
+            parentId: "root",
+            index: rootIndex === 0 ? 0 : rootNode.children.length,
+          },
+        };
+      }
+
+      const hoveredNode = outline.nodes[hoveredRow.rowId];
+      if (hoveredNode === undefined || hoverZone === null) {
+        return null;
+      }
+      const effectiveZone =
+        hoveredNode.type === "chapter" && hoverZone === "inside"
+          ? clientY < hoveredRow.rect.top + hoveredRow.rect.height / 2
+            ? "before"
+            : "after"
+          : hoverZone;
+
+      if (effectiveZone === "inside") {
+        return hoveredNode.type !== "folder"
+          ? null
+          : {
+              preview: { kind: "highlight-row", rowId: hoveredNode.id },
+              target: { kind: "into", parentId: hoveredNode.id },
+            };
+      }
+
+      if (effectiveZone === "before") {
+        return resolveInsert(hoveredNode.id, hoveredRow.rowIndex, false);
+      }
+
+      const afterVisualIndex =
+        hoveredNode.type === "folder"
+          ? findSubtreeEndIndex(hoveredRow.rowIndex) + 1
+          : hoveredRow.rowIndex + 1;
+      return resolveInsert(hoveredNode.id, afterVisualIndex, true);
+    },
+    [renderItems, store, treeAtom],
+  );
 
   return (
     <>
@@ -94,7 +199,8 @@ export function ManuscriptSectionBody() {
         <FlatTreeList
           items={renderItems}
           getItemKey={(item) => item.key}
-          rootDropTarget={isRootDropTarget}
+          listRef={listRef}
+          dropPreview={state.drag?.resolved?.preview ?? null}
           dragging={state.drag !== null}
           rowHeight={TREE_ROW_HEIGHT_PX}
           onRequestRename={startRenaming}
@@ -102,33 +208,44 @@ export function ManuscriptSectionBody() {
           onCancelDrag={() => {
             dispatch({ type: "dragEnd" });
           }}
-          renderRow={(item, _index, layout) => (
+          renderRow={(item, index, layout) => (
             <ManuscriptTreeRow
               id={item.id}
               title={item.title}
               type={item.type}
               depth={item.depth}
               expanded={item.expanded}
+              index={index}
               animateEnter={layout.animateEnter}
               y={layout.y}
               height={layout.height}
               selected={item.id !== null && item.id === state.selectedId}
               editing={item.editing}
               drag={state.drag}
+              listRef={listRef}
+              resolveDropTarget={resolveDropTarget}
               onActivate={activateNode}
               onCancelEditing={cancelEditing}
               onSubmitEditing={submitEditing}
               onDragStart={(id, type) => {
                 dispatch({ type: "dragStart", sourceId: id, sourceType: type });
               }}
-              onDragMove={(targetParentId) => {
-                dispatch({ type: "dragMove", targetParentId });
+              onDragMove={(resolved) => {
+                dispatch({ type: "dragMove", resolved });
               }}
               onDragEnd={() => {
                 const drag = store.get(treeAtom).drag;
                 dispatch({ type: "dragEnd" });
-                if (drag?.targetParentId) {
-                  void moveNode(drag.sourceId, drag.targetParentId);
+                if (drag?.resolved?.target.kind === "into") {
+                  void moveNode(drag.sourceId, drag.resolved.target.parentId);
+                  return;
+                }
+                if (drag?.resolved?.target.kind === "insert") {
+                  void moveNode(
+                    drag.sourceId,
+                    drag.resolved.target.parentId,
+                    drag.resolved.target.index,
+                  );
                 }
               }}
             />

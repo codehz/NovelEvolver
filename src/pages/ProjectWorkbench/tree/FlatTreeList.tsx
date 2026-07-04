@@ -4,6 +4,7 @@ import type { ReactNode, RefObject } from "react";
 
 import { cn } from "#app/lib/cn";
 
+import type { TreeDropPreview } from "./tree-drag";
 import { TREE_ROW_HEIGHT_PX } from "./tree-row-motion";
 
 type TreeRowLayout = {
@@ -18,7 +19,7 @@ type FlatTreeListProps<TItem> = {
   renderRow: (item: TItem, index: number, layout: TreeRowLayout) => ReactNode;
   className?: string;
   listRef?: RefObject<HTMLUListElement | null>;
-  rootDropTarget?: boolean;
+  dropPreview?: TreeDropPreview | null;
   dragging?: boolean;
   rowHeight?: number;
   onRequestRename?: () => void;
@@ -57,7 +58,7 @@ export function FlatTreeList<TItem>({
   renderRow,
   className,
   listRef,
-  rootDropTarget = false,
+  dropPreview = null,
   dragging = false,
   rowHeight = TREE_ROW_HEIGHT_PX,
   onRequestRename,
@@ -71,7 +72,11 @@ export function FlatTreeList<TItem>({
   return (
     <ul
       ref={listRef}
-      className={cn("outline-none", rootDropTarget && "bg-resource-drop-target", className)}
+      className={cn(
+        "outline-none",
+        dropPreview?.kind === "highlight-root" && "bg-tree-drop-target",
+        className,
+      )}
       role="tree"
       style={{ height: listHeight, position: "relative" }}
       tabIndex={0}
@@ -106,6 +111,13 @@ export function FlatTreeList<TItem>({
           );
         })}
       </AnimatePresence>
+      {dropPreview?.kind === "insert-line" ? (
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute inset-x-0 z-10 h-1 -translate-y-1/2 bg-tree-drop-indicator"
+          style={{ top: dropPreview.index * rowHeight }}
+        />
+      ) : null}
     </ul>
   );
 }
