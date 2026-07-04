@@ -24,9 +24,6 @@ export function ResourceLibrarySectionBody() {
   const listRef = useRef<HTMLUListElement>(null);
   const pendingRevealRef = useRef<string | null>(null);
   const projection = useMemo(() => buildResourceRenderProjection(state), [state]);
-  const itemsRef = useRef(projection.items);
-  const rowIndexByPathRef = useRef(projection.rowIndexById);
-  const snapshotRef = useRef(state.snapshot);
   const {
     startCreating,
     activateNode,
@@ -37,10 +34,6 @@ export function ResourceLibrarySectionBody() {
     moveNode,
   } = useResourceLibraryTreeActions();
 
-  itemsRef.current = projection.items;
-  rowIndexByPathRef.current = projection.rowIndexById;
-  snapshotRef.current = state.snapshot;
-
   const revealPath = useEffectEvent((targetPath: string) => {
     if (targetPath === "") {
       pendingRevealRef.current = null;
@@ -48,7 +41,7 @@ export function ResourceLibrarySectionBody() {
       dispatch({ type: "select", path: "", nodeType: "folder" });
       return;
     }
-    const currentSnapshot = snapshotRef.current;
+    const currentSnapshot = state.snapshot;
     if (currentSnapshot?.nodes[targetPath] === undefined) {
       pendingRevealRef.current = null;
       return;
@@ -57,12 +50,12 @@ export function ResourceLibrarySectionBody() {
     if (parentPrefixes.length > 0) {
       dispatch({ type: "expandPaths", paths: parentPrefixes });
     }
-    const itemIndex = rowIndexByPathRef.current.get(targetPath);
+    const itemIndex = projection.rowIndexById.get(targetPath);
     if (itemIndex === undefined) {
       pendingRevealRef.current = targetPath;
       return;
     }
-    const item = itemsRef.current[itemIndex];
+    const item = projection.items[itemIndex];
     if (item === undefined) {
       pendingRevealRef.current = targetPath;
       return;
