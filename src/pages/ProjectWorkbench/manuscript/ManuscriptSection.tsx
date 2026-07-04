@@ -134,6 +134,18 @@ export function ManuscriptSectionBody() {
         return endIndex;
       };
 
+      const isExpandedFolderWithVisibleChildren = (rowIndex: number, folderId: string) => {
+        const item = renderItems[rowIndex];
+        const nextItem = renderItems[rowIndex + 1];
+        return (
+          item?.id === folderId &&
+          item.type === "folder" &&
+          item.expanded &&
+          nextItem !== undefined &&
+          nextItem.depth > item.depth
+        );
+      };
+
       if (hoveredRow === null) {
         const rootIndex = listRect !== null && clientY <= listRect.top ? 0 : renderItems.length;
         return {
@@ -172,6 +184,20 @@ export function ManuscriptSectionBody() {
 
       if (effectiveZone === "before") {
         return resolveInsert(hoveredNode.id, hoveredRow.rowIndex, false);
+      }
+
+      if (
+        hoveredNode.type === "folder" &&
+        isExpandedFolderWithVisibleChildren(hoveredRow.rowIndex, hoveredNode.id)
+      ) {
+        return {
+          preview: createInsertPreview(hoveredRow.rowIndex + 1),
+          target: {
+            kind: "insert",
+            parentId: hoveredNode.id,
+            index: 0,
+          },
+        };
       }
 
       const afterVisualIndex =
