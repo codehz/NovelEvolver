@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 
+import { SlotText } from "#app/components/SlotText";
 import { cn } from "#app/lib/cn";
 
 import {
@@ -33,11 +34,11 @@ export function PrimarySidebar({
     >
       <header
         className={cn(
-          "flex h-workbench-tab shrink-0 items-center justify-between gap-2 px-3",
+          "flex h-workbench-tab shrink-0 items-center justify-between gap-2 pr-3 pl-primary-sidebar-offset",
           sidebarTitleTypographyClass,
         )}
       >
-        <span className="truncate">{title}</span>
+        <SlotText text={title} className="truncate" />
         <div className="flex shrink-0 items-center gap-0.5">
           <button aria-label="视图操作（演示）" className={sidebarHeaderActionClass} type="button">
             <span
