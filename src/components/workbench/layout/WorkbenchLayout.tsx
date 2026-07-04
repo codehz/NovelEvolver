@@ -14,6 +14,7 @@ import type { WorkbenchPrimaryView } from "../types";
 import { ActivityBar } from "./ActivityBar";
 import { AuxiliarySidebar } from "./AuxiliarySidebar";
 import { PrimarySidebar } from "./PrimarySidebar";
+import { PrimarySidebarViewStack } from "./PrimarySidebarViewStack";
 
 const ACTIVITY_BAR_WIDTH = 48;
 const DEFAULT_PRIMARY_WIDTH = 256;
@@ -396,9 +397,13 @@ export function WorkbenchLayout({
           primarySidebarVisible={primarySidebarVisible}
           onSelectView={handleSelectView}
         />
-        {primarySidebarVisible && activePrimaryView ? (
-          <PrimarySidebar title={activePrimaryView.title} width={resolvedLayout.primaryWidth}>
-            {activePrimaryView.content}
+        {hasPrimaryViews ? (
+          <PrimarySidebar
+            className={cn(!primarySidebarVisible && "hidden")}
+            title={activePrimaryView?.title ?? primaryViews[0]!.title}
+            width={resolvedLayout.primaryWidth || layoutPreferences.primaryWidth}
+          >
+            <PrimarySidebarViewStack activeViewId={activeViewId} views={primaryViews} />
           </PrimarySidebar>
         ) : null}
         <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">{editor}</div>
