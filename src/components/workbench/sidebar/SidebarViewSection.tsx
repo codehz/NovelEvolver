@@ -3,6 +3,7 @@ import type { CSSProperties, PointerEvent as ReactPointerEvent, ReactNode } from
 import { ScrollArea } from "#app/components/ScrollArea";
 import { cn } from "#app/lib/cn";
 
+import { sidebarTitleTypographyClass } from "./sidebar-header-chrome";
 import {
   SidebarSectionActionsPortalProvider,
   SidebarSectionActionsPortalTarget,
@@ -13,7 +14,8 @@ export const SIDEBAR_SECTION_RESIZE_STRIP_HEIGHT = 0;
 export const SIDEBAR_SECTION_HEADER_HEIGHT_PX = 24;
 
 const sectionHeaderButtonClass = cn(
-  "flex h-6 min-w-0 flex-1 items-center gap-1 bg-workbench-panel-header pr-1.5 pl-1 text-left text-xs font-semibold tracking-wide uppercase",
+  "flex h-6 min-w-0 flex-1 items-center gap-1 bg-workbench-panel-header pr-1.5 pl-1 text-left",
+  sidebarTitleTypographyClass,
   "focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-badge-background",
 );
 

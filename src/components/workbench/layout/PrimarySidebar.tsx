@@ -2,7 +2,11 @@ import type { ReactNode } from "react";
 
 import { cn } from "#app/lib/cn";
 
-import { sidebarHeaderActionClass, sidebarHeaderIconClass } from "../sidebar/sidebar-header-chrome";
+import {
+  sidebarHeaderActionClass,
+  sidebarHeaderIconClass,
+  sidebarTitleTypographyClass,
+} from "../sidebar/sidebar-header-chrome";
 
 export function PrimarySidebar({
   title,
@@ -27,7 +31,12 @@ export function PrimarySidebar({
       )}
       style={{ width }}
     >
-      <header className="flex h-workbench-tab shrink-0 items-center justify-between gap-2 px-3 text-xs font-semibold tracking-wide uppercase">
+      <header
+        className={cn(
+          "flex h-workbench-tab shrink-0 items-center justify-between gap-2 px-3",
+          sidebarTitleTypographyClass,
+        )}
+      >
         <span className="truncate">{title}</span>
         <div className="flex shrink-0 items-center gap-0.5">
           <button aria-label="视图操作（演示）" className={sidebarHeaderActionClass} type="button">

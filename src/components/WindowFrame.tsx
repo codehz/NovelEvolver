@@ -113,7 +113,7 @@ function TitleBar() {
           isMac && "pl-mac-traffic-light-offset",
         )}
       >
-        <div className="flex size-5 items-center justify-center rounded-sm bg-badge-background text-badge font-semibold text-badge-foreground app-region-no-drag">
+        <div className="flex size-5 items-center justify-center rounded-sm bg-badge-background text-2xs font-semibold text-badge-foreground app-region-no-drag">
           NE
         </div>
         <WindowTitle />

@@ -1,5 +1,10 @@
 import { cn } from "#app/lib/cn";
 
+/** Primary sidebar chrome title + collapsible panel section headers. */
+export const sidebarTitleTypographyClass = cn(
+  "text-2xs tracking-wide text-workbench-sidebar-title uppercase",
+);
+
 export const sidebarHeaderActionClass = cn(
   "inline-flex size-6 shrink-0 items-center justify-center rounded border-0 bg-transparent p-0",
   "text-workbench-sidebar-action hover:bg-window-button-hover hover:text-workbench-sidebar-action",
