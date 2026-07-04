@@ -70,6 +70,7 @@
   --color-workbench-editor-gutter: var(--color-ctp-mantle);
   --color-workbench-tab-bar: var(--color-ctp-crust);
   --color-workbench-tab-active: var(--color-ctp-base);
+  --color-workbench-tab-active-text: var(--color-ctp-mauve);
   --color-workbench-tab-inactive: var(--color-workbench-sidebar);
   --color-workbench-tab-border: var(--color-ctp-surface0);
   --color-resource-drop-target: color-mix(in srgb, var(--color-ctp-mauve) 20%, transparent);

@@ -49,7 +49,7 @@ export function TabBar({ tabs, onActivate, onClose, renderIcon, className }: Tab
           className={cn(
             "group relative flex max-w-xs cursor-pointer items-center pr-1.5 pl-3 text-sm",
             tab.active
-              ? "bg-workbench-tab-active text-app-foreground before:absolute before:inset-x-0 before:top-0 before:h-px before:bg-ctp-mauve before:content-['']"
+              ? "bg-workbench-tab-active text-workbench-tab-active-text before:absolute before:inset-x-0 before:top-0 before:h-px before:bg-ctp-mauve before:content-['']"
               : "bg-workbench-tab-inactive text-ctp-subtext0",
           )}
           role="tab"
