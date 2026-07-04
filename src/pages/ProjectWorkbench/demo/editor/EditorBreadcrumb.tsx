@@ -12,33 +12,15 @@ import { manuscriptTreeMolecule } from "../../manuscript/state/manuscript-tree-m
 import { resourceLibraryTreeMolecule } from "../../resource-library/state/resource-tree-molecule";
 import type { WorkbenchEditorTab } from "../state/types";
 
-/** 面包屑单段：根节点固定为"资源库"，其余段为路径上的目录/文件名。 */
-type BreadcrumbSegment = {
-  /** 该段对应的完整资源路径；根段为 `""`。 */
-  path: string;
+type EditorBreadcrumbSegment = {
+  key: string;
   label: string;
-  /** 末段（文件）不可点击跳转，仅展示。 */
   clickable: boolean;
+  current: boolean;
+  onClick?: () => void;
 };
 
-function buildBreadcrumbSegments(resourcePath: string): BreadcrumbSegment[] {
-  const segments: BreadcrumbSegment[] = [{ path: "", label: "资源库", clickable: true }];
-  if (resourcePath === "") {
-    return segments;
-  }
-  const prefixes = resourceLibraryDirPathPrefixes(resourcePath);
-  for (const prefix of prefixes) {
-    const isLast = prefix === resourcePath;
-    segments.push({
-      path: prefix,
-      label: resourceBaseName(prefix),
-      clickable: !isLast,
-    });
-  }
-  return segments;
-}
-
-function ResourceEditorBreadcrumb({ resourcePath }: { resourcePath: string }) {
+function useResourceBreadcrumbSegments(resourcePath: string | null): EditorBreadcrumbSegment[] {
   const { revealInTree, treeUiAtom } = useMolecule(resourceLibraryTreeMolecule);
   const dispatchUi = useSetAtom(treeUiAtom);
 
@@ -54,117 +36,142 @@ function ResourceEditorBreadcrumb({ resourcePath }: { resourcePath: string }) {
     [dispatchUi, revealInTree],
   );
 
-  const segments = buildBreadcrumbSegments(resourcePath);
+  if (resourcePath === null) {
+    return [];
+  }
 
-  return (
-    <AutoTransition
-      as="nav"
-      aria-label="资源路径"
-      className="flex min-w-0 items-center gap-1"
-      transition={breadcrumbTransitionPreset}
-    >
-      {segments.map((segment, index) => {
-        const isLast = index === segments.length - 1;
-        return (
-          <Fragment key={isLast ? "LAST" : index}>
-            {index > 0 ? (
-              <span
-                aria-hidden="true"
-                className="icon-[codicon--chevron-right] shrink-0 text-sm text-ctp-overlay0"
-              />
-            ) : null}
-            {segment.clickable ? (
-              <button
-                className={cn(
-                  "max-w-48 truncate rounded px-1 py-0.5 text-xs",
-                  isLast
-                    ? "text-app-foreground"
-                    : "text-ctp-subtext0 hover:bg-window-button-hover hover:text-app-foreground",
-                )}
-                type="button"
-                onClick={() => {
-                  reveal(segment.path);
-                }}
-              >
-                <SlotText text={segment.label} />
-              </button>
-            ) : (
-              <SlotText
-                text={segment.label}
-                className="max-w-48 truncate text-xs text-app-foreground"
-              />
-            )}
-          </Fragment>
-        );
-      })}
-    </AutoTransition>
-  );
+  const segments: EditorBreadcrumbSegment[] = [
+    {
+      key: "segment:0",
+      label: "资源库",
+      clickable: true,
+      current: resourcePath === "",
+      onClick: () => {
+        reveal("");
+      },
+    },
+  ];
+  if (resourcePath === "") {
+    return segments;
+  }
+
+  const prefixes = resourceLibraryDirPathPrefixes(resourcePath);
+  for (const [index, prefix] of prefixes.entries()) {
+    const isLast = prefix === resourcePath;
+    segments.push({
+      key: `segment:${index + 1}`,
+      label: resourceBaseName(prefix),
+      clickable: !isLast,
+      current: isLast,
+      onClick: isLast
+        ? undefined
+        : () => {
+            reveal(prefix);
+          },
+    });
+  }
+  return segments;
 }
 
-function ManuscriptEditorBreadcrumb({ chapterId }: { chapterId: string }) {
+function useManuscriptBreadcrumbSegments(chapterId: string | null): EditorBreadcrumbSegment[] {
   const { treeAtom } = useMolecule(manuscriptTreeMolecule);
   const state = useAtomValue(treeAtom);
   const dispatch = useSetAtom(treeAtom);
-  const segments = state.outline === null ? [] : manuscriptParentChain(state.outline, chapterId);
+
+  const selectFolder = useCallback(
+    (id: string) => {
+      dispatch({ type: "expand", id });
+      dispatch({ type: "select", id });
+    },
+    [dispatch],
+  );
+
+  if (chapterId === null || state.outline === null) {
+    return [];
+  }
+
+  const chain = manuscriptParentChain(state.outline, chapterId);
+  return chain.map((segment, index) => {
+    const isLast = index === chain.length - 1;
+    const clickable = segment.type === "folder" && !isLast;
+    return {
+      key: `segment:${index}`,
+      label: segment.title,
+      clickable,
+      current: isLast,
+      onClick: clickable
+        ? () => {
+            selectFolder(segment.id);
+          }
+        : undefined,
+    };
+  });
+}
+
+const breadcrumbButtonClass = cn("max-w-48 truncate rounded px-1 py-0.5 text-xs");
+const breadcrumbCurrentButtonClass = cn("text-app-foreground");
+const breadcrumbClickableButtonClass = cn(
+  "text-ctp-subtext0 hover:bg-window-button-hover hover:text-app-foreground",
+);
+const breadcrumbCurrentTextClass = cn("max-w-48 truncate text-xs text-app-foreground");
+
+export function EditorBreadcrumb({ tab }: { tab: WorkbenchEditorTab }) {
+  const resourceSegments = useResourceBreadcrumbSegments(
+    tab.kind === "resource" ? tab.resourcePath : null,
+  );
+  const manuscriptSegments = useManuscriptBreadcrumbSegments(
+    tab.kind === "manuscript" ? tab.chapterId : null,
+  );
+  const segments = tab.kind === "resource" ? resourceSegments : manuscriptSegments;
+
+  if (segments.length === 0) {
+    return null;
+  }
 
   return (
     <AutoTransition
       as="nav"
-      aria-label="正文路径"
+      aria-label={tab.kind === "resource" ? "资源路径" : "正文路径"}
       className="flex min-w-0 items-center gap-1"
       transition={breadcrumbTransitionPreset}
     >
-      {segments.map((segment, index) => {
-        const isLast = index === segments.length - 1;
-        return (
-          <Fragment key={isLast ? "LAST" : segment.id}>
-            {index > 0 ? (
-              <span
-                aria-hidden="true"
-                className="icon-[codicon--chevron-right] shrink-0 text-sm text-ctp-overlay0"
-              />
-            ) : null}
-            {segment.type === "folder" && !isLast ? (
-              <button
-                className={cn(
-                  "max-w-48 truncate rounded px-1 py-0.5 text-xs",
-                  "text-ctp-subtext0 hover:bg-window-button-hover hover:text-app-foreground",
-                )}
-                type="button"
-                onClick={() => {
-                  dispatch({ type: "expand", id: segment.id });
-                  dispatch({ type: "select", id: segment.id });
-                }}
-              >
-                <SlotText text={segment.title} />
-              </button>
-            ) : (
-              <SlotText
-                text={segment.title}
-                className="max-w-48 truncate text-xs text-app-foreground"
-              />
-            )}
-          </Fragment>
-        );
-      })}
+      {segments.map((segment, index) => (
+        <Fragment key={segment.key}>
+          {index > 0 ? (
+            <span
+              aria-hidden="true"
+              className="icon-[codicon--chevron-right] shrink-0 text-sm text-ctp-overlay0"
+            />
+          ) : null}
+          {segment.clickable ? (
+            <button
+              className={cn(
+                breadcrumbButtonClass,
+                segment.current ? breadcrumbCurrentButtonClass : breadcrumbClickableButtonClass,
+              )}
+              type="button"
+              onClick={segment.onClick}
+            >
+              <SlotText text={segment.label} />
+            </button>
+          ) : (
+            <SlotText text={segment.label} className={breadcrumbCurrentTextClass} />
+          )}
+        </Fragment>
+      ))}
     </AutoTransition>
   );
 }
 
-export function EditorBreadcrumb({ tab }: { tab: WorkbenchEditorTab }) {
-  if (tab.kind === "resource") {
-    return <ResourceEditorBreadcrumb resourcePath={tab.resourcePath} />;
-  }
-  return <ManuscriptEditorBreadcrumb chapterId={tab.chapterId} />;
-}
+const breadcrumbEase = "cubic-bezier(0.22, 1, 0.36, 1)";
 
 const breadcrumbTransitionPreset = preset({
+  enter: [effects.fade(0), effects.translate({ x: 8, y: 0 })],
+  exit: [effects.fade(0), effects.translate({ x: -8, y: 0 })],
   move: effects.flip(),
   timing: {
-    move: {
-      easing:
-        "linear(0, 0.013 1%, 0.051 2.2%, 0.404 9.8%, 0.51 12.6%, 0.602 15.5%, 0.683 18.7%, 0.754 22.2%, 0.813 26%, 0.861 30.2%, 0.9 34.8%, 0.931 40%, 0.972 52.7%, 0.992 70.2%, 1)",
-      duration: 600,
-    },
+    enter: { duration: 220, easing: breadcrumbEase },
+    exit: { duration: 180, easing: breadcrumbEase },
+    move: { duration: 320, easing: breadcrumbEase },
   },
 });
