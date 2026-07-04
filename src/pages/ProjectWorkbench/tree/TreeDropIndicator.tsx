@@ -18,8 +18,8 @@ export function TreeDropIndicator({ preview }: TreeDropIndicatorProps) {
     <motion.div
       aria-hidden="true"
       className={cn(
-        "pointer-events-none absolute inset-x-0",
-        preview.kind === "highlight" ? "z-0 bg-tree-drop-target" : "z-20 bg-tree-drop-indicator",
+        "pointer-events-none absolute inset-x-0 transition-colors",
+        preview.kind === "highlight" ? "bg-tree-drop-target z-0" : "bg-tree-drop-indicator z-20",
       )}
       style={{ top: 0 }}
       initial={{
