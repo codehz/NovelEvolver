@@ -9,6 +9,11 @@ export default defineConfig({
   resolve: {
     alias: pathAlias,
   },
+  build: {
+    // Electron ships assets locally; skip Rollup's default 500 kB chunk warnings.
+    chunkSizeWarningLimit: 10_000,
+    reportCompressedSize: false,
+  },
   server: {
     port: 5173,
     strictPort: true,
