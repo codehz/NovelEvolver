@@ -15,32 +15,22 @@ import { ActivityBar } from "./ActivityBar";
 import { AuxiliarySidebarDock } from "./AuxiliarySidebarDock";
 import { PrimarySidebarDock } from "./PrimarySidebarDock";
 import { PrimarySidebarViewStack } from "./PrimarySidebarViewStack";
+import {
+  ACTIVITY_BAR_WIDTH,
+  CLOSE_SIDEBAR_THRESHOLD,
+  DEFAULT_AUXILIARY_WIDTH,
+  DEFAULT_PRIMARY_WIDTH,
+  MIN_AUXILIARY_WIDTH,
+  MIN_EDITOR_WIDTH,
+  MIN_PRIMARY_WIDTH,
+  deriveWorkbenchChromeLayout,
+  normalizeSidebarWidth,
+  snapshotLayoutPreferences,
+  type LayoutPreferences,
+  type ResizePriority,
+} from "./workbench-layout-resolver";
 
-const ACTIVITY_BAR_WIDTH = 48;
-const DEFAULT_PRIMARY_WIDTH = 256;
-const DEFAULT_AUXILIARY_WIDTH = 320;
-const MIN_PRIMARY_WIDTH = 208;
-const MIN_AUXILIARY_WIDTH = 240;
-const CLOSE_SIDEBAR_THRESHOLD = 160;
-const MIN_EDITOR_WIDTH = 520;
-
-type ResizePriority = "primary" | "auxiliary";
 type ResizeSide = ResizePriority;
-
-type LayoutPreferences = {
-  primaryVisible: boolean;
-  primaryWidth: number;
-  auxiliaryVisible: boolean;
-  auxiliaryWidth: number;
-  priority: ResizePriority;
-};
-
-type ResolvedWorkbenchLayout = {
-  primaryVisible: boolean;
-  primaryWidth: number;
-  auxiliaryVisible: boolean;
-  auxiliaryWidth: number;
-};
 
 const resizeHandleClass = cn(
   "absolute inset-y-0 z-20 w-1 cursor-col-resize touch-none bg-workbench-resize-handle select-none",
@@ -64,77 +54,6 @@ function resolveDefaultActiveViewId(
   }
 
   return primaryViews[0]!.id;
-}
-
-function resolveWorkbenchLayout(
-  preferences: LayoutPreferences,
-  containerWidth: number,
-): ResolvedWorkbenchLayout {
-  const availableWidth = Math.max(containerWidth - ACTIVITY_BAR_WIDTH, 0);
-  const editorMinWidth = Math.min(MIN_EDITOR_WIDTH, availableWidth);
-  let remainingSidebarWidth = Math.max(availableWidth - editorMinWidth, 0);
-  let primaryWidth = 0;
-  let auxiliaryWidth = 0;
-  const allocationOrder =
-    preferences.priority === "auxiliary"
-      ? (["auxiliary", "primary"] as const)
-      : (["primary", "auxiliary"] as const);
-
-  for (const side of allocationOrder) {
-    const wantsVisible =
-      side === "primary" ? preferences.primaryVisible : preferences.auxiliaryVisible;
-    if (!wantsVisible) {
-      continue;
-    }
-
-    const minWidth = side === "primary" ? MIN_PRIMARY_WIDTH : MIN_AUXILIARY_WIDTH;
-    if (remainingSidebarWidth < minWidth) {
-      continue;
-    }
-
-    const preferredWidth =
-      side === "primary"
-        ? Math.max(preferences.primaryWidth, MIN_PRIMARY_WIDTH)
-        : Math.max(preferences.auxiliaryWidth, MIN_AUXILIARY_WIDTH);
-    const width = Math.min(preferredWidth, remainingSidebarWidth);
-
-    if (side === "primary") {
-      primaryWidth = width;
-    } else {
-      auxiliaryWidth = width;
-    }
-    remainingSidebarWidth -= width;
-  }
-
-  return {
-    primaryVisible: primaryWidth >= MIN_PRIMARY_WIDTH,
-    primaryWidth,
-    auxiliaryVisible: auxiliaryWidth >= MIN_AUXILIARY_WIDTH,
-    auxiliaryWidth,
-  };
-}
-
-function normalizeSidebarWidth(width: number, minWidth: number) {
-  return Math.round(Math.max(width, minWidth));
-}
-
-function snapshotLayoutPreferences(
-  preferences: LayoutPreferences,
-  resolvedLayout: ResolvedWorkbenchLayout,
-  hasAuxiliary: boolean,
-): LayoutPreferences {
-  return {
-    ...preferences,
-    primaryVisible: resolvedLayout.primaryVisible,
-    primaryWidth: resolvedLayout.primaryVisible
-      ? resolvedLayout.primaryWidth
-      : preferences.primaryWidth,
-    auxiliaryVisible: hasAuxiliary && resolvedLayout.auxiliaryVisible,
-    auxiliaryWidth:
-      hasAuxiliary && resolvedLayout.auxiliaryVisible
-        ? resolvedLayout.auxiliaryWidth
-        : preferences.auxiliaryWidth,
-  };
 }
 
 function ResizeHandle({
@@ -194,25 +113,23 @@ export function WorkbenchLayout({
   const hasPrimaryViews = primaryViews.length > 0;
   const activePrimaryView = primaryViews.find((view) => view.id === activeViewId) ?? null;
   const canShowPrimary = hasPrimaryViews && activePrimaryView != null;
-  const resolvedLayout = resolveWorkbenchLayout(
-    {
-      ...layoutPreferences,
-      primaryVisible: canShowPrimary && layoutPreferences.primaryVisible,
-    },
+  const chromeLayout = deriveWorkbenchChromeLayout({
+    layoutPreferences,
     containerWidth,
-  );
-  const primarySidebarVisible = canShowPrimary && resolvedLayout.primaryVisible;
-  const primarySidebarPanelWidth = normalizeSidebarWidth(
-    primarySidebarVisible ? resolvedLayout.primaryWidth : layoutPreferences.primaryWidth,
-    MIN_PRIMARY_WIDTH,
-  );
-  const primarySidebarSpacerWidth = primarySidebarVisible ? resolvedLayout.primaryWidth : 0;
-  const auxiliaryVisible = hasAuxiliary && resolvedLayout.auxiliaryVisible;
-  const auxiliarySidebarPanelWidth = normalizeSidebarWidth(
-    auxiliaryVisible ? resolvedLayout.auxiliaryWidth : layoutPreferences.auxiliaryWidth,
-    MIN_AUXILIARY_WIDTH,
-  );
-  const auxiliarySidebarSpacerWidth = auxiliaryVisible ? resolvedLayout.auxiliaryWidth : 0;
+    canShowPrimary,
+    hasAuxiliary,
+  });
+  const {
+    resolved: resolvedLayout,
+    primary: primaryChrome,
+    auxiliary: auxiliaryChrome,
+  } = chromeLayout;
+  const primarySidebarVisible = primaryChrome.visible;
+  const primarySidebarPanelWidth = primaryChrome.panelWidth;
+  const primarySidebarSpacerWidth = primaryChrome.spacerWidth;
+  const auxiliaryVisible = auxiliaryChrome.visible;
+  const auxiliarySidebarPanelWidth = auxiliaryChrome.panelWidth;
+  const auxiliarySidebarSpacerWidth = auxiliaryChrome.spacerWidth;
 
   useEffect(() => {
     const container = containerRef.current;
@@ -433,7 +350,7 @@ export function WorkbenchLayout({
           <ResizeHandle
             active={activeResizeSide === "primary"}
             ariaLabel="调整主侧边栏宽度"
-            position={ACTIVITY_BAR_WIDTH + resolvedLayout.primaryWidth}
+            position={ACTIVITY_BAR_WIDTH + primaryChrome.spacerWidth}
             onPointerDown={(event) => startResizeDrag("primary", event)}
           />
         ) : null}
@@ -441,7 +358,7 @@ export function WorkbenchLayout({
           <ResizeHandle
             active={activeResizeSide === "auxiliary"}
             ariaLabel="调整辅助侧边栏宽度"
-            position={containerWidth - resolvedLayout.auxiliaryWidth - 1}
+            position={containerWidth - auxiliaryChrome.spacerWidth - 1}
             onPointerDown={(event) => startResizeDrag("auxiliary", event)}
           />
         ) : null}
