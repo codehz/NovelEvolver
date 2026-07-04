@@ -108,12 +108,6 @@ export function ManuscriptSectionBody() {
         height: TREE_DROP_INDICATOR_HEIGHT_PX,
       });
 
-      const createHighlightPreview = (startIndex: number, endIndex: number) => ({
-        kind: "highlight" as const,
-        top: startIndex * TREE_ROW_HEIGHT_PX,
-        height: (endIndex - startIndex + 1) * TREE_ROW_HEIGHT_PX,
-      });
-
       const resolveInsert = (rowId: string, visualIndex: number, placeAfter: boolean) => {
         const parentId = findManuscriptParentId(outline, rowId);
         if (parentId === null) {
@@ -160,6 +154,16 @@ export function ManuscriptSectionBody() {
         );
       };
 
+      const resolveInto = (rowIndex: number, folderId: string) => {
+        const visualIndex = isExpandedFolderWithVisibleChildren(rowIndex, folderId)
+          ? findSubtreeEndIndex(rowIndex) + 1
+          : rowIndex + 1;
+        return {
+          preview: createInsertPreview(visualIndex, getInsertDepth(folderId)),
+          target: { kind: "into" as const, parentId: folderId },
+        };
+      };
+
       if (hoveredRow === null) {
         const rootIndex = listRect !== null && clientY <= listRect.top ? 0 : renderItems.length;
         return {
@@ -186,13 +190,7 @@ export function ManuscriptSectionBody() {
       if (effectiveZone === "inside") {
         return hoveredNode.type !== "folder"
           ? null
-          : {
-              preview: createHighlightPreview(
-                hoveredRow.rowIndex,
-                findSubtreeEndIndex(hoveredRow.rowIndex),
-              ),
-              target: { kind: "into", parentId: hoveredNode.id },
-            };
+          : resolveInto(hoveredRow.rowIndex, hoveredNode.id);
       }
 
       if (effectiveZone === "before") {
