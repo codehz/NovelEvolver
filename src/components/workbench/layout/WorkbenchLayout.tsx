@@ -12,7 +12,7 @@ import { TitleBarAuxiliaryToggle } from "../titlebar/TitleBarAuxiliaryToggle";
 import { TitleBarPrimarySidebarToggle } from "../titlebar/TitleBarPrimarySidebarToggle";
 import type { WorkbenchPrimaryView } from "../types";
 import { ActivityBar } from "./ActivityBar";
-import { AuxiliarySidebar } from "./AuxiliarySidebar";
+import { AuxiliarySidebarDock } from "./AuxiliarySidebarDock";
 import { PrimarySidebarDock } from "./PrimarySidebarDock";
 import { PrimarySidebarViewStack } from "./PrimarySidebarViewStack";
 
@@ -208,6 +208,11 @@ export function WorkbenchLayout({
   );
   const primarySidebarSpacerWidth = primarySidebarVisible ? resolvedLayout.primaryWidth : 0;
   const auxiliaryVisible = hasAuxiliary && resolvedLayout.auxiliaryVisible;
+  const auxiliarySidebarPanelWidth = normalizeSidebarWidth(
+    auxiliaryVisible ? resolvedLayout.auxiliaryWidth : layoutPreferences.auxiliaryWidth,
+    MIN_AUXILIARY_WIDTH,
+  );
+  const auxiliarySidebarSpacerWidth = auxiliaryVisible ? resolvedLayout.auxiliaryWidth : 0;
 
   useEffect(() => {
     const container = containerRef.current;
@@ -414,9 +419,16 @@ export function WorkbenchLayout({
           </PrimarySidebarDock>
         ) : null}
         <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">{editor}</div>
-        <AuxiliarySidebar visible={auxiliaryVisible} width={resolvedLayout.auxiliaryWidth}>
-          {auxiliary}
-        </AuxiliarySidebar>
+        {hasAuxiliary ? (
+          <AuxiliarySidebarDock
+            panelWidth={auxiliarySidebarPanelWidth}
+            resizeTransitionDisabled={activeResizeSide === "auxiliary"}
+            spacerWidth={auxiliarySidebarSpacerWidth}
+            visible={auxiliaryVisible}
+          >
+            {auxiliary}
+          </AuxiliarySidebarDock>
+        ) : null}
         {primarySidebarVisible ? (
           <ResizeHandle
             active={activeResizeSide === "primary"}

@@ -3,22 +3,21 @@ import { cn } from "#app/lib/cn";
 import { sidebarHeaderActionClass, sidebarHeaderIconClass } from "../sidebar/sidebar-header-chrome";
 
 export function AuxiliarySidebar({
-  visible,
   width,
+  className,
+  "aria-hidden": ariaHidden,
   children,
 }: {
-  visible: boolean;
   width: number;
+  className?: string;
+  "aria-hidden"?: boolean;
   children?: React.ReactNode;
 }) {
-  if (!visible) {
-    return null;
-  }
-
   return (
     <aside
+      aria-hidden={ariaHidden}
       aria-label="AI 助手"
-      className="flex w-workbench-auxiliary shrink-0 flex-col bg-workbench-sidebar"
+      className={cn("flex w-workbench-auxiliary shrink-0 flex-col bg-workbench-sidebar", className)}
       style={{ width }}
     >
       <header className="flex h-workbench-tab shrink-0 items-center justify-between gap-2 px-3">
