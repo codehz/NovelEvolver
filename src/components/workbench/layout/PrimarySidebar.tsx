@@ -8,15 +8,18 @@ export function PrimarySidebar({
   title,
   width,
   className,
+  "aria-hidden": ariaHidden,
   children,
 }: {
   title: string;
   width: number;
   className?: string;
+  "aria-hidden"?: boolean;
   children?: ReactNode;
 }) {
   return (
     <aside
+      aria-hidden={ariaHidden}
       aria-label={title}
       className={cn(
         "flex min-h-0 w-workbench-sidebar shrink-0 flex-col bg-workbench-sidebar",

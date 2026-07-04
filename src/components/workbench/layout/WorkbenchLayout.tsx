@@ -13,7 +13,7 @@ import { TitleBarPrimarySidebarToggle } from "../titlebar/TitleBarPrimarySidebar
 import type { WorkbenchPrimaryView } from "../types";
 import { ActivityBar } from "./ActivityBar";
 import { AuxiliarySidebar } from "./AuxiliarySidebar";
-import { PrimarySidebar } from "./PrimarySidebar";
+import { PrimarySidebarDock } from "./PrimarySidebarDock";
 import { PrimarySidebarViewStack } from "./PrimarySidebarViewStack";
 
 const ACTIVITY_BAR_WIDTH = 48;
@@ -202,6 +202,11 @@ export function WorkbenchLayout({
     containerWidth,
   );
   const primarySidebarVisible = canShowPrimary && resolvedLayout.primaryVisible;
+  const primarySidebarPanelWidth = normalizeSidebarWidth(
+    primarySidebarVisible ? resolvedLayout.primaryWidth : layoutPreferences.primaryWidth,
+    MIN_PRIMARY_WIDTH,
+  );
+  const primarySidebarSpacerWidth = primarySidebarVisible ? resolvedLayout.primaryWidth : 0;
   const auxiliaryVisible = hasAuxiliary && resolvedLayout.auxiliaryVisible;
 
   useEffect(() => {
@@ -398,13 +403,15 @@ export function WorkbenchLayout({
           onSelectView={handleSelectView}
         />
         {hasPrimaryViews ? (
-          <PrimarySidebar
-            className={cn(!primarySidebarVisible && "hidden")}
+          <PrimarySidebarDock
+            panelWidth={primarySidebarPanelWidth}
+            resizeTransitionDisabled={activeResizeSide === "primary"}
+            spacerWidth={primarySidebarSpacerWidth}
             title={activePrimaryView?.title ?? primaryViews[0]!.title}
-            width={resolvedLayout.primaryWidth || layoutPreferences.primaryWidth}
+            visible={primarySidebarVisible}
           >
             <PrimarySidebarViewStack activeViewId={activeViewId} views={primaryViews} />
-          </PrimarySidebar>
+          </PrimarySidebarDock>
         ) : null}
         <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">{editor}</div>
         <AuxiliarySidebar visible={auxiliaryVisible} width={resolvedLayout.auxiliaryWidth}>
