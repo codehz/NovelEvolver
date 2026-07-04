@@ -16,10 +16,6 @@ import {
   toWorktreePath,
 } from "../resource-library-path";
 
-function debugLog(method: string, detail: Record<string, unknown>): void {
-  console.debug("[ResourceLibraryHandle]", method, detail);
-}
-
 /**
  * RPC view of the branch worktree's `resources/` directory.
  */
@@ -49,18 +45,14 @@ export class ResourceLibraryHandleImpl extends RpcTarget implements ResourceLibr
   }
 
   readFile(path: string): string {
-    debugLog("readFile", { path });
     assertResourceLibraryFilePath(path);
     ensureResourcesDirectory(this.#worktree);
     const filePath = toWorktreePath(path);
     this.#assertFile(filePath, path);
-    const content = this.#worktree.readFile(filePath).toString("utf-8");
-    debugLog("readFile:done", { path, bytes: Buffer.byteLength(content, "utf-8") });
-    return content;
+    return this.#worktree.readFile(filePath).toString("utf-8");
   }
 
   writeFile(path: string, content: string): void {
-    debugLog("writeFile", { path, bytes: Buffer.byteLength(content, "utf-8") });
     assertResourceLibraryFilePath(path);
     ensureResourcesDirectory(this.#worktree);
     const filePath = toWorktreePath(path);
@@ -71,31 +63,25 @@ export class ResourceLibraryHandleImpl extends RpcTarget implements ResourceLibr
       this.#worktree.mkdir(parent, { recursive: true });
     }
     this.#worktree.writeFile(filePath, Buffer.from(content, "utf-8"));
-    debugLog("writeFile:done", { path });
   }
 
   createFolder(path: string): void {
-    debugLog("createFolder", { path });
     assertResourceLibraryFolderCreatePath(path);
     ensureResourcesDirectory(this.#worktree);
     const folderPath = toWorktreePath(path);
     this.#assertNotFile(folderPath, path);
     this.#worktree.mkdir(folderPath, { recursive: true });
-    debugLog("createFolder:done", { path });
   }
 
   unlink(path: string): void {
-    debugLog("unlink", { path });
     assertResourceLibraryRemovablePath(path);
     ensureResourcesDirectory(this.#worktree);
     const worktreePath = toWorktreePath(path);
     this.#assertPathExists(worktreePath, path);
     this.#unlinkWorktreePath(worktreePath);
-    debugLog("unlink:done", { path });
   }
 
   move(from: string, to: string): void {
-    debugLog("move", { from, to });
     assertResourceLibraryMovePaths(from, to);
     this.#assertMoveDoesNotNestInside(from, to);
     ensureResourcesDirectory(this.#worktree);
@@ -111,7 +97,6 @@ export class ResourceLibraryHandleImpl extends RpcTarget implements ResourceLibr
       throw new Error(`Cannot move onto an existing folder: ${to}`);
     }
     this.#worktree.move(fromWorktree, toWorktree);
-    debugLog("move:done", { from, to });
   }
 
   #rpcPathFromWorktree(worktreePath: string): string {
