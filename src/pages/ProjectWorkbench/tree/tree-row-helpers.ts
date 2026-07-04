@@ -2,6 +2,31 @@ export type TreeDepthItem = {
   depth: number;
 };
 
+export function buildSubtreeEndIndexArray<TItem extends TreeDepthItem>(
+  items: readonly TItem[],
+): number[] {
+  const endIndexes = items.map((_, index) => index);
+  const openIndexes: number[] = [];
+
+  for (const [index, item] of items.entries()) {
+    while (
+      openIndexes.length > 0 &&
+      items[openIndexes[openIndexes.length - 1]!]!.depth >= item.depth
+    ) {
+      const openIndex = openIndexes.pop()!;
+      endIndexes[openIndex] = index - 1;
+    }
+    openIndexes.push(index);
+  }
+
+  const lastIndex = items.length - 1;
+  while (openIndexes.length > 0) {
+    endIndexes[openIndexes.pop()!] = lastIndex;
+  }
+
+  return endIndexes;
+}
+
 export function findSubtreeEndIndex<TItem extends TreeDepthItem>(
   items: readonly TItem[],
   startIndex: number,

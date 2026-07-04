@@ -11,7 +11,7 @@ import type { ManuscriptNode, ManuscriptOutline } from "#shared/rpc/projects-rpc
 import { FlatTreeList } from "../tree/FlatTreeList";
 import type { TreeResolvedDrop, TreeRowHoverZone } from "../tree/tree-drag";
 import type { TreeRowDomData } from "../tree/tree-row-dom";
-import { buildTreeRowIndexMap, findSubtreeEndIndex } from "../tree/tree-row-helpers";
+import { buildSubtreeEndIndexArray, buildTreeRowIndexMap } from "../tree/tree-row-helpers";
 import { TREE_DROP_INDICATOR_HEIGHT_PX, TREE_ROW_HEIGHT_PX } from "../tree/tree-row-motion";
 import {
   findManuscriptChildIndex,
@@ -37,6 +37,7 @@ type ManuscriptRenderItem = {
 function resolveCreatingRenderPosition(
   items: ManuscriptRenderItem[],
   rowIndexById: Map<string, number>,
+  subtreeEndIndexes: readonly number[],
   editing: Extract<ManuscriptEditingState, { mode: "creating" }>,
   outline: ManuscriptOutline,
 ): { insertAt: number; depth: number } {
@@ -60,7 +61,8 @@ function resolveCreatingRenderPosition(
     return { insertAt: items.length, depth };
   }
 
-  return { insertAt: findSubtreeEndIndex(items, previousSiblingIndex) + 1, depth };
+  const previousSiblingEndIndex = subtreeEndIndexes[previousSiblingIndex];
+  return { insertAt: (previousSiblingEndIndex ?? previousSiblingIndex) + 1, depth };
 }
 
 export function ManuscriptSectionBody() {
@@ -84,6 +86,7 @@ export function ManuscriptSectionBody() {
     () => buildTreeRowIndexMap(flatItems, (item) => item.id),
     [flatItems],
   );
+  const flatSubtreeEndIndexes = useMemo(() => buildSubtreeEndIndexArray(flatItems), [flatItems]);
 
   const renderItems = useMemo(() => {
     const items: ManuscriptRenderItem[] = flatItems.map((item) => ({
@@ -97,7 +100,13 @@ export function ManuscriptSectionBody() {
       const position =
         state.outline === null
           ? { insertAt: items.length, depth: 0 }
-          : resolveCreatingRenderPosition(items, rowIndexById, editing, state.outline);
+          : resolveCreatingRenderPosition(
+              items,
+              rowIndexById,
+              flatSubtreeEndIndexes,
+              editing,
+              state.outline,
+            );
       items.splice(position.insertAt, 0, {
         id: null,
         title: "",
@@ -109,9 +118,13 @@ export function ManuscriptSectionBody() {
       });
     }
     return items;
-  }, [flatItems, rowIndexById, state.editing, state.outline]);
+  }, [flatItems, flatSubtreeEndIndexes, rowIndexById, state.editing, state.outline]);
   const renderIndexById = useMemo(
     () => buildTreeRowIndexMap(renderItems, (item) => item.id),
+    [renderItems],
+  );
+  const renderSubtreeEndIndexes = useMemo(
+    () => buildSubtreeEndIndexArray(renderItems),
     [renderItems],
   );
   const resolveDropTarget = useCallback(
@@ -169,19 +182,17 @@ export function ManuscriptSectionBody() {
 
       const isExpandedFolderWithVisibleChildren = (rowIndex: number, folderId: string) => {
         const item = renderItems[rowIndex];
-        const nextItem = renderItems[rowIndex + 1];
         return (
           item?.id === folderId &&
           item.type === "folder" &&
           item.expanded &&
-          nextItem !== undefined &&
-          nextItem.depth > item.depth
+          (renderSubtreeEndIndexes[rowIndex] ?? rowIndex) > rowIndex
         );
       };
 
       const resolveInto = (rowIndex: number, folderId: string) => {
         const visualIndex = isExpandedFolderWithVisibleChildren(rowIndex, folderId)
-          ? findSubtreeEndIndex(renderItems, rowIndex) + 1
+          ? (renderSubtreeEndIndexes[rowIndex] ?? rowIndex) + 1
           : rowIndex + 1;
         return {
           preview: createInsertPreview(visualIndex, getInsertDepth(folderId)),
@@ -237,11 +248,11 @@ export function ManuscriptSectionBody() {
 
       const afterVisualIndex =
         hoveredNode.type === "folder"
-          ? findSubtreeEndIndex(renderItems, hoveredRowIndex) + 1
+          ? (renderSubtreeEndIndexes[hoveredRowIndex] ?? hoveredRowIndex) + 1
           : hoveredRowIndex + 1;
       return resolveInsert(hoveredNode.id, afterVisualIndex, true);
     },
-    [renderIndexById, renderItems, store, treeAtom],
+    [renderIndexById, renderItems, renderSubtreeEndIndexes, store, treeAtom],
   );
 
   return (

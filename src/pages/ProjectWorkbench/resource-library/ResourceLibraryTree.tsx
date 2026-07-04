@@ -1,6 +1,6 @@
 import { useMolecule } from "bunshi/react";
 import { useAtomValue, useSetAtom, useStore } from "jotai";
-import { useCallback, useLayoutEffect, useMemo, useRef } from "react";
+import { useCallback, useEffectEvent, useLayoutEffect, useMemo, useRef } from "react";
 
 import { resourceLibraryDirPathPrefixes } from "#shared/resource-library-path";
 import type { ResourceTreeSnapshot } from "#shared/rpc/projects-rpc";
@@ -9,7 +9,7 @@ import { FlatTreeList } from "../tree/FlatTreeList";
 import type { TreeResolvedDrop, TreeRowHoverZone } from "../tree/tree-drag";
 import { queryTreeRowById } from "../tree/tree-row-dom";
 import type { TreeRowDomData } from "../tree/tree-row-dom";
-import { buildTreeRowIndexMap, findSubtreeEndIndex } from "../tree/tree-row-helpers";
+import { buildSubtreeEndIndexArray, buildTreeRowIndexMap } from "../tree/tree-row-helpers";
 import { TREE_ROW_HEIGHT_PX } from "../tree/tree-row-motion";
 import { isInvalidDropTarget, resolveDropTargetFromRow } from "./drag-hit-test";
 import { ResourceLibraryTreeRow } from "./ResourceLibraryTreeRow";
@@ -36,40 +36,50 @@ function ResourceLibraryTreeContent({
   const store = useStore();
   const listRef = useRef<HTMLUListElement>(null);
   const pendingRevealRef = useRef<string | null>(null);
+  const renderItemsRef = useRef(renderItems);
+  const rowIndexByPathRef = useRef<Map<string, number>>(new Map());
+  const snapshotRef = useRef(snapshot);
   const rowIndexByPath = useMemo(
     () => buildTreeRowIndexMap(renderItems, (item) => item.path),
     [renderItems],
   );
+  const subtreeEndIndexes = useMemo(() => buildSubtreeEndIndexArray(renderItems), [renderItems]);
 
-  const revealPath = useCallback(
-    (targetPath: string) => {
-      if (targetPath === "") {
-        pendingRevealRef.current = null;
-        listRef.current?.scrollIntoView({ block: "start" });
-        dispatch({ type: "select", path: "", nodeType: "folder" });
-        return;
-      }
-      if (snapshot?.nodes[targetPath] === undefined) {
-        pendingRevealRef.current = null;
-        return;
-      }
-      const parentPrefixes = resourceLibraryDirPathPrefixes(targetPath).slice(0, -1);
-      if (parentPrefixes.length > 0) {
-        dispatch({ type: "expandPaths", paths: parentPrefixes });
-      }
-      const itemIndex = rowIndexByPath.get(targetPath);
-      if (itemIndex === undefined) {
-        pendingRevealRef.current = targetPath;
-        return;
-      }
-      const item = renderItems[itemIndex];
+  renderItemsRef.current = renderItems;
+  rowIndexByPathRef.current = rowIndexByPath;
+  snapshotRef.current = snapshot;
+
+  const revealPath = useEffectEvent((targetPath: string) => {
+    if (targetPath === "") {
       pendingRevealRef.current = null;
-      dispatch({ type: "select", path: targetPath, nodeType: item.type });
-      const row = listRef.current ? queryTreeRowById(listRef.current, targetPath) : null;
-      row?.scrollIntoView({ block: "nearest" });
-    },
-    [dispatch, renderItems, rowIndexByPath, snapshot],
-  );
+      listRef.current?.scrollIntoView({ block: "start" });
+      dispatch({ type: "select", path: "", nodeType: "folder" });
+      return;
+    }
+    const currentSnapshot = snapshotRef.current;
+    if (currentSnapshot?.nodes[targetPath] === undefined) {
+      pendingRevealRef.current = null;
+      return;
+    }
+    const parentPrefixes = resourceLibraryDirPathPrefixes(targetPath).slice(0, -1);
+    if (parentPrefixes.length > 0) {
+      dispatch({ type: "expandPaths", paths: parentPrefixes });
+    }
+    const itemIndex = rowIndexByPathRef.current.get(targetPath);
+    if (itemIndex === undefined) {
+      pendingRevealRef.current = targetPath;
+      return;
+    }
+    const item = renderItemsRef.current[itemIndex];
+    if (item === undefined) {
+      pendingRevealRef.current = targetPath;
+      return;
+    }
+    pendingRevealRef.current = null;
+    dispatch({ type: "select", path: targetPath, nodeType: item.type });
+    const row = listRef.current ? queryTreeRowById(listRef.current, targetPath) : null;
+    row?.scrollIntoView({ block: "nearest" });
+  });
 
   useLayoutEffect(() => {
     return onRevealRequest(revealPath);
@@ -148,7 +158,10 @@ function ResourceLibraryTreeContent({
       if (targetItem?.type !== "folder") {
         return null;
       }
-      const endIndex = findSubtreeEndIndex(renderItems, targetIndex);
+      const endIndex = subtreeEndIndexes[targetIndex];
+      if (endIndex === undefined) {
+        return null;
+      }
       return {
         preview: {
           kind: "highlight",
@@ -158,7 +171,7 @@ function ResourceLibraryTreeContent({
         target: targetPath,
       };
     },
-    [renderItems, rowIndexByPath, snapshot],
+    [renderItems.length, rowIndexByPath, snapshot, subtreeEndIndexes],
   );
 
   const handleDragEnd = useCallback(() => {

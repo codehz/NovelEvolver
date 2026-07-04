@@ -2,7 +2,7 @@ import { remapResourcePath, resourceParentPath } from "#shared/resource-library-
 import type { ResourceNode, ResourceTreeSnapshot } from "#shared/rpc/projects-rpc";
 
 import type { TreeResolvedDrop } from "../../tree/tree-drag";
-import { findSubtreeEndIndex } from "../../tree/tree-row-helpers";
+import { buildSubtreeEndIndexArray, buildTreeRowIndexMap } from "../../tree/tree-row-helpers";
 import { isInvalidDropTarget } from "../drag-hit-test";
 import type { ResourceTreeEditingState, ResourceTreeState } from "./types";
 import { initialResourceTreeState } from "./types";
@@ -413,6 +413,8 @@ export function buildFlatRenderItems(state: ResourceTreeState): FlatRenderItem[]
   }
 
   const flatItems = flattenVisibleNodes(state.snapshot, state.expandedPaths, state.nodeVisualIds);
+  const rowIndexByPath = buildTreeRowIndexMap(flatItems, (item) => item.path);
+  const subtreeEndIndexes = buildSubtreeEndIndexArray(flatItems);
   const items: FlatRenderItem[] = flatItems.map((item) => ({
     key: item.visualId,
     visualId: item.visualId,
@@ -427,8 +429,8 @@ export function buildFlatRenderItems(state: ResourceTreeState): FlatRenderItem[]
 
   if (state.editing?.mode === "renaming") {
     const renaming = state.editing;
-    const renameIndex = items.findIndex((item) => item.path === renaming.path);
-    if (renameIndex >= 0) {
+    const renameIndex = rowIndexByPath.get(renaming.path);
+    if (renameIndex !== undefined) {
       items[renameIndex] = {
         ...items[renameIndex],
         editing: renaming,
@@ -441,38 +443,37 @@ export function buildFlatRenderItems(state: ResourceTreeState): FlatRenderItem[]
     return items;
   }
 
-  const prefix = editing.parentPath === "" ? "" : `${editing.parentPath}/`;
   let insertAt = 0;
   let depth = 0;
+  const parentIndex =
+    editing.parentPath === "" ? undefined : rowIndexByPath.get(editing.parentPath);
+  const parentItem = parentIndex === undefined ? undefined : flatItems[parentIndex];
+  const parentNode = state.snapshot.nodes[editing.parentPath];
 
   if (editing.kind === "folder") {
-    if (editing.parentPath !== "") {
-      const parentIndex = flatItems.findIndex((item) => item.path === editing.parentPath);
-      insertAt = parentIndex >= 0 ? parentIndex + 1 : 0;
-      depth = parentIndex >= 0 ? flatItems[parentIndex]!.depth + 1 : 0;
+    if (parentIndex !== undefined && parentItem !== undefined) {
+      insertAt = parentIndex + 1;
+      depth = parentItem.depth + 1;
     }
   } else {
-    let lastFolderIndex = -1;
-    for (let index = 0; index < flatItems.length; index += 1) {
-      if (flatItems[index]!.type !== "folder") {
-        continue;
-      }
-      const path = flatItems[index]!.path;
-      const isDirectChild =
-        editing.parentPath === ""
-          ? !path.includes("/")
-          : path.startsWith(prefix) && !path.slice(prefix.length).includes("/");
-      if (isDirectChild) {
-        lastFolderIndex = index;
+    let lastFolderIndex: number | undefined;
+    if (parentNode?.type === "folder") {
+      for (const childPath of parentNode.children) {
+        if (state.snapshot.nodes[childPath]?.type !== "folder") {
+          break;
+        }
+        const childIndex = rowIndexByPath.get(childPath);
+        if (childIndex !== undefined) {
+          lastFolderIndex = childIndex;
+        }
       }
     }
-    if (lastFolderIndex >= 0) {
-      insertAt = findSubtreeEndIndex(flatItems, lastFolderIndex) + 1;
+    if (lastFolderIndex !== undefined) {
+      insertAt = subtreeEndIndexes[lastFolderIndex]! + 1;
       depth = flatItems[lastFolderIndex]!.depth;
-    } else if (editing.parentPath !== "") {
-      const parentIndex = flatItems.findIndex((item) => item.path === editing.parentPath);
-      insertAt = parentIndex >= 0 ? parentIndex + 1 : 0;
-      depth = parentIndex >= 0 ? flatItems[parentIndex]!.depth + 1 : 0;
+    } else if (parentIndex !== undefined && parentItem !== undefined) {
+      insertAt = parentIndex + 1;
+      depth = parentItem.depth + 1;
     }
   }
 
