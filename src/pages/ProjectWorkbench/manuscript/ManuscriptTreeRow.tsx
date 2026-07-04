@@ -1,10 +1,13 @@
 import { motion } from "motion/react";
+import { useCallback } from "react";
 
 import { cn } from "#app/lib/cn";
 import type { ManuscriptNode } from "#shared/rpc/projects-rpc";
 
-import { ResourceTreeInlineInput } from "../resource-library/ResourceTreeInlineInput";
+import { findTreeRowDataAtPoint } from "../tree/tree-row-dom";
 import { treeRowPaddingVariants, treeRowVariants } from "../tree/tree-row-motion";
+import { TreeInlineInput } from "../tree/TreeInlineInput";
+import { useTreeRowPointerDrag } from "../tree/use-tree-row-pointer-drag";
 import type { ManuscriptEditingState, ManuscriptDragState } from "./state/types";
 
 type ManuscriptTreeRowProps = {
@@ -58,6 +61,14 @@ export function ManuscriptTreeRow({
   onDragEnd,
 }: ManuscriptTreeRowProps) {
   const isEditing = editing !== null;
+  const inputAriaLabel =
+    editing?.mode === "creating"
+      ? type === "folder"
+        ? "新文件夹名"
+        : "新章节标题"
+      : type === "folder"
+        ? "重命名文件夹"
+        : "重命名章节";
   const rowClasses = cn(
     "flex size-full items-center gap-1 overflow-hidden text-left text-app-foreground",
     isDropHighlighted(id, drag)
@@ -66,6 +77,37 @@ export function ManuscriptTreeRow({
         ? "bg-workbench-tab-active"
         : drag === null && "hover:bg-workbench-tab-active/60",
   );
+  const resolveDropTarget = useCallback(
+    (
+      _start: { rowId: string; rowType: ManuscriptNode["type"] },
+      clientX: number,
+      clientY: number,
+    ) => {
+      const target = findTreeRowDataAtPoint<ManuscriptNode["type"]>(clientX, clientY);
+      if (target === null) {
+        return "root";
+      }
+      return target.rowType === "folder" ? target.rowId : null;
+    },
+    [],
+  );
+  const pointerHandlers = useTreeRowPointerDrag({
+    disabled: isEditing || id === null,
+    dragSource: id === null ? null : { rowId: id, rowType: type },
+    onActivate: () => {
+      if (id !== null) {
+        onActivate(id, type, title);
+      }
+    },
+    onDragStart: () => {
+      if (id !== null) {
+        onDragStart(id, type);
+      }
+    },
+    onDragMove,
+    onDragEnd,
+    resolveDropTarget,
+  });
 
   const rowContent = (
     <>
@@ -82,10 +124,9 @@ export function ManuscriptTreeRow({
       </span>
       <span aria-hidden="true" className={cn(rowIcon(type, expanded), "shrink-0 text-base")} />
       {editing ? (
-        <ResourceTreeInlineInput
+        <TreeInlineInput
+          ariaLabel={inputAriaLabel}
           initialValue={editing.mode === "renaming" ? title : ""}
-          kind={type === "folder" ? "folder" : "file"}
-          mode={editing.mode}
           onCancel={onCancelEditing}
           onConfirm={(nextTitle) => {
             void onSubmitEditing(editing, nextTitle);
@@ -121,62 +162,14 @@ export function ManuscriptTreeRow({
       ) : (
         <motion.button
           className={rowClasses}
-          data-manuscript-node-id={id}
-          data-manuscript-node-type={type}
+          data-tree-row-id={id}
+          data-tree-row-type={type}
           type="button"
           variants={treeRowPaddingVariants}
           custom={depth}
           initial={false}
           animate="visible"
-          onPointerDown={(event) => {
-            event.currentTarget.setPointerCapture(event.pointerId);
-            event.currentTarget.dataset.dragStartX = String(event.clientX);
-            event.currentTarget.dataset.dragStartY = String(event.clientY);
-          }}
-          onPointerMove={(event) => {
-            const startX = Number(event.currentTarget.dataset.dragStartX);
-            const startY = Number(event.currentTarget.dataset.dragStartY);
-            if (!Number.isFinite(startX) || !Number.isFinite(startY)) {
-              return;
-            }
-            const dx = event.clientX - startX;
-            const dy = event.clientY - startY;
-            if (drag === null && dx * dx + dy * dy >= 16) {
-              onDragStart(id, type);
-            }
-            const target = document
-              .elementFromPoint(event.clientX, event.clientY)
-              ?.closest<HTMLElement>("[data-manuscript-node-id]");
-            if (!target) {
-              onDragMove("root");
-              return;
-            }
-            const targetId = target.dataset.manuscriptNodeId;
-            const targetType = target.dataset.manuscriptNodeType;
-            if (!targetId || !targetType) {
-              onDragMove(null);
-              return;
-            }
-            onDragMove(targetType === "folder" ? targetId : null);
-          }}
-          onPointerUp={(event) => {
-            const wasDragging = drag !== null;
-            delete event.currentTarget.dataset.dragStartX;
-            delete event.currentTarget.dataset.dragStartY;
-            if (event.currentTarget.hasPointerCapture(event.pointerId)) {
-              event.currentTarget.releasePointerCapture(event.pointerId);
-            }
-            if (wasDragging) {
-              onDragEnd();
-              return;
-            }
-            onActivate(id, type, title);
-          }}
-          onPointerCancel={(event) => {
-            delete event.currentTarget.dataset.dragStartX;
-            delete event.currentTarget.dataset.dragStartY;
-            onDragMove(null);
-          }}
+          {...pointerHandlers}
         >
           {rowContent}
         </motion.button>

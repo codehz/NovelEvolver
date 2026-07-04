@@ -1,11 +1,9 @@
 import { useMolecule } from "bunshi/react";
 import { useAtomValue, useSetAtom, useStore } from "jotai";
-import { AnimatePresence } from "motion/react";
-import { useCallback, useLayoutEffect, useMemo, useRef } from "react";
+import { useCallback, useLayoutEffect, useRef } from "react";
 
-import { cn } from "#app/lib/cn";
-
-import { TREE_ROW_HEIGHT_PX } from "../tree/tree-row-motion";
+import { FlatTreeList } from "../tree/FlatTreeList";
+import { queryTreeRowById } from "../tree/tree-row-dom";
 import { ResourceLibraryTreeRow } from "./ResourceLibraryTreeRow";
 import { resourceLibraryTreeMolecule } from "./state/resource-tree-molecule";
 import type { FlatRenderItem } from "./state/tree-data-reducer";
@@ -26,28 +24,8 @@ function ResourceLibraryTreeContent({
   const { treeUiAtom, onRevealRequest } = useMolecule(resourceLibraryTreeMolecule);
   const dispatchUi = useSetAtom(treeUiAtom);
   const store = useStore();
-  const hasLayoutRef = useRef(false);
-  const previousKeysRef = useRef<Set<string>>(new Set());
   const listRef = useRef<HTMLUListElement>(null);
   const pendingRevealRef = useRef<string | null>(null);
-
-  const enterKeySet = useMemo(() => {
-    const next = new Set<string>();
-    if (!hasLayoutRef.current) {
-      return next;
-    }
-    for (const item of renderItems) {
-      if (!previousKeysRef.current.has(item.key)) {
-        next.add(item.key);
-      }
-    }
-    return next;
-  }, [renderItems]);
-
-  useLayoutEffect(() => {
-    hasLayoutRef.current = true;
-    previousKeysRef.current = new Set(renderItems.map((item) => item.key));
-  }, [renderItems]);
 
   const revealPath = useCallback(
     (targetPath: string) => {
@@ -64,9 +42,7 @@ function ResourceLibraryTreeContent({
       }
       pendingRevealRef.current = null;
       dispatchUi({ type: "select", path: targetPath, nodeType: item.type });
-      const row = listRef.current?.querySelector<HTMLElement>(
-        `[data-row-path="${CSS.escape(targetPath)}"]`,
-      );
+      const row = listRef.current ? queryTreeRowById(listRef.current, targetPath) : null;
       row?.scrollIntoView({ block: "nearest" });
     },
     [renderItems, dispatchUi],
@@ -113,55 +89,40 @@ function ResourceLibraryTreeContent({
   }, [dispatchUi, moveNode, store, treeUiAtom]);
 
   const isRootDropTarget = drag !== null && drag.targetPath === "";
-  const listHeight = useMemo(() => renderItems.length * TREE_ROW_HEIGHT_PX, [renderItems.length]);
 
   if (renderItems.length === 0) {
     return <p className="px-2 py-1 text-xs text-ctp-subtext0">资源库为空。</p>;
   }
 
   return (
-    <ul
-      ref={listRef}
-      className={cn("outline-none", isRootDropTarget && "bg-resource-drop-target")}
-      role="tree"
-      style={{
-        height: listHeight,
-        position: "relative",
+    <FlatTreeList
+      items={renderItems}
+      getItemKey={(item) => item.key}
+      listRef={listRef}
+      rootDropTarget={isRootDropTarget}
+      dragging={drag !== null}
+      onRequestRename={startRenaming}
+      onRequestDelete={deleteNode}
+      onCancelDrag={() => {
+        dispatchUi({ type: "dragEnd" });
       }}
-      tabIndex={0}
-      onKeyDown={(event) => {
-        if (event.key === "F2") {
-          event.preventDefault();
-          startRenaming();
-        } else if (event.key === "Delete") {
-          event.preventDefault();
-          void deleteNode();
-        } else if (event.key === "Escape" && drag !== null) {
-          event.preventDefault();
-          dispatchUi({ type: "dragEnd" });
-        }
-      }}
-    >
-      <AnimatePresence initial={false}>
-        {renderItems.map((item, index) => (
-          <ResourceLibraryTreeRow
-            key={item.key}
-            animateEnter={enterKeySet.has(item.key)}
-            drag={drag}
-            height={TREE_ROW_HEIGHT_PX}
-            item={item}
-            selectedPath={selectedPath}
-            y={index * TREE_ROW_HEIGHT_PX}
-            onActivate={activateNode}
-            onCancelEditing={cancelEditing}
-            onDragEnd={handleDragEnd}
-            onDragMove={handleDragMove}
-            onDragStart={handleDragStart}
-            onSubmitEditing={submitEditing}
-          />
-        ))}
-      </AnimatePresence>
-    </ul>
+      renderRow={(item, _index, layout) => (
+        <ResourceLibraryTreeRow
+          animateEnter={layout.animateEnter}
+          drag={drag}
+          height={layout.height}
+          item={item}
+          selectedPath={selectedPath}
+          y={layout.y}
+          onActivate={activateNode}
+          onCancelEditing={cancelEditing}
+          onDragEnd={handleDragEnd}
+          onDragMove={handleDragMove}
+          onDragStart={handleDragStart}
+          onSubmitEditing={submitEditing}
+        />
+      )}
+    />
   );
 }
 

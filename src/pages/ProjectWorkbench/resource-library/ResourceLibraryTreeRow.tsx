@@ -1,12 +1,15 @@
 import { motion } from "motion/react";
+import { useCallback } from "react";
 
 import { cn } from "#app/lib/cn";
 
+import { findTreeRowDataAtPoint } from "../tree/tree-row-dom";
 import { treeRowPaddingVariants, treeRowVariants } from "../tree/tree-row-motion";
-import { ResourceTreeInlineInput } from "./ResourceTreeInlineInput";
+import { TreeInlineInput } from "../tree/TreeInlineInput";
+import { useTreeRowPointerDrag } from "../tree/use-tree-row-pointer-drag";
+import { resolveDropTargetFromRow } from "./drag-hit-test";
 import type { FlatRenderItem } from "./state/tree-data-reducer";
 import type { ResourceTreeDragState } from "./state/types";
-import { useTreeRowPointerDrag } from "./use-tree-row-pointer-drag";
 
 type ResourceLibraryTreeRowProps = {
   item: FlatRenderItem;
@@ -57,6 +60,20 @@ export function ResourceLibraryTreeRow({
   const isSelected = item.path !== null && selectedPath === item.path;
   const editing = item.editing;
   const isEditing = editing !== null;
+  const inputAriaLabel =
+    editing?.mode === "creating"
+      ? editing.kind === "file"
+        ? "新文件名"
+        : "新文件夹名"
+      : editing?.kind === "file"
+        ? "重命名文件"
+        : "重命名文件夹";
+  const inputPlaceholder =
+    editing?.mode === "creating"
+      ? editing.kind === "file"
+        ? "例如 设定/世界观.md"
+        : "例如 设定/资料"
+      : undefined;
   const rowClasses = cn(
     "flex size-full items-center gap-1 overflow-hidden text-left text-app-foreground",
     isDropHighlighted(item, drag)
@@ -65,14 +82,32 @@ export function ResourceLibraryTreeRow({
         ? "bg-workbench-tab-active"
         : drag === null && "hover:bg-workbench-tab-active/60",
   );
+  const resolveDropTarget = useCallback(
+    (start: { rowId: string; rowType: "file" | "folder" }, clientX: number, clientY: number) => {
+      const target = findTreeRowDataAtPoint<"file" | "folder">(clientX, clientY);
+      if (target === null) {
+        return "";
+      }
+      return resolveDropTargetFromRow(target.rowId, target.rowType, start.rowId, start.rowType);
+    },
+    [],
+  );
   const pointerHandlers = useTreeRowPointerDrag({
     disabled: isEditing,
-    sourcePath: item.path,
-    sourceType: item.type,
-    onActivate,
-    onDragStart,
+    dragSource: item.path === null ? null : { rowId: item.path, rowType: item.type },
+    onActivate: () => {
+      if (item.path !== null) {
+        onActivate(item.path, item.type);
+      }
+    },
+    onDragStart: () => {
+      if (item.path !== null) {
+        onDragStart(item.path, item.type);
+      }
+    },
     onDragMove,
     onDragEnd,
+    resolveDropTarget,
   });
 
   const rowContent = (
@@ -90,10 +125,10 @@ export function ResourceLibraryTreeRow({
       </span>
       <span aria-hidden="true" className={cn(getRowIcon(item), "shrink-0 text-base")} />
       {editing ? (
-        <ResourceTreeInlineInput
+        <TreeInlineInput
+          ariaLabel={inputAriaLabel}
           initialValue={editing.mode === "renaming" ? item.name : ""}
-          kind={editing.kind}
-          mode={editing.mode}
+          placeholder={inputPlaceholder}
           onCancel={onCancelEditing}
           onConfirm={(name) => {
             void onSubmitEditing(editing, name);
@@ -132,8 +167,8 @@ export function ResourceLibraryTreeRow({
       ) : (
         <motion.button
           className={rowClasses}
-          data-row-path={item.path ?? undefined}
-          data-row-type={item.type}
+          data-tree-row-id={item.path ?? undefined}
+          data-tree-row-type={item.type}
           type="button"
           variants={treeRowPaddingVariants}
           custom={item.depth}

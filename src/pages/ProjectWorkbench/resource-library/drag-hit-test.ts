@@ -28,7 +28,7 @@ export function isInvalidDropTarget(
 }
 
 /**
- * 给定指针命中的目标行信息（从 DOM `data-row-path` / `data-row-type` 读取），
+ * 给定指针命中的目标行信息（从 DOM `data-tree-row-id` / `data-tree-row-type` 读取），
  * 解析出有效放置目标 path。
  *
  * - 文件夹行 → 目标为该文件夹 path。

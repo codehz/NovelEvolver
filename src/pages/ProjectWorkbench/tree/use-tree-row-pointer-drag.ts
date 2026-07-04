@@ -1,111 +1,91 @@
 import { useCallback, useRef } from "react";
 import type { PointerEventHandler } from "react";
 
-import { resolveDropTargetFromRow } from "./drag-hit-test";
-
 /** 拖动识别阈值（px）：位移超过此值才从"按下"进入"拖动中"。 */
 const DRAG_THRESHOLD = 4;
 
-type UseTreeRowPointerDragOptions = {
+type TreeRowPointerStartState<RowType extends string> = {
+  pointerId: number;
+  clientX: number;
+  clientY: number;
+  rowId: string;
+  rowType: RowType;
+};
+
+type UseTreeRowPointerDragOptions<RowType extends string, DropTarget> = {
   disabled: boolean;
-  sourcePath: string | null;
-  sourceType: "file" | "folder";
-  onActivate: (path: string, type: "file" | "folder") => void;
-  onDragStart: (sourcePath: string, sourceType: "file" | "folder") => void;
-  onDragMove: (targetPath: string | null) => void;
+  dragSource: { rowId: string; rowType: RowType } | null;
+  onActivate: () => void;
+  onDragStart: () => void;
+  onDragMove: (target: DropTarget | null) => void;
   onDragEnd: () => void;
+  resolveDropTarget: (
+    start: TreeRowPointerStartState<RowType>,
+    clientX: number,
+    clientY: number,
+  ) => DropTarget | null;
 };
 
-type PointerStartState = {
-  id: number;
-  x: number;
-  y: number;
-  path: string;
-  type: "file" | "folder";
-};
-
-function resolveTargetPathFromPointer(start: PointerStartState, clientX: number, clientY: number) {
-  const target = document
-    .elementFromPoint(clientX, clientY)
-    ?.closest<HTMLElement>("[data-row-path]");
-  if (target === null || target === undefined) {
-    return "";
-  }
-  const targetPath = target.dataset.rowPath;
-  const targetType = target.dataset.rowType;
-  if (targetPath === undefined || targetType === undefined) {
-    return "";
-  }
-  return resolveDropTargetFromRow(
-    targetPath,
-    targetType === "folder" ? "folder" : "file",
-    start.path,
-    start.type,
-  );
-}
-
-export function useTreeRowPointerDrag({
+export function useTreeRowPointerDrag<RowType extends string, DropTarget>({
   disabled,
-  sourcePath,
-  sourceType,
+  dragSource,
   onActivate,
   onDragStart,
   onDragMove,
   onDragEnd,
-}: UseTreeRowPointerDragOptions): {
+  resolveDropTarget,
+}: UseTreeRowPointerDragOptions<RowType, DropTarget>): {
   onPointerDown: PointerEventHandler<HTMLButtonElement>;
   onPointerMove: PointerEventHandler<HTMLButtonElement>;
   onPointerUp: PointerEventHandler<HTMLButtonElement>;
   onPointerCancel: PointerEventHandler<HTMLButtonElement>;
 } {
-  const pointerStartRef = useRef<PointerStartState | null>(null);
+  const pointerStartRef = useRef<TreeRowPointerStartState<RowType> | null>(null);
   const draggingRef = useRef(false);
 
   const onPointerDown = useCallback<PointerEventHandler<HTMLButtonElement>>(
     (event) => {
-      if (disabled || sourcePath === null) {
+      if (disabled || dragSource === null) {
         return;
       }
       pointerStartRef.current = {
-        id: event.pointerId,
-        x: event.clientX,
-        y: event.clientY,
-        path: sourcePath,
-        type: sourceType,
+        pointerId: event.pointerId,
+        clientX: event.clientX,
+        clientY: event.clientY,
+        rowId: dragSource.rowId,
+        rowType: dragSource.rowType,
       };
       draggingRef.current = false;
       event.currentTarget.setPointerCapture(event.pointerId);
     },
-    [disabled, sourcePath, sourceType],
+    [disabled, dragSource],
   );
 
   const onPointerMove = useCallback<PointerEventHandler<HTMLButtonElement>>(
     (event) => {
       const start = pointerStartRef.current;
-      if (start === null || start.id !== event.pointerId) {
+      if (start === null || start.pointerId !== event.pointerId) {
         return;
       }
       if (!draggingRef.current) {
-        const dx = event.clientX - start.x;
-        const dy = event.clientY - start.y;
+        const dx = event.clientX - start.clientX;
+        const dy = event.clientY - start.clientY;
         if (dx * dx + dy * dy < DRAG_THRESHOLD * DRAG_THRESHOLD) {
           return;
         }
         draggingRef.current = true;
-        onDragStart(start.path, start.type);
+        onDragStart();
       }
-      // setPointerCapture 使 pointermove 始终派发给源行，无法用事件接收者判断目标。
-      // 用 elementFromPoint 找指针视觉所在行，读取其 data-row-path / data-row-type。
-      onDragMove(resolveTargetPathFromPointer(start, event.clientX, event.clientY));
+      onDragMove(resolveDropTarget(start, event.clientX, event.clientY));
     },
-    [onDragMove, onDragStart],
+    [onDragMove, onDragStart, resolveDropTarget],
   );
 
   const onPointerUp = useCallback<PointerEventHandler<HTMLButtonElement>>(
     (event) => {
       const start = pointerStartRef.current;
       pointerStartRef.current = null;
-      if (start === null || start.id !== event.pointerId) {
+      if (start === null || start.pointerId !== event.pointerId) {
         return;
       }
       if (event.currentTarget.hasPointerCapture(event.pointerId)) {
@@ -116,7 +96,7 @@ export function useTreeRowPointerDrag({
         onDragEnd();
         return;
       }
-      onActivate(start.path, start.type);
+      onActivate();
     },
     [onActivate, onDragEnd],
   );
