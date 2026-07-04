@@ -1,6 +1,6 @@
 import { cn } from "#app/lib/cn";
 
-import { sidebarHeaderActionClass, sidebarHeaderIconClass } from "./sidebar-header-chrome";
+import { sidebarHeaderActionClass, sidebarHeaderIconClass } from "./sidebar-chrome";
 
 export interface SidebarHeaderActionButtonProps {
   /** Accessible label (also used as tooltip). */

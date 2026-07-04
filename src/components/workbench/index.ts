@@ -11,7 +11,7 @@ export {
   SidebarSectionActionsPortalProvider,
   SidebarSectionActionsPortalTarget,
 } from "./sidebar/sidebar-section-actions-portal";
-export { sidebarHeaderActionClass, sidebarHeaderIconClass } from "./sidebar/sidebar-header-chrome";
+export { sidebarHeaderActionClass, sidebarHeaderIconClass } from "./sidebar/sidebar-chrome";
 export {
   SidebarHeaderActionButton,
   type SidebarHeaderActionButtonProps,

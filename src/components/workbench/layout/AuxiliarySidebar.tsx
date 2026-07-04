@@ -1,6 +1,6 @@
 import { cn } from "#app/lib/cn";
 
-import { sidebarHeaderActionClass, sidebarHeaderIconClass } from "../sidebar/sidebar-header-chrome";
+import { sidebarHeaderActionClass, sidebarHeaderIconClass } from "../sidebar/sidebar-chrome";
 
 export function AuxiliarySidebar({
   width,

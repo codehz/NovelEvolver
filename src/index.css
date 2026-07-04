@@ -64,7 +64,6 @@
   --color-workbench-activity-bar-foreground: var(--color-ctp-overlay0);
   --color-workbench-activity-bar-active: var(--color-ctp-mauve);
   --color-workbench-sidebar: var(--color-ctp-mantle);
-  --color-workbench-sidebar-title: var(--color-ctp-mauve);
   --color-workbench-sidebar-action: var(--color-ctp-mauve);
   --color-workbench-resize-handle: var(--color-ctp-mauve);
   --color-workbench-editor: var(--color-ctp-base);

@@ -7,7 +7,7 @@ import {
   primarySidebarChromeTitleTextClass,
   sidebarHeaderActionClass,
   sidebarHeaderIconClass,
-} from "../sidebar/sidebar-header-chrome";
+} from "../sidebar/sidebar-chrome";
 
 export function PrimarySidebar({
   title,
