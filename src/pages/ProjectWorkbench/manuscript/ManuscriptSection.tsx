@@ -1,7 +1,7 @@
 import { useMolecule } from "bunshi/react";
 import { useAtomValue, useSetAtom, useStore } from "jotai";
 import { AnimatePresence } from "motion/react";
-import { useMemo } from "react";
+import { useLayoutEffect, useMemo, useRef } from "react";
 
 import {
   SidebarHeaderActionButton,
@@ -33,6 +33,8 @@ export function ManuscriptSectionBody() {
   const flatItems = useAtomValue(flatItemsAtom);
   const dispatch = useSetAtom(treeAtom);
   const store = useStore();
+  const hasLayoutRef = useRef(false);
+  const previousKeysRef = useRef<Set<string>>(new Set());
   const {
     startCreating,
     startRenaming,
@@ -67,6 +69,24 @@ export function ManuscriptSectionBody() {
     }
     return items;
   }, [flatItems, state.editing]);
+
+  const enterKeySet = useMemo(() => {
+    const next = new Set<string>();
+    if (!hasLayoutRef.current) {
+      return next;
+    }
+    for (const item of renderItems) {
+      if (!previousKeysRef.current.has(item.key)) {
+        next.add(item.key);
+      }
+    }
+    return next;
+  }, [renderItems]);
+
+  useLayoutEffect(() => {
+    hasLayoutRef.current = true;
+    previousKeysRef.current = new Set(renderItems.map((item) => item.key));
+  }, [renderItems]);
 
   const listHeight = renderItems.length * RESOURCE_LIBRARY_TREE_ROW_HEIGHT_PX;
   const isRootDropTarget = state.drag !== null && state.drag.targetParentId === "root";
@@ -121,6 +141,7 @@ export function ManuscriptSectionBody() {
                 type={item.type}
                 depth={item.depth}
                 expanded={item.expanded}
+                animateEnter={enterKeySet.has(item.key)}
                 y={index * RESOURCE_LIBRARY_TREE_ROW_HEIGHT_PX}
                 height={RESOURCE_LIBRARY_TREE_ROW_HEIGHT_PX}
                 selected={item.id !== null && item.id === state.selectedId}

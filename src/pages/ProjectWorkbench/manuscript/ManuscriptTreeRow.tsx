@@ -18,6 +18,7 @@ type ManuscriptTreeRowProps = {
   expanded: boolean;
   y: number;
   height: number;
+  animateEnter: boolean;
   selected: boolean;
   editing: ManuscriptEditingState | null;
   drag: ManuscriptDragState | null;
@@ -48,6 +49,7 @@ export function ManuscriptTreeRow({
   expanded,
   y,
   height,
+  animateEnter,
   selected,
   editing,
   drag,
@@ -105,7 +107,7 @@ export function ManuscriptTreeRow({
       style={{ top: 0, height }}
       variants={resourceLibraryTreeRowVariants}
       custom={y}
-      initial={false}
+      initial={animateEnter ? "hidden" : false}
       animate="visible"
       exit="exit"
     >
