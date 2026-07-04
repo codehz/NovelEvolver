@@ -11,6 +11,8 @@ import { queryTreeRowById } from "../tree/tree-row-dom";
 import type { TreeRowDomData } from "../tree/tree-row-dom";
 import { buildSubtreeEndIndexArray, buildTreeRowIndexMap } from "../tree/tree-row-helpers";
 import { TREE_ROW_HEIGHT_PX } from "../tree/tree-row-motion";
+import { TreeSectionStateGate } from "../tree/TreeSectionStateGate";
+import { useTreeDragController } from "../tree/use-tree-drag-controller";
 import { isInvalidDropTarget, resolveDropTargetFromRow } from "./drag-hit-test";
 import { ResourceLibraryTreeRow } from "./ResourceLibraryTreeRow";
 import { resourceLibraryTreeMolecule } from "./state/resource-tree-molecule";
@@ -90,20 +92,24 @@ function ResourceLibraryTreeContent({
       revealPath(pendingRevealRef.current);
     }
   }, [renderItems, revealPath]);
-
-  const handleDragStart = useCallback(
-    (sourcePath: string, sourceType: "file" | "folder") => {
-      dispatch({ type: "dragStart", sourcePath, sourceType });
-    },
-    [dispatch],
-  );
-
-  const handleDragMove = useCallback(
-    (resolved: TreeResolvedDrop<string> | null) => {
-      dispatch({ type: "dragMove", resolved });
-    },
-    [dispatch],
-  );
+  const dispatchDragEnd = useCallback(() => {
+    dispatch({ type: "dragEnd" });
+  }, [dispatch]);
+  const { handleDragStart, handleDragMove, handleCancelDrag, handleDragEnd } =
+    useTreeDragController<"file" | "folder", string, NonNullable<ResourceTreeDragState>>({
+      getCurrentDrag: () => store.get(treeAtom).drag,
+      dispatchDragStart: (sourcePath, sourceType) => {
+        dispatch({ type: "dragStart", sourcePath, sourceType });
+      },
+      dispatchDragMove: (resolved) => {
+        dispatch({ type: "dragMove", resolved });
+      },
+      dispatchDragEnd,
+      commitResolvedDrop: async (drag) => {
+        await moveNode(drag.sourcePath, drag.sourceType, drag.resolved.target);
+      },
+      shouldCommitDrop: (drag) => drag.resolved.target !== drag.sourcePath,
+    });
 
   const resolveDropTarget = useCallback(
     ({
@@ -174,23 +180,6 @@ function ResourceLibraryTreeContent({
     [renderItems.length, rowIndexByPath, snapshot, subtreeEndIndexes],
   );
 
-  const handleDragEnd = useCallback(() => {
-    const currentDrag = store.get(treeAtom).drag;
-    dispatch({ type: "dragEnd" });
-    if (
-      currentDrag === null ||
-      currentDrag.resolved === null ||
-      currentDrag.resolved.target === currentDrag.sourcePath
-    ) {
-      return;
-    }
-    void moveNode(currentDrag.sourcePath, currentDrag.sourceType, currentDrag.resolved.target);
-  }, [dispatch, moveNode, store, treeAtom]);
-
-  if (renderItems.length === 0) {
-    return <p className="px-2 py-1 text-xs text-ctp-subtext0">资源库为空。</p>;
-  }
-
   return (
     <FlatTreeList
       items={renderItems}
@@ -200,9 +189,7 @@ function ResourceLibraryTreeContent({
       dragging={drag !== null}
       onRequestRename={startRenaming}
       onRequestDelete={deleteNode}
-      onCancelDrag={() => {
-        dispatch({ type: "dragEnd" });
-      }}
+      onCancelDrag={handleCancelDrag}
       renderRow={(item, index, layout) => (
         <ResourceLibraryTreeRow
           animateEnter={layout.animateEnter}
@@ -234,24 +221,20 @@ export function ResourceLibraryTree() {
   const renderItems = useAtomValue(flatRenderItemsAtom);
   const selectedPath = useAtomValue(selectedPathAtom);
 
-  if (state.status === "loading" || state.status === "idle") {
-    return <p className="px-2 py-1 text-xs text-ctp-subtext0">加载资源库…</p>;
-  }
-
-  if (state.status === "error") {
-    return (
-      <p className="px-2 py-1 text-xs text-ctp-red" role="alert">
-        {state.error}
-      </p>
-    );
-  }
-
   return (
-    <ResourceLibraryTreeContent
-      renderItems={renderItems}
-      snapshot={state.snapshot}
-      selectedPath={selectedPath}
-      drag={state.drag}
-    />
+    <TreeSectionStateGate
+      status={state.status}
+      error={state.error}
+      isEmpty={renderItems.length === 0}
+      loadingLabel="加载资源库…"
+      emptyLabel="资源库为空。"
+    >
+      <ResourceLibraryTreeContent
+        renderItems={renderItems}
+        snapshot={state.snapshot}
+        selectedPath={selectedPath}
+        drag={state.drag}
+      />
+    </TreeSectionStateGate>
   );
 }

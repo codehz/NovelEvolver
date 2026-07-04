@@ -13,6 +13,8 @@ import type { TreeResolvedDrop, TreeRowHoverZone } from "../tree/tree-drag";
 import type { TreeRowDomData } from "../tree/tree-row-dom";
 import { buildSubtreeEndIndexArray, buildTreeRowIndexMap } from "../tree/tree-row-helpers";
 import { TREE_DROP_INDICATOR_HEIGHT_PX, TREE_ROW_HEIGHT_PX } from "../tree/tree-row-motion";
+import { TreeSectionStateGate } from "../tree/TreeSectionStateGate";
+import { useTreeDragController } from "../tree/use-tree-drag-controller";
 import {
   findManuscriptChildIndex,
   findManuscriptParentId,
@@ -127,6 +129,31 @@ export function ManuscriptSectionBody() {
     () => buildSubtreeEndIndexArray(renderItems),
     [renderItems],
   );
+  const dispatchDragEnd = useCallback(() => {
+    dispatch({ type: "dragEnd" });
+  }, [dispatch]);
+  const { handleDragStart, handleDragMove, handleCancelDrag, handleDragEnd } =
+    useTreeDragController<
+      ManuscriptNode["type"],
+      ManuscriptMoveTarget,
+      NonNullable<typeof state.drag>
+    >({
+      getCurrentDrag: () => store.get(treeAtom).drag,
+      dispatchDragStart: (sourceId, sourceType) => {
+        dispatch({ type: "dragStart", sourceId, sourceType });
+      },
+      dispatchDragMove: (resolved) => {
+        dispatch({ type: "dragMove", resolved });
+      },
+      dispatchDragEnd,
+      commitResolvedDrop: async (drag) => {
+        if (drag.resolved.target.kind === "into") {
+          await moveNode(drag.sourceId, drag.resolved.target.parentId);
+          return;
+        }
+        await moveNode(drag.sourceId, drag.resolved.target.parentId, drag.resolved.target.index);
+      },
+    });
   const resolveDropTarget = useCallback(
     ({
       start: _start,
@@ -269,15 +296,13 @@ export function ManuscriptSectionBody() {
           onClick={() => startCreating("folder")}
         />
       </SidebarSectionActionsPortalContent>
-      {state.status === "loading" || state.status === "idle" ? (
-        <p className="px-2 py-1 text-xs text-ctp-subtext0">加载正文…</p>
-      ) : state.status === "error" ? (
-        <p className="px-2 py-1 text-xs text-ctp-red" role="alert">
-          {state.error}
-        </p>
-      ) : renderItems.length === 0 ? (
-        <p className="px-2 py-1 text-xs text-ctp-subtext0">正文为空。</p>
-      ) : (
+      <TreeSectionStateGate
+        status={state.status}
+        error={state.error}
+        isEmpty={renderItems.length === 0}
+        loadingLabel="加载正文…"
+        emptyLabel="正文为空。"
+      >
         <FlatTreeList
           items={renderItems}
           getItemKey={(item) => item.key}
@@ -287,9 +312,7 @@ export function ManuscriptSectionBody() {
           rowHeight={TREE_ROW_HEIGHT_PX}
           onRequestRename={startRenaming}
           onRequestDelete={deleteNode}
-          onCancelDrag={() => {
-            dispatch({ type: "dragEnd" });
-          }}
+          onCancelDrag={handleCancelDrag}
           renderRow={(item, index, layout) => (
             <ManuscriptTreeRow
               id={item.id}
@@ -309,31 +332,13 @@ export function ManuscriptSectionBody() {
               onActivate={activateNode}
               onCancelEditing={cancelEditing}
               onSubmitEditing={submitEditing}
-              onDragStart={(id, type) => {
-                dispatch({ type: "dragStart", sourceId: id, sourceType: type });
-              }}
-              onDragMove={(resolved) => {
-                dispatch({ type: "dragMove", resolved });
-              }}
-              onDragEnd={() => {
-                const drag = store.get(treeAtom).drag;
-                dispatch({ type: "dragEnd" });
-                if (drag?.resolved?.target.kind === "into") {
-                  void moveNode(drag.sourceId, drag.resolved.target.parentId);
-                  return;
-                }
-                if (drag?.resolved?.target.kind === "insert") {
-                  void moveNode(
-                    drag.sourceId,
-                    drag.resolved.target.parentId,
-                    drag.resolved.target.index,
-                  );
-                }
-              }}
+              onDragStart={handleDragStart}
+              onDragMove={handleDragMove}
+              onDragEnd={handleDragEnd}
             />
           )}
         />
-      )}
+      </TreeSectionStateGate>
     </>
   );
 }
