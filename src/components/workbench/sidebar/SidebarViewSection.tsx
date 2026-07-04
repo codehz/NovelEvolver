@@ -18,7 +18,7 @@ const sectionHeaderButtonClass = cn(
 );
 
 const sectionHeaderChevronClass = cn(
-  "text-workbench-sidebar-action inline-flex shrink-0 items-center justify-center text-sm leading-none",
+  "inline-flex shrink-0 items-center justify-center text-sm leading-none text-workbench-sidebar-action",
 );
 
 const sectionResizeSeamClass = cn("relative z-20 h-0 shrink-0");
@@ -29,7 +29,7 @@ const sectionResizeHandleClass = cn(
 );
 
 const sectionResizeRailClass = cn(
-  "bg-workbench-resize-handle h-1 w-full shrink-0 opacity-0 transition-opacity delay-0 duration-150",
+  "h-1 w-full shrink-0 bg-workbench-resize-handle opacity-0 transition-opacity delay-0 duration-150",
   "group-hover:opacity-100 group-hover:delay-300 group-focus-visible:opacity-100 group-focus-visible:delay-150",
 );
 
