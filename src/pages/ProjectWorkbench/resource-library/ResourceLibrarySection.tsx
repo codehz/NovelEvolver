@@ -1,12 +1,13 @@
 import { useMolecule } from "bunshi/react";
 import { useAtomValue, useSetAtom, useStore } from "jotai";
-import { useCallback, useEffectEvent, useLayoutEffect, useMemo, useRef } from "react";
+import { useCallback, useMemo, useRef } from "react";
 
 import { SidebarHeaderActionButton } from "#app/components/workbench";
 import { resourceLibraryDirPathPrefixes } from "#shared/resource-library-path";
 
 import { queryTreeRowById } from "../tree/tree-row-dom";
 import { TreePane } from "../tree/TreePane";
+import { useTreeRevealRequest } from "../tree/use-tree-reveal-request";
 import type { TreeDropResolveInput } from "../tree/use-tree-row-pointer-drag";
 import { resolveResourceDropTarget } from "./resource-tree-placement-policy";
 import { buildResourceRenderProjection, type ResourceRenderItem } from "./resource-tree-projector";
@@ -22,7 +23,6 @@ export function ResourceLibrarySectionBody() {
   const dispatch = useSetAtom(treeAtom);
   const store = useStore();
   const listRef = useRef<HTMLUListElement>(null);
-  const pendingRevealRef = useRef<string | null>(null);
   const projection = useMemo(() => buildResourceRenderProjection(state), [state]);
   const {
     startCreating,
@@ -34,45 +34,38 @@ export function ResourceLibrarySectionBody() {
     moveNode,
   } = useResourceLibraryTreeActions();
 
-  const revealPath = useEffectEvent((targetPath: string) => {
-    if (targetPath === "") {
-      pendingRevealRef.current = null;
-      listRef.current?.scrollIntoView({ block: "start" });
-      dispatch({ type: "select", path: "", nodeType: "folder" });
-      return;
-    }
-    const currentSnapshot = state.snapshot;
-    if (currentSnapshot?.nodes[targetPath] === undefined) {
-      pendingRevealRef.current = null;
-      return;
-    }
-    const parentPrefixes = resourceLibraryDirPathPrefixes(targetPath).slice(0, -1);
-    if (parentPrefixes.length > 0) {
-      dispatch({ type: "expandPaths", paths: parentPrefixes });
-    }
-    const itemIndex = projection.rowIndexById.get(targetPath);
-    if (itemIndex === undefined) {
-      pendingRevealRef.current = targetPath;
-      return;
-    }
-    const item = projection.items[itemIndex];
-    if (item === undefined) {
-      pendingRevealRef.current = targetPath;
-      return;
-    }
-    pendingRevealRef.current = null;
-    dispatch({ type: "select", path: targetPath, nodeType: item.type });
-    const row = listRef.current ? queryTreeRowById(listRef.current, targetPath) : null;
-    row?.scrollIntoView({ block: "nearest" });
+  useTreeRevealRequest({
+    onRevealRequest,
+    retryDeps: [projection.items],
+    reveal: (targetPath) => {
+      if (targetPath === "") {
+        listRef.current?.scrollIntoView({ block: "start" });
+        dispatch({ type: "select", path: "", nodeType: "folder" });
+        return "done";
+      }
+
+      const currentSnapshot = state.snapshot;
+      if (currentSnapshot?.nodes[targetPath] === undefined) {
+        return "done";
+      }
+
+      const parentPrefixes = resourceLibraryDirPathPrefixes(targetPath).slice(0, -1);
+      if (parentPrefixes.length > 0) {
+        dispatch({ type: "expandPaths", paths: parentPrefixes });
+      }
+
+      const itemIndex = projection.rowIndexById.get(targetPath);
+      const item = itemIndex === undefined ? undefined : projection.items[itemIndex];
+      if (item === undefined) {
+        return "retry";
+      }
+
+      dispatch({ type: "select", path: targetPath, nodeType: item.type });
+      const row = listRef.current ? queryTreeRowById(listRef.current, targetPath) : null;
+      row?.scrollIntoView({ block: "nearest" });
+      return "done";
+    },
   });
-
-  useLayoutEffect(() => onRevealRequest(revealPath), [onRevealRequest, revealPath]);
-
-  useLayoutEffect(() => {
-    if (pendingRevealRef.current !== null) {
-      revealPath(pendingRevealRef.current);
-    }
-  }, [projection.items, revealPath]);
 
   const resolveDropTarget = useCallback(
     (input: TreeDropResolveInput<"file" | "folder">) => {
