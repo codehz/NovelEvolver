@@ -5,7 +5,7 @@ import { useCallback, useLayoutEffect, useMemo, useRef } from "react";
 
 import { cn } from "#app/lib/cn";
 
-import { RESOURCE_LIBRARY_TREE_ROW_HEIGHT_PX } from "./resource-library-tree-motion";
+import { TREE_ROW_HEIGHT_PX } from "../tree/tree-row-motion";
 import { ResourceLibraryTreeRow } from "./ResourceLibraryTreeRow";
 import { resourceLibraryTreeMolecule } from "./state/resource-tree-molecule";
 import type { FlatRenderItem } from "./state/tree-data-reducer";
@@ -113,10 +113,7 @@ function ResourceLibraryTreeContent({
   }, [dispatchUi, moveNode, store, treeUiAtom]);
 
   const isRootDropTarget = drag !== null && drag.targetPath === "";
-  const listHeight = useMemo(
-    () => renderItems.length * RESOURCE_LIBRARY_TREE_ROW_HEIGHT_PX,
-    [renderItems.length],
-  );
+  const listHeight = useMemo(() => renderItems.length * TREE_ROW_HEIGHT_PX, [renderItems.length]);
 
   if (renderItems.length === 0) {
     return <p className="px-2 py-1 text-xs text-ctp-subtext0">资源库为空。</p>;
@@ -151,10 +148,10 @@ function ResourceLibraryTreeContent({
             key={item.key}
             animateEnter={enterKeySet.has(item.key)}
             drag={drag}
-            height={RESOURCE_LIBRARY_TREE_ROW_HEIGHT_PX}
+            height={TREE_ROW_HEIGHT_PX}
             item={item}
             selectedPath={selectedPath}
-            y={index * RESOURCE_LIBRARY_TREE_ROW_HEIGHT_PX}
+            y={index * TREE_ROW_HEIGHT_PX}
             onActivate={activateNode}
             onCancelEditing={cancelEditing}
             onDragEnd={handleDragEnd}

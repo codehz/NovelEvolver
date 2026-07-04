@@ -2,10 +2,7 @@ import { motion } from "motion/react";
 
 import { cn } from "#app/lib/cn";
 
-import {
-  resourceLibraryTreeRowPaddingVariants,
-  resourceLibraryTreeRowVariants,
-} from "./resource-library-tree-motion";
+import { treeRowPaddingVariants, treeRowVariants } from "../tree/tree-row-motion";
 import { ResourceTreeInlineInput } from "./ResourceTreeInlineInput";
 import type { FlatRenderItem } from "./state/tree-data-reducer";
 import type { ResourceTreeDragState } from "./state/types";
@@ -116,7 +113,7 @@ export function ResourceLibraryTreeRow({
       className="absolute inset-x-0"
       role="none"
       style={{ top: 0, height }}
-      variants={resourceLibraryTreeRowVariants}
+      variants={treeRowVariants}
       custom={y}
       initial={animateEnter ? "hidden" : false}
       animate="visible"
@@ -125,7 +122,7 @@ export function ResourceLibraryTreeRow({
       {isEditing ? (
         <motion.div
           className={rowClasses}
-          variants={resourceLibraryTreeRowPaddingVariants}
+          variants={treeRowPaddingVariants}
           custom={item.depth}
           initial={false}
           animate="visible"
@@ -138,7 +135,7 @@ export function ResourceLibraryTreeRow({
           data-row-path={item.path ?? undefined}
           data-row-type={item.type}
           type="button"
-          variants={resourceLibraryTreeRowPaddingVariants}
+          variants={treeRowPaddingVariants}
           custom={item.depth}
           initial={false}
           animate="visible"

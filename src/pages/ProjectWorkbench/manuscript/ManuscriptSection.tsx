@@ -9,7 +9,7 @@ import {
 } from "#app/components/workbench";
 import { cn } from "#app/lib/cn";
 
-import { RESOURCE_LIBRARY_TREE_ROW_HEIGHT_PX } from "../resource-library/resource-library-tree-motion";
+import { TREE_ROW_HEIGHT_PX } from "../tree/tree-row-motion";
 import { ManuscriptTreeRow } from "./ManuscriptTreeRow";
 import { manuscriptTreeMolecule } from "./state/manuscript-tree-molecule";
 import type { ManuscriptEditingState } from "./state/types";
@@ -88,7 +88,7 @@ export function ManuscriptSectionBody() {
     previousKeysRef.current = new Set(renderItems.map((item) => item.key));
   }, [renderItems]);
 
-  const listHeight = renderItems.length * RESOURCE_LIBRARY_TREE_ROW_HEIGHT_PX;
+  const listHeight = renderItems.length * TREE_ROW_HEIGHT_PX;
   const isRootDropTarget = state.drag !== null && state.drag.targetParentId === "root";
 
   return (
@@ -142,8 +142,8 @@ export function ManuscriptSectionBody() {
                 depth={item.depth}
                 expanded={item.expanded}
                 animateEnter={enterKeySet.has(item.key)}
-                y={index * RESOURCE_LIBRARY_TREE_ROW_HEIGHT_PX}
-                height={RESOURCE_LIBRARY_TREE_ROW_HEIGHT_PX}
+                y={index * TREE_ROW_HEIGHT_PX}
+                height={TREE_ROW_HEIGHT_PX}
                 selected={item.id !== null && item.id === state.selectedId}
                 editing={item.editing}
                 drag={state.drag}

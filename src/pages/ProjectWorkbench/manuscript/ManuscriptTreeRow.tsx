@@ -3,11 +3,8 @@ import { motion } from "motion/react";
 import { cn } from "#app/lib/cn";
 import type { ManuscriptNode } from "#shared/rpc/projects-rpc";
 
-import {
-  resourceLibraryTreeRowPaddingVariants,
-  resourceLibraryTreeRowVariants,
-} from "../resource-library/resource-library-tree-motion";
 import { ResourceTreeInlineInput } from "../resource-library/ResourceTreeInlineInput";
+import { treeRowPaddingVariants, treeRowVariants } from "../tree/tree-row-motion";
 import type { ManuscriptEditingState, ManuscriptDragState } from "./state/types";
 
 type ManuscriptTreeRowProps = {
@@ -105,7 +102,7 @@ export function ManuscriptTreeRow({
       className="absolute inset-x-0"
       role="none"
       style={{ top: 0, height }}
-      variants={resourceLibraryTreeRowVariants}
+      variants={treeRowVariants}
       custom={y}
       initial={animateEnter ? "hidden" : false}
       animate="visible"
@@ -114,7 +111,7 @@ export function ManuscriptTreeRow({
       {isEditing || id === null ? (
         <motion.div
           className={rowClasses}
-          variants={resourceLibraryTreeRowPaddingVariants}
+          variants={treeRowPaddingVariants}
           custom={depth}
           initial={false}
           animate="visible"
@@ -127,7 +124,7 @@ export function ManuscriptTreeRow({
           data-manuscript-node-id={id}
           data-manuscript-node-type={type}
           type="button"
-          variants={resourceLibraryTreeRowPaddingVariants}
+          variants={treeRowPaddingVariants}
           custom={depth}
           initial={false}
           animate="visible"
