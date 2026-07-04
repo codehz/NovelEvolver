@@ -21,7 +21,6 @@
   --opacity-titlebar-inactive: 0.45;
   --color-badge-background: var(--color-ctp-mauve);
   --color-badge-foreground: var(--color-ctp-crust);
-  --color-window-button-hover: color-mix(in srgb, var(--color-ctp-text) 8%, transparent);
   --color-window-button-close-hover: var(--color-ctp-red);
 
   --text-titlebar: 0.75rem;
@@ -38,13 +37,7 @@
   --spacing-workbench-tab: 2.125rem;
   --spacing-status-bar: 1.375rem;
 
-  --color-notification-surface: var(--color-ctp-mantle);
-  --color-notification-border: var(--color-ctp-mauve);
-  --color-notification-info: var(--color-ctp-blue);
-  --color-notification-warning: var(--color-ctp-yellow);
-  --color-notification-error: var(--color-ctp-red);
-  --color-notification-action: var(--color-ctp-mauve);
-  --shadow-notification-item-divider: inset 0 1px 0 0 var(--color-notification-border);
+  --shadow-notification-item-divider: inset 0 1px 0 0 var(--color-badge-background);
   --spacing-notification-panel: 26rem;
   --spacing-notification-panel-max-height: 22rem;
   --spacing-notification-edge-inset: 0.75rem;
@@ -53,20 +46,12 @@
   --spacing-notification-stack-offset: 0.5rem;
   --z-index-notification: 40;
 
-  --color-quick-pick-surface: var(--color-ctp-mantle);
-  --color-quick-pick-highlight: color-mix(in srgb, var(--color-ctp-surface0) 55%, transparent);
-  --color-quick-pick-emphasis: var(--color-ctp-mauve);
   --shadow-quick-pick: 0 8px 24px color-mix(in srgb, var(--color-ctp-crust) 55%, transparent);
   --spacing-quick-pick: 36rem;
   --spacing-quick-pick-max-height: 20rem;
   --z-index-quick-pick: 50;
 
-  --color-workbench-activity-bar: var(--color-ctp-crust);
-  --color-workbench-activity-bar-foreground: var(--color-ctp-overlay0);
-  --color-workbench-activity-bar-active: var(--color-ctp-mauve);
   --color-workbench-sidebar: var(--color-ctp-mantle);
-  --color-workbench-sidebar-action: var(--color-ctp-mauve);
-  --color-workbench-resize-handle: var(--color-ctp-mauve);
   --color-workbench-editor: var(--color-ctp-base);
   --color-workbench-editor-gutter: var(--color-ctp-mantle);
   --color-workbench-tab-bar: var(--color-ctp-crust);
@@ -74,11 +59,6 @@
   --color-workbench-tab-active-text: var(--color-ctp-mauve);
   --color-workbench-tab-inactive: var(--color-workbench-sidebar);
   --color-workbench-tab-border: var(--color-ctp-surface0);
-  --color-tree-drop-target: color-mix(in srgb, var(--color-ctp-mauve) 20%, transparent);
-  --color-tree-drop-indicator: var(--color-ctp-mauve);
-  --color-workbench-panel-header: var(--color-ctp-mantle);
-  --color-scrollbar-thumb: color-mix(in srgb, var(--color-ctp-overlay1) 72%, transparent);
-  --color-scrollbar-thumb-hover: color-mix(in srgb, var(--color-ctp-overlay2) 88%, transparent);
   --spacing-scrollbar: 0.75rem;
   --spacing-pte-line: 1.5rem;
   --spacing-pte-gutter: 0.75rem;

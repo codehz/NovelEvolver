@@ -1,7 +1,7 @@
 import { cn } from "#app/lib/cn";
 
 export const quickPickPanelClass = cn(
-  "fixed top-titlebar left-1/2 z-quick-pick m-0 w-quick-pick overflow-hidden rounded-lg bg-quick-pick-surface text-sm text-app-foreground shadow-quick-pick app-region-no-drag",
+  "fixed top-titlebar left-1/2 z-quick-pick m-0 w-quick-pick overflow-hidden rounded-lg bg-app-surface text-sm text-app-foreground shadow-quick-pick app-region-no-drag",
   "-translate-x-1/2 -translate-y-2 opacity-0 transition transition-discrete duration-220 ease-[cubic-bezier(0.33,1,0.68,1)]",
   "open:-translate-x-1/2 open:translate-y-0 open:opacity-100",
   "open:starting:-translate-x-1/2 open:starting:-translate-y-2 open:starting:opacity-0",
@@ -26,14 +26,14 @@ export const quickPickRowButtonClass = cn(
 );
 
 export const quickPickRowHighlightSurfaceClass = cn(
-  "pointer-events-none absolute inset-0 rounded-sm bg-quick-pick-highlight",
+  "pointer-events-none absolute inset-0 rounded-sm bg-ctp-surface0/55",
 );
 
 export const quickPickRowButtonContentClass = cn(
   "relative z-10 flex w-full min-w-0 items-center gap-2",
 );
 
-export const quickPickRowEmphasisClass = cn("text-quick-pick-emphasis");
+export const quickPickRowEmphasisClass = cn("text-ctp-mauve");
 
 export const quickPickEmptyClass = cn("rounded-sm px-2 py-1 text-app-muted");
 

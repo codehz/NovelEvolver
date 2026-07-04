@@ -1,9 +1,7 @@
 import { cn } from "#app/lib/cn";
 
 /** Interactive status bar segment (encoding, branch, sync, etc.). */
-export const statusBarItemButtonClass = cn(
-  "flex shrink-0 items-center px-2.5 hover:bg-window-button-hover",
-);
+export const statusBarItemButtonClass = cn("flex shrink-0 items-center px-2.5 hover:bg-ctp-text/8");
 
 export const statusBarItemButtonWithIconClass = cn(statusBarItemButtonClass, "gap-1.5");
 

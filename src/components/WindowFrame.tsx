@@ -15,7 +15,7 @@ import { titleBarTitleAtom } from "#app/lib/titlebar-title";
 import type { WindowState } from "#shared/window";
 
 const windowControlButtonClass = cn(
-  "inline-flex size-7 shrink-0 items-center justify-center rounded-full border-0 bg-transparent p-0 text-titlebar-foreground transition-colors duration-150 hover:bg-window-button-hover focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-badge-background active:bg-window-button-hover",
+  "inline-flex size-7 shrink-0 items-center justify-center rounded-full border-0 bg-transparent p-0 text-titlebar-foreground transition-colors duration-150 hover:bg-ctp-text/8 focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-badge-background active:bg-ctp-text/8",
 );
 
 function WindowControls({

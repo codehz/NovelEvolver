@@ -22,7 +22,7 @@ export function TreeDropIndicator({ preview }: TreeDropIndicatorProps) {
       aria-hidden="true"
       className={cn(
         "pointer-events-none absolute right-0 transition-colors",
-        preview.kind === "highlight" ? "z-0 bg-tree-drop-target" : "z-20 bg-tree-drop-indicator",
+        preview.kind === "highlight" ? "z-0 bg-ctp-mauve/20" : "z-20 bg-ctp-mauve",
       )}
       style={{ top: 0 }}
       initial={{

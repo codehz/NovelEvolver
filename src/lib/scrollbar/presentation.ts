@@ -20,13 +20,13 @@ export const scrollbarTrackClass = cn(
 );
 
 export const scrollbarThumbClass = cn(
-  "absolute inset-x-0 top-0 rounded-none bg-scrollbar-thumb opacity-0",
+  "absolute inset-x-0 top-0 rounded-none bg-ctp-overlay1/72 opacity-0",
   "transition-opacity delay-400 duration-300 ease-out",
 );
 
 export const scrollbarThumbPeekClass = cn("opacity-40 delay-0");
 
-export const scrollbarThumbActiveClass = cn("bg-scrollbar-thumb-hover opacity-100 delay-0");
+export const scrollbarThumbActiveClass = cn("bg-ctp-overlay2/88 opacity-100 delay-0");
 
 export function scrollbarThumbClassName(snapshot: ScrollbarControllerSnapshot): string {
   return cn(

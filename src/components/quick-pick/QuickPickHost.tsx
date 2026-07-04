@@ -421,7 +421,7 @@ function QuickPickInputPanelBody({
           }}
         />
         {error ? (
-          <p className="mt-1 text-xs text-notification-error" role="alert">
+          <p className="mt-1 text-xs text-ctp-red" role="alert">
             {error}
           </p>
         ) : null}

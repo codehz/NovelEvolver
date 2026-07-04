@@ -34,9 +34,7 @@ export function NotificationCenterPanel({
           <button
             className={cn(
               notificationIconButtonClass,
-              items.length > 0
-                ? "text-notification-action"
-                : "cursor-not-allowed text-app-muted opacity-50",
+              items.length > 0 ? "text-ctp-mauve" : "cursor-not-allowed text-app-muted opacity-50",
             )}
             type="button"
             disabled={items.length === 0}
@@ -49,7 +47,7 @@ export function NotificationCenterPanel({
             <span aria-hidden="true" className="icon-[codicon--clear-all] text-sm" />
           </button>
           <button
-            className={cn(notificationIconButtonClass, "text-notification-action")}
+            className={cn(notificationIconButtonClass, "text-ctp-mauve")}
             type="button"
             onClick={() => {
               requestClose(onDismiss);

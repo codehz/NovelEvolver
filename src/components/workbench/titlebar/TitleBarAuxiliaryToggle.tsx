@@ -4,7 +4,7 @@ import { TitleBarActionsPortalContent } from "#app/lib/titlebar-portal";
 const toggleButtonClass = cn(
   "inline-flex size-7 shrink-0 items-center justify-center rounded-full border-0 bg-transparent p-0",
   "text-titlebar-foreground transition-colors duration-150",
-  "hover:bg-window-button-hover",
+  "hover:bg-ctp-text/8",
   "focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-badge-background",
 );
 

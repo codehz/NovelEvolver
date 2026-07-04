@@ -9,7 +9,7 @@ import { useEditorBreadcrumb } from "./use-editor-breadcrumb";
 const breadcrumbButtonClass = cn("max-w-48 truncate rounded px-1 py-0.5 text-xs");
 const breadcrumbCurrentButtonClass = cn("text-app-foreground");
 const breadcrumbClickableButtonClass = cn(
-  "text-ctp-subtext0 hover:bg-window-button-hover hover:text-app-foreground",
+  "text-ctp-subtext0 hover:bg-ctp-text/8 hover:text-app-foreground",
 );
 const breadcrumbCurrentTextClass = cn("max-w-48 truncate text-xs text-app-foreground");
 

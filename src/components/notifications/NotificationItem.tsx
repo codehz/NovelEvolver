@@ -68,7 +68,7 @@ export function NotificationItem({ notification, variant, ref }: NotificationIte
             {message}
           </p>
           {severity === "progress" && progress != null ? (
-            <div className="mt-1.5 h-1 overflow-hidden rounded-full bg-notification-border">
+            <div className="mt-1.5 h-1 overflow-hidden rounded-full bg-badge-background">
               <div
                 className="h-full bg-badge-background transition-[width] duration-200"
                 style={{ width: `${Math.min(100, Math.max(0, progress))}%` }}
@@ -97,7 +97,7 @@ export function NotificationItem({ notification, variant, ref }: NotificationIte
         aria-label="关闭通知"
         className={cn(
           notificationIconButtonClass,
-          "text-notification-action opacity-0 transition-opacity duration-150",
+          "text-ctp-mauve opacity-0 transition-opacity duration-150",
           "group-focus-within:opacity-100 group-hover:opacity-100 focus-visible:opacity-100",
         )}
         type="button"

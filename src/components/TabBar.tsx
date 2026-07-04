@@ -72,7 +72,7 @@ export function TabBar({ tabs, onActivate, onClose, renderIcon, className }: Tab
               aria-label={`关闭 ${tab.label}`}
               className={cn(
                 "ml-1 inline-flex items-center justify-center rounded p-0.5 text-[17px] text-ctp-mauve opacity-0 transition-opacity",
-                "group-hover:opacity-100 hover:bg-window-button-hover",
+                "group-hover:opacity-100 hover:bg-ctp-text/8",
                 tab.active && "opacity-100",
               )}
               type="button"

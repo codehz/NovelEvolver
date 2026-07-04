@@ -10,8 +10,8 @@ type ActivityItem = {
 
 const activityButtonClass = cn(
   "flex h-activity-bar-item w-activity-bar shrink-0 items-center justify-center border-0 bg-transparent p-2.5",
-  "text-workbench-activity-bar-foreground transition-colors duration-150",
-  "hover:text-workbench-activity-bar-active",
+  "text-ctp-overlay0 transition-colors duration-150",
+  "hover:text-ctp-mauve",
   "focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-badge-background",
 );
 
@@ -33,7 +33,7 @@ export function ActivityBar({
   return (
     <nav
       aria-label="活动栏"
-      className="relative z-30 flex h-full min-h-0 w-activity-bar shrink-0 flex-col bg-workbench-activity-bar"
+      className="relative z-30 flex h-full min-h-0 w-activity-bar shrink-0 flex-col bg-window-chrome"
     >
       <div className="flex flex-col">
         {items.map((item) => {
@@ -44,7 +44,7 @@ export function ActivityBar({
               aria-current={isActive ? "page" : undefined}
               aria-expanded={isActive ? true : undefined}
               aria-label={item.label}
-              className={cn(activityButtonClass, isActive && "text-workbench-activity-bar-active")}
+              className={cn(activityButtonClass, isActive && "text-ctp-mauve")}
               title={item.label}
               type="button"
               onClick={() => onSelectView(item.id)}

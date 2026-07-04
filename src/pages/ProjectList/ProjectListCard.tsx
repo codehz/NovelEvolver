@@ -7,7 +7,7 @@ import { formatLastOpened } from "./format-last-opened";
 const projectCardActionClass = cn(
   "inline-flex size-7 shrink-0 items-center justify-center rounded-md border-0 bg-transparent p-0",
   "text-ctp-subtext0 transition-colors duration-150",
-  "hover:bg-window-button-hover hover:text-ctp-red",
+  "hover:bg-ctp-text/8 hover:text-ctp-red",
   "focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-badge-background",
 );
 
