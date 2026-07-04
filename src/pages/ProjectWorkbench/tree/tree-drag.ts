@@ -1,6 +1,6 @@
 export type TreeDropPreview =
   | { kind: "highlight"; top: number; height: number }
-  | { kind: "insert"; top: number; height: number };
+  | { kind: "insert"; top: number; height: number; depth: number };
 
 export type TreeResolvedDrop<TTarget> = {
   preview: TreeDropPreview;

@@ -4,6 +4,10 @@ export const TREE_ROW_HEIGHT_PX = 24;
 export const TREE_DROP_INDICATOR_HEIGHT_PX = 4;
 export const TREE_ROW_Y_DURATION_MS = 220;
 export const TREE_ROW_ENTER_Y_OFFSET_PX = 6;
+export const TREE_ROW_DEPTH_INDENT_PX = 8;
+export const TREE_ROW_BASE_PADDING_LEFT_PX = 10;
+export const TREE_ROW_DISCLOSURE_WIDTH_PX = 16;
+export const TREE_ROW_CONTENT_GAP_PX = 4;
 
 const treeEase = [0.22, 1, 0.36, 1] as const;
 
@@ -21,6 +25,18 @@ export const treeRowPaddingLeftTransition: Transition = {
   duration: TREE_ROW_Y_DURATION_MS / 1000,
   ease: treeEase,
 };
+
+export function getTreeRowPaddingLeft(depth: number): number {
+  return depth * TREE_ROW_DEPTH_INDENT_PX + TREE_ROW_BASE_PADDING_LEFT_PX;
+}
+
+/**
+ * 条状插入指示器从图标槽位起始处开始，而不是整行全宽，
+ * 以表达目标插入层级。
+ */
+export function getTreeRowInsertIndicatorLeft(depth: number): number {
+  return getTreeRowPaddingLeft(depth) + TREE_ROW_DISCLOSURE_WIDTH_PX + TREE_ROW_CONTENT_GAP_PX;
+}
 
 /** 退出仅淡出；禁止在 exit 中设置 y（绝对定位 + 列表高度不同步会导致错位）。 */
 export const treeRowExitOpacityTransition: Transition = {
@@ -58,7 +74,7 @@ export const treeRowVariants: Variants = {
 
 export const treeRowPaddingVariants: Variants = {
   visible: (depth: number) => ({
-    paddingLeft: depth * 8 + 10,
+    paddingLeft: getTreeRowPaddingLeft(depth),
     transition: {
       paddingLeft: treeRowPaddingLeftTransition,
     },

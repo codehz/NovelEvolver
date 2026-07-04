@@ -12,7 +12,11 @@ import { FlatTreeList } from "../tree/FlatTreeList";
 import type { TreeResolvedDrop, TreeRowHoverZone } from "../tree/tree-drag";
 import type { TreeRowDomData } from "../tree/tree-row-dom";
 import { TREE_DROP_INDICATOR_HEIGHT_PX, TREE_ROW_HEIGHT_PX } from "../tree/tree-row-motion";
-import { findManuscriptChildIndex, findManuscriptParentId } from "./manuscript-tree";
+import {
+  findManuscriptChildIndex,
+  findManuscriptParentId,
+  manuscriptParentChain,
+} from "./manuscript-tree";
 import { ManuscriptTreeRow } from "./ManuscriptTreeRow";
 import { manuscriptTreeMolecule } from "./state/manuscript-tree-molecule";
 import type { ManuscriptEditingState, ManuscriptMoveTarget } from "./state/types";
@@ -94,8 +98,12 @@ export function ManuscriptSectionBody() {
         return null;
       }
 
-      const createInsertPreview = (visualIndex: number) => ({
+      const getInsertDepth = (parentId: string) =>
+        parentId === outline.rootId ? 0 : manuscriptParentChain(outline, parentId).length - 1;
+
+      const createInsertPreview = (visualIndex: number, depth: number) => ({
         kind: "insert" as const,
+        depth,
         top: visualIndex * TREE_ROW_HEIGHT_PX - TREE_DROP_INDICATOR_HEIGHT_PX / 2,
         height: TREE_DROP_INDICATOR_HEIGHT_PX,
       });
@@ -116,7 +124,7 @@ export function ManuscriptSectionBody() {
           return null;
         }
         return {
-          preview: createInsertPreview(visualIndex),
+          preview: createInsertPreview(visualIndex, getInsertDepth(parentId)),
           target: {
             kind: "insert" as const,
             parentId,
@@ -155,7 +163,7 @@ export function ManuscriptSectionBody() {
       if (hoveredRow === null) {
         const rootIndex = listRect !== null && clientY <= listRect.top ? 0 : renderItems.length;
         return {
-          preview: createInsertPreview(rootIndex),
+          preview: createInsertPreview(rootIndex, 0),
           target: {
             kind: "insert",
             parentId: "root",
@@ -196,7 +204,7 @@ export function ManuscriptSectionBody() {
         isExpandedFolderWithVisibleChildren(hoveredRow.rowIndex, hoveredNode.id)
       ) {
         return {
-          preview: createInsertPreview(hoveredRow.rowIndex + 1),
+          preview: createInsertPreview(hoveredRow.rowIndex + 1, getInsertDepth(hoveredNode.id)),
           target: {
             kind: "insert",
             parentId: hoveredNode.id,
