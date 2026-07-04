@@ -1,8 +1,13 @@
 import { cn } from "#app/lib/cn";
 
-/** Primary sidebar chrome title + collapsible panel section headers. */
-export const sidebarTitleTypographyClass = cn(
-  "text-2xs tracking-wide text-workbench-sidebar-title uppercase",
+/** Primary sidebar top chrome row — VS Code view title (2xs uppercase; not section headers). */
+export const primarySidebarChromeTitleTextClass = cn(
+  "truncate text-2xs font-medium tracking-wide text-workbench-sidebar-title uppercase",
+);
+
+/** Collapsible panel section header label inside the sidebar body. */
+export const sidebarSectionHeaderTitleTypographyClass = cn(
+  "text-2xs font-semibold tracking-wide uppercase",
 );
 
 export const sidebarHeaderActionClass = cn(

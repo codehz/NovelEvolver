@@ -4,9 +4,9 @@ import { SlotText } from "#app/components/SlotText";
 import { cn } from "#app/lib/cn";
 
 import {
+  primarySidebarChromeTitleTextClass,
   sidebarHeaderActionClass,
   sidebarHeaderIconClass,
-  sidebarTitleTypographyClass,
 } from "../sidebar/sidebar-header-chrome";
 
 export function PrimarySidebar({
@@ -35,10 +35,9 @@ export function PrimarySidebar({
       <header
         className={cn(
           "flex h-workbench-tab shrink-0 items-center justify-between gap-2 pr-3 pl-primary-sidebar-offset",
-          sidebarTitleTypographyClass,
         )}
       >
-        <SlotText text={title} className="truncate" />
+        <SlotText text={title} className={primarySidebarChromeTitleTextClass} />
         <div className="flex shrink-0 items-center gap-0.5">
           <button aria-label="视图操作（演示）" className={sidebarHeaderActionClass} type="button">
             <span
