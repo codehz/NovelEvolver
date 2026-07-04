@@ -5,10 +5,10 @@ import { cn } from "#app/lib/cn";
 import type { TreeResolvedDrop } from "../tree/tree-drag";
 import { TreeRowShell } from "../tree/TreeRowShell";
 import type { TreeDropResolveInput } from "../tree/use-tree-row-pointer-drag";
-import type { FlatRenderItem } from "./state/tree-data-reducer";
+import type { ResourceRenderItem } from "./resource-tree-projector";
 
 type ResourceLibraryTreeRowProps = {
-  item: FlatRenderItem;
+  item: ResourceRenderItem;
   index: number;
   y: number;
   height: number;
@@ -21,13 +21,16 @@ type ResourceLibraryTreeRowProps = {
   ) => TreeResolvedDrop<string> | null;
   onActivate: (path: string, type: "file" | "folder") => void;
   onCancelEditing: () => void;
-  onSubmitEditing: (editing: NonNullable<FlatRenderItem["editing"]>, name: string) => Promise<void>;
+  onSubmitEditing: (
+    editing: NonNullable<ResourceRenderItem["editing"]>,
+    name: string,
+  ) => Promise<void>;
   onDragStart: (sourcePath: string, sourceType: "file" | "folder") => void;
   onDragMove: (resolved: TreeResolvedDrop<string> | null) => void;
   onDragEnd: () => void;
 };
 
-function getRowIcon(item: FlatRenderItem) {
+function getRowIcon(item: ResourceRenderItem) {
   if (item.type === "folder") {
     return item.expanded ? cn("icon-[codicon--folder-opened]") : cn("icon-[codicon--folder]");
   }

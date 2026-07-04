@@ -13,7 +13,7 @@ import {
 
 import { useResourceLibrary } from "../../demo/branch/branch-scopes";
 import { useWorkbenchEditorActions } from "../../demo/editor/use-workbench-editor-actions";
-import { moveDestinationPath } from "../drag-hit-test";
+import { moveDestinationPath } from "../resource-tree-placement-policy";
 import { resourceLibraryTreeMolecule } from "./resource-tree-molecule";
 import type { ResourceTreeEditingState, ResourceTreeSelection } from "./types";
 
