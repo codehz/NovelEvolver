@@ -10,9 +10,32 @@ export type BranchInfo = {
   commit: string | null;
 };
 
+export type ResourceNodeType = "file" | "folder";
+
 export type ResourceNode = {
   name: string;
-  type: "file" | "folder";
+  type: ResourceNodeType;
+};
+
+export type ResourceFileTreeNode = {
+  path: string;
+  name: string;
+  type: "file";
+};
+
+export type ResourceFolderTreeNode = {
+  path: string;
+  name: string;
+  type: "folder";
+  children: string[];
+};
+
+export type ResourceTreeNode = ResourceFileTreeNode | ResourceFolderTreeNode;
+
+export type ResourceTreeSnapshot = {
+  version: 1;
+  rootPath: "";
+  nodes: Record<string, ResourceTreeNode>;
 };
 
 export type ManuscriptNodeType = "folder" | "chapter";
@@ -42,25 +65,28 @@ export type ManuscriptOutline = {
  * File operations under the branch worktree's `resources/` directory.
  *
  * All `path` arguments are relative to that directory; `""` denotes the library root.
+ * `getTree` and structure-changing operations return a full metadata snapshot keyed by path.
  * `readFile` / `writeFile` use UTF-8 text. `unlink` removes files or folders recursively.
  */
 export interface ResourceLibraryHandle extends RpcTarget {
-  /** List entries in a folder. `path` `""` lists the library root. */
-  ls(path: string): ResourceNode[];
+  getTree(): ResourceTreeSnapshot;
+
+  /** Create an empty file (and missing parent folders) and return the updated tree. */
+  createFile(path: string): ResourceTreeSnapshot;
+
+  /** Create a folder (and missing parents) and return the updated tree. */
+  createFolder(path: string): ResourceTreeSnapshot;
 
   /** Read a file as UTF-8 text. */
   readFile(path: string): string;
 
-  /** Write a file as UTF-8 text (creates parent folders as needed). */
+  /** Write a file as UTF-8 text. */
   writeFile(path: string, content: string): void;
 
-  /** Create a folder (and missing parents). */
-  createFolder(path: string): void;
-
   /** Remove a file or folder recursively. Cannot target `""` (the library root). */
-  unlink(path: string): void;
+  unlink(path: string): ResourceTreeSnapshot;
 
-  move(from: string, to: string): void;
+  move(from: string, to: string): ResourceTreeSnapshot;
 }
 
 /**

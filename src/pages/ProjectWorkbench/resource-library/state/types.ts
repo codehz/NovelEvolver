@@ -1,4 +1,4 @@
-import type { ResourceNode } from "#shared/rpc/projects-rpc";
+import type { ResourceNode, ResourceTreeSnapshot } from "#shared/rpc/projects-rpc";
 
 import type { TreeResolvedDrop } from "../../tree/tree-drag";
 
@@ -28,44 +28,26 @@ export type ResourceTreeDragState = {
   resolved: TreeResolvedDrop<string> | null;
 };
 
-export type ResourceTreeUiState = {
+export type ResourceTreeState = {
+  status: "idle" | "loading" | "ready" | "error";
+  error: string | null;
+  snapshot: ResourceTreeSnapshot | null;
+  expandedPaths: Record<string, true>;
   selected: ResourceTreeSelection | null;
   editing: ResourceTreeEditingState | null;
   drag: ResourceTreeDragState | null;
-  /** 待展开目录队列（按顺序处理，用于多级新建后的逐级加载）。 */
-  expandPathQueue: string[];
-};
-
-export type DirListingState =
-  | { status: "idle" }
-  | { status: "loading" }
-  | { status: "ready"; entries: ResourceNode[] }
-  | { status: "error"; message: string };
-
-/** 规范化树状态：展开集合 + 各目录 ls 缓存（path `""` 为根）。 */
-export type ResourceTreeDataState = {
-  status: "idle" | "loading" | "ready" | "error";
-  error: string | null;
-  expandedPaths: Record<string, true>;
-  listings: Record<string, DirListingState>;
   nodeVisualIds: Record<string, string>;
   nextVisualId: number;
-  reloadPaths: string[];
 };
 
-export const initialResourceTreeUiState: ResourceTreeUiState = {
+export const initialResourceTreeState: ResourceTreeState = {
+  status: "idle",
+  error: null,
+  snapshot: null,
+  expandedPaths: {},
   selected: null,
   editing: null,
   drag: null,
-  expandPathQueue: [],
-};
-
-export const initialResourceTreeDataState: ResourceTreeDataState = {
-  status: "idle",
-  error: null,
-  expandedPaths: {},
-  listings: {},
   nodeVisualIds: {},
   nextVisualId: 1,
-  reloadPaths: [],
 };

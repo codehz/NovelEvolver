@@ -1,12 +1,16 @@
 import { RpcTarget } from "capnweb";
 import type { VirtualWorktree } from "nano-git/worktree/core";
 
-import type { ResourceLibraryHandle, ResourceNode } from "#shared/rpc/projects-rpc";
+import type {
+  ResourceLibraryHandle,
+  ResourceNode,
+  ResourceTreeNode,
+  ResourceTreeSnapshot,
+} from "#shared/rpc/projects-rpc";
 
 import {
   assertResourceLibraryFilePath,
   assertResourceLibraryFolderCreatePath,
-  assertResourceLibraryListPath,
   assertResourceLibraryMovePaths,
   assertResourceLibraryRemovablePath,
   ensureResourcesDirectory,
@@ -28,20 +32,23 @@ export class ResourceLibraryHandleImpl extends RpcTarget implements ResourceLibr
     ensureResourcesDirectory(worktree);
   }
 
-  ls(path: string): ResourceNode[] {
-    assertResourceLibraryListPath(path);
+  getTree(): ResourceTreeSnapshot {
     ensureResourcesDirectory(this.#worktree);
-    const dirPath = toWorktreePath(path);
-    this.#assertDirectory(dirPath, path);
-    return this.#worktree
-      .readdir(dirPath)
-      .filter((entry) => entry.kind === "blob" || entry.kind === "tree")
-      .map(
-        (entry): ResourceNode => ({
-          name: entry.name,
-          type: entry.kind === "tree" ? "folder" : "file",
-        }),
-      );
+    return this.#readTree();
+  }
+
+  createFile(path: string): ResourceTreeSnapshot {
+    assertResourceLibraryFilePath(path);
+    ensureResourcesDirectory(this.#worktree);
+    const filePath = toWorktreePath(path);
+    this.#assertNotDirectory(filePath, path);
+    const parent = parentWorktreePath(filePath);
+    if (parent !== null) {
+      this.#assertParentDirectoryForWrite(parent);
+      this.#worktree.mkdir(parent, { recursive: true });
+    }
+    this.#worktree.writeFile(filePath, Buffer.from("", "utf-8"));
+    return this.#readTree();
   }
 
   readFile(path: string): string {
@@ -65,23 +72,25 @@ export class ResourceLibraryHandleImpl extends RpcTarget implements ResourceLibr
     this.#worktree.writeFile(filePath, Buffer.from(content, "utf-8"));
   }
 
-  createFolder(path: string): void {
+  createFolder(path: string): ResourceTreeSnapshot {
     assertResourceLibraryFolderCreatePath(path);
     ensureResourcesDirectory(this.#worktree);
     const folderPath = toWorktreePath(path);
     this.#assertNotFile(folderPath, path);
     this.#worktree.mkdir(folderPath, { recursive: true });
+    return this.#readTree();
   }
 
-  unlink(path: string): void {
+  unlink(path: string): ResourceTreeSnapshot {
     assertResourceLibraryRemovablePath(path);
     ensureResourcesDirectory(this.#worktree);
     const worktreePath = toWorktreePath(path);
     this.#assertPathExists(worktreePath, path);
     this.#unlinkWorktreePath(worktreePath);
+    return this.#readTree();
   }
 
-  move(from: string, to: string): void {
+  move(from: string, to: string): ResourceTreeSnapshot {
     assertResourceLibraryMovePaths(from, to);
     this.#assertMoveDoesNotNestInside(from, to);
     ensureResourcesDirectory(this.#worktree);
@@ -97,6 +106,69 @@ export class ResourceLibraryHandleImpl extends RpcTarget implements ResourceLibr
       throw new Error(`Cannot move onto an existing folder: ${to}`);
     }
     this.#worktree.move(fromWorktree, toWorktree);
+    return this.#readTree();
+  }
+
+  #readTree(): ResourceTreeSnapshot {
+    const nodes: Record<string, ResourceTreeNode> = {
+      "": {
+        path: "",
+        name: "",
+        type: "folder",
+        children: [],
+      },
+    };
+
+    const visitDirectory = (rpcPath: string): void => {
+      const worktreePath = toWorktreePath(rpcPath);
+      this.#assertDirectory(worktreePath, rpcPath);
+      const entries = sortEntries(
+        this.#worktree
+          .readdir(worktreePath)
+          .filter((entry) => entry.kind === "blob" || entry.kind === "tree")
+          .map(
+            (entry): ResourceNode => ({
+              name: entry.name,
+              type: entry.kind === "tree" ? "folder" : "file",
+            }),
+          ),
+      );
+
+      const childPaths: string[] = [];
+      for (const entry of entries) {
+        const childRpcPath = rpcPath === "" ? entry.name : `${rpcPath}/${entry.name}`;
+        childPaths.push(childRpcPath);
+        if (entry.type === "folder") {
+          nodes[childRpcPath] = {
+            path: childRpcPath,
+            name: entry.name,
+            type: "folder",
+            children: [],
+          };
+          visitDirectory(childRpcPath);
+        } else {
+          nodes[childRpcPath] = {
+            path: childRpcPath,
+            name: entry.name,
+            type: "file",
+          };
+        }
+      }
+
+      const node = nodes[rpcPath];
+      if (node?.type !== "folder") {
+        throw new Error(`Expected folder node at path: ${rpcPath}`);
+      }
+      node.children = childPaths;
+    };
+
+    visitDirectory("");
+
+    return {
+      version: 1,
+      rootPath: "",
+      nodes,
+    };
   }
 
   #rpcPathFromWorktree(worktreePath: string): string {
@@ -177,4 +249,13 @@ export class ResourceLibraryHandleImpl extends RpcTarget implements ResourceLibr
     }
     this.#worktree.delete(worktreePath);
   }
+}
+
+function sortEntries(entries: ResourceNode[]): ResourceNode[] {
+  return [...entries].sort((a, b) => {
+    if (a.type === b.type) {
+      return a.name.localeCompare(b.name);
+    }
+    return a.type === "folder" ? -1 : 1;
+  });
 }

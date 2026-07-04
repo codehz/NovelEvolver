@@ -2,6 +2,9 @@ import { useMolecule } from "bunshi/react";
 import { useAtomValue, useSetAtom, useStore } from "jotai";
 import { useCallback, useLayoutEffect, useRef } from "react";
 
+import { resourceLibraryDirPathPrefixes } from "#shared/resource-library-path";
+import type { ResourceTreeSnapshot } from "#shared/rpc/projects-rpc";
+
 import { FlatTreeList } from "../tree/FlatTreeList";
 import type { TreeResolvedDrop, TreeRowHoverZone } from "../tree/tree-drag";
 import { queryTreeRowById } from "../tree/tree-row-dom";
@@ -16,48 +19,56 @@ import { useResourceLibraryTreeActions } from "./state/use-resource-library-tree
 
 function ResourceLibraryTreeContent({
   renderItems,
+  snapshot,
   selectedPath,
   drag,
 }: {
   renderItems: FlatRenderItem[];
+  snapshot: ResourceTreeSnapshot | null;
   selectedPath: string | null;
   drag: ResourceTreeDragState | null;
 }) {
   const { activateNode, startRenaming, cancelEditing, submitEditing, deleteNode, moveNode } =
     useResourceLibraryTreeActions();
-  const { treeUiAtom, onRevealRequest } = useMolecule(resourceLibraryTreeMolecule);
-  const dispatchUi = useSetAtom(treeUiAtom);
+  const { treeAtom, onRevealRequest } = useMolecule(resourceLibraryTreeMolecule);
+  const dispatch = useSetAtom(treeAtom);
   const store = useStore();
   const listRef = useRef<HTMLUListElement>(null);
   const pendingRevealRef = useRef<string | null>(null);
 
   const revealPath = useCallback(
     (targetPath: string) => {
-      // 根路径：滚动到列表顶部即可。
       if (targetPath === "") {
         pendingRevealRef.current = null;
         listRef.current?.scrollIntoView({ block: "start" });
+        dispatch({ type: "select", path: "", nodeType: "folder" });
         return;
+      }
+      if (snapshot?.nodes[targetPath] === undefined) {
+        pendingRevealRef.current = null;
+        return;
+      }
+      const parentPrefixes = resourceLibraryDirPathPrefixes(targetPath).slice(0, -1);
+      if (parentPrefixes.length > 0) {
+        dispatch({ type: "expandPaths", paths: parentPrefixes });
       }
       const item = renderItems.find((candidate) => candidate.path === targetPath);
       if (item === undefined) {
-        pendingRevealRef.current = targetPath; // 父级尚未展开/加载，等待重试
+        pendingRevealRef.current = targetPath;
         return;
       }
       pendingRevealRef.current = null;
-      dispatchUi({ type: "select", path: targetPath, nodeType: item.type });
+      dispatch({ type: "select", path: targetPath, nodeType: item.type });
       const row = listRef.current ? queryTreeRowById(listRef.current, targetPath) : null;
       row?.scrollIntoView({ block: "nearest" });
     },
-    [renderItems, dispatchUi],
+    [dispatch, renderItems, snapshot],
   );
 
-  // 注册一条命令通道：breadcrumb 调用 revealInTree(path) 即触发此回调。
   useLayoutEffect(() => {
     return onRevealRequest(revealPath);
   }, [onRevealRequest, revealPath]);
 
-  // breadcrumb 定位请求：父级目录异步加载后重试 pending 的 reveal。
   useLayoutEffect(() => {
     if (pendingRevealRef.current !== null) {
       revealPath(pendingRevealRef.current);
@@ -66,16 +77,16 @@ function ResourceLibraryTreeContent({
 
   const handleDragStart = useCallback(
     (sourcePath: string, sourceType: "file" | "folder") => {
-      dispatchUi({ type: "dragStart", sourcePath, sourceType });
+      dispatch({ type: "dragStart", sourcePath, sourceType });
     },
-    [dispatchUi],
+    [dispatch],
   );
 
   const handleDragMove = useCallback(
     (resolved: TreeResolvedDrop<string> | null) => {
-      dispatchUi({ type: "dragMove", resolved });
+      dispatch({ type: "dragMove", resolved });
     },
-    [dispatchUi],
+    [dispatch],
   );
 
   const resolveDropTarget = useCallback(
@@ -141,9 +152,8 @@ function ResourceLibraryTreeContent({
   );
 
   const handleDragEnd = useCallback(() => {
-    // 从 store 读取最新 drag，避免闭包捕获渲染快照导致的陈旧值。
-    const currentDrag = store.get(treeUiAtom).drag;
-    dispatchUi({ type: "dragEnd" });
+    const currentDrag = store.get(treeAtom).drag;
+    dispatch({ type: "dragEnd" });
     if (
       currentDrag === null ||
       currentDrag.resolved === null ||
@@ -152,7 +162,7 @@ function ResourceLibraryTreeContent({
       return;
     }
     void moveNode(currentDrag.sourcePath, currentDrag.sourceType, currentDrag.resolved.target);
-  }, [dispatchUi, moveNode, store, treeUiAtom]);
+  }, [dispatch, moveNode, store, treeAtom]);
 
   if (renderItems.length === 0) {
     return <p className="px-2 py-1 text-xs text-ctp-subtext0">资源库为空。</p>;
@@ -168,7 +178,7 @@ function ResourceLibraryTreeContent({
       onRequestRename={startRenaming}
       onRequestDelete={deleteNode}
       onCancelDrag={() => {
-        dispatchUi({ type: "dragEnd" });
+        dispatch({ type: "dragEnd" });
       }}
       renderRow={(item, index, layout) => (
         <ResourceLibraryTreeRow
@@ -193,22 +203,21 @@ function ResourceLibraryTreeContent({
 }
 
 export function ResourceLibraryTree() {
-  const { treeDataAtom, flatRenderItemsAtom, selectedPathAtom, treeUiAtom } = useMolecule(
+  const { treeAtom, flatRenderItemsAtom, selectedPathAtom } = useMolecule(
     resourceLibraryTreeMolecule,
   );
-  const data = useAtomValue(treeDataAtom);
+  const state = useAtomValue(treeAtom);
   const renderItems = useAtomValue(flatRenderItemsAtom);
   const selectedPath = useAtomValue(selectedPathAtom);
-  const ui = useAtomValue(treeUiAtom);
 
-  if (data.status === "loading" || data.status === "idle") {
+  if (state.status === "loading" || state.status === "idle") {
     return <p className="px-2 py-1 text-xs text-ctp-subtext0">加载资源库…</p>;
   }
 
-  if (data.status === "error") {
+  if (state.status === "error") {
     return (
       <p className="px-2 py-1 text-xs text-ctp-red" role="alert">
-        {data.error}
+        {state.error}
       </p>
     );
   }
@@ -216,8 +225,9 @@ export function ResourceLibraryTree() {
   return (
     <ResourceLibraryTreeContent
       renderItems={renderItems}
+      snapshot={state.snapshot}
       selectedPath={selectedPath}
-      drag={ui.drag}
+      drag={state.drag}
     />
   );
 }

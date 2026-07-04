@@ -184,6 +184,21 @@ export function useWorkbenchEditorActions() {
     [setActiveTabId, setTabs],
   );
 
+  const closeResourceTabs = useCallback(
+    (path: string, nodeType: ResourceNode["type"]) => {
+      setTabs((current) => {
+        const next = current.filter(
+          (tab) =>
+            tab.kind !== "resource" || !matchesResourcePath(tab.resourcePath, path, nodeType),
+        );
+        const active = next.find((tab) => tab.active) ?? next[next.length - 1] ?? null;
+        setActiveTabId(active?.id ?? null);
+        return next.map((tab) => ({ ...tab, active: tab.id === active?.id }));
+      });
+    },
+    [setActiveTabId, setTabs],
+  );
+
   return {
     tabs,
     activateTab,
@@ -194,5 +209,6 @@ export function useWorkbenchEditorActions() {
     rebindResourcePaths,
     renameManuscriptTab,
     closeManuscriptTabs,
+    closeResourceTabs,
   };
 }

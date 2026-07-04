@@ -3,426 +3,388 @@ import {
   resourceBaseName,
   resourceParentPath,
 } from "#shared/resource-library-path";
-import type { ResourceNode } from "#shared/rpc/projects-rpc";
+import type { ResourceNode, ResourceTreeSnapshot } from "#shared/rpc/projects-rpc";
 
-import type { ResourceTreeNode } from "../resource-tree";
-import { buildVisibleResourceTree } from "./tree-cache";
-import type { ResourceTreeDataState, ResourceTreeEditingState } from "./types";
-import { initialResourceTreeDataState } from "./types";
+import type { TreeResolvedDrop } from "../../tree/tree-drag";
+import type { ResourceTreeEditingState, ResourceTreeState } from "./types";
+import { initialResourceTreeState } from "./types";
 
-export type ResourceTreeDataAction =
-  | { type: "initStart" }
-  | { type: "initSuccess"; entries: ResourceNode[] }
-  | { type: "reloadRootSuccess"; entries: ResourceNode[] }
-  | { type: "initError"; message: string }
-  | { type: "setNodeLoading"; path: string; loading: boolean }
-  | { type: "setNodeChildren"; path: string; entries: ResourceNode[] }
-  | { type: "setNodeExpanded"; path: string; expanded: boolean }
+export type ResourceTreeAction =
+  | { type: "loadStart" }
+  | { type: "loadSuccess"; snapshot: ResourceTreeSnapshot }
+  | { type: "loadError"; message: string }
+  | { type: "setSnapshot"; snapshot: ResourceTreeSnapshot }
+  | { type: "select"; path: string; nodeType: ResourceNode["type"] }
   | { type: "toggleFolder"; path: string }
-  | { type: "invalidatePath"; path: string }
-  | { type: "queueReloadPath"; path: string }
+  | { type: "expandPath"; path: string }
+  | { type: "expandPaths"; paths: string[] }
+  | { type: "startEditing"; editing: ResourceTreeEditingState }
+  | { type: "cancelEditing" }
   | { type: "remapPaths"; from: string; to: string; nodeType: ResourceNode["type"] }
-  | { type: "commitRename"; sourcePath: string; newPath: string; nodeType: ResourceNode["type"] }
-  | { type: "commitMove"; sourcePath: string; targetPath: string; nodeType: ResourceNode["type"] }
-  | { type: "shiftReloadQueue" };
+  | { type: "dragStart"; sourcePath: string; sourceType: ResourceNode["type"] }
+  | { type: "dragMove"; resolved: TreeResolvedDrop<string> | null }
+  | { type: "dragEnd" };
+
+function appendExpandedPath(
+  expandedPaths: Record<string, true>,
+  path: string,
+): Record<string, true> {
+  if (path === "" || expandedPaths[path]) {
+    return expandedPaths;
+  }
+  return {
+    ...expandedPaths,
+    [path]: true,
+  };
+}
+
+function appendExpandedPaths(
+  expandedPaths: Record<string, true>,
+  paths: string[],
+): Record<string, true> {
+  let next = expandedPaths;
+  for (const path of paths) {
+    next = appendExpandedPath(next, path);
+  }
+  return next;
+}
+
+function filterExpandedPaths(
+  snapshot: ResourceTreeSnapshot,
+  expandedPaths: Record<string, true>,
+): Record<string, true> {
+  const next: Record<string, true> = {};
+  for (const path of Object.keys(expandedPaths)) {
+    if (snapshot.nodes[path]?.type === "folder") {
+      next[path] = true;
+    }
+  }
+  return next;
+}
 
 function remapExpandedPaths(
-  expandedPaths: ResourceTreeDataState["expandedPaths"],
+  expandedPaths: Record<string, true>,
   from: string,
   to: string,
   nodeType: ResourceNode["type"],
-): ResourceTreeDataState["expandedPaths"] {
-  const next: ResourceTreeDataState["expandedPaths"] = {};
+): Record<string, true> {
+  const next: Record<string, true> = {};
   for (const path of Object.keys(expandedPaths)) {
     next[remapResourcePath(path, from, to, nodeType)] = true;
   }
   return next;
 }
 
-function remapListings(
-  listings: ResourceTreeDataState["listings"],
+function remapEditingState(
+  editing: ResourceTreeEditingState | null,
   from: string,
   to: string,
   nodeType: ResourceNode["type"],
-): ResourceTreeDataState["listings"] {
-  const next: ResourceTreeDataState["listings"] = {};
-  for (const [path, listing] of Object.entries(listings)) {
-    next[remapResourcePath(path, from, to, nodeType)] = listing;
+): ResourceTreeEditingState | null {
+  if (editing === null) {
+    return null;
   }
-  return next;
-}
-
-function appendReloadPath(queue: string[], path: string): string[] {
-  return queue.includes(path) ? queue : [...queue, path];
-}
-
-function remapReloadPaths(
-  reloadPaths: string[],
-  from: string,
-  to: string,
-  nodeType: ResourceNode["type"],
-): string[] {
-  const next: string[] = [];
-  for (const path of reloadPaths) {
-    const mapped = remapResourcePath(path, from, to, nodeType);
-    if (!next.includes(mapped)) {
-      next.push(mapped);
-    }
+  if (editing.mode === "creating") {
+    const parentPath = remapResourcePath(editing.parentPath, from, to, nodeType);
+    return parentPath === editing.parentPath ? editing : { ...editing, parentPath };
   }
-  return next;
+  const path = remapResourcePath(editing.path, from, to, nodeType);
+  return path === editing.path ? editing : { ...editing, path };
 }
 
 function remapNodeVisualIds(
-  nodeVisualIds: ResourceTreeDataState["nodeVisualIds"],
+  nodeVisualIds: Record<string, string>,
   from: string,
   to: string,
   nodeType: ResourceNode["type"],
-): ResourceTreeDataState["nodeVisualIds"] {
-  const next: ResourceTreeDataState["nodeVisualIds"] = {};
+): Record<string, string> {
+  const next: Record<string, string> = {};
   for (const [path, visualId] of Object.entries(nodeVisualIds)) {
     next[remapResourcePath(path, from, to, nodeType)] = visualId;
   }
   return next;
 }
 
-type PathMutation = {
-  from: string;
-  to: string;
-  nodeType: ResourceNode["type"];
-};
-
-function applyPathMutation(
-  state: ResourceTreeDataState,
-  mutation: PathMutation,
-): ResourceTreeDataState {
+function remapSelection(
+  selected: ResourceTreeState["selected"],
+  from: string,
+  to: string,
+  nodeType: ResourceNode["type"],
+): ResourceTreeState["selected"] {
+  if (selected === null) {
+    return null;
+  }
   return {
-    ...state,
-    expandedPaths: remapExpandedPaths(
-      state.expandedPaths,
-      mutation.from,
-      mutation.to,
-      mutation.nodeType,
-    ),
-    listings: remapListings(state.listings, mutation.from, mutation.to, mutation.nodeType),
-    nodeVisualIds: remapNodeVisualIds(
-      state.nodeVisualIds,
-      mutation.from,
-      mutation.to,
-      mutation.nodeType,
-    ),
-    reloadPaths: remapReloadPaths(state.reloadPaths, mutation.from, mutation.to, mutation.nodeType),
+    ...selected,
+    path: remapResourcePath(selected.path, from, to, nodeType),
   };
 }
 
-function dropListingSubtree(
-  listings: ResourceTreeDataState["listings"],
-  path: string,
-): ResourceTreeDataState["listings"] {
-  const next = { ...listings };
-  for (const key of Object.keys(next)) {
-    if (key === path || (path !== "" && key.startsWith(`${path}/`))) {
-      delete next[key];
+function collectSnapshotPaths(snapshot: ResourceTreeSnapshot): string[] {
+  const paths: string[] = [];
+  const visit = (path: string): void => {
+    const node = snapshot.nodes[path];
+    if (node === undefined || node.type !== "folder") {
+      return;
     }
-  }
-  return next;
+    for (const childPath of node.children) {
+      paths.push(childPath);
+      if (snapshot.nodes[childPath]?.type === "folder") {
+        visit(childPath);
+      }
+    }
+  };
+  visit(snapshot.rootPath);
+  return paths;
 }
 
-function setListingLoading(
-  listings: ResourceTreeDataState["listings"],
-  path: string,
-  loading: boolean,
-): ResourceTreeDataState["listings"] {
-  if (!loading) {
-    const current = listings[path];
-    if (current?.status === "loading") {
-      return { ...listings, [path]: { status: "idle" } };
-    }
-    return listings;
-  }
-  return { ...listings, [path]: { status: "loading" } };
-}
-
-function childPath(parentPath: string, name: string): string {
-  return parentPath === "" ? name : `${parentPath}/${name}`;
-}
-
-function ensureVisualIdsForEntries(
-  state: ResourceTreeDataState,
-  parentPath: string,
-  entries: ResourceNode[],
-): Pick<ResourceTreeDataState, "nodeVisualIds" | "nextVisualId"> {
-  const directChildPaths = new Set(entries.map((entry) => childPath(parentPath, entry.name)));
-  const nextNodeVisualIds: ResourceTreeDataState["nodeVisualIds"] = {};
-
-  for (const [path, visualId] of Object.entries(state.nodeVisualIds)) {
-    const isDirectChild =
-      parentPath === ""
-        ? !path.includes("/")
-        : path.startsWith(`${parentPath}/`) && !path.slice(parentPath.length + 1).includes("/");
-    if (isDirectChild && !directChildPaths.has(path)) {
-      continue;
-    }
-    nextNodeVisualIds[path] = visualId;
-  }
-
+function reconcileVisualIds(
+  state: ResourceTreeState,
+  snapshot: ResourceTreeSnapshot,
+): Pick<ResourceTreeState, "nodeVisualIds" | "nextVisualId"> {
+  const nextNodeVisualIds: Record<string, string> = {};
   let nextVisualId = state.nextVisualId;
-  for (const entry of entries) {
-    const path = childPath(parentPath, entry.name);
-    if (nextNodeVisualIds[path] !== undefined) {
+  for (const path of collectSnapshotPaths(snapshot)) {
+    const existing = state.nodeVisualIds[path];
+    if (existing !== undefined) {
+      nextNodeVisualIds[path] = existing;
       continue;
     }
     nextNodeVisualIds[path] = `resource-node-${nextVisualId}`;
     nextVisualId += 1;
   }
-
-  return { nodeVisualIds: nextNodeVisualIds, nextVisualId };
-}
-
-function sortEntries(entries: ResourceNode[]): ResourceNode[] {
-  return [...entries].sort((a, b) => {
-    if (a.type === b.type) {
-      return a.name.localeCompare(b.name);
-    }
-    return a.type === "folder" ? -1 : 1;
-  });
-}
-
-function updateListingEntries(
-  listings: ResourceTreeDataState["listings"],
-  path: string,
-  update: (entries: ResourceNode[]) => ResourceNode[],
-): ResourceTreeDataState["listings"] {
-  const current = listings[path];
-  if (current?.status !== "ready") {
-    return listings;
-  }
   return {
-    ...listings,
-    [path]: {
-      status: "ready",
-      entries: sortEntries(update(current.entries)),
-    },
+    nodeVisualIds: nextNodeVisualIds,
+    nextVisualId,
   };
 }
 
-function renameEntryInListing(
-  listings: ResourceTreeDataState["listings"],
-  path: string,
-  sourceName: string,
-  nextName: string,
-  nodeType: ResourceNode["type"],
-): ResourceTreeDataState["listings"] {
-  return updateListingEntries(listings, path, (entries) =>
-    entries.map((entry) =>
-      entry.name === sourceName && entry.type === nodeType ? { ...entry, name: nextName } : entry,
-    ),
-  );
-}
-
-function upsertMovedEntryIntoReadyListing(
-  listings: ResourceTreeDataState["listings"],
-  path: string,
-  entry: ResourceNode,
-): ResourceTreeDataState["listings"] {
-  const current = listings[path];
-  if (current?.status !== "ready") {
-    return listings;
-  }
-  return updateListingEntries(listings, path, (entries) => {
-    if (
-      entries.some((candidate) => candidate.name === entry.name && candidate.type === entry.type)
-    ) {
-      return entries;
+function nearestExistingFolderPath(snapshot: ResourceTreeSnapshot, path: string): string {
+  let current = path;
+  while (true) {
+    const node = snapshot.nodes[current];
+    if (node?.type === "folder") {
+      return current;
     }
-    return [...entries, entry];
-  });
+    if (current === "") {
+      return "";
+    }
+    current = resourceParentPath(current);
+  }
 }
 
-export function resourceTreeDataReducer(
-  state: ResourceTreeDataState,
-  action: ResourceTreeDataAction,
-): ResourceTreeDataState {
+function pruneSelection(
+  selected: ResourceTreeState["selected"],
+  snapshot: ResourceTreeSnapshot,
+): ResourceTreeState["selected"] {
+  if (selected === null) {
+    return null;
+  }
+  const node = snapshot.nodes[selected.path];
+  if (node !== undefined) {
+    return {
+      path: selected.path,
+      type: node.type,
+    };
+  }
+  return {
+    path: nearestExistingFolderPath(snapshot, selected.path),
+    type: "folder",
+  };
+}
+
+function pruneEditing(
+  editing: ResourceTreeEditingState | null,
+  snapshot: ResourceTreeSnapshot,
+): ResourceTreeEditingState | null {
+  if (editing === null) {
+    return null;
+  }
+  if (editing.mode === "creating") {
+    return snapshot.nodes[editing.parentPath]?.type === "folder" ? editing : null;
+  }
+  const node = snapshot.nodes[editing.path];
+  return node?.type === editing.kind ? editing : null;
+}
+
+function applySnapshot(
+  state: ResourceTreeState,
+  snapshot: ResourceTreeSnapshot,
+): ResourceTreeState {
+  return {
+    ...state,
+    status: "ready",
+    error: null,
+    snapshot,
+    expandedPaths: filterExpandedPaths(snapshot, state.expandedPaths),
+    selected: pruneSelection(state.selected, snapshot),
+    editing: pruneEditing(state.editing, snapshot),
+    ...reconcileVisualIds(state, snapshot),
+  };
+}
+
+export function resourceTreeReducer(
+  state: ResourceTreeState,
+  action: ResourceTreeAction,
+): ResourceTreeState {
   switch (action.type) {
-    case "initStart":
+    case "loadStart":
       return {
-        ...initialResourceTreeDataState,
+        ...initialResourceTreeState,
         status: "loading",
       };
-    case "initSuccess":
-      return {
-        status: "ready",
-        error: null,
-        expandedPaths: {},
-        listings: { "": { status: "ready", entries: action.entries } },
-        ...ensureVisualIdsForEntries(initialResourceTreeDataState, "", action.entries),
-        reloadPaths: [],
-      };
-    case "reloadRootSuccess":
-      return {
-        ...state,
-        status: "ready",
-        error: null,
-        listings: {
-          ...state.listings,
-          "": { status: "ready", entries: action.entries },
+    case "loadSuccess":
+      return applySnapshot(
+        {
+          ...state,
+          status: "ready",
+          error: null,
         },
-        ...ensureVisualIdsForEntries(state, "", action.entries),
-      };
-    case "initError":
+        action.snapshot,
+      );
+    case "loadError":
       return {
-        ...initialResourceTreeDataState,
+        ...initialResourceTreeState,
         status: "error",
         error: action.message,
       };
-    case "setNodeLoading":
+    case "setSnapshot":
+      return applySnapshot(state, action.snapshot);
+    case "select":
       return {
         ...state,
-        listings: setListingLoading(state.listings, action.path, action.loading),
-      };
-    case "setNodeChildren":
-      return {
-        ...state,
-        listings: {
-          ...state.listings,
-          [action.path]: { status: "ready", entries: action.entries },
+        selected: {
+          path: action.path,
+          type: action.nodeType,
         },
-        ...ensureVisualIdsForEntries(state, action.path, action.entries),
       };
-    case "setNodeExpanded": {
-      const nextExpanded = { ...state.expandedPaths };
-      if (action.expanded) {
-        nextExpanded[action.path] = true;
-      } else {
-        delete nextExpanded[action.path];
-      }
-      return {
-        ...state,
-        expandedPaths: nextExpanded,
-      };
-    }
     case "toggleFolder": {
-      const nextExpanded = { ...state.expandedPaths };
-      if (action.path in nextExpanded) {
-        delete nextExpanded[action.path];
+      const nextExpandedPaths = { ...state.expandedPaths };
+      if (nextExpandedPaths[action.path]) {
+        delete nextExpandedPaths[action.path];
       } else {
-        nextExpanded[action.path] = true;
+        nextExpandedPaths[action.path] = true;
       }
       return {
         ...state,
-        expandedPaths: nextExpanded,
+        expandedPaths: nextExpandedPaths,
       };
     }
-    case "invalidatePath": {
-      const path = action.path;
-      if (path === "") {
-        return {
-          ...state,
-          reloadPaths: state.reloadPaths.includes("")
-            ? state.reloadPaths
-            : [...state.reloadPaths, ""],
-        };
-      }
-      const queue = state.reloadPaths.includes(path)
-        ? state.reloadPaths
-        : [...state.reloadPaths, path];
+    case "expandPath":
       return {
         ...state,
-        listings: dropListingSubtree(state.listings, path),
-        reloadPaths: queue,
+        expandedPaths: appendExpandedPath(state.expandedPaths, action.path),
       };
-    }
-    case "queueReloadPath":
+    case "expandPaths":
       return {
         ...state,
-        reloadPaths: appendReloadPath(state.reloadPaths, action.path),
+        expandedPaths: appendExpandedPaths(state.expandedPaths, action.paths),
+      };
+    case "startEditing":
+      return {
+        ...state,
+        editing: action.editing,
+        expandedPaths:
+          action.editing.mode === "creating"
+            ? appendExpandedPath(state.expandedPaths, action.editing.parentPath)
+            : state.expandedPaths,
+      };
+    case "cancelEditing":
+      return {
+        ...state,
+        editing: null,
       };
     case "remapPaths":
-      return applyPathMutation(state, action);
-    case "commitRename": {
-      const sourceName = resourceBaseName(action.sourcePath);
-      const nextName = resourceBaseName(action.newPath);
-      if (sourceName === "" || nextName === "") {
-        return state;
-      }
-      const remappedState = applyPathMutation(state, {
-        from: action.sourcePath,
-        to: action.newPath,
-        nodeType: action.nodeType,
-      });
-      const parentPath = resourceParentPath(action.sourcePath);
       return {
-        ...remappedState,
-        listings: renameEntryInListing(
-          remappedState.listings,
-          parentPath,
-          sourceName,
-          nextName,
+        ...state,
+        expandedPaths: remapExpandedPaths(
+          state.expandedPaths,
+          action.from,
+          action.to,
+          action.nodeType,
+        ),
+        selected: remapSelection(state.selected, action.from, action.to, action.nodeType),
+        editing: remapEditingState(state.editing, action.from, action.to, action.nodeType),
+        nodeVisualIds: remapNodeVisualIds(
+          state.nodeVisualIds,
+          action.from,
+          action.to,
           action.nodeType,
         ),
       };
-    }
-    case "commitMove": {
-      const sourceName = resourceBaseName(action.sourcePath);
-      if (sourceName === "") {
-        return state;
-      }
-      const newPath = childPath(action.targetPath, sourceName);
-      const remappedState = applyPathMutation(state, {
-        from: action.sourcePath,
-        to: newPath,
-        nodeType: action.nodeType,
-      });
-      const sourceParentPath = resourceParentPath(action.sourcePath);
-      const nextSourceListings = updateListingEntries(
-        remappedState.listings,
-        sourceParentPath,
-        (entries) => entries.filter((entry) => entry.name !== sourceName),
-      );
-      const nextListings = upsertMovedEntryIntoReadyListing(nextSourceListings, action.targetPath, {
-        name: sourceName,
-        type: action.nodeType,
-      });
-      const nextExpandedPaths: ResourceTreeDataState["expandedPaths"] =
-        action.targetPath === ""
-          ? remappedState.expandedPaths
-          : {
-              ...remappedState.expandedPaths,
-              [action.targetPath]: true,
-            };
-      return {
-        ...remappedState,
-        expandedPaths: nextExpandedPaths,
-        listings: nextListings,
-      };
-    }
-    case "shiftReloadQueue":
+    case "dragStart":
       return {
         ...state,
-        reloadPaths: state.reloadPaths.slice(1),
+        drag: {
+          sourcePath: action.sourcePath,
+          sourceType: action.sourceType,
+          resolved: null,
+        },
+      };
+    case "dragMove":
+      if (state.drag === null) {
+        return state;
+      }
+      return {
+        ...state,
+        drag: {
+          ...state.drag,
+          resolved: action.resolved,
+        },
+      };
+    case "dragEnd":
+      return {
+        ...state,
+        drag: null,
       };
     default:
       return state;
   }
 }
 
-export function flattenResourceTree(
-  nodes: ResourceTreeNode[],
-  depth: number = 0,
-): Array<{ node: ResourceTreeNode; depth: number }> {
-  const result: Array<{ node: ResourceTreeNode; depth: number }> = [];
-  for (const node of nodes) {
-    result.push({ node, depth });
-    if (node.type === "folder" && node.expanded && node.children && node.children.length > 0) {
-      result.push(...flattenResourceTree(node.children, depth + 1));
-    }
-  }
-  return result;
-}
+type FlatTreeNode = {
+  visualId: string;
+  path: string;
+  name: string;
+  type: ResourceNode["type"];
+  depth: number;
+  expanded: boolean;
+};
 
-export function flattenVisibleResourceTree(
-  state: ResourceTreeDataState,
-): Array<{ node: ResourceTreeNode; depth: number }> {
-  return flattenResourceTree(buildVisibleResourceTree(state));
+function flattenVisibleNodes(
+  snapshot: ResourceTreeSnapshot,
+  expandedPaths: Record<string, true>,
+  nodeVisualIds: Record<string, string>,
+): FlatTreeNode[] {
+  const result: FlatTreeNode[] = [];
+
+  const visit = (parentPath: string, depth: number): void => {
+    const parent = snapshot.nodes[parentPath];
+    if (parent?.type !== "folder") {
+      return;
+    }
+    for (const childPath of parent.children) {
+      const node = snapshot.nodes[childPath];
+      if (node === undefined) {
+        continue;
+      }
+      const expanded = node.type === "folder" && expandedPaths[node.path] === true;
+      result.push({
+        visualId: nodeVisualIds[node.path] ?? node.path,
+        path: node.path,
+        name: node.name,
+        type: node.type,
+        depth,
+        expanded,
+      });
+      if (node.type === "folder" && expanded) {
+        visit(node.path, depth + 1);
+      }
+    }
+  };
+
+  visit(snapshot.rootPath, 0);
+  return result;
 }
 
 export type FlatRenderItem = {
@@ -437,32 +399,36 @@ export type FlatRenderItem = {
   editing: ResourceTreeEditingState | null;
 };
 
-export function buildFlatRenderItems(
-  flatItems: Array<{ node: ResourceTreeNode; depth: number }>,
-  editing: ResourceTreeEditingState | null,
-): FlatRenderItem[] {
-  const items: FlatRenderItem[] = flatItems.map(({ node, depth }) => ({
-    key: node.visualId,
-    visualId: node.visualId,
-    depth,
-    type: node.type,
-    path: node.path,
-    name: node.name,
-    expanded: node.expanded,
-    loading: node.loading,
+export function buildFlatRenderItems(state: ResourceTreeState): FlatRenderItem[] {
+  if (state.snapshot === null) {
+    return [];
+  }
+
+  const flatItems = flattenVisibleNodes(state.snapshot, state.expandedPaths, state.nodeVisualIds);
+  const items: FlatRenderItem[] = flatItems.map((item) => ({
+    key: item.visualId,
+    visualId: item.visualId,
+    depth: item.depth,
+    type: item.type,
+    path: item.path,
+    name: item.name,
+    expanded: item.expanded,
+    loading: false,
     editing: null,
   }));
 
-  if (editing?.mode === "renaming") {
-    const renameIdx = items.findIndex((item) => item.path === editing.path);
-    if (renameIdx >= 0) {
-      items[renameIdx] = {
-        ...items[renameIdx],
-        editing,
+  if (state.editing?.mode === "renaming") {
+    const renaming = state.editing;
+    const renameIndex = items.findIndex((item) => item.path === renaming.path);
+    if (renameIndex >= 0) {
+      items[renameIndex] = {
+        ...items[renameIndex],
+        editing: renaming,
       };
     }
   }
 
+  const editing = state.editing;
   if (editing?.mode !== "creating") {
     return items;
   }
@@ -473,30 +439,32 @@ export function buildFlatRenderItems(
 
   if (editing.kind === "folder") {
     if (editing.parentPath !== "") {
-      const parentIdx = flatItems.findIndex((item) => item.node.path === editing.parentPath);
-      insertAt = parentIdx >= 0 ? parentIdx + 1 : 0;
-      depth = parentIdx >= 0 ? flatItems[parentIdx].depth + 1 : 0;
+      const parentIndex = flatItems.findIndex((item) => item.path === editing.parentPath);
+      insertAt = parentIndex >= 0 ? parentIndex + 1 : 0;
+      depth = parentIndex >= 0 ? flatItems[parentIndex]!.depth + 1 : 0;
     }
   } else {
-    let lastDirIdx = -1;
-    for (let i = 0; i < flatItems.length; i++) {
-      if (flatItems[i].node.type !== "folder") continue;
-      const p = flatItems[i].node.path;
+    let lastFolderIndex = -1;
+    for (let index = 0; index < flatItems.length; index += 1) {
+      if (flatItems[index]!.type !== "folder") {
+        continue;
+      }
+      const path = flatItems[index]!.path;
       const isDirectChild =
         editing.parentPath === ""
-          ? !p.includes("/")
-          : p.startsWith(prefix) && !p.slice(prefix.length).includes("/");
+          ? !path.includes("/")
+          : path.startsWith(prefix) && !path.slice(prefix.length).includes("/");
       if (isDirectChild) {
-        lastDirIdx = i;
+        lastFolderIndex = index;
       }
     }
-    if (lastDirIdx >= 0) {
-      insertAt = lastDirIdx + 1;
-      depth = flatItems[lastDirIdx].depth;
+    if (lastFolderIndex >= 0) {
+      insertAt = lastFolderIndex + 1;
+      depth = flatItems[lastFolderIndex]!.depth;
     } else if (editing.parentPath !== "") {
-      const parentIdx = flatItems.findIndex((item) => item.node.path === editing.parentPath);
-      insertAt = parentIdx >= 0 ? parentIdx + 1 : 0;
-      depth = parentIdx >= 0 ? flatItems[parentIdx].depth + 1 : 0;
+      const parentIndex = flatItems.findIndex((item) => item.path === editing.parentPath);
+      insertAt = parentIndex >= 0 ? parentIndex + 1 : 0;
+      depth = parentIndex >= 0 ? flatItems[parentIndex]!.depth + 1 : 0;
     }
   }
 
@@ -513,4 +481,9 @@ export function buildFlatRenderItems(
   });
 
   return items;
+}
+
+export function moveDestinationPath(sourcePath: string, targetPath: string): string {
+  const sourceName = resourceBaseName(sourcePath);
+  return targetPath === "" ? sourceName : `${targetPath}/${sourceName}`;
 }

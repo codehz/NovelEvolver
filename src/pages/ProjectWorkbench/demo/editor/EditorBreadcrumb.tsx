@@ -21,19 +21,13 @@ type EditorBreadcrumbSegment = {
 };
 
 function useResourceBreadcrumbSegments(resourcePath: string | null): EditorBreadcrumbSegment[] {
-  const { revealInTree, treeUiAtom } = useMolecule(resourceLibraryTreeMolecule);
-  const dispatchUi = useSetAtom(treeUiAtom);
+  const { revealInTree } = useMolecule(resourceLibraryTreeMolecule);
 
   const reveal = useCallback(
     (path: string) => {
-      // 入队展开所有父级前缀（sync effect 会逐级加载并展开），再发出定位请求。
-      const parentPrefixes = path === "" ? [] : resourceLibraryDirPathPrefixes(path).slice(0, -1);
-      if (parentPrefixes.length > 0) {
-        dispatchUi({ type: "enqueueExpandPaths", paths: parentPrefixes });
-      }
       revealInTree(path);
     },
-    [dispatchUi, revealInTree],
+    [revealInTree],
   );
 
   if (resourcePath === null) {
