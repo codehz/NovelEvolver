@@ -7,18 +7,51 @@ import type { ManuscriptNode } from "#shared/rpc/projects-rpc";
 
 import { useManuscript } from "../../demo/branch/branch-scopes";
 import { useWorkbenchEditorActions } from "../../demo/editor/use-workbench-editor-actions";
-import { collectManuscriptChapterIds, findManuscriptParentId } from "../manuscript-tree";
+import {
+  collectManuscriptChapterIds,
+  findManuscriptChildIndex,
+  findManuscriptParentId,
+} from "../manuscript-tree";
 import { manuscriptTreeMolecule } from "./manuscript-tree-molecule";
-import type { ManuscriptEditingState } from "./types";
+import type { ManuscriptEditingState, ManuscriptTreeState } from "./types";
 
-function selectedParentId(selectedId: string | null, selectedType: ManuscriptNode["type"] | null) {
-  if (selectedId === null || selectedType === null) {
-    return "root";
+type ManuscriptCreateTarget = {
+  parentId: string;
+  index: number;
+};
+
+function resolveCreateTarget(current: ManuscriptTreeState): ManuscriptCreateTarget {
+  const outline = current.outline;
+  if (outline === null) {
+    return { parentId: "root", index: 0 };
   }
-  if (selectedType === "folder") {
-    return selectedId;
+
+  const root = outline.nodes[outline.rootId];
+  if (root?.type !== "folder") {
+    return { parentId: outline.rootId, index: 0 };
   }
-  return null;
+
+  const selectedId = current.selectedId;
+  if (selectedId === null) {
+    return { parentId: outline.rootId, index: root.children.length };
+  }
+
+  const selectedNode = outline.nodes[selectedId];
+  if (selectedNode?.type === "folder") {
+    return { parentId: selectedNode.id, index: selectedNode.children.length };
+  }
+
+  if (selectedNode?.type === "chapter") {
+    const parentId = findManuscriptParentId(outline, selectedNode.id);
+    if (parentId !== null) {
+      const childIndex = findManuscriptChildIndex(outline, parentId, selectedNode.id);
+      if (childIndex >= 0) {
+        return { parentId, index: childIndex + 1 };
+      }
+    }
+  }
+
+  return { parentId: outline.rootId, index: root.children.length };
 }
 
 export function useManuscriptTreeActions() {
@@ -33,18 +66,8 @@ export function useManuscriptTreeActions() {
   const startCreating = useCallback(
     (kind: ManuscriptNode["type"]) => {
       const current = store.get(treeAtom);
-      const selectedId = current.selectedId;
-      const selectedNode =
-        selectedId === null ? null : (current.outline?.nodes[selectedId] ?? null);
-      const parentId = selectedParentId(selectedId, selectedNode?.type ?? null);
-      if (parentId === null) {
-        const fallbackParent = current.outline
-          ? findManuscriptParentId(current.outline, selectedId!)
-          : null;
-        dispatch({ type: "startCreating", kind, parentId: fallbackParent ?? "root" });
-        return;
-      }
-      dispatch({ type: "startCreating", kind, parentId });
+      const target = resolveCreateTarget(current);
+      dispatch({ type: "startCreating", kind, ...target });
     },
     [dispatch, store, treeAtom],
   );
@@ -72,8 +95,8 @@ export function useManuscriptTreeActions() {
         const outline =
           editing.mode === "creating"
             ? editing.kind === "folder"
-              ? await manuscript.createFolder(editing.parentId, title)
-              : await manuscript.createChapter(editing.parentId, title)
+              ? await manuscript.createFolder(editing.parentId, title, editing.index)
+              : await manuscript.createChapter(editing.parentId, title, editing.index)
             : await manuscript.renameNode(editing.id, title);
         dispatch({ type: "setOutline", outline });
         if (editing.mode === "renaming" && editing.kind === "chapter") {

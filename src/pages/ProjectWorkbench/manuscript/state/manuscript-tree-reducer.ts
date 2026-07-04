@@ -17,7 +17,7 @@ export type ManuscriptTreeAction =
   | { type: "select"; id: string }
   | { type: "toggleFolder"; id: string }
   | { type: "expand"; id: string }
-  | { type: "startCreating"; kind: ManuscriptNode["type"]; parentId: string }
+  | { type: "startCreating"; kind: ManuscriptNode["type"]; parentId: string; index: number }
   | { type: "startRenaming"; id: string; kind: ManuscriptNode["type"] }
   | { type: "cancelEditing" }
   | { type: "dragStart"; sourceId: string; sourceType: ManuscriptNode["type"] }
@@ -166,6 +166,7 @@ export function manuscriptTreeReducer(
           id: state.nextEditingId,
           kind: action.kind,
           parentId: action.parentId,
+          index: action.index,
         },
         expandedIds: { ...state.expandedIds, [action.parentId]: true },
         nextEditingId: state.nextEditingId + 1,

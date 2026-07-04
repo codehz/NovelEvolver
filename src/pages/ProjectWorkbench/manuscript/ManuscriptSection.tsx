@@ -6,7 +6,7 @@ import {
   SidebarHeaderActionButton,
   SidebarSectionActionsPortalContent,
 } from "#app/components/workbench";
-import type { ManuscriptNode } from "#shared/rpc/projects-rpc";
+import type { ManuscriptNode, ManuscriptOutline } from "#shared/rpc/projects-rpc";
 
 import { FlatTreeList } from "../tree/FlatTreeList";
 import type { TreeResolvedDrop, TreeRowHoverZone } from "../tree/tree-drag";
@@ -32,6 +32,46 @@ type ManuscriptRenderItem = {
   key: string;
   editing: ManuscriptEditingState | null;
 };
+
+function findSubtreeEndIndex(items: ManuscriptRenderItem[], startIndex: number): number {
+  const startItem = items[startIndex];
+  if (startItem === undefined) {
+    return startIndex;
+  }
+  let endIndex = startIndex;
+  while (endIndex + 1 < items.length && items[endIndex + 1]!.depth > startItem.depth) {
+    endIndex += 1;
+  }
+  return endIndex;
+}
+
+function resolveCreatingRenderPosition(
+  items: ManuscriptRenderItem[],
+  editing: Extract<ManuscriptEditingState, { mode: "creating" }>,
+  outline: ManuscriptOutline,
+): { insertAt: number; depth: number } {
+  const parent = outline.nodes[editing.parentId];
+  if (parent?.type !== "folder") {
+    return { insertAt: items.length, depth: 0 };
+  }
+
+  const parentIndex = items.findIndex((item) => item.id === editing.parentId);
+  const parentDepth = editing.parentId === outline.rootId ? -1 : items[parentIndex]?.depth;
+  const depth = parentDepth === undefined ? 0 : parentDepth + 1;
+  const index = Math.max(0, Math.min(parent.children.length, Math.trunc(editing.index)));
+
+  if (index === 0) {
+    return { insertAt: parentIndex >= 0 ? parentIndex + 1 : 0, depth };
+  }
+
+  const previousSiblingId = parent.children[index - 1];
+  const previousSiblingIndex = items.findIndex((item) => item.id === previousSiblingId);
+  if (previousSiblingIndex < 0) {
+    return { insertAt: items.length, depth };
+  }
+
+  return { insertAt: findSubtreeEndIndex(items, previousSiblingIndex) + 1, depth };
+}
 
 export function ManuscriptSectionBody() {
   useManuscriptTreeSync();
@@ -60,21 +100,22 @@ export function ManuscriptSectionBody() {
     }));
     const editing = state.editing;
     if (editing?.mode === "creating") {
-      const parentIndex = flatItems.findIndex((item) => item.id === editing.parentId);
-      const parentDepth = parentIndex >= 0 ? flatItems[parentIndex].depth : -1;
-      const insertAt = parentIndex >= 0 ? parentIndex + 1 : flatItems.length;
-      items.splice(insertAt, 0, {
+      const position =
+        state.outline === null
+          ? { insertAt: items.length, depth: 0 }
+          : resolveCreatingRenderPosition(items, editing, state.outline);
+      items.splice(position.insertAt, 0, {
         id: null,
         title: "",
         type: editing.kind,
-        depth: parentDepth + 1,
+        depth: position.depth,
         expanded: false,
         key: `creating-${editing.id}`,
         editing,
       });
     }
     return items;
-  }, [flatItems, state.editing]);
+  }, [flatItems, state.editing, state.outline]);
   const resolveDropTarget = useCallback(
     ({
       start: _start,

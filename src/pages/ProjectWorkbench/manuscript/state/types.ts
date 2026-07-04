@@ -7,6 +7,7 @@ export type ManuscriptCreatingState = {
   id: number;
   kind: ManuscriptNode["type"];
   parentId: string;
+  index: number;
 };
 
 export type ManuscriptRenamingState = {
