@@ -1,6 +1,6 @@
 import { AutoTransition, effects, preset } from "@codehz/auto-transition";
 import { useMolecule } from "bunshi/react";
-import { useAtomValue, useSetAtom } from "jotai";
+import { useAtomValue } from "jotai";
 import { Fragment, useCallback } from "react";
 
 import { SlotText } from "#app/components/SlotText";
@@ -68,16 +68,14 @@ function useResourceBreadcrumbSegments(resourcePath: string | null): EditorBread
 }
 
 function useManuscriptBreadcrumbSegments(chapterId: string | null): EditorBreadcrumbSegment[] {
-  const { treeAtom } = useMolecule(manuscriptTreeMolecule);
+  const { treeAtom, revealInTree } = useMolecule(manuscriptTreeMolecule);
   const state = useAtomValue(treeAtom);
-  const dispatch = useSetAtom(treeAtom);
 
-  const selectFolder = useCallback(
+  const reveal = useCallback(
     (id: string) => {
-      dispatch({ type: "expand", id });
-      dispatch({ type: "select", id });
+      revealInTree(id);
     },
-    [dispatch],
+    [revealInTree],
   );
 
   if (chapterId === null || state.outline === null) {
@@ -95,7 +93,7 @@ function useManuscriptBreadcrumbSegments(chapterId: string | null): EditorBreadc
       current: isLast,
       onClick: clickable
         ? () => {
-            selectFolder(segment.id);
+            reveal(segment.id);
           }
         : undefined,
     };

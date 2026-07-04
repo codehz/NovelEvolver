@@ -1,12 +1,15 @@
 import { useMolecule } from "bunshi/react";
 import { useAtomValue, useSetAtom, useStore } from "jotai";
-import { useCallback, useMemo } from "react";
+import { useCallback, useMemo, useRef } from "react";
 
 import { SidebarHeaderActionButton } from "#app/components/workbench";
 import type { ManuscriptNode } from "#shared/rpc/projects-rpc";
 
+import { queryTreeRowById } from "../tree/tree-row-dom";
 import { TreePane } from "../tree/TreePane";
+import { useTreeRevealRequest } from "../tree/use-tree-reveal-request";
 import type { TreeDropResolveInput } from "../tree/use-tree-row-pointer-drag";
+import { manuscriptParentChain } from "./manuscript-tree";
 import { resolveManuscriptDropTarget } from "./manuscript-tree-placement-policy";
 import {
   buildManuscriptRenderProjection,
@@ -20,10 +23,11 @@ import { useManuscriptTreeSync } from "./state/use-manuscript-tree-sync";
 
 export function ManuscriptSectionBody() {
   useManuscriptTreeSync();
-  const { treeAtom } = useMolecule(manuscriptTreeMolecule);
+  const { treeAtom, onRevealRequest } = useMolecule(manuscriptTreeMolecule);
   const state = useAtomValue(treeAtom);
   const dispatch = useSetAtom(treeAtom);
   const store = useStore();
+  const listRef = useRef<HTMLUListElement>(null);
   const projection = useMemo(() => buildManuscriptRenderProjection(state), [state]);
   const {
     startCreating,
@@ -34,6 +38,46 @@ export function ManuscriptSectionBody() {
     deleteNode,
     moveNode,
   } = useManuscriptTreeActions();
+
+  useTreeRevealRequest({
+    onRevealRequest,
+    retryDeps: [projection.items],
+    reveal: (targetId) => {
+      const outline = state.outline;
+      if (outline === null) {
+        return "retry";
+      }
+      const targetNode = outline.nodes[targetId];
+      if (targetNode === undefined) {
+        return "done";
+      }
+
+      if (targetId === outline.rootId) {
+        listRef.current?.scrollIntoView({ block: "start" });
+        dispatch({ type: "expand", id: outline.rootId });
+        dispatch({ type: "select", id: outline.rootId });
+        return "done";
+      }
+
+      const ancestorIds = manuscriptParentChain(outline, targetId)
+        .map((node) => node.id)
+        .slice(0, -1);
+      for (const ancestorId of ancestorIds) {
+        dispatch({ type: "expand", id: ancestorId });
+      }
+
+      const itemIndex = projection.rowIndexById.get(targetId);
+      const item = itemIndex === undefined ? undefined : projection.items[itemIndex];
+      if (item === undefined) {
+        return "retry";
+      }
+
+      dispatch({ type: "select", id: targetId });
+      const row = listRef.current ? queryTreeRowById(listRef.current, targetId) : null;
+      row?.scrollIntoView({ block: "nearest" });
+      return "done";
+    },
+  });
 
   const resolveDropTarget = useCallback(
     (input: TreeDropResolveInput<ManuscriptNode["type"]>) => {
@@ -52,6 +96,7 @@ export function ManuscriptSectionBody() {
 
   return (
     <TreePane<ManuscriptRenderItem, ManuscriptNode["type"], ManuscriptMoveTarget>
+      listRef={listRef}
       headerActions={
         <>
           <SidebarHeaderActionButton
