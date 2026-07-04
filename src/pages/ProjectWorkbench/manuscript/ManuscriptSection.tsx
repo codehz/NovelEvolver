@@ -100,6 +100,12 @@ export function ManuscriptSectionBody() {
         height: TREE_DROP_INDICATOR_HEIGHT_PX,
       });
 
+      const createHighlightPreview = (startIndex: number, endIndex: number) => ({
+        kind: "highlight" as const,
+        top: startIndex * TREE_ROW_HEIGHT_PX,
+        height: (endIndex - startIndex + 1) * TREE_ROW_HEIGHT_PX,
+      });
+
       const resolveInsert = (rowId: string, visualIndex: number, placeAfter: boolean) => {
         const parentId = findManuscriptParentId(outline, rowId);
         if (parentId === null) {
@@ -173,11 +179,10 @@ export function ManuscriptSectionBody() {
         return hoveredNode.type !== "folder"
           ? null
           : {
-              preview: {
-                kind: "highlight",
-                top: hoveredRow.rowIndex * TREE_ROW_HEIGHT_PX,
-                height: TREE_ROW_HEIGHT_PX,
-              },
+              preview: createHighlightPreview(
+                hoveredRow.rowIndex,
+                findSubtreeEndIndex(hoveredRow.rowIndex),
+              ),
               target: { kind: "into", parentId: hoveredNode.id },
             };
       }
