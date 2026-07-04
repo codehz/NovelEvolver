@@ -1,104 +1,10 @@
 import { AutoTransition, effects, preset } from "@codehz/auto-transition";
-import { useMolecule } from "bunshi/react";
-import { useAtomValue } from "jotai";
-import { Fragment, useCallback } from "react";
+import { Fragment } from "react";
 
-import { SlotText } from "#app/components/SlotText";
 import { cn } from "#app/lib/cn";
-import { resourceBaseName, resourceLibraryDirPathPrefixes } from "#shared/resource-library-path";
 
-import { manuscriptParentChain } from "../../manuscript/manuscript-tree";
-import { manuscriptTreeMolecule } from "../../manuscript/state/manuscript-tree-molecule";
-import { resourceLibraryTreeMolecule } from "../../resource-library/state/resource-tree-molecule";
 import type { WorkbenchEditorTab } from "../state/types";
-
-type EditorBreadcrumbSegment = {
-  key: string;
-  label: string;
-  clickable: boolean;
-  current: boolean;
-  onClick?: () => void;
-};
-
-function useResourceBreadcrumbSegments(resourcePath: string | null): EditorBreadcrumbSegment[] {
-  const { revealInTree } = useMolecule(resourceLibraryTreeMolecule);
-
-  const reveal = useCallback(
-    (path: string) => {
-      revealInTree(path);
-    },
-    [revealInTree],
-  );
-
-  if (resourcePath === null) {
-    return [];
-  }
-
-  const segments: EditorBreadcrumbSegment[] = [
-    {
-      key: "segment:0",
-      label: "资源库",
-      clickable: true,
-      current: resourcePath === "",
-      onClick: () => {
-        reveal("");
-      },
-    },
-  ];
-  if (resourcePath === "") {
-    return segments;
-  }
-
-  const prefixes = resourceLibraryDirPathPrefixes(resourcePath);
-  for (const [index, prefix] of prefixes.entries()) {
-    const isLast = prefix === resourcePath;
-    segments.push({
-      key: `segment:${index + 1}`,
-      label: resourceBaseName(prefix),
-      clickable: !isLast,
-      current: isLast,
-      onClick: isLast
-        ? undefined
-        : () => {
-            reveal(prefix);
-          },
-    });
-  }
-  return segments;
-}
-
-function useManuscriptBreadcrumbSegments(chapterId: string | null): EditorBreadcrumbSegment[] {
-  const { treeAtom, revealInTree } = useMolecule(manuscriptTreeMolecule);
-  const state = useAtomValue(treeAtom);
-
-  const reveal = useCallback(
-    (id: string) => {
-      revealInTree(id);
-    },
-    [revealInTree],
-  );
-
-  if (chapterId === null || state.outline === null) {
-    return [];
-  }
-
-  const chain = manuscriptParentChain(state.outline, chapterId);
-  return chain.map((segment, index) => {
-    const isLast = index === chain.length - 1;
-    const clickable = segment.type === "folder" && !isLast;
-    return {
-      key: `segment:${index}`,
-      label: segment.title,
-      clickable,
-      current: isLast,
-      onClick: clickable
-        ? () => {
-            reveal(segment.id);
-          }
-        : undefined,
-    };
-  });
-}
+import { useEditorBreadcrumb } from "./use-editor-breadcrumb";
 
 const breadcrumbButtonClass = cn("max-w-48 truncate rounded px-1 py-0.5 text-xs");
 const breadcrumbCurrentButtonClass = cn("text-app-foreground");
@@ -108,13 +14,7 @@ const breadcrumbClickableButtonClass = cn(
 const breadcrumbCurrentTextClass = cn("max-w-48 truncate text-xs text-app-foreground");
 
 export function EditorBreadcrumb({ tab }: { tab: WorkbenchEditorTab }) {
-  const resourceSegments = useResourceBreadcrumbSegments(
-    tab.kind === "resource" ? tab.resourcePath : null,
-  );
-  const manuscriptSegments = useManuscriptBreadcrumbSegments(
-    tab.kind === "manuscript" ? tab.chapterId : null,
-  );
-  const segments = tab.kind === "resource" ? resourceSegments : manuscriptSegments;
+  const { ariaLabel, segments } = useEditorBreadcrumb(tab);
 
   if (segments.length === 0) {
     return null;
@@ -123,7 +23,7 @@ export function EditorBreadcrumb({ tab }: { tab: WorkbenchEditorTab }) {
   return (
     <AutoTransition
       as="nav"
-      aria-label={tab.kind === "resource" ? "资源路径" : "正文路径"}
+      aria-label={ariaLabel}
       className="flex min-w-0 items-center gap-1"
       transition={breadcrumbTransitionPreset}
     >
@@ -144,10 +44,10 @@ export function EditorBreadcrumb({ tab }: { tab: WorkbenchEditorTab }) {
               type="button"
               onClick={segment.onClick}
             >
-              <SlotText text={segment.label} />
+              {segment.label}
             </button>
           ) : (
-            <SlotText text={segment.label} className={breadcrumbCurrentTextClass} />
+            <span className={breadcrumbCurrentTextClass}>{segment.label}</span>
           )}
         </Fragment>
       ))}
