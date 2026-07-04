@@ -10,9 +10,13 @@ export type TreeRowDomData<RowType extends string = string> = {
 export function findTreeRowDataAtPoint<RowType extends string = string>(
   clientX: number,
   clientY: number,
+  root?: ParentNode | null,
 ): TreeRowDomData<RowType> | null {
   const target = document.elementFromPoint(clientX, clientY)?.closest<HTMLElement>(treeRowSelector);
   if (target === null || target === undefined) {
+    return null;
+  }
+  if (root !== null && root !== undefined && !root.contains(target)) {
     return null;
   }
   const rowId = target.dataset.treeRowId;

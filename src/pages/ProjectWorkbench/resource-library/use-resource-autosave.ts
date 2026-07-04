@@ -10,7 +10,6 @@ export function useTextAutosave(
   source: string,
 ): (content: string) => void {
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const latestRef = useRef<string>("");
   const writeRef = useRef(writeText);
   const targetRef = useRef(targetId);
 
@@ -27,8 +26,9 @@ export function useTextAutosave(
 
   return useCallback(
     (content: string) => {
-      latestRef.current = content;
-      if (targetRef.current == null || targetRef.current === "" || writeRef.current == null) {
+      const target = targetRef.current;
+      const write = writeRef.current;
+      if (target == null || target === "" || write == null) {
         return;
       }
       if (timerRef.current != null) {
@@ -36,12 +36,7 @@ export function useTextAutosave(
       }
       timerRef.current = setTimeout(() => {
         timerRef.current = null;
-        const target = targetRef.current;
-        const write = writeRef.current;
-        if (target == null || target === "" || write == null) {
-          return;
-        }
-        void write(target, latestRef.current).catch((error) => {
+        void write(target, content).catch((error) => {
           notificationApi.error(error instanceof Error ? error.message : "自动保存失败", {
             source,
           });

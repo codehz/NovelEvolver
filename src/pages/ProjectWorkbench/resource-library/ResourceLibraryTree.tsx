@@ -11,7 +11,7 @@ import { queryTreeRowById } from "../tree/tree-row-dom";
 import type { TreeRowDomData } from "../tree/tree-row-dom";
 import { buildTreeRowIndexMap, findSubtreeEndIndex } from "../tree/tree-row-helpers";
 import { TREE_ROW_HEIGHT_PX } from "../tree/tree-row-motion";
-import { resolveDropTargetFromRow } from "./drag-hit-test";
+import { isInvalidDropTarget, resolveDropTargetFromRow } from "./drag-hit-test";
 import { ResourceLibraryTreeRow } from "./ResourceLibraryTreeRow";
 import { resourceLibraryTreeMolecule } from "./state/resource-tree-molecule";
 import type { FlatRenderItem } from "./state/tree-data-reducer";
@@ -111,14 +111,21 @@ function ResourceLibraryTreeContent({
       clientX: number;
       clientY: number;
     }): TreeResolvedDrop<string> | null => {
+      if (snapshot === null) {
+        return null;
+      }
       const listHeight = renderItems.length * TREE_ROW_HEIGHT_PX;
       if (hoveredRow === null) {
+        if (isInvalidDropTarget(snapshot, start.rowId, start.rowType, "")) {
+          return null;
+        }
         return {
           preview: { kind: "highlight", top: 0, height: listHeight },
           target: "",
         };
       }
       const targetPath = resolveDropTargetFromRow(
+        snapshot,
         hoveredRow.rowId,
         hoveredRow.rowType,
         start.rowId,
@@ -151,7 +158,7 @@ function ResourceLibraryTreeContent({
         target: targetPath,
       };
     },
-    [renderItems, rowIndexByPath],
+    [renderItems, rowIndexByPath, snapshot],
   );
 
   const handleDragEnd = useCallback(() => {
@@ -190,6 +197,7 @@ function ResourceLibraryTreeContent({
           height={layout.height}
           index={index}
           item={item}
+          listRef={listRef}
           resolveDropTarget={resolveDropTarget}
           selectedPath={selectedPath}
           y={layout.y}

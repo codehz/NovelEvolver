@@ -13,8 +13,8 @@ import {
 
 import { useResourceLibrary } from "../../demo/branch/branch-scopes";
 import { useWorkbenchEditorActions } from "../../demo/editor/use-workbench-editor-actions";
+import { moveDestinationPath } from "../drag-hit-test";
 import { resourceLibraryTreeMolecule } from "./resource-tree-molecule";
-import { moveDestinationPath } from "./tree-data-reducer";
 import type { ResourceTreeEditingState, ResourceTreeSelection } from "./types";
 
 function parentPathForCreating(selected: ResourceTreeSelection | null): string {

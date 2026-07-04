@@ -98,13 +98,14 @@ export function useTreeRowPointerDrag<RowType extends string, DropTarget>({
         draggingRef.current = true;
         onDragStart();
       }
-      const hoveredRow = findTreeRowDataAtPoint<RowType>(event.clientX, event.clientY);
+      const listElement = listRef?.current ?? null;
+      const hoveredRow = findTreeRowDataAtPoint<RowType>(event.clientX, event.clientY, listElement);
       onDragMove(
         resolveDropTarget({
           start,
           hoveredRow,
           hoverZone: hoveredRow === null ? null : resolveHoverZone(event.clientY, hoveredRow.rect),
-          listRect: listRef?.current?.getBoundingClientRect() ?? null,
+          listRect: listElement?.getBoundingClientRect() ?? null,
           clientX: event.clientX,
           clientY: event.clientY,
         }),
@@ -137,13 +138,21 @@ export function useTreeRowPointerDrag<RowType extends string, DropTarget>({
     (event) => {
       const start = pointerStartRef.current;
       pointerStartRef.current = null;
+      const wasDragging = draggingRef.current;
       draggingRef.current = false;
-      if (start !== null && event.currentTarget.hasPointerCapture(event.pointerId)) {
+      if (
+        start !== null &&
+        start.pointerId === event.pointerId &&
+        event.currentTarget.hasPointerCapture(event.pointerId)
+      ) {
         event.currentTarget.releasePointerCapture(event.pointerId);
       }
       onDragMove(null);
+      if (wasDragging) {
+        onDragEnd();
+      }
     },
-    [onDragMove],
+    [onDragEnd, onDragMove],
   );
 
   return {

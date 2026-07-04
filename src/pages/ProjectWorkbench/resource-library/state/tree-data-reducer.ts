@@ -1,11 +1,9 @@
-import {
-  remapResourcePath,
-  resourceBaseName,
-  resourceParentPath,
-} from "#shared/resource-library-path";
+import { remapResourcePath, resourceParentPath } from "#shared/resource-library-path";
 import type { ResourceNode, ResourceTreeSnapshot } from "#shared/rpc/projects-rpc";
 
 import type { TreeResolvedDrop } from "../../tree/tree-drag";
+import { findSubtreeEndIndex } from "../../tree/tree-row-helpers";
+import { isInvalidDropTarget } from "../drag-hit-test";
 import type { ResourceTreeEditingState, ResourceTreeState } from "./types";
 import { initialResourceTreeState } from "./types";
 
@@ -329,7 +327,17 @@ export function resourceTreeReducer(
         ...state,
         drag: {
           ...state.drag,
-          resolved: action.resolved,
+          resolved:
+            action.resolved !== null &&
+            state.snapshot !== null &&
+            !isInvalidDropTarget(
+              state.snapshot,
+              state.drag.sourcePath,
+              state.drag.sourceType,
+              action.resolved.target,
+            )
+              ? action.resolved
+              : null,
         },
       };
     case "dragEnd":
@@ -459,7 +467,7 @@ export function buildFlatRenderItems(state: ResourceTreeState): FlatRenderItem[]
       }
     }
     if (lastFolderIndex >= 0) {
-      insertAt = lastFolderIndex + 1;
+      insertAt = findSubtreeEndIndex(flatItems, lastFolderIndex) + 1;
       depth = flatItems[lastFolderIndex]!.depth;
     } else if (editing.parentPath !== "") {
       const parentIndex = flatItems.findIndex((item) => item.path === editing.parentPath);
@@ -481,9 +489,4 @@ export function buildFlatRenderItems(state: ResourceTreeState): FlatRenderItem[]
   });
 
   return items;
-}
-
-export function moveDestinationPath(sourcePath: string, targetPath: string): string {
-  const sourceName = resourceBaseName(sourcePath);
-  return targetPath === "" ? sourceName : `${targetPath}/${sourceName}`;
 }

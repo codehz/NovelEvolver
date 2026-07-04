@@ -1,3 +1,5 @@
+import type { RefObject } from "react";
+
 import { cn } from "#app/lib/cn";
 
 import type { TreeResolvedDrop } from "../tree/tree-drag";
@@ -13,6 +15,7 @@ type ResourceLibraryTreeRowProps = {
   animateEnter: boolean;
   selectedPath: string | null;
   dragging: boolean;
+  listRef: RefObject<HTMLUListElement | null>;
   resolveDropTarget: (
     input: TreeDropResolveInput<"file" | "folder">,
   ) => TreeResolvedDrop<string> | null;
@@ -39,6 +42,7 @@ export function ResourceLibraryTreeRow({
   animateEnter,
   selectedPath,
   dragging,
+  listRef,
   resolveDropTarget,
   onActivate,
   onCancelEditing,
@@ -93,6 +97,7 @@ export function ResourceLibraryTreeRow({
             }
           : null
       }
+      listRef={listRef}
       resolveDropTarget={resolveDropTarget}
       onActivate={() => {
         if (item.path !== null) {
