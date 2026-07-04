@@ -12,6 +12,7 @@
   --app-region-no-drag: no-drag;
 
   --color-app-foreground: var(--color-ctp-text);
+  --color-app-muted: var(--color-ctp-subtext0);
   --color-app-background: var(--color-ctp-base);
   --color-app-surface: var(--color-ctp-mantle);
   --color-window-chrome: var(--color-ctp-crust);
@@ -35,7 +36,7 @@
   --spacing-workbench-sidebar: 16rem;
   --spacing-workbench-auxiliary: 20rem;
   --spacing-workbench-tab: 2.125rem;
-  --spacing-workbench-status-bar: 1.375rem;
+  --spacing-status-bar: 1.375rem;
 
   --color-notification-surface: var(--color-ctp-mantle);
   --color-notification-border: var(--color-ctp-mauve);
@@ -76,15 +77,9 @@
   --color-tree-drop-target: color-mix(in srgb, var(--color-ctp-mauve) 20%, transparent);
   --color-tree-drop-indicator: var(--color-ctp-mauve);
   --color-workbench-panel-header: var(--color-ctp-mantle);
-  --color-workbench-status-bar-foreground: var(--color-ctp-text);
-  --color-workbench-status-bar-muted: var(--color-ctp-subtext0);
-  --color-workbench-scrollbar-thumb: color-mix(in srgb, var(--color-ctp-overlay1) 72%, transparent);
-  --color-workbench-scrollbar-thumb-hover: color-mix(
-    in srgb,
-    var(--color-ctp-overlay2) 88%,
-    transparent
-  );
-  --spacing-workbench-scrollbar: 0.75rem;
+  --color-scrollbar-thumb: color-mix(in srgb, var(--color-ctp-overlay1) 72%, transparent);
+  --color-scrollbar-thumb-hover: color-mix(in srgb, var(--color-ctp-overlay2) 88%, transparent);
+  --spacing-scrollbar: 0.75rem;
   --spacing-pte-line: 1.5rem;
   --spacing-pte-gutter: 0.75rem;
   --spacing-pte-gutter-inset: 1rem;

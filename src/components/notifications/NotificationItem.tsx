@@ -63,7 +63,7 @@ export function NotificationItem({ notification, variant, ref }: NotificationIte
       />
       <div className="flex min-w-0 flex-1 flex-col gap-1.5">
         <div className="min-w-0">
-          {hasSource ? <p className="text-workbench-status-bar-muted">{source}</p> : null}
+          {hasSource ? <p className="text-app-muted">{source}</p> : null}
           <p className={cn("wrap-break-word text-app-foreground", isCompactRow && "leading-6")}>
             {message}
           </p>

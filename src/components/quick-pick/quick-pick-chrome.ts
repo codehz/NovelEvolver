@@ -14,7 +14,7 @@ export const quickPickPanelContentClass = cn("flex max-h-quick-pick-max-height w
 export const quickPickSearchWrapClass = cn("shrink-0 px-2 pt-2 pb-1.5");
 
 export const quickPickSearchInputClass = cn(
-  "w-full rounded-sm border border-badge-background bg-workbench-editor px-2 py-1 text-xs leading-tight text-app-foreground outline-none app-region-no-drag placeholder:text-workbench-status-bar-muted",
+  "w-full rounded-sm border border-badge-background bg-workbench-editor px-2 py-1 text-xs leading-tight text-app-foreground outline-none app-region-no-drag placeholder:text-app-muted",
 );
 
 export const quickPickListClass = cn(
@@ -35,7 +35,7 @@ export const quickPickRowButtonContentClass = cn(
 
 export const quickPickRowEmphasisClass = cn("text-quick-pick-emphasis");
 
-export const quickPickEmptyClass = cn("rounded-sm px-2 py-1 text-workbench-status-bar-muted");
+export const quickPickEmptyClass = cn("rounded-sm px-2 py-1 text-app-muted");
 
 /** 列表主项与额外项之间的分隔线，颜色与输入框边框一致。 */
 export const quickPickListDividerClass = cn("border-t border-badge-background");
@@ -45,5 +45,5 @@ export const quickPickTextInputWrapClass = cn("shrink-0 px-2 pt-2");
 export const quickPickTextInputClass = quickPickSearchInputClass;
 
 export const quickPickFooterHintClass = cn(
-  "shrink-0 border-t border-badge-background px-3 py-2 text-xs text-workbench-status-bar-muted",
+  "shrink-0 border-t border-badge-background px-3 py-2 text-xs text-app-muted",
 );

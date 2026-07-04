@@ -16,5 +16,5 @@ export const statusBarItemInfoNumericClass = cn(statusBarItemInfoClass, "tabular
 
 /** Left-side flex message / progress text. */
 export const statusBarMessageClass = cn(
-  "flex min-w-0 flex-1 items-center truncate px-2.5 text-workbench-status-bar-muted",
+  "flex min-w-0 flex-1 items-center truncate px-2.5 text-app-muted",
 );

@@ -147,7 +147,7 @@ function TitleBar() {
 
 function StatusBar() {
   return (
-    <footer className="relative flex h-workbench-status-bar shrink-0 items-stretch text-xs text-workbench-status-bar-foreground">
+    <footer className="relative flex h-status-bar shrink-0 items-stretch text-xs text-app-foreground">
       <StatusBarLeftPortalTarget
         as={Animatable}
         className="flex min-w-0 flex-1 items-stretch overflow-hidden"

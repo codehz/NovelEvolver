@@ -304,7 +304,7 @@ function QuickPickListPanelBody({
                       />
                       <span className="min-w-0 flex-1 truncate font-medium">{item.label}</span>
                       {item.detail ? (
-                        <span className="shrink-0 font-mono text-xs text-workbench-status-bar-muted">
+                        <span className="shrink-0 font-mono text-xs text-app-muted">
                           {item.detail}
                         </span>
                       ) : null}

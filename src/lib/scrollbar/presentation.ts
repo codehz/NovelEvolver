@@ -16,19 +16,17 @@ export const scrollbarOverlayRootClass = cn("pointer-events-none absolute inset-
 export const scrollbarStickyRailClass = cn("pointer-events-none sticky top-0 z-10 h-0 w-full");
 
 export const scrollbarTrackClass = cn(
-  "pointer-events-auto absolute top-0 right-0 z-10 w-workbench-scrollbar",
+  "pointer-events-auto absolute top-0 right-0 z-10 w-scrollbar",
 );
 
 export const scrollbarThumbClass = cn(
-  "absolute inset-x-0 top-0 rounded-none bg-workbench-scrollbar-thumb opacity-0",
+  "absolute inset-x-0 top-0 rounded-none bg-scrollbar-thumb opacity-0",
   "transition-opacity delay-400 duration-300 ease-out",
 );
 
 export const scrollbarThumbPeekClass = cn("opacity-40 delay-0");
 
-export const scrollbarThumbActiveClass = cn(
-  "bg-workbench-scrollbar-thumb-hover opacity-100 delay-0",
-);
+export const scrollbarThumbActiveClass = cn("bg-scrollbar-thumb-hover opacity-100 delay-0");
 
 export function scrollbarThumbClassName(snapshot: ScrollbarControllerSnapshot): string {
   return cn(

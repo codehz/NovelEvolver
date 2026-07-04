@@ -36,7 +36,7 @@ export function NotificationCenterPanel({
               notificationIconButtonClass,
               items.length > 0
                 ? "text-notification-action"
-                : "cursor-not-allowed text-workbench-status-bar-muted opacity-50",
+                : "cursor-not-allowed text-app-muted opacity-50",
             )}
             type="button"
             disabled={items.length === 0}
