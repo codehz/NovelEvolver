@@ -2,19 +2,11 @@ import { Link } from "wouter";
 
 import { cn } from "#app/lib/cn";
 
-import type { ActivityViewId } from "../types";
-
 type ActivityItem = {
-  id: ActivityViewId;
+  id: string;
   label: string;
   iconClass: string;
 };
-
-const primaryItems: ActivityItem[] = [
-  { id: "explorer", label: "资源管理器", iconClass: cn("icon-[codicon--files]") },
-  { id: "search", label: "搜索", iconClass: cn("icon-[codicon--search]") },
-  { id: "scm", label: "源代码管理", iconClass: cn("icon-[codicon--source-control]") },
-];
 
 const activityButtonClass = cn(
   "flex h-activity-bar-item w-activity-bar shrink-0 items-center justify-center border-0 bg-transparent p-2.5",
@@ -28,13 +20,15 @@ const activityIconClass = cn(
 );
 
 export function ActivityBar({
+  items,
   activeView,
   primarySidebarVisible,
   onSelectView,
 }: {
-  activeView: ActivityViewId;
+  items: readonly ActivityItem[];
+  activeView: string | null;
   primarySidebarVisible: boolean;
-  onSelectView: (view: ActivityViewId) => void;
+  onSelectView: (viewId: string) => void;
 }) {
   return (
     <nav
@@ -42,7 +36,7 @@ export function ActivityBar({
       className="flex h-full min-h-0 w-activity-bar shrink-0 flex-col bg-workbench-activity-bar"
     >
       <div className="flex flex-col">
-        {primaryItems.map((item) => {
+        {items.map((item) => {
           const isActive = primarySidebarVisible && activeView === item.id;
           return (
             <button

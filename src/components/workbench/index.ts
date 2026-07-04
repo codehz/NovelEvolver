@@ -1,4 +1,4 @@
-export type { ActivityViewId } from "./types";
+export type { WorkbenchPrimaryView } from "./types";
 export { WorkbenchLayout, type WorkbenchLayoutProps } from "./layout/WorkbenchLayout";
 export {
   SidebarViewSection,

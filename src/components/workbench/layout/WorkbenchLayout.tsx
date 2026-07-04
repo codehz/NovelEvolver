@@ -10,7 +10,7 @@ import { cn } from "#app/lib/cn";
 
 import { TitleBarAuxiliaryToggle } from "../titlebar/TitleBarAuxiliaryToggle";
 import { TitleBarPrimarySidebarToggle } from "../titlebar/TitleBarPrimarySidebarToggle";
-import type { ActivityViewId } from "../types";
+import type { WorkbenchPrimaryView } from "../types";
 import { ActivityBar } from "./ActivityBar";
 import { AuxiliarySidebar } from "./AuxiliarySidebar";
 import { PrimarySidebar } from "./PrimarySidebar";
@@ -46,6 +46,24 @@ const resizeHandleClass = cn(
   "opacity-0 transition-opacity delay-0 duration-150",
   "hover:opacity-100 hover:delay-300 focus-visible:opacity-100 focus-visible:delay-150",
 );
+
+function resolveDefaultActiveViewId(
+  primaryViews: readonly WorkbenchPrimaryView[],
+  defaultActiveViewId?: string,
+) {
+  if (primaryViews.length === 0) {
+    return null;
+  }
+
+  if (defaultActiveViewId) {
+    const matchedView = primaryViews.find((view) => view.id === defaultActiveViewId);
+    if (matchedView) {
+      return matchedView.id;
+    }
+  }
+
+  return primaryViews[0]!.id;
+}
 
 function resolveWorkbenchLayout(
   preferences: LayoutPreferences,
@@ -142,15 +160,23 @@ function ResizeHandle({
 }
 
 export type WorkbenchLayoutProps = {
-  primarySidebar: Partial<Record<ActivityViewId, ReactNode>>;
+  primaryViews: readonly WorkbenchPrimaryView[];
   editor: ReactNode;
   auxiliary?: ReactNode;
+  defaultActiveViewId?: string;
 };
 
-export function WorkbenchLayout({ primarySidebar, editor, auxiliary }: WorkbenchLayoutProps) {
-  const [activeView, setActiveView] = useState<ActivityViewId>("explorer");
+export function WorkbenchLayout({
+  primaryViews,
+  editor,
+  auxiliary,
+  defaultActiveViewId,
+}: WorkbenchLayoutProps) {
+  const [activeViewId, setActiveViewId] = useState<string | null>(() =>
+    resolveDefaultActiveViewId(primaryViews, defaultActiveViewId),
+  );
   const [layoutPreferences, setLayoutPreferences] = useState<LayoutPreferences>({
-    primaryVisible: true,
+    primaryVisible: primaryViews.length > 0,
     primaryWidth: DEFAULT_PRIMARY_WIDTH,
     auxiliaryVisible: auxiliary != null,
     auxiliaryWidth: DEFAULT_AUXILIARY_WIDTH,
@@ -164,8 +190,17 @@ export function WorkbenchLayout({ primarySidebar, editor, auxiliary }: Workbench
   const dragCleanupRef = useRef<(() => void) | null>(null);
 
   const hasAuxiliary = auxiliary != null;
-  const resolvedLayout = resolveWorkbenchLayout(layoutPreferences, containerWidth);
-  const primarySidebarVisible = resolvedLayout.primaryVisible;
+  const hasPrimaryViews = primaryViews.length > 0;
+  const activePrimaryView = primaryViews.find((view) => view.id === activeViewId) ?? null;
+  const canShowPrimary = hasPrimaryViews && activePrimaryView != null;
+  const resolvedLayout = resolveWorkbenchLayout(
+    {
+      ...layoutPreferences,
+      primaryVisible: canShowPrimary && layoutPreferences.primaryVisible,
+    },
+    containerWidth,
+  );
+  const primarySidebarVisible = canShowPrimary && resolvedLayout.primaryVisible;
   const auxiliaryVisible = hasAuxiliary && resolvedLayout.auxiliaryVisible;
 
   useEffect(() => {
@@ -192,6 +227,17 @@ export function WorkbenchLayout({ primarySidebar, editor, auxiliary }: Workbench
   }, []);
 
   useEffect(() => {
+    const nextActiveViewId =
+      activeViewId != null && primaryViews.some((view) => view.id === activeViewId)
+        ? activeViewId
+        : resolveDefaultActiveViewId(primaryViews, defaultActiveViewId);
+
+    if (nextActiveViewId !== activeViewId) {
+      setActiveViewId(nextActiveViewId);
+    }
+  }, [activeViewId, defaultActiveViewId, primaryViews]);
+
+  useEffect(() => {
     if (hasAuxiliary) {
       return;
     }
@@ -207,23 +253,55 @@ export function WorkbenchLayout({ primarySidebar, editor, auxiliary }: Workbench
   }, [hasAuxiliary]);
 
   useEffect(() => {
+    if (hasPrimaryViews) {
+      return;
+    }
+
+    setLayoutPreferences((value) =>
+      value.primaryVisible
+        ? {
+            ...value,
+            primaryVisible: false,
+          }
+        : value,
+    );
+  }, [hasPrimaryViews]);
+
+  useEffect(() => {
     return () => {
       dragCleanupRef.current?.();
     };
   }, []);
 
-  function handleSelectView(view: ActivityViewId) {
-    if (view === activeView && primarySidebarVisible) {
+  function handleSelectView(viewId: string) {
+    if (viewId === activeViewId && primarySidebarVisible) {
       setLayoutPreferences((value) => ({
         ...value,
         primaryVisible: false,
       }));
       return;
     }
-    setActiveView(view);
+
+    setActiveViewId(viewId);
     setLayoutPreferences((value) => ({
       ...value,
       primaryVisible: true,
+      priority: "primary",
+    }));
+  }
+
+  function handlePrimarySidebarToggle() {
+    if (!hasPrimaryViews) {
+      return;
+    }
+
+    if (activeViewId == null) {
+      setActiveViewId(resolveDefaultActiveViewId(primaryViews, defaultActiveViewId));
+    }
+
+    setLayoutPreferences((value) => ({
+      ...value,
+      primaryVisible: !primarySidebarVisible,
       priority: "primary",
     }));
   }
@@ -287,20 +365,14 @@ export function WorkbenchLayout({ primarySidebar, editor, auxiliary }: Workbench
     window.addEventListener("pointercancel", cleanup, { once: true });
   }
 
-  const primaryContent = primarySidebar[activeView];
-
   return (
     <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
-      <TitleBarPrimarySidebarToggle
-        visible={primarySidebarVisible}
-        onToggle={() =>
-          setLayoutPreferences((value) => ({
-            ...value,
-            primaryVisible: !primarySidebarVisible,
-            priority: "primary",
-          }))
-        }
-      />
+      {hasPrimaryViews ? (
+        <TitleBarPrimarySidebarToggle
+          visible={primarySidebarVisible}
+          onToggle={handlePrimarySidebarToggle}
+        />
+      ) : null}
       {hasAuxiliary ? (
         <TitleBarAuxiliaryToggle
           visible={auxiliaryVisible}
@@ -315,13 +387,18 @@ export function WorkbenchLayout({ primarySidebar, editor, auxiliary }: Workbench
       ) : null}
       <div ref={containerRef} className="relative flex min-h-0 flex-1 overflow-hidden">
         <ActivityBar
-          activeView={activeView}
+          items={primaryViews.map((view) => ({
+            id: view.id,
+            label: view.title,
+            iconClass: view.iconClass,
+          }))}
+          activeView={activeViewId}
           primarySidebarVisible={primarySidebarVisible}
           onSelectView={handleSelectView}
         />
-        {primarySidebarVisible ? (
-          <PrimarySidebar activeView={activeView} width={resolvedLayout.primaryWidth}>
-            {primaryContent}
+        {primarySidebarVisible && activePrimaryView ? (
+          <PrimarySidebar title={activePrimaryView.title} width={resolvedLayout.primaryWidth}>
+            {activePrimaryView.content}
           </PrimarySidebar>
         ) : null}
         <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">{editor}</div>

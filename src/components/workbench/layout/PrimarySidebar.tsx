@@ -3,31 +3,24 @@ import type { ReactNode } from "react";
 import { cn } from "#app/lib/cn";
 
 import { sidebarHeaderActionClass, sidebarHeaderIconClass } from "../sidebar/sidebar-header-chrome";
-import type { ActivityViewId } from "../types";
-
-const viewTitles: Record<ActivityViewId, string> = {
-  explorer: "资源管理器",
-  search: "搜索",
-  scm: "源代码管理",
-};
 
 export function PrimarySidebar({
-  activeView,
+  title,
   width,
   children,
 }: {
-  activeView: ActivityViewId;
+  title: string;
   width: number;
   children?: ReactNode;
 }) {
   return (
     <aside
-      aria-label={viewTitles[activeView]}
+      aria-label={title}
       className="flex min-h-0 w-workbench-sidebar shrink-0 flex-col bg-workbench-sidebar"
       style={{ width }}
     >
       <header className="flex h-workbench-tab shrink-0 items-center justify-between gap-2 px-3 text-xs font-semibold tracking-wide uppercase">
-        <span className="truncate">{viewTitles[activeView]}</span>
+        <span className="truncate">{title}</span>
         <div className="flex shrink-0 items-center gap-0.5">
           <button aria-label="视图操作（演示）" className={sidebarHeaderActionClass} type="button">
             <span

@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 
-import type { ActivityViewId } from "#app/components/workbench";
+import type { WorkbenchPrimaryView } from "#app/components/workbench";
+import { cn } from "#app/lib/cn";
 
 import { EditorArea } from "./editor/EditorArea";
 import { AuxiliaryPanelDemo } from "./sidebars/auxiliary-demo";
@@ -9,17 +10,33 @@ import {
   ScmSidebarDemo,
   SearchSidebarDemo,
 } from "./sidebars/primary-sidebar-demo";
+
 export function buildWorkbenchDemoSlots(projectLabel: string): {
-  primarySidebar: Partial<Record<ActivityViewId, ReactNode>>;
+  primaryViews: WorkbenchPrimaryView[];
   editor: ReactNode;
   auxiliary: ReactNode;
 } {
   return {
-    primarySidebar: {
-      explorer: <ExplorerSidebarDemo projectLabel={projectLabel} />,
-      search: <SearchSidebarDemo />,
-      scm: <ScmSidebarDemo />,
-    },
+    primaryViews: [
+      {
+        id: "explorer",
+        title: "资源管理器",
+        iconClass: cn("icon-[codicon--files]"),
+        content: <ExplorerSidebarDemo projectLabel={projectLabel} />,
+      },
+      {
+        id: "search",
+        title: "搜索",
+        iconClass: cn("icon-[codicon--search]"),
+        content: <SearchSidebarDemo />,
+      },
+      {
+        id: "scm",
+        title: "源代码管理",
+        iconClass: cn("icon-[codicon--source-control]"),
+        content: <ScmSidebarDemo />,
+      },
+    ],
     editor: <EditorArea />,
     auxiliary: <AuxiliaryPanelDemo />,
   };
