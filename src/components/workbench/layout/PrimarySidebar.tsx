@@ -31,7 +31,7 @@ export function PrimarySidebar({
     >
       <header
         className={cn(
-          "flex h-workbench-tab shrink-0 items-center justify-between gap-2 pr-3 pl-primary-sidebar-offset",
+          "flex h-workbench-tab shrink-0 items-center justify-between gap-2 pr-3 pl-5.5",
         )}
       >
         <SlotText text={title} className={primarySidebarChromeTitleTextClass} />

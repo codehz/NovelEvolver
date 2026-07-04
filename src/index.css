@@ -26,29 +26,19 @@
   --text-titlebar: 0.75rem;
   --text-activity-bar-icon: 1.375rem;
   --text-2xs: 0.6875rem;
-  --spacing-primary-sidebar-offset: 1.375rem;
   --spacing-titlebar: 2.25rem;
-  --spacing-titlebar-button: 3rem;
-  --spacing-mac-traffic-light-offset: 4.5rem;
   --spacing-activity-bar: 3rem;
-  --spacing-activity-bar-item: 3rem;
   --spacing-workbench-sidebar: 16rem;
   --spacing-workbench-auxiliary: 20rem;
   --spacing-workbench-tab: 2.125rem;
-  --spacing-status-bar: 1.375rem;
 
   --shadow-notification-item-divider: inset 0 1px 0 0 var(--color-badge-background);
   --spacing-notification-panel: 26rem;
-  --spacing-notification-panel-max-height: 22rem;
-  --spacing-notification-edge-inset: 0.75rem;
-  --spacing-notification-above-statusbar: 2.215rem;
   --anchor-notification-bell: --notification-bell;
-  --spacing-notification-stack-offset: 0.5rem;
   --z-index-notification: 40;
 
   --shadow-quick-pick: 0 8px 24px color-mix(in srgb, var(--color-ctp-crust) 55%, transparent);
   --spacing-quick-pick: 36rem;
-  --spacing-quick-pick-max-height: 20rem;
   --z-index-quick-pick: 50;
 
   --spacing-scrollbar: 0.75rem;

@@ -107,12 +107,7 @@ function TitleBar() {
         titlebarChromeOpacityClass,
       )}
     >
-      <div
-        className={cn(
-          "flex min-w-0 items-center gap-2 self-center",
-          isMac && "pl-mac-traffic-light-offset",
-        )}
-      >
+      <div className={cn("flex min-w-0 items-center gap-2 self-center", isMac && "pl-18")}>
         <div className="flex size-5 items-center justify-center rounded-sm bg-badge-background text-2xs font-semibold text-badge-foreground app-region-no-drag">
           NE
         </div>
@@ -147,7 +142,7 @@ function TitleBar() {
 
 function StatusBar() {
   return (
-    <footer className="relative flex h-status-bar shrink-0 items-stretch text-xs text-app-foreground">
+    <footer className="relative flex h-5.5 shrink-0 items-stretch text-xs text-app-foreground">
       <StatusBarLeftPortalTarget
         as={Animatable}
         className="flex min-w-0 flex-1 items-stretch overflow-hidden"

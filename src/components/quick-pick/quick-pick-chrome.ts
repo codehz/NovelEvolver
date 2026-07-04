@@ -9,7 +9,7 @@ export const quickPickPanelClass = cn(
 
 export const quickPickPanelHeightShellClass = cn("w-full overflow-hidden");
 
-export const quickPickPanelContentClass = cn("flex max-h-quick-pick-max-height w-full flex-col");
+export const quickPickPanelContentClass = cn("flex max-h-80 w-full flex-col");
 
 export const quickPickSearchWrapClass = cn("shrink-0 px-2 pt-2 pb-1.5");
 

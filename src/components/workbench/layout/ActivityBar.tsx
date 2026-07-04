@@ -9,7 +9,7 @@ type ActivityItem = {
 };
 
 const activityButtonClass = cn(
-  "flex h-activity-bar-item w-activity-bar shrink-0 items-center justify-center border-0 bg-transparent p-2.5",
+  "flex size-activity-bar shrink-0 items-center justify-center border-0 bg-transparent p-2.5",
   "text-ctp-overlay0 transition-colors duration-150",
   "hover:text-ctp-mauve",
   "focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-badge-background",

@@ -15,14 +15,12 @@ export const notificationPanelClass = cn(
 
 export const notificationPanelHeightShellClass = cn("w-full overflow-hidden");
 
-export const notificationPanelContentClass = cn(
-  "flex max-h-notification-panel-max-height min-h-0 w-full flex-col",
-);
+export const notificationPanelContentClass = cn("flex max-h-88 min-h-0 w-full flex-col");
 
 export const notificationCenterPopoverPanelClass = cn(
   "fixed inset-[unset] m-0 min-w-notification-panel position-anchor-notification-bell",
-  "bottom-[calc(anchor(top)+var(--spacing-notification-edge-inset))]",
-  "right-[calc(anchor(right)+var(--spacing-notification-edge-inset))]",
+  "bottom-[calc(anchor(top)+0.75rem)]",
+  "right-[calc(anchor(right)+0.75rem)]",
   "translate-y-1 opacity-0 transition transition-discrete duration-220 ease-[cubic-bezier(0.33,1,0.68,1)]",
   "open:translate-y-0 open:opacity-100",
   "open:starting:translate-y-1 open:starting:opacity-0",
