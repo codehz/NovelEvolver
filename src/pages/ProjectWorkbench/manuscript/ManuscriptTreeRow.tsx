@@ -1,14 +1,11 @@
-import { motion } from "motion/react";
 import type { RefObject } from "react";
 
 import { cn } from "#app/lib/cn";
 import type { ManuscriptNode } from "#shared/rpc/projects-rpc";
 
-import type { TreeResolvedDrop, TreeRowHoverZone } from "../tree/tree-drag";
-import type { TreeRowDomData } from "../tree/tree-row-dom";
-import { treeRowPaddingVariants, treeRowVariants } from "../tree/tree-row-motion";
-import { TreeInlineInput } from "../tree/TreeInlineInput";
-import { useTreeRowPointerDrag } from "../tree/use-tree-row-pointer-drag";
+import type { TreeResolvedDrop } from "../tree/tree-drag";
+import { TreeRowShell } from "../tree/TreeRowShell";
+import type { TreeDropResolveInput } from "../tree/use-tree-row-pointer-drag";
 import type { ManuscriptEditingState, ManuscriptMoveTarget } from "./state/types";
 
 type ManuscriptTreeRowProps = {
@@ -25,13 +22,9 @@ type ManuscriptTreeRowProps = {
   editing: ManuscriptEditingState | null;
   dragging: boolean;
   listRef: RefObject<HTMLUListElement | null>;
-  resolveDropTarget: (input: {
-    start: { rowId: string; rowType: ManuscriptNode["type"] };
-    hoveredRow: TreeRowDomData<ManuscriptNode["type"]> | null;
-    hoverZone: TreeRowHoverZone | null;
-    listRect: DOMRect | null;
-    clientY: number;
-  }) => TreeResolvedDrop<ManuscriptMoveTarget> | null;
+  resolveDropTarget: (
+    input: TreeDropResolveInput<ManuscriptNode["type"]>,
+  ) => TreeResolvedDrop<ManuscriptMoveTarget> | null;
   onActivate: (id: string, type: ManuscriptNode["type"], title: string) => void;
   onCancelEditing: () => void;
   onSubmitEditing: (editing: ManuscriptEditingState, title: string) => Promise<void>;
@@ -69,7 +62,6 @@ export function ManuscriptTreeRow({
   onDragMove,
   onDragEnd,
 }: ManuscriptTreeRowProps) {
-  const isEditing = editing !== null;
   const inputAriaLabel =
     editing?.mode === "creating"
       ? type === "folder"
@@ -78,97 +70,46 @@ export function ManuscriptTreeRow({
       : type === "folder"
         ? "重命名文件夹"
         : "重命名章节";
-  const rowClasses = cn(
-    "flex size-full items-center gap-1 overflow-hidden text-left text-app-foreground",
-    !dragging && (selected || isEditing)
-      ? "bg-workbench-tab-active"
-      : !dragging && "hover:bg-workbench-tab-active/60",
-  );
-  const pointerHandlers = useTreeRowPointerDrag({
-    disabled: isEditing || id === null,
-    dragSource: id === null ? null : { rowId: id, rowType: type },
-    listRef,
-    onActivate: () => {
-      if (id !== null) {
-        onActivate(id, type, title);
-      }
-    },
-    onDragStart: () => {
-      if (id !== null) {
-        onDragStart(id, type);
-      }
-    },
-    onDragMove,
-    onDragEnd,
-    resolveDropTarget,
-  });
-
-  const rowContent = (
-    <>
-      <span aria-hidden="true" className="flex w-4 shrink-0 items-center justify-center text-sm">
-        {type === "folder" ? (
-          <span
-            className={cn(
-              "icon-[codicon--chevron-right]",
-              "motion-safe:transition-transform motion-safe:duration-220 motion-safe:ease-[cubic-bezier(0.22,1,0.36,1)]",
-              expanded && "rotate-90",
-            )}
-          />
-        ) : null}
-      </span>
-      <span aria-hidden="true" className={cn(rowIcon(type, expanded), "shrink-0 text-base")} />
-      {editing ? (
-        <TreeInlineInput
-          ariaLabel={inputAriaLabel}
-          initialValue={editing.mode === "renaming" ? title : ""}
-          onCancel={onCancelEditing}
-          onConfirm={(nextTitle) => {
-            void onSubmitEditing(editing, nextTitle);
-          }}
-        />
-      ) : (
-        <span className="truncate text-xs leading-5">{title}</span>
-      )}
-    </>
-  );
-
   return (
-    <motion.li
-      className="absolute inset-x-0 z-10"
-      role="none"
-      style={{ top: 0, height }}
-      variants={treeRowVariants}
-      custom={y}
-      initial={animateEnter ? "hidden" : false}
-      animate="visible"
-      exit="exit"
-    >
-      {isEditing || id === null ? (
-        <motion.div
-          className={rowClasses}
-          variants={treeRowPaddingVariants}
-          custom={depth}
-          initial={false}
-          animate="visible"
-        >
-          {rowContent}
-        </motion.div>
-      ) : (
-        <motion.button
-          className={rowClasses}
-          data-tree-row-id={id}
-          data-tree-row-index={index}
-          data-tree-row-type={type}
-          type="button"
-          variants={treeRowPaddingVariants}
-          custom={depth}
-          initial={false}
-          animate="visible"
-          {...pointerHandlers}
-        >
-          {rowContent}
-        </motion.button>
-      )}
-    </motion.li>
+    <TreeRowShell<ManuscriptNode["type"], ManuscriptMoveTarget>
+      rowId={id}
+      rowIndex={index}
+      rowType={type}
+      depth={depth}
+      expanded={expanded}
+      y={y}
+      height={height}
+      animateEnter={animateEnter}
+      selected={selected}
+      dragging={dragging}
+      iconClassName={rowIcon(type, expanded)}
+      label={title}
+      input={
+        editing
+          ? {
+              ariaLabel: inputAriaLabel,
+              initialValue: editing.mode === "renaming" ? title : "",
+              onCancel: onCancelEditing,
+              onConfirm: (nextTitle) => {
+                void onSubmitEditing(editing, nextTitle);
+              },
+            }
+          : null
+      }
+      listRef={listRef}
+      resolveDropTarget={resolveDropTarget}
+      onActivate={() => {
+        if (id !== null) {
+          onActivate(id, type, title);
+        }
+      }}
+      onDragStart={() => {
+        if (id !== null) {
+          onDragStart(id, type);
+        }
+      }}
+      onDragMove={onDragMove}
+      onDragEnd={onDragEnd}
+    />
   );
 }

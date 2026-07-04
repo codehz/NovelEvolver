@@ -1,6 +1,6 @@
 import { useMolecule } from "bunshi/react";
 import { useAtomValue, useSetAtom, useStore } from "jotai";
-import { useCallback, useLayoutEffect, useRef } from "react";
+import { useCallback, useLayoutEffect, useMemo, useRef } from "react";
 
 import { resourceLibraryDirPathPrefixes } from "#shared/resource-library-path";
 import type { ResourceTreeSnapshot } from "#shared/rpc/projects-rpc";
@@ -9,6 +9,7 @@ import { FlatTreeList } from "../tree/FlatTreeList";
 import type { TreeResolvedDrop, TreeRowHoverZone } from "../tree/tree-drag";
 import { queryTreeRowById } from "../tree/tree-row-dom";
 import type { TreeRowDomData } from "../tree/tree-row-dom";
+import { buildTreeRowIndexMap, findSubtreeEndIndex } from "../tree/tree-row-helpers";
 import { TREE_ROW_HEIGHT_PX } from "../tree/tree-row-motion";
 import { resolveDropTargetFromRow } from "./drag-hit-test";
 import { ResourceLibraryTreeRow } from "./ResourceLibraryTreeRow";
@@ -35,6 +36,10 @@ function ResourceLibraryTreeContent({
   const store = useStore();
   const listRef = useRef<HTMLUListElement>(null);
   const pendingRevealRef = useRef<string | null>(null);
+  const rowIndexByPath = useMemo(
+    () => buildTreeRowIndexMap(renderItems, (item) => item.path),
+    [renderItems],
+  );
 
   const revealPath = useCallback(
     (targetPath: string) => {
@@ -52,17 +57,18 @@ function ResourceLibraryTreeContent({
       if (parentPrefixes.length > 0) {
         dispatch({ type: "expandPaths", paths: parentPrefixes });
       }
-      const item = renderItems.find((candidate) => candidate.path === targetPath);
-      if (item === undefined) {
+      const itemIndex = rowIndexByPath.get(targetPath);
+      if (itemIndex === undefined) {
         pendingRevealRef.current = targetPath;
         return;
       }
+      const item = renderItems[itemIndex];
       pendingRevealRef.current = null;
       dispatch({ type: "select", path: targetPath, nodeType: item.type });
       const row = listRef.current ? queryTreeRowById(listRef.current, targetPath) : null;
       row?.scrollIntoView({ block: "nearest" });
     },
-    [dispatch, renderItems, snapshot],
+    [dispatch, renderItems, rowIndexByPath, snapshot],
   );
 
   useLayoutEffect(() => {
@@ -127,18 +133,15 @@ function ResourceLibraryTreeContent({
           target: "",
         };
       }
-      const targetIndex = renderItems.findIndex((item) => item.path === targetPath);
-      const targetItem = targetIndex >= 0 ? renderItems[targetIndex] : null;
-      if (targetItem === null || targetItem.type !== "folder") {
+      const targetIndex = rowIndexByPath.get(targetPath);
+      if (targetIndex === undefined) {
         return null;
       }
-      let endIndex = targetIndex;
-      while (
-        endIndex + 1 < renderItems.length &&
-        renderItems[endIndex + 1]!.depth > targetItem.depth
-      ) {
-        endIndex += 1;
+      const targetItem = renderItems[targetIndex];
+      if (targetItem?.type !== "folder") {
+        return null;
       }
+      const endIndex = findSubtreeEndIndex(renderItems, targetIndex);
       return {
         preview: {
           kind: "highlight",
@@ -148,7 +151,7 @@ function ResourceLibraryTreeContent({
         target: targetPath,
       };
     },
-    [renderItems],
+    [renderItems, rowIndexByPath],
   );
 
   const handleDragEnd = useCallback(() => {

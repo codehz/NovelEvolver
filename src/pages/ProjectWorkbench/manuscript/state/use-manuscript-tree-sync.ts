@@ -1,8 +1,8 @@
 import { useMolecule } from "bunshi/react";
 import { useSetAtom } from "jotai";
-import { useEffect } from "react";
 
 import { useManuscript } from "../../demo/branch/branch-scopes";
+import { useTreeLoadSync } from "../../tree/use-tree-load-sync";
 import { manuscriptTreeMolecule } from "./manuscript-tree-molecule";
 
 export function useManuscriptTreeSync(): void {
@@ -10,26 +10,18 @@ export function useManuscriptTreeSync(): void {
   const { treeAtom } = useMolecule(manuscriptTreeMolecule);
   const dispatch = useSetAtom(treeAtom);
 
-  useEffect(() => {
-    let cancelled = false;
-    dispatch({ type: "loadStart" });
-    void manuscript
-      .getOutline()
-      .then((outline) => {
-        if (!cancelled) {
-          dispatch({ type: "loadSuccess", outline });
-        }
-      })
-      .catch((error) => {
-        if (!cancelled) {
-          dispatch({
-            type: "loadError",
-            message: error instanceof Error ? error.message : "加载正文失败",
-          });
-        }
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [dispatch, manuscript]);
+  useTreeLoadSync({
+    load: () => manuscript.getOutline(),
+    onStart: () => {
+      dispatch({ type: "loadStart" });
+    },
+    onSuccess: (outline) => {
+      dispatch({ type: "loadSuccess", outline });
+    },
+    onError: (message) => {
+      dispatch({ type: "loadError", message });
+    },
+    fallbackErrorMessage: "加载正文失败",
+    deps: [manuscript],
+  });
 }

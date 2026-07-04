@@ -11,11 +11,12 @@ import type { ManuscriptNode, ManuscriptOutline } from "#shared/rpc/projects-rpc
 import { FlatTreeList } from "../tree/FlatTreeList";
 import type { TreeResolvedDrop, TreeRowHoverZone } from "../tree/tree-drag";
 import type { TreeRowDomData } from "../tree/tree-row-dom";
+import { buildTreeRowIndexMap, findSubtreeEndIndex } from "../tree/tree-row-helpers";
 import { TREE_DROP_INDICATOR_HEIGHT_PX, TREE_ROW_HEIGHT_PX } from "../tree/tree-row-motion";
 import {
   findManuscriptChildIndex,
   findManuscriptParentId,
-  manuscriptParentChain,
+  getManuscriptNodeDepth,
 } from "./manuscript-tree";
 import { ManuscriptTreeRow } from "./ManuscriptTreeRow";
 import { manuscriptTreeMolecule } from "./state/manuscript-tree-molecule";
@@ -33,20 +34,9 @@ type ManuscriptRenderItem = {
   editing: ManuscriptEditingState | null;
 };
 
-function findSubtreeEndIndex(items: ManuscriptRenderItem[], startIndex: number): number {
-  const startItem = items[startIndex];
-  if (startItem === undefined) {
-    return startIndex;
-  }
-  let endIndex = startIndex;
-  while (endIndex + 1 < items.length && items[endIndex + 1]!.depth > startItem.depth) {
-    endIndex += 1;
-  }
-  return endIndex;
-}
-
 function resolveCreatingRenderPosition(
   items: ManuscriptRenderItem[],
+  rowIndexById: Map<string, number>,
   editing: Extract<ManuscriptEditingState, { mode: "creating" }>,
   outline: ManuscriptOutline,
 ): { insertAt: number; depth: number } {
@@ -55,7 +45,7 @@ function resolveCreatingRenderPosition(
     return { insertAt: items.length, depth: 0 };
   }
 
-  const parentIndex = items.findIndex((item) => item.id === editing.parentId);
+  const parentIndex = rowIndexById.get(editing.parentId) ?? -1;
   const parentDepth = editing.parentId === outline.rootId ? -1 : items[parentIndex]?.depth;
   const depth = parentDepth === undefined ? 0 : parentDepth + 1;
   const index = Math.max(0, Math.min(parent.children.length, Math.trunc(editing.index)));
@@ -65,7 +55,7 @@ function resolveCreatingRenderPosition(
   }
 
   const previousSiblingId = parent.children[index - 1];
-  const previousSiblingIndex = items.findIndex((item) => item.id === previousSiblingId);
+  const previousSiblingIndex = rowIndexById.get(previousSiblingId) ?? -1;
   if (previousSiblingIndex < 0) {
     return { insertAt: items.length, depth };
   }
@@ -90,6 +80,10 @@ export function ManuscriptSectionBody() {
     deleteNode,
     moveNode,
   } = useManuscriptTreeActions();
+  const rowIndexById = useMemo(
+    () => buildTreeRowIndexMap(flatItems, (item) => item.id),
+    [flatItems],
+  );
 
   const renderItems = useMemo(() => {
     const items: ManuscriptRenderItem[] = flatItems.map((item) => ({
@@ -103,7 +97,7 @@ export function ManuscriptSectionBody() {
       const position =
         state.outline === null
           ? { insertAt: items.length, depth: 0 }
-          : resolveCreatingRenderPosition(items, editing, state.outline);
+          : resolveCreatingRenderPosition(items, rowIndexById, editing, state.outline);
       items.splice(position.insertAt, 0, {
         id: null,
         title: "",
@@ -115,19 +109,25 @@ export function ManuscriptSectionBody() {
       });
     }
     return items;
-  }, [flatItems, state.editing, state.outline]);
+  }, [flatItems, rowIndexById, state.editing, state.outline]);
+  const renderIndexById = useMemo(
+    () => buildTreeRowIndexMap(renderItems, (item) => item.id),
+    [renderItems],
+  );
   const resolveDropTarget = useCallback(
     ({
       start: _start,
       hoveredRow,
       hoverZone,
       listRect,
+      clientX: _clientX,
       clientY,
     }: {
       start: { rowId: string; rowType: ManuscriptNode["type"] };
       hoveredRow: TreeRowDomData<ManuscriptNode["type"]> | null;
       hoverZone: TreeRowHoverZone | null;
       listRect: DOMRect | null;
+      clientX: number;
       clientY: number;
     }): TreeResolvedDrop<ManuscriptMoveTarget> | null => {
       const outline = store.get(treeAtom).outline;
@@ -139,8 +139,7 @@ export function ManuscriptSectionBody() {
         return null;
       }
 
-      const getInsertDepth = (parentId: string) =>
-        parentId === outline.rootId ? 0 : manuscriptParentChain(outline, parentId).length - 1;
+      const getInsertDepth = (parentId: string) => getManuscriptNodeDepth(outline, parentId) + 1;
 
       const createInsertPreview = (visualIndex: number, depth: number) => ({
         kind: "insert" as const,
@@ -168,21 +167,6 @@ export function ManuscriptSectionBody() {
         };
       };
 
-      const findSubtreeEndIndex = (startIndex: number) => {
-        const startItem = renderItems[startIndex];
-        if (startItem === undefined) {
-          return startIndex;
-        }
-        let endIndex = startIndex;
-        while (
-          endIndex + 1 < renderItems.length &&
-          renderItems[endIndex + 1]!.depth > startItem.depth
-        ) {
-          endIndex += 1;
-        }
-        return endIndex;
-      };
-
       const isExpandedFolderWithVisibleChildren = (rowIndex: number, folderId: string) => {
         const item = renderItems[rowIndex];
         const nextItem = renderItems[rowIndex + 1];
@@ -197,7 +181,7 @@ export function ManuscriptSectionBody() {
 
       const resolveInto = (rowIndex: number, folderId: string) => {
         const visualIndex = isExpandedFolderWithVisibleChildren(rowIndex, folderId)
-          ? findSubtreeEndIndex(rowIndex) + 1
+          ? findSubtreeEndIndex(renderItems, rowIndex) + 1
           : rowIndex + 1;
         return {
           preview: createInsertPreview(visualIndex, getInsertDepth(folderId)),
@@ -211,7 +195,7 @@ export function ManuscriptSectionBody() {
           preview: createInsertPreview(rootIndex, 0),
           target: {
             kind: "insert",
-            parentId: "root",
+            parentId: outline.rootId,
             index: rootIndex === 0 ? 0 : rootNode.children.length,
           },
         };
@@ -221,6 +205,7 @@ export function ManuscriptSectionBody() {
       if (hoveredNode === undefined || hoverZone === null) {
         return null;
       }
+      const hoveredRowIndex = renderIndexById.get(hoveredNode.id) ?? hoveredRow.rowIndex;
       const effectiveZone =
         hoveredNode.type === "chapter" && hoverZone === "inside"
           ? clientY < hoveredRow.rect.top + hoveredRow.rect.height / 2
@@ -229,21 +214,19 @@ export function ManuscriptSectionBody() {
           : hoverZone;
 
       if (effectiveZone === "inside") {
-        return hoveredNode.type !== "folder"
-          ? null
-          : resolveInto(hoveredRow.rowIndex, hoveredNode.id);
+        return hoveredNode.type !== "folder" ? null : resolveInto(hoveredRowIndex, hoveredNode.id);
       }
 
       if (effectiveZone === "before") {
-        return resolveInsert(hoveredNode.id, hoveredRow.rowIndex, false);
+        return resolveInsert(hoveredNode.id, hoveredRowIndex, false);
       }
 
       if (
         hoveredNode.type === "folder" &&
-        isExpandedFolderWithVisibleChildren(hoveredRow.rowIndex, hoveredNode.id)
+        isExpandedFolderWithVisibleChildren(hoveredRowIndex, hoveredNode.id)
       ) {
         return {
-          preview: createInsertPreview(hoveredRow.rowIndex + 1, getInsertDepth(hoveredNode.id)),
+          preview: createInsertPreview(hoveredRowIndex + 1, getInsertDepth(hoveredNode.id)),
           target: {
             kind: "insert",
             parentId: hoveredNode.id,
@@ -254,11 +237,11 @@ export function ManuscriptSectionBody() {
 
       const afterVisualIndex =
         hoveredNode.type === "folder"
-          ? findSubtreeEndIndex(hoveredRow.rowIndex) + 1
-          : hoveredRow.rowIndex + 1;
+          ? findSubtreeEndIndex(renderItems, hoveredRowIndex) + 1
+          : hoveredRowIndex + 1;
       return resolveInsert(hoveredNode.id, afterVisualIndex, true);
     },
-    [renderItems, store, treeAtom],
+    [renderIndexById, renderItems, store, treeAtom],
   );
 
   return (

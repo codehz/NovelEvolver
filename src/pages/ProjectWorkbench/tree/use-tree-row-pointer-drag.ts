@@ -8,7 +8,7 @@ import { findTreeRowDataAtPoint } from "./tree-row-dom";
 /** 拖动识别阈值（px）：位移超过此值才从"按下"进入"拖动中"。 */
 const DRAG_THRESHOLD = 4;
 
-type TreeRowPointerStartState<RowType extends string> = {
+export type TreeRowPointerStartState<RowType extends string> = {
   pointerId: number;
   clientX: number;
   clientY: number;
@@ -16,7 +16,7 @@ type TreeRowPointerStartState<RowType extends string> = {
   rowType: RowType;
 };
 
-type TreeDropResolveInput<RowType extends string> = {
+export type TreeDropResolveInput<RowType extends string> = {
   start: TreeRowPointerStartState<RowType>;
   hoveredRow: TreeRowDomData<RowType> | null;
   hoverZone: TreeRowHoverZone | null;

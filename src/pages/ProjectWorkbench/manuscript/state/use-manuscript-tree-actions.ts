@@ -1,5 +1,5 @@
 import { useMolecule } from "bunshi/react";
-import { useAtomValue, useSetAtom, useStore } from "jotai";
+import { useSetAtom, useStore } from "jotai";
 import { useCallback } from "react";
 
 import { notificationApi } from "#app/lib/notifications";
@@ -57,7 +57,6 @@ function resolveCreateTarget(current: ManuscriptTreeState): ManuscriptCreateTarg
 export function useManuscriptTreeActions() {
   const manuscript = useManuscript();
   const { treeAtom } = useMolecule(manuscriptTreeMolecule);
-  const state = useAtomValue(treeAtom);
   const dispatch = useSetAtom(treeAtom);
   const store = useStore();
   const { openManuscriptTab, renameManuscriptTab, closeManuscriptTabs } =
@@ -163,7 +162,6 @@ export function useManuscriptTreeActions() {
   );
 
   return {
-    state,
     startCreating,
     startRenaming,
     cancelEditing,
