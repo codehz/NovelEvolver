@@ -22,7 +22,7 @@ export function EditorArea() {
 
       {activeTab && (
         <div className="flex h-8 shrink-0 items-center gap-1 bg-workbench-editor px-3 text-xs text-ctp-subtext0">
-          <EditorBreadcrumb resourcePath={activeTab.resourcePath} />
+          <EditorBreadcrumb tab={activeTab} />
         </div>
       )}
 
@@ -36,7 +36,8 @@ export function EditorArea() {
               tabId={tab.id}
               active={tab.active}
               defaultValue={tab.initialContent}
-              resourcePath={tab.resourcePath}
+              resourcePath={tab.kind === "resource" ? tab.resourcePath : undefined}
+              chapterId={tab.kind === "manuscript" ? tab.chapterId : undefined}
             />
           ))
         )}

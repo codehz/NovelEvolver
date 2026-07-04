@@ -2,7 +2,11 @@ import { createScope, molecule, use, useMolecule } from "bunshi/react";
 import type { RpcPromise } from "capnweb";
 import { atom, useSetAtom } from "jotai";
 
-import type { ResourceLibraryHandle, WorktreeHandle } from "#shared/rpc/projects-rpc";
+import type {
+  ManuscriptHandle,
+  ResourceLibraryHandle,
+  WorktreeHandle,
+} from "#shared/rpc/projects-rpc";
 
 import { projectMolecule } from "../state/molecules";
 
@@ -33,6 +37,9 @@ export const worktreeMolecule = molecule(() => {
 /** 当前分支资源库根（`openWorktree(...).resources` 级联，不在此 await）。 */
 export const resourceLibraryMolecule = molecule(() => use(worktreeMolecule).resources);
 
+/** 当前分支正文根（`openWorktree(...).manuscript` 级联，不在此 await）。 */
+export const manuscriptMolecule = molecule(() => use(worktreeMolecule).manuscript);
+
 export function useActiveBranchName(): string {
   return useMolecule(activeBranchNameMolecule);
 }
@@ -43,4 +50,8 @@ export function useWorktree(): RpcPromise<WorktreeHandle> {
 
 export function useResourceLibrary(): RpcPromise<ResourceLibraryHandle> {
   return useMolecule(resourceLibraryMolecule);
+}
+
+export function useManuscript(): RpcPromise<ManuscriptHandle> {
+  return useMolecule(manuscriptMolecule);
 }

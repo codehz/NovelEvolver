@@ -1,13 +1,16 @@
 import { AutoTransition, effects, preset } from "@codehz/auto-transition";
 import { useMolecule } from "bunshi/react";
-import { useSetAtom } from "jotai";
+import { useAtomValue, useSetAtom } from "jotai";
 import { Fragment, useCallback } from "react";
 
 import { SlotText } from "#app/components/SlotText";
 import { cn } from "#app/lib/cn";
 import { resourceBaseName, resourceLibraryDirPathPrefixes } from "#shared/resource-library-path";
 
+import { manuscriptParentChain } from "../../manuscript/manuscript-tree";
+import { manuscriptTreeMolecule } from "../../manuscript/state/manuscript-tree-molecule";
 import { resourceLibraryTreeMolecule } from "../../resource-library/state/resource-tree-molecule";
+import type { WorkbenchEditorTab } from "../state/types";
 
 /** 面包屑单段：根节点固定为"资源库"，其余段为路径上的目录/文件名。 */
 type BreadcrumbSegment = {
@@ -35,7 +38,7 @@ function buildBreadcrumbSegments(resourcePath: string): BreadcrumbSegment[] {
   return segments;
 }
 
-export function EditorBreadcrumb({ resourcePath }: { resourcePath: string }) {
+function ResourceEditorBreadcrumb({ resourcePath }: { resourcePath: string }) {
   const { revealInTree, treeUiAtom } = useMolecule(resourceLibraryTreeMolecule);
   const dispatchUi = useSetAtom(treeUiAtom);
 
@@ -96,6 +99,63 @@ export function EditorBreadcrumb({ resourcePath }: { resourcePath: string }) {
       })}
     </AutoTransition>
   );
+}
+
+function ManuscriptEditorBreadcrumb({ chapterId }: { chapterId: string }) {
+  const { treeAtom } = useMolecule(manuscriptTreeMolecule);
+  const state = useAtomValue(treeAtom);
+  const dispatch = useSetAtom(treeAtom);
+  const segments = state.outline === null ? [] : manuscriptParentChain(state.outline, chapterId);
+
+  return (
+    <AutoTransition
+      as="nav"
+      aria-label="正文路径"
+      className="flex min-w-0 items-center gap-1"
+      transition={breadcrumbTransitionPreset}
+    >
+      {segments.map((segment, index) => {
+        const isLast = index === segments.length - 1;
+        return (
+          <Fragment key={isLast ? "LAST" : segment.id}>
+            {index > 0 ? (
+              <span
+                aria-hidden="true"
+                className="icon-[codicon--chevron-right] shrink-0 text-sm text-ctp-overlay0"
+              />
+            ) : null}
+            {segment.type === "folder" && !isLast ? (
+              <button
+                className={cn(
+                  "max-w-48 truncate rounded px-1 py-0.5 text-xs",
+                  "text-ctp-subtext0 hover:bg-window-button-hover hover:text-app-foreground",
+                )}
+                type="button"
+                onClick={() => {
+                  dispatch({ type: "expand", id: segment.id });
+                  dispatch({ type: "select", id: segment.id });
+                }}
+              >
+                <SlotText text={segment.title} />
+              </button>
+            ) : (
+              <SlotText
+                text={segment.title}
+                className="max-w-48 truncate text-xs text-app-foreground"
+              />
+            )}
+          </Fragment>
+        );
+      })}
+    </AutoTransition>
+  );
+}
+
+export function EditorBreadcrumb({ tab }: { tab: WorkbenchEditorTab }) {
+  if (tab.kind === "resource") {
+    return <ResourceEditorBreadcrumb resourcePath={tab.resourcePath} />;
+  }
+  return <ManuscriptEditorBreadcrumb chapterId={tab.chapterId} />;
 }
 
 const breadcrumbTransitionPreset = preset({

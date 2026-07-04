@@ -15,6 +15,29 @@ export type ResourceNode = {
   type: "file" | "folder";
 };
 
+export type ManuscriptNodeType = "folder" | "chapter";
+
+export type ManuscriptFolderNode = {
+  id: string;
+  type: "folder";
+  title: string;
+  children: string[];
+};
+
+export type ManuscriptChapterNode = {
+  id: string;
+  type: "chapter";
+  title: string;
+};
+
+export type ManuscriptNode = ManuscriptFolderNode | ManuscriptChapterNode;
+
+export type ManuscriptOutline = {
+  version: 1;
+  rootId: "root";
+  nodes: Record<string, ManuscriptNode>;
+};
+
 /**
  * File operations under the branch worktree's `resources/` directory.
  *
@@ -40,11 +63,29 @@ export interface ResourceLibraryHandle extends RpcTarget {
   move(from: string, to: string): void;
 }
 
+/**
+ * Ordered manuscript tree under the branch worktree's `manuscript/` directory.
+ *
+ * `outline.json` is the source of truth for structure, title, and ordering. Chapter
+ * body files are addressed by stable node IDs and are not human-readable paths.
+ */
+export interface ManuscriptHandle extends RpcTarget {
+  getOutline(): ManuscriptOutline;
+  createFolder(parentId: string, title: string, index?: number): ManuscriptOutline;
+  createChapter(parentId: string, title: string, index?: number): ManuscriptOutline;
+  renameNode(id: string, title: string): ManuscriptOutline;
+  moveNode(id: string, targetParentId: string, index?: number): ManuscriptOutline;
+  deleteNode(id: string): ManuscriptOutline;
+  readChapter(id: string): string;
+  writeChapter(id: string, content: string): void;
+}
+
 /** Live RPC handle for a branch-scoped virtual worktree (SQLite-backed in app userData). */
 export interface WorktreeHandle extends RpcTarget {
   /** Baseline tree SHA-1 recorded when the worktree was first created for this branch. */
   readonly baseTree: string;
   readonly resources: ResourceLibraryHandle;
+  readonly manuscript: ManuscriptHandle;
   // TODO: design more api
 }
 

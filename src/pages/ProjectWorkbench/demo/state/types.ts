@@ -1,4 +1,4 @@
-export type WorkbenchEditorTab = {
+export type ResourceWorkbenchEditorTab = {
   id: string;
   kind: "resource";
   resourcePath: string;
@@ -6,6 +6,17 @@ export type WorkbenchEditorTab = {
   active: boolean;
   initialContent: string;
 };
+
+export type ManuscriptWorkbenchEditorTab = {
+  id: string;
+  kind: "manuscript";
+  chapterId: string;
+  label: string;
+  active: boolean;
+  initialContent: string;
+};
+
+export type WorkbenchEditorTab = ResourceWorkbenchEditorTab | ManuscriptWorkbenchEditorTab;
 
 export function resourceTabLabel(resourcePath: string): string {
   const slash = resourcePath.lastIndexOf("/");

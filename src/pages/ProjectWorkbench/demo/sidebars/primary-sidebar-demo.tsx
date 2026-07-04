@@ -8,6 +8,7 @@ import {
 } from "#app/components/workbench";
 import { cn } from "#app/lib/cn";
 
+import { ManuscriptSectionBody } from "../../manuscript/ManuscriptSection";
 import { ResourceLibrarySectionBody } from "../../resource-library/ResourceLibrarySection";
 
 type DemoTreeNode = {
@@ -16,13 +17,6 @@ type DemoTreeNode = {
   depth?: number;
   active?: boolean;
 };
-
-const manuscriptTree: DemoTreeNode[] = [
-  { icon: cn("icon-[codicon--folder-opened]"), label: "手稿" },
-  { icon: cn("icon-[codicon--file]"), label: "第一章.md", depth: 1, active: true },
-  { icon: cn("icon-[codicon--file]"), label: "第二章.md", depth: 1 },
-  { icon: cn("icon-[codicon--file]"), label: "番外·序.md", depth: 1 },
-];
 
 const timelineTree: DemoTreeNode[] = [
   { icon: cn("icon-[codicon--history]"), label: "修订记录" },
@@ -70,7 +64,7 @@ export function ExplorerSidebarDemo({ projectLabel }: { projectLabel: string }) 
         panelId: "explorer-manuscript-panel",
         expanded: manuscriptExpanded,
         defaultBodyHeight: DEFAULT_MANUSCRIPT_BODY_HEIGHT,
-        body: <ExplorerTreeBody nodes={manuscriptTree} title="正文" />,
+        body: <ManuscriptSectionBody />,
         onToggleExpanded: () => setManuscriptExpanded((value) => !value),
       },
       {
