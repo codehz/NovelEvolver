@@ -23,8 +23,9 @@ export const sidebarHeaderIconClass = cn(
 
 // --- Section header (collapsible panels inside sidebar body) ---
 
+// Section Header 应该是白色加粗文字和主题色按钮的，不要在这里加 text-ctp-mauve
 export const sidebarSectionHeaderButtonClass = cn(
-  "flex h-6 min-w-0 flex-1 items-center gap-1 bg-app-surface pr-1.5 pl-1 text-left text-ctp-mauve",
+  "flex h-6 min-w-0 flex-1 items-center gap-1 bg-app-surface pr-1.5 pl-1 text-left",
   "text-2xs font-semibold tracking-wide uppercase",
   sidebarChromeFocusVisibleClass,
 );
