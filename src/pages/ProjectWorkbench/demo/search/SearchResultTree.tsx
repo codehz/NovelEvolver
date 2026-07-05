@@ -25,14 +25,8 @@ import {
 
 export type { SearchResultDomainRoot };
 
-const SEARCH_TREE_EXTRA_LEFT_PX = 6;
-
-function searchTreePaddingLeft(depth: number): number {
-  return getTreeRowPaddingLeft(depth) + SEARCH_TREE_EXTRA_LEFT_PX;
-}
-
 function searchTreeMatchPaddingLeft(leafDepth: number): number {
-  return searchTreePaddingLeft(leafDepth) + TREE_ROW_DISCLOSURE_WIDTH_PX + TREE_ROW_CONTENT_GAP_PX;
+  return getTreeRowPaddingLeft(leafDepth) + TREE_ROW_DISCLOSURE_WIDTH_PX + TREE_ROW_CONTENT_GAP_PX;
 }
 
 function entityIconClass(entityKind: WorktreeSearchHit["entityKind"]): string {
@@ -90,7 +84,7 @@ function SearchFlatRowView({
         height={height}
         animateEnter={animateEnter}
         depth={row.depth}
-        paddingLeftPx={searchTreePaddingLeft(row.depth)}
+        paddingLeftPx={getTreeRowPaddingLeft(row.depth)}
         className="cursor-pointer text-xs font-medium text-ctp-text hover:bg-ctp-surface0/50"
         aria-expanded={row.expanded}
         tabIndex={0}
@@ -111,7 +105,7 @@ function SearchFlatRowView({
         height={height}
         animateEnter={animateEnter}
         depth={row.depth}
-        paddingLeftPx={searchTreePaddingLeft(row.depth)}
+        paddingLeftPx={getTreeRowPaddingLeft(row.depth)}
         className="cursor-pointer text-xs text-ctp-subtext1 hover:bg-ctp-surface0/50"
         aria-expanded={row.expanded}
         tabIndex={0}
@@ -193,7 +187,7 @@ function SearchFlatRowView({
       height={height}
       animateEnter={animateEnter}
       depth={row.depth}
-      paddingLeftPx={searchTreePaddingLeft(row.depth)}
+      paddingLeftPx={getTreeRowPaddingLeft(row.depth)}
       className={cn(
         "text-xs text-ctp-subtext1",
         openable && "cursor-pointer hover:bg-ctp-surface0/50",
