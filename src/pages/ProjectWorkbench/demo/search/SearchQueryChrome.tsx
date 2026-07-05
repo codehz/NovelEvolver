@@ -1,5 +1,15 @@
 import { cn } from "#app/lib/cn";
 
+const searchFieldRowClass = cn("flex h-7 items-center gap-1.5 rounded-sm bg-ctp-surface0 px-2");
+
+const searchInputClass = cn(
+  "min-h-0 min-w-0 flex-1 border-0 bg-transparent py-0 text-xs leading-none text-ctp-text outline-none placeholder:text-ctp-overlay0",
+  "appearance-none",
+  "[&::-webkit-search-cancel-button]:hidden",
+  "[&::-webkit-search-decoration]:hidden",
+  "[&::-webkit-search-results-button]:hidden",
+);
+
 export function SearchQueryChrome({
   query,
   statsLine,
@@ -16,7 +26,7 @@ export function SearchQueryChrome({
       <label className="sr-only" htmlFor="workbench-search-input">
         搜索
       </label>
-      <div className="flex items-center gap-1.5 rounded-sm bg-ctp-surface0 px-2 py-1">
+      <div className={searchFieldRowClass}>
         <span
           aria-hidden="true"
           className={cn(
@@ -29,7 +39,7 @@ export function SearchQueryChrome({
           type="search"
           autoComplete="off"
           spellCheck={false}
-          className="min-w-0 flex-1 bg-transparent text-xs text-ctp-text outline-none placeholder:text-ctp-overlay0"
+          className={searchInputClass}
           placeholder="搜索正文与资源库"
           value={query}
           onChange={(event) => onQueryChange(event.target.value)}
