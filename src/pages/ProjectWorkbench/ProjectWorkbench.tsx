@@ -10,10 +10,10 @@ import { projectDisplayName } from "#app/lib/project-display-name";
 import { convertRpcPromise } from "#app/lib/rpc-utils";
 import { useTitleBarTitle } from "#app/lib/titlebar-title";
 
-import { BranchScopeProvider } from "./demo/branch/BranchScopeProvider";
-import { projectIdScope, projectMolecule } from "./demo/state/molecules";
-import { WorkbenchDemoStatusBar } from "./demo/statusbar/WorkbenchDemoStatusBar";
-import { buildWorkbenchDemoSlots } from "./demo/workbench-demo";
+import { BranchScopeProvider } from "./workbench/branch/BranchScopeProvider";
+import { buildWorkbenchSlots } from "./workbench/slots";
+import { projectIdScope, projectMolecule } from "./workbench/state/molecules";
+import { WorkbenchStatusBar } from "./workbench/statusbar/WorkbenchStatusBar";
 
 export function ProjectWorkbench() {
   const { projectId } = useParams<{ projectId: string }>();
@@ -66,8 +66,8 @@ function ProjectWorkbenchInner() {
   useTitleBarTitle(displayName);
   return (
     <BranchScopeProvider>
-      <WorkbenchLayout {...buildWorkbenchDemoSlots(displayName)} />
-      <WorkbenchDemoStatusBar />
+      <WorkbenchLayout {...buildWorkbenchSlots(displayName)} />
+      <WorkbenchStatusBar />
     </BranchScopeProvider>
   );
 }
