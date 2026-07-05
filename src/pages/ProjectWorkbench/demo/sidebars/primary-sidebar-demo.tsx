@@ -1,6 +1,5 @@
 import { useMemo, useState } from "react";
 
-import { ScrollArea } from "#app/components/ScrollArea";
 import { SidebarPaneStack } from "#app/components/workbench";
 import { cn } from "#app/lib/cn";
 
@@ -88,16 +87,4 @@ export function ExplorerSidebarDemo({ projectLabel }: { projectLabel: string }) 
   );
 
   return <SidebarPaneStack panes={panes} />;
-}
-
-export function ScmSidebarDemo() {
-  return (
-    <ScrollArea className="min-h-0 flex-1" fill>
-      <div className="flex flex-col items-center gap-2 px-2 py-6 text-center text-xs text-ctp-subtext0">
-        <span aria-hidden="true" className="icon-[codicon--source-control] text-2xl" />
-        <p>尚未配置版本控制。</p>
-        <p className="text-ctp-overlay0">布局演示占位。</p>
-      </div>
-    </ScrollArea>
-  );
 }

@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { KeyboardEvent, ReactNode } from "react";
 
-import { ScrollArea } from "#app/components/ScrollArea";
 import { cn } from "#app/lib/cn";
 import { FlatTreeList } from "#app/pages/ProjectWorkbench/tree/FlatTreeList";
 import {
@@ -280,25 +279,23 @@ export function SearchResultTree({
   const getItemKey = useCallback((row: SearchResultFlatRow) => row.key, []);
 
   return (
-    <ScrollArea className="min-h-0 flex-1" fill>
-      <div ref={highlightContainerRef} className="py-1">
-        <FlatTreeList
-          items={flatRows}
-          getItemKey={getItemKey}
-          rowHeight={TREE_ROW_HEIGHT_PX}
-          className="w-full"
-          renderRow={(row, _index, layout) => (
-            <SearchFlatRowView
-              row={row}
-              layout={layout}
-              onToggleDomain={onToggleDomain}
-              onToggleFolder={onToggleFolder}
-              onToggleLeaf={onToggleLeaf}
-              onOpen={onOpenHit}
-            />
-          )}
-        />
-      </div>
-    </ScrollArea>
+    <div ref={highlightContainerRef} className="py-1">
+      <FlatTreeList
+        items={flatRows}
+        getItemKey={getItemKey}
+        rowHeight={TREE_ROW_HEIGHT_PX}
+        className="w-full"
+        renderRow={(row, _index, layout) => (
+          <SearchFlatRowView
+            row={row}
+            layout={layout}
+            onToggleDomain={onToggleDomain}
+            onToggleFolder={onToggleFolder}
+            onToggleLeaf={onToggleLeaf}
+            onOpen={onOpenHit}
+          />
+        )}
+      />
+    </div>
   );
 }
