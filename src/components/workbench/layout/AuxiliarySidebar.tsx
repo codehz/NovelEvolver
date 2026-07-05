@@ -17,7 +17,7 @@ export function AuxiliarySidebar({
     <aside
       aria-hidden={ariaHidden}
       aria-label="AI 助手"
-      className={cn("flex w-workbench-auxiliary shrink-0 flex-col bg-app-surface", className)}
+      className={cn("flex w-80 shrink-0 flex-col bg-app-surface", className)}
       style={{ width }}
     >
       <header className="flex h-workbench-tab shrink-0 items-center justify-between gap-2 px-3">

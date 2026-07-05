@@ -26,7 +26,7 @@ export function PrimarySidebar({
     <aside
       aria-hidden={ariaHidden}
       aria-label={title}
-      className={cn("flex min-h-0 w-workbench-sidebar shrink-0 flex-col bg-app-surface", className)}
+      className={cn("flex min-h-0 w-64 shrink-0 flex-col bg-app-surface", className)}
       style={{ width }}
     >
       <header
