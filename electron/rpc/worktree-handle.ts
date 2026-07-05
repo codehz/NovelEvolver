@@ -1,4 +1,5 @@
 import { RpcTarget } from "capnweb";
+import type { Repository } from "nano-git/repository/core";
 import { readTreeSnapshot } from "nano-git/repository/tree/tree-diff";
 import type { VirtualWorktree } from "nano-git/worktree/core";
 
@@ -25,12 +26,17 @@ export class WorktreeHandleImpl extends RpcTarget implements WorktreeHandle {
   readonly #manuscript: ManuscriptHandle;
   readonly #diff: WorktreeDiffHandle;
 
-  constructor(worktree: VirtualWorktree, objects: ObjectDatabase) {
+  constructor(
+    worktree: VirtualWorktree,
+    objects: ObjectDatabase,
+    repo: Repository,
+    branchName: string,
+  ) {
     super();
     this.#worktree = worktree;
     this.#resources = new ResourceLibraryHandleImpl(worktree);
     this.#manuscript = new ManuscriptHandleImpl(worktree);
-    this.#diff = new WorktreeDiffHandleImpl(worktree, objects, this.#manuscript);
+    this.#diff = new WorktreeDiffHandleImpl(worktree, objects, this.#manuscript, repo, branchName);
   }
 
   get baseTree(): string {

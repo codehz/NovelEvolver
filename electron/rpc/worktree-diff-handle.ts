@@ -1,4 +1,6 @@
 import { RpcTarget } from "capnweb";
+import type { SHA1 } from "nano-git";
+import type { Repository } from "nano-git/repository/core";
 import type { VirtualWorktree } from "nano-git/worktree/core";
 
 import type { ManuscriptHandle } from "#shared/rpc/projects-rpc";
@@ -27,12 +29,22 @@ export class WorktreeDiffHandleImpl extends RpcTarget implements WorktreeDiffHan
   readonly #worktree: VirtualWorktree;
   readonly #objects: ObjectDatabase;
   readonly #manuscript: ManuscriptHandle;
+  readonly #repo: Repository;
+  readonly #branchName: string;
 
-  constructor(worktree: VirtualWorktree, objects: ObjectDatabase, manuscript: ManuscriptHandle) {
+  constructor(
+    worktree: VirtualWorktree,
+    objects: ObjectDatabase,
+    manuscript: ManuscriptHandle,
+    repo: Repository,
+    branchName: string,
+  ) {
     super();
     this.#worktree = worktree;
     this.#objects = objects;
     this.#manuscript = manuscript;
+    this.#repo = repo;
+    this.#branchName = branchName;
   }
 
   compute(): WorktreeDiffResult {
@@ -70,6 +82,20 @@ export class WorktreeDiffHandleImpl extends RpcTarget implements WorktreeDiffHan
     } else {
       throw new Error(`Unknown revert ID: ${revertId}`);
     }
+    return this.compute();
+  }
+
+  commit(message: string, author: { name: string; email: string }): WorktreeDiffResult {
+    const tree = this.#worktree.writeTree();
+    const parentCommit = this.#repo.readBranch(this.#branchName);
+    const parents: SHA1[] = parentCommit !== null ? [parentCommit] : [];
+    const now = Math.floor(Date.now() / 1000);
+    const gitAuthor = { name: author.name, email: author.email, timestamp: now, timezone: "+0000" };
+
+    const commitHash = this.#repo.createCommit(tree, parents, message, gitAuthor);
+    this.#repo.updateRef(`refs/heads/${this.#branchName}`, commitHash);
+    this.#worktree.reset(tree);
+
     return this.compute();
   }
 

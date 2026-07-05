@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 import { ScrollArea } from "#app/components/ScrollArea";
 import { cn } from "#app/lib/cn";
@@ -120,6 +120,9 @@ export function ScmSidebarSection() {
   const [result, setResult] = useState<WorktreeDiffResult | null>(null);
   const [error, setError] = useState<boolean>(false);
   const [loading, setLoading] = useState(true);
+  const [commitMessage, setCommitMessage] = useState("");
+  const [committing, setCommitting] = useState(false);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   const load = useCallback(() => {
     setLoading(true);
@@ -154,6 +157,24 @@ export function ScmSidebarSection() {
     },
     [diffHandle, load],
   );
+
+  const handleCommit = useCallback(() => {
+    const message = commitMessage.trim();
+    if (message === "" || committing) return;
+
+    setCommitting(true);
+    diffHandle
+      .commit(message, { name: "NovelEvolver", email: "app@novel-evolver.local" })
+      .then((updated) => {
+        setResult(updated);
+        setCommitMessage("");
+        setCommitting(false);
+      })
+      .catch(() => {
+        setCommitting(false);
+        load();
+      });
+  }, [diffHandle, commitMessage, committing, load]);
 
   if (loading) {
     return (
@@ -190,44 +211,89 @@ export function ScmSidebarSection() {
   }
 
   return (
-    <ScrollArea className="-m-2 min-h-0 flex-1" fill>
-      <div className="flex flex-col gap-0.5 py-1">
-        {/* 正文变更 */}
-        {result.manuscript.length > 0 ? (
-          <section>
-            <div className="flex items-center gap-1.5 px-2 py-0.5 text-[10px] font-semibold tracking-wide text-ctp-mauve uppercase">
-              <span className="icon-[codicon--symbol-method] shrink-0 text-sm" />
-              正文变更
-              <span className="ml-0.5 rounded bg-ctp-surface0 px-1 py-px font-mono text-ctp-subtext0">
-                {result.manuscript.length}
-              </span>
-            </div>
-            <ul className="flex flex-col" role="tree">
-              {result.manuscript.map((item) => (
-                <DiffItemRow key={item.revertId} item={item} onRevert={handleRevert} />
-              ))}
-            </ul>
-          </section>
-        ) : null}
+    <div className="flex min-h-0 flex-1 flex-col">
+      <ScrollArea className="-m-2 min-h-0 flex-1" fill>
+        <div className="flex flex-col gap-0.5 py-1">
+          {/* 正文变更 */}
+          {result.manuscript.length > 0 ? (
+            <section>
+              <div className="flex items-center gap-1.5 px-2 py-0.5 text-[10px] font-semibold tracking-wide text-ctp-mauve uppercase">
+                <span className="icon-[codicon--symbol-method] shrink-0 text-sm" />
+                正文变更
+                <span className="ml-0.5 rounded bg-ctp-surface0 px-1 py-px font-mono text-ctp-subtext0">
+                  {result.manuscript.length}
+                </span>
+              </div>
+              <ul className="flex flex-col" role="tree">
+                {result.manuscript.map((item) => (
+                  <DiffItemRow key={item.revertId} item={item} onRevert={handleRevert} />
+                ))}
+              </ul>
+            </section>
+          ) : null}
 
-        {/* 资源变更 */}
-        {result.resources.length > 0 ? (
-          <section>
-            <div className="flex items-center gap-1.5 px-2 py-0.5 text-[10px] font-semibold tracking-wide text-ctp-mauve uppercase">
-              <span className="icon-[codicon--symbol-file] shrink-0 text-sm" />
-              资源变更
-              <span className="ml-0.5 rounded bg-ctp-surface0 px-1 py-px font-mono text-ctp-subtext0">
-                {result.resources.length}
-              </span>
-            </div>
-            <ul className="flex flex-col" role="tree">
-              {result.resources.map((item) => (
-                <DiffItemRow key={item.revertId} item={item} onRevert={handleRevert} />
-              ))}
-            </ul>
-          </section>
-        ) : null}
+          {/* 资源变更 */}
+          {result.resources.length > 0 ? (
+            <section>
+              <div className="flex items-center gap-1.5 px-2 py-0.5 text-[10px] font-semibold tracking-wide text-ctp-mauve uppercase">
+                <span className="icon-[codicon--symbol-file] shrink-0 text-sm" />
+                资源变更
+                <span className="ml-0.5 rounded bg-ctp-surface0 px-1 py-px font-mono text-ctp-subtext0">
+                  {result.resources.length}
+                </span>
+              </div>
+              <ul className="flex flex-col" role="tree">
+                {result.resources.map((item) => (
+                  <DiffItemRow key={item.revertId} item={item} onRevert={handleRevert} />
+                ))}
+              </ul>
+            </section>
+          ) : null}
+        </div>
+      </ScrollArea>
+
+      {/* 提交区域 */}
+      <div className="shrink-0 border-t border-ctp-surface0 p-2">
+        <textarea
+          ref={textareaRef}
+          className="w-full resize-none rounded-sm border border-ctp-surface0 bg-ctp-base px-2 py-1.5 text-xs leading-tight text-ctp-text outline-none placeholder:text-ctp-overlay0 focus:border-ctp-mauve"
+          rows={3}
+          placeholder="提交信息…"
+          value={commitMessage}
+          onChange={(e) => setCommitMessage(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) {
+              e.preventDefault();
+              handleCommit();
+            }
+          }}
+          disabled={committing}
+        />
+        <button
+          type="button"
+          className={cn(
+            "mt-1.5 flex w-full items-center justify-center gap-1.5 rounded-sm px-2 py-1 text-xs font-medium",
+            commitMessage.trim() !== "" && !committing
+              ? "bg-ctp-mauve text-ctp-crust hover:brightness-110"
+              : "cursor-not-allowed bg-ctp-surface0 text-ctp-overlay0",
+          )}
+          disabled={commitMessage.trim() === "" || committing}
+          onClick={handleCommit}
+        >
+          {committing ? (
+            <>
+              <span className="icon-[codicon--loading] animate-spin text-sm" />
+              提交中…
+            </>
+          ) : (
+            <>
+              <span className="icon-[codicon--check] text-sm" />
+              提交
+            </>
+          )}
+        </button>
+        <p className="mt-1 text-center text-[10px] text-ctp-overlay0">Ctrl+Enter 提交</p>
       </div>
-    </ScrollArea>
+    </div>
   );
 }

@@ -63,7 +63,7 @@ export class ProjectHandleImpl extends RpcTarget implements ProjectHandle {
     }
 
     const worktree = this.#worktreesStore.openWorktree(this.#repo.objects, this.#projectId, name);
-    return new WorktreeHandleImpl(worktree, this.#repo.objects);
+    return new WorktreeHandleImpl(worktree, this.#repo.objects, this.#repo, name);
   }
 
   [Symbol.dispose](): void {

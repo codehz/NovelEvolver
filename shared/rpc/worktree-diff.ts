@@ -63,4 +63,10 @@ export interface WorktreeDiffHandle extends RpcTarget {
    * - folder:... → 还原整个文件夹的全部变更
    */
   revert(revertId: string): WorktreeDiffResult;
+
+  /**
+   * 将当前工作树变更提交为一个新的 git commit。
+   * 提交后 baseTree 自动前移，差异列表应归零。
+   */
+  commit(message: string, author: { name: string; email: string }): WorktreeDiffResult;
 }
