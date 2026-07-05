@@ -67,8 +67,18 @@ export type ScmSnapshot = {
   resourceChanges: ScmChange[];
 };
 
+/** 当前分支上的一条已提交记录（线性历史，不含工作区草稿）。 */
+export type ScmCommitSummary = {
+  hash: string;
+  shortHash: string;
+  message: string;
+  authorName: string;
+  committedAt: number;
+};
+
 export interface WorktreeScmHandle extends RpcTarget {
   subscribeSnapshot(): RpcSubscriptionStream<ScmSnapshot>;
   revertChange(changeId: string): ScmSnapshot;
   commit(message: string, author: { name: string; email: string }): ScmSnapshot;
+  listCommits(maxCount?: number): ScmCommitSummary[];
 }

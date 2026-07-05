@@ -1,6 +1,7 @@
 import { createHash } from "node:crypto";
 
 import type { SHA1 } from "nano-git";
+import { walkLogEntries } from "nano-git/log";
 import type { Repository } from "nano-git/repository/core";
 import { readTreeSnapshot } from "nano-git/repository/tree/tree-diff";
 import type { VirtualWorktree } from "nano-git/worktree/core";
@@ -16,7 +17,12 @@ import type {
   ManuscriptOutline,
   WorktreeNodeIdResult,
 } from "#shared/rpc/projects-rpc";
-import type { ScmChange, ScmChangeStats, ScmSnapshot } from "#shared/rpc/worktree-scm";
+import type {
+  ScmChange,
+  ScmChangeStats,
+  ScmCommitSummary,
+  ScmSnapshot,
+} from "#shared/rpc/worktree-scm";
 import type {
   ManuscriptTreeDelta,
   ManuscriptTreeNode,
@@ -715,6 +721,26 @@ export class WorktreeSession {
     this.#worktree.reset(tree);
     this.#commitMutation({});
     return this.#currentScmSnapshot();
+  }
+
+  listBranchCommits(maxCount = 50): ScmCommitSummary[] {
+    const tip = this.#repo.readBranch(this.#branchName);
+    if (tip === null) {
+      return [];
+    }
+
+    const commits: ScmCommitSummary[] = [];
+    for (const entry of walkLogEntries(this.#objects, { from: [tip], maxCount })) {
+      const subject = entry.commit.message.split("\n")[0]?.trim() ?? "";
+      commits.push({
+        hash: entry.hash,
+        shortHash: entry.hash.slice(0, 7),
+        message: subject === "" ? "(无提交说明)" : subject,
+        authorName: entry.commit.author.name,
+        committedAt: entry.commit.committer.timestamp,
+      });
+    }
+    return commits;
   }
 
   #currentScmSnapshot(): ScmSnapshot {

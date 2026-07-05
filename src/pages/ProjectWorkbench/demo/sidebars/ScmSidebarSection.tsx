@@ -4,14 +4,16 @@ import { SidebarPaneStack } from "#app/components/workbench";
 
 import { SCM_CHANGES_DEFAULT_BODY_HEIGHT, SCM_GRAPH_DEFAULT_BODY_HEIGHT } from "../scm/constants";
 import { ScmChangesBody } from "../scm/ScmChangesBody";
-import { ScmGraphPlaceholder } from "../scm/ScmGraphPlaceholder";
+import { ScmGraphBody } from "../scm/ScmGraphBody";
 import { useScmChangesState } from "../scm/use-scm-changes-state";
+import { useScmGraphState } from "../scm/use-scm-graph-state";
 
 export function ScmSidebarSection() {
   const {
     commit,
     commitMessage,
     committing,
+    commitsRefreshKey,
     error,
     loading,
     result,
@@ -19,6 +21,7 @@ export function ScmSidebarSection() {
     revertChange,
     setCommitMessage,
   } = useScmChangesState();
+  const graph = useScmGraphState(commitsRefreshKey);
   const [changesExpanded, setChangesExpanded] = useState(true);
   const [graphExpanded, setGraphExpanded] = useState(true);
 
@@ -53,7 +56,14 @@ export function ScmSidebarSection() {
         panelId: "scm-graph-panel",
         expanded: graphExpanded,
         defaultBodyHeight: SCM_GRAPH_DEFAULT_BODY_HEIGHT,
-        body: <ScmGraphPlaceholder />,
+        body: (
+          <ScmGraphBody
+            commits={graph.commits}
+            error={graph.error}
+            loading={graph.loading}
+            onRetry={graph.retry}
+          />
+        ),
         onToggleExpanded: () => setGraphExpanded((value) => !value),
       },
     ],
@@ -63,6 +73,10 @@ export function ScmSidebarSection() {
       commitMessage,
       committing,
       error,
+      graph.commits,
+      graph.error,
+      graph.loading,
+      graph.retry,
       graphExpanded,
       loading,
       result,

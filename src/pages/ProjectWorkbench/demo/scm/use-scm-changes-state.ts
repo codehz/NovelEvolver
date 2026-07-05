@@ -14,6 +14,7 @@ export function useScmChangesState() {
   const [retryKey, setRetryKey] = useState(0);
   const [commitMessage, setCommitMessage] = useState("");
   const [committing, setCommitting] = useState(false);
+  const [commitsRefreshKey, setCommitsRefreshKey] = useState(0);
 
   useEffect(() => {
     setLoading(true);
@@ -61,6 +62,7 @@ export function useScmChangesState() {
         setResult(updated);
         setCommitMessage("");
         setCommitting(false);
+        setCommitsRefreshKey((current) => current + 1);
       })
       .catch(() => {
         setCommitting(false);
@@ -72,6 +74,7 @@ export function useScmChangesState() {
     commit,
     commitMessage,
     committing,
+    commitsRefreshKey,
     error,
     loading,
     result,
