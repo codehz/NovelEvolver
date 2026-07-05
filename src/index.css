@@ -55,7 +55,6 @@
   --color-pte-md-quote: var(--color-ctp-subtext0);
   --color-pte-md-strong: var(--color-ctp-text);
   --color-pte-selection: color-mix(in srgb, var(--color-ctp-overlay0) 28%, transparent);
-  --counter-pte-line: pte-line;
   --spacing-pte-gutter: 0.75rem;
   --spacing-pte-gutter-inset: 1rem;
   --spacing-pte-line: 1.5rem;
