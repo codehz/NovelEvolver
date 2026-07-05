@@ -14,8 +14,6 @@
   --font-display: "MiSans", sans-serif;
   --font-mono: "Maple Mono CN", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
   --text-2xs: 0.6875rem;
-  --text-activity-bar-icon: 1.375rem;
-  --text-titlebar: 0.75rem;
 
   --color-app-background: var(--color-ctp-base);
   --color-app-foreground: var(--color-ctp-text);
@@ -27,7 +25,6 @@
   --color-titlebar-foreground: var(--color-ctp-text);
   --color-window-button-close-hover: var(--color-ctp-red);
   --color-window-chrome: var(--color-ctp-crust);
-  --opacity-titlebar-inactive: 0.45;
 
   --spacing-activity-bar: 3rem;
   --spacing-titlebar: 2.25rem;

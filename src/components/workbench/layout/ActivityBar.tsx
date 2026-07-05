@@ -16,7 +16,7 @@ const activityButtonClass = cn(
 );
 
 const activityIconClass = cn(
-  "inline-flex size-6 shrink-0 items-center justify-center text-activity-bar-icon leading-none",
+  "inline-flex size-6 shrink-0 items-center justify-center text-[1.375rem] leading-none",
 );
 
 export function ActivityBar({

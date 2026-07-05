@@ -78,7 +78,7 @@ function WindowTitle() {
   const titleBarTitle = useAtomValue(titleBarTitleAtom);
 
   return (
-    <p className="truncate text-titlebar font-medium text-titlebar-foreground">
+    <p className="truncate text-xs font-medium text-titlebar-foreground">
       <SlotText text={titleBarTitle} options={windowTitleSlotTextOptions} />
     </p>
   );
@@ -95,9 +95,7 @@ const fallbackWindowState: WindowState = {
 function TitleBar() {
   const windowState = useWindowState(fallbackWindowState);
   const isMac = windowState.platform === "darwin";
-  const titlebarChromeOpacityClass = cn(
-    windowState.isFocused ? "opacity-100" : "opacity-titlebar-inactive",
-  );
+  const titlebarChromeOpacityClass = cn(windowState.isFocused ? "opacity-100" : "opacity-45");
 
   return (
     <header
