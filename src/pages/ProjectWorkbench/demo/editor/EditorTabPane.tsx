@@ -1,8 +1,9 @@
 import { ScopeProvider, useMolecule } from "bunshi/react";
 import { useAtomValue, useSetAtom } from "jotai";
+import type { Ref } from "react";
 import { useCallback } from "react";
 
-import { PlainTextEditor } from "#app/components/PlainTextEditor";
+import { PlainTextEditor, type PlainTextEditorHandle } from "#app/components/PlainTextEditor";
 
 import { useResourceAutosave, useTextAutosave } from "../../resource-library/use-resource-autosave";
 import { useManuscript, useResourceLibrary } from "../branch/branch-scopes";
@@ -12,16 +13,19 @@ type EditorTabPaneProps = {
   tabId: string;
   active: boolean;
   defaultValue: string;
+  editorRef?: Ref<PlainTextEditorHandle>;
   resourcePath?: string;
   chapterId?: string;
 };
 
 function EditorTabPlainTextEditor({
+  ref,
   active,
   defaultValue,
   resourcePath,
   chapterId,
 }: {
+  ref?: Ref<PlainTextEditorHandle>;
   active: boolean;
   defaultValue: string;
   resourcePath?: string;
@@ -53,6 +57,7 @@ function EditorTabPlainTextEditor({
 
   return (
     <PlainTextEditor
+      ref={ref}
       active={active}
       defaultValue={defaultValue}
       selectionSnapshot={selectionSnapshot}
@@ -69,6 +74,7 @@ export function EditorTabPane({
   tabId,
   active,
   defaultValue,
+  editorRef,
   resourcePath,
   chapterId,
 }: EditorTabPaneProps) {
@@ -81,6 +87,7 @@ export function EditorTabPane({
         <EditorTabPlainTextEditor
           active={active}
           defaultValue={defaultValue}
+          ref={editorRef}
           resourcePath={resourcePath}
           chapterId={chapterId}
         />

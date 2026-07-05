@@ -1,13 +1,18 @@
 import { AutoTransition } from "@codehz/auto-transition";
+import { useRef } from "react";
 
+import type { PlainTextEditorHandle } from "#app/components/PlainTextEditor";
 import { TabBar, type TabItem } from "#app/components/TabBar";
 
 import { EditorBreadcrumb } from "./EditorBreadcrumb";
 import { EditorEmptyState } from "./EditorEmptyState";
 import { EditorTabPane } from "./EditorTabPane";
 import { useWorkbenchEditorActions } from "./use-workbench-editor-actions";
+import { useWorkbenchEditorScmSync } from "./use-workbench-editor-scm-sync";
 
 export function EditorArea() {
+  const editorHandlesRef = useRef(new Map<string, PlainTextEditorHandle>());
+  useWorkbenchEditorScmSync(editorHandlesRef);
   const { tabs, activateTab, closeTab } = useWorkbenchEditorActions();
 
   const activeTab = tabs.find((tab) => tab.active) ?? tabs[0];
@@ -36,6 +41,13 @@ export function EditorArea() {
               tabId={tab.id}
               active={tab.active}
               defaultValue={tab.initialContent}
+              editorRef={(handle) => {
+                if (handle === null) {
+                  editorHandlesRef.current.delete(tab.id);
+                  return;
+                }
+                editorHandlesRef.current.set(tab.id, handle);
+              }}
               resourcePath={tab.kind === "resource" ? tab.resourcePath : undefined}
               chapterId={tab.kind === "manuscript" ? tab.chapterId : undefined}
             />

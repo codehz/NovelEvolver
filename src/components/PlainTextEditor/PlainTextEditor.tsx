@@ -72,6 +72,7 @@ export function PlainTextEditor({
   const onCaretChangeRef = useRef(onCaretChange);
   const onSelectionSnapshotChangeRef = useRef(onSelectionSnapshotChange);
   const highlightCurrentLineRef = useRef(highlightCurrentLine);
+  const suppressOnChangeRef = useRef(false);
   const activeLineCollapsedRef = useRef<boolean | null>(null);
   const activeLineCompartmentRef = useRef(new Compartment());
 
@@ -135,7 +136,11 @@ export function PlainTextEditor({
       activeLineCompartment.of(activeLineExtensions(highlightCurrentLineRef.current, true)),
       EditorView.updateListener.of((update) => {
         if (update.docChanged) {
-          onChangeRef.current?.(update.state.doc.toString());
+          const shouldNotify = !suppressOnChangeRef.current;
+          suppressOnChangeRef.current = false;
+          if (shouldNotify) {
+            onChangeRef.current?.(update.state.doc.toString());
+          }
         }
         if (update.docChanged || update.selectionSet || update.focusChanged) {
           publishSelectionState(update.view);
@@ -211,6 +216,7 @@ export function PlainTextEditor({
         if (current === nextValue) {
           return;
         }
+        suppressOnChangeRef.current = true;
         view.dispatch({
           changes: { from: 0, to: view.state.doc.length, insert: nextValue },
         });
