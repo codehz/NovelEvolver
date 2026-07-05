@@ -1,5 +1,17 @@
 # Repository Guidelines
 
+## Compatibility Policy (Prototype Phase)
+
+This project is currently in **prototype development phase** — **no changes need to consider backward compatibility**. This includes but is not limited to:
+
+- **Data storage formats**: SQLite schemas, file structures, serialization formats may change at any time without migration paths.
+- **IPC / RPC interfaces**: Channel names, parameter signatures, return types may be arbitrarily modified without retaining deprecated versions.
+- **Component props / state structures**: React component interfaces and state management shapes may be refactored at any time.
+- **Persistent data**: User-local data (project config, window state, draft content, etc.) is not guaranteed to be cross-version compatible during the prototype phase.
+- **Public API**: Any module exports or type definitions may be broken without semver consideration.
+
+> **Principle**: Prioritize rapid idea validation — do not let compatibility concerns slow down iteration during the prototype phase. Introduce compatibility strategies only after the product enters Beta/stable stage.
+
 ## Project Structure & Module Organization
 
 `src/` contains the Vite renderer application (`App.tsx`, `main.tsx`, `index.css`). `electron/` contains the Electron main and preload processes. Build output goes to `dist/` for the renderer and `dist-electron/` for Electron; do not edit generated files directly. Root config files include `vite.config.ts`, `tsconfig.json`, `.oxlintrc.json`, `.oxfmtrc.json`, and `tsdown.electron.mts`. IPC types shared between renderer and Electron live in `shared/`.
