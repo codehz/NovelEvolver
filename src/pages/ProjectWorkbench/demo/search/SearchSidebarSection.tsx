@@ -52,7 +52,7 @@ export function SearchSidebarSection() {
         loading={loading}
         onQueryChange={setQuery}
       />
-      <div className="-m-2 flex min-h-0 flex-1 flex-col overflow-hidden">
+      <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
         {!hasQuery ? (
           <div className="flex min-h-0 flex-1 flex-col items-center justify-center px-2 py-6 text-center text-xs text-ctp-subtext0">
             <p className="text-ctp-overlay0">在上方输入关键词</p>

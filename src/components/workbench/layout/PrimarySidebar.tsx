@@ -30,9 +30,7 @@ export function PrimarySidebar({
       style={{ width }}
     >
       <header
-        className={cn(
-          "flex h-workbench-tab shrink-0 items-center justify-between gap-2 pr-3 pl-5.5",
-        )}
+        className={cn("flex h-workbench-tab shrink-0 items-center justify-between gap-2 pr-3 pl-5")}
       >
         <SlotText text={title} className={primarySidebarChromeTitleTextClass} />
         <div className="flex shrink-0 items-center gap-0.5">
@@ -45,7 +43,7 @@ export function PrimarySidebar({
         </div>
       </header>
 
-      <div className="flex min-h-0 min-w-0 flex-1 flex-col p-2 text-sm">{children}</div>
+      <div className="flex min-h-0 min-w-0 flex-1 flex-col text-sm">{children}</div>
     </aside>
   );
 }

@@ -25,13 +25,13 @@ export const sidebarHeaderIconClass = cn(
 
 // Section Header 应该是白色加粗文字和主题色按钮的，不要在这里加 text-ctp-mauve
 export const sidebarSectionHeaderButtonClass = cn(
-  "flex h-6 min-w-0 flex-1 items-center gap-1 bg-app-surface pr-1.5 pl-1 text-left",
+  "flex h-6 min-w-0 flex-1 items-center gap-0.5 bg-app-surface px-0.5 text-left",
   "text-2xs font-semibold tracking-wide uppercase",
   sidebarChromeFocusVisibleClass,
 );
 
 export const sidebarSectionHeaderChevronClass = cn(
-  "inline-flex shrink-0 items-center justify-center text-sm leading-none text-ctp-mauve",
+  "inline-flex shrink-0 items-center justify-center text-base leading-none text-ctp-mauve",
 );
 
 // --- Section resize (horizontal seam between stacked panes) ---

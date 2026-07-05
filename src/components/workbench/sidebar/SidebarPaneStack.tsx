@@ -404,10 +404,7 @@ export function SidebarPaneStack({ panes, className }: SidebarPaneStackProps) {
   );
 
   return (
-    <div
-      ref={stackRef}
-      className={cn("-m-2 flex min-h-0 flex-1 flex-col overflow-hidden", className)}
-    >
+    <div ref={stackRef} className={cn("flex min-h-0 flex-1 flex-col overflow-hidden", className)}>
       {panes.map((pane) => {
         const layout = paneLayouts[pane.id];
         const resizeHandle = resizeHandles.find((handle) => handle.anchorPaneId === pane.id);

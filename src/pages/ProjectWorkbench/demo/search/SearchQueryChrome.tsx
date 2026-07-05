@@ -12,7 +12,7 @@ export function SearchQueryChrome({
   onQueryChange: (value: string) => void;
 }) {
   return (
-    <div className="shrink-0 p-2">
+    <div className="shrink-0 pt-1.5 pr-3 pl-5">
       <label className="sr-only" htmlFor="workbench-search-input">
         搜索
       </label>
