@@ -6,8 +6,8 @@ export const TREE_ROW_HEIGHT_PX = 24;
 export const TREE_DROP_INDICATOR_HEIGHT_PX = 4;
 export const TREE_ROW_Y_DURATION_MS = 220;
 export const TREE_ROW_ENTER_Y_OFFSET_PX = 6;
-export const TREE_ROW_DEPTH_INDENT_PX = 8;
-export const TREE_ROW_BASE_PADDING_LEFT_PX = 10;
+export const TREE_ROW_DEPTH_INDENT_PX = 6;
+export const TREE_ROW_BASE_PADDING_LEFT_PX = 8;
 export const TREE_ROW_DISCLOSURE_WIDTH_PX = 16;
 export const TREE_ROW_CONTENT_GAP_PX = 4;
 
