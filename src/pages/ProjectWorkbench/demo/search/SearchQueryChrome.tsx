@@ -13,12 +13,10 @@ const searchInputClass = cn(
 export function SearchQueryChrome({
   query,
   statsLine,
-  loading,
   onQueryChange,
 }: {
   query: string;
   statsLine: string | null;
-  loading: boolean;
   onQueryChange: (value: string) => void;
 }) {
   return (
@@ -29,10 +27,7 @@ export function SearchQueryChrome({
       <div className={searchFieldRowClass}>
         <span
           aria-hidden="true"
-          className={cn(
-            "shrink-0 text-sm text-ctp-overlay0",
-            loading ? "icon-[codicon--loading] animate-spin" : "icon-[codicon--search]",
-          )}
+          className={cn("shrink-0 text-sm text-ctp-overlay0", "icon-[codicon--search]")}
         />
         <input
           id="workbench-search-input"
@@ -40,7 +35,6 @@ export function SearchQueryChrome({
           autoComplete="off"
           spellCheck={false}
           className={searchInputClass}
-          placeholder="搜索正文与资源库"
           value={query}
           onChange={(event) => onQueryChange(event.target.value)}
         />
@@ -55,11 +49,9 @@ export function SearchQueryChrome({
           </button>
         ) : null}
       </div>
-      {statsLine !== null ? (
-        <p className="mt-1.5 px-0.5 text-[10px] leading-snug text-ctp-subtext0">{statsLine}</p>
-      ) : (
-        <p className="mt-1.5 px-0.5 text-[10px] text-ctp-overlay0">输入关键词即时搜索</p>
-      )}
+      <p className="mt-1.5 px-0.5 text-[10px] leading-snug text-ctp-subtext0">
+        {statsLine ?? "请输入搜索内容"}
+      </p>
     </div>
   );
 }

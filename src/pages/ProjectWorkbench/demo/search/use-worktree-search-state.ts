@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 
+import { cn } from "#app/lib/cn";
 import type { WorktreeSearchHit, WorktreeSearchResult } from "#shared/rpc/worktree-search";
 
 import { useManuscript, useResourceLibrary, useWorktreeSearch } from "../branch/branch-scopes";
@@ -7,6 +8,7 @@ import { useWorkbenchEditorActions } from "../editor/use-workbench-editor-action
 import { buildSearchPathTree } from "./build-search-path-tree";
 import { SEARCH_DEBOUNCE_MS, SEARCH_MAX_RESULTS_PER_DOMAIN } from "./constants";
 import { formatSearchStatsLine, summarizeSearchHits } from "./search-stats";
+import type { SearchResultDomainRoot } from "./SearchResultTree";
 
 const emptyResult = (query: string): WorktreeSearchResult => ({
   query,
@@ -84,24 +86,35 @@ export function useWorktreeSearchState() {
   }, []);
 
   const statsLine = useMemo(() => {
-    if (debouncedQuery === "") {
+    if (debouncedQuery === "" || loading || error) {
       return null;
     }
-    const manuscriptHits = result?.manuscript ?? [];
-    const resourceHits = result?.resources ?? [];
-    const manuscriptStats = formatSearchStatsLine(summarizeSearchHits(manuscriptHits));
-    const resourceStats = formatSearchStatsLine(summarizeSearchHits(resourceHits));
-    return `正文：${manuscriptStats} · 资源：${resourceStats}`;
-  }, [debouncedQuery, result]);
+    const allHits = [...(result?.manuscript ?? []), ...(result?.resources ?? [])];
+    return formatSearchStatsLine(summarizeSearchHits(allHits));
+  }, [debouncedQuery, error, loading, result]);
 
-  const manuscriptTree = useMemo(
-    () => buildSearchPathTree(result?.manuscript ?? []),
-    [result?.manuscript],
-  );
-  const resourceTree = useMemo(
-    () => buildSearchPathTree(result?.resources ?? []),
-    [result?.resources],
-  );
+  const roots = useMemo((): SearchResultDomainRoot[] => {
+    const manuscriptTree = buildSearchPathTree(result?.manuscript ?? []);
+    const resourceTree = buildSearchPathTree(result?.resources ?? []);
+    const list: SearchResultDomainRoot[] = [];
+    if (manuscriptTree.length > 0) {
+      list.push({
+        id: "manuscript",
+        title: "正文",
+        iconClass: cn("icon-[codicon--book]", "text-ctp-blue"),
+        nodes: manuscriptTree,
+      });
+    }
+    if (resourceTree.length > 0) {
+      list.push({
+        id: "resources",
+        title: "资源库",
+        iconClass: cn("icon-[codicon--folder]", "text-ctp-mauve"),
+        nodes: resourceTree,
+      });
+    }
+    return list;
+  }, [result?.manuscript, result?.resources]);
 
   const openHit = useCallback(
     (hit: WorktreeSearchHit) => {
@@ -121,13 +134,9 @@ export function useWorktreeSearchState() {
   return {
     query,
     setQuery,
-    debouncedQuery,
-    loading,
     error,
-    result,
     statsLine,
-    manuscriptTree,
-    resourceTree,
+    roots,
     retry,
     openHit,
   };
