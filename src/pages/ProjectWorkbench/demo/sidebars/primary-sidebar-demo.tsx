@@ -90,23 +90,6 @@ export function ExplorerSidebarDemo({ projectLabel }: { projectLabel: string }) 
   return <SidebarPaneStack panes={panes} />;
 }
 
-export function SearchSidebarDemo() {
-  return (
-    <ScrollArea className="-m-2 min-h-0 flex-1" fill>
-      <div className="flex flex-col gap-2 px-1">
-        <label className="flex flex-col gap-1 text-xs text-ctp-subtext0">
-          搜索
-          <span className="flex items-center gap-2 rounded border border-titlebar-border bg-app-background px-2 py-1.5">
-            <span aria-hidden="true" className="icon-[codicon--search] text-sm" />
-            <span className="text-ctp-overlay0">搜索文件内容（演示）</span>
-          </span>
-        </label>
-        <p className="text-xs text-ctp-subtext0">输入关键词后将在此显示结果。</p>
-      </div>
-    </ScrollArea>
-  );
-}
-
 export function ScmSidebarDemo() {
   return (
     <ScrollArea className="-m-2 min-h-0 flex-1" fill>

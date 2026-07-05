@@ -1,0 +1,2 @@
+export const SEARCH_DEBOUNCE_MS = 320;
+export const SEARCH_MAX_RESULTS_PER_DOMAIN = 200;

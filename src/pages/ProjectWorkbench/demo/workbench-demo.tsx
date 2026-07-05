@@ -4,8 +4,9 @@ import type { WorkbenchPrimaryView } from "#app/components/workbench";
 import { cn } from "#app/lib/cn";
 
 import { EditorArea } from "./editor/EditorArea";
+import { SearchSidebarSection } from "./search/SearchSidebarSection";
 import { AuxiliaryPanelDemo } from "./sidebars/auxiliary-demo";
-import { ExplorerSidebarDemo, SearchSidebarDemo } from "./sidebars/primary-sidebar-demo";
+import { ExplorerSidebarDemo } from "./sidebars/primary-sidebar-demo";
 import { ScmSidebarSection } from "./sidebars/ScmSidebarSection";
 
 export function buildWorkbenchDemoSlots(projectLabel: string): {
@@ -25,7 +26,7 @@ export function buildWorkbenchDemoSlots(projectLabel: string): {
         id: "search",
         title: "搜索",
         iconClass: cn("icon-[codicon--search]"),
-        content: <SearchSidebarDemo />,
+        content: <SearchSidebarSection />,
       },
       {
         id: "scm",
