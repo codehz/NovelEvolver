@@ -4,7 +4,11 @@ import type { ReactNode, RefObject } from "react";
 import { cn } from "#app/lib/cn";
 
 import type { TreeResolvedDrop } from "./tree-drag";
-import { treeRowPaddingVariants, treeRowVariants } from "./tree-row-motion";
+import {
+  treeRowDisclosureChevronSlotClass,
+  treeRowPaddingVariants,
+  treeRowVariants,
+} from "./tree-row-motion";
 import { TreeInlineInput } from "./TreeInlineInput";
 import type { TreeDropResolveInput } from "./use-tree-row-pointer-drag";
 import { useTreeRowPointerDrag } from "./use-tree-row-pointer-drag";
@@ -82,7 +86,7 @@ export function TreeRowShell<RowType extends string, DropTarget>({
 
   const rowContent = (
     <>
-      <span aria-hidden="true" className="flex w-4 shrink-0 items-center justify-center text-sm">
+      <span aria-hidden="true" className={treeRowDisclosureChevronSlotClass}>
         {rowType === "folder" ? (
           <span
             className={cn(

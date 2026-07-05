@@ -54,7 +54,7 @@ export function NotificationCenterPanel({
             }}
             aria-label="关闭"
           >
-            <span aria-hidden="true" className="icon-[codicon--chevron-down] text-sm" />
+            <span aria-hidden="true" className="icon-[codicon--chevron-down] text-base" />
           </button>
         </div>
       </header>

@@ -32,7 +32,7 @@ export function EditorBreadcrumb({ tab }: { tab: WorkbenchEditorTab }) {
           {index > 0 ? (
             <span
               aria-hidden="true"
-              className="icon-[codicon--chevron-right] shrink-0 text-sm text-ctp-overlay0"
+              className="icon-[codicon--chevron-right] shrink-0 text-base text-ctp-overlay0"
             />
           ) : null}
           {segment.clickable ? (

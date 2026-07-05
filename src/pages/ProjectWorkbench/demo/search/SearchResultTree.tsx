@@ -6,6 +6,8 @@ import {
   getTreeRowPaddingLeft,
   TREE_ROW_CONTENT_GAP_PX,
   TREE_ROW_DISCLOSURE_WIDTH_PX,
+  treeRowDisclosureChevronSlotClass,
+  treeRowDisclosureSpacerClass,
 } from "#app/pages/ProjectWorkbench/tree/tree-row-motion";
 import type { WorktreeSearchHit } from "#shared/rpc/worktree-search";
 
@@ -181,12 +183,12 @@ function SearchLeafRow({
         {showMatches ? (
           <span
             className={cn(
-              "shrink-0 text-sm text-ctp-overlay0",
+              treeRowDisclosureChevronSlotClass,
               expanded ? "icon-[codicon--chevron-down]" : "icon-[codicon--chevron-right]",
             )}
           />
         ) : (
-          <span className="size-3.5 shrink-0" />
+          <span className={treeRowDisclosureSpacerClass} />
         )}
         <span className={cn(entityIconClass(leaf.entityKind), "shrink-0 text-sm")} />
         <span className="truncate">{leaf.name}</span>
@@ -240,7 +242,7 @@ function SearchDomainRootRow({
     >
       <span
         className={cn(
-          "shrink-0 text-sm text-ctp-overlay0",
+          treeRowDisclosureChevronSlotClass,
           expanded ? "icon-[codicon--chevron-down]" : "icon-[codicon--chevron-right]",
         )}
       />
@@ -280,7 +282,7 @@ function SearchFolderRow({
     >
       <span
         className={cn(
-          "shrink-0 text-sm text-ctp-overlay0",
+          treeRowDisclosureChevronSlotClass,
           expanded ? "icon-[codicon--chevron-down]" : "icon-[codicon--chevron-right]",
         )}
       />

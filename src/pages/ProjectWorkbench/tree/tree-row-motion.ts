@@ -1,5 +1,7 @@
 import type { Transition, Variants } from "motion/react";
 
+import { cn } from "#app/lib/cn";
+
 export const TREE_ROW_HEIGHT_PX = 24;
 export const TREE_DROP_INDICATOR_HEIGHT_PX = 4;
 export const TREE_ROW_Y_DURATION_MS = 220;
@@ -8,6 +10,13 @@ export const TREE_ROW_DEPTH_INDENT_PX = 8;
 export const TREE_ROW_BASE_PADDING_LEFT_PX = 10;
 export const TREE_ROW_DISCLOSURE_WIDTH_PX = 16;
 export const TREE_ROW_CONTENT_GAP_PX = 4;
+
+/** 与 `TREE_ROW_DISCLOSURE_WIDTH_PX` 对齐的展开箭头槽位（16px / text-base）。 */
+export const treeRowDisclosureChevronSlotClass = cn(
+  "inline-flex size-4 shrink-0 items-center justify-center text-base leading-none text-ctp-overlay0",
+);
+
+export const treeRowDisclosureSpacerClass = cn("size-4 shrink-0");
 
 const treeEase = [0.22, 1, 0.36, 1] as const;
 
