@@ -1,5 +1,7 @@
 import { cn } from "#app/lib/cn";
 
+import { useActiveBranchName } from "../branch/branch-scopes";
+
 export function ScmCommitForm({
   commitMessage,
   committing,
@@ -11,14 +13,16 @@ export function ScmCommitForm({
   onCommitMessageChange: (value: string) => void;
   onCommit: () => void;
 }) {
+  const branchName = useActiveBranchName();
   const canCommit = commitMessage.trim() !== "" && !committing;
+  const placeholder = `消息 (Ctrl+Enter 在 "${branchName}" 提交)`;
 
   return (
     <div className="shrink-0 p-2">
       <textarea
-        className="w-full resize-none rounded-sm border border-ctp-surface0 bg-ctp-base px-2 py-1.5 text-xs leading-tight text-ctp-text outline-none placeholder:text-ctp-overlay0 focus:border-ctp-mauve"
-        rows={3}
-        placeholder="提交信息…"
+        className="field-sizing-content min-h-0 w-full resize-none rounded-sm bg-ctp-surface0 px-2 py-1.5 text-xs leading-tight text-ctp-text outline-none placeholder:text-ctp-overlay0"
+        rows={1}
+        placeholder={placeholder}
         value={commitMessage}
         onChange={(e) => onCommitMessageChange(e.target.value)}
         onKeyDown={(e) => {
@@ -52,7 +56,6 @@ export function ScmCommitForm({
           </>
         )}
       </button>
-      <p className="mt-1 text-center text-[10px] text-ctp-overlay0">Ctrl+Enter 提交</p>
     </div>
   );
 }
