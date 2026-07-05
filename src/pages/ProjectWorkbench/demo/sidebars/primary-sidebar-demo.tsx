@@ -1,11 +1,7 @@
-import { Fragment, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 
 import { ScrollArea } from "#app/components/ScrollArea";
-import {
-  SidebarSectionRowResizeHandle,
-  SidebarViewSection,
-  useSidebarPaneStack,
-} from "#app/components/workbench";
+import { SidebarPaneStack } from "#app/components/workbench";
 import { cn } from "#app/lib/cn";
 
 import { ManuscriptSectionBody } from "../../manuscript/ManuscriptSection";
@@ -90,47 +86,8 @@ export function ExplorerSidebarDemo({ projectLabel }: { projectLabel: string }) 
     ],
     [manuscriptExpanded, projectLabel, referenceExpanded, timelineExpanded],
   );
-  const { stackRef, paneLayouts, resizeHandles, getResizeHandleProps } = useSidebarPaneStack({
-    panes,
-  });
-  const paneTitleMap = useMemo(
-    () => Object.fromEntries(panes.map((pane) => [pane.id, pane.title])),
-    [panes],
-  );
 
-  return (
-    <div ref={stackRef} className="-m-2 flex min-h-0 flex-1 flex-col overflow-hidden">
-      {panes.map((pane) => {
-        const layout = paneLayouts[pane.id];
-        const resizeHandle = resizeHandles.find((handle) => handle.anchorPaneId === pane.id);
-        const resizeHandleProps = resizeHandle ? getResizeHandleProps(resizeHandle.id) : null;
-
-        return (
-          <Fragment key={pane.id}>
-            {resizeHandle && resizeHandleProps ? (
-              <SidebarSectionRowResizeHandle
-                active={resizeHandleProps.active}
-                ariaLabel={`调整${paneTitleMap[resizeHandle.upperPaneId]}与${pane.title}区域高度`}
-                onPointerDown={resizeHandleProps.onPointerDown}
-              />
-            ) : null}
-            <SidebarViewSection
-              ariaLabel={pane.ariaLabel}
-              bodyFillsSection={layout?.bodyFillsSection}
-              bodyStyle={layout?.bodyStyle}
-              expanded={pane.expanded}
-              panelId={pane.panelId}
-              sectionStyle={layout?.sectionStyle}
-              title={pane.title}
-              onToggleExpanded={pane.onToggleExpanded}
-            >
-              {pane.body}
-            </SidebarViewSection>
-          </Fragment>
-        );
-      })}
-    </div>
-  );
+  return <SidebarPaneStack panes={panes} />;
 }
 
 export function SearchSidebarDemo() {

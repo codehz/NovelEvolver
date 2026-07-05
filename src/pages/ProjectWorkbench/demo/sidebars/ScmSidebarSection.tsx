@@ -1,9 +1,10 @@
 import { useMemo, useState } from "react";
 
+import { SidebarPaneStack } from "#app/components/workbench";
+
 import { SCM_CHANGES_DEFAULT_BODY_HEIGHT, SCM_GRAPH_DEFAULT_BODY_HEIGHT } from "../scm/constants";
 import { ScmChangesBody } from "../scm/ScmChangesBody";
 import { ScmGraphPlaceholder } from "../scm/ScmGraphPlaceholder";
-import { ScmSidebarPaneStack } from "../scm/ScmSidebarPaneStack";
 import { useScmChangesState } from "../scm/use-scm-changes-state";
 
 export function ScmSidebarSection() {
@@ -71,5 +72,5 @@ export function ScmSidebarSection() {
     ],
   );
 
-  return <ScmSidebarPaneStack panes={panes} />;
+  return <SidebarPaneStack panes={panes} />;
 }

@@ -7,6 +7,11 @@ export {
   SIDEBAR_SECTION_RESIZE_STRIP_HEIGHT,
 } from "./sidebar/SidebarViewSection";
 export {
+  SidebarPaneStack,
+  type SidebarPaneStackItem,
+  type SidebarPaneStackProps,
+} from "./sidebar/SidebarPaneStack";
+export {
   SidebarSectionActionsPortalContent,
   SidebarSectionActionsPortalProvider,
   SidebarSectionActionsPortalTarget,

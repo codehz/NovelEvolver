@@ -1,23 +1,24 @@
 import { Fragment, useMemo, type ReactNode } from "react";
 
-import {
-  SidebarSectionRowResizeHandle,
-  SidebarViewSection,
-  useSidebarPaneStack,
-} from "#app/components/workbench";
+import { cn } from "#app/lib/cn";
 
-export type ScmSidebarPaneConfig = {
-  id: string;
+import { SidebarSectionRowResizeHandle, SidebarViewSection } from "./SidebarViewSection";
+import { useSidebarPaneStack, type SidebarPaneStackPane } from "./use-sidebar-pane-stack";
+
+export type SidebarPaneStackItem = SidebarPaneStackPane & {
   title: string;
   ariaLabel: string;
   panelId: string;
-  expanded: boolean;
-  defaultBodyHeight: number;
   body: ReactNode;
   onToggleExpanded: () => void;
 };
 
-export function ScmSidebarPaneStack({ panes }: { panes: ScmSidebarPaneConfig[] }) {
+export type SidebarPaneStackProps = {
+  panes: SidebarPaneStackItem[];
+  className?: string;
+};
+
+export function SidebarPaneStack({ panes, className }: SidebarPaneStackProps) {
   const { stackRef, paneLayouts, resizeHandles, getResizeHandleProps } = useSidebarPaneStack({
     panes,
   });
@@ -27,7 +28,10 @@ export function ScmSidebarPaneStack({ panes }: { panes: ScmSidebarPaneConfig[] }
   );
 
   return (
-    <div ref={stackRef} className="-m-2 flex min-h-0 flex-1 flex-col overflow-hidden">
+    <div
+      ref={stackRef}
+      className={cn("-m-2 flex min-h-0 flex-1 flex-col overflow-hidden", className)}
+    >
       {panes.map((pane) => {
         const layout = paneLayouts[pane.id];
         const resizeHandle = resizeHandles.find((handle) => handle.anchorPaneId === pane.id);
