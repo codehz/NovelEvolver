@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { KeyboardEvent } from "react";
 
-import { ScrollArea } from "#app/components/ScrollArea";
 import { cn } from "#app/lib/cn";
 import { FlatTreeList } from "#app/pages/ProjectWorkbench/tree/FlatTreeList";
 import {
@@ -218,41 +217,29 @@ export function ScmChangesList({
   const getItemKey = useCallback((row: ScmChangeFlatRow) => row.key, []);
 
   return (
-    <ScrollArea className="min-h-0 flex-1" fill>
-      <div className="py-1">
-        <FlatTreeList
-          items={flatRows}
-          getItemKey={getItemKey}
-          rowHeight={TREE_ROW_HEIGHT_PX}
-          className="w-full"
-          renderRow={(row, _index, layout) =>
-            row.kind === "domain" ? (
-              <ScmDomainRow
-                title={row.title}
-                iconClass={row.iconClass}
-                expanded={row.expanded}
-                childCount={row.childCount}
-                layout={layout}
-                onToggle={() => onToggleDomain(row.key)}
-              />
-            ) : row.kind === "folder" ? (
-              <ScmFolderRow
-                row={row}
-                layout={layout}
-                onToggle={onToggleFolder}
-                onRevert={onRevert}
-              />
-            ) : (
-              <ScmDiffItemRow
-                item={row.item}
-                depth={row.depth}
-                layout={layout}
-                onRevert={onRevert}
-              />
-            )
-          }
-        />
-      </div>
-    </ScrollArea>
+    <div className="py-1">
+      <FlatTreeList
+        items={flatRows}
+        getItemKey={getItemKey}
+        rowHeight={TREE_ROW_HEIGHT_PX}
+        className="w-full"
+        renderRow={(row, _index, layout) =>
+          row.kind === "domain" ? (
+            <ScmDomainRow
+              title={row.title}
+              iconClass={row.iconClass}
+              expanded={row.expanded}
+              childCount={row.childCount}
+              layout={layout}
+              onToggle={() => onToggleDomain(row.key)}
+            />
+          ) : row.kind === "folder" ? (
+            <ScmFolderRow row={row} layout={layout} onToggle={onToggleFolder} onRevert={onRevert} />
+          ) : (
+            <ScmDiffItemRow item={row.item} depth={row.depth} layout={layout} onRevert={onRevert} />
+          )
+        }
+      />
+    </div>
   );
 }
