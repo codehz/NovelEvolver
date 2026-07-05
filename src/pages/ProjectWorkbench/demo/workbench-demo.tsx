@@ -5,11 +5,8 @@ import { cn } from "#app/lib/cn";
 
 import { EditorArea } from "./editor/EditorArea";
 import { AuxiliaryPanelDemo } from "./sidebars/auxiliary-demo";
-import {
-  ExplorerSidebarDemo,
-  ScmSidebarDemo,
-  SearchSidebarDemo,
-} from "./sidebars/primary-sidebar-demo";
+import { ExplorerSidebarDemo, SearchSidebarDemo } from "./sidebars/primary-sidebar-demo";
+import { ScmSidebarSection } from "./sidebars/ScmSidebarSection";
 
 export function buildWorkbenchDemoSlots(projectLabel: string): {
   primaryViews: WorkbenchPrimaryView[];
@@ -34,7 +31,7 @@ export function buildWorkbenchDemoSlots(projectLabel: string): {
         id: "scm",
         title: "源代码管理",
         iconClass: cn("icon-[codicon--source-control]"),
-        content: <ScmSidebarDemo />,
+        content: <ScmSidebarSection />,
       },
     ],
     editor: <EditorArea />,

@@ -7,6 +7,7 @@ import type {
   ResourceLibraryHandle,
   WorktreeHandle,
 } from "#shared/rpc/projects-rpc";
+import type { WorktreeDiffHandle } from "#shared/rpc/worktree-diff";
 
 import { projectMolecule } from "../state/molecules";
 
@@ -40,6 +41,9 @@ export const resourceLibraryMolecule = molecule(() => use(worktreeMolecule).reso
 /** 当前分支正文根（`openWorktree(...).manuscript` 级联，不在此 await）。 */
 export const manuscriptMolecule = molecule(() => use(worktreeMolecule).manuscript);
 
+/** 当前分支 diff 句柄（`openWorktree(...).diff` 级联，不在此 await）。 */
+export const worktreeDiffMolecule = molecule(() => use(worktreeMolecule).diff);
+
 export function useActiveBranchName(): string {
   return useMolecule(activeBranchNameMolecule);
 }
@@ -54,4 +58,8 @@ export function useResourceLibrary(): RpcPromise<ResourceLibraryHandle> {
 
 export function useManuscript(): RpcPromise<ManuscriptHandle> {
   return useMolecule(manuscriptMolecule);
+}
+
+export function useWorktreeDiff(): RpcPromise<WorktreeDiffHandle> {
+  return useMolecule(worktreeDiffMolecule);
 }
