@@ -9,12 +9,14 @@ import type {
   WorktreeHandle,
 } from "#shared/rpc/projects-rpc";
 import type { WorktreeScmHandle } from "#shared/rpc/worktree-scm";
+import type { WorktreeSearchHandle } from "#shared/rpc/worktree-search";
 import type { WorktreeTreeHandle } from "#shared/rpc/worktree-tree";
 
 import { WorktreeSession } from "../worktree/session";
 import { ManuscriptHandleImpl } from "./manuscript-handle";
 import { ResourceLibraryHandleImpl } from "./resource-library-handle";
 import { WorktreeScmHandleImpl } from "./worktree-scm-handle";
+import { WorktreeSearchHandleImpl } from "./worktree-search-handle";
 import { WorktreeTreeHandleImpl } from "./worktree-tree-handle";
 
 /** ObjectDatabase 类型（从 readTreeSnapshot 参数推导） */
@@ -29,6 +31,7 @@ export class WorktreeHandleImpl extends RpcTarget implements WorktreeHandle {
   readonly #manuscript: ManuscriptHandle;
   readonly #scm: WorktreeScmHandle;
   readonly #tree: WorktreeTreeHandle;
+  readonly #search: WorktreeSearchHandle;
 
   constructor(
     worktree: VirtualWorktree,
@@ -44,6 +47,7 @@ export class WorktreeHandleImpl extends RpcTarget implements WorktreeHandle {
     this.#manuscript = new ManuscriptHandleImpl(session);
     this.#scm = new WorktreeScmHandleImpl(session);
     this.#tree = new WorktreeTreeHandleImpl(session);
+    this.#search = new WorktreeSearchHandleImpl(session);
   }
 
   get baseTree(): string {
@@ -64,5 +68,9 @@ export class WorktreeHandleImpl extends RpcTarget implements WorktreeHandle {
 
   get tree(): WorktreeTreeHandle {
     return this.#tree;
+  }
+
+  get search(): WorktreeSearchHandle {
+    return this.#search;
   }
 }

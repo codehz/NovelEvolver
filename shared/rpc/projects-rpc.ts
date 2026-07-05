@@ -3,6 +3,7 @@ import type { RpcTarget } from "capnweb";
 import type { ProjectMetadata } from "#shared/project";
 
 import type { WorktreeScmHandle } from "./worktree-scm";
+import type { WorktreeSearchHandle } from "./worktree-search";
 import type { WorktreeTreeHandle } from "./worktree-tree";
 
 /** Branch info for the HEAD of a project repository. */
@@ -121,6 +122,7 @@ export interface WorktreeHandle extends RpcTarget {
   readonly manuscript: ManuscriptHandle;
   readonly scm: WorktreeScmHandle;
   readonly tree: WorktreeTreeHandle;
+  readonly search: WorktreeSearchHandle;
 }
 
 /**

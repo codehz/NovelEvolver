@@ -23,6 +23,7 @@ import type {
   ScmCommitSummary,
   ScmSnapshot,
 } from "#shared/rpc/worktree-scm";
+import type { WorktreeSearchQuery, WorktreeSearchResult } from "#shared/rpc/worktree-search";
 import type {
   ManuscriptTreeDelta,
   ManuscriptTreeNode,
@@ -60,6 +61,7 @@ import {
   toWorktreePath,
 } from "../resource-library-path";
 import { RpcStreamPublisher } from "../rpc/stream-publisher";
+import { executeWorktreeSearch } from "../search/worktree-search";
 
 type ObjectDatabase = Parameters<typeof readTreeSnapshot>[0];
 
@@ -741,6 +743,10 @@ export class WorktreeSession {
       });
     }
     return commits;
+  }
+
+  searchWorktree(options: WorktreeSearchQuery): WorktreeSearchResult {
+    return executeWorktreeSearch(this.#worktree, this.#resourceIdByPath, options);
   }
 
   #currentScmSnapshot(): ScmSnapshot {
