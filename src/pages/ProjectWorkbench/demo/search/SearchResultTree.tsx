@@ -1,17 +1,29 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
+import type { KeyboardEvent, ReactNode } from "react";
 
 import { ScrollArea } from "#app/components/ScrollArea";
 import { cn } from "#app/lib/cn";
+import { FlatTreeList } from "#app/pages/ProjectWorkbench/tree/FlatTreeList";
 import {
   getTreeRowPaddingLeft,
   TREE_ROW_CONTENT_GAP_PX,
   TREE_ROW_DISCLOSURE_WIDTH_PX,
+  TREE_ROW_HEIGHT_PX,
   treeRowDisclosureChevronSlotClass,
   treeRowDisclosureSpacerClass,
 } from "#app/pages/ProjectWorkbench/tree/tree-row-motion";
+import { TreeMotionRow } from "#app/pages/ProjectWorkbench/tree/TreeMotionRow";
 import type { WorktreeSearchHit } from "#shared/rpc/worktree-search";
 
-import type { SearchPathTreeLeaf, SearchPathTreeNode } from "./build-search-path-tree";
+import {
+  collectSearchTreeFolderKeys,
+  collectSearchTreeLeafKeys,
+  flattenSearchResultTree,
+  type SearchResultDomainRoot,
+  type SearchResultFlatRow,
+} from "./search-result-tree-projector";
+
+export type { SearchResultDomainRoot };
 
 const SEARCH_TREE_EXTRA_LEFT_PX = 6;
 
@@ -19,49 +31,8 @@ function searchTreePaddingLeft(depth: number): number {
   return getTreeRowPaddingLeft(depth) + SEARCH_TREE_EXTRA_LEFT_PX;
 }
 
-/** 匹配预览行无展开箭头，用与父行箭头槽位等宽的额外缩进对齐内容列。 */
 function searchTreeMatchPaddingLeft(leafDepth: number): number {
   return searchTreePaddingLeft(leafDepth) + TREE_ROW_DISCLOSURE_WIDTH_PX + TREE_ROW_CONTENT_GAP_PX;
-}
-
-export type SearchResultDomainRoot = {
-  id: string;
-  title: string;
-  iconClass: string;
-  nodes: SearchPathTreeNode[];
-};
-
-function scopeKey(scope: string, key: string): string {
-  return `${scope}::${key}`;
-}
-
-function collectFolderPathKeys(nodes: SearchPathTreeNode[], scope: string): string[] {
-  const keys: string[] = [];
-  const visit = (list: SearchPathTreeNode[]) => {
-    for (const node of list) {
-      if (node.type === "folder") {
-        keys.push(scopeKey(scope, node.pathKey));
-        visit(node.children);
-      }
-    }
-  };
-  visit(nodes);
-  return keys;
-}
-
-function collectLeafIds(nodes: SearchPathTreeNode[], scope: string): string[] {
-  const ids: string[] = [];
-  const visit = (list: SearchPathTreeNode[]) => {
-    for (const node of list) {
-      if (node.type === "leaf") {
-        ids.push(scopeKey(scope, node.nodeId));
-      } else {
-        visit(node.children);
-      }
-    }
-  };
-  visit(nodes);
-  return ids;
 }
 
 function entityIconClass(entityKind: WorktreeSearchHit["entityKind"]): string {
@@ -72,72 +43,129 @@ function entityIconClass(entityKind: WorktreeSearchHit["entityKind"]): string {
   );
 }
 
-function SearchMatchRow({
-  hit,
-  depth,
-  onOpen,
-}: {
-  hit: WorktreeSearchHit;
-  depth: number;
-  onOpen: (hit: WorktreeSearchHit) => void;
-}) {
-  const openable =
-    (hit.domain === "manuscript" && hit.entityKind === "chapter") ||
-    (hit.domain === "resource" && hit.entityKind === "file");
-
+function disclosureChevron(expanded: boolean): ReactNode {
   return (
-    <li
-      role="treeitem"
+    <span
+      aria-hidden="true"
       className={cn(
-        "flex min-h-6 cursor-default items-center gap-1 py-0.5 pr-2 text-2xs text-ctp-subtext1",
-        openable && "cursor-pointer hover:bg-ctp-surface0/50",
+        treeRowDisclosureChevronSlotClass,
+        "icon-[codicon--chevron-right]",
+        "motion-safe:transition-transform motion-safe:duration-220 motion-safe:ease-[cubic-bezier(0.22,1,0.36,1)]",
+        expanded && "rotate-90",
       )}
-      style={{ paddingLeft: `${searchTreeMatchPaddingLeft(depth)}px` }}
-      onClick={() => {
-        if (openable) {
-          onOpen(hit);
-        }
-      }}
-      onKeyDown={(event) => {
-        if (!openable) {
-          return;
-        }
-        if (event.key === "Enter" || event.key === " ") {
-          event.preventDefault();
-          onOpen(hit);
-        }
-      }}
-      tabIndex={openable ? 0 : -1}
-    >
-      <span className="icon-[codicon--list-flat] shrink-0 text-sm text-ctp-overlay0" />
-      {hit.matchKind === "title" ? (
-        <span className="truncate text-ctp-subtext0">名称匹配</span>
-      ) : (
-        <span className="truncate font-mono text-ctp-text">
-          {hit.line !== undefined ? (
-            <span className="mr-1 text-ctp-overlay0">{hit.line}:</span>
-          ) : null}
-          {hit.snippet ?? hit.label}
-        </span>
-      )}
-    </li>
+    />
   );
 }
 
-function SearchLeafRow({
-  leaf,
-  depth,
-  expanded,
-  onToggle,
+function activateOnEnterSpace(onActivate: () => void) {
+  return (event: KeyboardEvent) => {
+    if (event.key === "Enter" || event.key === " ") {
+      event.preventDefault();
+      onActivate();
+    }
+  };
+}
+
+function SearchFlatRowView({
+  row,
+  layout,
+  onToggleDomain,
+  onToggleFolder,
+  onToggleLeaf,
   onOpen,
 }: {
-  leaf: SearchPathTreeLeaf;
-  depth: number;
-  expanded: boolean;
-  onToggle: () => void;
+  row: SearchResultFlatRow;
+  layout: { y: number; height: number; animateEnter: boolean };
+  onToggleDomain: (id: string) => void;
+  onToggleFolder: (key: string) => void;
+  onToggleLeaf: (key: string) => void;
   onOpen: (hit: WorktreeSearchHit) => void;
 }) {
-  const showMatches = leaf.hits.length > 1 || leaf.hits.some((hit) => hit.matchKind === "content");
+  const { y, height, animateEnter } = layout;
+
+  if (row.kind === "domain") {
+    return (
+      <TreeMotionRow
+        y={y}
+        height={height}
+        animateEnter={animateEnter}
+        depth={row.depth}
+        paddingLeftPx={searchTreePaddingLeft(row.depth)}
+        className="cursor-pointer text-xs font-medium text-ctp-text hover:bg-ctp-surface0/50"
+        aria-expanded={row.expanded}
+        tabIndex={0}
+        onClick={() => onToggleDomain(row.key)}
+        onKeyDown={activateOnEnterSpace(() => onToggleDomain(row.key))}
+      >
+        {disclosureChevron(row.expanded)}
+        <span className={cn(row.iconClass, "shrink-0 text-sm")} />
+        <span className="truncate">{row.title}</span>
+      </TreeMotionRow>
+    );
+  }
+
+  if (row.kind === "folder") {
+    return (
+      <TreeMotionRow
+        y={y}
+        height={height}
+        animateEnter={animateEnter}
+        depth={row.depth}
+        paddingLeftPx={searchTreePaddingLeft(row.depth)}
+        className="cursor-pointer text-xs text-ctp-subtext1 hover:bg-ctp-surface0/50"
+        aria-expanded={row.expanded}
+        tabIndex={0}
+        onClick={() => onToggleFolder(row.key)}
+        onKeyDown={activateOnEnterSpace(() => onToggleFolder(row.key))}
+      >
+        {disclosureChevron(row.expanded)}
+        <span className="icon-[codicon--folder] shrink-0 text-sm text-ctp-mauve" />
+        <span className="truncate">{row.segment}</span>
+        <span className="ml-auto shrink-0 text-[10px] text-ctp-overlay0">{row.childCount}</span>
+      </TreeMotionRow>
+    );
+  }
+
+  if (row.kind === "match") {
+    const openable =
+      (row.hit.domain === "manuscript" && row.hit.entityKind === "chapter") ||
+      (row.hit.domain === "resource" && row.hit.entityKind === "file");
+
+    return (
+      <TreeMotionRow
+        y={y}
+        height={height}
+        animateEnter={animateEnter}
+        depth={row.leafDepth}
+        paddingLeftPx={searchTreeMatchPaddingLeft(row.leafDepth)}
+        className={cn(
+          "text-2xs text-ctp-subtext1",
+          openable && "cursor-pointer hover:bg-ctp-surface0/50",
+        )}
+        tabIndex={openable ? 0 : -1}
+        onClick={() => {
+          if (openable) {
+            onOpen(row.hit);
+          }
+        }}
+        onKeyDown={openable ? activateOnEnterSpace(() => onOpen(row.hit)) : undefined}
+      >
+        <span className="icon-[codicon--list-flat] shrink-0 text-sm text-ctp-overlay0" />
+        {row.hit.matchKind === "title" ? (
+          <span className="truncate text-ctp-subtext0">名称匹配</span>
+        ) : (
+          <span className="truncate font-mono text-ctp-text">
+            {row.hit.line !== undefined ? (
+              <span className="mr-1 text-ctp-overlay0">{row.hit.line}:</span>
+            ) : null}
+            {row.hit.snippet ?? row.hit.label}
+          </span>
+        )}
+      </TreeMotionRow>
+    );
+  }
+
+  const leaf = row.leaf;
   const openable =
     (leaf.hits[0]?.domain === "manuscript" && leaf.entityKind === "chapter") ||
     (leaf.hits[0]?.domain === "resource" && leaf.entityKind === "file");
@@ -149,214 +177,45 @@ function SearchLeafRow({
     }
   };
 
-  return (
-    <>
-      <li
-        role="treeitem"
-        aria-expanded={showMatches ? expanded : undefined}
-        className={cn(
-          "flex h-6 items-center gap-1 pr-2 text-xs text-ctp-subtext1",
-          openable && "cursor-pointer hover:bg-ctp-surface0/50",
-        )}
-        style={{ paddingLeft: `${searchTreePaddingLeft(depth)}px` }}
-        onClick={() => {
-          if (showMatches) {
-            onToggle();
-            return;
-          }
-          if (openable) {
-            openPrimary();
-          }
-        }}
-        onKeyDown={(event) => {
-          if (event.key === "Enter" || event.key === " ") {
-            event.preventDefault();
-            if (showMatches) {
-              onToggle();
-            } else if (openable) {
-              openPrimary();
-            }
-          }
-        }}
-        tabIndex={0}
-      >
-        {showMatches ? (
-          <span
-            className={cn(
-              treeRowDisclosureChevronSlotClass,
-              expanded ? "icon-[codicon--chevron-down]" : "icon-[codicon--chevron-right]",
-            )}
-          />
-        ) : (
-          <span className={treeRowDisclosureSpacerClass} />
-        )}
-        <span className={cn(entityIconClass(leaf.entityKind), "shrink-0 text-sm")} />
-        <span className="truncate">{leaf.name}</span>
-        {showMatches ? (
-          <span className="ml-auto shrink-0 rounded bg-ctp-surface0 px-1 py-px font-mono text-[10px] text-ctp-subtext0">
-            {leaf.hits.length}
-          </span>
-        ) : null}
-      </li>
-      {showMatches && expanded
-        ? leaf.hits.map((hit, index) => (
-            <SearchMatchRow
-              key={`${leaf.nodeId}-${hit.matchKind}-${hit.line ?? index}`}
-              hit={hit}
-              depth={depth}
-              onOpen={onOpen}
-            />
-          ))
-        : null}
-    </>
-  );
-}
+  const onActivate = () => {
+    if (row.showMatches) {
+      onToggleLeaf(row.key);
+      return;
+    }
+    if (openable) {
+      openPrimary();
+    }
+  };
 
-function SearchDomainRootRow({
-  title,
-  iconClass,
-  depth,
-  expanded,
-  onToggle,
-}: {
-  title: string;
-  iconClass: string;
-  depth: number;
-  expanded: boolean;
-  onToggle: () => void;
-}) {
   return (
-    <li
-      role="treeitem"
-      aria-expanded={expanded}
-      className="flex h-6 cursor-pointer items-center gap-1 pr-2 text-xs font-medium text-ctp-text hover:bg-ctp-surface0/50"
-      style={{ paddingLeft: `${searchTreePaddingLeft(depth)}px` }}
-      onClick={onToggle}
-      onKeyDown={(event) => {
-        if (event.key === "Enter" || event.key === " ") {
-          event.preventDefault();
-          onToggle();
-        }
-      }}
+    <TreeMotionRow
+      y={y}
+      height={height}
+      animateEnter={animateEnter}
+      depth={row.depth}
+      paddingLeftPx={searchTreePaddingLeft(row.depth)}
+      className={cn(
+        "text-xs text-ctp-subtext1",
+        openable && "cursor-pointer hover:bg-ctp-surface0/50",
+      )}
+      aria-expanded={row.showMatches ? row.expanded : undefined}
       tabIndex={0}
+      onClick={onActivate}
+      onKeyDown={activateOnEnterSpace(onActivate)}
     >
-      <span
-        className={cn(
-          treeRowDisclosureChevronSlotClass,
-          expanded ? "icon-[codicon--chevron-down]" : "icon-[codicon--chevron-right]",
-        )}
-      />
-      <span className={cn(iconClass, "shrink-0 text-sm")} />
-      <span className="truncate">{title}</span>
-    </li>
-  );
-}
-
-function SearchFolderRow({
-  segment,
-  depth,
-  expanded,
-  childCount,
-  onToggle,
-}: {
-  segment: string;
-  depth: number;
-  expanded: boolean;
-  childCount: number;
-  onToggle: () => void;
-}) {
-  return (
-    <li
-      role="treeitem"
-      aria-expanded={expanded}
-      className="flex h-6 cursor-pointer items-center gap-1 pr-2 text-xs text-ctp-subtext1 hover:bg-ctp-surface0/50"
-      style={{ paddingLeft: `${searchTreePaddingLeft(depth)}px` }}
-      onClick={onToggle}
-      onKeyDown={(event) => {
-        if (event.key === "Enter" || event.key === " ") {
-          event.preventDefault();
-          onToggle();
-        }
-      }}
-      tabIndex={0}
-    >
-      <span
-        className={cn(
-          treeRowDisclosureChevronSlotClass,
-          expanded ? "icon-[codicon--chevron-down]" : "icon-[codicon--chevron-right]",
-        )}
-      />
-      <span className="icon-[codicon--folder] shrink-0 text-sm text-ctp-mauve" />
-      <span className="truncate">{segment}</span>
-      <span className="ml-auto shrink-0 text-[10px] text-ctp-overlay0">{childCount}</span>
-    </li>
-  );
-}
-
-function SearchTreeNodes({
-  nodes,
-  depth,
-  scope,
-  expandedFolders,
-  expandedLeaves,
-  onToggleFolder,
-  onToggleLeaf,
-  onOpen,
-}: {
-  nodes: SearchPathTreeNode[];
-  depth: number;
-  scope: string;
-  expandedFolders: ReadonlySet<string>;
-  expandedLeaves: ReadonlySet<string>;
-  onToggleFolder: (scopedPathKey: string) => void;
-  onToggleLeaf: (scopedNodeId: string) => void;
-  onOpen: (hit: WorktreeSearchHit) => void;
-}) {
-  return (
-    <>
-      {nodes.map((node) => {
-        if (node.type === "folder") {
-          const scopedPathKey = scopeKey(scope, node.pathKey);
-          const expanded = expandedFolders.has(scopedPathKey);
-          return (
-            <div key={scopedPathKey}>
-              <SearchFolderRow
-                segment={node.segment}
-                depth={depth}
-                expanded={expanded}
-                childCount={node.children.length}
-                onToggle={() => onToggleFolder(scopedPathKey)}
-              />
-              {expanded ? (
-                <SearchTreeNodes
-                  nodes={node.children}
-                  depth={depth + 1}
-                  scope={scope}
-                  expandedFolders={expandedFolders}
-                  expandedLeaves={expandedLeaves}
-                  onToggleFolder={onToggleFolder}
-                  onToggleLeaf={onToggleLeaf}
-                  onOpen={onOpen}
-                />
-              ) : null}
-            </div>
-          );
-        }
-
-        const scopedNodeId = scopeKey(scope, node.nodeId);
-        const expanded = expandedLeaves.has(scopedNodeId);
-        return (
-          <SearchLeafRow
-            key={scopedNodeId}
-            leaf={node}
-            depth={depth}
-            expanded={expanded}
-            onToggle={() => onToggleLeaf(scopedNodeId)}
-            onOpen={onOpen}
-          />
-        );
-      })}
-    </>
+      {row.showMatches ? (
+        disclosureChevron(row.expanded)
+      ) : (
+        <span className={treeRowDisclosureSpacerClass} />
+      )}
+      <span className={cn(entityIconClass(leaf.entityKind), "shrink-0 text-sm")} />
+      <span className="truncate">{leaf.name}</span>
+      {row.showMatches ? (
+        <span className="ml-auto shrink-0 rounded bg-ctp-surface0 px-1 py-px font-mono text-[10px] text-ctp-subtext0">
+          {leaf.hits.length}
+        </span>
+      ) : null}
+    </TreeMotionRow>
   );
 }
 
@@ -367,22 +226,8 @@ export function SearchResultTree({
   roots: SearchResultDomainRoot[];
   onOpenHit: (hit: WorktreeSearchHit) => void;
 }) {
-  const folderKeys = useMemo(() => {
-    const keys: string[] = [];
-    for (const root of roots) {
-      keys.push(...collectFolderPathKeys(root.nodes, root.id));
-    }
-    return keys;
-  }, [roots]);
-
-  const leafIds = useMemo(() => {
-    const ids: string[] = [];
-    for (const root of roots) {
-      ids.push(...collectLeafIds(root.nodes, root.id));
-    }
-    return ids;
-  }, [roots]);
-
+  const folderKeys = useMemo(() => collectSearchTreeFolderKeys(roots), [roots]);
+  const leafIds = useMemo(() => collectSearchTreeLeafKeys(roots), [roots]);
   const domainIds = useMemo(() => roots.map((root) => root.id), [roots]);
 
   const [expandedDomains, setExpandedDomains] = useState<Set<string>>(() => new Set(domainIds));
@@ -394,6 +239,11 @@ export function SearchResultTree({
     setExpandedFolders(new Set(folderKeys));
     setExpandedLeaves(new Set(leafIds));
   }, [domainIds, folderKeys, leafIds]);
+
+  const flatRows = useMemo(
+    () => flattenSearchResultTree(roots, expandedDomains, expandedFolders, expandedLeaves),
+    [roots, expandedDomains, expandedFolders, expandedLeaves],
+  );
 
   const onToggleDomain = useCallback((domainId: string) => {
     setExpandedDomains((current) => {
@@ -431,36 +281,28 @@ export function SearchResultTree({
     });
   }, []);
 
+  const getItemKey = useCallback((row: SearchResultFlatRow) => row.key, []);
+
   return (
     <ScrollArea className="min-h-0 flex-1" fill>
-      <ul className="flex flex-col gap-0.5 py-1" role="tree">
-        {roots.map((root) => {
-          const domainExpanded = expandedDomains.has(root.id);
-          return (
-            <div key={root.id}>
-              <SearchDomainRootRow
-                title={root.title}
-                iconClass={root.iconClass}
-                depth={0}
-                expanded={domainExpanded}
-                onToggle={() => onToggleDomain(root.id)}
-              />
-              {domainExpanded ? (
-                <SearchTreeNodes
-                  nodes={root.nodes}
-                  depth={1}
-                  scope={root.id}
-                  expandedFolders={expandedFolders}
-                  expandedLeaves={expandedLeaves}
-                  onToggleFolder={onToggleFolder}
-                  onToggleLeaf={onToggleLeaf}
-                  onOpen={onOpenHit}
-                />
-              ) : null}
-            </div>
-          );
-        })}
-      </ul>
+      <div className="py-1">
+        <FlatTreeList
+          items={flatRows}
+          getItemKey={getItemKey}
+          rowHeight={TREE_ROW_HEIGHT_PX}
+          className="w-full"
+          renderRow={(row, _index, layout) => (
+            <SearchFlatRowView
+              row={row}
+              layout={layout}
+              onToggleDomain={onToggleDomain}
+              onToggleFolder={onToggleFolder}
+              onToggleLeaf={onToggleLeaf}
+              onOpen={onOpenHit}
+            />
+          )}
+        />
+      </div>
     </ScrollArea>
   );
 }
