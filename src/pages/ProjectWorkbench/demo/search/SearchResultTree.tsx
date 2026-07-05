@@ -30,6 +30,10 @@ function searchTreeMatchPaddingLeft(leafDepth: number): number {
   return getTreeRowPaddingLeft(leafDepth) + TREE_ROW_DISCLOSURE_WIDTH_PX + TREE_ROW_CONTENT_GAP_PX;
 }
 
+const searchResultCountPillClass = cn(
+  "ml-auto shrink-0 rounded-full bg-ctp-surface0 px-1 py-px font-mono text-[10px] text-ctp-subtext0",
+);
+
 function entityIconClass(entityKind: WorktreeSearchHit["entityKind"]): string {
   return cn(
     entityKind === "folder" && "icon-[codicon--folder] text-ctp-mauve",
@@ -124,7 +128,7 @@ function SearchFlatRowView({
         {disclosureChevron(row.expanded)}
         <span className="icon-[codicon--folder] shrink-0 text-sm text-ctp-mauve" />
         <SearchHighlightText className="truncate">{row.segment}</SearchHighlightText>
-        <span className="ml-auto shrink-0 text-[10px] text-ctp-overlay0">{row.childCount}</span>
+        <span className={searchResultCountPillClass}>{row.childCount}</span>
       </TreeMotionRow>
     );
   }
@@ -210,7 +214,7 @@ function SearchFlatRowView({
       <span className={cn(entityIconClass(leaf.entityKind), "shrink-0 text-sm")} />
       <SearchHighlightText className="truncate">{leaf.name}</SearchHighlightText>
       {row.showMatches ? (
-        <span className="ml-auto shrink-0 rounded bg-ctp-surface0 px-1 py-px font-mono text-[10px] text-ctp-subtext0">
+        <span className={searchResultCountPillClass}>
           {leaf.hits.filter((hit) => hit.matchKind === "content").length}
         </span>
       ) : null}
