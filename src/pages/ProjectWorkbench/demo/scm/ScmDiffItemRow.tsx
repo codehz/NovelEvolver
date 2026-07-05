@@ -1,6 +1,11 @@
-import { useState } from "react";
+import type { KeyboardEvent, ReactNode } from "react";
 
 import { cn } from "#app/lib/cn";
+import {
+  treeRowDisclosureChevronSlotClass,
+  treeRowDisclosureSpacerClass,
+} from "#app/pages/ProjectWorkbench/tree/tree-row-motion";
+import { TreeMotionRow } from "#app/pages/ProjectWorkbench/tree/TreeMotionRow";
 import type { ScmChange } from "#shared/rpc/worktree-scm";
 
 import { ScmDiffStats } from "./ScmDiffStats";
@@ -17,61 +22,111 @@ function scmChangeKindIconClass(kind: ScmChange["kind"]): string {
 }
 
 function scmEntityIconClass(entityKind: ScmChange["entityKind"]): string {
-  return entityKind === "folder"
-    ? "icon-[codicon--folder] text-ctp-mauve"
-    : "icon-[codicon--file] text-ctp-overlay0";
+  return cn(
+    entityKind === "chapter" && "icon-[codicon--book] text-ctp-blue",
+    entityKind === "folder" && "icon-[codicon--folder] text-ctp-mauve",
+    entityKind === "file" && "icon-[codicon--file] text-ctp-overlay0",
+  );
+}
+
+const scmChangeRowClass = cn(
+  "group cursor-default text-xs text-ctp-subtext1 hover:bg-ctp-surface0/50",
+);
+const scmChangeMetaClass = cn("ml-auto flex shrink-0 items-center gap-1");
+const scmChangeMetaIdleClass = cn(
+  "flex shrink-0 items-center gap-1 group-focus-within:hidden group-hover:hidden",
+);
+const scmChangeRevertButtonClass = cn(
+  "hidden size-5 shrink-0 cursor-pointer items-center justify-center text-ctp-overlay0",
+  "group-focus-within:flex group-hover:flex hover:bg-ctp-surface1 hover:text-ctp-subtext1",
+);
+
+function disclosureChevron(expanded: boolean): ReactNode {
+  return (
+    <span
+      aria-hidden="true"
+      className={cn(
+        treeRowDisclosureChevronSlotClass,
+        "icon-[codicon--chevron-right]",
+        "motion-safe:transition-transform motion-safe:duration-220 motion-safe:ease-[cubic-bezier(0.22,1,0.36,1)]",
+        expanded && "rotate-90",
+      )}
+    />
+  );
 }
 
 export function ScmDiffItemRow({
   item,
+  depth,
+  layout,
+  label,
+  disclosure,
+  iconClassName,
+  className,
+  ariaExpanded,
+  onClick,
+  onKeyDown,
   onRevert,
 }: {
   item: ScmChange;
+  depth: number;
+  layout: { y: number; height: number; animateEnter: boolean };
+  label?: string;
+  disclosure?: ReactNode;
+  iconClassName?: string;
+  className?: string;
+  ariaExpanded?: boolean;
+  onClick?: () => void;
+  onKeyDown?: (event: KeyboardEvent) => void;
   onRevert: (changeId: string) => void;
 }) {
-  const [hovered, setHovered] = useState(false);
-
   return (
-    <li
-      className="flex h-6 items-center gap-1 rounded px-2 text-xs text-ctp-subtext1 hover:bg-ctp-surface0/50"
-      style={{ paddingLeft: `${(item.depth + 1) * 12}px` }}
-      role="treeitem"
+    <TreeMotionRow
+      y={layout.y}
+      height={layout.height}
+      animateEnter={layout.animateEnter}
+      depth={depth}
+      className={cn(scmChangeRowClass, className)}
+      aria-expanded={ariaExpanded}
       tabIndex={0}
-      onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => setHovered(false)}
+      onClick={onClick}
+      onKeyDown={onKeyDown}
     >
-      <span className={cn(scmEntityIconClass(item.entityKind), "shrink-0 text-sm")} />
-      <span className="truncate">{item.label}</span>
+      {disclosure ?? <span className={treeRowDisclosureSpacerClass} />}
+      <span
+        className={cn(iconClassName ?? scmEntityIconClass(item.entityKind), "shrink-0 text-sm")}
+      />
+      <span className="truncate">{label ?? item.label}</span>
       {item.kind === "reorder" ? (
         <span className="shrink-0 text-[10px] text-ctp-overlay0">顺序</span>
       ) : null}
-      <span className="ml-auto flex shrink-0 items-center gap-1">
-        {!hovered && item.stats !== undefined ? (
-          <ScmDiffStats added={item.stats.added} removed={item.stats.removed} />
-        ) : null}
-        {!hovered ? (
+      <span className={scmChangeMetaClass}>
+        <span className={scmChangeMetaIdleClass}>
+          {item.stats !== undefined ? (
+            <ScmDiffStats added={item.stats.added} removed={item.stats.removed} />
+          ) : null}
           <span className={cn(scmChangeKindIconClass(item.kind), "shrink-0 text-sm")} />
-        ) : null}
-        {hovered ? (
-          <button
-            type="button"
-            className="size-5 shrink-0 cursor-pointer items-center justify-center rounded text-ctp-overlay0 hover:bg-ctp-surface1 hover:text-ctp-subtext1"
-            onClick={(e) => {
+        </span>
+        <button
+          type="button"
+          className={scmChangeRevertButtonClass}
+          onClick={(e) => {
+            e.stopPropagation();
+            onRevert(item.id);
+          }}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" || e.key === " ") {
               e.stopPropagation();
               onRevert(item.id);
-            }}
-            onKeyDown={(e) => {
-              if (e.key === "Enter" || e.key === " ") {
-                e.stopPropagation();
-                onRevert(item.id);
-              }
-            }}
-            title="还原此变更"
-          >
-            <span className="icon-[codicon--discard] text-sm" />
-          </button>
-        ) : null}
+            }
+          }}
+          title="还原此变更"
+        >
+          <span className="icon-[codicon--discard] text-sm" />
+        </button>
       </span>
-    </li>
+    </TreeMotionRow>
   );
 }
+
+export { disclosureChevron, scmEntityIconClass };
