@@ -5,8 +5,8 @@ import { useCallback } from "react";
 import { notificationApi } from "#app/lib/notifications";
 import type { ManuscriptTreeNode } from "#shared/rpc/worktree-tree";
 
-import { useManuscript } from "../../branch/branch-scopes";
-import { useWorkbenchEditorActions } from "../../editor/use-workbench-editor-actions";
+import { useManuscript } from "../../../branch/branch-scopes";
+import { useWorkbenchEditorActions } from "../../../editor/use-workbench-editor-actions";
 import { findManuscriptChildIndex, findManuscriptParentId } from "../manuscript-tree";
 import { manuscriptTreeMolecule } from "./manuscript-tree-molecule";
 import type { ManuscriptEditingState, ManuscriptTreeState } from "./types";

@@ -4,8 +4,8 @@ import { cn } from "#app/lib/cn";
 import {
   treeRowDisclosureChevronSlotClass,
   treeRowDisclosureSpacerClass,
-} from "#app/pages/ProjectWorkbench/tree/tree-row-motion";
-import { TreeMotionRow } from "#app/pages/ProjectWorkbench/tree/TreeMotionRow";
+} from "#app/pages/ProjectWorkbench/workbench/tree/tree-row-motion";
+import { TreeMotionRow } from "#app/pages/ProjectWorkbench/workbench/tree/TreeMotionRow";
 import type { ScmChange } from "#shared/rpc/worktree-scm";
 
 import { ScmDiffStats } from "./ScmDiffStats";

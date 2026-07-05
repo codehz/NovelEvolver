@@ -5,7 +5,7 @@ import { useEffect } from "react";
 import { consumeRpcStream } from "#app/lib/app-rpc-react";
 import type { WorktreeTreeEvent } from "#shared/rpc/worktree-tree";
 
-import { useWorktreeTree } from "../../branch/branch-scopes";
+import { useWorktreeTree } from "../../../branch/branch-scopes";
 import { resourceLibraryTreeMolecule } from "./resource-tree-molecule";
 
 export function useResourceTreeSync(): void {

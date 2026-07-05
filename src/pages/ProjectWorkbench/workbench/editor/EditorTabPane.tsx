@@ -6,7 +6,10 @@ import { useCallback } from "react";
 import { PlainTextEditor, type PlainTextEditorHandle } from "#app/components/PlainTextEditor";
 
 import { useManuscript, useResourceLibrary } from "../branch/branch-scopes";
-import { useResourceAutosave, useTextAutosave } from "../resource-library/use-resource-autosave";
+import {
+  useResourceAutosave,
+  useTextAutosave,
+} from "../explorer/resource-library/use-resource-autosave";
 import { editorTabMolecule, editorTabScope } from "../state/molecules";
 
 type EditorTabPaneProps = {

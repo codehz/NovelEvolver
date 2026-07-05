@@ -6,8 +6,8 @@ import { notificationApi } from "#app/lib/notifications";
 import { normalizeResourceNameInput } from "#shared/resource-library-path";
 import type { ResourceTreeSnapshot } from "#shared/rpc/worktree-tree";
 
-import { useResourceLibrary } from "../../branch/branch-scopes";
-import { useWorkbenchEditorActions } from "../../editor/use-workbench-editor-actions";
+import { useResourceLibrary } from "../../../branch/branch-scopes";
+import { useWorkbenchEditorActions } from "../../../editor/use-workbench-editor-actions";
 import { findResourceParentId } from "../resource-tree";
 import { resourceLibraryTreeMolecule } from "./resource-tree-molecule";
 import type { ResourceTreeEditingState, ResourceTreeSelection } from "./types";

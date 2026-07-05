@@ -11,9 +11,9 @@ import { convertRpcPromise } from "#app/lib/rpc-utils";
 import { useTitleBarTitle } from "#app/lib/titlebar-title";
 
 import { BranchScopeProvider } from "./workbench/branch/BranchScopeProvider";
-import { buildWorkbenchSlots } from "./workbench/slots";
 import { projectIdScope, projectMolecule } from "./workbench/state/molecules";
 import { WorkbenchStatusBar } from "./workbench/statusbar/WorkbenchStatusBar";
+import { buildWorkbenchSlots } from "./workbench/workbench-slots";
 
 export function ProjectWorkbench() {
   const { projectId } = useParams<{ projectId: string }>();

@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { KeyboardEvent, ReactNode } from "react";
 
 import { cn } from "#app/lib/cn";
-import { FlatTreeList } from "#app/pages/ProjectWorkbench/tree/FlatTreeList";
+import { FlatTreeList } from "#app/pages/ProjectWorkbench/workbench/tree/FlatTreeList";
 import {
   getTreeRowPaddingLeft,
   TREE_ROW_CONTENT_GAP_PX,
@@ -10,8 +10,8 @@ import {
   TREE_ROW_HEIGHT_PX,
   treeRowDisclosureChevronSlotClass,
   treeRowDisclosureSpacerClass,
-} from "#app/pages/ProjectWorkbench/tree/tree-row-motion";
-import { TreeMotionRow } from "#app/pages/ProjectWorkbench/tree/TreeMotionRow";
+} from "#app/pages/ProjectWorkbench/workbench/tree/tree-row-motion";
+import { TreeMotionRow } from "#app/pages/ProjectWorkbench/workbench/tree/TreeMotionRow";
 import type { WorktreeSearchHit } from "#shared/rpc/worktree-search";
 
 import {

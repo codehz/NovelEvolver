@@ -3,8 +3,8 @@ import { useMemo, useState } from "react";
 import { SidebarPaneStack } from "#app/components/workbench";
 import { cn } from "#app/lib/cn";
 
-import { ManuscriptSectionBody } from "../manuscript/ManuscriptSection";
-import { ResourceLibrarySectionBody } from "../resource-library/ResourceLibrarySection";
+import { ManuscriptSectionBody } from "../explorer/manuscript/ManuscriptSection";
+import { ResourceLibrarySectionBody } from "../explorer/resource-library/ResourceLibrarySection";
 
 type SidebarTreeNode = {
   icon: string;

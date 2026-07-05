@@ -3,11 +3,11 @@ import type { ReactNode } from "react";
 import type { WorkbenchPrimaryView } from "#app/components/workbench";
 import { cn } from "#app/lib/cn";
 
+import { AuxiliaryPanel } from "./auxiliary/AuxiliaryPanel";
 import { EditorArea } from "./editor/EditorArea";
-import { SearchSidebarSection } from "./search/SearchSidebarSection";
-import { AuxiliaryPanel } from "./sidebars/auxiliary-panel";
-import { ExplorerSidebar } from "./sidebars/primary-sidebar";
-import { ScmSidebarSection } from "./sidebars/ScmSidebarSection";
+import { ExplorerSidebar } from "./sidebar/ExplorerSidebar";
+import { ScmSidebarSection } from "./sidebar/ScmSidebarSection";
+import { SearchSidebarSection } from "./sidebar/SearchSidebarSection";
 
 export function buildWorkbenchSlots(projectLabel: string): {
   primaryViews: WorkbenchPrimaryView[];

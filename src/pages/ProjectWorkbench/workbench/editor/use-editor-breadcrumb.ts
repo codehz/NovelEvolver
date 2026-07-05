@@ -8,10 +8,10 @@ import type {
   ResourceTreeSnapshot,
 } from "#shared/rpc/worktree-tree";
 
-import { manuscriptParentChain } from "../manuscript/manuscript-tree";
-import { manuscriptTreeMolecule } from "../manuscript/state/manuscript-tree-molecule";
-import { resourceParentChain } from "../resource-library/resource-tree";
-import { resourceLibraryTreeMolecule } from "../resource-library/state/resource-tree-molecule";
+import { manuscriptParentChain } from "../explorer/manuscript/manuscript-tree";
+import { manuscriptTreeMolecule } from "../explorer/manuscript/state/manuscript-tree-molecule";
+import { resourceParentChain } from "../explorer/resource-library/resource-tree";
+import { resourceLibraryTreeMolecule } from "../explorer/resource-library/state/resource-tree-molecule";
 import type {
   ManuscriptWorkbenchEditorTab,
   ResourceWorkbenchEditorTab,

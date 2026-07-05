@@ -1,7 +1,7 @@
 import { ScmDiffError } from "../scm/ScmDiffStatusViews";
-import { SearchQueryChrome } from "./SearchQueryChrome";
-import { SearchResultTree } from "./SearchResultTree";
-import { useWorktreeSearchState } from "./use-worktree-search-state";
+import { SearchQueryChrome } from "../search/SearchQueryChrome";
+import { SearchResultTree } from "../search/SearchResultTree";
+import { useWorktreeSearchState } from "../search/use-worktree-search-state";
 
 export function SearchSidebarSection() {
   const { query, setQuery, highlightQuery, error, statsLine, roots, retry, openHit } =

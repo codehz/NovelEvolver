@@ -2,13 +2,13 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { KeyboardEvent } from "react";
 
 import { cn } from "#app/lib/cn";
-import { FlatTreeList } from "#app/pages/ProjectWorkbench/tree/FlatTreeList";
+import { FlatTreeList } from "#app/pages/ProjectWorkbench/workbench/tree/FlatTreeList";
 import {
   TREE_ROW_HEIGHT_PX,
   getTreeRowPaddingLeft,
   treeRowDisclosureSpacerClass,
-} from "#app/pages/ProjectWorkbench/tree/tree-row-motion";
-import { TreeMotionRow } from "#app/pages/ProjectWorkbench/tree/TreeMotionRow";
+} from "#app/pages/ProjectWorkbench/workbench/tree/tree-row-motion";
+import { TreeMotionRow } from "#app/pages/ProjectWorkbench/workbench/tree/TreeMotionRow";
 import type { ScmChange } from "#shared/rpc/worktree-scm";
 
 import {

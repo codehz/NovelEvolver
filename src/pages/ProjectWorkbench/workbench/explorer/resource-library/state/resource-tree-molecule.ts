@@ -1,8 +1,8 @@
 import { molecule, use } from "bunshi/react";
 import { atomWithReducer } from "jotai/utils";
 
-import { branchNameScope } from "../../branch/branch-scopes";
-import { projectIdScope } from "../../state/molecules";
+import { branchNameScope } from "../../../branch/branch-scopes";
+import { projectIdScope } from "../../../state/molecules";
 import { resourceTreeReducer } from "./tree-data-reducer";
 import { initialResourceTreeState } from "./types";
 
