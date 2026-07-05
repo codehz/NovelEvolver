@@ -39,14 +39,24 @@ function readFileFromTree(
   let hash: SHA1 = treeHash;
 
   for (let i = 0; i < segments.length; i++) {
-    const obj = readObject(objects, hash);
+    let obj;
+    try {
+      obj = readObject(objects, hash);
+    } catch {
+      return undefined;
+    }
     if (obj.type !== "tree") return undefined;
 
     const entry = obj.entries.find((e) => e.name === segments[i]);
     if (entry === undefined) return undefined;
 
     if (i === segments.length - 1) {
-      const blob = readObject(objects, entry.hash);
+      let blob;
+      try {
+        blob = readObject(objects, entry.hash);
+      } catch {
+        return undefined;
+      }
       return blob.type === "blob" ? blob.content : undefined;
     }
     hash = entry.hash;
@@ -154,7 +164,12 @@ interface BaseSnapshot {
 }
 
 function buildBaseSnapshot(objects: ObjectDatabase, baseTree: SHA1): BaseSnapshot {
-  const snapshot = readTreeSnapshot(objects, baseTree);
+  let snapshot;
+  try {
+    snapshot = readTreeSnapshot(objects, baseTree);
+  } catch {
+    return { outline: null, resourcePaths: new Set() };
+  }
 
   const outlineContent = readTextFromTree(objects, baseTree, MANUSCRIPT_OUTLINE_PATH);
   const outline = parseOutlineOrNull(outlineContent);
@@ -225,13 +240,27 @@ function computeManuscriptDiff(
 
     // 新增节点（仅在 current 中）
     if (baseNode === null && currentNode !== null) {
-      nodes.push({
+      const nodeDiff: NodeDiff = {
         id,
         type: currentNode.type,
         title: currentNode.title,
         base: null,
         parent: currentParentById.get(id) ?? null,
-      });
+      };
+      // 新增章节：读取当前内容计算字数统计
+      if (currentNode.type === "chapter") {
+        const bodyPath = chapterBodyPath(id);
+        const content = worktree.exists(bodyPath)
+          ? worktree.readFile(bodyPath).toString("utf-8")
+          : "";
+        if (content.length > 0) {
+          nodeDiff.contentChanged = {
+            stats: { added: content.length, removed: 0 },
+            oldContent: "",
+          };
+        }
+      }
+      nodes.push(nodeDiff);
       continue;
     }
 

@@ -320,6 +320,12 @@ function ManuscriptChangeRow({
         <span className={cn(typeIcon, "shrink-0 text-sm text-ctp-overlay0")} />
         <span className="truncate">{diff.title}</span>
         <span className="ml-auto flex shrink-0 items-center gap-1">
+          {diff.contentChanged !== undefined ? (
+            <DiffStats
+              added={diff.contentChanged.stats.added}
+              removed={diff.contentChanged.stats.removed}
+            />
+          ) : null}
           <span className="icon-[codicon--diff-added] shrink-0 text-sm text-ctp-green" />
         </span>
       </li>
