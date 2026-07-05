@@ -1,13 +1,18 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { Fragment, useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
 
-import { ScrollArea } from "#app/components/ScrollArea";
+import {
+  SidebarSectionRowResizeHandle,
+  SidebarViewSection,
+  useSidebarPaneStack,
+} from "#app/components/workbench";
 import { cn } from "#app/lib/cn";
 import type { RpcStreamSubscribe } from "#shared/rpc/stream";
 import type { ScmChange, ScmSnapshot } from "#shared/rpc/worktree-scm";
 
 import { useWorktreeScm } from "../branch/branch-scopes";
 
-// ==================== Stats badge ====================
+const DEFAULT_CHANGES_BODY_HEIGHT = 200;
+const DEFAULT_GRAPH_BODY_HEIGHT = 120;
 
 function DiffStats({ added, removed }: { added: number; removed: number }) {
   return (
@@ -174,6 +179,169 @@ function DiffError({ onRetry }: { onRetry: () => void }) {
   );
 }
 
+function ScmGraphPlaceholder() {
+  return (
+    <div className="flex flex-col items-center gap-2 px-2 py-6 text-center text-xs text-ctp-subtext0">
+      <span aria-hidden="true" className="icon-[codicon--graph] text-2xl text-ctp-overlay0" />
+      <p>提交图表（占位）</p>
+    </div>
+  );
+}
+
+function ScmCommitForm({
+  commitMessage,
+  committing,
+  onCommitMessageChange,
+  onCommit,
+}: {
+  commitMessage: string;
+  committing: boolean;
+  onCommitMessageChange: (value: string) => void;
+  onCommit: () => void;
+}) {
+  return (
+    <div className="shrink-0 p-2">
+      <textarea
+        className="w-full resize-none rounded-sm border border-ctp-surface0 bg-ctp-base px-2 py-1.5 text-xs leading-tight text-ctp-text outline-none placeholder:text-ctp-overlay0 focus:border-ctp-mauve"
+        rows={3}
+        placeholder="提交信息…"
+        value={commitMessage}
+        onChange={(e) => onCommitMessageChange(e.target.value)}
+        onKeyDown={(e) => {
+          if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) {
+            e.preventDefault();
+            onCommit();
+          }
+        }}
+        disabled={committing}
+      />
+      <button
+        type="button"
+        className={cn(
+          "mt-1.5 flex w-full items-center justify-center gap-1.5 rounded-sm px-2 py-1 text-xs font-medium",
+          commitMessage.trim() !== "" && !committing
+            ? "bg-ctp-mauve text-ctp-crust hover:brightness-110"
+            : "cursor-not-allowed bg-ctp-surface0 text-ctp-overlay0",
+        )}
+        disabled={commitMessage.trim() === "" || committing}
+        onClick={onCommit}
+      >
+        {committing ? (
+          <>
+            <span className="icon-[codicon--loading] animate-spin text-sm" />
+            提交中…
+          </>
+        ) : (
+          <>
+            <span className="icon-[codicon--check] text-sm" />
+            提交
+          </>
+        )}
+      </button>
+      <p className="mt-1 text-center text-[10px] text-ctp-overlay0">Ctrl+Enter 提交</p>
+    </div>
+  );
+}
+
+function ScmChangesBody({
+  commitMessage,
+  committing,
+  loading,
+  error,
+  result,
+  onCommitMessageChange,
+  onCommit,
+  onRetry,
+  onRevert,
+}: {
+  commitMessage: string;
+  committing: boolean;
+  loading: boolean;
+  error: boolean;
+  result: ScmSnapshot | null;
+  onCommitMessageChange: (value: string) => void;
+  onCommit: () => void;
+  onRetry: () => void;
+  onRevert: (changeId: string) => void;
+}) {
+  let changesContent: ReactNode;
+
+  if (loading) {
+    changesContent = <DiffLoading />;
+  } else if (error) {
+    changesContent = <DiffError onRetry={onRetry} />;
+  } else if (result === null) {
+    changesContent = <DiffEmptyState />;
+  } else if (!result.hasChanges) {
+    changesContent = (
+      <>
+        {result.warning ? (
+          <div className="px-2 pt-2">
+            <div className="rounded border border-ctp-yellow/40 bg-ctp-yellow/10 px-2 py-1 text-[10px] text-ctp-yellow">
+              {result.warning}
+            </div>
+          </div>
+        ) : null}
+        <DiffEmptyState />
+      </>
+    );
+  } else {
+    changesContent = (
+      <div className="flex flex-col gap-0.5 py-1">
+        {result.warning ? (
+          <div className="mx-2 mb-1 rounded border border-ctp-yellow/40 bg-ctp-yellow/10 px-2 py-1 text-[10px] text-ctp-yellow">
+            {result.warning}
+          </div>
+        ) : null}
+        {result.manuscriptChanges.length > 0 ? (
+          <section>
+            <div className="flex items-center gap-1.5 px-2 py-0.5 text-[10px] font-semibold tracking-wide text-ctp-mauve uppercase">
+              <span className="icon-[codicon--symbol-method] shrink-0 text-sm" />
+              正文变更
+              <span className="ml-0.5 rounded bg-ctp-surface0 px-1 py-px font-mono text-ctp-subtext0">
+                {result.manuscriptChanges.length}
+              </span>
+            </div>
+            <ul className="flex flex-col" role="tree">
+              {result.manuscriptChanges.map((item) => (
+                <DiffItemRow key={item.id} item={item} onRevert={onRevert} />
+              ))}
+            </ul>
+          </section>
+        ) : null}
+        {result.resourceChanges.length > 0 ? (
+          <section>
+            <div className="flex items-center gap-1.5 px-2 py-0.5 text-[10px] font-semibold tracking-wide text-ctp-mauve uppercase">
+              <span className="icon-[codicon--symbol-file] shrink-0 text-sm" />
+              资源变更
+              <span className="ml-0.5 rounded bg-ctp-surface0 px-1 py-px font-mono text-ctp-subtext0">
+                {result.resourceChanges.length}
+              </span>
+            </div>
+            <ul className="flex flex-col" role="tree">
+              {result.resourceChanges.map((item) => (
+                <DiffItemRow key={item.id} item={item} onRevert={onRevert} />
+              ))}
+            </ul>
+          </section>
+        ) : null}
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex min-h-0 flex-col">
+      <ScmCommitForm
+        commitMessage={commitMessage}
+        committing={committing}
+        onCommit={onCommit}
+        onCommitMessageChange={onCommitMessageChange}
+      />
+      {changesContent}
+    </div>
+  );
+}
+
 // ==================== Main component ====================
 
 export function ScmSidebarSection() {
@@ -184,7 +352,8 @@ export function ScmSidebarSection() {
   const [retryKey, setRetryKey] = useState(0);
   const [commitMessage, setCommitMessage] = useState("");
   const [committing, setCommitting] = useState(false);
-  const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const [changesExpanded, setChangesExpanded] = useState(true);
+  const [graphExpanded, setGraphExpanded] = useState(true);
 
   useEffect(() => {
     setLoading(true);
@@ -238,136 +407,94 @@ export function ScmSidebarSection() {
     setRetryKey((current) => current + 1);
   }, []);
 
-  if (loading) {
-    return (
-      <ScrollArea className="-m-2 min-h-0 flex-1" fill>
-        <DiffLoading />
-      </ScrollArea>
-    );
-  }
+  const panes = useMemo(
+    () => [
+      {
+        id: "changes",
+        title: "更改",
+        ariaLabel: "更改",
+        panelId: "scm-changes-panel",
+        expanded: changesExpanded,
+        defaultBodyHeight: DEFAULT_CHANGES_BODY_HEIGHT,
+        body: (
+          <ScmChangesBody
+            commitMessage={commitMessage}
+            committing={committing}
+            error={error}
+            loading={loading}
+            result={result}
+            onCommit={handleCommit}
+            onCommitMessageChange={setCommitMessage}
+            onRetry={handleRetry}
+            onRevert={handleRevert}
+          />
+        ),
+        onToggleExpanded: () => setChangesExpanded((value) => !value),
+      },
+      {
+        id: "graph",
+        title: "图表",
+        ariaLabel: "图表",
+        panelId: "scm-graph-panel",
+        expanded: graphExpanded,
+        defaultBodyHeight: DEFAULT_GRAPH_BODY_HEIGHT,
+        body: <ScmGraphPlaceholder />,
+        onToggleExpanded: () => setGraphExpanded((value) => !value),
+      },
+    ],
+    [
+      changesExpanded,
+      commitMessage,
+      committing,
+      error,
+      graphExpanded,
+      handleCommit,
+      handleRetry,
+      handleRevert,
+      loading,
+      result,
+    ],
+  );
 
-  if (error) {
-    return (
-      <ScrollArea className="-m-2 min-h-0 flex-1" fill>
-        <DiffError onRetry={handleRetry} />
-      </ScrollArea>
-    );
-  }
-
-  if (result === null) {
-    return (
-      <ScrollArea className="-m-2 min-h-0 flex-1" fill>
-        <DiffEmptyState />
-      </ScrollArea>
-    );
-  }
-
-  const hasChanges = result.hasChanges;
-
-  if (!hasChanges) {
-    return (
-      <ScrollArea className="-m-2 min-h-0 flex-1" fill>
-        {result.warning ? (
-          <div className="px-2 pt-2">
-            <div className="rounded border border-ctp-yellow/40 bg-ctp-yellow/10 px-2 py-1 text-[10px] text-ctp-yellow">
-              {result.warning}
-            </div>
-          </div>
-        ) : null}
-        <DiffEmptyState />
-      </ScrollArea>
-    );
-  }
+  const { stackRef, paneLayouts, resizeHandles, getResizeHandleProps } = useSidebarPaneStack({
+    panes,
+  });
+  const paneTitleMap = useMemo(
+    () => Object.fromEntries(panes.map((pane) => [pane.id, pane.title])),
+    [panes],
+  );
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col">
-      <ScrollArea className="-m-2 min-h-0 flex-1" fill>
-        <div className="flex flex-col gap-0.5 py-1">
-          {result.warning ? (
-            <div className="mx-2 mb-1 rounded border border-ctp-yellow/40 bg-ctp-yellow/10 px-2 py-1 text-[10px] text-ctp-yellow">
-              {result.warning}
-            </div>
-          ) : null}
-          {/* 正文变更 */}
-          {result.manuscriptChanges.length > 0 ? (
-            <section>
-              <div className="flex items-center gap-1.5 px-2 py-0.5 text-[10px] font-semibold tracking-wide text-ctp-mauve uppercase">
-                <span className="icon-[codicon--symbol-method] shrink-0 text-sm" />
-                正文变更
-                <span className="ml-0.5 rounded bg-ctp-surface0 px-1 py-px font-mono text-ctp-subtext0">
-                  {result.manuscriptChanges.length}
-                </span>
-              </div>
-              <ul className="flex flex-col" role="tree">
-                {result.manuscriptChanges.map((item) => (
-                  <DiffItemRow key={item.id} item={item} onRevert={handleRevert} />
-                ))}
-              </ul>
-            </section>
-          ) : null}
+    <div ref={stackRef} className="-m-2 flex min-h-0 flex-1 flex-col overflow-hidden">
+      {panes.map((pane) => {
+        const layout = paneLayouts[pane.id];
+        const resizeHandle = resizeHandles.find((handle) => handle.anchorPaneId === pane.id);
+        const resizeHandleProps = resizeHandle ? getResizeHandleProps(resizeHandle.id) : null;
 
-          {/* 资源变更 */}
-          {result.resourceChanges.length > 0 ? (
-            <section>
-              <div className="flex items-center gap-1.5 px-2 py-0.5 text-[10px] font-semibold tracking-wide text-ctp-mauve uppercase">
-                <span className="icon-[codicon--symbol-file] shrink-0 text-sm" />
-                资源变更
-                <span className="ml-0.5 rounded bg-ctp-surface0 px-1 py-px font-mono text-ctp-subtext0">
-                  {result.resourceChanges.length}
-                </span>
-              </div>
-              <ul className="flex flex-col" role="tree">
-                {result.resourceChanges.map((item) => (
-                  <DiffItemRow key={item.id} item={item} onRevert={handleRevert} />
-                ))}
-              </ul>
-            </section>
-          ) : null}
-        </div>
-      </ScrollArea>
-
-      {/* 提交区域 */}
-      <div className="shrink-0 border-t border-ctp-surface0 p-2">
-        <textarea
-          ref={textareaRef}
-          className="w-full resize-none rounded-sm border border-ctp-surface0 bg-ctp-base px-2 py-1.5 text-xs leading-tight text-ctp-text outline-none placeholder:text-ctp-overlay0 focus:border-ctp-mauve"
-          rows={3}
-          placeholder="提交信息…"
-          value={commitMessage}
-          onChange={(e) => setCommitMessage(e.target.value)}
-          onKeyDown={(e) => {
-            if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) {
-              e.preventDefault();
-              handleCommit();
-            }
-          }}
-          disabled={committing}
-        />
-        <button
-          type="button"
-          className={cn(
-            "mt-1.5 flex w-full items-center justify-center gap-1.5 rounded-sm px-2 py-1 text-xs font-medium",
-            commitMessage.trim() !== "" && !committing
-              ? "bg-ctp-mauve text-ctp-crust hover:brightness-110"
-              : "cursor-not-allowed bg-ctp-surface0 text-ctp-overlay0",
-          )}
-          disabled={commitMessage.trim() === "" || committing}
-          onClick={handleCommit}
-        >
-          {committing ? (
-            <>
-              <span className="icon-[codicon--loading] animate-spin text-sm" />
-              提交中…
-            </>
-          ) : (
-            <>
-              <span className="icon-[codicon--check] text-sm" />
-              提交
-            </>
-          )}
-        </button>
-        <p className="mt-1 text-center text-[10px] text-ctp-overlay0">Ctrl+Enter 提交</p>
-      </div>
+        return (
+          <Fragment key={pane.id}>
+            {resizeHandle && resizeHandleProps ? (
+              <SidebarSectionRowResizeHandle
+                active={resizeHandleProps.active}
+                ariaLabel={`调整${paneTitleMap[resizeHandle.upperPaneId]}与${pane.title}区域高度`}
+                onPointerDown={resizeHandleProps.onPointerDown}
+              />
+            ) : null}
+            <SidebarViewSection
+              ariaLabel={pane.ariaLabel}
+              bodyFillsSection={layout?.bodyFillsSection}
+              bodyStyle={layout?.bodyStyle}
+              expanded={pane.expanded}
+              panelId={pane.panelId}
+              sectionStyle={layout?.sectionStyle}
+              title={pane.title}
+              onToggleExpanded={pane.onToggleExpanded}
+            >
+              {pane.body}
+            </SidebarViewSection>
+          </Fragment>
+        );
+      })}
     </div>
   );
 }
