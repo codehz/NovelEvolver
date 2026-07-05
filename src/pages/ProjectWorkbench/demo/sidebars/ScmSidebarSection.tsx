@@ -2,9 +2,10 @@ import { useCallback, useEffect, useRef, useState } from "react";
 
 import { ScrollArea } from "#app/components/ScrollArea";
 import { cn } from "#app/lib/cn";
-import type { DiffItem, WorktreeDiffResult } from "#shared/rpc/worktree-diff";
+import type { RpcStreamSubscribe } from "#shared/rpc/stream";
+import type { ScmChange, ScmSnapshot } from "#shared/rpc/worktree-scm";
 
-import { useWorktreeDiff } from "../branch/branch-scopes";
+import { useWorktreeScm } from "../branch/branch-scopes";
 
 // ==================== Stats badge ====================
 
@@ -19,20 +20,80 @@ function DiffStats({ added, removed }: { added: number; removed: number }) {
 
 // ==================== 单行 DiffItem 渲染 ====================
 
-function DiffItemRow({ item, onRevert }: { item: DiffItem; onRevert: (revertId: string) => void }) {
+function consumeRpcStream<T>(
+  subscribe: RpcStreamSubscribe<T>,
+  onValue: (value: T) => void,
+  onError: () => void,
+): () => void {
+  let canceled = false;
+  let abortSubscription: (() => void) | null = null;
+
+  void Promise.resolve(subscribe())
+    .then((stream) => {
+      if (canceled) {
+        void stream.cancel("SCM subscription disposed.").catch(() => undefined);
+        return;
+      }
+
+      const abortController = new AbortController();
+      abortSubscription = () => {
+        abortController.abort();
+      };
+
+      void stream
+        .pipeTo(
+          new WritableStream<T>({
+            write: (value) => {
+              onValue(value);
+            },
+          }),
+          { signal: abortController.signal },
+        )
+        .catch((error) => {
+          if (!canceled && !(error instanceof DOMException && error.name === "AbortError")) {
+            onError();
+          }
+        })
+        .finally(() => {
+          if (!canceled) {
+            abortSubscription = null;
+          }
+        });
+    })
+    .catch(() => {
+      if (!canceled) {
+        onError();
+      }
+    });
+
+  return () => {
+    canceled = true;
+    abortSubscription?.();
+  };
+}
+
+function DiffItemRow({
+  item,
+  onRevert,
+}: {
+  item: ScmChange;
+  onRevert: (changeId: string) => void;
+}) {
   const [hovered, setHovered] = useState(false);
 
   const kindIcon = cn(
-    item.kind === "add" && "icon-[codicon--diff-added] text-ctp-green",
-    item.kind === "remove" && "icon-[codicon--diff-removed] text-ctp-red",
-    item.kind === "modify" && "icon-[codicon--diff-modified] text-ctp-yellow",
+    item.kind === "create" && "icon-[codicon--diff-added] text-ctp-green",
+    item.kind === "delete" && "icon-[codicon--diff-removed] text-ctp-red",
+    item.kind === "content" && "icon-[codicon--diff-modified] text-ctp-yellow",
+    item.kind === "rename" && "icon-[codicon--edit] text-ctp-yellow",
     item.kind === "move" && "icon-[codicon--diff-modified] text-ctp-yellow",
     item.kind === "reorder" && "icon-[codicon--list-flat] text-ctp-subtext0",
   );
 
-  const fileIcon = item.isDir
-    ? "icon-[codicon--folder] text-ctp-mauve"
-    : "icon-[codicon--file] text-ctp-overlay0";
+  const fileIcon =
+    item.entityKind === "folder"
+      ? "icon-[codicon--folder] text-ctp-mauve"
+      : "icon-[codicon--file] text-ctp-overlay0";
 
   return (
     <li
@@ -59,12 +120,12 @@ function DiffItemRow({ item, onRevert }: { item: DiffItem; onRevert: (revertId: 
             className="size-5 shrink-0 cursor-pointer items-center justify-center rounded text-ctp-overlay0 hover:bg-ctp-surface1 hover:text-ctp-subtext1"
             onClick={(e) => {
               e.stopPropagation();
-              onRevert(item.revertId);
+              onRevert(item.id);
             }}
             onKeyDown={(e) => {
               if (e.key === "Enter" || e.key === " ") {
                 e.stopPropagation();
-                onRevert(item.revertId);
+                onRevert(item.id);
               }
             }}
             title="还原此变更"
@@ -116,46 +177,43 @@ function DiffError({ onRetry }: { onRetry: () => void }) {
 // ==================== Main component ====================
 
 export function ScmSidebarSection() {
-  const diffHandle = useWorktreeDiff();
-  const [result, setResult] = useState<WorktreeDiffResult | null>(null);
+  const scmHandle = useWorktreeScm();
+  const [result, setResult] = useState<ScmSnapshot | null>(null);
   const [error, setError] = useState<boolean>(false);
   const [loading, setLoading] = useState(true);
+  const [retryKey, setRetryKey] = useState(0);
   const [commitMessage, setCommitMessage] = useState("");
   const [committing, setCommitting] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
-  const load = useCallback(() => {
+  useEffect(() => {
     setLoading(true);
     setError(false);
-    diffHandle
-      .compute()
-      .then((data) => {
-        setResult(data);
+    return consumeRpcStream(
+      () => scmHandle.subscribeSnapshot(),
+      (snapshot) => {
+        setResult(snapshot);
         setLoading(false);
-      })
-      .catch(() => {
+      },
+      () => {
         setError(true);
         setLoading(false);
-      });
-  }, [diffHandle]);
-
-  useEffect(() => {
-    load();
-  }, [load]);
+      },
+    );
+  }, [scmHandle, retryKey]);
 
   const handleRevert = useCallback(
-    (revertId: string) => {
-      diffHandle
-        .revert(revertId)
+    (changeId: string) => {
+      scmHandle
+        .revertChange(changeId)
         .then((updated) => {
           setResult(updated);
         })
         .catch(() => {
-          // revert 失败时刷新状态
-          load();
+          setError(true);
         });
     },
-    [diffHandle, load],
+    [scmHandle],
   );
 
   const handleCommit = useCallback(() => {
@@ -163,7 +221,7 @@ export function ScmSidebarSection() {
     if (message === "" || committing) return;
 
     setCommitting(true);
-    diffHandle
+    scmHandle
       .commit(message, { name: "NovelEvolver", email: "app@novel-evolver.local" })
       .then((updated) => {
         setResult(updated);
@@ -172,9 +230,13 @@ export function ScmSidebarSection() {
       })
       .catch(() => {
         setCommitting(false);
-        load();
+        setError(true);
       });
-  }, [diffHandle, commitMessage, committing, load]);
+  }, [scmHandle, commitMessage, committing]);
+
+  const handleRetry = useCallback(() => {
+    setRetryKey((current) => current + 1);
+  }, []);
 
   if (loading) {
     return (
@@ -187,7 +249,7 @@ export function ScmSidebarSection() {
   if (error) {
     return (
       <ScrollArea className="-m-2 min-h-0 flex-1" fill>
-        <DiffError onRetry={load} />
+        <DiffError onRetry={handleRetry} />
       </ScrollArea>
     );
   }
@@ -200,11 +262,18 @@ export function ScmSidebarSection() {
     );
   }
 
-  const hasChanges = result.manuscript.length > 0 || result.resources.length > 0;
+  const hasChanges = result.hasChanges;
 
   if (!hasChanges) {
     return (
       <ScrollArea className="-m-2 min-h-0 flex-1" fill>
+        {result.warning ? (
+          <div className="px-2 pt-2">
+            <div className="rounded border border-ctp-yellow/40 bg-ctp-yellow/10 px-2 py-1 text-[10px] text-ctp-yellow">
+              {result.warning}
+            </div>
+          </div>
+        ) : null}
         <DiffEmptyState />
       </ScrollArea>
     );
@@ -214,37 +283,42 @@ export function ScmSidebarSection() {
     <div className="flex min-h-0 flex-1 flex-col">
       <ScrollArea className="-m-2 min-h-0 flex-1" fill>
         <div className="flex flex-col gap-0.5 py-1">
+          {result.warning ? (
+            <div className="mx-2 mb-1 rounded border border-ctp-yellow/40 bg-ctp-yellow/10 px-2 py-1 text-[10px] text-ctp-yellow">
+              {result.warning}
+            </div>
+          ) : null}
           {/* 正文变更 */}
-          {result.manuscript.length > 0 ? (
+          {result.manuscriptChanges.length > 0 ? (
             <section>
               <div className="flex items-center gap-1.5 px-2 py-0.5 text-[10px] font-semibold tracking-wide text-ctp-mauve uppercase">
                 <span className="icon-[codicon--symbol-method] shrink-0 text-sm" />
                 正文变更
                 <span className="ml-0.5 rounded bg-ctp-surface0 px-1 py-px font-mono text-ctp-subtext0">
-                  {result.manuscript.length}
+                  {result.manuscriptChanges.length}
                 </span>
               </div>
               <ul className="flex flex-col" role="tree">
-                {result.manuscript.map((item) => (
-                  <DiffItemRow key={item.revertId} item={item} onRevert={handleRevert} />
+                {result.manuscriptChanges.map((item) => (
+                  <DiffItemRow key={item.id} item={item} onRevert={handleRevert} />
                 ))}
               </ul>
             </section>
           ) : null}
 
           {/* 资源变更 */}
-          {result.resources.length > 0 ? (
+          {result.resourceChanges.length > 0 ? (
             <section>
               <div className="flex items-center gap-1.5 px-2 py-0.5 text-[10px] font-semibold tracking-wide text-ctp-mauve uppercase">
                 <span className="icon-[codicon--symbol-file] shrink-0 text-sm" />
                 资源变更
                 <span className="ml-0.5 rounded bg-ctp-surface0 px-1 py-px font-mono text-ctp-subtext0">
-                  {result.resources.length}
+                  {result.resourceChanges.length}
                 </span>
               </div>
               <ul className="flex flex-col" role="tree">
-                {result.resources.map((item) => (
-                  <DiffItemRow key={item.revertId} item={item} onRevert={handleRevert} />
+                {result.resourceChanges.map((item) => (
+                  <DiffItemRow key={item.id} item={item} onRevert={handleRevert} />
                 ))}
               </ul>
             </section>

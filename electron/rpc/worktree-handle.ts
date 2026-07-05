@@ -8,11 +8,12 @@ import type {
   ResourceLibraryHandle,
   WorktreeHandle,
 } from "#shared/rpc/projects-rpc";
-import type { WorktreeDiffHandle } from "#shared/rpc/worktree-diff";
+import type { WorktreeScmHandle } from "#shared/rpc/worktree-scm";
 
+import { ScmSession } from "../scm/session";
 import { ManuscriptHandleImpl } from "./manuscript-handle";
 import { ResourceLibraryHandleImpl } from "./resource-library-handle";
-import { WorktreeDiffHandleImpl } from "./worktree-diff-handle";
+import { WorktreeScmHandleImpl } from "./worktree-scm-handle";
 
 /** ObjectDatabase 类型（从 readTreeSnapshot 参数推导） */
 type ObjectDatabase = Parameters<typeof readTreeSnapshot>[0];
@@ -24,19 +25,25 @@ export class WorktreeHandleImpl extends RpcTarget implements WorktreeHandle {
   readonly #worktree: VirtualWorktree;
   readonly #resources: ResourceLibraryHandle;
   readonly #manuscript: ManuscriptHandle;
-  readonly #diff: WorktreeDiffHandle;
+  readonly #scm: WorktreeScmHandle;
 
   constructor(
     worktree: VirtualWorktree,
     objects: ObjectDatabase,
     repo: Repository,
     branchName: string,
+    hadExistingDraft: boolean,
   ) {
     super();
     this.#worktree = worktree;
-    this.#resources = new ResourceLibraryHandleImpl(worktree);
-    this.#manuscript = new ManuscriptHandleImpl(worktree);
-    this.#diff = new WorktreeDiffHandleImpl(worktree, objects, this.#manuscript, repo, branchName);
+    const session = new ScmSession(worktree, objects, repo, branchName, { hadExistingDraft });
+    this.#resources = new ResourceLibraryHandleImpl(worktree, () => {
+      session.handleExternalMutation();
+    });
+    this.#manuscript = new ManuscriptHandleImpl(worktree, () => {
+      session.handleExternalMutation();
+    });
+    this.#scm = new WorktreeScmHandleImpl(session);
   }
 
   get baseTree(): string {
@@ -51,7 +58,7 @@ export class WorktreeHandleImpl extends RpcTarget implements WorktreeHandle {
     return this.#manuscript;
   }
 
-  get diff(): WorktreeDiffHandle {
-    return this.#diff;
+  get scm(): WorktreeScmHandle {
+    return this.#scm;
   }
 }

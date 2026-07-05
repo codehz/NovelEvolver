@@ -11,200 +11,35 @@ import type {
 } from "#shared/rpc/projects-rpc";
 
 import {
-  assertValidManuscriptId,
+  MANUSCRIPT_ROOT_ID,
+  clampChildIndex,
+  cloneOutline,
+  collectDescendantIds,
+  createEmptyOutline,
+  findParentId,
+  normalizeManuscriptTitle,
+  parseOutline,
+  validateOutline,
+} from "../manuscript-outline";
+import {
   chapterBodyPath,
   ensureManuscriptStorage,
   MANUSCRIPT_OUTLINE_PATH,
 } from "../manuscript-path";
 
-const ROOT_ID = "root";
 const MANUSCRIPT_ID_SIZE = 10;
-
-function createEmptyOutline(): ManuscriptOutline {
-  return {
-    version: 1,
-    rootId: ROOT_ID,
-    nodes: {
-      [ROOT_ID]: {
-        id: ROOT_ID,
-        type: "folder",
-        title: "手稿",
-        children: [],
-      },
-    },
-  };
-}
-
-function normalizeTitle(title: string): string {
-  const normalized = title.trim();
-  if (normalized === "") {
-    throw new Error("Title must not be empty.");
-  }
-  return normalized;
-}
-
-function cloneOutline(outline: ManuscriptOutline): ManuscriptOutline {
-  return {
-    version: 1,
-    rootId: "root",
-    nodes: Object.fromEntries(
-      Object.entries(outline.nodes).map(([id, node]) => [
-        id,
-        node.type === "folder" ? { ...node, children: [...node.children] } : { ...node },
-      ]),
-    ),
-  };
-}
-
-function parseOutline(content: string): ManuscriptOutline {
-  let parsed: unknown;
-  try {
-    parsed = JSON.parse(content);
-  } catch {
-    throw new Error("Manuscript outline is not valid JSON.");
-  }
-  return validateOutline(parsed);
-}
-
-function validateOutline(value: unknown): ManuscriptOutline {
-  if (typeof value !== "object" || value === null) {
-    throw new Error("Manuscript outline must be an object.");
-  }
-  const outline = value as Partial<ManuscriptOutline>;
-  if (outline.version !== 1) {
-    throw new Error("Unsupported manuscript outline version.");
-  }
-  if (outline.rootId !== ROOT_ID) {
-    throw new Error("Manuscript outline rootId must be root.");
-  }
-  if (typeof outline.nodes !== "object" || outline.nodes === null) {
-    throw new Error("Manuscript outline nodes must be an object.");
-  }
-
-  const nodes: Record<string, ManuscriptNode> = {};
-  for (const [id, rawNode] of Object.entries(outline.nodes as Record<string, unknown>)) {
-    if (id !== ROOT_ID) {
-      assertValidManuscriptId(id);
-    }
-    if (typeof rawNode !== "object" || rawNode === null) {
-      throw new Error(`Invalid manuscript node: ${id}`);
-    }
-    const node = rawNode as Partial<ManuscriptNode>;
-    if (node.id !== id) {
-      throw new Error(`Manuscript node id mismatch: ${id}`);
-    }
-    if (typeof node.title !== "string" || node.title.trim() === "") {
-      throw new Error(`Manuscript node title must not be empty: ${id}`);
-    }
-    if (node.type === "folder") {
-      const children = (node as Partial<ManuscriptFolderNode>).children;
-      if (!Array.isArray(children) || children.some((child) => typeof child !== "string")) {
-        throw new Error(`Manuscript folder children must be string IDs: ${id}`);
-      }
-      nodes[id] = { id, type: "folder", title: node.title, children: [...children] };
-    } else if (node.type === "chapter") {
-      if ("children" in node) {
-        throw new Error(`Manuscript chapter must be a leaf node: ${id}`);
-      }
-      nodes[id] = { id, type: "chapter", title: node.title };
-    } else {
-      throw new Error(`Invalid manuscript node type: ${id}`);
-    }
-  }
-
-  const root = nodes[ROOT_ID];
-  if (root === undefined || root.type !== "folder") {
-    throw new Error("Manuscript outline root folder is missing.");
-  }
-
-  const parentById = new Map<string, string>();
-  for (const node of Object.values(nodes)) {
-    if (node.type !== "folder") {
-      continue;
-    }
-    const seenChildren = new Set<string>();
-    for (const childId of node.children) {
-      if (seenChildren.has(childId)) {
-        throw new Error(`Manuscript folder contains duplicate child: ${childId}`);
-      }
-      seenChildren.add(childId);
-      if (nodes[childId] === undefined) {
-        throw new Error(`Manuscript child does not exist: ${childId}`);
-      }
-      if (childId === ROOT_ID) {
-        throw new Error("Manuscript root cannot be a child node.");
-      }
-      if (parentById.has(childId)) {
-        throw new Error(`Manuscript node has multiple parents: ${childId}`);
-      }
-      parentById.set(childId, node.id);
-    }
-  }
-
-  const visiting = new Set<string>();
-  const visited = new Set<string>();
-  const visit = (id: string): void => {
-    if (visited.has(id)) {
-      return;
-    }
-    if (visiting.has(id)) {
-      throw new Error(`Manuscript outline contains a cycle at: ${id}`);
-    }
-    visiting.add(id);
-    const node = nodes[id];
-    if (node?.type === "folder") {
-      for (const childId of node.children) {
-        visit(childId);
-      }
-    }
-    visiting.delete(id);
-    visited.add(id);
-  };
-  visit(ROOT_ID);
-  if (visited.size !== Object.keys(nodes).length) {
-    throw new Error("Manuscript outline contains unreachable nodes.");
-  }
-
-  return { version: 1, rootId: "root", nodes };
-}
-
-function clampIndex(index: number | undefined, length: number): number {
-  if (index === undefined || !Number.isFinite(index)) {
-    return length;
-  }
-  return Math.max(0, Math.min(length, Math.trunc(index)));
-}
-
-function findParentId(outline: ManuscriptOutline, id: string): string | null {
-  for (const node of Object.values(outline.nodes)) {
-    if (node.type === "folder" && node.children.includes(id)) {
-      return node.id;
-    }
-  }
-  return null;
-}
-
-function collectDescendantIds(outline: ManuscriptOutline, id: string): string[] {
-  const node = outline.nodes[id];
-  if (node === undefined || node.type === "chapter") {
-    return [];
-  }
-  const descendants: string[] = [];
-  for (const childId of node.children) {
-    descendants.push(childId, ...collectDescendantIds(outline, childId));
-  }
-  return descendants;
-}
 
 /**
  * RPC view of the branch worktree's ordered manuscript storage.
  */
 export class ManuscriptHandleImpl extends RpcTarget implements ManuscriptHandle {
   readonly #worktree: VirtualWorktree;
+  readonly #onDidChange: () => void;
 
-  constructor(worktree: VirtualWorktree) {
+  constructor(worktree: VirtualWorktree, onDidChange: () => void = () => undefined) {
     super();
     this.#worktree = worktree;
+    this.#onDidChange = onDidChange;
     this.#ensureInitialized();
   }
 
@@ -217,11 +52,12 @@ export class ManuscriptHandleImpl extends RpcTarget implements ManuscriptHandle 
     const folder: ManuscriptFolderNode = {
       id: this.#createUniqueId(outline),
       type: "folder",
-      title: normalizeTitle(title),
+      title: normalizeManuscriptTitle(title),
       children: [],
     };
     this.#insertChild(outline, parentId, folder, index);
     this.#writeOutline(outline);
+    this.#onDidChange();
     return outline;
   }
 
@@ -230,24 +66,26 @@ export class ManuscriptHandleImpl extends RpcTarget implements ManuscriptHandle 
     const chapter: ManuscriptChapterNode = {
       id: this.#createUniqueId(outline),
       type: "chapter",
-      title: normalizeTitle(title),
+      title: normalizeManuscriptTitle(title),
     };
     this.#worktree.writeFile(chapterBodyPath(chapter.id), Buffer.from("", "utf-8"));
     this.#insertChild(outline, parentId, chapter, index);
     this.#writeOutline(outline);
+    this.#onDidChange();
     return outline;
   }
 
   renameNode(id: string, title: string): ManuscriptOutline {
     const outline = this.#readOutline();
     const node = this.#requireNode(outline, id);
-    node.title = normalizeTitle(title);
+    node.title = normalizeManuscriptTitle(title);
     this.#writeOutline(outline);
+    this.#onDidChange();
     return outline;
   }
 
   moveNode(id: string, targetParentId: string, index?: number): ManuscriptOutline {
-    if (id === ROOT_ID) {
+    if (id === MANUSCRIPT_ROOT_ID) {
       throw new Error("Cannot move the manuscript root.");
     }
     const outline = this.#readOutline();
@@ -267,15 +105,16 @@ export class ManuscriptHandleImpl extends RpcTarget implements ManuscriptHandle 
     const insertionParent = this.#requireFolder(outline, targetParent.id);
     const nextIndex =
       sourceParent.id === insertionParent.id && index !== undefined && index > previousIndex
-        ? clampIndex(index - 1, insertionParent.children.length)
-        : clampIndex(index, insertionParent.children.length);
+        ? clampChildIndex(index - 1, insertionParent.children.length)
+        : clampChildIndex(index, insertionParent.children.length);
     insertionParent.children.splice(nextIndex, 0, id);
     this.#writeOutline(outline);
+    this.#onDidChange();
     return outline;
   }
 
   deleteNode(id: string): ManuscriptOutline {
-    if (id === ROOT_ID) {
+    if (id === MANUSCRIPT_ROOT_ID) {
       throw new Error("Cannot delete the manuscript root.");
     }
     const outline = this.#readOutline();
@@ -296,6 +135,7 @@ export class ManuscriptHandleImpl extends RpcTarget implements ManuscriptHandle 
         this.#worktree.delete(chapterBodyPath(deleteId), { force: true });
       }
     }
+    this.#onDidChange();
     return outline;
   }
 
@@ -315,6 +155,16 @@ export class ManuscriptHandleImpl extends RpcTarget implements ManuscriptHandle 
     this.#requireChapter(outline, id);
     ensureManuscriptStorage(this.#worktree);
     this.#worktree.writeFile(chapterBodyPath(id), Buffer.from(content, "utf-8"));
+    this.#onDidChange();
+  }
+
+  replaceOutline(outline: ManuscriptOutline): void {
+    this.#writeOutline(outline);
+  }
+
+  deleteChapterBody(id: string): void {
+    ensureManuscriptStorage(this.#worktree);
+    this.#worktree.delete(chapterBodyPath(id), { force: true });
   }
 
   #ensureInitialized(): void {
@@ -371,7 +221,7 @@ export class ManuscriptHandleImpl extends RpcTarget implements ManuscriptHandle 
   ): void {
     const parent = this.#requireFolder(outline, parentId);
     outline.nodes[node.id] = node;
-    parent.children.splice(clampIndex(index, parent.children.length), 0, node.id);
+    parent.children.splice(clampChildIndex(index, parent.children.length), 0, node.id);
   }
 
   #requireNode(outline: ManuscriptOutline, id: string): ManuscriptNode {

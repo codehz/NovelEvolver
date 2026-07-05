@@ -25,10 +25,12 @@ import {
  */
 export class ResourceLibraryHandleImpl extends RpcTarget implements ResourceLibraryHandle {
   readonly #worktree: VirtualWorktree;
+  readonly #onDidChange: () => void;
 
-  constructor(worktree: VirtualWorktree) {
+  constructor(worktree: VirtualWorktree, onDidChange: () => void = () => undefined) {
     super();
     this.#worktree = worktree;
+    this.#onDidChange = onDidChange;
     ensureResourcesDirectory(worktree);
   }
 
@@ -48,6 +50,7 @@ export class ResourceLibraryHandleImpl extends RpcTarget implements ResourceLibr
       this.#worktree.mkdir(parent, { recursive: true });
     }
     this.#worktree.writeFile(filePath, Buffer.from("", "utf-8"));
+    this.#onDidChange();
     return this.#readTree();
   }
 
@@ -70,6 +73,7 @@ export class ResourceLibraryHandleImpl extends RpcTarget implements ResourceLibr
       this.#worktree.mkdir(parent, { recursive: true });
     }
     this.#worktree.writeFile(filePath, Buffer.from(content, "utf-8"));
+    this.#onDidChange();
   }
 
   createFolder(path: string): ResourceTreeSnapshot {
@@ -78,6 +82,7 @@ export class ResourceLibraryHandleImpl extends RpcTarget implements ResourceLibr
     const folderPath = toWorktreePath(path);
     this.#assertNotFile(folderPath, path);
     this.#worktree.mkdir(folderPath, { recursive: true });
+    this.#onDidChange();
     return this.#readTree();
   }
 
@@ -87,6 +92,7 @@ export class ResourceLibraryHandleImpl extends RpcTarget implements ResourceLibr
     const worktreePath = toWorktreePath(path);
     this.#assertPathExists(worktreePath, path);
     this.#unlinkWorktreePath(worktreePath);
+    this.#onDidChange();
     return this.#readTree();
   }
 
@@ -106,6 +112,7 @@ export class ResourceLibraryHandleImpl extends RpcTarget implements ResourceLibr
       throw new Error(`Cannot move onto an existing folder: ${to}`);
     }
     this.#worktree.move(fromWorktree, toWorktree);
+    this.#onDidChange();
     return this.#readTree();
   }
 
