@@ -36,7 +36,6 @@ const searchResultCountPillClass = cn(
 
 function entityIconClass(entityKind: WorktreeSearchHit["entityKind"]): string {
   return cn(
-    entityKind === "folder" && "icon-[codicon--folder] text-ctp-mauve",
     entityKind === "chapter" && "icon-[codicon--book] text-ctp-blue",
     entityKind === "file" && "icon-[codicon--file] text-ctp-overlay0",
   );
@@ -127,17 +126,13 @@ function SearchFlatRowView({
       >
         {disclosureChevron(row.expanded)}
         <span className="icon-[codicon--folder] shrink-0 text-sm text-ctp-mauve" />
-        <SearchHighlightText className="truncate">{row.segment}</SearchHighlightText>
+        <span className="truncate">{row.segment}</span>
         <span className={searchResultCountPillClass}>{row.childCount}</span>
       </TreeMotionRow>
     );
   }
 
   if (row.kind === "match") {
-    const openable =
-      (row.hit.domain === "manuscript" && row.hit.entityKind === "chapter") ||
-      (row.hit.domain === "resource" && row.hit.entityKind === "file");
-
     return (
       <TreeMotionRow
         y={y}
@@ -145,38 +140,26 @@ function SearchFlatRowView({
         animateEnter={animateEnter}
         depth={row.leafDepth}
         paddingLeftPx={searchTreeMatchPaddingLeft(row.leafDepth)}
-        className={cn(
-          "text-2xs text-ctp-subtext1",
-          openable && "cursor-pointer hover:bg-ctp-surface0/50",
-        )}
-        tabIndex={openable ? 0 : -1}
-        onClick={() => {
-          if (openable) {
-            onOpen(row.hit);
-          }
-        }}
-        onKeyDown={openable ? activateOnEnterSpace(() => onOpen(row.hit)) : undefined}
+        className="cursor-pointer text-2xs text-ctp-subtext1 hover:bg-ctp-surface0/50"
+        tabIndex={0}
+        onClick={() => onOpen(row.hit)}
+        onKeyDown={activateOnEnterSpace(() => onOpen(row.hit))}
       >
         <span className="icon-[codicon--list-flat] shrink-0 text-sm text-ctp-overlay0" />
         <span className="truncate font-mono text-ctp-text">
-          {row.hit.line !== undefined ? (
-            <span className="mr-1 text-ctp-overlay0">{row.hit.line}:</span>
-          ) : null}
-          <SearchHighlightText>{row.hit.snippet ?? row.hit.label}</SearchHighlightText>
+          <span className="mr-1 text-ctp-overlay0">{row.hit.line}:</span>
+          <SearchHighlightText>{row.hit.snippet}</SearchHighlightText>
         </span>
       </TreeMotionRow>
     );
   }
 
   const leaf = row.leaf;
-  const openable =
-    (leaf.hits[0]?.domain === "manuscript" && leaf.entityKind === "chapter") ||
-    (leaf.hits[0]?.domain === "resource" && leaf.entityKind === "file");
+  const primaryHit = leaf.hits[0];
 
   const openPrimary = () => {
-    const primary = leaf.hits.find((hit) => hit.matchKind === "content") ?? leaf.hits[0];
-    if (primary !== undefined) {
-      onOpen(primary);
+    if (primaryHit !== undefined) {
+      onOpen(primaryHit);
     }
   };
 
@@ -185,7 +168,7 @@ function SearchFlatRowView({
       onToggleLeaf(row.key);
       return;
     }
-    if (openable) {
+    if (primaryHit !== undefined) {
       openPrimary();
     }
   };
@@ -197,10 +180,7 @@ function SearchFlatRowView({
       animateEnter={animateEnter}
       depth={row.depth}
       paddingLeftPx={getTreeRowPaddingLeft(row.depth)}
-      className={cn(
-        "text-xs text-ctp-subtext1",
-        openable && "cursor-pointer hover:bg-ctp-surface0/50",
-      )}
+      className={cn("text-xs text-ctp-subtext1", "cursor-pointer hover:bg-ctp-surface0/50")}
       aria-expanded={row.showMatches ? row.expanded : undefined}
       tabIndex={0}
       onClick={onActivate}
@@ -212,10 +192,13 @@ function SearchFlatRowView({
         <span className={treeRowDisclosureSpacerClass} />
       )}
       <span className={cn(entityIconClass(leaf.entityKind), "shrink-0 text-sm")} />
-      <SearchHighlightText className="truncate">{leaf.name}</SearchHighlightText>
+      <span className="truncate">{leaf.name}</span>
       {row.showMatches ? (
-        <span className={searchResultCountPillClass}>
-          {leaf.hits.filter((hit) => hit.matchKind === "content").length}
+        <span className={searchResultCountPillClass}>{leaf.hits.length}</span>
+      ) : primaryHit !== undefined ? (
+        <span className="min-w-0 flex-1 truncate font-mono text-2xs text-ctp-overlay1">
+          <span className="mr-1 text-ctp-overlay0">{primaryHit.line}:</span>
+          <SearchHighlightText>{primaryHit.snippet}</SearchHighlightText>
         </span>
       ) : null}
     </TreeMotionRow>

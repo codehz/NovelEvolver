@@ -5,11 +5,6 @@ export type SearchPathTreeFolder = {
   segment: string;
   pathKey: string;
   children: SearchPathTreeNode[];
-  /** 文件夹节点自身的标题命中（与路径上的结构文件夹合并展示）。 */
-  folderEntity?: {
-    nodeId: string;
-    hits: WorktreeSearchHit[];
-  };
 };
 
 export type SearchPathTreeLeaf = {
@@ -95,35 +90,6 @@ function ensureFolderAtPath(
   return current;
 }
 
-function mergeFolderEntityHits(
-  folder: SearchPathTreeFolder,
-  nodeId: string,
-  hits: WorktreeSearchHit[],
-): void {
-  if (folder.folderEntity?.nodeId === nodeId) {
-    folder.folderEntity.hits.push(...hits);
-    return;
-  }
-  folder.folderEntity = { nodeId, hits: [...hits] };
-}
-
-function insertFolderEntity(
-  root: SearchPathTreeFolder,
-  displayPath: string,
-  nodeId: string,
-  hits: readonly WorktreeSearchHit[],
-): void {
-  const segments = displayPath.split("/").filter((segment) => segment !== "");
-  if (segments.length === 0) {
-    return;
-  }
-  const folder = ensureFolderAtPath(root, segments);
-  if (folder === undefined) {
-    return;
-  }
-  mergeFolderEntityHits(folder, nodeId, [...hits]);
-}
-
 function insertLeaf(
   root: SearchPathTreeFolder,
   displayPath: string,
@@ -156,10 +122,6 @@ export function buildSearchPathTree(hits: readonly WorktreeSearchHit[]): SearchP
   for (const [nodeId, nodeHits] of groupHitsByNodeId(hits)) {
     const first = nodeHits[0];
     if (first === undefined) {
-      continue;
-    }
-    if (first.entityKind === "folder") {
-      insertFolderEntity(root, first.displayPath, nodeId, nodeHits);
       continue;
     }
     insertLeaf(root, first.displayPath, {

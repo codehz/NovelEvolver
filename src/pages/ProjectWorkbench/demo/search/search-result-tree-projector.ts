@@ -46,7 +46,7 @@ export type SearchResultFlatRow =
     };
 
 function leafShowsMatches(leaf: SearchPathTreeLeaf): boolean {
-  return leaf.hits.some((hit) => hit.matchKind === "content");
+  return leaf.hits.length > 1;
 }
 
 function visitNodes(
@@ -70,30 +70,6 @@ function visitNodes(
         childCount: node.children.length,
       });
       if (expanded) {
-        if (node.folderEntity !== undefined) {
-          const entityKey = scopeKey(scope, node.folderEntity.nodeId);
-          const showMatches = leafShowsMatches({
-            type: "leaf",
-            nodeId: node.folderEntity.nodeId,
-            name: node.segment,
-            label: node.segment,
-            entityKind: "folder",
-            hits: node.folderEntity.hits,
-          });
-          if (showMatches && expandedLeaves.has(entityKey)) {
-            for (const [index, hit] of node.folderEntity.hits.entries()) {
-              if (hit.matchKind !== "content") {
-                continue;
-              }
-              out.push({
-                kind: "match",
-                key: `${entityKey}::${hit.matchKind}::${hit.line ?? index}`,
-                hit,
-                leafDepth: depth,
-              });
-            }
-          }
-        }
         visitNodes(node.children, scope, depth + 1, expandedFolders, expandedLeaves, out);
       }
       continue;
@@ -112,12 +88,9 @@ function visitNodes(
     });
     if (showMatches && expanded) {
       for (const [index, hit] of node.hits.entries()) {
-        if (hit.matchKind !== "content") {
-          continue;
-        }
         out.push({
           kind: "match",
-          key: `${key}::${hit.matchKind}::${hit.line ?? index}`,
+          key: `${key}::${hit.line}:${hit.column}:${index}`,
           hit,
           leafDepth: depth,
         });
@@ -172,11 +145,10 @@ export function collectSearchTreeLeafKeys(roots: readonly SearchResultDomainRoot
   const visit = (nodes: SearchPathTreeNode[], scope: string) => {
     for (const node of nodes) {
       if (node.type === "leaf") {
-        keys.push(scopeKey(scope, node.nodeId));
-      } else {
-        if (node.folderEntity !== undefined) {
-          keys.push(scopeKey(scope, node.folderEntity.nodeId));
+        if (leafShowsMatches(node)) {
+          keys.push(scopeKey(scope, node.nodeId));
         }
+      } else {
         visit(node.children, scope);
       }
     }

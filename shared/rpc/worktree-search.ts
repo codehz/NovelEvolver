@@ -14,8 +14,6 @@ export type WorktreeSearchQuery = {
   maxResultsPerDomain?: number;
 };
 
-export type WorktreeSearchMatchKind = "title" | "content";
-
 type WorktreeSearchHitBase = {
   domain: WorktreeSearchDomain;
   /** 树节点 id，用于打开编辑器 / 定位侧栏项。 */
@@ -23,23 +21,22 @@ type WorktreeSearchHitBase = {
   label: string;
   /** 手稿为章节路径标题；资源为 `resources/` 下相对路径。 */
   displayPath: string;
-  matchKind: WorktreeSearchMatchKind;
-  /** 正文命中时的上下文片段（单行或多行，不含高亮标记）。 */
-  snippet?: string;
-  /** 正文命中行号，1-based。 */
-  line?: number;
+  /** 命中的上下文片段（单行或多行，不含高亮标记）。 */
+  snippet: string;
+  /** 命中行号，1-based。 */
+  line: number;
   /** 该行内命中列，0-based UTF-16 偏移。 */
-  column?: number;
+  column: number;
 };
 
 export type ManuscriptSearchHit = WorktreeSearchHitBase & {
   domain: "manuscript";
-  entityKind: "chapter" | "folder";
+  entityKind: "chapter";
 };
 
 export type ResourceSearchHit = WorktreeSearchHitBase & {
   domain: "resource";
-  entityKind: "file" | "folder";
+  entityKind: "file";
 };
 
 export type WorktreeSearchHit = ManuscriptSearchHit | ResourceSearchHit;
@@ -47,9 +44,9 @@ export type WorktreeSearchHit = ManuscriptSearchHit | ResourceSearchHit;
 export type WorktreeSearchResult = {
   query: string;
   scope: WorktreeSearchScope;
-  /** 手稿（章节正文 + 节点标题）。 */
+  /** 手稿正文命中。 */
   manuscript: ManuscriptSearchHit[];
-  /** 资源库（文件正文 + 文件/文件夹名称）。 */
+  /** 资源库文件内容命中。 */
   resources: ResourceSearchHit[];
 };
 

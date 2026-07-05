@@ -17,7 +17,6 @@ const SNIPPET_CONTEXT_CHARS = 48;
 
 type ManuscriptSearchEntry = {
   id: string;
-  type: "folder" | "chapter";
   title: string;
   displayPath: string;
   content: string;
@@ -25,7 +24,6 @@ type ManuscriptSearchEntry = {
 
 type ResourceSearchEntry = {
   path: string;
-  type: "file" | "folder";
   name: string;
   displayPath: string;
   content: string;
@@ -93,13 +91,14 @@ function readManuscriptEntries(worktree: VirtualWorktree): ManuscriptSearchEntry
         node.type === "chapter" && worktree.exists(chapterBodyPath(node.id))
           ? worktree.readFile(chapterBodyPath(node.id)).toString("utf-8")
           : "";
-      entries.push({
-        id: node.id,
-        type: node.type,
-        title: node.title,
-        displayPath,
-        content,
-      });
+      if (node.type === "chapter") {
+        entries.push({
+          id: node.id,
+          title: node.title,
+          displayPath,
+          content,
+        });
+      }
       if (node.type === "folder") {
         visit(node.id, displayPath);
       }
@@ -138,17 +137,14 @@ function readResourceEntries(worktree: VirtualWorktree): ResourceSearchEntry[] {
 
     for (const dirEntry of dirEntries) {
       const childPath = resourcePath === "" ? dirEntry.name : `${resourcePath}/${dirEntry.name}`;
-      const type = dirEntry.kind === "tree" ? "folder" : "file";
-      const content =
-        type === "file" ? worktree.readFile(toWorktreePath(childPath)).toString("utf-8") : "";
-      entries.push({
-        path: childPath,
-        type,
-        name: dirEntry.name,
-        displayPath: childPath,
-        content,
-      });
-      if (type === "folder") {
+      if (dirEntry.kind === "blob") {
+        entries.push({
+          path: childPath,
+          name: dirEntry.name,
+          displayPath: childPath,
+          content: worktree.readFile(toWorktreePath(childPath)).toString("utf-8"),
+        });
+      } else {
         visit(childPath);
       }
     }
@@ -170,22 +166,7 @@ function searchManuscript(
       break;
     }
 
-    const titleIndex = findNeedleIndex(entry.title, needle);
-    if (titleIndex !== -1) {
-      hits.push({
-        domain: "manuscript",
-        nodeId: entry.id,
-        entityKind: entry.type === "chapter" ? "chapter" : "folder",
-        label: entry.title,
-        displayPath: entry.displayPath,
-        matchKind: "title",
-      });
-      if (hits.length >= maxResults) {
-        break;
-      }
-    }
-
-    if (entry.type !== "chapter" || entry.content === "") {
+    if (entry.content === "") {
       continue;
     }
 
@@ -201,7 +182,6 @@ function searchManuscript(
       entityKind: "chapter",
       label: entry.title,
       displayPath: entry.displayPath,
-      matchKind: "content",
       snippet: snippetAroundMatch(entry.content, contentIndex, needle.length),
       line,
       column,
@@ -229,22 +209,7 @@ function searchResources(
       continue;
     }
 
-    const titleIndex = findNeedleIndex(entry.name, needle);
-    if (titleIndex !== -1) {
-      hits.push({
-        domain: "resource",
-        nodeId,
-        entityKind: entry.type,
-        label: entry.name,
-        displayPath: entry.displayPath,
-        matchKind: "title",
-      });
-      if (hits.length >= maxResults) {
-        break;
-      }
-    }
-
-    if (entry.type !== "file" || entry.content === "") {
+    if (entry.content === "") {
       continue;
     }
 
@@ -260,7 +225,6 @@ function searchResources(
       entityKind: "file",
       label: entry.name,
       displayPath: entry.displayPath,
-      matchKind: "content",
       snippet: snippetAroundMatch(entry.content, contentIndex, needle.length),
       line,
       column,
