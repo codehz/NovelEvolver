@@ -2,9 +2,25 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 
 import { ScrollArea } from "#app/components/ScrollArea";
 import { cn } from "#app/lib/cn";
+import {
+  getTreeRowPaddingLeft,
+  TREE_ROW_CONTENT_GAP_PX,
+  TREE_ROW_DISCLOSURE_WIDTH_PX,
+} from "#app/pages/ProjectWorkbench/tree/tree-row-motion";
 import type { WorktreeSearchHit } from "#shared/rpc/worktree-search";
 
 import type { SearchPathTreeLeaf, SearchPathTreeNode } from "./build-search-path-tree";
+
+const SEARCH_TREE_EXTRA_LEFT_PX = 6;
+
+function searchTreePaddingLeft(depth: number): number {
+  return getTreeRowPaddingLeft(depth) + SEARCH_TREE_EXTRA_LEFT_PX;
+}
+
+/** 匹配预览行无展开箭头，用与父行箭头槽位等宽的额外缩进对齐内容列。 */
+function searchTreeMatchPaddingLeft(leafDepth: number): number {
+  return searchTreePaddingLeft(leafDepth) + TREE_ROW_DISCLOSURE_WIDTH_PX + TREE_ROW_CONTENT_GAP_PX;
+}
 
 export type SearchResultDomainRoot = {
   id: string;
@@ -71,10 +87,10 @@ function SearchMatchRow({
     <li
       role="treeitem"
       className={cn(
-        "flex min-h-6 cursor-default items-center gap-1 rounded px-2 py-0.5 text-2xs text-ctp-subtext1",
+        "flex min-h-6 cursor-default items-center gap-1 py-0.5 pr-2 text-2xs text-ctp-subtext1",
         openable && "cursor-pointer hover:bg-ctp-surface0/50",
       )}
-      style={{ paddingLeft: `${(depth + 1) * 12}px` }}
+      style={{ paddingLeft: `${searchTreeMatchPaddingLeft(depth)}px` }}
       onClick={() => {
         if (openable) {
           onOpen(hit);
@@ -137,10 +153,10 @@ function SearchLeafRow({
         role="treeitem"
         aria-expanded={showMatches ? expanded : undefined}
         className={cn(
-          "flex h-6 items-center gap-1 rounded px-2 text-xs text-ctp-subtext1",
+          "flex h-6 items-center gap-1 pr-2 text-xs text-ctp-subtext1",
           openable && "cursor-pointer hover:bg-ctp-surface0/50",
         )}
-        style={{ paddingLeft: `${depth * 12}px` }}
+        style={{ paddingLeft: `${searchTreePaddingLeft(depth)}px` }}
         onClick={() => {
           if (showMatches) {
             onToggle();
@@ -211,8 +227,8 @@ function SearchDomainRootRow({
     <li
       role="treeitem"
       aria-expanded={expanded}
-      className="flex h-6 cursor-pointer items-center gap-1 rounded px-2 text-xs font-medium text-ctp-text hover:bg-ctp-surface0/50"
-      style={{ paddingLeft: `${depth * 12}px` }}
+      className="flex h-6 cursor-pointer items-center gap-1 pr-2 text-xs font-medium text-ctp-text hover:bg-ctp-surface0/50"
+      style={{ paddingLeft: `${searchTreePaddingLeft(depth)}px` }}
       onClick={onToggle}
       onKeyDown={(event) => {
         if (event.key === "Enter" || event.key === " ") {
@@ -251,8 +267,8 @@ function SearchFolderRow({
     <li
       role="treeitem"
       aria-expanded={expanded}
-      className="flex h-6 cursor-pointer items-center gap-1 rounded px-2 text-xs text-ctp-subtext1 hover:bg-ctp-surface0/50"
-      style={{ paddingLeft: `${depth * 12}px` }}
+      className="flex h-6 cursor-pointer items-center gap-1 pr-2 text-xs text-ctp-subtext1 hover:bg-ctp-surface0/50"
+      style={{ paddingLeft: `${searchTreePaddingLeft(depth)}px` }}
       onClick={onToggle}
       onKeyDown={(event) => {
         if (event.key === "Enter" || event.key === " ") {
