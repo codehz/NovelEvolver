@@ -1,4 +1,7 @@
-import type { ManuscriptNode, ManuscriptOutline } from "#shared/rpc/projects-rpc";
+import type {
+  ManuscriptTreeNode as SharedManuscriptTreeNode,
+  ManuscriptTreeSnapshot,
+} from "#shared/rpc/worktree-tree";
 
 type ManuscriptTreeMetadata = {
   parentById: Map<string, string>;
@@ -6,72 +9,75 @@ type ManuscriptTreeMetadata = {
   depthById: Map<string, number>;
 };
 
-const manuscriptTreeMetadataCache = new WeakMap<ManuscriptOutline, ManuscriptTreeMetadata>();
+const manuscriptTreeMetadataCache = new WeakMap<ManuscriptTreeSnapshot, ManuscriptTreeMetadata>();
 
-function getManuscriptTreeMetadata(outline: ManuscriptOutline): ManuscriptTreeMetadata {
-  const cached = manuscriptTreeMetadataCache.get(outline);
+function getManuscriptTreeMetadata(snapshot: ManuscriptTreeSnapshot): ManuscriptTreeMetadata {
+  const cached = manuscriptTreeMetadataCache.get(snapshot);
   if (cached !== undefined) {
     return cached;
   }
 
   const parentById = new Map<string, string>();
-  const childIndexById = new Map<string, number>();
-  const depthById = new Map<string, number>([[outline.rootId, -1]]);
+  const childIndexById = new Map<string, number>([[snapshot.rootId, 0]]);
+  const depthById = new Map<string, number>([[snapshot.rootId, -1]]);
 
   const visit = (parentId: string): void => {
-    const parent = outline.nodes[parentId];
-    if (parent?.type !== "folder") {
+    const parent = snapshot.nodes[parentId];
+    if (parent === undefined) {
       return;
     }
 
     const parentDepth = depthById.get(parentId) ?? -1;
-    for (const [index, childId] of parent.children.entries()) {
+    for (const [index, childId] of parent.childIds.entries()) {
       parentById.set(childId, parentId);
       childIndexById.set(childId, index);
       depthById.set(childId, parentDepth + 1);
 
-      if (outline.nodes[childId]?.type === "folder") {
+      if (snapshot.nodes[childId]?.type === "folder") {
         visit(childId);
       }
     }
   };
 
-  visit(outline.rootId);
+  visit(snapshot.rootId);
 
   const metadata = {
     parentById,
     childIndexById,
     depthById,
   };
-  manuscriptTreeMetadataCache.set(outline, metadata);
+  manuscriptTreeMetadataCache.set(snapshot, metadata);
   return metadata;
 }
 
-export type ManuscriptTreeNode = {
+export type ManuscriptFlatTreeNode = {
   id: string;
   title: string;
-  type: ManuscriptNode["type"];
+  type: SharedManuscriptTreeNode["type"];
   depth: number;
   expanded: boolean;
 };
 
 export function manuscriptNodeChildren(
-  outline: ManuscriptOutline,
+  snapshot: ManuscriptTreeSnapshot,
   parentId: string,
-): ManuscriptNode[] {
-  const parent = outline.nodes[parentId];
+): SharedManuscriptTreeNode[] {
+  const parent = snapshot.nodes[parentId];
   if (parent?.type !== "folder") {
     return [];
   }
-  return parent.children.map((id) => outline.nodes[id]).filter((node) => node !== undefined);
+  return parent.childIds.map((id) => snapshot.nodes[id]).filter((node) => node !== undefined);
 }
 
-export function manuscriptParentChain(outline: ManuscriptOutline, id: string): ManuscriptNode[] {
-  const { parentById } = getManuscriptTreeMetadata(outline);
-  const chain: ManuscriptNode[] = [];
+export function manuscriptParentChain(
+  snapshot: ManuscriptTreeSnapshot,
+  id: string,
+): SharedManuscriptTreeNode[] {
+  const { parentById } = getManuscriptTreeMetadata(snapshot);
+  const chain: SharedManuscriptTreeNode[] = [];
   let currentId: string | null = id;
   while (currentId !== null) {
-    const node = outline.nodes[currentId];
+    const node = snapshot.nodes[currentId];
     if (node === undefined) {
       break;
     }
@@ -81,43 +87,49 @@ export function manuscriptParentChain(outline: ManuscriptOutline, id: string): M
   return chain;
 }
 
-export function findManuscriptParentId(outline: ManuscriptOutline, id: string): string | null {
-  return getManuscriptTreeMetadata(outline).parentById.get(id) ?? null;
+export function findManuscriptParentId(
+  snapshot: ManuscriptTreeSnapshot,
+  id: string,
+): string | null {
+  return getManuscriptTreeMetadata(snapshot).parentById.get(id) ?? null;
 }
 
 export function findManuscriptChildIndex(
-  outline: ManuscriptOutline,
+  snapshot: ManuscriptTreeSnapshot,
   parentId: string,
   childId: string,
 ): number {
-  const metadata = getManuscriptTreeMetadata(outline);
+  const metadata = getManuscriptTreeMetadata(snapshot);
   if (metadata.parentById.get(childId) !== parentId) {
     return -1;
   }
   return metadata.childIndexById.get(childId) ?? -1;
 }
 
-export function getManuscriptNodeDepth(outline: ManuscriptOutline, id: string): number {
-  return getManuscriptTreeMetadata(outline).depthById.get(id) ?? -1;
+export function getManuscriptNodeDepth(snapshot: ManuscriptTreeSnapshot, id: string): number {
+  return getManuscriptTreeMetadata(snapshot).depthById.get(id) ?? -1;
 }
 
-export function collectManuscriptChapterIds(outline: ManuscriptOutline, id: string): string[] {
-  const node = outline.nodes[id];
+export function collectManuscriptChapterIds(
+  snapshot: ManuscriptTreeSnapshot,
+  id: string,
+): string[] {
+  const node = snapshot.nodes[id];
   if (node === undefined) {
     return [];
   }
   if (node.type === "chapter") {
     return [id];
   }
-  return node.children.flatMap((childId) => collectManuscriptChapterIds(outline, childId));
+  return node.childIds.flatMap((childId) => collectManuscriptChapterIds(snapshot, childId));
 }
 
 export function isManuscriptDescendant(
-  outline: ManuscriptOutline,
+  snapshot: ManuscriptTreeSnapshot,
   ancestorId: string,
   candidateId: string,
 ): boolean {
-  const { parentById } = getManuscriptTreeMetadata(outline);
+  const { parentById } = getManuscriptTreeMetadata(snapshot);
   let currentId = parentById.get(candidateId) ?? null;
   while (currentId !== null) {
     if (currentId === ancestorId) {
@@ -129,13 +141,13 @@ export function isManuscriptDescendant(
 }
 
 export function flattenManuscriptTree(
-  outline: ManuscriptOutline,
+  snapshot: ManuscriptTreeSnapshot,
   expandedIds: Record<string, true>,
-): ManuscriptTreeNode[] {
-  const result: ManuscriptTreeNode[] = [];
+): ManuscriptFlatTreeNode[] {
+  const result: ManuscriptFlatTreeNode[] = [];
 
   function visit(parentId: string, depth: number): void {
-    for (const node of manuscriptNodeChildren(outline, parentId)) {
+    for (const node of manuscriptNodeChildren(snapshot, parentId)) {
       const expanded = node.type === "folder" && expandedIds[node.id] === true;
       result.push({
         id: node.id,
@@ -150,6 +162,6 @@ export function flattenManuscriptTree(
     }
   }
 
-  visit(outline.rootId, 0);
+  visit(snapshot.rootId, 0);
   return result;
 }

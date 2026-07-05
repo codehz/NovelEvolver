@@ -14,7 +14,7 @@ type EditorTabPaneProps = {
   active: boolean;
   defaultValue: string;
   editorRef?: Ref<PlainTextEditorHandle>;
-  resourcePath?: string;
+  resourceId?: string;
   chapterId?: string;
 };
 
@@ -22,13 +22,13 @@ function EditorTabPlainTextEditor({
   ref,
   active,
   defaultValue,
-  resourcePath,
+  resourceId,
   chapterId,
 }: {
   ref?: Ref<PlainTextEditorHandle>;
   active: boolean;
   defaultValue: string;
-  resourcePath?: string;
+  resourceId?: string;
   chapterId?: string;
 }) {
   const { caretPositionAtom, selectionSnapshotAtom } = useMolecule(editorTabMolecule);
@@ -39,8 +39,8 @@ function EditorTabPlainTextEditor({
   const manuscript = useManuscript();
 
   const writeFile = useCallback(
-    async (path: string, content: string) => {
-      await resources.writeFile(path, content);
+    async (id: string, content: string) => {
+      await resources.writeFile(id, content);
     },
     [resources],
   );
@@ -52,7 +52,7 @@ function EditorTabPlainTextEditor({
     [manuscript],
   );
 
-  const scheduleSave = useResourceAutosave(resourcePath, writeFile);
+  const scheduleSave = useResourceAutosave(resourceId, writeFile);
   const scheduleChapterSave = useTextAutosave(chapterId, writeChapter, "正文");
 
   return (
@@ -64,7 +64,7 @@ function EditorTabPlainTextEditor({
       onSelectionSnapshotChange={setSelectionSnapshot}
       onCaretChange={setCaretPosition}
       onChange={
-        resourcePath != null ? scheduleSave : chapterId != null ? scheduleChapterSave : undefined
+        resourceId != null ? scheduleSave : chapterId != null ? scheduleChapterSave : undefined
       }
     />
   );
@@ -75,7 +75,7 @@ export function EditorTabPane({
   active,
   defaultValue,
   editorRef,
-  resourcePath,
+  resourceId,
   chapterId,
 }: EditorTabPaneProps) {
   return (
@@ -88,7 +88,7 @@ export function EditorTabPane({
           active={active}
           defaultValue={defaultValue}
           ref={editorRef}
-          resourcePath={resourcePath}
+          resourceId={resourceId}
           chapterId={chapterId}
         />
       </div>

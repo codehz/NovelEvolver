@@ -8,6 +8,7 @@ import type {
   WorktreeHandle,
 } from "#shared/rpc/projects-rpc";
 import type { WorktreeScmHandle } from "#shared/rpc/worktree-scm";
+import type { WorktreeTreeHandle } from "#shared/rpc/worktree-tree";
 
 import { projectMolecule } from "../state/molecules";
 
@@ -44,6 +45,9 @@ export const manuscriptMolecule = molecule(() => use(worktreeMolecule).manuscrip
 /** 当前分支 SCM 句柄（`openWorktree(...).scm` 级联，不在此 await）。 */
 export const worktreeScmMolecule = molecule(() => use(worktreeMolecule).scm);
 
+/** 当前分支树同步句柄（`openWorktree(...).tree` 级联，不在此 await）。 */
+export const worktreeTreeMolecule = molecule(() => use(worktreeMolecule).tree);
+
 export function useActiveBranchName(): string {
   return useMolecule(activeBranchNameMolecule);
 }
@@ -62,4 +66,8 @@ export function useManuscript(): RpcPromise<ManuscriptHandle> {
 
 export function useWorktreeScm(): RpcPromise<WorktreeScmHandle> {
   return useMolecule(worktreeScmMolecule);
+}
+
+export function useWorktreeTree(): RpcPromise<WorktreeTreeHandle> {
+  return useMolecule(worktreeTreeMolecule);
 }

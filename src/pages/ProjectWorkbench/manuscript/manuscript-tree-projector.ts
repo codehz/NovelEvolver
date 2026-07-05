@@ -1,4 +1,4 @@
-import type { ManuscriptNode, ManuscriptOutline } from "#shared/rpc/projects-rpc";
+import type { ManuscriptTreeNode, ManuscriptTreeSnapshot } from "#shared/rpc/worktree-tree";
 
 import { buildSubtreeEndIndexArray, buildTreeRowIndexMap } from "../tree/tree-row-helpers";
 import { flattenManuscriptTree } from "./manuscript-tree";
@@ -7,7 +7,7 @@ import type { ManuscriptEditingState, ManuscriptTreeState } from "./state/types"
 export type ManuscriptRenderItem = {
   id: string | null;
   title: string;
-  type: ManuscriptNode["type"];
+  type: ManuscriptTreeNode["type"];
   depth: number;
   expanded: boolean;
   key: string;
@@ -25,23 +25,23 @@ function resolveCreatingRenderPosition(
   rowIndexById: Map<string, number>,
   subtreeEndIndexes: readonly number[],
   editing: Extract<ManuscriptEditingState, { mode: "creating" }>,
-  outline: ManuscriptOutline,
+  snapshot: ManuscriptTreeSnapshot,
 ): { insertAt: number; depth: number } {
-  const parent = outline.nodes[editing.parentId];
+  const parent = snapshot.nodes[editing.parentId];
   if (parent?.type !== "folder") {
     return { insertAt: items.length, depth: 0 };
   }
 
   const parentIndex = rowIndexById.get(editing.parentId) ?? -1;
-  const parentDepth = editing.parentId === outline.rootId ? -1 : items[parentIndex]?.depth;
+  const parentDepth = editing.parentId === snapshot.rootId ? -1 : items[parentIndex]?.depth;
   const depth = parentDepth === undefined ? 0 : parentDepth + 1;
-  const index = Math.max(0, Math.min(parent.children.length, Math.trunc(editing.index)));
+  const index = Math.max(0, Math.min(parent.childIds.length, Math.trunc(editing.index)));
 
   if (index === 0) {
     return { insertAt: parentIndex >= 0 ? parentIndex + 1 : 0, depth };
   }
 
-  const previousSiblingId = parent.children[index - 1];
+  const previousSiblingId = parent.childIds[index - 1];
   const previousSiblingIndex = rowIndexById.get(previousSiblingId) ?? -1;
   if (previousSiblingIndex < 0) {
     return { insertAt: items.length, depth };
@@ -55,7 +55,7 @@ export function buildManuscriptRenderProjection(
   state: ManuscriptTreeState,
 ): ManuscriptRenderProjection {
   const flatItems =
-    state.outline === null ? [] : flattenManuscriptTree(state.outline, state.expandedIds);
+    state.snapshot === null ? [] : flattenManuscriptTree(state.snapshot, state.expandedIds);
   const baseRowIndexById = buildTreeRowIndexMap(flatItems, (item) => item.id);
   const baseSubtreeEndIndexes = buildSubtreeEndIndexArray(flatItems);
 
@@ -69,14 +69,14 @@ export function buildManuscriptRenderProjection(
   const editing = state.editing;
   if (editing?.mode === "creating") {
     const position =
-      state.outline === null
+      state.snapshot === null
         ? { insertAt: items.length, depth: 0 }
         : resolveCreatingRenderPosition(
             items,
             baseRowIndexById,
             baseSubtreeEndIndexes,
             editing,
-            state.outline,
+            state.snapshot,
           );
     items.splice(position.insertAt, 0, {
       id: null,

@@ -1,4 +1,4 @@
-import type { ResourceNode, ResourceTreeSnapshot } from "#shared/rpc/projects-rpc";
+import type { ResourceTreeNode, ResourceTreeSnapshot } from "#shared/rpc/worktree-tree";
 
 import type { TreeResolvedDrop } from "../../tree/tree-drag";
 
@@ -6,25 +6,25 @@ export type CreatingState = {
   mode: "creating";
   id: number;
   kind: "file" | "folder";
-  parentPath: string;
+  parentId: string;
 };
 
 export type RenamingState = {
   mode: "renaming";
-  path: string;
+  id: string;
   kind: "file" | "folder";
 };
 
 export type ResourceTreeEditingState = CreatingState | RenamingState;
 
 export type ResourceTreeSelection = {
-  path: string;
-  type: ResourceNode["type"];
+  id: string;
+  type: ResourceTreeNode["type"];
 };
 
 export type ResourceTreeDragState = {
-  sourcePath: string;
-  sourceType: ResourceNode["type"];
+  sourceId: string;
+  sourceType: ResourceTreeNode["type"];
   resolved: TreeResolvedDrop<string> | null;
 };
 

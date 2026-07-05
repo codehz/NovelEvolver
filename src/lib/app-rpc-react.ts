@@ -12,7 +12,7 @@ type RpcStreamSubscriptionOptions<T> = {
   cancelReason?: string;
 };
 
-function consumeRpcStream<T>({
+export function consumeRpcStream<T>({
   subscribe,
   onValue,
   onError,

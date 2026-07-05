@@ -1,7 +1,7 @@
 import type { RefObject } from "react";
 
 import { cn } from "#app/lib/cn";
-import type { ManuscriptNode } from "#shared/rpc/projects-rpc";
+import type { ManuscriptTreeNode } from "#shared/rpc/worktree-tree";
 
 import type { TreeResolvedDrop } from "../tree/tree-drag";
 import { TreeRowShell } from "../tree/TreeRowShell";
@@ -11,7 +11,7 @@ import type { ManuscriptEditingState, ManuscriptMoveTarget } from "./state/types
 type ManuscriptTreeRowProps = {
   id: string | null;
   title: string;
-  type: ManuscriptNode["type"];
+  type: ManuscriptTreeNode["type"];
   depth: number;
   expanded: boolean;
   index: number;
@@ -23,17 +23,17 @@ type ManuscriptTreeRowProps = {
   dragging: boolean;
   listRef: RefObject<HTMLUListElement | null>;
   resolveDropTarget: (
-    input: TreeDropResolveInput<ManuscriptNode["type"]>,
+    input: TreeDropResolveInput<ManuscriptTreeNode["type"]>,
   ) => TreeResolvedDrop<ManuscriptMoveTarget> | null;
-  onActivate: (id: string, type: ManuscriptNode["type"], title: string) => void;
+  onActivate: (id: string, type: ManuscriptTreeNode["type"], title: string) => void;
   onCancelEditing: () => void;
   onSubmitEditing: (editing: ManuscriptEditingState, title: string) => Promise<void>;
-  onDragStart: (id: string, type: ManuscriptNode["type"]) => void;
+  onDragStart: (id: string, type: ManuscriptTreeNode["type"]) => void;
   onDragMove: (resolved: TreeResolvedDrop<ManuscriptMoveTarget> | null) => void;
   onDragEnd: () => void;
 };
 
-function rowIcon(type: ManuscriptNode["type"], expanded: boolean) {
+function rowIcon(type: ManuscriptTreeNode["type"], expanded: boolean) {
   if (type === "folder") {
     return expanded ? cn("icon-[codicon--folder-opened]") : cn("icon-[codicon--folder]");
   }
@@ -71,7 +71,7 @@ export function ManuscriptTreeRow({
         ? "重命名文件夹"
         : "重命名章节";
   return (
-    <TreeRowShell<ManuscriptNode["type"], ManuscriptMoveTarget>
+    <TreeRowShell<ManuscriptTreeNode["type"], ManuscriptMoveTarget>
       rowId={id}
       rowIndex={index}
       rowType={type}

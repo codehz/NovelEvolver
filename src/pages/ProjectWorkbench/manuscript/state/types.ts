@@ -1,11 +1,11 @@
-import type { ManuscriptNode, ManuscriptOutline } from "#shared/rpc/projects-rpc";
+import type { ManuscriptTreeNode, ManuscriptTreeSnapshot } from "#shared/rpc/worktree-tree";
 
 import type { TreeResolvedDrop } from "../../tree/tree-drag";
 
 export type ManuscriptCreatingState = {
   mode: "creating";
   id: number;
-  kind: ManuscriptNode["type"];
+  kind: ManuscriptTreeNode["type"];
   parentId: string;
   index: number;
 };
@@ -13,7 +13,7 @@ export type ManuscriptCreatingState = {
 export type ManuscriptRenamingState = {
   mode: "renaming";
   id: string;
-  kind: ManuscriptNode["type"];
+  kind: ManuscriptTreeNode["type"];
 };
 
 export type ManuscriptEditingState = ManuscriptCreatingState | ManuscriptRenamingState;
@@ -24,14 +24,14 @@ export type ManuscriptMoveTarget =
 
 export type ManuscriptDragState = {
   sourceId: string;
-  sourceType: ManuscriptNode["type"];
+  sourceType: ManuscriptTreeNode["type"];
   resolved: TreeResolvedDrop<ManuscriptMoveTarget> | null;
 };
 
 export type ManuscriptTreeState = {
   status: "idle" | "loading" | "ready" | "error";
   error: string | null;
-  outline: ManuscriptOutline | null;
+  snapshot: ManuscriptTreeSnapshot | null;
   expandedIds: Record<string, true>;
   selectedId: string | null;
   editing: ManuscriptEditingState | null;
@@ -42,7 +42,7 @@ export type ManuscriptTreeState = {
 export const initialManuscriptTreeState: ManuscriptTreeState = {
   status: "idle",
   error: null,
-  outline: null,
+  snapshot: null,
   expandedIds: { root: true },
   selectedId: null,
   editing: null,

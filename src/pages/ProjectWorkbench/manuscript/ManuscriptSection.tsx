@@ -3,7 +3,7 @@ import { useAtomValue, useSetAtom, useStore } from "jotai";
 import { useCallback, useMemo, useRef } from "react";
 
 import { SidebarHeaderActionButton } from "#app/components/workbench";
-import type { ManuscriptNode } from "#shared/rpc/projects-rpc";
+import type { ManuscriptTreeNode } from "#shared/rpc/worktree-tree";
 
 import { queryTreeRowById } from "../tree/tree-row-dom";
 import { TreePane } from "../tree/TreePane";
@@ -43,23 +43,23 @@ export function ManuscriptSectionBody() {
     onRevealRequest,
     retryDeps: [projection.items],
     reveal: (targetId) => {
-      const outline = state.outline;
-      if (outline === null) {
+      const snapshot = state.snapshot;
+      if (snapshot === null) {
         return "retry";
       }
-      const targetNode = outline.nodes[targetId];
+      const targetNode = snapshot.nodes[targetId];
       if (targetNode === undefined) {
         return "done";
       }
 
-      if (targetId === outline.rootId) {
+      if (targetId === snapshot.rootId) {
         listRef.current?.scrollIntoView({ block: "start" });
-        dispatch({ type: "expand", id: outline.rootId });
-        dispatch({ type: "select", id: outline.rootId });
+        dispatch({ type: "expand", id: snapshot.rootId });
+        dispatch({ type: "select", id: snapshot.rootId });
         return "done";
       }
 
-      const ancestorIds = manuscriptParentChain(outline, targetId)
+      const ancestorIds = manuscriptParentChain(snapshot, targetId)
         .map((node) => node.id)
         .slice(0, -1);
       for (const ancestorId of ancestorIds) {
@@ -80,13 +80,13 @@ export function ManuscriptSectionBody() {
   });
 
   const resolveDropTarget = useCallback(
-    (input: TreeDropResolveInput<ManuscriptNode["type"]>) => {
-      const outline = store.get(treeAtom).outline;
-      if (outline === null) {
+    (input: TreeDropResolveInput<ManuscriptTreeNode["type"]>) => {
+      const snapshot = store.get(treeAtom).snapshot;
+      if (snapshot === null) {
         return null;
       }
       return resolveManuscriptDropTarget({
-        outline,
+        snapshot,
         projection,
         ...input,
       });
@@ -95,7 +95,7 @@ export function ManuscriptSectionBody() {
   );
 
   return (
-    <TreePane<ManuscriptRenderItem, ManuscriptNode["type"], ManuscriptMoveTarget>
+    <TreePane<ManuscriptRenderItem, ManuscriptTreeNode["type"], ManuscriptMoveTarget>
       listRef={listRef}
       headerActions={
         <>

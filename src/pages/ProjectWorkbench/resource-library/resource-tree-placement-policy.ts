@@ -1,36 +1,53 @@
-import { resourceBaseName, resourceParentPath } from "#shared/resource-library-path";
-import type { ResourceTreeSnapshot } from "#shared/rpc/projects-rpc";
+import type { ResourceTreeNode, ResourceTreeSnapshot } from "#shared/rpc/worktree-tree";
 
 import type { TreeResolvedDrop, TreeRowHoverZone } from "../tree/tree-drag";
 import type { TreeRowDomData } from "../tree/tree-row-dom";
 import { TREE_ROW_HEIGHT_PX } from "../tree/tree-row-motion";
+import { isResourceDescendant } from "./resource-tree";
 import type { ResourceRenderProjection } from "./resource-tree-projector";
 
-export function moveDestinationPath(sourcePath: string, targetPath: string): string {
-  const sourceName = resourceBaseName(sourcePath);
-  return targetPath === "" ? sourceName : `${targetPath}/${sourceName}`;
+function hasDuplicateNameInTargetParent(
+  snapshot: ResourceTreeSnapshot,
+  sourceId: string,
+  sourceName: string,
+  targetParentId: string,
+): boolean {
+  const targetParent = snapshot.nodes[targetParentId];
+  if (targetParent?.type !== "folder") {
+    return true;
+  }
+  return targetParent.childIds.some((childId) => {
+    if (childId === sourceId) {
+      return false;
+    }
+    return snapshot.nodes[childId]?.name === sourceName;
+  });
 }
 
 export function isInvalidDropTarget(
   snapshot: ResourceTreeSnapshot,
-  sourcePath: string,
-  sourceType: "file" | "folder",
-  targetPath: string,
+  sourceId: string,
+  sourceType: ResourceTreeNode["type"],
+  targetParentId: string,
 ): boolean {
-  if (snapshot.nodes[targetPath]?.type !== "folder") {
+  const targetParent = snapshot.nodes[targetParentId];
+  if (targetParent?.type !== "folder") {
     return true;
   }
-  if (targetPath === sourcePath) {
+  const source = snapshot.nodes[sourceId];
+  if (source === undefined) {
     return true;
   }
-  if (sourceType === "folder" && targetPath.startsWith(`${sourcePath}/`)) {
+  if (targetParentId === sourceId) {
     return true;
   }
-  const sourceParent = resourceParentPath(sourcePath);
-  if (targetPath === sourceParent) {
+  if (sourceType === "folder" && isResourceDescendant(snapshot, sourceId, targetParentId)) {
     return true;
   }
-  if (snapshot.nodes[moveDestinationPath(sourcePath, targetPath)] !== undefined) {
+  if (source.parentId === targetParentId) {
+    return true;
+  }
+  if (hasDuplicateNameInTargetParent(snapshot, sourceId, source.name, targetParentId)) {
     return true;
   }
   return false;
@@ -38,13 +55,17 @@ export function isInvalidDropTarget(
 
 function resolveDropTargetFromRow(
   snapshot: ResourceTreeSnapshot,
-  targetRowPath: string,
-  targetRowType: "file" | "folder",
-  sourcePath: string,
-  sourceType: "file" | "folder",
+  targetRowId: string,
+  targetRowType: ResourceTreeNode["type"],
+  sourceId: string,
+  sourceType: ResourceTreeNode["type"],
 ): string | null {
-  const candidate = targetRowType === "folder" ? targetRowPath : resourceParentPath(targetRowPath);
-  if (isInvalidDropTarget(snapshot, sourcePath, sourceType, candidate)) {
+  const targetNode = snapshot.nodes[targetRowId];
+  if (targetNode === undefined) {
+    return null;
+  }
+  const candidate = targetRowType === "folder" ? targetRowId : targetNode.parentId;
+  if (candidate === null || isInvalidDropTarget(snapshot, sourceId, sourceType, candidate)) {
     return null;
   }
   return candidate;
@@ -58,8 +79,8 @@ export function resolveResourceDropTarget({
 }: {
   snapshot: ResourceTreeSnapshot;
   projection: ResourceRenderProjection;
-  start: { rowId: string; rowType: "file" | "folder" };
-  hoveredRow: TreeRowDomData<"file" | "folder"> | null;
+  start: { rowId: string; rowType: ResourceTreeNode["type"] };
+  hoveredRow: TreeRowDomData<ResourceTreeNode["type"]> | null;
   hoverZone: TreeRowHoverZone | null;
   listRect: DOMRect | null;
   clientX: number;
@@ -67,31 +88,31 @@ export function resolveResourceDropTarget({
 }): TreeResolvedDrop<string> | null {
   const listHeight = projection.items.length * TREE_ROW_HEIGHT_PX;
   if (hoveredRow === null) {
-    if (isInvalidDropTarget(snapshot, start.rowId, start.rowType, "")) {
+    if (isInvalidDropTarget(snapshot, start.rowId, start.rowType, snapshot.rootId)) {
       return null;
     }
     return {
       preview: { kind: "highlight", top: 0, height: listHeight },
-      target: "",
+      target: snapshot.rootId,
     };
   }
-  const targetPath = resolveDropTargetFromRow(
+  const targetParentId = resolveDropTargetFromRow(
     snapshot,
     hoveredRow.rowId,
     hoveredRow.rowType,
     start.rowId,
     start.rowType,
   );
-  if (targetPath === null) {
+  if (targetParentId === null) {
     return null;
   }
-  if (targetPath === "") {
+  if (targetParentId === snapshot.rootId) {
     return {
       preview: { kind: "highlight", top: 0, height: listHeight },
-      target: "",
+      target: snapshot.rootId,
     };
   }
-  const targetIndex = projection.rowIndexById.get(targetPath);
+  const targetIndex = projection.rowIndexById.get(targetParentId);
   if (targetIndex === undefined) {
     return null;
   }
@@ -109,6 +130,6 @@ export function resolveResourceDropTarget({
       top: targetIndex * TREE_ROW_HEIGHT_PX,
       height: (endIndex - targetIndex + 1) * TREE_ROW_HEIGHT_PX,
     },
-    target: targetPath,
+    target: targetParentId,
   };
 }

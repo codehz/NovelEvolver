@@ -3,6 +3,7 @@ import type { RpcTarget } from "capnweb";
 import type { ProjectMetadata } from "#shared/project";
 
 import type { WorktreeScmHandle } from "./worktree-scm";
+import type { WorktreeTreeHandle } from "./worktree-tree";
 
 /** Branch info for the HEAD of a project repository. */
 export type BranchInfo = {
@@ -63,6 +64,10 @@ export type ManuscriptOutline = {
   nodes: Record<string, ManuscriptNode>;
 };
 
+export type WorktreeNodeIdResult = {
+  nodeId: string;
+};
+
 /**
  * File operations under the branch worktree's `resources/` directory.
  *
@@ -71,24 +76,25 @@ export type ManuscriptOutline = {
  * `readFile` / `writeFile` use UTF-8 text. `unlink` removes files or folders recursively.
  */
 export interface ResourceLibraryHandle extends RpcTarget {
-  getTree(): ResourceTreeSnapshot;
+  /** Create an empty file under `parentId`. */
+  createFile(parentId: string, name: string): WorktreeNodeIdResult;
 
-  /** Create an empty file (and missing parent folders) and return the updated tree. */
-  createFile(path: string): ResourceTreeSnapshot;
-
-  /** Create a folder (and missing parents) and return the updated tree. */
-  createFolder(path: string): ResourceTreeSnapshot;
+  /** Create a folder under `parentId`. */
+  createFolder(parentId: string, name: string): WorktreeNodeIdResult;
 
   /** Read a file as UTF-8 text. */
-  readFile(path: string): string;
+  readFile(id: string): string;
 
   /** Write a file as UTF-8 text. */
-  writeFile(path: string, content: string): void;
+  writeFile(id: string, content: string): void;
 
-  /** Remove a file or folder recursively. Cannot target `""` (the library root). */
-  unlink(path: string): ResourceTreeSnapshot;
+  /** Rename a file or folder within its current parent. */
+  renameNode(id: string, name: string): void;
 
-  move(from: string, to: string): ResourceTreeSnapshot;
+  /** Remove a file or folder recursively. */
+  deleteNode(id: string): void;
+
+  moveNode(id: string, targetParentId: string): void;
 }
 
 /**
@@ -98,12 +104,11 @@ export interface ResourceLibraryHandle extends RpcTarget {
  * body files are addressed by stable node IDs and are not human-readable paths.
  */
 export interface ManuscriptHandle extends RpcTarget {
-  getOutline(): ManuscriptOutline;
-  createFolder(parentId: string, title: string, index?: number): ManuscriptOutline;
-  createChapter(parentId: string, title: string, index?: number): ManuscriptOutline;
-  renameNode(id: string, title: string): ManuscriptOutline;
-  moveNode(id: string, targetParentId: string, index?: number): ManuscriptOutline;
-  deleteNode(id: string): ManuscriptOutline;
+  createFolder(parentId: string, title: string, index?: number): WorktreeNodeIdResult;
+  createChapter(parentId: string, title: string, index?: number): WorktreeNodeIdResult;
+  renameNode(id: string, title: string): void;
+  moveNode(id: string, targetParentId: string, index?: number): void;
+  deleteNode(id: string): void;
   readChapter(id: string): string;
   writeChapter(id: string, content: string): void;
 }
@@ -115,6 +120,7 @@ export interface WorktreeHandle extends RpcTarget {
   readonly resources: ResourceLibraryHandle;
   readonly manuscript: ManuscriptHandle;
   readonly scm: WorktreeScmHandle;
+  readonly tree: WorktreeTreeHandle;
 }
 
 /**

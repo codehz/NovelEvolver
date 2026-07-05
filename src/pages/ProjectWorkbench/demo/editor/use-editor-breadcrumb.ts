@@ -1,11 +1,16 @@
 import { useMolecule } from "bunshi/react";
 import { useAtomValue } from "jotai";
 
-import { resourceBaseName, resourceLibraryDirPathPrefixes } from "#shared/resource-library-path";
-import type { ManuscriptNode, ManuscriptOutline } from "#shared/rpc/projects-rpc";
+import type {
+  ManuscriptTreeNode,
+  ManuscriptTreeSnapshot,
+  ResourceTreeNode,
+  ResourceTreeSnapshot,
+} from "#shared/rpc/worktree-tree";
 
 import { manuscriptParentChain } from "../../manuscript/manuscript-tree";
 import { manuscriptTreeMolecule } from "../../manuscript/state/manuscript-tree-molecule";
+import { resourceParentChain } from "../../resource-library/resource-tree";
 import { resourceLibraryTreeMolecule } from "../../resource-library/state/resource-tree-molecule";
 import type {
   ManuscriptWorkbenchEditorTab,
@@ -27,9 +32,10 @@ type EditorBreadcrumbModel = {
 };
 
 type EditorBreadcrumbContext = {
-  manuscriptOutline: ManuscriptOutline | null;
+  manuscriptSnapshot: ManuscriptTreeSnapshot | null;
+  resourceSnapshot: ResourceTreeSnapshot | null;
   revealManuscript: (id: string) => void;
-  revealResource: (path: string) => void;
+  revealResource: (id: string) => void;
 };
 
 type EditorBreadcrumbDefinition<TTab extends WorkbenchEditorTab, TNode> = {
@@ -41,29 +47,37 @@ type EditorBreadcrumbDefinition<TTab extends WorkbenchEditorTab, TNode> = {
   reveal: (node: TNode, context: EditorBreadcrumbContext) => void;
 };
 
-const resourceBreadcrumbDefinition: EditorBreadcrumbDefinition<ResourceWorkbenchEditorTab, string> =
-  {
-    ariaLabel: "资源路径",
-    resolveNodes: (tab) => ["", ...resourceLibraryDirPathPrefixes(tab.resourcePath)],
-    getKey: (path) => (path === "" ? "resource:root" : `resource:${path}`),
-    getLabel: (path) => (path === "" ? "资源库" : resourceBaseName(path)),
-    isClickable: (path, index, nodes) => path === "" || index < nodes.length - 1,
-    reveal: (path, context) => {
-      context.revealResource(path);
-    },
-  };
+const resourceBreadcrumbDefinition: EditorBreadcrumbDefinition<
+  ResourceWorkbenchEditorTab,
+  ResourceTreeNode
+> = {
+  ariaLabel: "资源路径",
+  resolveNodes: (tab, context) => {
+    const snapshot = context.resourceSnapshot;
+    if (snapshot === null) {
+      return [];
+    }
+    return resourceParentChain(snapshot, tab.resourceId);
+  },
+  getKey: (node) => `resource:${node.id}`,
+  getLabel: (node, index) => (index === 0 ? "资源库" : node.name),
+  isClickable: (_, index, nodes) => index < nodes.length - 1,
+  reveal: (node, context) => {
+    context.revealResource(node.id);
+  },
+};
 
 const manuscriptBreadcrumbDefinition: EditorBreadcrumbDefinition<
   ManuscriptWorkbenchEditorTab,
-  ManuscriptNode
+  ManuscriptTreeNode
 > = {
   ariaLabel: "正文路径",
   resolveNodes: (tab, context) => {
-    const outline = context.manuscriptOutline;
-    if (outline === null) {
+    const snapshot = context.manuscriptSnapshot;
+    if (snapshot === null) {
       return [];
     }
-    return manuscriptParentChain(outline, tab.chapterId);
+    return manuscriptParentChain(snapshot, tab.chapterId);
   },
   getKey: (node) => `manuscript:${node.id}`,
   getLabel: (node) => node.title,
@@ -101,17 +115,21 @@ function buildEditorBreadcrumbModel<TTab extends WorkbenchEditorTab, TNode>(
 }
 
 export function useEditorBreadcrumb(tab: WorkbenchEditorTab): EditorBreadcrumbModel {
-  const { revealInTree: revealResource } = useMolecule(resourceLibraryTreeMolecule);
-  const { treeAtom, revealInTree: revealManuscript } = useMolecule(manuscriptTreeMolecule);
-  const manuscriptOutline = useAtomValue(treeAtom).outline;
+  const { treeAtom: resourceTreeAtom, revealInTree: revealResource } = useMolecule(
+    resourceLibraryTreeMolecule,
+  );
+  const { treeAtom: manuscriptTreeAtom, revealInTree: revealManuscript } =
+    useMolecule(manuscriptTreeMolecule);
+  const manuscriptSnapshot = useAtomValue(manuscriptTreeAtom).snapshot;
+  const resourceSnapshot = useAtomValue(resourceTreeAtom).snapshot;
 
   const context: EditorBreadcrumbContext = {
-    manuscriptOutline,
+    manuscriptSnapshot,
+    resourceSnapshot,
     revealManuscript,
     revealResource,
   };
 
-  // Breadcrumb variants share rendering; only chain resolution and reveal policy differ.
   switch (tab.kind) {
     case "resource":
       return buildEditorBreadcrumbModel(resourceBreadcrumbDefinition, tab, context);

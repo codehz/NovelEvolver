@@ -3,12 +3,13 @@ import { useAtomValue, useSetAtom, useStore } from "jotai";
 import { useCallback, useMemo, useRef } from "react";
 
 import { SidebarHeaderActionButton } from "#app/components/workbench";
-import { resourceLibraryDirPathPrefixes } from "#shared/resource-library-path";
+import type { ResourceTreeNode } from "#shared/rpc/worktree-tree";
 
 import { queryTreeRowById } from "../tree/tree-row-dom";
 import { TreePane } from "../tree/TreePane";
 import { useTreeRevealRequest } from "../tree/use-tree-reveal-request";
 import type { TreeDropResolveInput } from "../tree/use-tree-row-pointer-drag";
+import { resourceParentChain } from "./resource-tree";
 import { resolveResourceDropTarget } from "./resource-tree-placement-policy";
 import { buildResourceRenderProjection, type ResourceRenderItem } from "./resource-tree-projector";
 import { ResourceLibraryTreeRow } from "./ResourceLibraryTreeRow";
@@ -37,38 +38,45 @@ export function ResourceLibrarySectionBody() {
   useTreeRevealRequest({
     onRevealRequest,
     retryDeps: [projection.items],
-    reveal: (targetPath) => {
-      if (targetPath === "") {
-        listRef.current?.scrollIntoView({ block: "start" });
-        dispatch({ type: "select", path: "", nodeType: "folder" });
-        return "done";
-      }
-
+    reveal: (targetId) => {
       const currentSnapshot = state.snapshot;
-      if (currentSnapshot?.nodes[targetPath] === undefined) {
+      if (currentSnapshot === null) {
+        return "retry";
+      }
+
+      const targetNode = currentSnapshot.nodes[targetId];
+      if (targetNode === undefined) {
         return "done";
       }
 
-      const parentPrefixes = resourceLibraryDirPathPrefixes(targetPath).slice(0, -1);
-      if (parentPrefixes.length > 0) {
-        dispatch({ type: "expandPaths", paths: parentPrefixes });
+      if (targetId === currentSnapshot.rootId) {
+        listRef.current?.scrollIntoView({ block: "start" });
+        dispatch({ type: "select", id: targetId, nodeType: "folder" });
+        return "done";
       }
 
-      const itemIndex = projection.rowIndexById.get(targetPath);
+      const ancestorIds = resourceParentChain(currentSnapshot, targetId)
+        .map((node) => node.id)
+        .slice(0, -1);
+      if (ancestorIds.length > 0) {
+        dispatch({ type: "expandPaths", ids: ancestorIds });
+      }
+
+      const itemIndex = projection.rowIndexById.get(targetId);
       const item = itemIndex === undefined ? undefined : projection.items[itemIndex];
       if (item === undefined) {
         return "retry";
       }
 
-      dispatch({ type: "select", path: targetPath, nodeType: item.type });
-      const row = listRef.current ? queryTreeRowById(listRef.current, targetPath) : null;
+      dispatch({ type: "select", id: targetId, nodeType: item.type });
+      const row = listRef.current ? queryTreeRowById(listRef.current, targetId) : null;
       row?.scrollIntoView({ block: "nearest" });
       return "done";
     },
   });
 
   const resolveDropTarget = useCallback(
-    (input: TreeDropResolveInput<"file" | "folder">) => {
+    (input: TreeDropResolveInput<ResourceTreeNode["type"]>) => {
       const snapshot = store.get(treeAtom).snapshot;
       if (snapshot === null) {
         return null;
@@ -83,7 +91,7 @@ export function ResourceLibrarySectionBody() {
   );
 
   return (
-    <TreePane<ResourceRenderItem, "file" | "folder", string>
+    <TreePane<ResourceRenderItem, ResourceTreeNode["type"], string>
       listRef={listRef}
       headerActions={
         <>
@@ -114,19 +122,9 @@ export function ResourceLibrarySectionBody() {
       dragging={state.drag !== null}
       onRequestRename={startRenaming}
       onRequestDelete={deleteNode}
-      getCurrentDrag={() => {
-        const drag = store.get(treeAtom).drag;
-        if (drag === null) {
-          return null;
-        }
-        return {
-          sourceId: drag.sourcePath,
-          sourceType: drag.sourceType,
-          resolved: drag.resolved,
-        };
-      }}
+      getCurrentDrag={() => store.get(treeAtom).drag}
       dispatchDragStart={(sourceId, sourceType) => {
-        dispatch({ type: "dragStart", sourcePath: sourceId, sourceType });
+        dispatch({ type: "dragStart", sourceId, sourceType });
       }}
       dispatchDragMove={(resolved) => {
         dispatch({ type: "dragMove", resolved });
@@ -158,7 +156,7 @@ export function ResourceLibrarySectionBody() {
           item={item}
           listRef={rowListRef}
           resolveDropTarget={resolveDrop}
-          selectedPath={state.selected?.path ?? null}
+          selectedId={state.selected?.id ?? null}
           y={layout.y}
           onActivate={activateNode}
           onCancelEditing={cancelEditing}

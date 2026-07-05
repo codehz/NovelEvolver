@@ -48,8 +48,8 @@ export function useTextAutosave(
 }
 
 export function useResourceAutosave(
-  resourcePath: string | undefined,
-  writeFile: ((path: string, content: string) => Promise<void>) | undefined,
+  resourceId: string | undefined,
+  writeFile: ((id: string, content: string) => Promise<void>) | undefined,
 ): (content: string) => void {
-  return useTextAutosave(resourcePath, writeFile, "资源库");
+  return useTextAutosave(resourceId, writeFile, "资源库");
 }

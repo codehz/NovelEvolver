@@ -1,6 +1,7 @@
 import type { RefObject } from "react";
 
 import { cn } from "#app/lib/cn";
+import type { ResourceTreeNode } from "#shared/rpc/worktree-tree";
 
 import type { TreeResolvedDrop } from "../tree/tree-drag";
 import { TreeRowShell } from "../tree/TreeRowShell";
@@ -13,19 +14,19 @@ type ResourceLibraryTreeRowProps = {
   y: number;
   height: number;
   animateEnter: boolean;
-  selectedPath: string | null;
+  selectedId: string | null;
   dragging: boolean;
   listRef: RefObject<HTMLUListElement | null>;
   resolveDropTarget: (
-    input: TreeDropResolveInput<"file" | "folder">,
+    input: TreeDropResolveInput<ResourceTreeNode["type"]>,
   ) => TreeResolvedDrop<string> | null;
-  onActivate: (path: string, type: "file" | "folder") => void;
+  onActivate: (id: string, type: ResourceTreeNode["type"], name: string) => void;
   onCancelEditing: () => void;
   onSubmitEditing: (
     editing: NonNullable<ResourceRenderItem["editing"]>,
     name: string,
   ) => Promise<void>;
-  onDragStart: (sourcePath: string, sourceType: "file" | "folder") => void;
+  onDragStart: (sourceId: string, sourceType: ResourceTreeNode["type"]) => void;
   onDragMove: (resolved: TreeResolvedDrop<string> | null) => void;
   onDragEnd: () => void;
 };
@@ -43,7 +44,7 @@ export function ResourceLibraryTreeRow({
   y,
   height,
   animateEnter,
-  selectedPath,
+  selectedId,
   dragging,
   listRef,
   resolveDropTarget,
@@ -54,7 +55,7 @@ export function ResourceLibraryTreeRow({
   onDragMove,
   onDragEnd,
 }: ResourceLibraryTreeRowProps) {
-  const isSelected = item.path !== null && selectedPath === item.path;
+  const isSelected = item.id !== null && selectedId === item.id;
   const editing = item.editing;
   const inputAriaLabel =
     editing?.mode === "creating"
@@ -67,12 +68,12 @@ export function ResourceLibraryTreeRow({
   const inputPlaceholder =
     editing?.mode === "creating"
       ? editing.kind === "file"
-        ? "例如 设定/世界观.md"
-        : "例如 设定/资料"
+        ? "例如 world.md"
+        : "例如 设定"
       : undefined;
   return (
-    <TreeRowShell<"file" | "folder", string>
-      rowId={item.path}
+    <TreeRowShell<ResourceTreeNode["type"], string>
+      rowId={item.id}
       rowIndex={index}
       rowType={item.type}
       depth={item.depth}
@@ -103,13 +104,13 @@ export function ResourceLibraryTreeRow({
       listRef={listRef}
       resolveDropTarget={resolveDropTarget}
       onActivate={() => {
-        if (item.path !== null) {
-          onActivate(item.path, item.type);
+        if (item.id !== null) {
+          onActivate(item.id, item.type, item.name);
         }
       }}
       onDragStart={() => {
-        if (item.path !== null) {
-          onDragStart(item.path, item.type);
+        if (item.id !== null) {
+          onDragStart(item.id, item.type);
         }
       }}
       onDragMove={onDragMove}

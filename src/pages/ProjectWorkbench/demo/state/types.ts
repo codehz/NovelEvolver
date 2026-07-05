@@ -1,7 +1,7 @@
 export type ResourceWorkbenchEditorTab = {
   id: string;
   kind: "resource";
-  resourcePath: string;
+  resourceId: string;
   label: string;
   active: boolean;
   initialContent: string;
@@ -17,8 +17,3 @@ export type ManuscriptWorkbenchEditorTab = {
 };
 
 export type WorkbenchEditorTab = ResourceWorkbenchEditorTab | ManuscriptWorkbenchEditorTab;
-
-export function resourceTabLabel(resourcePath: string): string {
-  const slash = resourcePath.lastIndexOf("/");
-  return slash === -1 ? resourcePath : resourcePath.slice(slash + 1);
-}

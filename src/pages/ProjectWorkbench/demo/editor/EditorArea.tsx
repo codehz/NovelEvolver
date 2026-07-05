@@ -9,9 +9,11 @@ import { EditorEmptyState } from "./EditorEmptyState";
 import { EditorTabPane } from "./EditorTabPane";
 import { useWorkbenchEditorActions } from "./use-workbench-editor-actions";
 import { useWorkbenchEditorScmSync } from "./use-workbench-editor-scm-sync";
+import { useWorkbenchEditorTreeSync } from "./use-workbench-editor-tree-sync";
 
 export function EditorArea() {
   const editorHandlesRef = useRef(new Map<string, PlainTextEditorHandle>());
+  useWorkbenchEditorTreeSync();
   useWorkbenchEditorScmSync(editorHandlesRef);
   const { tabs, activateTab, closeTab } = useWorkbenchEditorActions();
 
@@ -48,7 +50,7 @@ export function EditorArea() {
                 }
                 editorHandlesRef.current.set(tab.id, handle);
               }}
-              resourcePath={tab.kind === "resource" ? tab.resourcePath : undefined}
+              resourceId={tab.kind === "resource" ? tab.resourceId : undefined}
               chapterId={tab.kind === "manuscript" ? tab.chapterId : undefined}
             />
           ))

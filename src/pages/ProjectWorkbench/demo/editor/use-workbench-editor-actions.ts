@@ -3,36 +3,9 @@ import { useAtom, useSetAtom } from "jotai";
 import { useCallback } from "react";
 
 import { notificationApi } from "#app/lib/notifications";
-import type { ResourceNode } from "#shared/rpc/projects-rpc";
 
 import { workbenchEditorMolecule } from "../state/molecules";
-import { resourceTabLabel, type WorkbenchEditorTab } from "../state/types";
-
-function matchesResourcePath(
-  resourcePath: string,
-  from: string,
-  nodeType: ResourceNode["type"],
-): boolean {
-  if (nodeType === "file") {
-    return resourcePath === from;
-  }
-  return resourcePath === from || resourcePath.startsWith(`${from}/`);
-}
-
-function remapResourcePath(
-  resourcePath: string,
-  from: string,
-  to: string,
-  nodeType: ResourceNode["type"],
-): string {
-  if (!matchesResourcePath(resourcePath, from, nodeType)) {
-    return resourcePath;
-  }
-  if (nodeType === "file" || resourcePath === from) {
-    return to;
-  }
-  return `${to}${resourcePath.slice(from.length)}`;
-}
+import { type WorkbenchEditorTab } from "../state/types";
 
 export function useWorkbenchEditorActions() {
   const { tabsAtom, activeTabIdAtom } = useMolecule(workbenchEditorMolecule);
@@ -77,22 +50,24 @@ export function useWorkbenchEditorActions() {
   );
 
   const openResourceTab = useCallback(
-    async (resourcePath: string, readFile: (path: string) => Promise<string>) => {
-      const existing = tabs.find(
-        (tab) => tab.kind === "resource" && tab.resourcePath === resourcePath,
-      );
+    async (
+      resourceId: string,
+      label: string,
+      readFile: (resourceId: string) => Promise<string>,
+    ) => {
+      const existing = tabs.find((tab) => tab.kind === "resource" && tab.resourceId === resourceId);
       if (existing) {
         activateTab(existing.id);
         return;
       }
 
       try {
-        const content = await readFile(resourcePath);
+        const content = await readFile(resourceId);
         const newTab: WorkbenchEditorTab = {
           id: `resource:${crypto.randomUUID()}`,
           kind: "resource",
-          resourcePath,
-          label: resourceTabLabel(resourcePath),
+          resourceId,
+          label,
           active: true,
           initialContent: content,
         };
@@ -136,69 +111,6 @@ export function useWorkbenchEditorActions() {
     [activateTab, setActiveTabId, setTabs, tabs],
   );
 
-  const rebindResourcePaths = useCallback(
-    (from: string, to: string, nodeType: ResourceNode["type"]) => {
-      setTabs((current) =>
-        current.map((tab) => {
-          if (tab.kind !== "resource") {
-            return tab;
-          }
-          const nextPath = remapResourcePath(tab.resourcePath, from, to, nodeType);
-          if (nextPath === tab.resourcePath) {
-            return tab;
-          }
-          return {
-            ...tab,
-            resourcePath: nextPath,
-            label: resourceTabLabel(nextPath),
-          };
-        }),
-      );
-    },
-    [setTabs],
-  );
-
-  const renameManuscriptTab = useCallback(
-    (chapterId: string, title: string) => {
-      setTabs((current) =>
-        current.map((tab) =>
-          tab.kind === "manuscript" && tab.chapterId === chapterId ? { ...tab, label: title } : tab,
-        ),
-      );
-    },
-    [setTabs],
-  );
-
-  const closeManuscriptTabs = useCallback(
-    (chapterIds: readonly string[]) => {
-      const idSet = new Set(chapterIds);
-      setTabs((current) => {
-        const next = current.filter(
-          (tab) => tab.kind !== "manuscript" || !idSet.has(tab.chapterId),
-        );
-        const active = next.find((tab) => tab.active) ?? next[next.length - 1] ?? null;
-        setActiveTabId(active?.id ?? null);
-        return next.map((tab) => ({ ...tab, active: tab.id === active?.id }));
-      });
-    },
-    [setActiveTabId, setTabs],
-  );
-
-  const closeResourceTabs = useCallback(
-    (path: string, nodeType: ResourceNode["type"]) => {
-      setTabs((current) => {
-        const next = current.filter(
-          (tab) =>
-            tab.kind !== "resource" || !matchesResourcePath(tab.resourcePath, path, nodeType),
-        );
-        const active = next.find((tab) => tab.active) ?? next[next.length - 1] ?? null;
-        setActiveTabId(active?.id ?? null);
-        return next.map((tab) => ({ ...tab, active: tab.id === active?.id }));
-      });
-    },
-    [setActiveTabId, setTabs],
-  );
-
   return {
     tabs,
     activateTab,
@@ -206,9 +118,5 @@ export function useWorkbenchEditorActions() {
     closeTab,
     openResourceTab,
     openManuscriptTab,
-    rebindResourcePaths,
-    renameManuscriptTab,
-    closeManuscriptTabs,
-    closeResourceTabs,
   };
 }

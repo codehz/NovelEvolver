@@ -9,11 +9,13 @@ import type {
   WorktreeHandle,
 } from "#shared/rpc/projects-rpc";
 import type { WorktreeScmHandle } from "#shared/rpc/worktree-scm";
+import type { WorktreeTreeHandle } from "#shared/rpc/worktree-tree";
 
-import { ScmSession } from "../scm/session";
+import { WorktreeSession } from "../worktree/session";
 import { ManuscriptHandleImpl } from "./manuscript-handle";
 import { ResourceLibraryHandleImpl } from "./resource-library-handle";
 import { WorktreeScmHandleImpl } from "./worktree-scm-handle";
+import { WorktreeTreeHandleImpl } from "./worktree-tree-handle";
 
 /** ObjectDatabase 类型（从 readTreeSnapshot 参数推导） */
 type ObjectDatabase = Parameters<typeof readTreeSnapshot>[0];
@@ -26,6 +28,7 @@ export class WorktreeHandleImpl extends RpcTarget implements WorktreeHandle {
   readonly #resources: ResourceLibraryHandle;
   readonly #manuscript: ManuscriptHandle;
   readonly #scm: WorktreeScmHandle;
+  readonly #tree: WorktreeTreeHandle;
 
   constructor(
     worktree: VirtualWorktree,
@@ -36,14 +39,11 @@ export class WorktreeHandleImpl extends RpcTarget implements WorktreeHandle {
   ) {
     super();
     this.#worktree = worktree;
-    const session = new ScmSession(worktree, objects, repo, branchName, { hadExistingDraft });
-    this.#resources = new ResourceLibraryHandleImpl(worktree, () => {
-      session.handleExternalMutation();
-    });
-    this.#manuscript = new ManuscriptHandleImpl(worktree, () => {
-      session.handleExternalMutation();
-    });
+    const session = new WorktreeSession(worktree, objects, repo, branchName, { hadExistingDraft });
+    this.#resources = new ResourceLibraryHandleImpl(session);
+    this.#manuscript = new ManuscriptHandleImpl(session);
     this.#scm = new WorktreeScmHandleImpl(session);
+    this.#tree = new WorktreeTreeHandleImpl(session);
   }
 
   get baseTree(): string {
@@ -60,5 +60,9 @@ export class WorktreeHandleImpl extends RpcTarget implements WorktreeHandle {
 
   get scm(): WorktreeScmHandle {
     return this.#scm;
+  }
+
+  get tree(): WorktreeTreeHandle {
+    return this.#tree;
   }
 }

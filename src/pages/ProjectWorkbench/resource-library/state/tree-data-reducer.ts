@@ -1,7 +1,12 @@
-import { remapResourcePath, resourceParentPath } from "#shared/resource-library-path";
-import type { ResourceNode, ResourceTreeSnapshot } from "#shared/rpc/projects-rpc";
+import type {
+  ResourceTreeDelta,
+  ResourceTreeNode,
+  ResourceTreeSnapshot,
+} from "#shared/rpc/worktree-tree";
 
 import type { TreeResolvedDrop } from "../../tree/tree-drag";
+import { applyWorktreeTreeDelta } from "../../tree/worktree-tree-state";
+import { findResourceParentId } from "../resource-tree";
 import { isInvalidDropTarget } from "../resource-tree-placement-policy";
 import type { ResourceTreeEditingState, ResourceTreeState } from "./types";
 import { initialResourceTreeState } from "./types";
@@ -10,38 +15,34 @@ export type ResourceTreeAction =
   | { type: "loadStart" }
   | { type: "loadSuccess"; snapshot: ResourceTreeSnapshot }
   | { type: "loadError"; message: string }
-  | { type: "setSnapshot"; snapshot: ResourceTreeSnapshot }
-  | { type: "select"; path: string; nodeType: ResourceNode["type"] }
-  | { type: "toggleFolder"; path: string }
-  | { type: "expandPath"; path: string }
-  | { type: "expandPaths"; paths: string[] }
+  | { type: "applyDelta"; delta: ResourceTreeDelta; revision: number }
+  | { type: "select"; id: string; nodeType: ResourceTreeNode["type"] }
+  | { type: "toggleFolder"; id: string }
+  | { type: "expandPath"; id: string }
+  | { type: "expandPaths"; ids: string[] }
   | { type: "startEditing"; editing: ResourceTreeEditingState }
   | { type: "cancelEditing" }
-  | { type: "remapPaths"; from: string; to: string; nodeType: ResourceNode["type"] }
-  | { type: "dragStart"; sourcePath: string; sourceType: ResourceNode["type"] }
+  | { type: "dragStart"; sourceId: string; sourceType: ResourceTreeNode["type"] }
   | { type: "dragMove"; resolved: TreeResolvedDrop<string> | null }
   | { type: "dragEnd" };
 
-function appendExpandedPath(
-  expandedPaths: Record<string, true>,
-  path: string,
-): Record<string, true> {
-  if (path === "" || expandedPaths[path]) {
+function appendExpandedPath(expandedPaths: Record<string, true>, id: string): Record<string, true> {
+  if (expandedPaths[id]) {
     return expandedPaths;
   }
   return {
     ...expandedPaths,
-    [path]: true,
+    [id]: true,
   };
 }
 
 function appendExpandedPaths(
   expandedPaths: Record<string, true>,
-  paths: string[],
+  ids: string[],
 ): Record<string, true> {
   let next = expandedPaths;
-  for (const path of paths) {
-    next = appendExpandedPath(next, path);
+  for (const id of ids) {
+    next = appendExpandedPath(next, id);
   }
   return next;
 }
@@ -51,88 +52,30 @@ function filterExpandedPaths(
   expandedPaths: Record<string, true>,
 ): Record<string, true> {
   const next: Record<string, true> = {};
-  for (const path of Object.keys(expandedPaths)) {
-    if (snapshot.nodes[path]?.type === "folder") {
-      next[path] = true;
+  for (const id of Object.keys(expandedPaths)) {
+    if (snapshot.nodes[id]?.type === "folder") {
+      next[id] = true;
     }
   }
   return next;
 }
 
-function remapExpandedPaths(
-  expandedPaths: Record<string, true>,
-  from: string,
-  to: string,
-  nodeType: ResourceNode["type"],
-): Record<string, true> {
-  const next: Record<string, true> = {};
-  for (const path of Object.keys(expandedPaths)) {
-    next[remapResourcePath(path, from, to, nodeType)] = true;
-  }
-  return next;
-}
-
-function remapEditingState(
-  editing: ResourceTreeEditingState | null,
-  from: string,
-  to: string,
-  nodeType: ResourceNode["type"],
-): ResourceTreeEditingState | null {
-  if (editing === null) {
-    return null;
-  }
-  if (editing.mode === "creating") {
-    const parentPath = remapResourcePath(editing.parentPath, from, to, nodeType);
-    return parentPath === editing.parentPath ? editing : { ...editing, parentPath };
-  }
-  const path = remapResourcePath(editing.path, from, to, nodeType);
-  return path === editing.path ? editing : { ...editing, path };
-}
-
-function remapNodeVisualIds(
-  nodeVisualIds: Record<string, string>,
-  from: string,
-  to: string,
-  nodeType: ResourceNode["type"],
-): Record<string, string> {
-  const next: Record<string, string> = {};
-  for (const [path, visualId] of Object.entries(nodeVisualIds)) {
-    next[remapResourcePath(path, from, to, nodeType)] = visualId;
-  }
-  return next;
-}
-
-function remapSelection(
-  selected: ResourceTreeState["selected"],
-  from: string,
-  to: string,
-  nodeType: ResourceNode["type"],
-): ResourceTreeState["selected"] {
-  if (selected === null) {
-    return null;
-  }
-  return {
-    ...selected,
-    path: remapResourcePath(selected.path, from, to, nodeType),
-  };
-}
-
-function collectSnapshotPaths(snapshot: ResourceTreeSnapshot): string[] {
-  const paths: string[] = [];
-  const visit = (path: string): void => {
-    const node = snapshot.nodes[path];
+function collectSnapshotIds(snapshot: ResourceTreeSnapshot): string[] {
+  const ids: string[] = [];
+  const visit = (id: string): void => {
+    const node = snapshot.nodes[id];
     if (node === undefined || node.type !== "folder") {
       return;
     }
-    for (const childPath of node.children) {
-      paths.push(childPath);
-      if (snapshot.nodes[childPath]?.type === "folder") {
-        visit(childPath);
+    for (const childId of node.childIds) {
+      ids.push(childId);
+      if (snapshot.nodes[childId]?.type === "folder") {
+        visit(childId);
       }
     }
   };
-  visit(snapshot.rootPath);
-  return paths;
+  visit(snapshot.rootId);
+  return ids;
 }
 
 function reconcileVisualIds(
@@ -141,13 +84,13 @@ function reconcileVisualIds(
 ): Pick<ResourceTreeState, "nodeVisualIds" | "nextVisualId"> {
   const nextNodeVisualIds: Record<string, string> = {};
   let nextVisualId = state.nextVisualId;
-  for (const path of collectSnapshotPaths(snapshot)) {
-    const existing = state.nodeVisualIds[path];
+  for (const id of collectSnapshotIds(snapshot)) {
+    const existing = state.nodeVisualIds[id];
     if (existing !== undefined) {
-      nextNodeVisualIds[path] = existing;
+      nextNodeVisualIds[id] = existing;
       continue;
     }
-    nextNodeVisualIds[path] = `resource-node-${nextVisualId}`;
+    nextNodeVisualIds[id] = `resource-node-${nextVisualId}`;
     nextVisualId += 1;
   }
   return {
@@ -156,18 +99,16 @@ function reconcileVisualIds(
   };
 }
 
-function nearestExistingFolderPath(snapshot: ResourceTreeSnapshot, path: string): string {
-  let current = path;
-  while (true) {
+function nearestExistingFolderId(snapshot: ResourceTreeSnapshot, id: string): string {
+  let current = findResourceParentId(snapshot, id);
+  while (current !== null) {
     const node = snapshot.nodes[current];
     if (node?.type === "folder") {
       return current;
     }
-    if (current === "") {
-      return "";
-    }
-    current = resourceParentPath(current);
+    current = findResourceParentId(snapshot, current);
   }
+  return snapshot.rootId;
 }
 
 function pruneSelection(
@@ -177,15 +118,15 @@ function pruneSelection(
   if (selected === null) {
     return null;
   }
-  const node = snapshot.nodes[selected.path];
+  const node = snapshot.nodes[selected.id];
   if (node !== undefined) {
     return {
-      path: selected.path,
+      id: selected.id,
       type: node.type,
     };
   }
   return {
-    path: nearestExistingFolderPath(snapshot, selected.path),
+    id: nearestExistingFolderId(snapshot, selected.id),
     type: "folder",
   };
 }
@@ -198,9 +139,9 @@ function pruneEditing(
     return null;
   }
   if (editing.mode === "creating") {
-    return snapshot.nodes[editing.parentPath]?.type === "folder" ? editing : null;
+    return snapshot.nodes[editing.parentId]?.type === "folder" ? editing : null;
   }
-  const node = snapshot.nodes[editing.path];
+  const node = snapshot.nodes[editing.id];
   return node?.type === editing.kind ? editing : null;
 }
 
@@ -245,22 +186,40 @@ export function resourceTreeReducer(
         status: "error",
         error: action.message,
       };
-    case "setSnapshot":
-      return applySnapshot(state, action.snapshot);
+    case "applyDelta":
+      if (state.snapshot === null) {
+        return state;
+      }
+      return applySnapshot(
+        state,
+        applyWorktreeTreeDelta(
+          {
+            revision: action.revision - 1,
+            manuscript: { rootId: "root", nodes: {} },
+            resources: state.snapshot,
+          },
+          {
+            kind: "delta",
+            fromRevision: action.revision - 1,
+            toRevision: action.revision,
+            resources: action.delta,
+          },
+        ).resources,
+      );
     case "select":
       return {
         ...state,
         selected: {
-          path: action.path,
+          id: action.id,
           type: action.nodeType,
         },
       };
     case "toggleFolder": {
       const nextExpandedPaths = { ...state.expandedPaths };
-      if (nextExpandedPaths[action.path]) {
-        delete nextExpandedPaths[action.path];
+      if (nextExpandedPaths[action.id]) {
+        delete nextExpandedPaths[action.id];
       } else {
-        nextExpandedPaths[action.path] = true;
+        nextExpandedPaths[action.id] = true;
       }
       return {
         ...state,
@@ -270,12 +229,12 @@ export function resourceTreeReducer(
     case "expandPath":
       return {
         ...state,
-        expandedPaths: appendExpandedPath(state.expandedPaths, action.path),
+        expandedPaths: appendExpandedPath(state.expandedPaths, action.id),
       };
     case "expandPaths":
       return {
         ...state,
-        expandedPaths: appendExpandedPaths(state.expandedPaths, action.paths),
+        expandedPaths: appendExpandedPaths(state.expandedPaths, action.ids),
       };
     case "startEditing":
       return {
@@ -283,7 +242,7 @@ export function resourceTreeReducer(
         editing: action.editing,
         expandedPaths:
           action.editing.mode === "creating"
-            ? appendExpandedPath(state.expandedPaths, action.editing.parentPath)
+            ? appendExpandedPath(state.expandedPaths, action.editing.parentId)
             : state.expandedPaths,
       };
     case "cancelEditing":
@@ -291,29 +250,11 @@ export function resourceTreeReducer(
         ...state,
         editing: null,
       };
-    case "remapPaths":
-      return {
-        ...state,
-        expandedPaths: remapExpandedPaths(
-          state.expandedPaths,
-          action.from,
-          action.to,
-          action.nodeType,
-        ),
-        selected: remapSelection(state.selected, action.from, action.to, action.nodeType),
-        editing: remapEditingState(state.editing, action.from, action.to, action.nodeType),
-        nodeVisualIds: remapNodeVisualIds(
-          state.nodeVisualIds,
-          action.from,
-          action.to,
-          action.nodeType,
-        ),
-      };
     case "dragStart":
       return {
         ...state,
         drag: {
-          sourcePath: action.sourcePath,
+          sourceId: action.sourceId,
           sourceType: action.sourceType,
           resolved: null,
         },
@@ -331,7 +272,7 @@ export function resourceTreeReducer(
             state.snapshot !== null &&
             !isInvalidDropTarget(
               state.snapshot,
-              state.drag.sourcePath,
+              state.drag.sourceId,
               state.drag.sourceType,
               action.resolved.target,
             )

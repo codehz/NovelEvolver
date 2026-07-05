@@ -3,33 +3,31 @@ import { useSetAtom, useStore } from "jotai";
 import { useCallback, useRef } from "react";
 
 import { notificationApi } from "#app/lib/notifications";
-import {
-  expandDirsAfterCreate,
-  joinResourceChildPath,
-  normalizeResourceNameInput,
-  resourceBaseName,
-  resourceParentPath,
-} from "#shared/resource-library-path";
+import { normalizeResourceNameInput } from "#shared/resource-library-path";
+import type { ResourceTreeSnapshot } from "#shared/rpc/worktree-tree";
 
 import { useResourceLibrary } from "../../demo/branch/branch-scopes";
 import { useWorkbenchEditorActions } from "../../demo/editor/use-workbench-editor-actions";
-import { moveDestinationPath } from "../resource-tree-placement-policy";
+import { findResourceParentId } from "../resource-tree";
 import { resourceLibraryTreeMolecule } from "./resource-tree-molecule";
 import type { ResourceTreeEditingState, ResourceTreeSelection } from "./types";
 
-function parentPathForCreating(selected: ResourceTreeSelection | null): string {
+function parentIdForCreating(
+  selected: ResourceTreeSelection | null,
+  snapshot: ResourceTreeSnapshot,
+): string {
   if (selected === null) {
-    return "";
+    return snapshot.rootId;
   }
   if (selected.type === "folder") {
-    return selected.path;
+    return selected.id;
   }
-  return resourceParentPath(selected.path);
+  return findResourceParentId(snapshot, selected.id) ?? snapshot.rootId;
 }
 
 export function useResourceLibraryTreeActions() {
   const resources = useResourceLibrary();
-  const { openResourceTab, rebindResourcePaths, closeResourceTabs } = useWorkbenchEditorActions();
+  const { openResourceTab } = useWorkbenchEditorActions();
   const { treeAtom } = useMolecule(resourceLibraryTreeMolecule);
   const store = useStore();
   const dispatch = useSetAtom(treeAtom);
@@ -38,7 +36,10 @@ export function useResourceLibraryTreeActions() {
   const startCreating = useCallback(
     (kind: "file" | "folder") => {
       const current = store.get(treeAtom);
-      const parentPath = parentPathForCreating(current.selected);
+      const parentId =
+        current.snapshot === null
+          ? "root"
+          : parentIdForCreating(current.selected, current.snapshot);
       creatingIdRef.current += 1;
       dispatch({
         type: "startEditing",
@@ -46,7 +47,7 @@ export function useResourceLibraryTreeActions() {
           mode: "creating",
           id: creatingIdRef.current,
           kind,
-          parentPath,
+          parentId,
         },
       });
     },
@@ -55,14 +56,17 @@ export function useResourceLibraryTreeActions() {
 
   const startRenaming = useCallback(() => {
     const current = store.get(treeAtom);
-    if (current.selected === null || current.editing !== null || current.selected.path === "") {
+    if (current.selected === null || current.editing !== null) {
+      return;
+    }
+    if (current.snapshot?.rootId === current.selected.id) {
       return;
     }
     dispatch({
       type: "startEditing",
       editing: {
         mode: "renaming",
-        path: current.selected.path,
+        id: current.selected.id,
         kind: current.selected.type,
       },
     });
@@ -75,29 +79,21 @@ export function useResourceLibraryTreeActions() {
   const submitCreating = useCallback(
     async (editing: Extract<ResourceTreeEditingState, { mode: "creating" }>, name: string) => {
       dispatch({ type: "cancelEditing" });
-      let path: string;
-      try {
-        path = joinResourceChildPath(editing.parentPath, name);
-      } catch (error) {
-        notificationApi.error(error instanceof Error ? error.message : "路径无效", {
-          source: "资源库",
-        });
+      const normalized = normalizeResourceNameInput(name);
+      if (normalized === "") {
         return;
       }
-      if (path === "") {
-        return;
-      }
-
       try {
-        const snapshot =
+        const result =
           editing.kind === "folder"
-            ? await resources.createFolder(path)
-            : await resources.createFile(path);
-        dispatch({ type: "setSnapshot", snapshot });
-        dispatch({ type: "expandPaths", paths: expandDirsAfterCreate(path, editing.kind) });
-        dispatch({ type: "select", path, nodeType: editing.kind });
+            ? await resources.createFolder(editing.parentId, normalized)
+            : await resources.createFile(editing.parentId, normalized);
+        dispatch({ type: "expandPath", id: editing.parentId });
+        dispatch({ type: "select", id: result.nodeId, nodeType: editing.kind });
         if (editing.kind === "file") {
-          void openResourceTab(path, (resourcePath) => resources.readFile(resourcePath));
+          void openResourceTab(result.nodeId, normalized, (resourceId) =>
+            resources.readFile(resourceId),
+          );
         }
       } catch (error) {
         notificationApi.error(error instanceof Error ? error.message : "创建失败", {
@@ -115,93 +111,76 @@ export function useResourceLibraryTreeActions() {
       if (normalized === "") {
         return;
       }
-      const parentPath = resourceParentPath(editing.path);
-      let newPath: string;
-      try {
-        newPath = joinResourceChildPath(parentPath, normalized);
-      } catch (error) {
-        notificationApi.error(error instanceof Error ? error.message : "路径无效", {
-          source: "资源库",
-        });
-        return;
-      }
-      if (newPath === "" || newPath === editing.path) {
-        return;
-      }
 
       try {
-        const snapshot = await resources.move(editing.path, newPath);
-        rebindResourcePaths(editing.path, newPath, editing.kind);
-        dispatch({ type: "remapPaths", from: editing.path, to: newPath, nodeType: editing.kind });
-        dispatch({ type: "setSnapshot", snapshot });
-        dispatch({ type: "select", path: newPath, nodeType: editing.kind });
+        await resources.renameNode(editing.id, normalized);
       } catch (error) {
         notificationApi.error(error instanceof Error ? error.message : "重命名失败", {
           source: "资源库",
         });
       }
     },
-    [dispatch, rebindResourcePaths, resources],
+    [dispatch, resources],
   );
 
   const moveNode = useCallback(
-    async (sourcePath: string, sourceType: "file" | "folder", targetPath: string) => {
-      const newPath = moveDestinationPath(sourcePath, targetPath);
-      if (newPath === "" || newPath === sourcePath) {
+    async (sourceId: string, sourceType: "file" | "folder", targetParentId: string) => {
+      if (sourceId === targetParentId) {
         return;
       }
 
       try {
-        const snapshot = await resources.move(sourcePath, newPath);
-        rebindResourcePaths(sourcePath, newPath, sourceType);
-        if (targetPath !== "") {
-          dispatch({ type: "expandPath", path: targetPath });
+        await resources.moveNode(sourceId, targetParentId);
+        if (sourceType === "folder") {
+          dispatch({ type: "expandPath", id: targetParentId });
         }
-        dispatch({ type: "remapPaths", from: sourcePath, to: newPath, nodeType: sourceType });
-        dispatch({ type: "setSnapshot", snapshot });
-        dispatch({ type: "select", path: newPath, nodeType: sourceType });
+        dispatch({ type: "select", id: sourceId, nodeType: sourceType });
       } catch (error) {
         notificationApi.error(error instanceof Error ? error.message : "移动失败", {
           source: "资源库",
         });
       }
     },
-    [dispatch, rebindResourcePaths, resources],
+    [dispatch, resources],
   );
 
   const activateNode = useCallback(
-    (path: string, type: "file" | "folder") => {
-      dispatch({ type: "select", path, nodeType: type });
+    (id: string, type: "file" | "folder", name: string) => {
+      dispatch({ type: "select", id, nodeType: type });
       if (type === "folder") {
-        dispatch({ type: "toggleFolder", path });
+        dispatch({ type: "toggleFolder", id });
         return;
       }
-      void openResourceTab(path, (resourcePath) => resources.readFile(resourcePath));
+      void openResourceTab(id, name, (resourceId) => resources.readFile(resourceId));
     },
     [dispatch, openResourceTab, resources],
   );
 
   const deleteNode = useCallback(async () => {
     const current = store.get(treeAtom);
-    if (current.selected === null || current.selected.path === "") {
+    if (current.selected === null || current.snapshot === null) {
       return;
     }
-    const { path, type } = current.selected;
-    const name = resourceBaseName(path);
-    if (!confirm(`确定要删除「${name}」吗？`)) {
+    const node = current.snapshot.nodes[current.selected.id];
+    if (node === undefined || current.selected.id === current.snapshot.rootId) {
+      return;
+    }
+    if (!confirm(`确定要删除「${node.name}」吗？`)) {
       return;
     }
 
     try {
-      const snapshot = await resources.unlink(path);
-      closeResourceTabs(path, type);
-      dispatch({ type: "setSnapshot", snapshot });
+      await resources.deleteNode(node.id);
+      const parentId = findResourceParentId(current.snapshot, node.id);
+      if (parentId !== null) {
+        dispatch({ type: "select", id: parentId, nodeType: "folder" });
+      }
     } catch (error) {
       notificationApi.error(error instanceof Error ? error.message : "删除失败", {
         source: "资源库",
       });
     }
-  }, [closeResourceTabs, dispatch, resources, store, treeAtom]);
+  }, [dispatch, resources, store, treeAtom]);
 
   const submitEditing = useCallback(
     async (editing: ResourceTreeEditingState, name: string) => {

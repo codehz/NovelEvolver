@@ -1,4 +1,4 @@
-import type { ManuscriptNode, ManuscriptOutline } from "#shared/rpc/projects-rpc";
+import type { ManuscriptTreeNode, ManuscriptTreeSnapshot } from "#shared/rpc/worktree-tree";
 
 import type { TreeResolvedDrop, TreeRowHoverZone } from "../tree/tree-drag";
 import type { TreeRowDomData } from "../tree/tree-row-dom";
@@ -13,25 +13,25 @@ import type { ManuscriptRenderProjection } from "./manuscript-tree-projector";
 import type { ManuscriptMoveTarget } from "./state/types";
 
 function canMoveIntoParent(
-  outline: ManuscriptOutline | null,
+  snapshot: ManuscriptTreeSnapshot | null,
   sourceId: string,
-  sourceType: ManuscriptNode["type"],
+  sourceType: ManuscriptTreeNode["type"],
   targetParentId: string,
 ): boolean {
-  if (outline === null) {
+  if (snapshot === null) {
     return false;
   }
-  const target = outline.nodes[targetParentId];
+  const target = snapshot.nodes[targetParentId];
   if (target?.type !== "folder") {
     return false;
   }
-  const sourceParentId = findManuscriptParentId(outline, sourceId);
+  const sourceParentId = findManuscriptParentId(snapshot, sourceId);
   if (sourceParentId === targetParentId) {
     return false;
   }
   if (
     sourceType === "folder" &&
-    (sourceId === targetParentId || isManuscriptDescendant(outline, sourceId, targetParentId))
+    (sourceId === targetParentId || isManuscriptDescendant(snapshot, sourceId, targetParentId))
   ) {
     return false;
   }
@@ -39,38 +39,38 @@ function canMoveIntoParent(
 }
 
 export function isValidManuscriptMoveTarget(
-  outline: ManuscriptOutline | null,
+  snapshot: ManuscriptTreeSnapshot | null,
   sourceId: string,
-  sourceType: ManuscriptNode["type"],
+  sourceType: ManuscriptTreeNode["type"],
   target: ManuscriptMoveTarget,
 ): boolean {
-  if (outline === null) {
+  if (snapshot === null) {
     return false;
   }
   if (target.kind === "into") {
-    return canMoveIntoParent(outline, sourceId, sourceType, target.parentId);
+    return canMoveIntoParent(snapshot, sourceId, sourceType, target.parentId);
   }
-  const targetParent = outline.nodes[target.parentId];
+  const targetParent = snapshot.nodes[target.parentId];
   if (targetParent?.type !== "folder") {
     return false;
   }
   if (
     sourceType === "folder" &&
-    (sourceId === target.parentId || isManuscriptDescendant(outline, sourceId, target.parentId))
+    (sourceId === target.parentId || isManuscriptDescendant(snapshot, sourceId, target.parentId))
   ) {
     return false;
   }
-  if (target.index < 0 || target.index > targetParent.children.length) {
+  if (target.index < 0 || target.index > targetParent.childIds.length) {
     return false;
   }
-  const sourceParentId = findManuscriptParentId(outline, sourceId);
+  const sourceParentId = findManuscriptParentId(snapshot, sourceId);
   if (sourceParentId === null) {
     return false;
   }
   if (sourceParentId !== target.parentId) {
     return true;
   }
-  const sourceIndex = findManuscriptChildIndex(outline, sourceParentId, sourceId);
+  const sourceIndex = findManuscriptChildIndex(snapshot, sourceParentId, sourceId);
   if (sourceIndex < 0) {
     return false;
   }
@@ -78,28 +78,28 @@ export function isValidManuscriptMoveTarget(
 }
 
 export function resolveManuscriptDropTarget({
-  outline,
+  snapshot,
   projection,
   hoveredRow,
   hoverZone,
   listRect,
   clientY,
 }: {
-  outline: ManuscriptOutline;
+  snapshot: ManuscriptTreeSnapshot;
   projection: ManuscriptRenderProjection;
-  start: { rowId: string; rowType: ManuscriptNode["type"] };
-  hoveredRow: TreeRowDomData<ManuscriptNode["type"]> | null;
+  start: { rowId: string; rowType: ManuscriptTreeNode["type"] };
+  hoveredRow: TreeRowDomData<ManuscriptTreeNode["type"]> | null;
   hoverZone: TreeRowHoverZone | null;
   listRect: DOMRect | null;
   clientX: number;
   clientY: number;
 }): TreeResolvedDrop<ManuscriptMoveTarget> | null {
-  const rootNode = outline.nodes[outline.rootId];
+  const rootNode = snapshot.nodes[snapshot.rootId];
   if (rootNode?.type !== "folder") {
     return null;
   }
 
-  const getInsertDepth = (parentId: string) => getManuscriptNodeDepth(outline, parentId) + 1;
+  const getInsertDepth = (parentId: string) => getManuscriptNodeDepth(snapshot, parentId) + 1;
 
   const createInsertPreview = (visualIndex: number, depth: number) => ({
     kind: "insert" as const,
@@ -109,11 +109,11 @@ export function resolveManuscriptDropTarget({
   });
 
   const resolveInsert = (rowId: string, visualIndex: number, placeAfter: boolean) => {
-    const parentId = findManuscriptParentId(outline, rowId);
+    const parentId = findManuscriptParentId(snapshot, rowId);
     if (parentId === null) {
       return null;
     }
-    const childIndex = findManuscriptChildIndex(outline, parentId, rowId);
+    const childIndex = findManuscriptChildIndex(snapshot, parentId, rowId);
     if (childIndex < 0) {
       return null;
     }
@@ -153,13 +153,13 @@ export function resolveManuscriptDropTarget({
       preview: createInsertPreview(rootIndex, 0),
       target: {
         kind: "insert",
-        parentId: outline.rootId,
-        index: rootIndex === 0 ? 0 : rootNode.children.length,
+        parentId: snapshot.rootId,
+        index: rootIndex === 0 ? 0 : rootNode.childIds.length,
       },
     };
   }
 
-  const hoveredNode = outline.nodes[hoveredRow.rowId];
+  const hoveredNode = snapshot.nodes[hoveredRow.rowId];
   if (hoveredNode === undefined || hoverZone === null) {
     return null;
   }

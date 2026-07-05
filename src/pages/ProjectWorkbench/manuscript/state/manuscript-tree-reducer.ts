@@ -1,6 +1,11 @@
-import type { ManuscriptNode, ManuscriptOutline } from "#shared/rpc/projects-rpc";
+import type {
+  ManuscriptTreeDelta,
+  ManuscriptTreeNode,
+  ManuscriptTreeSnapshot,
+} from "#shared/rpc/worktree-tree";
 
 import type { TreeResolvedDrop } from "../../tree/tree-drag";
+import { applyWorktreeTreeDelta } from "../../tree/worktree-tree-state";
 import { findManuscriptParentId } from "../manuscript-tree";
 import { isValidManuscriptMoveTarget } from "../manuscript-tree-placement-policy";
 import type { ManuscriptMoveTarget, ManuscriptTreeState } from "./types";
@@ -8,31 +13,31 @@ import { initialManuscriptTreeState } from "./types";
 
 export type ManuscriptTreeAction =
   | { type: "loadStart" }
-  | { type: "loadSuccess"; outline: ManuscriptOutline }
+  | { type: "loadSuccess"; snapshot: ManuscriptTreeSnapshot }
   | { type: "loadError"; message: string }
-  | { type: "setOutline"; outline: ManuscriptOutline }
+  | { type: "applyDelta"; delta: ManuscriptTreeDelta; revision: number }
   | { type: "select"; id: string }
   | { type: "toggleFolder"; id: string }
   | { type: "expand"; id: string }
-  | { type: "startCreating"; kind: ManuscriptNode["type"]; parentId: string; index: number }
-  | { type: "startRenaming"; id: string; kind: ManuscriptNode["type"] }
+  | { type: "startCreating"; kind: ManuscriptTreeNode["type"]; parentId: string; index: number }
+  | { type: "startRenaming"; id: string; kind: ManuscriptTreeNode["type"] }
   | { type: "cancelEditing" }
-  | { type: "dragStart"; sourceId: string; sourceType: ManuscriptNode["type"] }
+  | { type: "dragStart"; sourceId: string; sourceType: ManuscriptTreeNode["type"] }
   | { type: "dragMove"; resolved: TreeResolvedDrop<ManuscriptMoveTarget> | null }
   | { type: "dragEnd" };
 
 function pruneSelection(
   selectedId: string | null,
-  outline: ManuscriptOutline,
-  nextOutline: ManuscriptOutline,
+  snapshot: ManuscriptTreeSnapshot,
+  nextSnapshot: ManuscriptTreeSnapshot,
 ): string | null {
   if (selectedId === null) {
     return null;
   }
-  if (nextOutline.nodes[selectedId] !== undefined) {
+  if (nextSnapshot.nodes[selectedId] !== undefined) {
     return selectedId;
   }
-  return findManuscriptParentId(outline, selectedId);
+  return findManuscriptParentId(snapshot, selectedId);
 }
 
 export function manuscriptTreeReducer(
@@ -50,7 +55,7 @@ export function manuscriptTreeReducer(
         ...state,
         status: "ready",
         error: null,
-        outline: action.outline,
+        snapshot: action.snapshot,
       };
     case "loadError":
       return {
@@ -58,14 +63,29 @@ export function manuscriptTreeReducer(
         status: "error",
         error: action.message,
       };
-    case "setOutline": {
-      const previousOutline = state.outline ?? action.outline;
+    case "applyDelta": {
+      if (state.snapshot === null) {
+        return state;
+      }
+      const nextSnapshot = applyWorktreeTreeDelta(
+        {
+          revision: action.revision - 1,
+          manuscript: state.snapshot,
+          resources: { rootId: "root", nodes: {} },
+        },
+        {
+          kind: "delta",
+          fromRevision: action.revision - 1,
+          toRevision: action.revision,
+          manuscript: action.delta,
+        },
+      ).manuscript;
       return {
         ...state,
         status: "ready",
         error: null,
-        outline: action.outline,
-        selectedId: pruneSelection(state.selectedId, previousOutline, action.outline),
+        snapshot: nextSnapshot,
+        selectedId: pruneSelection(state.selectedId, state.snapshot, nextSnapshot),
       };
     }
     case "select":
@@ -133,7 +153,7 @@ export function manuscriptTreeReducer(
           resolved:
             action.resolved !== null &&
             isValidManuscriptMoveTarget(
-              state.outline,
+              state.snapshot,
               state.drag.sourceId,
               state.drag.sourceType,
               action.resolved.target,
