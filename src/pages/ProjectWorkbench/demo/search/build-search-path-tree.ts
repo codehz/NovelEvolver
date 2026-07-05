@@ -5,6 +5,11 @@ export type SearchPathTreeFolder = {
   segment: string;
   pathKey: string;
   children: SearchPathTreeNode[];
+  /** 文件夹节点自身的标题命中（与路径上的结构文件夹合并展示）。 */
+  folderEntity?: {
+    nodeId: string;
+    hits: WorktreeSearchHit[];
+  };
 };
 
 export type SearchPathTreeLeaf = {
@@ -51,26 +56,29 @@ function sortTreeRecursive(nodes: SearchPathTreeNode[]): SearchPathTreeNode[] {
   });
 }
 
-function insertLeaf(
+function findFolderChild(
+  parent: SearchPathTreeFolder,
+  segment: string,
+): SearchPathTreeFolder | undefined {
+  const existing = parent.children.find(
+    (child): child is SearchPathTreeFolder => child.type === "folder" && child.segment === segment,
+  );
+  return existing;
+}
+
+function ensureFolderAtPath(
   root: SearchPathTreeFolder,
-  displayPath: string,
-  leaf: Omit<SearchPathTreeLeaf, "type">,
-): void {
-  const segments = displayPath.split("/").filter((segment) => segment !== "");
+  segments: readonly string[],
+): SearchPathTreeFolder | undefined {
   if (segments.length === 0) {
-    root.children.push({ type: "leaf", ...leaf, name: leaf.label });
-    return;
+    return undefined;
   }
 
   let current = root;
   let pathKey = "";
-  for (let index = 0; index < segments.length - 1; index += 1) {
-    const segment = segments[index]!;
+  for (const segment of segments) {
     pathKey = pathKey === "" ? segment : `${pathKey}/${segment}`;
-    const existing = current.children.find(
-      (child): child is SearchPathTreeFolder =>
-        child.type === "folder" && child.segment === segment,
-    );
+    const existing = findFolderChild(current, segment);
     if (existing !== undefined) {
       current = existing;
       continue;
@@ -84,9 +92,57 @@ function insertLeaf(
     current.children.push(folder);
     current = folder;
   }
+  return current;
+}
+
+function mergeFolderEntityHits(
+  folder: SearchPathTreeFolder,
+  nodeId: string,
+  hits: WorktreeSearchHit[],
+): void {
+  if (folder.folderEntity?.nodeId === nodeId) {
+    folder.folderEntity.hits.push(...hits);
+    return;
+  }
+  folder.folderEntity = { nodeId, hits: [...hits] };
+}
+
+function insertFolderEntity(
+  root: SearchPathTreeFolder,
+  displayPath: string,
+  nodeId: string,
+  hits: readonly WorktreeSearchHit[],
+): void {
+  const segments = displayPath.split("/").filter((segment) => segment !== "");
+  if (segments.length === 0) {
+    return;
+  }
+  const folder = ensureFolderAtPath(root, segments);
+  if (folder === undefined) {
+    return;
+  }
+  mergeFolderEntityHits(folder, nodeId, [...hits]);
+}
+
+function insertLeaf(
+  root: SearchPathTreeFolder,
+  displayPath: string,
+  leaf: Omit<SearchPathTreeLeaf, "type">,
+): void {
+  const segments = displayPath.split("/").filter((segment) => segment !== "");
+  if (segments.length === 0) {
+    root.children.push({ type: "leaf", ...leaf, name: leaf.label });
+    return;
+  }
+
+  const parentSegments = segments.slice(0, -1);
+  const parent = parentSegments.length === 0 ? root : ensureFolderAtPath(root, parentSegments);
+  if (parent === undefined) {
+    return;
+  }
 
   const fileName = segments[segments.length - 1] ?? leaf.label;
-  current.children.push({ type: "leaf", ...leaf, name: fileName });
+  parent.children.push({ type: "leaf", ...leaf, name: fileName });
 }
 
 export function buildSearchPathTree(hits: readonly WorktreeSearchHit[]): SearchPathTreeNode[] {
@@ -100,6 +156,10 @@ export function buildSearchPathTree(hits: readonly WorktreeSearchHit[]): SearchP
   for (const [nodeId, nodeHits] of groupHitsByNodeId(hits)) {
     const first = nodeHits[0];
     if (first === undefined) {
+      continue;
+    }
+    if (first.entityKind === "folder") {
+      insertFolderEntity(root, first.displayPath, nodeId, nodeHits);
       continue;
     }
     insertLeaf(root, first.displayPath, {

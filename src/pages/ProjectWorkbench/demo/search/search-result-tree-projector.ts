@@ -70,6 +70,27 @@ function visitNodes(
         childCount: node.children.length,
       });
       if (expanded) {
+        if (node.folderEntity !== undefined) {
+          const entityKey = scopeKey(scope, node.folderEntity.nodeId);
+          const showMatches = leafShowsMatches({
+            type: "leaf",
+            nodeId: node.folderEntity.nodeId,
+            name: node.segment,
+            label: node.segment,
+            entityKind: "folder",
+            hits: node.folderEntity.hits,
+          });
+          if (showMatches && expandedLeaves.has(entityKey)) {
+            for (const [index, hit] of node.folderEntity.hits.entries()) {
+              out.push({
+                kind: "match",
+                key: `${entityKey}::${hit.matchKind}::${hit.line ?? index}`,
+                hit,
+                leafDepth: depth,
+              });
+            }
+          }
+        }
         visitNodes(node.children, scope, depth + 1, expandedFolders, expandedLeaves, out);
       }
       continue;
@@ -147,6 +168,9 @@ export function collectSearchTreeLeafKeys(roots: readonly SearchResultDomainRoot
       if (node.type === "leaf") {
         keys.push(scopeKey(scope, node.nodeId));
       } else {
+        if (node.folderEntity !== undefined) {
+          keys.push(scopeKey(scope, node.folderEntity.nodeId));
+        }
         visit(node.children, scope);
       }
     }
