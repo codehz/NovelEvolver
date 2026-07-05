@@ -2,6 +2,8 @@ import type { RpcTarget } from "capnweb";
 
 import type { ProjectMetadata } from "#shared/project";
 
+import type { WorktreeDiffHandle } from "./worktree-diff";
+
 /** Branch info for the HEAD of a project repository. */
 export type BranchInfo = {
   /** Branch name, e.g. "main". null if HEAD is detached. */
@@ -112,7 +114,7 @@ export interface WorktreeHandle extends RpcTarget {
   readonly baseTree: string;
   readonly resources: ResourceLibraryHandle;
   readonly manuscript: ManuscriptHandle;
-  // TODO: design more api
+  readonly diff: WorktreeDiffHandle;
 }
 
 /**
