@@ -68,7 +68,7 @@ export function TreeRowShell<RowType extends string, DropTarget>({
 }: TreeRowShellProps<RowType, DropTarget>) {
   const isEditing = input !== null;
   const rowClasses = cn(
-    "flex size-full items-center gap-1 overflow-hidden text-left text-app-foreground",
+    "flex size-full items-center gap-1 overflow-hidden pr-4 text-left text-app-foreground",
     !dragging && (selected || isEditing)
       ? "bg-app-background"
       : !dragging && "hover:bg-app-background/60",

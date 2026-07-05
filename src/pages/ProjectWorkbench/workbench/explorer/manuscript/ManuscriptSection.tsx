@@ -164,6 +164,7 @@ export function ManuscriptSectionBody() {
           selected={item.id !== null && item.id === state.selectedId}
           editing={item.editing}
           dragging={dragging}
+          changeStatus={item.changeStatus}
           listRef={listRef}
           resolveDropTarget={resolveDrop}
           onActivate={activateNode}

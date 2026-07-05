@@ -1,4 +1,8 @@
-import type { ManuscriptTreeNode, ManuscriptTreeSnapshot } from "#shared/rpc/worktree-tree";
+import type {
+  FileChangeStatus,
+  ManuscriptTreeNode,
+  ManuscriptTreeSnapshot,
+} from "#shared/rpc/worktree-tree";
 
 import { buildSubtreeEndIndexArray, buildTreeRowIndexMap } from "../../tree/tree-row-helpers";
 import { flattenManuscriptTree } from "./manuscript-tree";
@@ -12,6 +16,7 @@ export type ManuscriptRenderItem = {
   expanded: boolean;
   key: string;
   editing: ManuscriptEditingState | null;
+  changeStatus?: FileChangeStatus;
 };
 
 export type ManuscriptRenderProjection = {
@@ -62,6 +67,7 @@ export function buildManuscriptRenderProjection(
   const items: ManuscriptRenderItem[] = flatItems.map((item) => ({
     ...item,
     key: item.id,
+    changeStatus: state.snapshot?.nodes[item.id]?.changeStatus,
     editing:
       state.editing?.mode === "renaming" && state.editing.id === item.id ? state.editing : null,
   }));
@@ -85,6 +91,7 @@ export function buildManuscriptRenderProjection(
       depth: position.depth,
       expanded: false,
       key: `creating-${editing.id}`,
+      changeStatus: undefined,
       editing,
     });
   }

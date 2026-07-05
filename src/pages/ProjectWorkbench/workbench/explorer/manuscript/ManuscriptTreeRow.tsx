@@ -1,12 +1,24 @@
 import type { RefObject } from "react";
 
 import { cn } from "#app/lib/cn";
-import type { ManuscriptTreeNode } from "#shared/rpc/worktree-tree";
+import type { FileChangeStatus, ManuscriptTreeNode } from "#shared/rpc/worktree-tree";
 
 import type { TreeResolvedDrop } from "../../tree/tree-drag";
 import { TreeRowShell } from "../../tree/TreeRowShell";
 import type { TreeDropResolveInput } from "../../tree/use-tree-row-pointer-drag";
 import type { ManuscriptEditingState, ManuscriptMoveTarget } from "./state/types";
+
+function changeStatusClass(status: FileChangeStatus | undefined) {
+  if (status === "added") return cn("text-ctp-green");
+  if (status === "modified") return cn("text-ctp-yellow");
+  return undefined;
+}
+
+function changeStatusLabel(status: FileChangeStatus | undefined) {
+  if (status === "added") return "A";
+  if (status === "modified") return "M";
+  return undefined;
+}
 
 type ManuscriptTreeRowProps = {
   id: string | null;
@@ -21,6 +33,7 @@ type ManuscriptTreeRowProps = {
   selected: boolean;
   editing: ManuscriptEditingState | null;
   dragging: boolean;
+  changeStatus?: FileChangeStatus;
   listRef: RefObject<HTMLUListElement | null>;
   resolveDropTarget: (
     input: TreeDropResolveInput<ManuscriptTreeNode["type"]>,
@@ -53,6 +66,7 @@ export function ManuscriptTreeRow({
   selected,
   editing,
   dragging,
+  changeStatus,
   listRef,
   resolveDropTarget,
   onActivate,
@@ -84,6 +98,18 @@ export function ManuscriptTreeRow({
       dragging={dragging}
       iconClassName={rowIcon(type, expanded)}
       label={title}
+      trailingContent={
+        changeStatus ? (
+          <span
+            className={cn(
+              "ml-auto shrink-0 text-[10px] leading-5 font-semibold",
+              changeStatusClass(changeStatus),
+            )}
+          >
+            {changeStatusLabel(changeStatus)}
+          </span>
+        ) : null
+      }
       input={
         editing
           ? {

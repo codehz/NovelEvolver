@@ -1,12 +1,24 @@
 import type { RefObject } from "react";
 
 import { cn } from "#app/lib/cn";
-import type { ResourceTreeNode } from "#shared/rpc/worktree-tree";
+import type { FileChangeStatus, ResourceTreeNode } from "#shared/rpc/worktree-tree";
 
 import type { TreeResolvedDrop } from "../../tree/tree-drag";
 import { TreeRowShell } from "../../tree/TreeRowShell";
 import type { TreeDropResolveInput } from "../../tree/use-tree-row-pointer-drag";
 import type { ResourceRenderItem } from "./resource-tree-projector";
+
+function changeStatusClass(status: FileChangeStatus | undefined) {
+  if (status === "added") return cn("text-ctp-green");
+  if (status === "modified") return cn("text-ctp-yellow");
+  return undefined;
+}
+
+function changeStatusLabel(status: FileChangeStatus | undefined) {
+  if (status === "added") return "A";
+  if (status === "modified") return "M";
+  return undefined;
+}
 
 type ResourceLibraryTreeRowProps = {
   item: ResourceRenderItem;
@@ -86,7 +98,19 @@ export function ResourceLibraryTreeRow({
       iconClassName={getRowIcon(item)}
       label={item.name}
       trailingContent={
-        item.loading ? <span className="ml-auto text-xs text-ctp-overlay0">…</span> : null
+        <>
+          {item.loading ? <span className="ml-auto text-xs text-ctp-overlay0">…</span> : null}
+          {item.changeStatus && !item.loading ? (
+            <span
+              className={cn(
+                "ml-auto shrink-0 text-[10px] leading-5 font-semibold",
+                changeStatusClass(item.changeStatus),
+              )}
+            >
+              {changeStatusLabel(item.changeStatus)}
+            </span>
+          ) : null}
+        </>
       }
       input={
         editing

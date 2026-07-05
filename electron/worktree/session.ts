@@ -25,6 +25,7 @@ import type {
 } from "#shared/rpc/worktree-scm";
 import type { WorktreeSearchQuery, WorktreeSearchResult } from "#shared/rpc/worktree-search";
 import type {
+  FileChangeStatus,
   ManuscriptTreeDelta,
   ManuscriptTreeNode,
   ManuscriptTreeSnapshot,
@@ -561,6 +562,54 @@ function sortWorktreeEntries(
   });
 }
 
+// ==================== 变更状态计算 ====================
+
+/** 根据节点是否存在于基线以及内容是否变化，确定变更状态。 */
+function resolveNodeChangeStatus(
+  existsInBase: boolean,
+  contentChanged: boolean,
+): FileChangeStatus | undefined {
+  if (!existsInBase) return "added";
+  if (contentChanged) return "modified";
+  return undefined;
+}
+
+/** 收集某个文件夹后代中所有带有 changeStatus 的节点 id（含自身）。 */
+function collectChangedDescendantIds(
+  tree: ManuscriptTreeSnapshot | ResourceTreeSnapshot,
+  folderId: string,
+): string[] {
+  const result: string[] = [];
+  const folder = tree.nodes[folderId];
+  if (!folder || folder.type !== "folder") return result;
+  for (const childId of folder.childIds) {
+    const child = tree.nodes[childId];
+    if (!child) continue;
+    if (child.changeStatus) result.push(childId);
+    if (child.type === "folder") {
+      result.push(...collectChangedDescendantIds(tree, childId));
+    }
+  }
+  return result;
+}
+
+/** 刷新文件夹自身的 changeStatus：若有已变更后代则标记为 modified，否则清空。 */
+function refreshFolderChangeStatusFromChildren(
+  tree: ManuscriptTreeSnapshot | ResourceTreeSnapshot,
+  folderId: string,
+): boolean {
+  const folder = tree.nodes[folderId];
+  if (!folder || folder.type !== "folder") return false;
+  const previous = folder.changeStatus;
+  const hasChangedDescendant = collectChangedDescendantIds(tree, folderId).length > 0;
+  if (hasChangedDescendant) {
+    folder.changeStatus = folder.changeStatus ?? "modified";
+  } else {
+    delete folder.changeStatus;
+  }
+  return folder.changeStatus !== previous;
+}
+
 export class WorktreeSession {
   readonly #worktree: VirtualWorktree;
   readonly #objects: ObjectDatabase;
@@ -589,6 +638,7 @@ export class WorktreeSession {
     this.#hydrateOrReset(status);
     this.#manuscriptTree = manuscriptTreeFromOutline(readOutlineFromWorktree(this.#worktree));
     this.#resourceTree = this.#buildResourceTreeFromWorktree();
+    this.#initChangeStatus();
   }
 
   subscribeScmSnapshot(): ReadableStream<ScmSnapshot> {
@@ -654,7 +704,14 @@ export class WorktreeSession {
     }
     ensureManuscriptStorage(this.#worktree);
     this.#worktree.writeFile(chapterBodyPath(id), Buffer.from(content, "utf-8"));
-    this.#commitMutation({});
+    const putNodes = this.#markManuscriptNodeChanged(id);
+    if (Object.keys(putNodes).length > 0) {
+      this.#commitMutation({
+        manuscript: { putNodes, deleteNodeIds: [], setChildren: [] },
+      });
+    } else {
+      this.#commitMutation({});
+    }
   }
 
   createResourceFile(parentId: string, name: string): WorktreeNodeIdResult {
@@ -698,7 +755,14 @@ export class WorktreeSession {
       toWorktreePath(this.#requireResourcePath(id)),
       Buffer.from(content, "utf-8"),
     );
-    this.#commitMutation({});
+    const putNodes = this.#markResourceNodeChanged(id);
+    if (Object.keys(putNodes).length > 0) {
+      this.#commitMutation({
+        resources: { putNodes, deleteNodeIds: [], setChildren: [] },
+      });
+    } else {
+      this.#commitMutation({});
+    }
   }
 
   revertScmChange(changeId: string): ScmSnapshot {
@@ -817,6 +881,136 @@ export class WorktreeSession {
     }
   }
 
+  #initChangeStatus(): void {
+    const baseTree = this.#worktree.baseTree;
+
+    // 正文变更状态
+    const baseManuscript = buildBaseManuscriptSnapshot(this.#objects, baseTree);
+    const currentManuscript = buildCurrentManuscriptSnapshot(this.#worktree);
+    for (const [id, currentEntry] of currentManuscript.entries) {
+      const node = this.#manuscriptTree.nodes[id];
+      if (!node) continue;
+      const baseEntry = baseManuscript.entries.get(id);
+      if (!baseEntry) {
+        node.changeStatus = "added";
+        continue;
+      }
+      const contentChanged =
+        currentEntry.type === "chapter" && currentEntry.content !== baseEntry.content;
+      const titleChanged = currentEntry.title !== baseEntry.title;
+      node.changeStatus = resolveNodeChangeStatus(true, contentChanged || titleChanged);
+    }
+    // 刷新文件夹状态（自底向上）
+    this.#refreshAllManuscriptFolderStatus();
+
+    // 资源变更状态
+    const baseResources = buildBaseResourceSnapshot(this.#objects, baseTree);
+    const currentResources = buildCurrentResourceSnapshot(this.#worktree);
+    for (const [path, currentEntry] of currentResources.entries) {
+      const nodeId = this.#resourceIdByPath.get(path);
+      if (nodeId === undefined) continue;
+      const node = this.#resourceTree.nodes[nodeId];
+      if (!node) continue;
+      const baseEntry = baseResources.entries.get(path);
+      if (!baseEntry) {
+        node.changeStatus = "added";
+        continue;
+      }
+      const contentChanged = currentEntry.type === "file" && currentEntry.hash !== baseEntry.hash;
+      node.changeStatus = resolveNodeChangeStatus(true, contentChanged);
+    }
+    this.#refreshAllResourceFolderStatus();
+  }
+
+  #refreshAllManuscriptFolderStatus(): void {
+    // 从叶子节点向上刷新所有文件夹
+    const visited = new Set<string>();
+    const visit = (nodeId: string): void => {
+      if (visited.has(nodeId)) return;
+      visited.add(nodeId);
+      const node = this.#manuscriptTree.nodes[nodeId];
+      if (!node || node.type !== "folder") return;
+      for (const childId of node.childIds) {
+        visit(childId);
+      }
+      refreshFolderChangeStatusFromChildren(this.#manuscriptTree, nodeId);
+    };
+    visit(this.#manuscriptTree.rootId);
+  }
+
+  #refreshAllResourceFolderStatus(): void {
+    const visited = new Set<string>();
+    const visit = (nodeId: string): void => {
+      if (visited.has(nodeId)) return;
+      visited.add(nodeId);
+      const node = this.#resourceTree.nodes[nodeId];
+      if (!node || node.type !== "folder") return;
+      for (const childId of node.childIds) {
+        visit(childId);
+      }
+      refreshFolderChangeStatusFromChildren(this.#resourceTree, nodeId);
+    };
+    visit(this.#resourceTree.rootId);
+  }
+
+  /** 标记正文节点为已变更，并向上传播到所有祖先文件夹。返回需要放入 delta putNodes 的节点。 */
+  #markManuscriptNodeChanged(id: string): Record<string, ManuscriptTreeNode> {
+    const node = this.#requireManuscriptNode(id);
+    if (node.changeStatus === "added") return {}; // 新增节点不变
+    const hadStatus = node.changeStatus !== undefined;
+    if (!hadStatus) {
+      node.changeStatus = "modified";
+    }
+    const putNodes: Record<string, ManuscriptTreeNode> = { [id]: cloneManuscriptTreeNode(node) };
+    // 向上传播到祖先文件夹
+    this.#propagateManuscriptFolderStatusUp(id, putNodes);
+    return putNodes;
+  }
+
+  /** 向上传播文件夹变更状态，从 nodeId 的父文件夹开始直到根。 */
+  #propagateManuscriptFolderStatusUp(
+    nodeId: string,
+    putNodes: Record<string, ManuscriptTreeNode>,
+  ): void {
+    let parentId = this.#manuscriptTree.nodes[nodeId]?.parentId;
+    while (parentId !== null && parentId !== undefined) {
+      const parent = this.#manuscriptTree.nodes[parentId];
+      if (!parent || parent.type !== "folder") break;
+      if (refreshFolderChangeStatusFromChildren(this.#manuscriptTree, parentId)) {
+        putNodes[parentId] = cloneManuscriptTreeNode(parent);
+      }
+      parentId = parent.parentId;
+    }
+  }
+
+  /** 标记资源节点为已变更，并向上传播到所有祖先文件夹。返回需要放入 delta putNodes 的节点。 */
+  #markResourceNodeChanged(id: string): Record<string, ResourceTreeNode> {
+    const node = this.#requireResourceNode(id);
+    if (node.changeStatus === "added") return {};
+    const hadStatus = node.changeStatus !== undefined;
+    if (!hadStatus) {
+      node.changeStatus = "modified";
+    }
+    const putNodes: Record<string, ResourceTreeNode> = { [id]: cloneResourceTreeNode(node) };
+    this.#propagateResourceFolderStatusUp(id, putNodes);
+    return putNodes;
+  }
+
+  #propagateResourceFolderStatusUp(
+    nodeId: string,
+    putNodes: Record<string, ResourceTreeNode>,
+  ): void {
+    let parentId = this.#resourceTree.nodes[nodeId]?.parentId;
+    while (parentId !== null && parentId !== undefined) {
+      const parent = this.#resourceTree.nodes[parentId];
+      if (!parent || parent.type !== "folder") break;
+      if (refreshFolderChangeStatusFromChildren(this.#resourceTree, parentId)) {
+        putNodes[parentId] = cloneResourceTreeNode(parent);
+      }
+      parentId = parent.parentId;
+    }
+  }
+
   #buildResourceTreeFromWorktree(): ResourceTreeSnapshot {
     ensureResourcesDirectory(this.#worktree);
     this.#resourcePathById.clear();
@@ -886,16 +1080,20 @@ export class WorktreeSession {
       title: normalizeManuscriptTitle(title),
       parentId: parent.id,
       childIds: [],
+      changeStatus: "added",
     };
     this.#manuscriptTree.nodes[nodeId] = folder;
     parent.childIds.splice(clampChildIndex(index, parent.childIds.length), 0, nodeId);
+    // 父文件夹获得 modified 状态（若尚未标记）
+    const putNodes: Record<string, ManuscriptTreeNode> = {
+      [nodeId]: cloneManuscriptTreeNode(folder),
+    };
+    this.#propagateManuscriptFolderStatusUp(nodeId, putNodes);
     this.#writeCurrentManuscriptTree();
     return {
       nodeId,
       delta: {
-        putNodes: {
-          [nodeId]: cloneManuscriptTreeNode(folder),
-        },
+        putNodes,
         deleteNodeIds: [],
         setChildren: [this.#manuscriptChildrenPatch(parent.id)],
       },
@@ -915,18 +1113,21 @@ export class WorktreeSession {
       title: normalizeManuscriptTitle(title),
       parentId: parent.id,
       childIds: [],
+      changeStatus: "added",
     };
     ensureManuscriptStorage(this.#worktree);
     this.#worktree.writeFile(chapterBodyPath(nodeId), Buffer.from("", "utf-8"));
     this.#manuscriptTree.nodes[nodeId] = chapter;
     parent.childIds.splice(clampChildIndex(index, parent.childIds.length), 0, nodeId);
+    const putNodes: Record<string, ManuscriptTreeNode> = {
+      [nodeId]: cloneManuscriptTreeNode(chapter),
+    };
+    this.#propagateManuscriptFolderStatusUp(nodeId, putNodes);
     this.#writeCurrentManuscriptTree();
     return {
       nodeId,
       delta: {
-        putNodes: {
-          [nodeId]: cloneManuscriptTreeNode(chapter),
-        },
+        putNodes,
         deleteNodeIds: [],
         setChildren: [this.#manuscriptChildrenPatch(parent.id)],
       },
@@ -938,9 +1139,7 @@ export class WorktreeSession {
     node.title = normalizeManuscriptTitle(title);
     this.#writeCurrentManuscriptTree();
     return {
-      putNodes: {
-        [id]: cloneManuscriptTreeNode(node),
-      },
+      putNodes: this.#markManuscriptNodeChanged(id),
       deleteNodeIds: [],
       setChildren: [],
     };
@@ -972,6 +1171,21 @@ export class WorktreeSession {
         : clampChildIndex(index, targetParent.childIds.length);
     targetParent.childIds.splice(insertionIndex, 0, id);
     node.parentId = targetParent.id;
+
+    // 刷新双方父文件夹的变更状态
+    const putNodes: Record<string, ManuscriptTreeNode> = {};
+    if (node.parentId !== sourceParentId) {
+      putNodes[id] = cloneManuscriptTreeNode(node);
+    }
+    // 双方父文件夹都需要重新计算（源可能不再有变更子节点，目标可能新增了变更子节点）
+    if (sourceParent.id !== targetParent.id) {
+      if (refreshFolderChangeStatusFromChildren(this.#manuscriptTree, sourceParent.id)) {
+        putNodes[sourceParent.id] = cloneManuscriptTreeNode(sourceParent);
+      }
+    }
+    if (refreshFolderChangeStatusFromChildren(this.#manuscriptTree, targetParent.id)) {
+      putNodes[targetParent.id] = cloneManuscriptTreeNode(targetParent);
+    }
     this.#writeCurrentManuscriptTree();
 
     const setChildren: TreeChildrenPatch[] =
@@ -983,7 +1197,7 @@ export class WorktreeSession {
           ];
 
     return {
-      putNodes: node.parentId === sourceParentId ? {} : { [id]: cloneManuscriptTreeNode(node) },
+      putNodes,
       deleteNodeIds: [],
       setChildren,
     };
@@ -1009,8 +1223,13 @@ export class WorktreeSession {
       delete this.#manuscriptTree.nodes[deleteId];
     }
     this.#writeCurrentManuscriptTree();
+    // 刷新父文件夹的变更状态（删除后可能不再有变更子节点）
+    const putNodes: Record<string, ManuscriptTreeNode> = {};
+    if (refreshFolderChangeStatusFromChildren(this.#manuscriptTree, parentId)) {
+      putNodes[parentId] = cloneManuscriptTreeNode(parent);
+    }
     return {
-      putNodes: {},
+      putNodes,
       deleteNodeIds: deleteIds,
       setChildren: [this.#manuscriptChildrenPatch(parentId)],
     };
@@ -1060,6 +1279,11 @@ export class WorktreeSession {
     currentParent.childIds.splice(clampChildIndex(baseIndex, currentParent.childIds.length), 0, id);
     this.#writeCurrentManuscriptTree();
 
+    // 刷新父文件夹的变更状态（恢复后可能消除 modified）
+    if (refreshFolderChangeStatusFromChildren(this.#manuscriptTree, currentParent.id)) {
+      putNodes[currentParent.id] = cloneManuscriptTreeNode(currentParent);
+    }
+
     return {
       putNodes,
       deleteNodeIds: [],
@@ -1082,6 +1306,7 @@ export class WorktreeSession {
       name: normalizedName,
       parentId: parent.id,
       childIds: [],
+      changeStatus: "added",
     };
     this.#worktree.writeFile(toWorktreePath(path), Buffer.from("", "utf-8"));
     this.#resourceTree.nodes[nodeId] = node;
@@ -1089,10 +1314,14 @@ export class WorktreeSession {
     this.#resourceIdByPath.set(path, nodeId);
     parent.childIds.push(nodeId);
     this.#sortResourceChildren(parent.id);
+    const putNodes: Record<string, ResourceTreeNode> = {
+      [nodeId]: cloneResourceTreeNode(node),
+    };
+    this.#propagateResourceFolderStatusUp(nodeId, putNodes);
     return {
       nodeId,
       delta: {
-        putNodes: { [nodeId]: cloneResourceTreeNode(node) },
+        putNodes,
         deleteNodeIds: [],
         setChildren: [this.#resourceChildrenPatch(parent.id)],
       },
@@ -1114,6 +1343,7 @@ export class WorktreeSession {
       name: normalizedName,
       parentId: parent.id,
       childIds: [],
+      changeStatus: "added",
     };
     this.#worktree.mkdir(toWorktreePath(path), { recursive: true });
     this.#resourceTree.nodes[nodeId] = node;
@@ -1121,10 +1351,14 @@ export class WorktreeSession {
     this.#resourceIdByPath.set(path, nodeId);
     parent.childIds.push(nodeId);
     this.#sortResourceChildren(parent.id);
+    const putNodes: Record<string, ResourceTreeNode> = {
+      [nodeId]: cloneResourceTreeNode(node),
+    };
+    this.#propagateResourceFolderStatusUp(nodeId, putNodes);
     return {
       nodeId,
       delta: {
-        putNodes: { [nodeId]: cloneResourceTreeNode(node) },
+        putNodes,
         deleteNodeIds: [],
         setChildren: [this.#resourceChildrenPatch(parent.id)],
       },
@@ -1149,7 +1383,7 @@ export class WorktreeSession {
     this.#reindexResourceSubtreePaths(id);
     this.#sortResourceChildren(parentId);
     return {
-      putNodes: { [id]: cloneResourceTreeNode(node) },
+      putNodes: this.#markResourceNodeChanged(id),
       deleteNodeIds: [],
       setChildren: [this.#resourceChildrenPatch(parentId)],
     };
@@ -1188,8 +1422,19 @@ export class WorktreeSession {
     this.#sortResourceChildren(sourceParent.id);
     this.#sortResourceChildren(targetParent.id);
 
+    // 刷新双方父文件夹的变更状态
+    const putNodes: Record<string, ResourceTreeNode> = {
+      [id]: cloneResourceTreeNode(node),
+    };
+    if (refreshFolderChangeStatusFromChildren(this.#resourceTree, sourceParent.id)) {
+      putNodes[sourceParent.id] = cloneResourceTreeNode(sourceParent);
+    }
+    if (refreshFolderChangeStatusFromChildren(this.#resourceTree, targetParent.id)) {
+      putNodes[targetParent.id] = cloneResourceTreeNode(targetParent);
+    }
+
     return {
-      putNodes: { [id]: cloneResourceTreeNode(node) },
+      putNodes,
       deleteNodeIds: [],
       setChildren: [
         this.#resourceChildrenPatch(sourceParent.id),
@@ -1219,8 +1464,13 @@ export class WorktreeSession {
       this.#resourcePathById.delete(deleteId);
       delete this.#resourceTree.nodes[deleteId];
     }
+    // 刷新父文件夹的变更状态
+    const putNodes: Record<string, ResourceTreeNode> = {};
+    if (refreshFolderChangeStatusFromChildren(this.#resourceTree, parentId)) {
+      putNodes[parentId] = cloneResourceTreeNode(parent);
+    }
     return {
-      putNodes: {},
+      putNodes,
       deleteNodeIds: deleteIds,
       setChildren: [this.#resourceChildrenPatch(parentId)],
     };
@@ -1238,6 +1488,12 @@ export class WorktreeSession {
     });
     const restoreResult = this.#materializeRestoredResourceSubtree(path, parentId);
     this.#sortResourceChildren(parentId);
+    // 刷新父文件夹的变更状态（恢复后可能消除 modified）
+    if (refreshFolderChangeStatusFromChildren(this.#resourceTree, parentId)) {
+      restoreResult.putNodes[parentId] = cloneResourceTreeNode(
+        this.#requireResourceFolder(parentId),
+      );
+    }
     return {
       putNodes: restoreResult.putNodes,
       deleteNodeIds: [],

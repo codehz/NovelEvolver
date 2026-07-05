@@ -1,4 +1,4 @@
-import type { ResourceTreeNode } from "#shared/rpc/worktree-tree";
+import type { FileChangeStatus, ResourceTreeNode } from "#shared/rpc/worktree-tree";
 
 import { buildSubtreeEndIndexArray, buildTreeRowIndexMap } from "../../tree/tree-row-helpers";
 import { flattenResourceTree } from "./resource-tree";
@@ -14,6 +14,7 @@ export type ResourceRenderItem = {
   expanded: boolean;
   loading: boolean;
   editing: ResourceTreeEditingState | null;
+  changeStatus?: FileChangeStatus;
 };
 
 export type ResourceRenderProjection = {
@@ -43,6 +44,7 @@ export function buildResourceRenderProjection(state: ResourceTreeState): Resourc
     name: item.name,
     expanded: item.expanded,
     loading: false,
+    changeStatus: state.snapshot?.nodes[item.id]?.changeStatus,
     editing:
       state.editing?.mode === "renaming" && state.editing.id === item.id ? state.editing : null,
   }));
@@ -72,6 +74,7 @@ export function buildResourceRenderProjection(state: ResourceTreeState): Resourc
       name: "",
       expanded: false,
       loading: false,
+      changeStatus: undefined,
       editing,
     });
   }
