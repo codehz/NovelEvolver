@@ -129,6 +129,7 @@ export function useWorktreeSearchState() {
   return {
     query,
     setQuery,
+    highlightQuery: debouncedQuery,
     error,
     statsLine,
     roots,

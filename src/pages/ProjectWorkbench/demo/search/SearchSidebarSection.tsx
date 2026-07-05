@@ -4,7 +4,8 @@ import { SearchResultTree } from "./SearchResultTree";
 import { useWorktreeSearchState } from "./use-worktree-search-state";
 
 export function SearchSidebarSection() {
-  const { query, setQuery, error, statsLine, roots, retry, openHit } = useWorktreeSearchState();
+  const { query, setQuery, highlightQuery, error, statsLine, roots, retry, openHit } =
+    useWorktreeSearchState();
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">
@@ -13,7 +14,7 @@ export function SearchSidebarSection() {
         {error ? (
           <ScmDiffError onRetry={retry} />
         ) : (
-          <SearchResultTree roots={roots} onOpenHit={openHit} />
+          <SearchResultTree roots={roots} highlightQuery={highlightQuery} onOpenHit={openHit} />
         )}
       </div>
     </div>

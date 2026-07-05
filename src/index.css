@@ -109,6 +109,11 @@
   button {
     font: inherit;
   }
+
+  ::highlight(novel-search-hit) {
+    background-color: color-mix(in srgb, var(--color-ctp-yellow) 38%, transparent);
+    color: inherit;
+  }
 }
 
 @utility app-region-* {

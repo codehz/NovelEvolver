@@ -46,7 +46,7 @@ export type SearchResultFlatRow =
     };
 
 function leafShowsMatches(leaf: SearchPathTreeLeaf): boolean {
-  return leaf.hits.length > 1 || leaf.hits.some((hit) => hit.matchKind === "content");
+  return leaf.hits.some((hit) => hit.matchKind === "content");
 }
 
 function visitNodes(
@@ -82,6 +82,9 @@ function visitNodes(
           });
           if (showMatches && expandedLeaves.has(entityKey)) {
             for (const [index, hit] of node.folderEntity.hits.entries()) {
+              if (hit.matchKind !== "content") {
+                continue;
+              }
               out.push({
                 kind: "match",
                 key: `${entityKey}::${hit.matchKind}::${hit.line ?? index}`,
@@ -109,6 +112,9 @@ function visitNodes(
     });
     if (showMatches && expanded) {
       for (const [index, hit] of node.hits.entries()) {
+        if (hit.matchKind !== "content") {
+          continue;
+        }
         out.push({
           kind: "match",
           key: `${key}::${hit.matchKind}::${hit.line ?? index}`,

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { KeyboardEvent, ReactNode } from "react";
 
 import { ScrollArea } from "#app/components/ScrollArea";
@@ -22,6 +22,7 @@ import {
   type SearchResultDomainRoot,
   type SearchResultFlatRow,
 } from "./search-result-tree-projector";
+import { useSearchResultHighlights } from "./use-search-result-highlights";
 
 export type { SearchResultDomainRoot };
 
@@ -58,6 +59,14 @@ function activateOnEnterSpace(onActivate: () => void) {
       onActivate();
     }
   };
+}
+
+function SearchHighlightText({ children, className }: { children: string; className?: string }) {
+  return (
+    <span data-search-highlight className={className}>
+      {children}
+    </span>
+  );
 }
 
 function SearchFlatRowView({
@@ -114,7 +123,7 @@ function SearchFlatRowView({
       >
         {disclosureChevron(row.expanded)}
         <span className="icon-[codicon--folder] shrink-0 text-sm text-ctp-mauve" />
-        <span className="truncate">{row.segment}</span>
+        <SearchHighlightText className="truncate">{row.segment}</SearchHighlightText>
         <span className="ml-auto shrink-0 text-[10px] text-ctp-overlay0">{row.childCount}</span>
       </TreeMotionRow>
     );
@@ -145,16 +154,12 @@ function SearchFlatRowView({
         onKeyDown={openable ? activateOnEnterSpace(() => onOpen(row.hit)) : undefined}
       >
         <span className="icon-[codicon--list-flat] shrink-0 text-sm text-ctp-overlay0" />
-        {row.hit.matchKind === "title" ? (
-          <span className="truncate text-ctp-subtext0">名称匹配</span>
-        ) : (
-          <span className="truncate font-mono text-ctp-text">
-            {row.hit.line !== undefined ? (
-              <span className="mr-1 text-ctp-overlay0">{row.hit.line}:</span>
-            ) : null}
-            {row.hit.snippet ?? row.hit.label}
-          </span>
-        )}
+        <span className="truncate font-mono text-ctp-text">
+          {row.hit.line !== undefined ? (
+            <span className="mr-1 text-ctp-overlay0">{row.hit.line}:</span>
+          ) : null}
+          <SearchHighlightText>{row.hit.snippet ?? row.hit.label}</SearchHighlightText>
+        </span>
       </TreeMotionRow>
     );
   }
@@ -203,10 +208,10 @@ function SearchFlatRowView({
         <span className={treeRowDisclosureSpacerClass} />
       )}
       <span className={cn(entityIconClass(leaf.entityKind), "shrink-0 text-sm")} />
-      <span className="truncate">{leaf.name}</span>
+      <SearchHighlightText className="truncate">{leaf.name}</SearchHighlightText>
       {row.showMatches ? (
         <span className="ml-auto shrink-0 rounded bg-ctp-surface0 px-1 py-px font-mono text-[10px] text-ctp-subtext0">
-          {leaf.hits.length}
+          {leaf.hits.filter((hit) => hit.matchKind === "content").length}
         </span>
       ) : null}
     </TreeMotionRow>
@@ -215,11 +220,15 @@ function SearchFlatRowView({
 
 export function SearchResultTree({
   roots,
+  highlightQuery,
   onOpenHit,
 }: {
   roots: SearchResultDomainRoot[];
+  highlightQuery: string;
   onOpenHit: (hit: WorktreeSearchHit) => void;
 }) {
+  const highlightContainerRef = useRef<HTMLDivElement>(null);
+
   const folderKeys = useMemo(() => collectSearchTreeFolderKeys(roots), [roots]);
   const leafIds = useMemo(() => collectSearchTreeLeafKeys(roots), [roots]);
   const domainIds = useMemo(() => roots.map((root) => root.id), [roots]);
@@ -238,6 +247,12 @@ export function SearchResultTree({
     () => flattenSearchResultTree(roots, expandedDomains, expandedFolders, expandedLeaves),
     [roots, expandedDomains, expandedFolders, expandedLeaves],
   );
+
+  const highlightLayoutRevision = useMemo(
+    () => flatRows.map((row) => row.key).join("\u0000"),
+    [flatRows],
+  );
+  useSearchResultHighlights(highlightContainerRef, highlightQuery, highlightLayoutRevision);
 
   const onToggleDomain = useCallback((domainId: string) => {
     setExpandedDomains((current) => {
@@ -279,7 +294,7 @@ export function SearchResultTree({
 
   return (
     <ScrollArea className="min-h-0 flex-1" fill>
-      <div className="py-1">
+      <div ref={highlightContainerRef} className="py-1">
         <FlatTreeList
           items={flatRows}
           getItemKey={getItemKey}
