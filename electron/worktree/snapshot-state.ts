@@ -7,7 +7,6 @@ import type { VirtualWorktree } from "nano-git/worktree/core";
 import { resourceBaseName, resourceParentPath } from "#shared/resource-library-path";
 import type { ManuscriptNode, ManuscriptOutline } from "#shared/rpc/projects-rpc";
 
-import { readTextFromTree } from "../diff/utils";
 import {
   cloneOutline,
   createEmptyOutline,
@@ -20,8 +19,9 @@ import {
   MANUSCRIPT_OUTLINE_PATH,
 } from "../manuscript-path";
 import { joinWorktreeChild, RESOURCES_DIR, toWorktreePath } from "../resource-library-path";
+import { readTextFromTree, type ObjectDatabase } from "./diff-utils";
 
-export type ObjectDatabase = Parameters<typeof readTreeSnapshot>[0];
+export type { ObjectDatabase };
 
 export type ManuscriptEntry = {
   id: string;

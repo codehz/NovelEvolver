@@ -1,6 +1,6 @@
 import type { ScmChange, ScmSnapshot } from "#shared/rpc/worktree-scm";
 
-import { computeStats } from "../diff/utils";
+import { computeStats } from "./diff-utils";
 import type {
   ManuscriptEntry,
   ManuscriptSnapshotState,
