@@ -26,7 +26,6 @@ export function useWorktreeSearchState() {
   const [query, setQuery] = useState("");
   const [debouncedQuery, setDebouncedQuery] = useState("");
   const [result, setResult] = useState<WorktreeSearchResult | null>(null);
-  const [loading, setLoading] = useState(false);
   const [error, setError] = useState(false);
   const [retryKey, setRetryKey] = useState(0);
 
@@ -47,13 +46,11 @@ export function useWorktreeSearchState() {
   useEffect(() => {
     if (debouncedQuery === "") {
       setResult(null);
-      setLoading(false);
       setError(false);
       return;
     }
 
     let cancelled = false;
-    setLoading(true);
     setError(false);
 
     searchHandle
@@ -65,13 +62,11 @@ export function useWorktreeSearchState() {
       .then((next) => {
         if (!cancelled) {
           setResult(next);
-          setLoading(false);
         }
       })
       .catch(() => {
         if (!cancelled) {
           setError(true);
-          setLoading(false);
           setResult(emptyResult(debouncedQuery));
         }
       });
@@ -86,12 +81,12 @@ export function useWorktreeSearchState() {
   }, []);
 
   const statsLine = useMemo(() => {
-    if (debouncedQuery === "" || loading || error) {
+    if (debouncedQuery === "" || error) {
       return null;
     }
     const allHits = [...(result?.manuscript ?? []), ...(result?.resources ?? [])];
     return formatSearchStatsLine(summarizeSearchHits(allHits));
-  }, [debouncedQuery, error, loading, result]);
+  }, [debouncedQuery, error, result]);
 
   const roots = useMemo((): SearchResultDomainRoot[] => {
     const manuscriptTree = buildSearchPathTree(result?.manuscript ?? []);

@@ -1,3 +1,4 @@
+import { SlotText } from "#app/components/SlotText";
 import { cn } from "#app/lib/cn";
 
 const searchFieldRowClass = cn("flex h-7 items-center gap-1.5 rounded-sm bg-ctp-surface0 px-2");
@@ -50,7 +51,7 @@ export function SearchQueryChrome({
         ) : null}
       </div>
       <p className="mt-1.5 px-0.5 text-[10px] leading-snug text-ctp-subtext0">
-        {statsLine ?? "请输入搜索内容"}
+        <SlotText text={statsLine ?? "请输入搜索内容"} options={{ skipUnchanged: true }} />
       </p>
     </div>
   );
