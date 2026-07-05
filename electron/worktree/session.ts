@@ -307,7 +307,12 @@ function buildResourceTreeFromCurrentRows(
       throw new Error(`Invalid resource parent: ${parentId}`);
     }
     childRows
-      .sort((left, right) => left.sortIndex - right.sortIndex || left.id.localeCompare(right.id))
+      .sort((left, right) => {
+        if (left.type !== right.type) {
+          return left.type === "folder" ? -1 : 1;
+        }
+        return left.name.localeCompare(right.name) || left.id.localeCompare(right.id);
+      })
       .forEach((row) => parent.childIds.push(row.id));
   }
 
@@ -333,7 +338,6 @@ function buildResourceTreeFromCommittedRows(
       parentId: row.parentId,
       type: row.type,
       name: row.name,
-      sortIndex: row.sortIndex,
       content: null,
     })),
   );
@@ -1109,8 +1113,6 @@ export class WorktreeSession {
         return;
       }
       const parent = node.parentId;
-      const sortIndex =
-        parent === null ? 0 : (this.#resourceTree.nodes[parent]?.childIds.indexOf(id) ?? 0);
       rows.push({
         projectId: this.#projectId,
         branchName: this.#branchName,
@@ -1118,7 +1120,6 @@ export class WorktreeSession {
         parentId: parent,
         type: node.type,
         name: node.name,
-        sortIndex,
         content:
           node.type === "file"
             ? Buffer.from(this.#currentResources.entries.get(id)?.content ?? "", "utf-8")
@@ -1140,8 +1141,6 @@ export class WorktreeSession {
         return;
       }
       const parent = node.parentId;
-      const sortIndex =
-        parent === null ? 0 : (this.#baseResourceTree.nodes[parent]?.childIds.indexOf(id) ?? 0);
       rows.push({
         projectId: this.#projectId,
         branchName: this.#branchName,
@@ -1149,7 +1148,6 @@ export class WorktreeSession {
         parentId: parent,
         type: node.type,
         name: node.name,
-        sortIndex,
         contentSha:
           node.type === "file"
             ? this.#repo.hashObject(
@@ -1257,7 +1255,6 @@ export class WorktreeSession {
     if (
       current.name !== base.name ||
       current.parentId !== base.parentId ||
-      current.index !== base.index ||
       (current.type === "file" && current.content !== base.content)
     ) {
       return "modified";
@@ -1300,7 +1297,6 @@ export class WorktreeSession {
         this.#renameResourceToBase(id);
         return;
       case "move":
-      case "reorder":
         this.#moveResourceToBase(id);
         return;
       case "content":

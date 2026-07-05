@@ -291,21 +291,6 @@ function collectResourceChanges(
         depth: current.depth,
       },
     });
-  } else if (previous.index !== current.index) {
-    changes.push({
-      order,
-      change: {
-        id: `resource:reorder:${id}`,
-        domain: "resource",
-        kind: "reorder",
-        entityId: id,
-        entityKind,
-        label: current.name,
-        previousPath: previous.displayPath,
-        displayPath: current.displayPath,
-        depth: current.depth,
-      },
-    });
   }
 
   if (current.type === "file" && previous.content !== current.content) {

@@ -37,7 +37,6 @@ export type ResourceNodeCurrentRow = {
   parentId: string | null;
   type: "folder" | "file";
   name: string;
-  sortIndex: number;
   content: Buffer | null;
 };
 
@@ -48,7 +47,6 @@ export type ResourceNodeCommittedRow = {
   parentId: string | null;
   type: "folder" | "file";
   name: string;
-  sortIndex: number;
   contentSha: string | null;
 };
 
@@ -89,7 +87,6 @@ type ResourceCurrentSqlRow = {
   parent_id: string | null;
   type: "folder" | "file";
   name: string;
-  sort_index: number;
   content: Uint8Array | null;
 };
 
@@ -100,7 +97,6 @@ type ResourceCommittedSqlRow = {
   parent_id: string | null;
   type: "folder" | "file";
   name: string;
-  sort_index: number;
   content_sha: string | null;
 };
 
@@ -170,7 +166,6 @@ export class WorktreesStore {
         parent_id TEXT,
         type TEXT NOT NULL,
         name TEXT NOT NULL,
-        sort_index INTEGER NOT NULL,
         content BLOB,
         PRIMARY KEY (project_id, branch_name, id),
         FOREIGN KEY (project_id, branch_name)
@@ -184,7 +179,6 @@ export class WorktreesStore {
         parent_id TEXT,
         type TEXT NOT NULL,
         name TEXT NOT NULL,
-        sort_index INTEGER NOT NULL,
         content_sha TEXT,
         PRIMARY KEY (project_id, branch_name, id),
         FOREIGN KEY (project_id, branch_name)
@@ -302,10 +296,10 @@ export class WorktreesStore {
     const rows = this.#db
       .prepare(
         `
-          SELECT project_id, branch_name, id, parent_id, type, name, sort_index, content
+          SELECT project_id, branch_name, id, parent_id, type, name, content
           FROM resource_node_current
           WHERE project_id = ? AND branch_name = ?
-          ORDER BY parent_id IS NOT NULL, parent_id, sort_index, id
+          ORDER BY parent_id IS NOT NULL, parent_id, type, name, id
         `,
       )
       .all(projectId, branchName) as ResourceCurrentSqlRow[];
@@ -317,7 +311,6 @@ export class WorktreesStore {
       parentId: row.parent_id,
       type: row.type,
       name: row.name,
-      sortIndex: row.sort_index,
       content: toBuffer(row.content),
     }));
   }
@@ -326,10 +319,10 @@ export class WorktreesStore {
     const rows = this.#db
       .prepare(
         `
-          SELECT project_id, branch_name, id, parent_id, type, name, sort_index, content_sha
+          SELECT project_id, branch_name, id, parent_id, type, name, content_sha
           FROM resource_node_committed
           WHERE project_id = ? AND branch_name = ?
-          ORDER BY parent_id IS NOT NULL, parent_id, sort_index, id
+          ORDER BY parent_id IS NOT NULL, parent_id, type, name, id
         `,
       )
       .all(projectId, branchName) as ResourceCommittedSqlRow[];
@@ -341,7 +334,6 @@ export class WorktreesStore {
       parentId: row.parent_id,
       type: row.type,
       name: row.name,
-      sortIndex: row.sort_index,
       contentSha: row.content_sha,
     }));
   }
@@ -409,8 +401,8 @@ export class WorktreesStore {
       `DELETE FROM resource_node_current WHERE project_id = ? AND branch_name = ?`,
       `
         INSERT INTO resource_node_current (
-          project_id, branch_name, id, parent_id, type, name, sort_index, content
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+          project_id, branch_name, id, parent_id, type, name, content
+        ) VALUES (?, ?, ?, ?, ?, ?, ?)
       `,
       projectId,
       branchName,
@@ -421,7 +413,6 @@ export class WorktreesStore {
         row.parentId,
         row.type,
         row.name,
-        row.sortIndex,
         row.content,
       ]),
     );
@@ -436,8 +427,8 @@ export class WorktreesStore {
       `DELETE FROM resource_node_committed WHERE project_id = ? AND branch_name = ?`,
       `
         INSERT INTO resource_node_committed (
-          project_id, branch_name, id, parent_id, type, name, sort_index, content_sha
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+          project_id, branch_name, id, parent_id, type, name, content_sha
+        ) VALUES (?, ?, ?, ?, ?, ?, ?)
       `,
       projectId,
       branchName,
@@ -448,7 +439,6 @@ export class WorktreesStore {
         row.parentId,
         row.type,
         row.name,
-        row.sortIndex,
         row.contentSha,
       ]),
     );
