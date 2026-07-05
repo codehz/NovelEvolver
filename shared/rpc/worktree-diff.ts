@@ -1,103 +1,53 @@
 import type { RpcTarget } from "capnweb";
 
-import type { ManuscriptNodeType } from "./projects-rpc";
-
 // ==================== 通用类型 ====================
 
 /** 字符级差异统计 */
 export type DiffStats = { added: number; removed: number };
 
-// ==================== 正文 Diff 类型 ====================
+// ==================== 扁平 Diff Item 模型 ====================
 
-/** 节点在基线中的完整快照（删除节点还原所需） */
-export type BaseNodeSnapshot = {
-  title: string;
-  parent: string | null;
-  /** folder 的子节点列表，chapter 为 null */
-  children: string[] | null;
-  /** chapter 的旧正文内容，folder 为 null */
-  content: string | null;
-};
-
-/** 文件夹子节点变更 */
-export type FolderChildrenChange = {
-  before: string[];
-  after: string[];
-};
-
-/** 内容变更（携带旧内容用于还原） */
-export type ContentChange = {
-  stats: DiffStats;
-  /** 旧正文内容（还原时直接写回 bodies/{id}.md） */
-  oldContent: string;
-};
+export type DiffItemKind = "add" | "remove" | "modify" | "move" | "reorder";
 
 /**
- * 单个正文节点的变更描述。
+ * 单个原子 diff 操作。
  *
- * 采用多维度可叠加模型：每个变更维度是独立的可选字段，
- * 一个节点可以同时被重命名、移动、修改内容。
- *
- * - `base === null` → 节点是新增的（仅 current 中存在）
- * - `title === null` → 节点是被删除的（仅 base 中存在）
- * - 两者都非 null → 节点在两边都存在，可能有多种变更维度
+ * 后端返回扁平列表，前端按顺序渲染即可。
+ * 每个 item 自带渲染所需的元数据和 revert 所需的信息。
  */
-export type NodeDiff = {
-  id: string;
-  type: ManuscriptNodeType;
+export type DiffItem = {
+  /** 唯一标识，用于 revert */
+  revertId: string;
+  /** 操作类型 */
+  kind: DiffItemKind;
+  /** 显示路径（如 "正文/第一章" 或 "images/cover.png"） */
+  path: string;
+  /** 树深度（用于缩进渲染，0 = 根级） */
+  depth: number;
+  /** 显示标签（节点标题或文件名） */
+  label: string;
+  /** 变更统计 */
+  stats?: DiffStats;
+  /** 是否为目录 */
+  isDir: boolean;
 
-  // ---- 存在性维度 ----
-  /** null = 节点被删除（仅 base 中存在） */
-  title: string | null;
-  /** null = 节点是新增的；非 null = 节点在 base 中存在 */
-  base: BaseNodeSnapshot | null;
-
-  // ---- 标题维度 ----
-  titleChanged?: { from: string; to: string };
-
-  // ---- 父节点维度 ----
-  /** 当前父节点（null = 根节点） */
-  parent: string | null;
-  parentChanged?: { from: string | null; to: string | null };
-
-  // ---- 内容维度（仅 chapter）----
-  contentChanged?: ContentChange;
-
-  // ---- 子节点维度（仅 folder）----
-  childrenChanged?: FolderChildrenChange;
+  // ---- reorder 专用 ----
+  reorderInfo?: {
+    /** 被移动的子节点 ID */
+    childId: string;
+    /** 文件夹 ID */
+    folderId: string;
+    /** 原始子节点序列（base 中的顺序，仅保留仍存在的子节点） */
+    before: string[];
+  };
 };
-
-/** 正文差异 */
-export type ManuscriptDiff = {
-  nodes: NodeDiff[];
-};
-
-// ==================== 资源 Diff 类型 ====================
-
-export type ResourceDiffEntry =
-  | { kind: "added"; path: string; resourceKind: "file"; stats: DiffStats }
-  | { kind: "added"; path: string; resourceKind: "folder" }
-  | { kind: "removed"; path: string; resourceKind: "file"; stats: DiffStats; oldContent: string }
-  | { kind: "removed"; path: string; resourceKind: "folder" }
-  | { kind: "modified"; path: string; stats: DiffStats; oldContent: string };
 
 // ==================== 总结果 ====================
 
 export type WorktreeDiffResult = {
-  manuscript: ManuscriptDiff;
-  resources: ResourceDiffEntry[];
+  manuscript: DiffItem[];
+  resources: DiffItem[];
 };
-
-// ==================== 还原目标 ====================
-
-export type ManuscriptRevertTarget =
-  | { id: string; dimension: "all" }
-  | { id: string; dimension: "title" }
-  | { id: string; dimension: "parent" }
-  | { id: string; dimension: "content" }
-  | { id: string; dimension: "children" };
-
-export type ResourceRevertTarget = { path: string; dimension: "all" };
 
 // ==================== RPC 接口 ====================
 
@@ -105,9 +55,12 @@ export interface WorktreeDiffHandle extends RpcTarget {
   /** 计算当前工作树与 base tree 的差异 */
   compute(): WorktreeDiffResult;
 
-  /** 还原正文节点的变更 */
-  revertManuscript(target: ManuscriptRevertTarget): void;
-
-  /** 还原资源的变更 */
-  revertResource(target: ResourceRevertTarget): void;
+  /**
+   * 按 revertId 还原单个操作，返回还原后的最新 diff。
+   * - node:... → 还原正文节点变更
+   * - resource:... → 还原资源变更
+   * - reorder:... → 还原排序变更
+   * - folder:... → 还原整个文件夹的全部变更
+   */
+  revert(revertId: string): WorktreeDiffResult;
 }
