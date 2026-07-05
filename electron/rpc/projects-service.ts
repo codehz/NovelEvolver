@@ -7,25 +7,27 @@ import { createSqliteRepository } from "nano-git/repository/sqlite";
 import type { ProjectMetadata } from "#shared/project";
 import type { ProjectHandleWithMetadata, ProjectsService } from "#shared/rpc/projects-rpc";
 
+import { ProjectsRepository } from "../db/repositories/projects-repo";
+import { WorktreeRepository } from "../db/repositories/worktree-repo";
 import { toProjectMetadata } from "../home-path";
 import type { RpcMainDeps } from "./deps";
 import { ProjectHandleImpl } from "./project-handle";
 
 export class ProjectsServiceImpl extends RpcTarget implements ProjectsService {
   readonly #window: BrowserWindow;
-  readonly #deps: RpcMainDeps;
+  readonly #projects: ProjectsRepository;
+  readonly #worktrees: WorktreeRepository;
 
   constructor(window: BrowserWindow, deps: RpcMainDeps) {
     super();
     this.#window = window;
-    this.#deps = deps;
+    const db = deps.getAppDb().db;
+    this.#projects = new ProjectsRepository(db);
+    this.#worktrees = new WorktreeRepository(db);
   }
 
   get recents(): ProjectMetadata[] {
-    return this.#deps
-      .getProjectsDb()
-      .list()
-      .map((record) => toProjectMetadata(record));
+    return this.#projects.list().map((record) => toProjectMetadata(record));
   }
 
   async openProjectDialog(): Promise<ProjectMetadata | null> {
@@ -44,7 +46,7 @@ export class ProjectsServiceImpl extends RpcTarget implements ProjectsService {
       throw new Error("请选择 .npk 项目文件");
     }
 
-    return toProjectMetadata(this.#deps.getProjectsDb().upsertByPath(path, Date.now()));
+    return toProjectMetadata(this.#projects.upsertByPath(path, Date.now()));
   }
 
   async createProjectDialog(): Promise<ProjectMetadata | null> {
@@ -69,34 +71,28 @@ export class ProjectsServiceImpl extends RpcTarget implements ProjectsService {
 
     using _repo = createSqliteRepository(path);
 
-    return toProjectMetadata(this.#deps.getProjectsDb().upsertByPath(path, Date.now()));
+    return toProjectMetadata(this.#projects.upsertByPath(path, Date.now()));
   }
 
   openProject(id: number): ProjectHandleWithMetadata {
-    const record = this.#deps.getProjectsDb().touchById(id, Date.now());
+    const record = this.#projects.touchById(id, Date.now());
     if (!record) {
       throw new Error(`Project with id ${id} not found`);
     }
     return {
-      handle: new ProjectHandleImpl(record.id, record.path, this.#deps.getWorktreesStore()),
+      handle: new ProjectHandleImpl(record.id, record.path, this.#worktrees),
       metadata: toProjectMetadata(record),
     };
   }
 
   recordOpen(id: number): ProjectMetadata | null {
-    const record = this.#deps.getProjectsDb().touchById(id, Date.now());
+    const record = this.#projects.touchById(id, Date.now());
     return record ? toProjectMetadata(record) : null;
   }
 
   removeProject(id: number): boolean {
-    const removed = this.#deps.getProjectsDb().removeById(id);
-    if (removed) {
-      try {
-        this.#deps.getWorktreesStore().deleteWorktreesForProject(id);
-      } catch (error) {
-        console.error(`Failed to delete worktrees for project ${id}:`, error);
-      }
-    }
-    return removed;
+    // worktree.project_id ON DELETE CASCADE 自动级联清空 worktree 及其
+    // manuscript / resource 节点，单条 DELETE 即原子完成，无需手动级联。
+    return this.#projects.removeById(id);
   }
 }

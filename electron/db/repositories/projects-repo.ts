@@ -1,4 +1,4 @@
-import { DatabaseSync } from "node:sqlite";
+import type { DatabaseSync } from "node:sqlite";
 
 type ProjectRow = {
   id: number;
@@ -6,7 +6,7 @@ type ProjectRow = {
   last_opened_at: number;
 };
 
-type ProjectDbRecord = {
+export type ProjectDbRecord = {
   id: number;
   path: string;
   lastOpenedAt: number;
@@ -20,18 +20,17 @@ function rowToRecord(row: ProjectRow): ProjectDbRecord {
   };
 }
 
-export class ProjectsDatabase {
+/**
+ * projects 表的 query 接口。
+ *
+ * 不负责建表（schema 由 initProjectsSchema 在 AppDatabase 启动时执行），
+ * 也不持有自己的连接，构造时注入共享 DatabaseSync 句柄。
+ */
+export class ProjectsRepository {
   readonly #db: DatabaseSync;
 
-  constructor(dbPath: string) {
-    this.#db = new DatabaseSync(dbPath);
-    this.#db.exec(`
-      CREATE TABLE IF NOT EXISTS projects (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        path TEXT NOT NULL UNIQUE,
-        last_opened_at INTEGER NOT NULL
-      );
-    `);
+  constructor(db: DatabaseSync) {
+    this.#db = db;
   }
 
   list(): ProjectDbRecord[] {
@@ -85,9 +84,5 @@ export class ProjectsDatabase {
   removeById(id: number): boolean {
     const result = this.#db.prepare(`DELETE FROM projects WHERE id = ?`).run(id);
     return result.changes > 0;
-  }
-
-  close() {
-    this.#db.close();
   }
 }

@@ -11,8 +11,8 @@ import type { WorktreeScmHandle } from "#shared/rpc/worktree-scm";
 import type { WorktreeSearchHandle } from "#shared/rpc/worktree-search";
 import type { WorktreeTreeHandle } from "#shared/rpc/worktree-tree";
 
+import type { WorktreeRepository } from "../db/repositories/worktree-repo";
 import { WorktreeSession } from "../worktree/session";
-import type { WorktreesStore } from "../worktrees-store";
 import { ManuscriptHandleImpl } from "./manuscript-handle";
 import { ResourceLibraryHandleImpl } from "./resource-library-handle";
 import { WorktreeScmHandleImpl } from "./worktree-scm-handle";
@@ -34,7 +34,7 @@ export class WorktreeHandleImpl extends RpcTarget implements WorktreeHandle {
   readonly #search: WorktreeSearchHandle;
 
   constructor(
-    store: WorktreesStore,
+    store: WorktreeRepository,
     objects: ObjectDatabase,
     repo: Repository,
     projectId: number,

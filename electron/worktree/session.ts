@@ -17,6 +17,14 @@ import type {
   WorktreeTreeSnapshot,
 } from "#shared/rpc/worktree-tree";
 
+import type {
+  ManuscriptNodeCommittedRow,
+  ManuscriptNodeCurrentRow,
+  ResourceNodeCommittedRow,
+  ResourceNodeCurrentRow,
+  WorktreeRecord,
+  WorktreeRepository,
+} from "../db/repositories/worktree-repo";
 import {
   cloneOutline,
   clampChildIndex,
@@ -29,14 +37,6 @@ import { chapterBodyPath } from "../manuscript-path";
 import { assertValidResourceRelativePath, RESOURCES_DIR } from "../resource-library-path";
 import { RpcStreamPublisher } from "../rpc/stream-publisher";
 import { executeWorktreeSearch } from "../search/worktree-search";
-import type {
-  ManuscriptNodeCommittedRow,
-  ManuscriptNodeCurrentRow,
-  ResourceNodeCommittedRow,
-  ResourceNodeCurrentRow,
-  WorktreeRecord,
-  WorktreesStore,
-} from "../worktrees-store";
 import { refreshAllFolderChangeStatuses } from "./change-status";
 import { readTextFromTree, type ObjectDatabase } from "./diff-utils";
 import { computeMinimalReorderedManuscriptIds } from "./manuscript-reorder";
@@ -408,7 +408,7 @@ function sortedEntryValues<T extends { order: number }>(entries: Map<string, T>)
 }
 
 export class WorktreeSession {
-  readonly #store: WorktreesStore;
+  readonly #store: WorktreeRepository;
   readonly #objects: ObjectDatabase;
   readonly #repo: Repository;
   readonly #projectId: number;
@@ -431,7 +431,7 @@ export class WorktreeSession {
   readonly #resourceIdByPath = new Map<string, string>();
 
   constructor(
-    store: WorktreesStore,
+    store: WorktreeRepository,
     objects: ObjectDatabase,
     repo: Repository,
     projectId: number,

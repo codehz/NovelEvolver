@@ -1,4 +1,4 @@
-import { DatabaseSync, type SQLInputValue } from "node:sqlite";
+import type { DatabaseSync, SQLInputValue } from "node:sqlite";
 
 export type WorktreeRecord = {
   projectId: number;
@@ -114,86 +114,19 @@ function rowToWorktreeRecord(row: WorktreeRow): WorktreeRecord {
   };
 }
 
-export class WorktreesStore {
+/**
+ * worktree 及 manuscript / resource 节点表的 query 接口。
+ *
+ * 不负责建表（schema 由 initWorktreeSchema 在 AppDatabase 启动时执行），
+ * 也不 open 自己的连接，构造时注入共享 DatabaseSync 句柄。
+ * worktree.project_id -> projects(id) 的 ON DELETE CASCADE 由 schema 保证，
+ * 因此不再需要 deleteWorktreesForProject 这类手动级联清理。
+ */
+export class WorktreeRepository {
   readonly #db: DatabaseSync;
 
-  constructor(dbPath: string) {
-    this.#db = new DatabaseSync(dbPath);
-    this.#db.exec(`
-      PRAGMA foreign_keys = ON;
-
-      CREATE TABLE IF NOT EXISTS worktree (
-        project_id INTEGER NOT NULL,
-        branch_name TEXT NOT NULL,
-        base_commit_sha TEXT,
-        revision INTEGER NOT NULL DEFAULT 0,
-        warning TEXT,
-        PRIMARY KEY (project_id, branch_name)
-      );
-
-      CREATE TABLE IF NOT EXISTS manuscript_node_current (
-        project_id INTEGER NOT NULL,
-        branch_name TEXT NOT NULL,
-        id TEXT NOT NULL,
-        parent_id TEXT,
-        type TEXT NOT NULL,
-        title TEXT NOT NULL,
-        sort_index INTEGER NOT NULL,
-        content BLOB,
-        PRIMARY KEY (project_id, branch_name, id),
-        FOREIGN KEY (project_id, branch_name)
-          REFERENCES worktree(project_id, branch_name) ON DELETE CASCADE
-      );
-
-      CREATE TABLE IF NOT EXISTS manuscript_node_committed (
-        project_id INTEGER NOT NULL,
-        branch_name TEXT NOT NULL,
-        id TEXT NOT NULL,
-        parent_id TEXT,
-        type TEXT NOT NULL,
-        title TEXT NOT NULL,
-        sort_index INTEGER NOT NULL,
-        content_sha TEXT,
-        PRIMARY KEY (project_id, branch_name, id),
-        FOREIGN KEY (project_id, branch_name)
-          REFERENCES worktree(project_id, branch_name) ON DELETE CASCADE
-      );
-
-      CREATE TABLE IF NOT EXISTS resource_node_current (
-        project_id INTEGER NOT NULL,
-        branch_name TEXT NOT NULL,
-        id TEXT NOT NULL,
-        parent_id TEXT,
-        type TEXT NOT NULL,
-        name TEXT NOT NULL,
-        content BLOB,
-        PRIMARY KEY (project_id, branch_name, id),
-        FOREIGN KEY (project_id, branch_name)
-          REFERENCES worktree(project_id, branch_name) ON DELETE CASCADE
-      );
-
-      CREATE TABLE IF NOT EXISTS resource_node_committed (
-        project_id INTEGER NOT NULL,
-        branch_name TEXT NOT NULL,
-        id TEXT NOT NULL,
-        parent_id TEXT,
-        type TEXT NOT NULL,
-        name TEXT NOT NULL,
-        content_sha TEXT,
-        PRIMARY KEY (project_id, branch_name, id),
-        FOREIGN KEY (project_id, branch_name)
-          REFERENCES worktree(project_id, branch_name) ON DELETE CASCADE
-      );
-
-      CREATE INDEX IF NOT EXISTS idx_manuscript_current_parent
-        ON manuscript_node_current(project_id, branch_name, parent_id);
-      CREATE INDEX IF NOT EXISTS idx_manuscript_committed_parent
-        ON manuscript_node_committed(project_id, branch_name, parent_id);
-      CREATE INDEX IF NOT EXISTS idx_resource_current_parent
-        ON resource_node_current(project_id, branch_name, parent_id);
-      CREATE INDEX IF NOT EXISTS idx_resource_committed_parent
-        ON resource_node_committed(project_id, branch_name, parent_id);
-    `);
+  constructor(db: DatabaseSync) {
+    this.#db = db;
   }
 
   hasWorktree(projectId: number, branchName: string): boolean {
@@ -444,6 +377,10 @@ export class WorktreesStore {
     );
   }
 
+  /**
+   * 在共享连接上执行 IMMEDIATE 事务。跨 repo 写入可放进同一事务，
+   * 与 AppDatabase.transaction() 等价（同一底层连接）。
+   */
   transaction<T>(operation: () => T): T {
     this.#db.exec("BEGIN IMMEDIATE");
     try {
@@ -454,15 +391,6 @@ export class WorktreesStore {
       this.#db.exec("ROLLBACK");
       throw error;
     }
-  }
-
-  deleteWorktreesForProject(projectId: number): number {
-    const result = this.#db.prepare(`DELETE FROM worktree WHERE project_id = ?`).run(projectId);
-    return Number(result.changes);
-  }
-
-  close(): void {
-    this.#db.close();
   }
 
   #replaceRows(
