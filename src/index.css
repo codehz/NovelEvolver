@@ -11,30 +11,33 @@
   --app-region-drag: drag;
   --app-region-no-drag: no-drag;
 
+  --font-display: "MiSans", sans-serif;
+  --font-mono: "Maple Mono CN", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  --text-2xs: 0.6875rem;
+  --text-activity-bar-icon: 1.375rem;
+  --text-titlebar: 0.75rem;
+
+  --color-app-background: var(--color-ctp-base);
   --color-app-foreground: var(--color-ctp-text);
   --color-app-muted: var(--color-ctp-subtext0);
-  --color-app-background: var(--color-ctp-base);
   --color-app-surface: var(--color-ctp-mantle);
-  --color-window-chrome: var(--color-ctp-crust);
-  --color-titlebar-foreground: var(--color-ctp-text);
-  --color-titlebar-border: var(--color-ctp-surface0);
-  --opacity-titlebar-inactive: 0.45;
   --color-badge-background: var(--color-ctp-mauve);
   --color-badge-foreground: var(--color-ctp-crust);
+  --color-titlebar-border: var(--color-ctp-surface0);
+  --color-titlebar-foreground: var(--color-ctp-text);
   --color-window-button-close-hover: var(--color-ctp-red);
+  --color-window-chrome: var(--color-ctp-crust);
+  --opacity-titlebar-inactive: 0.45;
 
-  --text-titlebar: 0.75rem;
-  --text-activity-bar-icon: 1.375rem;
-  --text-2xs: 0.6875rem;
-  --spacing-titlebar: 2.25rem;
   --spacing-activity-bar: 3rem;
-  --spacing-workbench-sidebar: 16rem;
+  --spacing-titlebar: 2.25rem;
   --spacing-workbench-auxiliary: 20rem;
+  --spacing-workbench-sidebar: 16rem;
   --spacing-workbench-tab: 2.125rem;
 
+  --anchor-notification-bell: --notification-bell;
   --shadow-notification-item-divider: inset 0 1px 0 0 var(--color-badge-background);
   --spacing-notification-panel: 26rem;
-  --anchor-notification-bell: --notification-bell;
   --z-index-notification: 40;
 
   --shadow-quick-pick: 0 8px 24px color-mix(in srgb, var(--color-ctp-crust) 55%, transparent);
@@ -42,23 +45,22 @@
   --z-index-quick-pick: 50;
 
   --spacing-scrollbar: 0.75rem;
-  --spacing-pte-line: 1.5rem;
+
+  --color-pte-line-highlight: color-mix(in srgb, var(--color-ctp-surface0) 42%, transparent);
+  --color-pte-line-number: var(--color-ctp-overlay0);
+  --color-pte-md-code: var(--color-ctp-green);
+  --color-pte-md-emphasis: var(--color-ctp-subtext1);
+  --color-pte-md-heading: var(--color-ctp-mauve);
+  --color-pte-md-link: var(--color-ctp-blue);
+  --color-pte-md-marker: var(--color-ctp-overlay1);
+  --color-pte-md-muted: var(--color-ctp-overlay0);
+  --color-pte-md-quote: var(--color-ctp-subtext0);
+  --color-pte-md-strong: var(--color-ctp-text);
+  --color-pte-selection: color-mix(in srgb, var(--color-ctp-overlay0) 28%, transparent);
+  --counter-pte-line: pte-line;
   --spacing-pte-gutter: 0.75rem;
   --spacing-pte-gutter-inset: 1rem;
-  --color-pte-line-number: var(--color-ctp-overlay0);
-  --color-pte-line-highlight: color-mix(in srgb, var(--color-ctp-surface0) 42%, transparent);
-  --color-pte-selection: color-mix(in srgb, var(--color-ctp-overlay0) 28%, transparent);
-  --color-pte-md-heading: var(--color-ctp-mauve);
-  --color-pte-md-strong: var(--color-ctp-text);
-  --color-pte-md-emphasis: var(--color-ctp-subtext1);
-  --color-pte-md-muted: var(--color-ctp-overlay0);
-  --color-pte-md-link: var(--color-ctp-blue);
-  --color-pte-md-code: var(--color-ctp-green);
-  --color-pte-md-quote: var(--color-ctp-subtext0);
-  --color-pte-md-marker: var(--color-ctp-overlay1);
-  --counter-pte-line: pte-line;
-  --font-display: "MiSans", sans-serif;
-  --font-mono: "Maple Mono CN", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  --spacing-pte-line: 1.5rem;
 }
 
 @layer base {
