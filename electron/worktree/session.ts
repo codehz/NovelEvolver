@@ -1,9 +1,6 @@
-import { createHash } from "node:crypto";
-
 import type { SHA1 } from "nano-git";
 import { walkLogEntries } from "nano-git/log";
 import type { Repository } from "nano-git/repository/core";
-import { readTreeSnapshot } from "nano-git/repository/tree/tree-diff";
 import type { VirtualWorktree } from "nano-git/worktree/core";
 import { nanoid } from "nanoid";
 
@@ -17,12 +14,7 @@ import type {
   ManuscriptOutline,
   WorktreeNodeIdResult,
 } from "#shared/rpc/projects-rpc";
-import type {
-  ScmChange,
-  ScmChangeStats,
-  ScmCommitSummary,
-  ScmSnapshot,
-} from "#shared/rpc/worktree-scm";
+import type { ScmCommitSummary, ScmSnapshot } from "#shared/rpc/worktree-scm";
 import type { WorktreeSearchQuery, WorktreeSearchResult } from "#shared/rpc/worktree-search";
 import type {
   FileChangeStatus,
@@ -37,16 +29,13 @@ import type {
   WorktreeTreeSnapshot,
 } from "#shared/rpc/worktree-tree";
 
-import { readTextFromTree } from "../diff/utils";
 import {
   clampChildIndex,
-  cloneOutline,
   collectDescendantIds,
   createEmptyOutline,
   findParentId,
   MANUSCRIPT_ROOT_ID,
   normalizeManuscriptTitle,
-  parseOutline,
   validateOutline,
 } from "../manuscript-outline";
 import {
@@ -57,53 +46,30 @@ import {
 import {
   assertValidResourceRelativePath,
   ensureResourcesDirectory,
-  joinWorktreeChild,
   RESOURCES_DIR,
   toWorktreePath,
 } from "../resource-library-path";
 import { RpcStreamPublisher } from "../rpc/stream-publisher";
 import { executeWorktreeSearch } from "../search/worktree-search";
-
-type ObjectDatabase = Parameters<typeof readTreeSnapshot>[0];
-
-type ManuscriptEntry = {
-  id: string;
-  type: ManuscriptNode["type"];
-  title: string;
-  parentId: string;
-  index: number;
-  depth: number;
-  displayPath: string;
-  order: number;
-  childIds: string[];
-  content: string;
-};
-
-type ManuscriptSnapshotState = {
-  outline: ManuscriptOutline;
-  entries: Map<string, ManuscriptEntry>;
-};
-
-type ResourceEntry = {
-  path: string;
-  type: "file" | "folder";
-  name: string;
-  parentPath: string;
-  depth: number;
-  displayPath: string;
-  order: number;
-  content: string;
-  hash: string;
-};
-
-type ResourceSnapshotState = {
-  entries: Map<string, ResourceEntry>;
-};
-
-type DetailedSnapshot = {
-  snapshot: ScmSnapshot;
-  changeHandlers: Map<string, () => void>;
-};
+import {
+  propagateFolderChangeStatusUp,
+  refreshAllFolderChangeStatuses,
+  refreshFolderChangeStatusFromChildren,
+} from "./change-status";
+import { buildDetailedScmSnapshot, type DetailedSnapshot } from "./scm-snapshot-builder";
+import {
+  buildBaseManuscriptSnapshot,
+  buildBaseResourceSnapshot,
+  buildCurrentManuscriptSnapshot,
+  buildCurrentResourceSnapshot,
+  ensureChapterBodiesExist,
+  type ManuscriptSnapshotState,
+  type ObjectDatabase,
+  readOutlineFromWorktree,
+  sortWorktreeEntries,
+  verifyResourceTree,
+  writeOutlineToWorktree,
+} from "./snapshot-state";
 
 type ExistingWorktreeStatus = {
   hadExistingDraft: boolean;
@@ -118,60 +84,6 @@ type TreeMutation = {
 const MANUSCRIPT_ID_SIZE = 10;
 const RESOURCE_ID_SIZE = 10;
 const RESOURCE_ROOT_ID = "root";
-
-function sha1Text(content: string): string {
-  return createHash("sha1").update(content).digest("hex");
-}
-
-function computeStats(previous: string, current: string): ScmChangeStats {
-  if (previous === current) {
-    return { added: 0, removed: 0 };
-  }
-  if (previous === "") {
-    return { added: current.length, removed: 0 };
-  }
-  if (current === "") {
-    return { added: 0, removed: previous.length };
-  }
-
-  const oldLines = previous.split("\n");
-  const newLines = current.split("\n");
-  const rows = oldLines.length;
-  const cols = newLines.length;
-  const dp: number[][] = Array.from({ length: rows + 1 }, () => Array<number>(cols + 1).fill(0));
-
-  for (let row = 1; row <= rows; row += 1) {
-    for (let col = 1; col <= cols; col += 1) {
-      if (oldLines[row - 1] === newLines[col - 1]) {
-        dp[row][col] = dp[row - 1]![col - 1]! + 1;
-      } else {
-        dp[row][col] = Math.max(dp[row - 1]![col]!, dp[row][col - 1]!);
-      }
-    }
-  }
-
-  let added = 0;
-  let removed = 0;
-  let row = rows;
-  let col = cols;
-
-  while (row > 0 || col > 0) {
-    if (row > 0 && col > 0 && oldLines[row - 1] === newLines[col - 1]) {
-      row -= 1;
-      col -= 1;
-      continue;
-    }
-    if (col > 0 && (row === 0 || dp[row]![col - 1]! >= dp[row - 1]![col]!)) {
-      added += newLines[col - 1]!.length + 1;
-      col -= 1;
-      continue;
-    }
-    removed += oldLines[row - 1]!.length + 1;
-    row -= 1;
-  }
-
-  return { added, removed };
-}
 
 function cloneManuscriptTreeNode(node: ManuscriptTreeNode): ManuscriptTreeNode {
   return {
@@ -273,10 +185,6 @@ function normalizeResourceNodeName(name: string): string {
   return normalized;
 }
 
-function resourceDepth(path: string): number {
-  return path === "" ? 0 : path.split("/").length - 1;
-}
-
 function sortResourceNodeRecords(nodes: ResourceTreeNode[]): ResourceTreeNode[] {
   return [...nodes].sort((left, right) => {
     if (left.type === right.type) {
@@ -284,216 +192,6 @@ function sortResourceNodeRecords(nodes: ResourceTreeNode[]): ResourceTreeNode[] 
     }
     return left.type === "folder" ? -1 : 1;
   });
-}
-
-function readOutlineFromWorktree(worktree: VirtualWorktree): ManuscriptOutline {
-  if (!worktree.exists(MANUSCRIPT_OUTLINE_PATH)) {
-    return createEmptyOutline();
-  }
-  const stat = worktree.stat(MANUSCRIPT_OUTLINE_PATH);
-  if (stat?.kind !== "blob") {
-    throw new Error("Manuscript outline path is not a file.");
-  }
-  return parseOutline(worktree.readFile(MANUSCRIPT_OUTLINE_PATH).toString("utf-8"));
-}
-
-function writeOutlineToWorktree(worktree: VirtualWorktree, outline: ManuscriptOutline): void {
-  ensureManuscriptStorage(worktree);
-  const validated = validateOutline(cloneOutline(outline));
-  worktree.writeFile(
-    MANUSCRIPT_OUTLINE_PATH,
-    Buffer.from(`${JSON.stringify(validated, null, 2)}\n`, "utf-8"),
-  );
-}
-
-function readOutlineFromBase(objects: ObjectDatabase, baseTree: SHA1): ManuscriptOutline {
-  const content = readTextFromTree(objects, baseTree, MANUSCRIPT_OUTLINE_PATH);
-  return content === null ? createEmptyOutline() : parseOutline(content);
-}
-
-function buildManuscriptSnapshot(
-  outline: ManuscriptOutline,
-  readChapter: (id: string) => string,
-): ManuscriptSnapshotState {
-  const entries = new Map<string, ManuscriptEntry>();
-  let order = 0;
-
-  const visit = (parentId: string, parentPath: string, depth: number): void => {
-    const parent = outline.nodes[parentId];
-    if (parent?.type !== "folder") {
-      return;
-    }
-
-    parent.children.forEach((childId, index) => {
-      const node = outline.nodes[childId];
-      if (node === undefined) {
-        throw new Error(`Missing manuscript node: ${childId}`);
-      }
-      const displayPath = parentPath === "" ? node.title : `${parentPath}/${node.title}`;
-      const entry: ManuscriptEntry = {
-        id: node.id,
-        type: node.type,
-        title: node.title,
-        parentId,
-        index,
-        depth,
-        displayPath,
-        order,
-        childIds: node.type === "folder" ? [...node.children] : [],
-        content: node.type === "chapter" ? readChapter(node.id) : "",
-      };
-      entries.set(node.id, entry);
-      order += 1;
-
-      if (node.type === "folder") {
-        visit(node.id, displayPath, depth + 1);
-      }
-    });
-  };
-
-  visit(outline.rootId, "", 0);
-
-  return { outline, entries };
-}
-
-function buildBaseManuscriptSnapshot(
-  objects: ObjectDatabase,
-  baseTree: SHA1,
-): ManuscriptSnapshotState {
-  const outline = readOutlineFromBase(objects, baseTree);
-  return buildManuscriptSnapshot(
-    outline,
-    (id) => readTextFromTree(objects, baseTree, chapterBodyPath(id)) ?? "",
-  );
-}
-
-function buildCurrentManuscriptSnapshot(worktree: VirtualWorktree): ManuscriptSnapshotState {
-  const outline = readOutlineFromWorktree(worktree);
-  return buildManuscriptSnapshot(outline, (id) =>
-    worktree.exists(chapterBodyPath(id))
-      ? worktree.readFile(chapterBodyPath(id)).toString("utf-8")
-      : "",
-  );
-}
-
-function buildBaseResourceSnapshot(objects: ObjectDatabase, baseTree: SHA1): ResourceSnapshotState {
-  const entries = new Map<string, ResourceEntry>();
-  let order = 0;
-
-  for (const snapshotEntry of readTreeSnapshot(objects, baseTree)) {
-    const { path, object } = snapshotEntry;
-    if (!path.startsWith(`${RESOURCES_DIR}/`)) {
-      continue;
-    }
-    const relativePath = path.slice(RESOURCES_DIR.length + 1);
-    if (relativePath === "") {
-      continue;
-    }
-    entries.set(relativePath, {
-      path: relativePath,
-      type: object.kind === "tree" ? "folder" : "file",
-      name: resourceBaseName(relativePath),
-      parentPath: resourceParentPath(relativePath),
-      depth: resourceDepth(relativePath),
-      displayPath: relativePath,
-      order,
-      content:
-        object.kind === "blob"
-          ? (readTextFromTree(objects, baseTree, joinWorktreeChild(RESOURCES_DIR, relativePath)) ??
-            "")
-          : "",
-      hash: object.hash,
-    });
-    order += 1;
-  }
-
-  return { entries };
-}
-
-function buildCurrentResourceSnapshot(worktree: VirtualWorktree): ResourceSnapshotState {
-  const entries = new Map<string, ResourceEntry>();
-  let order = 0;
-
-  if (!worktree.exists(RESOURCES_DIR)) {
-    return { entries };
-  }
-
-  const visit = (resourcePath: string): void => {
-    const worktreePath = resourcePath === "" ? RESOURCES_DIR : toWorktreePath(resourcePath);
-    const dirEntries = sortWorktreeEntries(
-      worktree
-        .readdir(worktreePath)
-        .filter((entry) => entry.kind === "blob" || entry.kind === "tree"),
-    );
-
-    for (const dirEntry of dirEntries) {
-      const childPath = resourcePath === "" ? dirEntry.name : `${resourcePath}/${dirEntry.name}`;
-      const type = dirEntry.kind === "tree" ? "folder" : "file";
-      const content =
-        type === "file" ? worktree.readFile(toWorktreePath(childPath)).toString("utf-8") : "";
-      entries.set(childPath, {
-        path: childPath,
-        type,
-        name: dirEntry.name,
-        parentPath: resourceParentPath(childPath),
-        depth: resourceDepth(childPath),
-        displayPath: childPath,
-        order,
-        content,
-        hash: type === "file" ? sha1Text(content) : sha1Text(`folder:${childPath}`),
-      });
-      order += 1;
-
-      if (type === "folder") {
-        visit(childPath);
-      }
-    }
-  };
-
-  visit("");
-
-  return { entries };
-}
-
-function ensureChapterBodiesExist(worktree: VirtualWorktree, outline: ManuscriptOutline): void {
-  for (const node of Object.values(outline.nodes)) {
-    if (node.type !== "chapter") {
-      continue;
-    }
-    const stat = worktree.stat(chapterBodyPath(node.id));
-    if (stat?.kind !== "blob") {
-      throw new Error(`Manuscript chapter body is missing: ${node.id}`);
-    }
-  }
-}
-
-function verifyResourceTree(worktree: VirtualWorktree): void {
-  if (!worktree.exists(RESOURCES_DIR)) {
-    return;
-  }
-
-  const visit = (worktreePath: string): void => {
-    const stat = worktree.stat(worktreePath);
-    if (stat?.kind !== "tree") {
-      throw new Error(`Resource path is not a folder: ${worktreePath}`);
-    }
-    for (const entry of worktree.readdir(worktreePath)) {
-      const childPath = joinWorktreeChild(worktreePath, entry.name);
-      if (entry.kind === "tree") {
-        visit(childPath);
-        continue;
-      }
-      if (entry.kind !== "blob") {
-        throw new Error(`Unsupported resource entry kind: ${entry.kind}`);
-      }
-      const childStat = worktree.stat(childPath);
-      if (childStat?.kind !== "blob") {
-        throw new Error(`Resource file is not readable: ${childPath}`);
-      }
-    }
-  };
-
-  visit(RESOURCES_DIR);
 }
 
 function manuscriptTreeFromOutline(outline: ManuscriptOutline): ManuscriptTreeSnapshot {
@@ -551,19 +249,6 @@ function manuscriptTreeToOutline(snapshot: ManuscriptTreeSnapshot): ManuscriptOu
   });
 }
 
-function sortWorktreeEntries(
-  entries: Array<{ name: string; kind: string }>,
-): Array<{ name: string; kind: string }> {
-  return [...entries].sort((left, right) => {
-    if (left.kind === right.kind) {
-      return left.name.localeCompare(right.name);
-    }
-    return left.kind === "tree" ? -1 : 1;
-  });
-}
-
-// ==================== 变更状态计算 ====================
-
 /** 根据节点是否存在于基线以及内容是否变化，确定变更状态。 */
 function resolveNodeChangeStatus(
   existsInBase: boolean,
@@ -572,42 +257,6 @@ function resolveNodeChangeStatus(
   if (!existsInBase) return "added";
   if (contentChanged) return "modified";
   return undefined;
-}
-
-/** 收集某个文件夹后代中所有带有 changeStatus 的节点 id（含自身）。 */
-function collectChangedDescendantIds(
-  tree: ManuscriptTreeSnapshot | ResourceTreeSnapshot,
-  folderId: string,
-): string[] {
-  const result: string[] = [];
-  const folder = tree.nodes[folderId];
-  if (!folder || folder.type !== "folder") return result;
-  for (const childId of folder.childIds) {
-    const child = tree.nodes[childId];
-    if (!child) continue;
-    if (child.changeStatus) result.push(childId);
-    if (child.type === "folder") {
-      result.push(...collectChangedDescendantIds(tree, childId));
-    }
-  }
-  return result;
-}
-
-/** 刷新文件夹自身的 changeStatus：若有已变更后代则标记为 modified，否则清空。 */
-function refreshFolderChangeStatusFromChildren(
-  tree: ManuscriptTreeSnapshot | ResourceTreeSnapshot,
-  folderId: string,
-): boolean {
-  const folder = tree.nodes[folderId];
-  if (!folder || folder.type !== "folder") return false;
-  const previous = folder.changeStatus;
-  const hasChangedDescendant = collectChangedDescendantIds(tree, folderId).length > 0;
-  if (hasChangedDescendant) {
-    folder.changeStatus = folder.changeStatus ?? "modified";
-  } else {
-    delete folder.changeStatus;
-  }
-  return folder.changeStatus !== previous;
 }
 
 export class WorktreeSession {
@@ -923,34 +572,11 @@ export class WorktreeSession {
   }
 
   #refreshAllManuscriptFolderStatus(): void {
-    // 从叶子节点向上刷新所有文件夹
-    const visited = new Set<string>();
-    const visit = (nodeId: string): void => {
-      if (visited.has(nodeId)) return;
-      visited.add(nodeId);
-      const node = this.#manuscriptTree.nodes[nodeId];
-      if (!node || node.type !== "folder") return;
-      for (const childId of node.childIds) {
-        visit(childId);
-      }
-      refreshFolderChangeStatusFromChildren(this.#manuscriptTree, nodeId);
-    };
-    visit(this.#manuscriptTree.rootId);
+    refreshAllFolderChangeStatuses(this.#manuscriptTree);
   }
 
   #refreshAllResourceFolderStatus(): void {
-    const visited = new Set<string>();
-    const visit = (nodeId: string): void => {
-      if (visited.has(nodeId)) return;
-      visited.add(nodeId);
-      const node = this.#resourceTree.nodes[nodeId];
-      if (!node || node.type !== "folder") return;
-      for (const childId of node.childIds) {
-        visit(childId);
-      }
-      refreshFolderChangeStatusFromChildren(this.#resourceTree, nodeId);
-    };
-    visit(this.#resourceTree.rootId);
+    refreshAllFolderChangeStatuses(this.#resourceTree);
   }
 
   /** 标记正文节点为已变更，并向上传播到所有祖先文件夹。返回需要放入 delta putNodes 的节点。 */
@@ -972,15 +598,7 @@ export class WorktreeSession {
     nodeId: string,
     putNodes: Record<string, ManuscriptTreeNode>,
   ): void {
-    let parentId = this.#manuscriptTree.nodes[nodeId]?.parentId;
-    while (parentId !== null && parentId !== undefined) {
-      const parent = this.#manuscriptTree.nodes[parentId];
-      if (!parent || parent.type !== "folder") break;
-      if (refreshFolderChangeStatusFromChildren(this.#manuscriptTree, parentId)) {
-        putNodes[parentId] = cloneManuscriptTreeNode(parent);
-      }
-      parentId = parent.parentId;
-    }
+    propagateFolderChangeStatusUp(this.#manuscriptTree, nodeId, putNodes, cloneManuscriptTreeNode);
   }
 
   /** 标记资源节点为已变更，并向上传播到所有祖先文件夹。返回需要放入 delta putNodes 的节点。 */
@@ -1000,15 +618,7 @@ export class WorktreeSession {
     nodeId: string,
     putNodes: Record<string, ResourceTreeNode>,
   ): void {
-    let parentId = this.#resourceTree.nodes[nodeId]?.parentId;
-    while (parentId !== null && parentId !== undefined) {
-      const parent = this.#resourceTree.nodes[parentId];
-      if (!parent || parent.type !== "folder") break;
-      if (refreshFolderChangeStatusFromChildren(this.#resourceTree, parentId)) {
-        putNodes[parentId] = cloneResourceTreeNode(parent);
-      }
-      parentId = parent.parentId;
-    }
+    propagateFolderChangeStatusUp(this.#resourceTree, nodeId, putNodes, cloneResourceTreeNode);
   }
 
   #buildResourceTreeFromWorktree(): ResourceTreeSnapshot {
@@ -1731,265 +1341,62 @@ export class WorktreeSession {
   #computeDetailedSnapshot(): DetailedSnapshot {
     const baseTree = this.#worktree.baseTree;
     const baseManuscript = buildBaseManuscriptSnapshot(this.#objects, baseTree);
-    const currentManuscript = buildCurrentManuscriptSnapshot(this.#worktree);
-    const baseResources = buildBaseResourceSnapshot(this.#objects, baseTree);
-    const currentResources = buildCurrentResourceSnapshot(this.#worktree);
-
-    const manuscriptChanges: Array<{ change: ScmChange; order: number }> = [];
-    const resourceChanges: Array<{ change: ScmChange; order: number }> = [];
-    const changeHandlers = new Map<string, () => void>();
-
-    const manuscriptIds = new Set<string>([
-      ...baseManuscript.entries.keys(),
-      ...currentManuscript.entries.keys(),
-    ]);
-
-    for (const id of manuscriptIds) {
-      const previous = baseManuscript.entries.get(id) ?? null;
-      const current = currentManuscript.entries.get(id) ?? null;
-
-      if (previous === null && current !== null) {
-        const change: ScmChange = {
-          id: `manuscript:create:${id}`,
-          domain: "manuscript",
-          kind: "create",
-          entityId: id,
-          entityKind: current.type === "chapter" ? "chapter" : "folder",
-          label: current.title,
-          displayPath: current.displayPath,
-          depth: current.depth,
-          stats:
-            current.type === "chapter" && current.content !== ""
-              ? { added: current.content.length, removed: 0 }
-              : undefined,
-        };
-        manuscriptChanges.push({ change, order: current.order });
-        changeHandlers.set(change.id, () => {
+    return buildDetailedScmSnapshot({
+      revision: this.#revision,
+      baseTree,
+      warning: this.#warning,
+      baseManuscript,
+      currentManuscript: buildCurrentManuscriptSnapshot(this.#worktree),
+      baseResources: buildBaseResourceSnapshot(this.#objects, baseTree),
+      currentResources: buildCurrentResourceSnapshot(this.#worktree),
+      handlers: {
+        onManuscriptCreate: (id) => () => {
           this.#commitMutation({ manuscript: this.#deleteManuscriptNode(id) });
-        });
-        continue;
-      }
-
-      if (previous !== null && current === null) {
-        const change: ScmChange = {
-          id: `manuscript:delete:${id}`,
-          domain: "manuscript",
-          kind: "delete",
-          entityId: id,
-          entityKind: previous.type === "chapter" ? "chapter" : "folder",
-          label: previous.title,
-          displayPath: previous.displayPath,
-          depth: previous.depth,
-          stats:
-            previous.type === "chapter" && previous.content !== ""
-              ? { added: 0, removed: previous.content.length }
-              : undefined,
-        };
-        manuscriptChanges.push({ change, order: previous.order });
-        changeHandlers.set(change.id, () => {
+        },
+        onManuscriptDelete: (id) => () => {
           this.#commitMutation({
             manuscript: this.#restoreManuscriptSubtreeFromBase(baseManuscript, id),
           });
-        });
-        continue;
-      }
-
-      if (previous === null || current === null) {
-        continue;
-      }
-
-      const entityKind = current.type === "chapter" ? "chapter" : "folder";
-      const displayPath = current.displayPath;
-      const depth = current.depth;
-      const order = current.order;
-
-      if (previous.title !== current.title) {
-        const change: ScmChange = {
-          id: `manuscript:rename:${id}`,
-          domain: "manuscript",
-          kind: "rename",
-          entityId: id,
-          entityKind,
-          label: current.title,
-          previousLabel: previous.title,
-          displayPath,
-          depth,
-        };
-        manuscriptChanges.push({ change, order });
-        changeHandlers.set(change.id, () => {
+        },
+        onManuscriptRename: (id, previous) => () => {
           this.#commitMutation({ manuscript: this.#renameManuscriptNode(id, previous.title) });
-        });
-      }
-
-      if (previous.parentId !== current.parentId) {
-        const change: ScmChange = {
-          id: `manuscript:move:${id}`,
-          domain: "manuscript",
-          kind: "move",
-          entityId: id,
-          entityKind,
-          label: current.title,
-          previousPath: previous.displayPath,
-          displayPath,
-          depth,
-        };
-        manuscriptChanges.push({ change, order });
-        changeHandlers.set(change.id, () => {
+        },
+        onManuscriptMove: (id, previous) => () => {
           this.#commitMutation({
             manuscript: this.#moveManuscriptNode(id, previous.parentId, previous.index),
           });
-        });
-      } else if (previous.index !== current.index) {
-        const change: ScmChange = {
-          id: `manuscript:reorder:${id}`,
-          domain: "manuscript",
-          kind: "reorder",
-          entityId: id,
-          entityKind,
-          label: current.title,
-          previousPath: previous.displayPath,
-          displayPath,
-          depth,
-        };
-        manuscriptChanges.push({ change, order });
-        changeHandlers.set(change.id, () => {
+        },
+        onManuscriptReorder: (id, previous) => () => {
           this.#commitMutation({
             manuscript: this.#moveManuscriptNode(id, previous.parentId, previous.index),
           });
-        });
-      }
-
-      if (current.type === "chapter" && previous.content !== current.content) {
-        const change: ScmChange = {
-          id: `manuscript:content:${id}`,
-          domain: "manuscript",
-          kind: "content",
-          entityId: id,
-          entityKind: "chapter",
-          label: current.title,
-          displayPath,
-          depth,
-          stats: computeStats(previous.content, current.content),
-        };
-        manuscriptChanges.push({ change, order });
-        changeHandlers.set(change.id, () => {
+        },
+        onManuscriptContent: (id, previous) => () => {
           ensureManuscriptStorage(this.#worktree);
           this.#worktree.writeFile(chapterBodyPath(id), Buffer.from(previous.content, "utf-8"));
           this.#commitMutation({});
-        });
-      }
-    }
-
-    const resourcePaths = new Set<string>([
-      ...baseResources.entries.keys(),
-      ...currentResources.entries.keys(),
-    ]);
-
-    for (const path of resourcePaths) {
-      const previous = baseResources.entries.get(path) ?? null;
-      const current = currentResources.entries.get(path) ?? null;
-
-      if (previous === null && current !== null) {
-        const change: ScmChange = {
-          id: `resource:create:${path}`,
-          domain: "resource",
-          kind: "create",
-          entityId: path,
-          entityKind: current.type,
-          label: current.name,
-          displayPath: current.displayPath,
-          depth: current.depth,
-          stats:
-            current.type === "file" && current.content !== ""
-              ? { added: current.content.length, removed: 0 }
-              : undefined,
-        };
-        resourceChanges.push({ change, order: current.order });
-        changeHandlers.set(change.id, () => {
+        },
+        onResourceCreate: (path) => () => {
           const id = this.#resourceIdByPath.get(path);
           if (id === undefined) {
             throw new Error(`Resource does not exist: ${path}`);
           }
           this.#commitMutation({ resources: this.#deleteResourceNode(id) });
-        });
-        continue;
-      }
-
-      if (previous !== null && current === null) {
-        const change: ScmChange = {
-          id: `resource:delete:${path}`,
-          domain: "resource",
-          kind: "delete",
-          entityId: path,
-          entityKind: previous.type,
-          label: previous.name,
-          displayPath: previous.displayPath,
-          depth: previous.depth,
-          stats:
-            previous.type === "file" && previous.content !== ""
-              ? { added: 0, removed: previous.content.length }
-              : undefined,
-        };
-        resourceChanges.push({ change, order: previous.order });
-        changeHandlers.set(change.id, () => {
+        },
+        onResourceDelete: (path, previous) => () => {
           this.#commitMutation({
             resources: this.#restoreResourcePathFromBase(path, previous.type),
           });
-        });
-        continue;
-      }
-
-      if (previous === null || current === null) {
-        continue;
-      }
-
-      if (
-        previous.type === "file" &&
-        current.type === "file" &&
-        previous.content !== current.content
-      ) {
-        const change: ScmChange = {
-          id: `resource:content:${path}`,
-          domain: "resource",
-          kind: "content",
-          entityId: path,
-          entityKind: "file",
-          label: current.name,
-          displayPath: current.displayPath,
-          depth: current.depth,
-          stats: computeStats(previous.content, current.content),
-        };
-        resourceChanges.push({ change, order: current.order });
-        changeHandlers.set(change.id, () => {
+        },
+        onResourceContent: (path, previous) => () => {
           const id = this.#resourceIdByPath.get(path);
           if (id === undefined) {
             throw new Error(`Resource does not exist: ${path}`);
           }
           this.#worktree.writeFile(toWorktreePath(path), Buffer.from(previous.content, "utf-8"));
           this.#commitMutation({});
-        });
-      }
-    }
-
-    manuscriptChanges.sort(
-      (left, right) =>
-        left.order - right.order || left.change.displayPath.localeCompare(right.change.displayPath),
-    );
-    resourceChanges.sort(
-      (left, right) =>
-        left.order - right.order || left.change.displayPath.localeCompare(right.change.displayPath),
-    );
-
-    return {
-      snapshot: {
-        revision: this.#revision,
-        baseTree,
-        hasChanges: manuscriptChanges.length > 0 || resourceChanges.length > 0,
-        warning: this.#warning,
-        manuscriptChanges: manuscriptChanges.map((item) => item.change),
-        resourceChanges: resourceChanges.map((item) => item.change),
+        },
       },
-      changeHandlers,
-    };
+    });
   }
 }
