@@ -1,5 +1,3 @@
-import type { VirtualWorktree } from "nano-git/worktree/core";
-
 import type {
   ManuscriptSearchHit,
   ResourceSearchHit,
@@ -8,22 +6,19 @@ import type {
   WorktreeSearchScope,
 } from "#shared/rpc/worktree-search";
 
-import { createEmptyOutline, parseOutline } from "../manuscript-outline";
-import { chapterBodyPath, MANUSCRIPT_OUTLINE_PATH } from "../manuscript-path";
-import { ensureResourcesDirectory, RESOURCES_DIR, toWorktreePath } from "../resource-library-path";
-
 const DEFAULT_MAX_PER_DOMAIN = 100;
 const SNIPPET_CONTEXT_CHARS = 48;
 
-type ManuscriptSearchEntry = {
+export type WorktreeSearchableManuscriptEntry = {
   id: string;
   title: string;
   displayPath: string;
   content: string;
 };
 
-type ResourceSearchEntry = {
-  path: string;
+export type WorktreeSearchableResourceEntry = {
+  id: string;
+  type: "folder" | "file";
   name: string;
   displayPath: string;
   content: string;
@@ -65,108 +60,15 @@ function snippetAroundMatch(text: string, matchIndex: number, needleLength: numb
   return snippet;
 }
 
-function readManuscriptEntries(worktree: VirtualWorktree): ManuscriptSearchEntry[] {
-  if (!worktree.exists(MANUSCRIPT_OUTLINE_PATH)) {
-    return [];
-  }
-  const outline =
-    worktree.stat(MANUSCRIPT_OUTLINE_PATH)?.kind === "blob"
-      ? parseOutline(worktree.readFile(MANUSCRIPT_OUTLINE_PATH).toString("utf-8"))
-      : createEmptyOutline();
-
-  const entries: ManuscriptSearchEntry[] = [];
-
-  const visit = (parentId: string, parentPath: string): void => {
-    const parent = outline.nodes[parentId];
-    if (parent?.type !== "folder") {
-      return;
-    }
-    for (const childId of parent.children) {
-      const node = outline.nodes[childId];
-      if (node === undefined || childId === outline.rootId) {
-        continue;
-      }
-      const displayPath = parentPath === "" ? node.title : `${parentPath}/${node.title}`;
-      const content =
-        node.type === "chapter" && worktree.exists(chapterBodyPath(node.id))
-          ? worktree.readFile(chapterBodyPath(node.id)).toString("utf-8")
-          : "";
-      if (node.type === "chapter") {
-        entries.push({
-          id: node.id,
-          title: node.title,
-          displayPath,
-          content,
-        });
-      }
-      if (node.type === "folder") {
-        visit(node.id, displayPath);
-      }
-    }
-  };
-
-  visit(outline.rootId, "");
-  return entries;
-}
-
-function sortWorktreeEntries(
-  entries: Array<{ name: string; kind: string }>,
-): Array<{ name: string; kind: string }> {
-  return [...entries].sort((left, right) => {
-    if (left.kind === right.kind) {
-      return left.name.localeCompare(right.name);
-    }
-    return left.kind === "tree" ? -1 : 1;
-  });
-}
-
-function readResourceEntries(worktree: VirtualWorktree): ResourceSearchEntry[] {
-  if (!worktree.exists(RESOURCES_DIR)) {
-    return [];
-  }
-  ensureResourcesDirectory(worktree);
-  const entries: ResourceSearchEntry[] = [];
-
-  const visit = (resourcePath: string): void => {
-    const worktreePath = resourcePath === "" ? RESOURCES_DIR : toWorktreePath(resourcePath);
-    const dirEntries = sortWorktreeEntries(
-      worktree
-        .readdir(worktreePath)
-        .filter((entry) => entry.kind === "blob" || entry.kind === "tree"),
-    );
-
-    for (const dirEntry of dirEntries) {
-      const childPath = resourcePath === "" ? dirEntry.name : `${resourcePath}/${dirEntry.name}`;
-      if (dirEntry.kind === "blob") {
-        entries.push({
-          path: childPath,
-          name: dirEntry.name,
-          displayPath: childPath,
-          content: worktree.readFile(toWorktreePath(childPath)).toString("utf-8"),
-        });
-      } else {
-        visit(childPath);
-      }
-    }
-  };
-
-  visit("");
-  return entries;
-}
-
 function searchManuscript(
-  entries: ManuscriptSearchEntry[],
+  entries: Iterable<WorktreeSearchableManuscriptEntry>,
   needle: string,
   maxResults: number,
 ): ManuscriptSearchHit[] {
   const hits: ManuscriptSearchHit[] = [];
 
   for (const entry of entries) {
-    if (hits.length >= maxResults) {
-      break;
-    }
-
-    if (entry.content === "") {
+    if (hits.length >= maxResults || entry.content === "") {
       continue;
     }
 
@@ -192,24 +94,14 @@ function searchManuscript(
 }
 
 function searchResources(
-  entries: ResourceSearchEntry[],
-  resourceIdByPath: ReadonlyMap<string, string>,
+  entries: Iterable<WorktreeSearchableResourceEntry>,
   needle: string,
   maxResults: number,
 ): ResourceSearchHit[] {
   const hits: ResourceSearchHit[] = [];
 
   for (const entry of entries) {
-    if (hits.length >= maxResults) {
-      break;
-    }
-
-    const nodeId = resourceIdByPath.get(entry.path);
-    if (nodeId === undefined) {
-      continue;
-    }
-
-    if (entry.content === "") {
+    if (hits.length >= maxResults || entry.type !== "file" || entry.content === "") {
       continue;
     }
 
@@ -221,7 +113,7 @@ function searchResources(
     const { line, column } = lineColumnAtOffset(entry.content, contentIndex);
     hits.push({
       domain: "resource",
-      nodeId,
+      nodeId: entry.id,
       entityKind: "file",
       label: entry.name,
       displayPath: entry.displayPath,
@@ -235,8 +127,8 @@ function searchResources(
 }
 
 export function executeWorktreeSearch(
-  worktree: VirtualWorktree,
-  resourceIdByPath: ReadonlyMap<string, string>,
+  manuscriptEntries: Iterable<WorktreeSearchableManuscriptEntry>,
+  resourceEntries: Iterable<WorktreeSearchableResourceEntry>,
   options: WorktreeSearchQuery,
 ): WorktreeSearchResult {
   const scope = normalizeScope(options.scope);
@@ -253,16 +145,15 @@ export function executeWorktreeSearch(
     };
   }
 
-  const searchManuscriptDomain = scope === "all" || scope === "manuscript";
-  const searchResourceDomain = scope === "all" || scope === "resource";
+  const manuscript =
+    scope === "all" || scope === "manuscript"
+      ? searchManuscript(manuscriptEntries, needle, maxResults)
+      : [];
 
-  const manuscript = searchManuscriptDomain
-    ? searchManuscript(readManuscriptEntries(worktree), needle, maxResults)
-    : [];
-
-  const resources = searchResourceDomain
-    ? searchResources(readResourceEntries(worktree), resourceIdByPath, needle, maxResults)
-    : [];
+  const resources =
+    scope === "all" || scope === "resource"
+      ? searchResources(resourceEntries, needle, maxResults)
+      : [];
 
   return {
     query: rawQuery,
