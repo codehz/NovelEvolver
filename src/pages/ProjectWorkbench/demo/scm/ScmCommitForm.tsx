@@ -18,7 +18,7 @@ export function ScmCommitForm({
   const placeholder = `消息 (Ctrl+Enter 在 "${branchName}" 提交)`;
 
   return (
-    <div className="shrink-0 p-2">
+    <div className="shrink-0 py-2 pr-3 pl-5.5">
       <textarea
         className="field-sizing-content min-h-0 w-full resize-none rounded-sm bg-ctp-surface0 px-2 py-1.5 text-xs leading-tight text-ctp-text outline-none placeholder:text-ctp-overlay0"
         rows={1}
