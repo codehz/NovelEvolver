@@ -1,9 +1,6 @@
-import { cn } from "#app/lib/cn";
 import type { ScmCommitSummary } from "#shared/rpc/worktree-scm";
 
 import { ScmGraphCommitRow } from "./ScmGraphCommitRow";
-
-const graphLineClass = cn("absolute top-3 bottom-3 left-4.75 w-px bg-ctp-surface1");
 
 function ScmGraphEmptyState() {
   return (
@@ -41,11 +38,16 @@ function ScmGraphError({ onRetry }: { onRetry: () => void }) {
 
 function ScmGraphList({ commits }: { commits: ScmCommitSummary[] }) {
   return (
-    <div className="relative py-1">
-      {commits.length > 1 ? <div aria-hidden className={graphLineClass} /> : null}
+    <div className="py-1">
       <ul className="flex flex-col" role="list">
         {commits.map((commit, index) => (
-          <ScmGraphCommitRow key={commit.hash} commit={commit} isHead={index === 0} />
+          <ScmGraphCommitRow
+            key={commit.hash}
+            commit={commit}
+            isHead={index === 0}
+            showBottomConnector={index < commits.length - 1}
+            showTopConnector={index > 0}
+          />
         ))}
       </ul>
     </div>
