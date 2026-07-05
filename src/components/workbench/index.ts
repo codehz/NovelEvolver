@@ -22,13 +22,6 @@ export {
   type SidebarHeaderActionButtonProps,
 } from "./sidebar/SidebarHeaderActionButton";
 export {
-  useSidebarPaneStack,
-  MIN_SIDEBAR_SECTION_BODY_HEIGHT,
-  type SidebarPaneStackPane,
-  type SidebarPaneStackLayout,
-  type SidebarPaneStackResizeHandle,
-} from "./sidebar/use-sidebar-pane-stack";
-export {
   statusBarIconOnlyButtonClass,
   statusBarItemButtonClass,
   statusBarItemButtonWithIconClass,
