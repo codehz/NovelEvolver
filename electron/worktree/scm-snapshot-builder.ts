@@ -1,6 +1,7 @@
 import type { ScmChange, ScmSnapshot } from "#shared/rpc/worktree-scm";
 
 import { computeStats } from "./diff-utils";
+import { computeMinimalReorderedManuscriptIds } from "./manuscript-reorder";
 import type { ManuscriptEntry, ManuscriptSnapshotState } from "./snapshot-state";
 
 export type ResourceSnapshotEntry = {
@@ -42,6 +43,10 @@ export function buildDetailedScmSnapshot(options: BuildDetailedScmSnapshotOption
 
   const manuscriptChanges: Array<{ change: ScmChange; order: number }> = [];
   const resourceChanges: Array<{ change: ScmChange; order: number }> = [];
+  const reorderedManuscriptIds = computeMinimalReorderedManuscriptIds(
+    baseManuscript,
+    currentManuscript,
+  );
 
   const manuscriptIds = new Set<string>([
     ...baseManuscript.entries.keys(),
@@ -50,7 +55,13 @@ export function buildDetailedScmSnapshot(options: BuildDetailedScmSnapshotOption
   for (const id of manuscriptIds) {
     const previous = baseManuscript.entries.get(id) ?? null;
     const current = currentManuscript.entries.get(id) ?? null;
-    collectManuscriptChanges(manuscriptChanges, id, previous, current);
+    collectManuscriptChanges(
+      manuscriptChanges,
+      id,
+      previous,
+      current,
+      reorderedManuscriptIds.has(id),
+    );
   }
 
   const resourceIds = new Set<string>([
@@ -87,6 +98,7 @@ function collectManuscriptChanges(
   id: string,
   previous: ManuscriptEntry | null,
   current: ManuscriptEntry | null,
+  reordered: boolean,
 ): void {
   if (previous === null && current !== null) {
     changes.push({
@@ -169,7 +181,7 @@ function collectManuscriptChanges(
         depth: current.depth,
       },
     });
-  } else if (previous.index !== current.index) {
+  } else if (reordered) {
     changes.push({
       order,
       change: {

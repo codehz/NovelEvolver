@@ -39,6 +39,7 @@ import type {
 } from "../worktrees-store";
 import { refreshAllFolderChangeStatuses } from "./change-status";
 import { readTextFromTree, type ObjectDatabase } from "./diff-utils";
+import { computeMinimalReorderedManuscriptIds } from "./manuscript-reorder";
 import {
   buildDetailedScmSnapshot,
   type ResourceSnapshotEntry,
@@ -1205,6 +1206,10 @@ export class WorktreeSession {
   #recomputeAllChangeStatuses(): void {
     clearChangeStatuses(this.#manuscriptTree.nodes);
     clearChangeStatuses(this.#resourceTree.nodes);
+    const reorderedManuscriptIds = computeMinimalReorderedManuscriptIds(
+      this.#baseManuscript,
+      this.#currentManuscript,
+    );
 
     for (const [id, entry] of this.#currentManuscript.entries.entries()) {
       const node = this.#manuscriptTree.nodes[id];
@@ -1212,7 +1217,11 @@ export class WorktreeSession {
         continue;
       }
       const baseEntry = this.#baseManuscript.entries.get(id);
-      node.changeStatus = this.#resolveManuscriptChangeStatus(entry, baseEntry);
+      node.changeStatus = this.#resolveManuscriptChangeStatus(
+        entry,
+        baseEntry,
+        reorderedManuscriptIds.has(id),
+      );
     }
     refreshAllFolderChangeStatuses(this.#manuscriptTree);
 
@@ -1230,6 +1239,7 @@ export class WorktreeSession {
   #resolveManuscriptChangeStatus(
     current: ManuscriptEntry,
     base: ManuscriptEntry | undefined,
+    reordered: boolean,
   ): FileChangeStatus | undefined {
     if (base === undefined) {
       return "added";
@@ -1237,7 +1247,7 @@ export class WorktreeSession {
     if (
       current.title !== base.title ||
       current.parentId !== base.parentId ||
-      current.index !== base.index ||
+      reordered ||
       (current.type === "chapter" && current.content !== base.content)
     ) {
       return "modified";
