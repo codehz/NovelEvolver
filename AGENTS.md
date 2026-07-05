@@ -71,6 +71,16 @@ There is no automated test suite configured yet. Until one exists, every change 
 
 Follow the existing Conventional Commit style: `feat(electron): ...`, `fix: ...`, `build: ...`, `refactor: ...`. Keep commits scoped to one change. PRs should include a short summary, the commands you ran for verification, and screenshots or recordings for UI changes such as title bar or window controls.
 
+## ScrollArea usage
+
+`ScrollArea` (`src/components/ScrollArea.tsx`) wraps a single controlled viewport driven by the shared `ScrollbarController` (`src/lib/scrollbar/`). It is designed to be the **outermost scroll container** of a panel/section, not a nested inner wrapper.
+
+- **Do not nest `ScrollArea` inside another `ScrollArea`.** The controller listens to scroll/resize on its viewport and renders a sticky rail; nesting produces overlapping sticky rails, double scrollbar metrics, and broken thumb sizing because the inner controller reads a viewport that is itself scrolled by the outer one.
+- Each scrollable surface in a layout should have **exactly one** `ScrollArea`. If a sub-region needs to scroll independently, model it as its own sibling `ScrollArea` (with its own `fill` / flex container) rather than placing it inside an outer `ScrollArea`'s children.
+- For non-scrolling inner content that just needs overflow clipping, use plain `overflow-auto` / `overflow-hidden` utilities instead of `ScrollArea` — `ScrollArea` is reserved for surfaces that warrant a custom sticky rail.
+- When a panel is a flex column with a fixed header + scrollable body, use the `fill` prop on a single body-level `ScrollArea` (`fill` applies `h-0 flex-1`) so it grows within the flex column without nesting.
+- The viewport ref is owned by `useScrollbarController()`; do not re-wrap the viewport in another scroll container or introduce a second controller instance inside the same subtree.
+
 ## Configuration Notes
 
 The renderer dev server is fixed to `http://localhost:5173`, and Electron startup waits for that port plus `dist-electron/main.js`. Keep those assumptions aligned when changing build or startup configuration.
