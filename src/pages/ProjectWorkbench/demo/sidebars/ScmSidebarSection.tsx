@@ -20,6 +20,8 @@ function DiffStats({ added, removed }: { added: number; removed: number }) {
 // ==================== 单行 DiffItem 渲染 ====================
 
 function DiffItemRow({ item, onRevert }: { item: DiffItem; onRevert: (revertId: string) => void }) {
+  const [hovered, setHovered] = useState(false);
+
   const kindIcon = cn(
     item.kind === "add" && "icon-[codicon--diff-added] text-ctp-green",
     item.kind === "remove" && "icon-[codicon--diff-removed] text-ctp-red",
@@ -34,14 +36,12 @@ function DiffItemRow({ item, onRevert }: { item: DiffItem; onRevert: (revertId: 
 
   return (
     <li
-      className="flex cursor-pointer items-center gap-1 rounded px-2 py-0.5 text-xs text-ctp-subtext1 hover:bg-ctp-surface0/50"
+      className="flex h-6 items-center gap-1 rounded px-2 text-xs text-ctp-subtext1 hover:bg-ctp-surface0/50"
       style={{ paddingLeft: `${(item.depth + 1) * 12}px` }}
-      onClick={() => onRevert(item.revertId)}
-      onKeyDown={(e) => {
-        if (e.key === "Enter" || e.key === " ") onRevert(item.revertId);
-      }}
       role="treeitem"
       tabIndex={0}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
     >
       <span className={cn(fileIcon, "shrink-0 text-sm")} />
       <span className="truncate">{item.label}</span>
@@ -49,10 +49,29 @@ function DiffItemRow({ item, onRevert }: { item: DiffItem; onRevert: (revertId: 
         <span className="shrink-0 text-[10px] text-ctp-overlay0">顺序</span>
       ) : null}
       <span className="ml-auto flex shrink-0 items-center gap-1">
-        {item.stats !== undefined ? (
+        {!hovered && item.stats !== undefined ? (
           <DiffStats added={item.stats.added} removed={item.stats.removed} />
         ) : null}
-        <span className={cn(kindIcon, "shrink-0 text-sm")} />
+        {!hovered ? <span className={cn(kindIcon, "shrink-0 text-sm")} /> : null}
+        {hovered ? (
+          <button
+            type="button"
+            className="size-5 shrink-0 cursor-pointer items-center justify-center rounded text-ctp-overlay0 hover:bg-ctp-surface1 hover:text-ctp-subtext1"
+            onClick={(e) => {
+              e.stopPropagation();
+              onRevert(item.revertId);
+            }}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" || e.key === " ") {
+                e.stopPropagation();
+                onRevert(item.revertId);
+              }
+            }}
+            title="还原此变更"
+          >
+            <span className="icon-[codicon--discard] text-sm" />
+          </button>
+        ) : null}
       </span>
     </li>
   );

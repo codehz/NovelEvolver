@@ -48,6 +48,7 @@ export function computeResourceDiffItems(
   const resolveWtPath = (p: string) => toWorktreePath(p);
 
   const currentPaths = new Set<string>();
+  const currentDirPaths = new Set<string>();
   const visitDirectory = (rpcPath: string): void => {
     const wPath = resolveWtPath(rpcPath);
     const dirEntries = worktree.readdir(wPath);
@@ -56,6 +57,7 @@ export function computeResourceDiffItems(
       const childPath = rpcPath === "" ? entry.name : `${rpcPath}/${entry.name}`;
       currentPaths.add(childPath);
       if (entry.kind === "tree") {
+        currentDirPaths.add(childPath);
         visitDirectory(childPath);
       }
     }
@@ -89,9 +91,7 @@ export function computeResourceDiffItems(
   for (const currentPath of currentPaths) {
     if (baseResourcePaths.has(currentPath)) continue;
 
-    const isDir = [...currentPaths].some(
-      (p) => p !== currentPath && p.startsWith(currentPath + "/"),
-    );
+    const isDir = currentDirPaths.has(currentPath);
     const segments = currentPath.split("/");
     const depth = segments.length - 1;
     const label = segments[segments.length - 1];
@@ -111,8 +111,7 @@ export function computeResourceDiffItems(
   // 两边都有 → 检查内容
   for (const path of currentPaths) {
     if (baseResourcePaths.has(path)) continue;
-    const isDir = [...currentPaths].some((p) => p !== path && p.startsWith(path + "/"));
-    if (isDir) continue;
+    if (currentDirPaths.has(path)) continue;
 
     const oldContent =
       readTextFromTree(objects, baseTree, joinWorktreeChild(RESOURCES_DIR, path)) ?? "";
