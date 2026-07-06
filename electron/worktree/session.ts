@@ -913,86 +913,11 @@ export class WorktreeSession {
         displayPath: snapshot.displayPath,
         timestamp: snapshot.capturedAt,
         message: "本地保存",
-        hasContent: true,
-        readOnly: false,
       }));
     const commitEntries = this.#listCommitTimelineEntries(target, boundedLimit);
     return [...localEntries, ...commitEntries]
       .sort((left, right) => right.timestamp - left.timestamp)
       .slice(0, boundedLimit);
-  }
-
-  readTimelineEntryContent(entryId: string): { content: string | null; readOnly: boolean } {
-    const localSnapshotId = this.#parseLocalTimelineEntryId(entryId);
-    if (localSnapshotId !== null) {
-      const snapshot = this.#store.getLocalSnapshot(
-        this.#projectId,
-        this.#branchName,
-        localSnapshotId,
-      );
-      if (snapshot === null) {
-        throw new Error(`Unknown timeline snapshot: ${entryId}`);
-      }
-      return {
-        content: snapshot.content.toString("utf-8"),
-        readOnly: false,
-      };
-    }
-
-    const commitTarget = this.#parseCommitTimelineEntryId(entryId);
-    if (commitTarget === null) {
-      throw new Error(`Unknown timeline entry: ${entryId}`);
-    }
-    const object = this.#repo.catFile(commitTarget.commitHash as SHA1);
-    if (object.type !== "commit") {
-      throw new Error(`Timeline entry is not a commit: ${commitTarget.commitHash}`);
-    }
-    return {
-      content: this.#readTimelineTargetState(object.tree, commitTarget.target)?.content ?? null,
-      readOnly: true,
-    };
-  }
-
-  restoreTimelineEntryContent(entryId: string): ScmSnapshot {
-    const content = this.readTimelineEntryContent(entryId).content;
-    if (content === null) {
-      throw new Error("Timeline entry has no restorable content.");
-    }
-
-    const localSnapshotId = this.#parseLocalTimelineEntryId(entryId);
-    const target =
-      localSnapshotId !== null
-        ? this.#targetFromLocalSnapshot(localSnapshotId)
-        : this.#parseCommitTimelineEntryId(entryId)?.target;
-    if (target === undefined) {
-      throw new Error(`Unknown timeline entry: ${entryId}`);
-    }
-
-    if (target.domain === "manuscript") {
-      const entry = this.#currentManuscript.entries.get(target.entityId);
-      if (entry === undefined || entry.type !== "chapter") {
-        throw new Error(`Manuscript chapter does not exist: ${target.entityId}`);
-      }
-      entry.content = content;
-      this.#persistAndEmit(false, {
-        domain: "manuscript",
-        entityId: target.entityId,
-        content,
-      });
-      return this.#currentScmSnapshot();
-    }
-
-    const entry = this.#currentResources.entries.get(target.entityId);
-    if (entry === undefined || entry.type !== "file") {
-      throw new Error(`Resource file does not exist: ${target.entityId}`);
-    }
-    entry.content = content;
-    this.#persistAndEmit(false, {
-      domain: "resource",
-      entityId: target.entityId,
-      content,
-    });
-    return this.#currentScmSnapshot();
   }
 
   searchWorktree(options: WorktreeSearchQuery): WorktreeSearchResult {
@@ -1897,8 +1822,6 @@ export class WorktreeSession {
         commitHash: entry.hash,
         shortHash: entry.hash.slice(0, 7),
         authorName: entry.commit.author.name,
-        hasContent: current?.content != null,
-        readOnly: true,
       });
       if (entries.length >= limit) {
         break;
@@ -1988,37 +1911,6 @@ export class WorktreeSession {
     return resourceTreeFromIndex(
       parseResourceIndex(readTextFromTree(this.#objects, treeHash, RESOURCES_INDEX_PATH)),
     );
-  }
-
-  #parseLocalTimelineEntryId(entryId: string): string | null {
-    return entryId.startsWith("local:") ? entryId.slice("local:".length) : null;
-  }
-
-  #parseCommitTimelineEntryId(
-    entryId: string,
-  ): { commitHash: string; target: TimelineTarget } | null {
-    const match = /^commit:([^:]+):(manuscript|resource):([^:]+)$/.exec(entryId);
-    if (match === null) {
-      return null;
-    }
-    return {
-      commitHash: match[1]!,
-      target: {
-        domain: match[2] as "manuscript" | "resource",
-        entityId: match[3]!,
-      },
-    };
-  }
-
-  #targetFromLocalSnapshot(snapshotId: string): TimelineTarget {
-    const snapshot = this.#store.getLocalSnapshot(this.#projectId, this.#branchName, snapshotId);
-    if (snapshot === null) {
-      throw new Error(`Unknown timeline snapshot: ${snapshotId}`);
-    }
-    return {
-      domain: snapshot.domain,
-      entityId: snapshot.entityId,
-    } as TimelineTarget;
   }
 
   #currentScmSnapshot(): ScmSnapshot {

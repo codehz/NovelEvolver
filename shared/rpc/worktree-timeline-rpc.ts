@@ -1,7 +1,5 @@
 import type { RpcTarget } from "capnweb";
 
-import type { ChangesSnapshot } from "./worktree-changes-rpc";
-
 export type TimelineDomain = "manuscript" | "resource";
 
 export type TimelineTarget =
@@ -37,17 +35,8 @@ export type TimelineEntry = {
   commitHash?: string;
   shortHash?: string;
   authorName?: string;
-  hasContent: boolean;
-  readOnly: boolean;
-};
-
-export type TimelineEntryContent = {
-  content: string | null;
-  readOnly: boolean;
 };
 
 export interface WorktreeTimelineHandle extends RpcTarget {
   listFileTimeline(target: TimelineTarget, limit?: number): TimelineEntry[];
-  readTimelineEntryContent(entryId: string): TimelineEntryContent;
-  restoreTimelineEntryContent(entryId: string): ChangesSnapshot;
 }

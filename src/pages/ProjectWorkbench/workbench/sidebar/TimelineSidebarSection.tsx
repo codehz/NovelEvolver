@@ -1,6 +1,6 @@
 import { useMolecule } from "bunshi/react";
 import { useAtomValue } from "jotai";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 import { cn } from "#app/lib/cn";
 import { notificationApi } from "#app/lib/notifications";
@@ -11,18 +11,8 @@ import { useWorktreeScmRevision } from "../branch/use-worktree-scm-revision";
 import { workbenchEditorMolecule } from "../state/molecules";
 
 const timelineRowClass = cn(
-  "group flex w-full min-w-0 flex-col gap-1 border-b border-titlebar-border p-2 text-left",
+  "group flex w-full min-w-0 border-b border-titlebar-border p-2 text-left",
   "hover:bg-ctp-surface0/40",
-);
-
-const timelineButtonClass = cn(
-  "inline-flex h-6 items-center gap-1 rounded-sm px-1.5 text-2xs text-ctp-mauve",
-  "hover:bg-ctp-text/8 disabled:pointer-events-none disabled:text-ctp-overlay0",
-);
-
-const previewClass = cn(
-  "max-h-52 overflow-auto rounded-sm bg-app-background p-2 whitespace-pre-wrap",
-  "font-mono text-2xs leading-4 text-app-foreground",
 );
 
 function formatTimelineTime(timestampMs: number): string {
@@ -78,7 +68,6 @@ export function TimelineSidebarSection() {
   const activeTab = useAtomValue(activeEditorTabAtom);
   const [entries, setEntries] = useState<TimelineEntry[] | null>(null);
   const [loading, setLoading] = useState(false);
-  const [preview, setPreview] = useState<{ entryId: string; content: string | null } | null>(null);
 
   const target = useMemo<TimelineTarget | null>(() => {
     if (activeTab === undefined) {
@@ -98,7 +87,6 @@ export function TimelineSidebarSection() {
 
   useEffect(() => {
     let canceled = false;
-    setPreview(null);
     if (target === null) {
       setEntries(null);
       setLoading(false);
@@ -127,39 +115,6 @@ export function TimelineSidebarSection() {
       canceled = true;
     };
   }, [revision, target, timeline]);
-
-  const previewEntry = useCallback(
-    (entry: TimelineEntry) => {
-      void Promise.resolve(timeline.readTimelineEntryContent(entry.id))
-        .then((result) => {
-          setPreview({
-            entryId: entry.id,
-            content: result.content,
-          });
-        })
-        .catch((error) => {
-          notificationApi.error(error instanceof Error ? error.message : "无法读取时间线内容", {
-            source: "时间线",
-          });
-        });
-    },
-    [timeline],
-  );
-
-  const restoreEntry = useCallback(
-    (entry: TimelineEntry) => {
-      void Promise.resolve(timeline.restoreTimelineEntryContent(entry.id))
-        .then(() => {
-          notificationApi.info("已恢复时间线内容", { source: "时间线" });
-        })
-        .catch((error) => {
-          notificationApi.error(error instanceof Error ? error.message : "无法恢复时间线内容", {
-            source: "时间线",
-          });
-        });
-    },
-    [timeline],
-  );
 
   return (
     <>
@@ -198,31 +153,6 @@ export function TimelineSidebarSection() {
                   </p>
                 </div>
               </div>
-              <div className="flex flex-wrap gap-1 pl-6">
-                <button
-                  className={timelineButtonClass}
-                  disabled={!entry.hasContent}
-                  type="button"
-                  onClick={() => previewEntry(entry)}
-                >
-                  <span aria-hidden="true" className="icon-[codicon--open-preview]" />
-                  预览
-                </button>
-                <button
-                  className={timelineButtonClass}
-                  disabled={!entry.hasContent}
-                  type="button"
-                  onClick={() => restoreEntry(entry)}
-                >
-                  <span aria-hidden="true" className="icon-[codicon--replace]" />
-                  恢复
-                </button>
-              </div>
-              {preview?.entryId === entry.id ? (
-                <div className="pl-6">
-                  <pre className={previewClass}>{preview.content ?? "此记录没有可预览内容。"}</pre>
-                </div>
-              ) : null}
             </div>
           ))}
         </div>
