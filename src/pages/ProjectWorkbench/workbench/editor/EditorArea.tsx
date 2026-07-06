@@ -4,6 +4,7 @@ import { useRef } from "react";
 import type { PlainTextEditorHandle } from "#app/components/PlainTextEditor";
 import { TabBar, type TabItem } from "#app/components/TabBar";
 
+import { contentEditorTabIconClass } from "../tree/content-tree-icons";
 import { EditorBreadcrumb } from "./EditorBreadcrumb";
 import { EditorEmptyState } from "./EditorEmptyState";
 import { EditorTabPane } from "./EditorTabPane";
@@ -25,7 +26,18 @@ export function EditorArea() {
       aria-label="编辑器"
       className="relative flex min-h-0 min-w-0 flex-1 flex-col bg-app-background"
     >
-      <TabBar tabs={tabs as TabItem[]} onActivate={activateTab} onClose={closeTab} />
+      <TabBar
+        tabs={tabs as TabItem[]}
+        onActivate={activateTab}
+        onClose={closeTab}
+        renderIcon={(tab) => {
+          const editorTab = tabs.find((item) => item.id === tab.id);
+          if (!editorTab) {
+            return null;
+          }
+          return <span aria-hidden="true" className={contentEditorTabIconClass(editorTab.kind)} />;
+        }}
+      />
 
       {activeTab && (
         <div className="flex h-8 shrink-0 items-center gap-1 bg-app-background px-3 text-xs text-ctp-subtext0">

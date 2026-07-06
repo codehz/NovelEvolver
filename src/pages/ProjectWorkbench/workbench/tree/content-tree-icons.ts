@@ -60,7 +60,12 @@ export function resourceTreeNodeIconClass(
   return contentFileLeafIconClass(type);
 }
 
+/** 编辑器 Tab 图标：正文章节为 book，资源文件为 file-text。 */
+export function contentEditorTabIconClass(kind: "manuscript" | "resource"): string {
+  return cn(contentFileLeafIconClass(kind === "manuscript" ? "chapter" : "file"), "mr-2");
+}
+
 /** 编辑器 Tab 默认图标（无自定义 renderIcon 时）。 */
 export function contentEditorTabDefaultIconClass(): string {
-  return cn(contentFileLeafIconClass("file"), "mr-2");
+  return contentEditorTabIconClass("resource");
 }
