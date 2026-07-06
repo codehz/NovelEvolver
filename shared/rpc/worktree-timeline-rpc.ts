@@ -12,7 +12,7 @@ export type TimelineTarget =
       entityId: string;
     };
 
-export type TimelineEntrySource = "journal" | "commit";
+export type TimelineEntrySource = "journal";
 
 export type TimelineEntryKind =
   | "create"

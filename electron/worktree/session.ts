@@ -12,12 +12,11 @@ import type {
   WorktreeChangesEvent,
   WorktreeChangesTreeDelta,
 } from "#shared/rpc/worktree-changes-rpc";
-import type { ScmCommitSummary, ScmSnapshot } from "#shared/rpc/worktree-scm-rpc";
+import type { ScmChange, ScmCommitSummary, ScmSnapshot } from "#shared/rpc/worktree-scm-rpc";
 import type { WorktreeSearchQuery, WorktreeSearchResult } from "#shared/rpc/worktree-search-rpc";
 import type {
   TimelineEntry,
   TimelineEntryContent,
-  TimelineEntryKind,
   TimelineTarget,
 } from "#shared/rpc/worktree-timeline-rpc";
 import type {
@@ -64,7 +63,6 @@ import { buildDetailedScmSnapshot, type ResourceSnapshotEntry } from "./scm-snap
 import {
   buildBaseManuscriptSnapshot,
   buildManuscriptSnapshot,
-  readOutlineFromBase,
   type ManuscriptEntry,
   type ManuscriptSnapshotState,
 } from "./snapshot-state";
@@ -104,12 +102,6 @@ type ResourceIndex = {
   nodes: Record<string, ResourceIndexNode>;
 };
 
-type TimelineFileState = {
-  label: string;
-  displayPath: string;
-  content: string | null;
-};
-
 type JournalOperationCapture = {
   kind: WorktreeJournalOperationKind;
   domain: "manuscript" | "resource";
@@ -126,6 +118,7 @@ type JournalOperationCapture = {
 type JournalRevisionCapture = {
   source: WorktreeJournalSource;
   title: string;
+  commitHash?: string | null;
   groupId: string | null;
   operations: JournalOperationCapture[];
 };
@@ -136,10 +129,6 @@ function sha1Text(content: string): string {
 
 function journalTimelineEntryId(revisionId: string, operationId: string): string {
   return `journal:${revisionId}:${operationId}`;
-}
-
-function commitTimelineEntryId(commitHash: string, target: TimelineTarget): string {
-  return `commit:${commitHash}:${target.domain}:${target.entityId}`;
 }
 
 function parseResourceIndex(content: string | null): ResourceIndex {
@@ -1083,12 +1072,18 @@ export class WorktreeSession {
   }
 
   commitScm(message: string, author: { name: string; email: string }): ScmSnapshot {
+    const snapshotBeforeCommit = this.#currentScmSnapshot();
     const tree = this.#writeCurrentTreeToRepo();
     const parentCommit = this.#repo.readBranch(this.#branchName);
     const parents: SHA1[] = parentCommit !== null ? [parentCommit] : [];
     const now = Math.floor(Date.now() / 1000);
     const gitAuthor = { name: author.name, email: author.email, timestamp: now, timezone: "+0000" };
     const commitHash = this.#repo.createCommit(tree, parents, message, gitAuthor);
+    const journalCapture = this.#journalCaptureFromScmSnapshot(
+      snapshotBeforeCommit,
+      message,
+      commitHash,
+    );
 
     this.#repo.updateRef(`refs/heads/${this.#branchName}`, commitHash);
     this.#baseCommitSha = commitHash;
@@ -1098,7 +1093,7 @@ export class WorktreeSession {
     this.#baseResources = cloneResourceSnapshotState(this.#currentResources);
     this.#changeTracker.clearCache();
     this.#resetChangesStreamBaseline();
-    this.#persistAndEmit(true);
+    this.#persistAndEmit(true, journalCapture);
     return this.#currentScmSnapshot();
   }
 
@@ -1124,7 +1119,7 @@ export class WorktreeSession {
 
   listFileTimeline(target: TimelineTarget, limit = 50): TimelineEntry[] {
     const boundedLimit = Math.max(1, Math.min(limit, 200));
-    const journalEntries = this.#store
+    return this.#store
       .readJournalTimelineEntries(
         this.#projectId,
         this.#branchName,
@@ -1133,10 +1128,6 @@ export class WorktreeSession {
         boundedLimit,
       )
       .map((entry) => this.#journalEntryToTimelineEntry(entry));
-    const commitEntries = this.#listCommitTimelineEntries(target, boundedLimit);
-    return [...journalEntries, ...commitEntries]
-      .sort((left, right) => right.timestamp - left.timestamp)
-      .slice(0, boundedLimit);
   }
 
   readTimelineEntryContent(entryId: string): TimelineEntryContent {
@@ -1158,24 +1149,7 @@ export class WorktreeSession {
       };
     }
 
-    const commitTarget = this.#parseCommitTimelineEntryId(entryId);
-    if (commitTarget === null) {
-      throw new Error(`Unknown timeline entry: ${entryId}`);
-    }
-    const object = this.#repo.catFile(commitTarget.commitHash as SHA1);
-    if (object.type !== "commit") {
-      throw new Error(`Timeline entry is not a commit: ${commitTarget.commitHash}`);
-    }
-    const previousTree =
-      object.parents[0] === undefined
-        ? this.#repo.createTree([])
-        : this.#commitTree(object.parents[0]);
-    const previous = this.#readTimelineTargetState(previousTree, commitTarget.target);
-    const current = this.#readTimelineTargetState(object.tree, commitTarget.target);
-    return {
-      content: current?.content ?? previous?.content ?? null,
-      beforeContent: previous?.content ?? null,
-    };
+    throw new Error(`Unknown timeline entry: ${entryId}`);
   }
 
   searchWorktree(options: WorktreeSearchQuery): WorktreeSearchResult {
@@ -2012,7 +1986,7 @@ export class WorktreeSession {
         actor: "user",
         source: capture.source,
         title: capture.title,
-        commitHash: null,
+        commitHash: capture.commitHash ?? null,
         groupId: capture.groupId,
       },
       capture.operations.map((operation, index) => {
@@ -2060,6 +2034,58 @@ export class WorktreeSession {
     return contentSha;
   }
 
+  #journalCaptureFromScmSnapshot(
+    snapshot: ScmSnapshot,
+    message: string,
+    commitHash: string,
+  ): JournalRevisionCapture | undefined {
+    const operations = [...snapshot.manuscriptChanges, ...snapshot.resourceChanges].map((change) =>
+      this.#journalOperationFromScmChange(change),
+    );
+    if (operations.length === 0) {
+      return undefined;
+    }
+    const title = message.split("\n")[0]?.trim() || "(无提交说明)";
+    return {
+      source: "commit",
+      title,
+      commitHash,
+      groupId: `commit:${commitHash}`,
+      operations,
+    };
+  }
+
+  #journalOperationFromScmChange(change: ScmChange): JournalOperationCapture {
+    const beforeContent = this.#journalContentForScmChange(change, "before");
+    const afterContent = this.#journalContentForScmChange(change, "after");
+    return {
+      kind: change.kind,
+      domain: change.domain,
+      entityId: change.entityId,
+      entityKind: change.entityKind,
+      label: change.label,
+      displayPath: change.displayPath,
+      previousLabel: "previousLabel" in change ? change.previousLabel : null,
+      previousPath: "previousPath" in change ? change.previousPath : null,
+      beforeContent,
+      afterContent,
+    };
+  }
+
+  #journalContentForScmChange(change: ScmChange, side: "before" | "after"): string | null {
+    if (change.entityKind !== "chapter" && change.entityKind !== "file") {
+      return null;
+    }
+    if (change.domain === "manuscript") {
+      const state = side === "before" ? this.#baseManuscript : this.#currentManuscript;
+      const entry = state.entries.get(change.entityId);
+      return entry?.type === "chapter" ? entry.content : null;
+    }
+    const state = side === "before" ? this.#baseResources : this.#currentResources;
+    const entry = state.entries.get(change.entityId);
+    return entry?.type === "file" ? entry.content : null;
+  }
+
   #journalEntryToTimelineEntry(entry: WorktreeJournalEntryRecord): TimelineEntry {
     return {
       id: journalTimelineEntryId(entry.revisionId, entry.operationId),
@@ -2086,132 +2112,6 @@ export class WorktreeSession {
     };
   }
 
-  #listCommitTimelineEntries(target: TimelineTarget, limit: number): TimelineEntry[] {
-    const tip = this.#repo.readBranch(this.#branchName);
-    if (tip === null) {
-      return [];
-    }
-
-    const entries: TimelineEntry[] = [];
-    const emptyTree = this.#repo.createTree([]);
-    for (const entry of walkLogEntries(this.#objects, { from: [tip], firstParent: true })) {
-      const previousTree =
-        entry.commit.parents[0] === undefined
-          ? emptyTree
-          : this.#commitTree(entry.commit.parents[0]);
-      const previous = this.#readTimelineTargetState(previousTree, target);
-      const current = this.#readTimelineTargetState(entry.commit.tree, target);
-      const kind = this.#resolveTimelineCommitKind(previous, current);
-      if (kind === null) {
-        continue;
-      }
-      const displayState = current ?? previous;
-      if (displayState === null) {
-        continue;
-      }
-      entries.push({
-        id: commitTimelineEntryId(entry.hash, target),
-        source: "commit",
-        kind,
-        domain: target.domain,
-        entityId: target.entityId,
-        label: displayState.label,
-        displayPath: displayState.displayPath,
-        timestamp: entry.commit.committer.timestamp * 1000,
-        message: entry.commit.message.split("\n")[0]?.trim() || "(无提交说明)",
-        stats:
-          previous?.content != null && current?.content != null
-            ? computeStats(previous?.content ?? "", current?.content ?? "")
-            : undefined,
-        commitHash: entry.hash,
-        shortHash: entry.hash.slice(0, 7),
-        authorName: entry.commit.author.name,
-        hasContent: current?.content != null,
-      });
-      if (entries.length >= limit) {
-        break;
-      }
-    }
-    return entries;
-  }
-
-  #commitTree(commitHash: SHA1): SHA1 {
-    const object = this.#repo.catFile(commitHash);
-    if (object.type !== "commit") {
-      throw new Error(`Expected commit at ${commitHash}, got ${object.type}.`);
-    }
-    return object.tree;
-  }
-
-  #resolveTimelineCommitKind(
-    previous: TimelineFileState | null,
-    current: TimelineFileState | null,
-  ): TimelineEntryKind | null {
-    if (previous === null && current !== null) {
-      return "create";
-    }
-    if (previous !== null && current === null) {
-      return "delete";
-    }
-    if (previous === null || current === null) {
-      return null;
-    }
-    if (previous.displayPath !== current.displayPath) {
-      return previous.label !== current.label ? "rename" : "move";
-    }
-    if (previous.label !== current.label) {
-      return "rename";
-    }
-    if (previous.content !== current.content) {
-      return "content";
-    }
-    return null;
-  }
-
-  #readTimelineTargetState(treeHash: SHA1, target: TimelineTarget): TimelineFileState | null {
-    if (target.domain === "manuscript") {
-      return this.#readManuscriptTimelineState(treeHash, target.entityId);
-    }
-    return this.#readResourceTimelineState(treeHash, target.entityId);
-  }
-
-  #readManuscriptTimelineState(treeHash: SHA1, entityId: string): TimelineFileState | null {
-    const outline = readOutlineFromBase(this.#objects, treeHash);
-    if (outline.nodes[entityId]?.type !== "chapter") {
-      return null;
-    }
-    const snapshot = buildManuscriptSnapshot(
-      outline,
-      (id) => readTextFromTree(this.#objects, treeHash, chapterBodyPath(id)) ?? "",
-    );
-    const entry = snapshot.entries.get(entityId);
-    if (entry === undefined || entry.type !== "chapter") {
-      return null;
-    }
-    return {
-      label: entry.title,
-      displayPath: entry.displayPath,
-      content: entry.content,
-    };
-  }
-
-  #readResourceTimelineState(treeHash: SHA1, entityId: string): TimelineFileState | null {
-    const tree = this.#readResourceTreeFromTree(treeHash);
-    const rebuilt = buildResourceSnapshotFromTree(
-      tree,
-      (id) => readTextFromTree(this.#objects, treeHash, `${RESOURCES_FILES_DIR}/${id}.txt`) ?? "",
-    );
-    const entry = rebuilt.snapshot.entries.get(entityId);
-    if (entry === undefined || entry.type !== "file") {
-      return null;
-    }
-    return {
-      label: entry.name,
-      displayPath: entry.displayPath,
-      content: entry.content,
-    };
-  }
-
   #readResourceTreeFromTree(treeHash: SHA1): ResourceTreeSnapshot {
     return resourceTreeFromIndex(
       parseResourceIndex(readTextFromTree(this.#objects, treeHash, RESOURCES_INDEX_PATH)),
@@ -2228,22 +2128,6 @@ export class WorktreeSession {
     return {
       revisionId: match[1]!,
       operationId: match[2]!,
-    };
-  }
-
-  #parseCommitTimelineEntryId(
-    entryId: string,
-  ): { commitHash: string; target: TimelineTarget } | null {
-    const match = /^commit:([^:]+):(manuscript|resource):([^:]+)$/.exec(entryId);
-    if (match === null) {
-      return null;
-    }
-    return {
-      commitHash: match[1]!,
-      target: {
-        domain: match[2] as "manuscript" | "resource",
-        entityId: match[3]!,
-      },
     };
   }
 

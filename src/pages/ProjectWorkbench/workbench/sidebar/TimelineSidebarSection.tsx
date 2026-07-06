@@ -33,6 +33,9 @@ function entryIconClass(entry: TimelineEntry): string {
   if (entry.kind === "create") {
     return "icon-[codicon--diff-added]";
   }
+  if (entry.revisionSource === "commit") {
+    return "icon-[codicon--git-commit]";
+  }
   if (entry.kind === "content" && entry.source === "journal") {
     return "icon-[codicon--save]";
   }
