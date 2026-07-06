@@ -27,7 +27,7 @@ function formatTimelineTime(timestampMs: number): string {
 }
 
 function entryIconClass(entry: TimelineEntry): string {
-  if (entry.source === "local-snapshot") {
+  if (entry.source === "journal") {
     return "icon-[codicon--save]";
   }
   if (entry.kind === "delete") {
@@ -49,8 +49,12 @@ function kindLabel(kind: TimelineEntry["kind"]): string {
       return "重命名";
     case "move":
       return "移动";
+    case "reorder":
+      return "排序";
     case "content":
       return "内容";
+    case "restore":
+      return "恢复";
   }
 }
 

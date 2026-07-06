@@ -50,21 +50,72 @@ export type ResourceNodeCommittedRow = {
   contentSha: string | null;
 };
 
-export type WorktreeLocalSnapshotDomain = "manuscript" | "resource";
+export type WorktreeJournalDomain = "manuscript" | "resource";
+export type WorktreeJournalSource =
+  | "autosave"
+  | "manual-checkpoint"
+  | "structure-edit"
+  | "restore"
+  | "commit"
+  | "import";
+export type WorktreeJournalActor = "user" | "system";
+export type WorktreeJournalOperationKind =
+  | "create"
+  | "delete"
+  | "rename"
+  | "move"
+  | "reorder"
+  | "content"
+  | "restore";
+export type WorktreeJournalEntityKind = "chapter" | "folder" | "file";
 
-export type WorktreeLocalSnapshotRecord = {
+export type WorktreeBlobRecord = {
   projectId: number;
-  branchName: string;
-  snapshotId: string;
-  domain: WorktreeLocalSnapshotDomain;
-  entityId: string;
-  capturedAt: number;
-  revision: number;
-  label: string;
-  displayPath: string;
+  blobId: string;
   contentSha: string;
   content: Buffer;
 };
+
+export type WorktreeJournalRevisionRecord = {
+  projectId: number;
+  branchName: string;
+  revisionId: string;
+  parentRevisionId: string | null;
+  createdAt: number;
+  worktreeRevision: number;
+  actor: WorktreeJournalActor;
+  source: WorktreeJournalSource;
+  title: string;
+  commitHash: string | null;
+  groupId: string | null;
+};
+
+export type WorktreeJournalOperationRecord = {
+  projectId: number;
+  branchName: string;
+  revisionId: string;
+  operationId: string;
+  orderIndex: number;
+  kind: WorktreeJournalOperationKind;
+  domain: WorktreeJournalDomain;
+  entityId: string;
+  entityKind: WorktreeJournalEntityKind;
+  label: string;
+  displayPath: string;
+  previousLabel: string | null;
+  previousPath: string | null;
+  beforeBlobId: string | null;
+  afterBlobId: string | null;
+  statsAdded: number | null;
+  statsRemoved: number | null;
+  metadataJson: string | null;
+};
+
+export type WorktreeJournalEntryRecord = WorktreeJournalRevisionRecord &
+  WorktreeJournalOperationRecord & {
+    beforeContent: Buffer | null;
+    afterContent: Buffer | null;
+  };
 
 type WorktreeRow = {
   project_id: number;
@@ -116,19 +167,46 @@ type ResourceCommittedSqlRow = {
   content_sha: string | null;
 };
 
-type WorktreeLocalSnapshotSqlRow = {
+type WorktreeJournalRevisionSqlRow = {
   project_id: number;
   branch_name: string;
-  snapshot_id: string;
-  domain: WorktreeLocalSnapshotDomain;
+  revision_id: string;
+  parent_revision_id: string | null;
+  created_at: number;
+  worktree_revision: number;
+  actor: WorktreeJournalActor;
+  source: WorktreeJournalSource;
+  title: string;
+  commit_hash: string | null;
+  group_id: string | null;
+};
+
+type WorktreeJournalOperationSqlRow = {
+  project_id: number;
+  branch_name: string;
+  revision_id: string;
+  operation_id: string;
+  order_index: number;
+  kind: WorktreeJournalOperationKind;
+  domain: WorktreeJournalDomain;
   entity_id: string;
-  captured_at: number;
-  revision: number;
+  entity_kind: WorktreeJournalEntityKind;
   label: string;
   display_path: string;
-  content_sha: string;
-  content: Uint8Array;
+  previous_label: string | null;
+  previous_path: string | null;
+  before_blob_id: string | null;
+  after_blob_id: string | null;
+  stats_added: number | null;
+  stats_removed: number | null;
+  metadata_json: string | null;
 };
+
+type WorktreeJournalEntrySqlRow = WorktreeJournalRevisionSqlRow &
+  WorktreeJournalOperationSqlRow & {
+    before_content: Uint8Array | null;
+    after_content: Uint8Array | null;
+  };
 
 function toBuffer(value: Uint8Array | null): Buffer | null {
   return value === null ? null : Buffer.from(value);
@@ -144,19 +222,55 @@ function rowToWorktreeRecord(row: WorktreeRow): WorktreeRecord {
   };
 }
 
-function rowToLocalSnapshotRecord(row: WorktreeLocalSnapshotSqlRow): WorktreeLocalSnapshotRecord {
+function rowToJournalRevisionRecord(
+  row: WorktreeJournalRevisionSqlRow,
+): WorktreeJournalRevisionRecord {
   return {
     projectId: row.project_id,
     branchName: row.branch_name,
-    snapshotId: row.snapshot_id,
+    revisionId: row.revision_id,
+    parentRevisionId: row.parent_revision_id,
+    createdAt: row.created_at,
+    worktreeRevision: row.worktree_revision,
+    actor: row.actor,
+    source: row.source,
+    title: row.title,
+    commitHash: row.commit_hash,
+    groupId: row.group_id,
+  };
+}
+
+function rowToJournalOperationRecord(
+  row: WorktreeJournalOperationSqlRow,
+): WorktreeJournalOperationRecord {
+  return {
+    projectId: row.project_id,
+    branchName: row.branch_name,
+    revisionId: row.revision_id,
+    operationId: row.operation_id,
+    orderIndex: row.order_index,
+    kind: row.kind,
     domain: row.domain,
     entityId: row.entity_id,
-    capturedAt: row.captured_at,
-    revision: row.revision,
+    entityKind: row.entity_kind,
     label: row.label,
     displayPath: row.display_path,
-    contentSha: row.content_sha,
-    content: Buffer.from(row.content),
+    previousLabel: row.previous_label,
+    previousPath: row.previous_path,
+    beforeBlobId: row.before_blob_id,
+    afterBlobId: row.after_blob_id,
+    statsAdded: row.stats_added,
+    statsRemoved: row.stats_removed,
+    metadataJson: row.metadata_json,
+  };
+}
+
+function rowToJournalEntryRecord(row: WorktreeJournalEntrySqlRow): WorktreeJournalEntryRecord {
+  return {
+    ...rowToJournalRevisionRecord(row),
+    ...rowToJournalOperationRecord(row),
+    beforeContent: toBuffer(row.before_content),
+    afterContent: toBuffer(row.after_content),
   };
 }
 
@@ -423,171 +537,249 @@ export class WorktreeRepository {
     );
   }
 
-  readLocalSnapshots(
+  upsertJournalBlob(record: WorktreeBlobRecord): void {
+    this.#db
+      .prepare(
+        `
+          INSERT INTO worktree_blob (project_id, blob_id, content_sha, content)
+          VALUES (?, ?, ?, ?)
+          ON CONFLICT(project_id, blob_id)
+          DO NOTHING
+        `,
+      )
+      .run(record.projectId, record.blobId, record.contentSha, record.content);
+  }
+
+  readJournalTimelineEntries(
     projectId: number,
     branchName: string,
-    domain: WorktreeLocalSnapshotDomain,
+    domain: WorktreeJournalDomain,
     entityId: string,
     limit: number,
-  ): WorktreeLocalSnapshotRecord[] {
+  ): WorktreeJournalEntryRecord[] {
     const rows = this.#db
       .prepare(
         `
           SELECT
-            project_id,
-            branch_name,
-            snapshot_id,
-            domain,
-            entity_id,
-            captured_at,
-            revision,
-            label,
-            display_path,
-            content_sha,
-            content
-          FROM worktree_local_snapshot
+            revision.project_id,
+            revision.branch_name,
+            revision.revision_id,
+            revision.parent_revision_id,
+            revision.created_at,
+            revision.worktree_revision,
+            revision.actor,
+            revision.source,
+            revision.title,
+            revision.commit_hash,
+            revision.group_id,
+            operation.operation_id,
+            operation.order_index,
+            operation.kind,
+            operation.domain,
+            operation.entity_id,
+            operation.entity_kind,
+            operation.label,
+            operation.display_path,
+            operation.previous_label,
+            operation.previous_path,
+            operation.before_blob_id,
+            operation.after_blob_id,
+            operation.stats_added,
+            operation.stats_removed,
+            operation.metadata_json,
+            before_blob.content AS before_content,
+            after_blob.content AS after_content
+          FROM worktree_journal_operation operation
+          INNER JOIN worktree_journal_revision revision
+            ON revision.project_id = operation.project_id
+            AND revision.branch_name = operation.branch_name
+            AND revision.revision_id = operation.revision_id
+          LEFT JOIN worktree_blob before_blob
+            ON before_blob.project_id = operation.project_id
+            AND before_blob.blob_id = operation.before_blob_id
+          LEFT JOIN worktree_blob after_blob
+            ON after_blob.project_id = operation.project_id
+            AND after_blob.blob_id = operation.after_blob_id
           WHERE
-            project_id = ?
-            AND branch_name = ?
-            AND domain = ?
-            AND entity_id = ?
-          ORDER BY captured_at DESC, revision DESC, snapshot_id DESC
+            operation.project_id = ?
+            AND operation.branch_name = ?
+            AND operation.domain = ?
+            AND operation.entity_id = ?
+          ORDER BY revision.created_at DESC, revision.worktree_revision DESC, operation.order_index DESC
           LIMIT ?
         `,
       )
-      .all(projectId, branchName, domain, entityId, limit) as WorktreeLocalSnapshotSqlRow[];
-    return rows.map(rowToLocalSnapshotRecord);
+      .all(projectId, branchName, domain, entityId, limit) as WorktreeJournalEntrySqlRow[];
+    return rows.map(rowToJournalEntryRecord);
   }
 
-  getLocalSnapshot(
+  getJournalTimelineEntry(
     projectId: number,
     branchName: string,
-    snapshotId: string,
-  ): WorktreeLocalSnapshotRecord | null {
+    revisionId: string,
+    operationId: string,
+  ): WorktreeJournalEntryRecord | null {
     const row = this.#db
       .prepare(
         `
           SELECT
-            project_id,
-            branch_name,
-            snapshot_id,
-            domain,
-            entity_id,
-            captured_at,
-            revision,
-            label,
-            display_path,
-            content_sha,
-            content
-          FROM worktree_local_snapshot
-          WHERE project_id = ? AND branch_name = ? AND snapshot_id = ?
+            revision.project_id,
+            revision.branch_name,
+            revision.revision_id,
+            revision.parent_revision_id,
+            revision.created_at,
+            revision.worktree_revision,
+            revision.actor,
+            revision.source,
+            revision.title,
+            revision.commit_hash,
+            revision.group_id,
+            operation.operation_id,
+            operation.order_index,
+            operation.kind,
+            operation.domain,
+            operation.entity_id,
+            operation.entity_kind,
+            operation.label,
+            operation.display_path,
+            operation.previous_label,
+            operation.previous_path,
+            operation.before_blob_id,
+            operation.after_blob_id,
+            operation.stats_added,
+            operation.stats_removed,
+            operation.metadata_json,
+            before_blob.content AS before_content,
+            after_blob.content AS after_content
+          FROM worktree_journal_operation operation
+          INNER JOIN worktree_journal_revision revision
+            ON revision.project_id = operation.project_id
+            AND revision.branch_name = operation.branch_name
+            AND revision.revision_id = operation.revision_id
+          LEFT JOIN worktree_blob before_blob
+            ON before_blob.project_id = operation.project_id
+            AND before_blob.blob_id = operation.before_blob_id
+          LEFT JOIN worktree_blob after_blob
+            ON after_blob.project_id = operation.project_id
+            AND after_blob.blob_id = operation.after_blob_id
+          WHERE
+            operation.project_id = ?
+            AND operation.branch_name = ?
+            AND operation.revision_id = ?
+            AND operation.operation_id = ?
         `,
       )
-      .get(projectId, branchName, snapshotId) as WorktreeLocalSnapshotSqlRow | undefined;
-    return row === undefined ? null : rowToLocalSnapshotRecord(row);
+      .get(projectId, branchName, revisionId, operationId) as
+      | WorktreeJournalEntrySqlRow
+      | undefined;
+    return row === undefined ? null : rowToJournalEntryRecord(row);
   }
 
-  recordLocalSnapshot(
-    record: WorktreeLocalSnapshotRecord,
-    coalesceWindowMs: number,
-  ): WorktreeLocalSnapshotRecord | null {
-    const latest = this.#db
-      .prepare(
-        `
-          SELECT
-            project_id,
-            branch_name,
-            snapshot_id,
-            domain,
-            entity_id,
-            captured_at,
-            revision,
-            label,
-            display_path,
-            content_sha,
-            content
-          FROM worktree_local_snapshot
-          WHERE
-            project_id = ?
-            AND branch_name = ?
-            AND domain = ?
-            AND entity_id = ?
-          ORDER BY captured_at DESC, revision DESC, snapshot_id DESC
-          LIMIT 1
-        `,
-      )
-      .get(record.projectId, record.branchName, record.domain, record.entityId) as
-      | WorktreeLocalSnapshotSqlRow
-      | undefined;
-
-    if (latest !== undefined && latest.content_sha === record.contentSha) {
-      return null;
+  recordJournalRevision(
+    revision: WorktreeJournalRevisionRecord,
+    operations: readonly WorktreeJournalOperationRecord[],
+  ): void {
+    if (operations.length === 0) {
+      return;
     }
 
-    if (latest !== undefined && record.capturedAt - latest.captured_at <= coalesceWindowMs) {
-      this.#db
-        .prepare(
-          `
-            UPDATE worktree_local_snapshot
-            SET
-              captured_at = ?,
-              revision = ?,
-              label = ?,
-              display_path = ?,
-              content_sha = ?,
-              content = ?
-            WHERE project_id = ? AND branch_name = ? AND snapshot_id = ?
-          `,
-        )
-        .run(
-          record.capturedAt,
-          record.revision,
-          record.label,
-          record.displayPath,
-          record.contentSha,
-          record.content,
-          record.projectId,
-          record.branchName,
-          latest.snapshot_id,
-        );
-      return {
-        ...record,
-        snapshotId: latest.snapshot_id,
-      };
-    }
+    const latest =
+      revision.parentRevisionId ??
+      this.#readLatestJournalRevisionId(revision.projectId, revision.branchName);
 
     this.#db
       .prepare(
         `
-          INSERT INTO worktree_local_snapshot (
+          INSERT INTO worktree_journal_revision (
             project_id,
             branch_name,
-            snapshot_id,
-            domain,
-            entity_id,
-            captured_at,
-            revision,
-            label,
-            display_path,
-            content_sha,
-            content
+            revision_id,
+            parent_revision_id,
+            created_at,
+            worktree_revision,
+            actor,
+            source,
+            title,
+            commit_hash,
+            group_id
           ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         `,
       )
       .run(
-        record.projectId,
-        record.branchName,
-        record.snapshotId,
-        record.domain,
-        record.entityId,
-        record.capturedAt,
-        record.revision,
-        record.label,
-        record.displayPath,
-        record.contentSha,
-        record.content,
+        revision.projectId,
+        revision.branchName,
+        revision.revisionId,
+        latest,
+        revision.createdAt,
+        revision.worktreeRevision,
+        revision.actor,
+        revision.source,
+        revision.title,
+        revision.commitHash,
+        revision.groupId,
       );
-    return record;
+
+    const operationStmt = this.#db.prepare(
+      `
+        INSERT INTO worktree_journal_operation (
+          project_id,
+          branch_name,
+          revision_id,
+          operation_id,
+          order_index,
+          kind,
+          domain,
+          entity_id,
+          entity_kind,
+          label,
+          display_path,
+          previous_label,
+          previous_path,
+          before_blob_id,
+          after_blob_id,
+          stats_added,
+          stats_removed,
+          metadata_json
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `,
+    );
+    for (const operation of operations) {
+      operationStmt.run(
+        operation.projectId,
+        operation.branchName,
+        operation.revisionId,
+        operation.operationId,
+        operation.orderIndex,
+        operation.kind,
+        operation.domain,
+        operation.entityId,
+        operation.entityKind,
+        operation.label,
+        operation.displayPath,
+        operation.previousLabel,
+        operation.previousPath,
+        operation.beforeBlobId,
+        operation.afterBlobId,
+        operation.statsAdded,
+        operation.statsRemoved,
+        operation.metadataJson,
+      );
+    }
+  }
+
+  #readLatestJournalRevisionId(projectId: number, branchName: string): string | null {
+    const row = this.#db
+      .prepare(
+        `
+          SELECT revision_id
+          FROM worktree_journal_revision
+          WHERE project_id = ? AND branch_name = ?
+          ORDER BY created_at DESC, worktree_revision DESC, revision_id DESC
+          LIMIT 1
+        `,
+      )
+      .get(projectId, branchName) as { revision_id: string } | undefined;
+    return row?.revision_id ?? null;
   }
 
   /**

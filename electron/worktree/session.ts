@@ -16,6 +16,7 @@ import type { ScmCommitSummary, ScmSnapshot } from "#shared/rpc/worktree-scm-rpc
 import type { WorktreeSearchQuery, WorktreeSearchResult } from "#shared/rpc/worktree-search-rpc";
 import type {
   TimelineEntry,
+  TimelineEntryContent,
   TimelineEntryKind,
   TimelineTarget,
 } from "#shared/rpc/worktree-timeline-rpc";
@@ -32,6 +33,7 @@ import type {
   ManuscriptNodeCurrentRow,
   ResourceNodeCommittedRow,
   ResourceNodeCurrentRow,
+  WorktreeJournalEntryRecord,
   WorktreeRecord,
   WorktreeRepository,
 } from "../db/repositories/worktree-repo";
@@ -69,7 +71,6 @@ import {
 const MANUSCRIPT_ID_SIZE = 10;
 const RESOURCE_ID_SIZE = 10;
 const RESOURCE_ROOT_ID = "root";
-const LOCAL_SNAPSHOT_COALESCE_WINDOW_MS = 30_000;
 const RESOURCES_INDEX_FILE = "index.json";
 const RESOURCES_FILES_DIR_NAME = "files";
 const RESOURCES_INDEX_PATH = `${RESOURCES_DIR}/${RESOURCES_INDEX_FILE}`;
@@ -102,24 +103,28 @@ type TimelineFileState = {
   content: string | null;
 };
 
-type LocalSnapshotCapture =
+type JournalContentCapture =
   | {
       domain: "manuscript";
       entityId: string;
-      content: string;
+      entityKind: "chapter";
+      beforeContent: string;
+      afterContent: string;
     }
   | {
       domain: "resource";
       entityId: string;
-      content: string;
+      entityKind: "file";
+      beforeContent: string;
+      afterContent: string;
     };
 
 function sha1Text(content: string): string {
   return createHash("sha1").update(content).digest("hex");
 }
 
-function localTimelineEntryId(snapshotId: string): string {
-  return `local:${snapshotId}`;
+function journalTimelineEntryId(revisionId: string, operationId: string): string {
+  return `journal:${revisionId}:${operationId}`;
 }
 
 function commitTimelineEntryId(commitHash: string, target: TimelineTarget): string {
@@ -699,11 +704,17 @@ export class WorktreeSession {
     if (entry === undefined) {
       throw new Error(`Manuscript chapter is missing: ${id}`);
     }
+    const beforeContent = entry.content;
+    if (beforeContent === content) {
+      return;
+    }
     entry.content = content;
     this.#persistAndEmit(false, {
       domain: "manuscript",
       entityId: id,
-      content,
+      entityKind: "chapter",
+      beforeContent,
+      afterContent: content,
     });
   }
 
@@ -823,11 +834,17 @@ export class WorktreeSession {
     if (entry === undefined) {
       throw new Error(`Resource file is missing: ${id}`);
     }
+    const beforeContent = entry.content;
+    if (beforeContent === content) {
+      return;
+    }
     entry.content = content;
     this.#persistAndEmit(false, {
       domain: "resource",
       entityId: id,
-      content,
+      entityKind: "file",
+      beforeContent,
+      afterContent: content,
     });
   }
 
@@ -895,45 +912,36 @@ export class WorktreeSession {
 
   listFileTimeline(target: TimelineTarget, limit = 50): TimelineEntry[] {
     const boundedLimit = Math.max(1, Math.min(limit, 200));
-    const localEntries = this.#store
-      .readLocalSnapshots(
+    const journalEntries = this.#store
+      .readJournalTimelineEntries(
         this.#projectId,
         this.#branchName,
         target.domain,
         target.entityId,
         boundedLimit,
       )
-      .map<TimelineEntry>((snapshot) => ({
-        id: localTimelineEntryId(snapshot.snapshotId),
-        source: "local-snapshot",
-        kind: "content",
-        domain: snapshot.domain,
-        entityId: snapshot.entityId,
-        label: snapshot.label,
-        displayPath: snapshot.displayPath,
-        timestamp: snapshot.capturedAt,
-        message: "本地保存",
-        hasContent: true,
-      }));
+      .map((entry) => this.#journalEntryToTimelineEntry(entry));
     const commitEntries = this.#listCommitTimelineEntries(target, boundedLimit);
-    return [...localEntries, ...commitEntries]
+    return [...journalEntries, ...commitEntries]
       .sort((left, right) => right.timestamp - left.timestamp)
       .slice(0, boundedLimit);
   }
 
-  readTimelineEntryContent(entryId: string): { content: string | null } {
-    const localSnapshotId = this.#parseLocalTimelineEntryId(entryId);
-    if (localSnapshotId !== null) {
-      const snapshot = this.#store.getLocalSnapshot(
+  readTimelineEntryContent(entryId: string): TimelineEntryContent {
+    const journalTarget = this.#parseJournalTimelineEntryId(entryId);
+    if (journalTarget !== null) {
+      const entry = this.#store.getJournalTimelineEntry(
         this.#projectId,
         this.#branchName,
-        localSnapshotId,
+        journalTarget.revisionId,
+        journalTarget.operationId,
       );
-      if (snapshot === null) {
-        throw new Error(`Unknown timeline snapshot: ${entryId}`);
+      if (entry === null) {
+        throw new Error(`Unknown journal timeline entry: ${entryId}`);
       }
       return {
-        content: snapshot.content.toString("utf-8"),
+        content: entry.afterContent?.toString("utf-8") ?? null,
+        beforeContent: entry.beforeContent?.toString("utf-8") ?? null,
       };
     }
 
@@ -1136,11 +1144,11 @@ export class WorktreeSession {
     ).snapshot;
   }
 
-  #persistAndEmit(includeCommitted = false, localSnapshot?: LocalSnapshotCapture): void {
+  #persistAndEmit(includeCommitted = false, journalCapture?: JournalContentCapture): void {
     this.#warning = null;
     this.#recomputeAllChangeStatuses();
     this.#revision += 1;
-    this.#persistState(includeCommitted, localSnapshot);
+    this.#persistState(includeCommitted, journalCapture);
     this.#emitChanges();
   }
 
@@ -1230,7 +1238,7 @@ export class WorktreeSession {
     this.#recordChangesStreamEmit(changesSnapshot);
   }
 
-  #persistState(includeCommitted: boolean, localSnapshot?: LocalSnapshotCapture): void {
+  #persistState(includeCommitted: boolean, journalCapture?: JournalContentCapture): void {
     this.#store.transaction(() => {
       this.#store.upsertWorktree({
         projectId: this.#projectId,
@@ -1261,8 +1269,8 @@ export class WorktreeSession {
           this.#serializeCommittedResourceRows(),
         );
       }
-      if (localSnapshot !== undefined) {
-        this.#recordLocalSnapshot(localSnapshot);
+      if (journalCapture !== undefined) {
+        this.#recordJournalContentRevision(journalCapture);
       }
     });
   }
@@ -1768,24 +1776,91 @@ export class WorktreeSession {
     return this.#repo.createTree(entries);
   }
 
-  #recordLocalSnapshot(snapshot: LocalSnapshotCapture): void {
-    const state = this.#currentTimelineTargetState(snapshot);
-    this.#store.recordLocalSnapshot(
+  #recordJournalContentRevision(capture: JournalContentCapture): void {
+    const state = this.#currentTimelineTargetState(capture);
+    const beforeSha = sha1Text(capture.beforeContent);
+    const afterSha = sha1Text(capture.afterContent);
+    const beforeBlob = Buffer.from(capture.beforeContent, "utf-8");
+    const afterBlob = Buffer.from(capture.afterContent, "utf-8");
+    this.#store.upsertJournalBlob({
+      projectId: this.#projectId,
+      blobId: beforeSha,
+      contentSha: beforeSha,
+      content: beforeBlob,
+    });
+    this.#store.upsertJournalBlob({
+      projectId: this.#projectId,
+      blobId: afterSha,
+      contentSha: afterSha,
+      content: afterBlob,
+    });
+
+    const revisionId = nanoid(12);
+    const operationId = nanoid(12);
+    const stats = computeStats(capture.beforeContent, capture.afterContent);
+    this.#store.recordJournalRevision(
       {
         projectId: this.#projectId,
         branchName: this.#branchName,
-        snapshotId: nanoid(12),
-        domain: snapshot.domain,
-        entityId: snapshot.entityId,
-        capturedAt: Date.now(),
-        revision: this.#revision,
-        label: state.label,
-        displayPath: state.displayPath,
-        contentSha: sha1Text(snapshot.content),
-        content: Buffer.from(snapshot.content, "utf-8"),
+        revisionId,
+        parentRevisionId: null,
+        createdAt: Date.now(),
+        worktreeRevision: this.#revision,
+        actor: "user",
+        source: "autosave",
+        title: "自动保存",
+        commitHash: null,
+        groupId: `autosave:${capture.domain}:${capture.entityId}`,
       },
-      LOCAL_SNAPSHOT_COALESCE_WINDOW_MS,
+      [
+        {
+          projectId: this.#projectId,
+          branchName: this.#branchName,
+          revisionId,
+          operationId,
+          orderIndex: 0,
+          kind: "content",
+          domain: capture.domain,
+          entityId: capture.entityId,
+          entityKind: capture.entityKind,
+          label: state.label,
+          displayPath: state.displayPath,
+          previousLabel: null,
+          previousPath: null,
+          beforeBlobId: beforeSha,
+          afterBlobId: afterSha,
+          statsAdded: stats.added,
+          statsRemoved: stats.removed,
+          metadataJson: null,
+        },
+      ],
     );
+  }
+
+  #journalEntryToTimelineEntry(entry: WorktreeJournalEntryRecord): TimelineEntry {
+    return {
+      id: journalTimelineEntryId(entry.revisionId, entry.operationId),
+      source: "journal",
+      revisionSource: entry.source,
+      actor: entry.actor,
+      kind: entry.kind,
+      domain: entry.domain,
+      entityId: entry.entityId,
+      label: entry.label,
+      displayPath: entry.displayPath,
+      timestamp: entry.createdAt,
+      message: entry.title,
+      stats:
+        entry.statsAdded === null || entry.statsRemoved === null
+          ? undefined
+          : { added: entry.statsAdded, removed: entry.statsRemoved },
+      commitHash: entry.commitHash ?? undefined,
+      shortHash: entry.commitHash?.slice(0, 7),
+      revisionId: entry.revisionId,
+      operationId: entry.operationId,
+      groupId: entry.groupId ?? undefined,
+      hasContent: entry.afterContent !== null,
+    };
   }
 
   #currentTimelineTargetState(target: TimelineTarget): TimelineFileState {
@@ -1944,8 +2019,17 @@ export class WorktreeSession {
     );
   }
 
-  #parseLocalTimelineEntryId(entryId: string): string | null {
-    return entryId.startsWith("local:") ? entryId.slice("local:".length) : null;
+  #parseJournalTimelineEntryId(
+    entryId: string,
+  ): { revisionId: string; operationId: string } | null {
+    const match = /^journal:([^:]+):([^:]+)$/.exec(entryId);
+    if (match === null) {
+      return null;
+    }
+    return {
+      revisionId: match[1]!,
+      operationId: match[2]!,
+    };
   }
 
   #parseCommitTimelineEntryId(

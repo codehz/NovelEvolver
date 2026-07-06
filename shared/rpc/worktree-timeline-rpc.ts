@@ -12,9 +12,26 @@ export type TimelineTarget =
       entityId: string;
     };
 
-export type TimelineEntrySource = "local-snapshot" | "commit";
+export type TimelineEntrySource = "journal" | "commit";
 
-export type TimelineEntryKind = "create" | "delete" | "rename" | "move" | "content";
+export type TimelineEntryKind =
+  | "create"
+  | "delete"
+  | "rename"
+  | "move"
+  | "reorder"
+  | "content"
+  | "restore";
+
+export type TimelineEntryActor = "user" | "system";
+
+export type TimelineEntryRevisionSource =
+  | "autosave"
+  | "manual-checkpoint"
+  | "structure-edit"
+  | "restore"
+  | "commit"
+  | "import";
 
 export type TimelineEntryStats = {
   added: number;
@@ -24,6 +41,8 @@ export type TimelineEntryStats = {
 export type TimelineEntry = {
   id: string;
   source: TimelineEntrySource;
+  revisionSource?: TimelineEntryRevisionSource;
+  actor?: TimelineEntryActor;
   kind: TimelineEntryKind;
   domain: TimelineDomain;
   entityId: string;
@@ -35,11 +54,15 @@ export type TimelineEntry = {
   commitHash?: string;
   shortHash?: string;
   authorName?: string;
+  revisionId?: string;
+  operationId?: string;
+  groupId?: string;
   hasContent: boolean;
 };
 
 export type TimelineEntryContent = {
   content: string | null;
+  beforeContent?: string | null;
 };
 
 export interface WorktreeTimelineHandle extends RpcTarget {
