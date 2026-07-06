@@ -32,3 +32,5 @@ bun.lockb
 
 # TypeScript
 *.tsbuildinfo
+
+.claude/plans
