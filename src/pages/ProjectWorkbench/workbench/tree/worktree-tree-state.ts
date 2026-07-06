@@ -5,7 +5,6 @@ import type {
   ResourceTreeDelta,
   ResourceTreeSnapshot,
   WorktreeTreeDeltaEvent,
-  WorktreeTreeEvent,
   WorktreeTreeSnapshot,
 } from "#shared/rpc/worktree-tree";
 
@@ -84,22 +83,6 @@ export function applyWorktreeTreeDelta(
         ? snapshot.resources
         : applyResourceTreeDelta(snapshot.resources, delta.resources),
   };
-}
-
-export function applyWorktreeTreeEvent(
-  current: WorktreeTreeSnapshot | null,
-  event: WorktreeTreeEvent,
-): WorktreeTreeSnapshot {
-  if (event.kind === "snapshot" || current === null) {
-    return event.kind === "snapshot"
-      ? event.snapshot
-      : {
-          revision: event.toRevision,
-          manuscript: { rootId: "root", nodes: {} },
-          resources: { rootId: "root", nodes: {} },
-        };
-  }
-  return applyWorktreeTreeDelta(current, event);
 }
 
 export type WorktreeTreeDomain = "manuscript" | "resources";

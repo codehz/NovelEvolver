@@ -3,9 +3,7 @@ import type { RpcTarget } from "capnweb";
 import type { ProjectMetadata } from "#shared/project";
 
 import type { WorktreeChangesHandle } from "./worktree-changes";
-import type { WorktreeScmHandle } from "./worktree-scm";
 import type { WorktreeSearchHandle } from "./worktree-search";
-import type { WorktreeTreeHandle } from "./worktree-tree";
 
 /** Branch info for the HEAD of a project repository. */
 export type BranchInfo = {
@@ -117,12 +115,8 @@ export interface ManuscriptHandle extends RpcTarget {
 
 /** Live RPC handle for a branch-scoped virtual worktree (SQLite-backed in app userData). */
 export interface WorktreeHandle extends RpcTarget {
-  /** Baseline tree SHA-1 recorded when the worktree was first created for this branch. */
-  readonly baseTree: string;
   readonly resources: ResourceLibraryHandle;
   readonly manuscript: ManuscriptHandle;
-  readonly scm: WorktreeScmHandle;
-  readonly tree: WorktreeTreeHandle;
   readonly search: WorktreeSearchHandle;
   readonly changes: WorktreeChangesHandle;
 }

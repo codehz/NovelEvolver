@@ -1,7 +1,3 @@
-import type { RpcTarget } from "capnweb";
-
-import type { RpcSubscriptionStream } from "./stream";
-
 export type ScmChangeStats = {
   added: number;
   removed: number;
@@ -75,10 +71,3 @@ export type ScmCommitSummary = {
   authorName: string;
   committedAt: number;
 };
-
-export interface WorktreeScmHandle extends RpcTarget {
-  subscribeSnapshot(): RpcSubscriptionStream<ScmSnapshot>;
-  revertChange(changeId: string): ScmSnapshot;
-  commit(message: string, author: { name: string; email: string }): ScmSnapshot;
-  listCommits(maxCount?: number): ScmCommitSummary[];
-}

@@ -8,18 +8,14 @@ import type {
   WorktreeHandle,
 } from "#shared/rpc/projects-rpc";
 import type { WorktreeChangesHandle } from "#shared/rpc/worktree-changes";
-import type { WorktreeScmHandle } from "#shared/rpc/worktree-scm";
 import type { WorktreeSearchHandle } from "#shared/rpc/worktree-search";
-import type { WorktreeTreeHandle } from "#shared/rpc/worktree-tree";
 
 import type { WorktreeRepository } from "../db/repositories/worktree-repo";
 import { WorktreeSession } from "../worktree/session";
 import { ManuscriptHandleImpl } from "./manuscript-handle";
 import { ResourceLibraryHandleImpl } from "./resource-library-handle";
 import { WorktreeChangesHandleImpl } from "./worktree-changes-handle";
-import { WorktreeScmHandleImpl } from "./worktree-scm-handle";
 import { WorktreeSearchHandleImpl } from "./worktree-search-handle";
-import { WorktreeTreeHandleImpl } from "./worktree-tree-handle";
 
 /** ObjectDatabase 类型（从 readTreeSnapshot 参数推导） */
 type ObjectDatabase = Parameters<typeof readTreeSnapshot>[0];
@@ -31,8 +27,6 @@ export class WorktreeHandleImpl extends RpcTarget implements WorktreeHandle {
   readonly #session: WorktreeSession;
   readonly #resources: ResourceLibraryHandle;
   readonly #manuscript: ManuscriptHandle;
-  readonly #scm: WorktreeScmHandle;
-  readonly #tree: WorktreeTreeHandle;
   readonly #search: WorktreeSearchHandle;
   readonly #changes: WorktreeChangesHandle;
 
@@ -47,14 +41,8 @@ export class WorktreeHandleImpl extends RpcTarget implements WorktreeHandle {
     this.#session = new WorktreeSession(store, objects, repo, projectId, branchName);
     this.#resources = new ResourceLibraryHandleImpl(this.#session);
     this.#manuscript = new ManuscriptHandleImpl(this.#session);
-    this.#scm = new WorktreeScmHandleImpl(this.#session);
-    this.#tree = new WorktreeTreeHandleImpl(this.#session);
     this.#search = new WorktreeSearchHandleImpl(this.#session);
     this.#changes = new WorktreeChangesHandleImpl(this.#session);
-  }
-
-  get baseTree(): string {
-    return this.#session.baseTree;
   }
 
   get resources(): ResourceLibraryHandle {
@@ -63,14 +51,6 @@ export class WorktreeHandleImpl extends RpcTarget implements WorktreeHandle {
 
   get manuscript(): ManuscriptHandle {
     return this.#manuscript;
-  }
-
-  get scm(): WorktreeScmHandle {
-    return this.#scm;
-  }
-
-  get tree(): WorktreeTreeHandle {
-    return this.#tree;
   }
 
   get search(): WorktreeSearchHandle {

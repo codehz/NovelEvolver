@@ -1,7 +1,3 @@
-import type { RpcTarget } from "capnweb";
-
-import type { RpcSubscriptionStream } from "./stream";
-
 export type ManuscriptTreeNodeType = "folder" | "chapter";
 export type ResourceTreeNodeType = "folder" | "file";
 
@@ -61,11 +57,6 @@ export type WorktreeTreeSnapshot = {
   resources: ResourceTreeSnapshot;
 };
 
-export type WorktreeTreeSnapshotEvent = {
-  kind: "snapshot";
-  snapshot: WorktreeTreeSnapshot;
-};
-
 export type WorktreeTreeDeltaEvent = {
   kind: "delta";
   fromRevision: number;
@@ -73,9 +64,3 @@ export type WorktreeTreeDeltaEvent = {
   manuscript?: ManuscriptTreeDelta;
   resources?: ResourceTreeDelta;
 };
-
-export type WorktreeTreeEvent = WorktreeTreeSnapshotEvent | WorktreeTreeDeltaEvent;
-
-export interface WorktreeTreeHandle extends RpcTarget {
-  subscribe(): RpcSubscriptionStream<WorktreeTreeEvent>;
-}

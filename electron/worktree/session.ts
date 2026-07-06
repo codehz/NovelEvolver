@@ -18,8 +18,6 @@ import type {
   ManuscriptTreeSnapshot,
   ResourceTreeNode,
   ResourceTreeSnapshot,
-  WorktreeTreeEvent,
-  WorktreeTreeSnapshot,
 } from "#shared/rpc/worktree-tree";
 
 import type {
@@ -122,18 +120,6 @@ function cloneResourceSnapshotState(state: ResourceSnapshotState): ResourceSnaps
         },
       ]),
     ),
-  };
-}
-
-function buildWorktreeTreeSnapshot(
-  revision: number,
-  manuscript: ManuscriptTreeSnapshot,
-  resources: ResourceTreeSnapshot,
-): WorktreeTreeSnapshot {
-  return {
-    revision,
-    manuscript: cloneManuscriptTreeSnapshot(manuscript),
-    resources: cloneResourceTreeSnapshot(resources),
   };
 }
 
@@ -421,8 +407,6 @@ export class WorktreeSession {
   readonly #repo: Repository;
   readonly #projectId: number;
   readonly #branchName: string;
-  readonly #scmPublisher = new RpcStreamPublisher<ScmSnapshot>();
-  readonly #treePublisher = new RpcStreamPublisher<WorktreeTreeEvent>();
   readonly #changesPublisher = new RpcStreamPublisher<WorktreeChangesEvent>();
   readonly #changeTracker = new ChangeTracker();
 
@@ -459,25 +443,6 @@ export class WorktreeSession {
 
   get baseTree(): string {
     return this.#resolveBaseTree();
-  }
-
-  subscribeScmSnapshot(): ReadableStream<ScmSnapshot> {
-    return this.#scmPublisher.subscribe({
-      getInitialValue: () => this.#currentScmSnapshot(),
-    });
-  }
-
-  subscribeTree(): ReadableStream<WorktreeTreeEvent> {
-    return this.#treePublisher.subscribe({
-      getInitialValue: () => ({
-        kind: "snapshot",
-        snapshot: buildWorktreeTreeSnapshot(
-          this.#revision,
-          this.#manuscriptTree,
-          this.#resourceTree,
-        ),
-      }),
-    });
   }
 
   subscribeChanges(): ReadableStream<WorktreeChangesEvent> {
@@ -1021,7 +986,6 @@ export class WorktreeSession {
     this.#recomputeAllChangeStatuses();
     this.#revision += 1;
     this.#persistState(includeCommitted);
-    this.#scmPublisher.emit(this.#currentScmSnapshot());
     this.#emitChanges();
   }
 
