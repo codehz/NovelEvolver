@@ -33,7 +33,10 @@ import type {
   ManuscriptNodeCurrentRow,
   ResourceNodeCommittedRow,
   ResourceNodeCurrentRow,
+  WorktreeJournalEntityKind,
   WorktreeJournalEntryRecord,
+  WorktreeJournalOperationKind,
+  WorktreeJournalSource,
   WorktreeRecord,
   WorktreeRepository,
 } from "../db/repositories/worktree-repo";
@@ -50,7 +53,11 @@ import { assertValidResourceRelativePath, RESOURCES_DIR } from "../resource-libr
 import { RpcStreamPublisher } from "../rpc/stream-publisher";
 import { executeWorktreeSearch } from "../search/worktree-search";
 import { refreshAllFolderChangeStatuses } from "./change-status";
-import { ChangeTracker, type ResourceSnapshotState } from "./change-tracker";
+import {
+  ChangeTracker,
+  type ResourceSnapshotEntry as JournalResourceSnapshotEntry,
+  type ResourceSnapshotState,
+} from "./change-tracker";
 import { computeStats, readTextFromTree, type ObjectDatabase } from "./diff-utils";
 import { computeMinimalReorderedManuscriptIds } from "./manuscript-reorder";
 import { buildDetailedScmSnapshot, type ResourceSnapshotEntry } from "./scm-snapshot-builder";
@@ -103,21 +110,25 @@ type TimelineFileState = {
   content: string | null;
 };
 
-type JournalContentCapture =
-  | {
-      domain: "manuscript";
-      entityId: string;
-      entityKind: "chapter";
-      beforeContent: string;
-      afterContent: string;
-    }
-  | {
-      domain: "resource";
-      entityId: string;
-      entityKind: "file";
-      beforeContent: string;
-      afterContent: string;
-    };
+type JournalOperationCapture = {
+  kind: WorktreeJournalOperationKind;
+  domain: "manuscript" | "resource";
+  entityId: string;
+  entityKind: WorktreeJournalEntityKind;
+  label: string;
+  displayPath: string;
+  previousLabel?: string | null;
+  previousPath?: string | null;
+  beforeContent?: string | null;
+  afterContent?: string | null;
+};
+
+type JournalRevisionCapture = {
+  source: WorktreeJournalSource;
+  title: string;
+  groupId: string | null;
+  operations: JournalOperationCapture[];
+};
 
 function sha1Text(content: string): string {
   return createHash("sha1").update(content).digest("hex");
@@ -616,7 +627,22 @@ export class WorktreeSession {
       childIds: [],
     };
     this.#rebuildCurrentManuscriptFromTree();
-    this.#persistAndEmit();
+    const entry = this.#requireManuscriptJournalEntry(nodeId);
+    this.#persistAndEmit(false, {
+      source: "structure-edit",
+      title: "创建文件夹",
+      groupId: null,
+      operations: [
+        {
+          kind: "create",
+          domain: "manuscript",
+          entityId: nodeId,
+          entityKind: "folder",
+          label: entry.title,
+          displayPath: entry.displayPath,
+        },
+      ],
+    });
     return { nodeId };
   }
 
@@ -633,15 +659,55 @@ export class WorktreeSession {
       childIds: [],
     };
     this.#rebuildCurrentManuscriptFromTree(new Map([[nodeId, ""]]));
-    this.#persistAndEmit();
+    const entry = this.#requireManuscriptJournalEntry(nodeId);
+    this.#persistAndEmit(false, {
+      source: "structure-edit",
+      title: "创建章节",
+      groupId: null,
+      operations: [
+        {
+          kind: "create",
+          domain: "manuscript",
+          entityId: nodeId,
+          entityKind: "chapter",
+          label: entry.title,
+          displayPath: entry.displayPath,
+          afterContent: entry.content,
+        },
+      ],
+    });
     return { nodeId };
   }
 
   renameManuscriptNode(id: string, title: string): void {
     const node = this.#requireManuscriptNode(id);
-    node.title = normalizeManuscriptTitle(title);
+    const previous = this.#requireManuscriptJournalEntry(id);
+    const normalizedTitle = normalizeManuscriptTitle(title);
+    if (node.title === normalizedTitle) {
+      return;
+    }
+    node.title = normalizedTitle;
     this.#rebuildCurrentManuscriptFromTree();
-    this.#persistAndEmit();
+    const current = this.#requireManuscriptJournalEntry(id);
+    this.#persistAndEmit(false, {
+      source: "structure-edit",
+      title: "重命名",
+      groupId: null,
+      operations: [
+        {
+          kind: "rename",
+          domain: "manuscript",
+          entityId: id,
+          entityKind: current.type === "chapter" ? "chapter" : "folder",
+          label: current.title,
+          displayPath: current.displayPath,
+          previousLabel: previous.title,
+          previousPath: previous.displayPath,
+          beforeContent: previous.type === "chapter" ? previous.content : null,
+          afterContent: current.type === "chapter" ? current.content : null,
+        },
+      ],
+    });
   }
 
   moveManuscriptNode(id: string, targetParentId: string, index?: number): void {
@@ -652,6 +718,7 @@ export class WorktreeSession {
     if (targetParentId === id || this.#isManuscriptDescendant(id, targetParentId)) {
       throw new Error("Cannot move a manuscript node into itself or its descendants.");
     }
+    const previous = this.#requireManuscriptJournalEntry(id);
     const sourceParent = this.#requireManuscriptFolder(node.parentId ?? "");
     const targetParent = this.#requireManuscriptFolder(targetParentId);
     const previousIndex = sourceParent.childIds.indexOf(id);
@@ -666,12 +733,47 @@ export class WorktreeSession {
     targetParent.childIds.splice(insertionIndex, 0, id);
     node.parentId = targetParent.id;
     this.#rebuildCurrentManuscriptFromTree();
-    this.#persistAndEmit();
+    const current = this.#requireManuscriptJournalEntry(id);
+    this.#persistAndEmit(false, {
+      source: "structure-edit",
+      title: sourceParent.id === targetParent.id ? "调整顺序" : "移动",
+      groupId: null,
+      operations: [
+        {
+          kind: sourceParent.id === targetParent.id ? "reorder" : "move",
+          domain: "manuscript",
+          entityId: id,
+          entityKind: current.type === "chapter" ? "chapter" : "folder",
+          label: current.title,
+          displayPath: current.displayPath,
+          previousPath: previous.displayPath,
+          beforeContent: previous.type === "chapter" ? previous.content : null,
+          afterContent: current.type === "chapter" ? current.content : null,
+        },
+      ],
+    });
   }
 
   deleteManuscriptNode(id: string): void {
+    const operations = this.#collectManuscriptSubtreeIds(id).map((subtreeId) => {
+      const entry = this.#requireManuscriptJournalEntry(subtreeId);
+      return {
+        kind: "delete" as const,
+        domain: "manuscript" as const,
+        entityId: subtreeId,
+        entityKind: entry.type === "chapter" ? ("chapter" as const) : ("folder" as const),
+        label: entry.title,
+        displayPath: entry.displayPath,
+        beforeContent: entry.type === "chapter" ? entry.content : null,
+      };
+    });
     this.#deleteManuscriptNodeFromCurrent(id);
-    this.#persistAndEmit();
+    this.#persistAndEmit(false, {
+      source: "structure-edit",
+      title: "删除",
+      groupId: null,
+      operations,
+    });
   }
 
   #deleteManuscriptNodeFromCurrent(id: string): void {
@@ -710,11 +812,21 @@ export class WorktreeSession {
     }
     entry.content = content;
     this.#persistAndEmit(false, {
-      domain: "manuscript",
-      entityId: id,
-      entityKind: "chapter",
-      beforeContent,
-      afterContent: content,
+      source: "autosave",
+      title: "自动保存",
+      groupId: `autosave:manuscript:${id}`,
+      operations: [
+        {
+          kind: "content",
+          domain: "manuscript",
+          entityId: id,
+          entityKind: "chapter",
+          label: entry.title,
+          displayPath: entry.displayPath,
+          beforeContent,
+          afterContent: content,
+        },
+      ],
     });
   }
 
@@ -733,7 +845,23 @@ export class WorktreeSession {
     parent.childIds.push(nodeId);
     sortResourceChildrenByName(this.#resourceTree, parent.id);
     this.#rebuildCurrentResourcesFromTree(new Map([[nodeId, ""]]));
-    this.#persistAndEmit();
+    const entry = this.#requireResourceJournalEntry(nodeId);
+    this.#persistAndEmit(false, {
+      source: "structure-edit",
+      title: "创建文件",
+      groupId: null,
+      operations: [
+        {
+          kind: "create",
+          domain: "resource",
+          entityId: nodeId,
+          entityKind: "file",
+          label: entry.name,
+          displayPath: entry.displayPath,
+          afterContent: entry.content,
+        },
+      ],
+    });
     return { nodeId };
   }
 
@@ -752,7 +880,22 @@ export class WorktreeSession {
     parent.childIds.push(nodeId);
     sortResourceChildrenByName(this.#resourceTree, parent.id);
     this.#rebuildCurrentResourcesFromTree();
-    this.#persistAndEmit();
+    const entry = this.#requireResourceJournalEntry(nodeId);
+    this.#persistAndEmit(false, {
+      source: "structure-edit",
+      title: "创建文件夹",
+      groupId: null,
+      operations: [
+        {
+          kind: "create",
+          domain: "resource",
+          entityId: nodeId,
+          entityKind: "folder",
+          label: entry.name,
+          displayPath: entry.displayPath,
+        },
+      ],
+    });
     return { nodeId };
   }
 
@@ -766,11 +909,34 @@ export class WorktreeSession {
       throw new Error(`Resource node has no parent: ${id}`);
     }
     const normalizedName = normalizeResourceNodeName(name);
+    if (node.name === normalizedName) {
+      return;
+    }
+    const previous = this.#requireResourceJournalEntry(id);
     this.#assertResourceSiblingNameAvailable(parentId, normalizedName, id);
     node.name = normalizedName;
     sortResourceChildrenByName(this.#resourceTree, parentId);
     this.#rebuildCurrentResourcesFromTree();
-    this.#persistAndEmit();
+    const current = this.#requireResourceJournalEntry(id);
+    this.#persistAndEmit(false, {
+      source: "structure-edit",
+      title: "重命名",
+      groupId: null,
+      operations: [
+        {
+          kind: "rename",
+          domain: "resource",
+          entityId: id,
+          entityKind: current.type,
+          label: current.name,
+          displayPath: current.displayPath,
+          previousLabel: previous.name,
+          previousPath: previous.displayPath,
+          beforeContent: previous.type === "file" ? previous.content : null,
+          afterContent: current.type === "file" ? current.content : null,
+        },
+      ],
+    });
   }
 
   moveResourceNode(id: string, targetParentId: string): void {
@@ -787,6 +953,7 @@ export class WorktreeSession {
     if (node.parentId === targetParentId) {
       throw new Error("Node is already under the target folder.");
     }
+    const previous = this.#requireResourceJournalEntry(id);
     const sourceParent = this.#requireResourceFolder(node.parentId ?? "");
     const targetParent = this.#requireResourceFolder(targetParentId);
     this.#assertResourceSiblingNameAvailable(targetParentId, node.name);
@@ -796,12 +963,47 @@ export class WorktreeSession {
     sortResourceChildrenByName(this.#resourceTree, sourceParent.id);
     sortResourceChildrenByName(this.#resourceTree, targetParent.id);
     this.#rebuildCurrentResourcesFromTree();
-    this.#persistAndEmit();
+    const current = this.#requireResourceJournalEntry(id);
+    this.#persistAndEmit(false, {
+      source: "structure-edit",
+      title: "移动",
+      groupId: null,
+      operations: [
+        {
+          kind: "move",
+          domain: "resource",
+          entityId: id,
+          entityKind: current.type,
+          label: current.name,
+          displayPath: current.displayPath,
+          previousPath: previous.displayPath,
+          beforeContent: previous.type === "file" ? previous.content : null,
+          afterContent: current.type === "file" ? current.content : null,
+        },
+      ],
+    });
   }
 
   deleteResourceNode(id: string): void {
+    const operations = this.#collectResourceSubtreeIds(id).map((subtreeId) => {
+      const entry = this.#requireResourceJournalEntry(subtreeId);
+      return {
+        kind: "delete" as const,
+        domain: "resource" as const,
+        entityId: subtreeId,
+        entityKind: entry.type,
+        label: entry.name,
+        displayPath: entry.displayPath,
+        beforeContent: entry.type === "file" ? entry.content : null,
+      };
+    });
     this.#deleteResourceNodeFromCurrent(id);
-    this.#persistAndEmit();
+    this.#persistAndEmit(false, {
+      source: "structure-edit",
+      title: "删除",
+      groupId: null,
+      operations,
+    });
   }
 
   #deleteResourceNodeFromCurrent(id: string): void {
@@ -840,11 +1042,21 @@ export class WorktreeSession {
     }
     entry.content = content;
     this.#persistAndEmit(false, {
-      domain: "resource",
-      entityId: id,
-      entityKind: "file",
-      beforeContent,
-      afterContent: content,
+      source: "autosave",
+      title: "自动保存",
+      groupId: `autosave:resource:${id}`,
+      operations: [
+        {
+          kind: "content",
+          domain: "resource",
+          entityId: id,
+          entityKind: "file",
+          label: entry.name,
+          displayPath: entry.displayPath,
+          beforeContent,
+          afterContent: content,
+        },
+      ],
     });
   }
 
@@ -1144,7 +1356,7 @@ export class WorktreeSession {
     ).snapshot;
   }
 
-  #persistAndEmit(includeCommitted = false, journalCapture?: JournalContentCapture): void {
+  #persistAndEmit(includeCommitted = false, journalCapture?: JournalRevisionCapture): void {
     this.#warning = null;
     this.#recomputeAllChangeStatuses();
     this.#revision += 1;
@@ -1238,7 +1450,7 @@ export class WorktreeSession {
     this.#recordChangesStreamEmit(changesSnapshot);
   }
 
-  #persistState(includeCommitted: boolean, journalCapture?: JournalContentCapture): void {
+  #persistState(includeCommitted: boolean, journalCapture?: JournalRevisionCapture): void {
     this.#store.transaction(() => {
       this.#store.upsertWorktree({
         projectId: this.#projectId,
@@ -1270,7 +1482,7 @@ export class WorktreeSession {
         );
       }
       if (journalCapture !== undefined) {
-        this.#recordJournalContentRevision(journalCapture);
+        this.#recordJournalRevision(journalCapture);
       }
     });
   }
@@ -1776,28 +1988,11 @@ export class WorktreeSession {
     return this.#repo.createTree(entries);
   }
 
-  #recordJournalContentRevision(capture: JournalContentCapture): void {
-    const state = this.#currentTimelineTargetState(capture);
-    const beforeSha = sha1Text(capture.beforeContent);
-    const afterSha = sha1Text(capture.afterContent);
-    const beforeBlob = Buffer.from(capture.beforeContent, "utf-8");
-    const afterBlob = Buffer.from(capture.afterContent, "utf-8");
-    this.#store.upsertJournalBlob({
-      projectId: this.#projectId,
-      blobId: beforeSha,
-      contentSha: beforeSha,
-      content: beforeBlob,
-    });
-    this.#store.upsertJournalBlob({
-      projectId: this.#projectId,
-      blobId: afterSha,
-      contentSha: afterSha,
-      content: afterBlob,
-    });
-
+  #recordJournalRevision(capture: JournalRevisionCapture): void {
+    if (capture.operations.length === 0) {
+      return;
+    }
     const revisionId = nanoid(12);
-    const operationId = nanoid(12);
-    const stats = computeStats(capture.beforeContent, capture.afterContent);
     this.#store.recordJournalRevision(
       {
         projectId: this.#projectId,
@@ -1807,34 +2002,54 @@ export class WorktreeSession {
         createdAt: Date.now(),
         worktreeRevision: this.#revision,
         actor: "user",
-        source: "autosave",
-        title: "自动保存",
+        source: capture.source,
+        title: capture.title,
         commitHash: null,
-        groupId: `autosave:${capture.domain}:${capture.entityId}`,
+        groupId: capture.groupId,
       },
-      [
-        {
+      capture.operations.map((operation, index) => {
+        const beforeBlobId = this.#upsertJournalContentBlob(operation.beforeContent ?? null);
+        const afterBlobId = this.#upsertJournalContentBlob(operation.afterContent ?? null);
+        const stats =
+          operation.beforeContent != null && operation.afterContent != null
+            ? computeStats(operation.beforeContent, operation.afterContent)
+            : null;
+        return {
           projectId: this.#projectId,
           branchName: this.#branchName,
           revisionId,
-          operationId,
-          orderIndex: 0,
-          kind: "content",
-          domain: capture.domain,
-          entityId: capture.entityId,
-          entityKind: capture.entityKind,
-          label: state.label,
-          displayPath: state.displayPath,
-          previousLabel: null,
-          previousPath: null,
-          beforeBlobId: beforeSha,
-          afterBlobId: afterSha,
-          statsAdded: stats.added,
-          statsRemoved: stats.removed,
+          operationId: nanoid(12),
+          orderIndex: index,
+          kind: operation.kind,
+          domain: operation.domain,
+          entityId: operation.entityId,
+          entityKind: operation.entityKind,
+          label: operation.label,
+          displayPath: operation.displayPath,
+          previousLabel: operation.previousLabel ?? null,
+          previousPath: operation.previousPath ?? null,
+          beforeBlobId,
+          afterBlobId,
+          statsAdded: stats?.added ?? null,
+          statsRemoved: stats?.removed ?? null,
           metadataJson: null,
-        },
-      ],
+        };
+      }),
     );
+  }
+
+  #upsertJournalContentBlob(content: string | null): string | null {
+    if (content === null) {
+      return null;
+    }
+    const contentSha = sha1Text(content);
+    this.#store.upsertJournalBlob({
+      projectId: this.#projectId,
+      blobId: contentSha,
+      contentSha,
+      content: Buffer.from(content, "utf-8"),
+    });
+    return contentSha;
   }
 
   #journalEntryToTimelineEntry(entry: WorktreeJournalEntryRecord): TimelineEntry {
@@ -1860,30 +2075,6 @@ export class WorktreeSession {
       operationId: entry.operationId,
       groupId: entry.groupId ?? undefined,
       hasContent: entry.afterContent !== null,
-    };
-  }
-
-  #currentTimelineTargetState(target: TimelineTarget): TimelineFileState {
-    if (target.domain === "manuscript") {
-      const entry = this.#currentManuscript.entries.get(target.entityId);
-      if (entry === undefined) {
-        throw new Error(`Manuscript chapter does not exist: ${target.entityId}`);
-      }
-      return {
-        label: entry.title,
-        displayPath: entry.displayPath,
-        content: entry.type === "chapter" ? entry.content : null,
-      };
-    }
-
-    const entry = this.#currentResources.entries.get(target.entityId);
-    if (entry === undefined) {
-      throw new Error(`Resource file does not exist: ${target.entityId}`);
-    }
-    return {
-      label: entry.name,
-      displayPath: entry.displayPath,
-      content: entry.type === "file" ? entry.content : null,
     };
   }
 
@@ -2107,6 +2298,14 @@ export class WorktreeSession {
     return node as ManuscriptTreeNode & { type: "folder" };
   }
 
+  #requireManuscriptJournalEntry(id: string): ManuscriptEntry {
+    const entry = this.#currentManuscript.entries.get(id);
+    if (entry === undefined) {
+      throw new Error(`Manuscript journal entry does not exist: ${id}`);
+    }
+    return entry;
+  }
+
   #requireResourceNode(id: string): ResourceTreeNode {
     const node = this.#resourceTree.nodes[id];
     if (node === undefined) {
@@ -2121,6 +2320,14 @@ export class WorktreeSession {
       throw new Error(`Resource node is not a folder: ${id}`);
     }
     return node as ResourceTreeNode & { type: "folder" };
+  }
+
+  #requireResourceJournalEntry(id: string): JournalResourceSnapshotEntry {
+    const entry = this.#currentResources.entries.get(id);
+    if (entry === undefined) {
+      throw new Error(`Resource journal entry does not exist: ${id}`);
+    }
+    return entry;
   }
 
   #isManuscriptDescendant(ancestorId: string, candidateId: string): boolean {
