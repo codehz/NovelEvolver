@@ -25,7 +25,7 @@
     "@codemirror/language": "^6.12.4",
     "@codemirror/merge": "^6.12.2",
     "@codemirror/state": "^6.7.1",
-    "@codemirror/view": "^6.43.5",
+    "@codemirror/view": "^6.43.6",
     "@iconify/json": "^2.2.496",
     "@iconify/utils": "^3.1.4",
     "@mogeko/maple-mono-cn": "^7.9.0",
@@ -65,6 +65,14 @@
     "typescript": "^6.0.3",
     "vite": "^8.1.3",
     "wait-on": "^9.0.10"
+  },
+  "resolutions": {
+    "@codemirror/commands": "$@codemirror/commands",
+    "@codemirror/lang-markdown": "$@codemirror/lang-markdown",
+    "@codemirror/language": "$@codemirror/language",
+    "@codemirror/merge": "$@codemirror/merge",
+    "@codemirror/state": "$@codemirror/state",
+    "@codemirror/view": "$@codemirror/view"
   },
   "lint-staged": {
     "*": "oxfmt --write --no-error-on-unmatched-pattern"
