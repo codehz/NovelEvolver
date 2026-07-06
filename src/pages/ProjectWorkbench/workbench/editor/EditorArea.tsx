@@ -24,7 +24,7 @@ export function EditorArea() {
   const activeTab = useAtomValue(activeEditorTabAtom);
   const activeTabId = useAtomValue(activeTabIdAtom);
   const transientTabId = useAtomValue(transientTabIdAtom);
-  const { tabs, activateTab, closeTab } = useWorkbenchEditorActions();
+  const { tabs, activateTab, closeTab, pinTab } = useWorkbenchEditorActions();
 
   return (
     <AutoTransition
@@ -38,6 +38,7 @@ export function EditorArea() {
         transientId={transientTabId}
         onActivate={activateTab}
         onClose={closeTab}
+        onPin={pinTab}
         renderIcon={(tab) => (
           <span aria-hidden="true" className={contentEditorTabIconClass(tab.kind)} />
         )}

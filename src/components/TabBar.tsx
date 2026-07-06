@@ -16,6 +16,7 @@ type TabBarProps<T extends TabItem> = {
   transientId?: string | null;
   onActivate: (id: string) => void;
   onClose?: (id: string) => void;
+  onPin?: (id: string) => void;
   renderIcon?: (tab: T) => ReactNode;
   className?: string;
 };
@@ -39,6 +40,7 @@ export function TabBar<T extends TabItem>({
   transientId = null,
   onActivate,
   onClose,
+  onPin,
   renderIcon,
   className,
 }: TabBarProps<T>) {
@@ -68,6 +70,7 @@ export function TabBar<T extends TabItem>({
             role="tab"
             aria-selected={active}
             onClick={() => onActivate(tab.id)}
+            onDoubleClick={() => onPin?.(tab.id)}
             onKeyDown={(event) => {
               if (event.key === "Enter" || event.key === " ") {
                 event.preventDefault();
@@ -92,6 +95,9 @@ export function TabBar<T extends TabItem>({
                 onClick={(event) => {
                   event.stopPropagation();
                   onClose(tab.id);
+                }}
+                onDoubleClick={(event) => {
+                  event.stopPropagation();
                 }}
               >
                 <span aria-hidden="true" className="icon-[codicon--close]" />
