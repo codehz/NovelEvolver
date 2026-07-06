@@ -1,5 +1,5 @@
 import { cn } from "#app/lib/cn";
-import type { EntityKind } from "#shared/rpc/worktree-changes-rpc";
+import type { EntityKind, LeafEntityKind } from "#shared/rpc/worktree-changes-rpc";
 import type { WorktreeSearchHit } from "#shared/rpc/worktree-search-rpc";
 import type { ManuscriptTreeNode, ResourceTreeNode } from "#shared/rpc/worktree-tree-rpc";
 
@@ -14,8 +14,12 @@ export function contentFolderIconClass(expanded: boolean): string {
   );
 }
 
-export function contentFileLeafIconClass(): string {
-  return cn("icon-[codicon--file-text] text-ctp-blue", contentTreeIconLayoutClass);
+export function contentFileLeafIconClass(entityKind: LeafEntityKind): string {
+  return cn(
+    "text-ctp-blue",
+    entityKind === "file" ? "icon-[codicon--file-text]" : "icon-[codicon--book]",
+    contentTreeIconLayoutClass,
+  );
 }
 
 export function contentDomainIconClass(domain: "manuscript" | "resource"): string {
@@ -33,7 +37,7 @@ export function contentEntityIconClass(
   if (entityKind === "folder") {
     return contentFolderIconClass(options?.folderExpanded ?? false);
   }
-  return contentFileLeafIconClass();
+  return contentFileLeafIconClass(entityKind);
 }
 
 export function manuscriptTreeNodeIconClass(
@@ -43,7 +47,7 @@ export function manuscriptTreeNodeIconClass(
   if (type === "folder") {
     return contentFolderIconClass(expanded);
   }
-  return contentFileLeafIconClass();
+  return contentFileLeafIconClass(type);
 }
 
 export function resourceTreeNodeIconClass(
@@ -53,10 +57,10 @@ export function resourceTreeNodeIconClass(
   if (type === "folder") {
     return contentFolderIconClass(expanded);
   }
-  return contentFileLeafIconClass();
+  return contentFileLeafIconClass(type);
 }
 
 /** 编辑器 Tab 默认图标（无自定义 renderIcon 时）。 */
 export function contentEditorTabDefaultIconClass(): string {
-  return cn(contentFileLeafIconClass(), "mr-2");
+  return cn(contentFileLeafIconClass("file"), "mr-2");
 }

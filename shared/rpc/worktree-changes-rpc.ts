@@ -10,7 +10,8 @@ import type {
 
 export type ChangeDomain = "manuscript" | "resource";
 export type ChangeKind = "create" | "delete" | "rename" | "move" | "reorder" | "content";
-export type EntityKind = "chapter" | "folder" | "file";
+export type LeafEntityKind = "chapter" | "file";
+export type EntityKind = LeafEntityKind | "folder";
 
 export type ChangeStats = {
   added: number;

@@ -1,6 +1,5 @@
 import { cn } from "#app/lib/cn";
 import { projectDisplayName } from "#app/lib/project-display-name";
-import { contentFileLeafIconClass } from "#app/pages/ProjectWorkbench/workbench/tree/content-tree-icons";
 import type { ProjectMetadata } from "#shared/project";
 
 import { formatLastOpened } from "./format-last-opened";
@@ -50,7 +49,7 @@ export function ProjectListCard({ project, onOpen, onRemove }: ProjectListCardPr
             onOpen(project.id);
           }}
         >
-          <span aria-hidden="true" className={cn(contentFileLeafIconClass(), "text-xl")} />
+          <span aria-hidden="true" className="icon-[codicon--repo] text-xl text-ctp-blue" />
           <span className="line-clamp-2 min-h-0 min-w-0 leading-snug font-medium text-app-foreground">
             {name}
           </span>
