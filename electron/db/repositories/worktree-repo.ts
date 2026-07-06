@@ -50,6 +50,22 @@ export type ResourceNodeCommittedRow = {
   contentSha: string | null;
 };
 
+export type WorktreeLocalSnapshotDomain = "manuscript" | "resource";
+
+export type WorktreeLocalSnapshotRecord = {
+  projectId: number;
+  branchName: string;
+  snapshotId: string;
+  domain: WorktreeLocalSnapshotDomain;
+  entityId: string;
+  capturedAt: number;
+  revision: number;
+  label: string;
+  displayPath: string;
+  contentSha: string;
+  content: Buffer;
+};
+
 type WorktreeRow = {
   project_id: number;
   branch_name: string;
@@ -100,6 +116,20 @@ type ResourceCommittedSqlRow = {
   content_sha: string | null;
 };
 
+type WorktreeLocalSnapshotSqlRow = {
+  project_id: number;
+  branch_name: string;
+  snapshot_id: string;
+  domain: WorktreeLocalSnapshotDomain;
+  entity_id: string;
+  captured_at: number;
+  revision: number;
+  label: string;
+  display_path: string;
+  content_sha: string;
+  content: Uint8Array;
+};
+
 function toBuffer(value: Uint8Array | null): Buffer | null {
   return value === null ? null : Buffer.from(value);
 }
@@ -111,6 +141,22 @@ function rowToWorktreeRecord(row: WorktreeRow): WorktreeRecord {
     baseCommitSha: row.base_commit_sha,
     revision: row.revision,
     warning: row.warning,
+  };
+}
+
+function rowToLocalSnapshotRecord(row: WorktreeLocalSnapshotSqlRow): WorktreeLocalSnapshotRecord {
+  return {
+    projectId: row.project_id,
+    branchName: row.branch_name,
+    snapshotId: row.snapshot_id,
+    domain: row.domain,
+    entityId: row.entity_id,
+    capturedAt: row.captured_at,
+    revision: row.revision,
+    label: row.label,
+    displayPath: row.display_path,
+    contentSha: row.content_sha,
+    content: Buffer.from(row.content),
   };
 }
 
@@ -375,6 +421,173 @@ export class WorktreeRepository {
         row.contentSha,
       ]),
     );
+  }
+
+  readLocalSnapshots(
+    projectId: number,
+    branchName: string,
+    domain: WorktreeLocalSnapshotDomain,
+    entityId: string,
+    limit: number,
+  ): WorktreeLocalSnapshotRecord[] {
+    const rows = this.#db
+      .prepare(
+        `
+          SELECT
+            project_id,
+            branch_name,
+            snapshot_id,
+            domain,
+            entity_id,
+            captured_at,
+            revision,
+            label,
+            display_path,
+            content_sha,
+            content
+          FROM worktree_local_snapshot
+          WHERE
+            project_id = ?
+            AND branch_name = ?
+            AND domain = ?
+            AND entity_id = ?
+          ORDER BY captured_at DESC, revision DESC, snapshot_id DESC
+          LIMIT ?
+        `,
+      )
+      .all(projectId, branchName, domain, entityId, limit) as WorktreeLocalSnapshotSqlRow[];
+    return rows.map(rowToLocalSnapshotRecord);
+  }
+
+  getLocalSnapshot(
+    projectId: number,
+    branchName: string,
+    snapshotId: string,
+  ): WorktreeLocalSnapshotRecord | null {
+    const row = this.#db
+      .prepare(
+        `
+          SELECT
+            project_id,
+            branch_name,
+            snapshot_id,
+            domain,
+            entity_id,
+            captured_at,
+            revision,
+            label,
+            display_path,
+            content_sha,
+            content
+          FROM worktree_local_snapshot
+          WHERE project_id = ? AND branch_name = ? AND snapshot_id = ?
+        `,
+      )
+      .get(projectId, branchName, snapshotId) as WorktreeLocalSnapshotSqlRow | undefined;
+    return row === undefined ? null : rowToLocalSnapshotRecord(row);
+  }
+
+  recordLocalSnapshot(
+    record: WorktreeLocalSnapshotRecord,
+    coalesceWindowMs: number,
+  ): WorktreeLocalSnapshotRecord | null {
+    const latest = this.#db
+      .prepare(
+        `
+          SELECT
+            project_id,
+            branch_name,
+            snapshot_id,
+            domain,
+            entity_id,
+            captured_at,
+            revision,
+            label,
+            display_path,
+            content_sha,
+            content
+          FROM worktree_local_snapshot
+          WHERE
+            project_id = ?
+            AND branch_name = ?
+            AND domain = ?
+            AND entity_id = ?
+          ORDER BY captured_at DESC, revision DESC, snapshot_id DESC
+          LIMIT 1
+        `,
+      )
+      .get(record.projectId, record.branchName, record.domain, record.entityId) as
+      | WorktreeLocalSnapshotSqlRow
+      | undefined;
+
+    if (latest !== undefined && latest.content_sha === record.contentSha) {
+      return null;
+    }
+
+    if (latest !== undefined && record.capturedAt - latest.captured_at <= coalesceWindowMs) {
+      this.#db
+        .prepare(
+          `
+            UPDATE worktree_local_snapshot
+            SET
+              captured_at = ?,
+              revision = ?,
+              label = ?,
+              display_path = ?,
+              content_sha = ?,
+              content = ?
+            WHERE project_id = ? AND branch_name = ? AND snapshot_id = ?
+          `,
+        )
+        .run(
+          record.capturedAt,
+          record.revision,
+          record.label,
+          record.displayPath,
+          record.contentSha,
+          record.content,
+          record.projectId,
+          record.branchName,
+          latest.snapshot_id,
+        );
+      return {
+        ...record,
+        snapshotId: latest.snapshot_id,
+      };
+    }
+
+    this.#db
+      .prepare(
+        `
+          INSERT INTO worktree_local_snapshot (
+            project_id,
+            branch_name,
+            snapshot_id,
+            domain,
+            entity_id,
+            captured_at,
+            revision,
+            label,
+            display_path,
+            content_sha,
+            content
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        `,
+      )
+      .run(
+        record.projectId,
+        record.branchName,
+        record.snapshotId,
+        record.domain,
+        record.entityId,
+        record.capturedAt,
+        record.revision,
+        record.label,
+        record.displayPath,
+        record.contentSha,
+        record.content,
+      );
+    return record;
   }
 
   /**

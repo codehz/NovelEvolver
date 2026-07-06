@@ -7,6 +7,7 @@ import type { WorktreeHandle } from "#shared/rpc/projects-rpc";
 import type { ResourceLibraryHandle } from "#shared/rpc/resource-library-rpc";
 import type { WorktreeChangesHandle } from "#shared/rpc/worktree-changes-rpc";
 import type { WorktreeSearchHandle } from "#shared/rpc/worktree-search-rpc";
+import type { WorktreeTimelineHandle } from "#shared/rpc/worktree-timeline-rpc";
 
 import { projectMolecule } from "../state/molecules";
 
@@ -46,6 +47,9 @@ export const worktreeSearchMolecule = molecule(() => use(worktreeMolecule).searc
 /** 当前分支变更跟踪句柄（`openWorktree(...).changes` 级联，不在此 await）。 */
 export const worktreeChangesMolecule = molecule(() => use(worktreeMolecule).changes);
 
+/** 当前分支文件时间线句柄（`openWorktree(...).timeline` 级联，不在此 await）。 */
+export const worktreeTimelineMolecule = molecule(() => use(worktreeMolecule).timeline);
+
 export function useActiveBranchName(): string {
   return useMolecule(activeBranchNameMolecule);
 }
@@ -68,4 +72,8 @@ export function useWorktreeSearch(): RpcPromise<WorktreeSearchHandle> {
 
 export function useWorktreeChanges(): RpcPromise<WorktreeChangesHandle> {
   return useMolecule(worktreeChangesMolecule);
+}
+
+export function useWorktreeTimeline(): RpcPromise<WorktreeTimelineHandle> {
+  return useMolecule(worktreeTimelineMolecule);
 }

@@ -73,6 +73,23 @@ export function initWorktreeSchema(db: DatabaseSync): void {
         REFERENCES worktree(project_id, branch_name) ON DELETE CASCADE
     );
 
+    CREATE TABLE IF NOT EXISTS worktree_local_snapshot (
+      project_id INTEGER NOT NULL,
+      branch_name TEXT NOT NULL,
+      snapshot_id TEXT NOT NULL,
+      domain TEXT NOT NULL,
+      entity_id TEXT NOT NULL,
+      captured_at INTEGER NOT NULL,
+      revision INTEGER NOT NULL,
+      label TEXT NOT NULL,
+      display_path TEXT NOT NULL,
+      content_sha TEXT NOT NULL,
+      content BLOB NOT NULL,
+      PRIMARY KEY (project_id, branch_name, snapshot_id),
+      FOREIGN KEY (project_id, branch_name)
+        REFERENCES worktree(project_id, branch_name) ON DELETE CASCADE
+    );
+
     CREATE INDEX IF NOT EXISTS idx_manuscript_current_parent
       ON manuscript_node_current(project_id, branch_name, parent_id);
     CREATE INDEX IF NOT EXISTS idx_manuscript_committed_parent
@@ -81,5 +98,7 @@ export function initWorktreeSchema(db: DatabaseSync): void {
       ON resource_node_current(project_id, branch_name, parent_id);
     CREATE INDEX IF NOT EXISTS idx_resource_committed_parent
       ON resource_node_committed(project_id, branch_name, parent_id);
+    CREATE INDEX IF NOT EXISTS idx_worktree_local_snapshot_entity
+      ON worktree_local_snapshot(project_id, branch_name, domain, entity_id, captured_at DESC);
   `);
 }

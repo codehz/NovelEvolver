@@ -7,6 +7,7 @@ import type { WorktreeHandle } from "#shared/rpc/projects-rpc";
 import type { ResourceLibraryHandle } from "#shared/rpc/resource-library-rpc";
 import type { WorktreeChangesHandle } from "#shared/rpc/worktree-changes-rpc";
 import type { WorktreeSearchHandle } from "#shared/rpc/worktree-search-rpc";
+import type { WorktreeTimelineHandle } from "#shared/rpc/worktree-timeline-rpc";
 
 import type { WorktreeRepository } from "../db/repositories/worktree-repo";
 import { WorktreeSession } from "../worktree/session";
@@ -14,6 +15,7 @@ import { ManuscriptHandleImpl } from "./manuscript-handle";
 import { ResourceLibraryHandleImpl } from "./resource-library-handle";
 import { WorktreeChangesHandleImpl } from "./worktree-changes-handle";
 import { WorktreeSearchHandleImpl } from "./worktree-search-handle";
+import { WorktreeTimelineHandleImpl } from "./worktree-timeline-handle";
 
 /** ObjectDatabase 类型（从 readTreeSnapshot 参数推导） */
 type ObjectDatabase = Parameters<typeof readTreeSnapshot>[0];
@@ -27,6 +29,7 @@ export class WorktreeHandleImpl extends RpcTarget implements WorktreeHandle {
   readonly #manuscript: ManuscriptHandle;
   readonly #search: WorktreeSearchHandle;
   readonly #changes: WorktreeChangesHandle;
+  readonly #timeline: WorktreeTimelineHandle;
 
   constructor(
     store: WorktreeRepository,
@@ -41,6 +44,7 @@ export class WorktreeHandleImpl extends RpcTarget implements WorktreeHandle {
     this.#manuscript = new ManuscriptHandleImpl(this.#session);
     this.#search = new WorktreeSearchHandleImpl(this.#session);
     this.#changes = new WorktreeChangesHandleImpl(this.#session);
+    this.#timeline = new WorktreeTimelineHandleImpl(this.#session);
   }
 
   get resources(): ResourceLibraryHandle {
@@ -57,5 +61,9 @@ export class WorktreeHandleImpl extends RpcTarget implements WorktreeHandle {
 
   get changes(): WorktreeChangesHandle {
     return this.#changes;
+  }
+
+  get timeline(): WorktreeTimelineHandle {
+    return this.#timeline;
   }
 }

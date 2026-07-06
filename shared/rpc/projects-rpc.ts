@@ -6,6 +6,7 @@ import type { ManuscriptHandle } from "./manuscript-rpc";
 import type { ResourceLibraryHandle } from "./resource-library-rpc";
 import type { WorktreeChangesHandle } from "./worktree-changes-rpc";
 import type { WorktreeSearchHandle } from "./worktree-search-rpc";
+import type { WorktreeTimelineHandle } from "./worktree-timeline-rpc";
 
 /** Branch info for the HEAD of a project repository. */
 export type BranchInfo = {
@@ -21,6 +22,7 @@ export interface WorktreeHandle extends RpcTarget {
   readonly manuscript: ManuscriptHandle;
   readonly search: WorktreeSearchHandle;
   readonly changes: WorktreeChangesHandle;
+  readonly timeline: WorktreeTimelineHandle;
 }
 
 /**

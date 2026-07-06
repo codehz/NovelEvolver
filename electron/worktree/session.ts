@@ -1,3 +1,5 @@
+import { createHash } from "node:crypto";
+
 import type { SHA1 } from "nano-git";
 import { walkLogEntries } from "nano-git/log";
 import type { Repository } from "nano-git/repository/core";
@@ -12,6 +14,11 @@ import type {
 } from "#shared/rpc/worktree-changes-rpc";
 import type { ScmCommitSummary, ScmSnapshot } from "#shared/rpc/worktree-scm-rpc";
 import type { WorktreeSearchQuery, WorktreeSearchResult } from "#shared/rpc/worktree-search-rpc";
+import type {
+  TimelineEntry,
+  TimelineEntryKind,
+  TimelineTarget,
+} from "#shared/rpc/worktree-timeline-rpc";
 import type {
   FileChangeStatus,
   ManuscriptTreeNode,
@@ -42,13 +49,13 @@ import { RpcStreamPublisher } from "../rpc/stream-publisher";
 import { executeWorktreeSearch } from "../search/worktree-search";
 import { refreshAllFolderChangeStatuses } from "./change-status";
 import { ChangeTracker, type ResourceSnapshotState } from "./change-tracker";
-import { readTextFromTree, type ObjectDatabase } from "./diff-utils";
+import { computeStats, readTextFromTree, type ObjectDatabase } from "./diff-utils";
 import { computeMinimalReorderedManuscriptIds } from "./manuscript-reorder";
 import { buildDetailedScmSnapshot, type ResourceSnapshotEntry } from "./scm-snapshot-builder";
 import {
   buildBaseManuscriptSnapshot,
-  buildBaseResourceSnapshot,
   buildManuscriptSnapshot,
+  readOutlineFromBase,
   type ManuscriptEntry,
   type ManuscriptSnapshotState,
 } from "./snapshot-state";
@@ -62,6 +69,146 @@ import {
 const MANUSCRIPT_ID_SIZE = 10;
 const RESOURCE_ID_SIZE = 10;
 const RESOURCE_ROOT_ID = "root";
+const LOCAL_SNAPSHOT_COALESCE_WINDOW_MS = 30_000;
+const RESOURCES_INDEX_FILE = "index.json";
+const RESOURCES_FILES_DIR_NAME = "files";
+const RESOURCES_INDEX_PATH = `${RESOURCES_DIR}/${RESOURCES_INDEX_FILE}`;
+const RESOURCES_FILES_DIR = `${RESOURCES_DIR}/${RESOURCES_FILES_DIR_NAME}`;
+
+type ResourceIndexNode =
+  | {
+      id: string;
+      type: "folder";
+      name: string;
+      parentId: string | null;
+      children: string[];
+    }
+  | {
+      id: string;
+      type: "file";
+      name: string;
+      parentId: string | null;
+    };
+
+type ResourceIndex = {
+  version: 1;
+  rootId: typeof RESOURCE_ROOT_ID;
+  nodes: Record<string, ResourceIndexNode>;
+};
+
+type TimelineFileState = {
+  label: string;
+  displayPath: string;
+  content: string | null;
+};
+
+type LocalSnapshotCapture =
+  | {
+      domain: "manuscript";
+      entityId: string;
+      content: string;
+    }
+  | {
+      domain: "resource";
+      entityId: string;
+      content: string;
+    };
+
+function sha1Text(content: string): string {
+  return createHash("sha1").update(content).digest("hex");
+}
+
+function localTimelineEntryId(snapshotId: string): string {
+  return `local:${snapshotId}`;
+}
+
+function commitTimelineEntryId(commitHash: string, target: TimelineTarget): string {
+  return `commit:${commitHash}:${target.domain}:${target.entityId}`;
+}
+
+function parseResourceIndex(content: string | null): ResourceIndex {
+  if (content === null) {
+    return {
+      version: 1,
+      rootId: RESOURCE_ROOT_ID,
+      nodes: {
+        [RESOURCE_ROOT_ID]: {
+          id: RESOURCE_ROOT_ID,
+          type: "folder",
+          name: "",
+          parentId: null,
+          children: [],
+        },
+      },
+    };
+  }
+
+  const value: unknown = JSON.parse(content);
+  if (
+    typeof value !== "object" ||
+    value === null ||
+    (value as { version?: unknown }).version !== 1 ||
+    (value as { rootId?: unknown }).rootId !== RESOURCE_ROOT_ID ||
+    typeof (value as { nodes?: unknown }).nodes !== "object" ||
+    (value as { nodes?: unknown }).nodes === null
+  ) {
+    throw new Error("Invalid resource index.");
+  }
+
+  const nodes = (value as ResourceIndex).nodes;
+  const root = nodes[RESOURCE_ROOT_ID];
+  if (root?.type !== "folder" || root.parentId !== null) {
+    throw new Error("Invalid resource index root.");
+  }
+  return value as ResourceIndex;
+}
+
+function resourceIndexFromTree(tree: ResourceTreeSnapshot): ResourceIndex {
+  const nodes: Record<string, ResourceIndexNode> = {};
+  for (const [id, node] of Object.entries(tree.nodes)) {
+    nodes[id] =
+      node.type === "folder"
+        ? {
+            id,
+            type: "folder",
+            name: node.name,
+            parentId: node.parentId,
+            children: [...node.childIds],
+          }
+        : {
+            id,
+            type: "file",
+            name: node.name,
+            parentId: node.parentId,
+          };
+  }
+  return {
+    version: 1,
+    rootId: RESOURCE_ROOT_ID,
+    nodes,
+  };
+}
+
+function resourceTreeFromIndex(index: ResourceIndex): ResourceTreeSnapshot {
+  const nodes: Record<string, ResourceTreeNode> = {};
+  for (const [id, node] of Object.entries(index.nodes)) {
+    nodes[id] = {
+      id,
+      type: node.type,
+      name: node.name,
+      parentId: node.parentId,
+      childIds: node.type === "folder" ? [...node.children] : [],
+    };
+  }
+  const root = nodes[RESOURCE_ROOT_ID];
+  if (root === undefined || root.type !== "folder" || root.parentId !== null) {
+    throw new Error("Resource root is missing.");
+  }
+  return {
+    rootId: RESOURCE_ROOT_ID,
+    nodes,
+  };
+}
 
 function cloneManuscriptTreeNode(node: ManuscriptTreeNode): ManuscriptTreeNode {
   return {
@@ -553,7 +700,11 @@ export class WorktreeSession {
       throw new Error(`Manuscript chapter is missing: ${id}`);
     }
     entry.content = content;
-    this.#persistAndEmit();
+    this.#persistAndEmit(false, {
+      domain: "manuscript",
+      entityId: id,
+      content,
+    });
   }
 
   createResourceFile(parentId: string, name: string): WorktreeNodeIdResult {
@@ -673,7 +824,11 @@ export class WorktreeSession {
       throw new Error(`Resource file is missing: ${id}`);
     }
     entry.content = content;
-    this.#persistAndEmit();
+    this.#persistAndEmit(false, {
+      domain: "resource",
+      entityId: id,
+      content,
+    });
   }
 
   revertScmChange(changeId: string): ScmSnapshot {
@@ -736,6 +891,108 @@ export class WorktreeSession {
       });
     }
     return commits;
+  }
+
+  listFileTimeline(target: TimelineTarget, limit = 50): TimelineEntry[] {
+    const boundedLimit = Math.max(1, Math.min(limit, 200));
+    const localEntries = this.#store
+      .readLocalSnapshots(
+        this.#projectId,
+        this.#branchName,
+        target.domain,
+        target.entityId,
+        boundedLimit,
+      )
+      .map<TimelineEntry>((snapshot) => ({
+        id: localTimelineEntryId(snapshot.snapshotId),
+        source: "local-snapshot",
+        kind: "content",
+        domain: snapshot.domain,
+        entityId: snapshot.entityId,
+        label: snapshot.label,
+        displayPath: snapshot.displayPath,
+        timestamp: snapshot.capturedAt,
+        message: "本地保存",
+        hasContent: true,
+        readOnly: false,
+      }));
+    const commitEntries = this.#listCommitTimelineEntries(target, boundedLimit);
+    return [...localEntries, ...commitEntries]
+      .sort((left, right) => right.timestamp - left.timestamp)
+      .slice(0, boundedLimit);
+  }
+
+  readTimelineEntryContent(entryId: string): { content: string | null; readOnly: boolean } {
+    const localSnapshotId = this.#parseLocalTimelineEntryId(entryId);
+    if (localSnapshotId !== null) {
+      const snapshot = this.#store.getLocalSnapshot(
+        this.#projectId,
+        this.#branchName,
+        localSnapshotId,
+      );
+      if (snapshot === null) {
+        throw new Error(`Unknown timeline snapshot: ${entryId}`);
+      }
+      return {
+        content: snapshot.content.toString("utf-8"),
+        readOnly: false,
+      };
+    }
+
+    const commitTarget = this.#parseCommitTimelineEntryId(entryId);
+    if (commitTarget === null) {
+      throw new Error(`Unknown timeline entry: ${entryId}`);
+    }
+    const object = this.#repo.catFile(commitTarget.commitHash as SHA1);
+    if (object.type !== "commit") {
+      throw new Error(`Timeline entry is not a commit: ${commitTarget.commitHash}`);
+    }
+    return {
+      content: this.#readTimelineTargetState(object.tree, commitTarget.target)?.content ?? null,
+      readOnly: true,
+    };
+  }
+
+  restoreTimelineEntryContent(entryId: string): ScmSnapshot {
+    const content = this.readTimelineEntryContent(entryId).content;
+    if (content === null) {
+      throw new Error("Timeline entry has no restorable content.");
+    }
+
+    const localSnapshotId = this.#parseLocalTimelineEntryId(entryId);
+    const target =
+      localSnapshotId !== null
+        ? this.#targetFromLocalSnapshot(localSnapshotId)
+        : this.#parseCommitTimelineEntryId(entryId)?.target;
+    if (target === undefined) {
+      throw new Error(`Unknown timeline entry: ${entryId}`);
+    }
+
+    if (target.domain === "manuscript") {
+      const entry = this.#currentManuscript.entries.get(target.entityId);
+      if (entry === undefined || entry.type !== "chapter") {
+        throw new Error(`Manuscript chapter does not exist: ${target.entityId}`);
+      }
+      entry.content = content;
+      this.#persistAndEmit(false, {
+        domain: "manuscript",
+        entityId: target.entityId,
+        content,
+      });
+      return this.#currentScmSnapshot();
+    }
+
+    const entry = this.#currentResources.entries.get(target.entityId);
+    if (entry === undefined || entry.type !== "file") {
+      throw new Error(`Resource file does not exist: ${target.entityId}`);
+    }
+    entry.content = content;
+    this.#persistAndEmit(false, {
+      domain: "resource",
+      entityId: target.entityId,
+      content,
+    });
+    return this.#currentScmSnapshot();
   }
 
   searchWorktree(options: WorktreeSearchQuery): WorktreeSearchResult {
@@ -888,57 +1145,17 @@ export class WorktreeSession {
     pathById: Map<string, string>;
     idByPath: Map<string, string>;
   } {
-    const legacy = buildBaseResourceSnapshot(this.#objects, baseTree);
-    const tree: ResourceTreeSnapshot = {
-      rootId: RESOURCE_ROOT_ID,
-      nodes: {
-        [RESOURCE_ROOT_ID]: {
-          id: RESOURCE_ROOT_ID,
-          type: "folder",
-          name: "",
-          parentId: null,
-          childIds: [],
-        },
-      },
-    };
-    const snapshotEntries = new Map<string, ResourceSnapshotEntry>();
-    const pathById = new Map<string, string>([[RESOURCE_ROOT_ID, ""]]);
-    const idByPath = new Map<string, string>([["", RESOURCE_ROOT_ID]]);
-
-    for (const legacyEntry of sortedEntryValues(legacy.entries)) {
-      const parentId = idByPath.get(legacyEntry.parentPath);
-      if (parentId === undefined) {
-        throw new Error(`Missing seeded resource parent: ${legacyEntry.parentPath}`);
-      }
-      const id = this.#createResourceId();
-      tree.nodes[id] = {
-        id,
-        type: legacyEntry.type,
-        name: legacyEntry.name,
-        parentId,
-        childIds: [],
-      };
-      tree.nodes[parentId]!.childIds.push(id);
-      pathById.set(id, legacyEntry.path);
-      idByPath.set(legacyEntry.path, id);
-      snapshotEntries.set(id, {
-        id,
-        type: legacyEntry.type,
-        name: legacyEntry.name,
-        parentId,
-        index: tree.nodes[parentId]!.childIds.length - 1,
-        depth: legacyEntry.depth,
-        displayPath: legacyEntry.displayPath,
-        order: legacyEntry.order,
-        content: legacyEntry.content,
-      });
-    }
+    const tree = this.#readResourceTreeFromTree(baseTree);
+    const rebuilt = buildResourceSnapshotFromTree(
+      tree,
+      (id) => readTextFromTree(this.#objects, baseTree, `${RESOURCES_FILES_DIR}/${id}.txt`) ?? "",
+    );
 
     return {
       tree,
-      snapshot: { entries: snapshotEntries },
-      pathById,
-      idByPath,
+      snapshot: rebuilt.snapshot,
+      pathById: rebuilt.pathById,
+      idByPath: rebuilt.idByPath,
     };
   }
 
@@ -958,34 +1175,17 @@ export class WorktreeSession {
     _rows: readonly ResourceNodeCommittedRow[],
   ): ResourceSnapshotState {
     const baseTree = this.#resolveBaseTree();
-    return buildResourceSnapshotFromTree(this.#baseResourceTree, (id) => {
-      const path = this.#buildResourcePathFromTree(this.#baseResourceTree, id);
-      return readTextFromTree(this.#objects, baseTree, `${RESOURCES_DIR}/${path}`) ?? "";
-    }).snapshot;
+    return buildResourceSnapshotFromTree(
+      this.#baseResourceTree,
+      (id) => readTextFromTree(this.#objects, baseTree, `${RESOURCES_FILES_DIR}/${id}.txt`) ?? "",
+    ).snapshot;
   }
 
-  #buildResourcePathFromTree(tree: ResourceTreeSnapshot, id: string): string {
-    if (id === tree.rootId) {
-      return "";
-    }
-    const segments: string[] = [];
-    let currentId: string | null = id;
-    while (currentId !== null && currentId !== tree.rootId) {
-      const node: ResourceTreeNode | undefined = tree.nodes[currentId];
-      if (node === undefined) {
-        throw new Error(`Missing resource node while resolving path: ${id}`);
-      }
-      segments.push(node.name);
-      currentId = node.parentId;
-    }
-    return segments.reverse().join("/");
-  }
-
-  #persistAndEmit(includeCommitted = false): void {
+  #persistAndEmit(includeCommitted = false, localSnapshot?: LocalSnapshotCapture): void {
     this.#warning = null;
     this.#recomputeAllChangeStatuses();
     this.#revision += 1;
-    this.#persistState(includeCommitted);
+    this.#persistState(includeCommitted, localSnapshot);
     this.#emitChanges();
   }
 
@@ -1075,7 +1275,7 @@ export class WorktreeSession {
     this.#recordChangesStreamEmit(changesSnapshot);
   }
 
-  #persistState(includeCommitted: boolean): void {
+  #persistState(includeCommitted: boolean, localSnapshot?: LocalSnapshotCapture): void {
     this.#store.transaction(() => {
       this.#store.upsertWorktree({
         projectId: this.#projectId,
@@ -1105,6 +1305,9 @@ export class WorktreeSession {
           this.#branchName,
           this.#serializeCommittedResourceRows(),
         );
+      }
+      if (localSnapshot !== undefined) {
+        this.#recordLocalSnapshot(localSnapshot);
       }
     });
   }
@@ -1545,14 +1748,11 @@ export class WorktreeSession {
       name: "manuscript",
       hash: this.#writeCurrentManuscriptTreeToRepo(),
     });
-    const resourcesTree = this.#writeCurrentResourcesTreeToRepo(this.#resourceTree.rootId);
-    if (resourcesTree !== null) {
-      rootEntries.push({
-        mode: "040000",
-        name: RESOURCES_DIR,
-        hash: resourcesTree,
-      });
-    }
+    rootEntries.push({
+      mode: "040000",
+      name: RESOURCES_DIR,
+      hash: this.#writeCurrentResourcesTreeToRepo(),
+    });
     return this.#repo.createTree(rootEntries);
   }
 
@@ -1586,43 +1786,239 @@ export class WorktreeSession {
     return this.#repo.createTree(entries);
   }
 
-  #writeCurrentResourcesTreeToRepo(folderId: string): SHA1 | null {
-    const folder = this.#resourceTree.nodes[folderId];
-    if (folder === undefined || folder.type !== "folder") {
-      return null;
-    }
-
-    const entries = folder.childIds
-      .map((childId) => {
-        const child = this.#resourceTree.nodes[childId];
-        if (child === undefined) {
-          return null;
-        }
-        if (child.type === "file") {
-          return {
-            mode: "100644",
-            name: child.name,
-            hash: this.#repo.writeBlob(
-              Buffer.from(this.#currentResources.entries.get(child.id)?.content ?? "", "utf-8"),
-            ),
-          };
-        }
-        const subtree = this.#writeCurrentResourcesTreeToRepo(child.id);
-        return subtree === null
-          ? null
-          : {
-              mode: "040000",
-              name: child.name,
-              hash: subtree,
-            };
-      })
-      .filter((entry) => entry !== null)
+  #writeCurrentResourcesTreeToRepo(): SHA1 {
+    const index = `${JSON.stringify(resourceIndexFromTree(this.#resourceTree), null, 2)}\n`;
+    const entries = [
+      {
+        mode: "100644",
+        name: RESOURCES_INDEX_FILE,
+        hash: this.#repo.writeBlob(Buffer.from(index, "utf-8")),
+      },
+    ];
+    const fileEntries = sortedEntryValues(this.#currentResources.entries)
+      .filter((entry) => entry.type === "file")
+      .map((entry) => ({
+        mode: "100644",
+        name: `${entry.id}.txt`,
+        hash: this.#repo.writeBlob(Buffer.from(entry.content, "utf-8")),
+      }))
       .sort((left, right) => left.name.localeCompare(right.name));
-
-    if (entries.length === 0) {
-      return null;
+    if (fileEntries.length > 0) {
+      entries.push({
+        mode: "040000",
+        name: RESOURCES_FILES_DIR_NAME,
+        hash: this.#repo.createTree(fileEntries),
+      });
     }
     return this.#repo.createTree(entries);
+  }
+
+  #recordLocalSnapshot(snapshot: LocalSnapshotCapture): void {
+    const state = this.#currentTimelineTargetState(snapshot);
+    this.#store.recordLocalSnapshot(
+      {
+        projectId: this.#projectId,
+        branchName: this.#branchName,
+        snapshotId: nanoid(12),
+        domain: snapshot.domain,
+        entityId: snapshot.entityId,
+        capturedAt: Date.now(),
+        revision: this.#revision,
+        label: state.label,
+        displayPath: state.displayPath,
+        contentSha: sha1Text(snapshot.content),
+        content: Buffer.from(snapshot.content, "utf-8"),
+      },
+      LOCAL_SNAPSHOT_COALESCE_WINDOW_MS,
+    );
+  }
+
+  #currentTimelineTargetState(target: TimelineTarget): TimelineFileState {
+    if (target.domain === "manuscript") {
+      const entry = this.#currentManuscript.entries.get(target.entityId);
+      if (entry === undefined) {
+        throw new Error(`Manuscript chapter does not exist: ${target.entityId}`);
+      }
+      return {
+        label: entry.title,
+        displayPath: entry.displayPath,
+        content: entry.type === "chapter" ? entry.content : null,
+      };
+    }
+
+    const entry = this.#currentResources.entries.get(target.entityId);
+    if (entry === undefined) {
+      throw new Error(`Resource file does not exist: ${target.entityId}`);
+    }
+    return {
+      label: entry.name,
+      displayPath: entry.displayPath,
+      content: entry.type === "file" ? entry.content : null,
+    };
+  }
+
+  #listCommitTimelineEntries(target: TimelineTarget, limit: number): TimelineEntry[] {
+    const tip = this.#repo.readBranch(this.#branchName);
+    if (tip === null) {
+      return [];
+    }
+
+    const entries: TimelineEntry[] = [];
+    const emptyTree = this.#repo.createTree([]);
+    for (const entry of walkLogEntries(this.#objects, { from: [tip], firstParent: true })) {
+      const previousTree =
+        entry.commit.parents[0] === undefined
+          ? emptyTree
+          : this.#commitTree(entry.commit.parents[0]);
+      const previous = this.#readTimelineTargetState(previousTree, target);
+      const current = this.#readTimelineTargetState(entry.commit.tree, target);
+      const kind = this.#resolveTimelineCommitKind(previous, current);
+      if (kind === null) {
+        continue;
+      }
+      const displayState = current ?? previous;
+      if (displayState === null) {
+        continue;
+      }
+      entries.push({
+        id: commitTimelineEntryId(entry.hash, target),
+        source: "commit",
+        kind,
+        domain: target.domain,
+        entityId: target.entityId,
+        label: displayState.label,
+        displayPath: displayState.displayPath,
+        timestamp: entry.commit.committer.timestamp * 1000,
+        message: entry.commit.message.split("\n")[0]?.trim() || "(无提交说明)",
+        stats:
+          previous?.content != null && current?.content != null
+            ? computeStats(previous?.content ?? "", current?.content ?? "")
+            : undefined,
+        commitHash: entry.hash,
+        shortHash: entry.hash.slice(0, 7),
+        authorName: entry.commit.author.name,
+        hasContent: current?.content != null,
+        readOnly: true,
+      });
+      if (entries.length >= limit) {
+        break;
+      }
+    }
+    return entries;
+  }
+
+  #commitTree(commitHash: SHA1): SHA1 {
+    const object = this.#repo.catFile(commitHash);
+    if (object.type !== "commit") {
+      throw new Error(`Expected commit at ${commitHash}, got ${object.type}.`);
+    }
+    return object.tree;
+  }
+
+  #resolveTimelineCommitKind(
+    previous: TimelineFileState | null,
+    current: TimelineFileState | null,
+  ): TimelineEntryKind | null {
+    if (previous === null && current !== null) {
+      return "create";
+    }
+    if (previous !== null && current === null) {
+      return "delete";
+    }
+    if (previous === null || current === null) {
+      return null;
+    }
+    if (previous.displayPath !== current.displayPath) {
+      return previous.label !== current.label ? "rename" : "move";
+    }
+    if (previous.label !== current.label) {
+      return "rename";
+    }
+    if (previous.content !== current.content) {
+      return "content";
+    }
+    return null;
+  }
+
+  #readTimelineTargetState(treeHash: SHA1, target: TimelineTarget): TimelineFileState | null {
+    if (target.domain === "manuscript") {
+      return this.#readManuscriptTimelineState(treeHash, target.entityId);
+    }
+    return this.#readResourceTimelineState(treeHash, target.entityId);
+  }
+
+  #readManuscriptTimelineState(treeHash: SHA1, entityId: string): TimelineFileState | null {
+    const outline = readOutlineFromBase(this.#objects, treeHash);
+    if (outline.nodes[entityId]?.type !== "chapter") {
+      return null;
+    }
+    const snapshot = buildManuscriptSnapshot(
+      outline,
+      (id) => readTextFromTree(this.#objects, treeHash, chapterBodyPath(id)) ?? "",
+    );
+    const entry = snapshot.entries.get(entityId);
+    if (entry === undefined || entry.type !== "chapter") {
+      return null;
+    }
+    return {
+      label: entry.title,
+      displayPath: entry.displayPath,
+      content: entry.content,
+    };
+  }
+
+  #readResourceTimelineState(treeHash: SHA1, entityId: string): TimelineFileState | null {
+    const tree = this.#readResourceTreeFromTree(treeHash);
+    const rebuilt = buildResourceSnapshotFromTree(
+      tree,
+      (id) => readTextFromTree(this.#objects, treeHash, `${RESOURCES_FILES_DIR}/${id}.txt`) ?? "",
+    );
+    const entry = rebuilt.snapshot.entries.get(entityId);
+    if (entry === undefined || entry.type !== "file") {
+      return null;
+    }
+    return {
+      label: entry.name,
+      displayPath: entry.displayPath,
+      content: entry.content,
+    };
+  }
+
+  #readResourceTreeFromTree(treeHash: SHA1): ResourceTreeSnapshot {
+    return resourceTreeFromIndex(
+      parseResourceIndex(readTextFromTree(this.#objects, treeHash, RESOURCES_INDEX_PATH)),
+    );
+  }
+
+  #parseLocalTimelineEntryId(entryId: string): string | null {
+    return entryId.startsWith("local:") ? entryId.slice("local:".length) : null;
+  }
+
+  #parseCommitTimelineEntryId(
+    entryId: string,
+  ): { commitHash: string; target: TimelineTarget } | null {
+    const match = /^commit:([^:]+):(manuscript|resource):([^:]+)$/.exec(entryId);
+    if (match === null) {
+      return null;
+    }
+    return {
+      commitHash: match[1]!,
+      target: {
+        domain: match[2] as "manuscript" | "resource",
+        entityId: match[3]!,
+      },
+    };
+  }
+
+  #targetFromLocalSnapshot(snapshotId: string): TimelineTarget {
+    const snapshot = this.#store.getLocalSnapshot(this.#projectId, this.#branchName, snapshotId);
+    if (snapshot === null) {
+      throw new Error(`Unknown timeline snapshot: ${snapshotId}`);
+    }
+    return {
+      domain: snapshot.domain,
+      entityId: snapshot.entityId,
+    } as TimelineTarget;
   }
 
   #currentScmSnapshot(): ScmSnapshot {
