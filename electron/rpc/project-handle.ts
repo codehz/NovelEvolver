@@ -4,6 +4,7 @@ import { createSqliteRepository } from "nano-git/repository/sqlite";
 import type { BranchInfo, ProjectHandle, WorktreeHandle } from "#shared/rpc/projects-rpc";
 
 import type { WorktreeRepository } from "../db/repositories/worktree-repo";
+import { WorktreeSession } from "../worktree/session";
 import { WorktreeHandleImpl } from "./worktree-handle";
 
 /**
@@ -18,6 +19,7 @@ export class ProjectHandleImpl extends RpcTarget implements ProjectHandle {
   readonly #projectId: number;
   readonly #repo: ReturnType<typeof createSqliteRepository>;
   readonly #worktrees: WorktreeRepository;
+  readonly #worktreeHandles = new Map<string, WorktreeHandle>();
 
   constructor(projectId: number, repoPath: string, worktrees: WorktreeRepository) {
     super();
@@ -45,13 +47,21 @@ export class ProjectHandleImpl extends RpcTarget implements ProjectHandle {
   }
 
   openWorktree(name: string): WorktreeHandle {
-    return new WorktreeHandleImpl(
+    const existing = this.#worktreeHandles.get(name);
+    if (existing !== undefined) {
+      return existing;
+    }
+
+    const session = new WorktreeSession(
       this.#worktrees,
       this.#repo.objects,
       this.#repo,
       this.#projectId,
       name,
     );
+    const handle = new WorktreeHandleImpl(session);
+    this.#worktreeHandles.set(name, handle);
+    return handle;
   }
 
   [Symbol.dispose](): void {

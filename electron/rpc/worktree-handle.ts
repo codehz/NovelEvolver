@@ -1,6 +1,4 @@
 import { RpcTarget } from "capnweb";
-import type { Repository } from "nano-git/repository/core";
-import { readTreeSnapshot } from "nano-git/repository/tree/tree-diff";
 
 import type { ManuscriptHandle } from "#shared/rpc/manuscript-rpc";
 import type { WorktreeHandle } from "#shared/rpc/projects-rpc";
@@ -9,16 +7,12 @@ import type { WorktreeChangesHandle } from "#shared/rpc/worktree-changes-rpc";
 import type { WorktreeSearchHandle } from "#shared/rpc/worktree-search-rpc";
 import type { WorktreeTimelineHandle } from "#shared/rpc/worktree-timeline-rpc";
 
-import type { WorktreeRepository } from "../db/repositories/worktree-repo";
-import { WorktreeSession } from "../worktree/session";
+import type { WorktreeSession } from "../worktree/session";
 import { ManuscriptHandleImpl } from "./manuscript-handle";
 import { ResourceLibraryHandleImpl } from "./resource-library-handle";
 import { WorktreeChangesHandleImpl } from "./worktree-changes-handle";
 import { WorktreeSearchHandleImpl } from "./worktree-search-handle";
 import { WorktreeTimelineHandleImpl } from "./worktree-timeline-handle";
-
-/** ObjectDatabase 类型（从 readTreeSnapshot 参数推导） */
-type ObjectDatabase = Parameters<typeof readTreeSnapshot>[0];
 
 /**
  * Server-side RPC target wrapping a SQLite-backed branch worktree session.
@@ -31,15 +25,9 @@ export class WorktreeHandleImpl extends RpcTarget implements WorktreeHandle {
   readonly #changes: WorktreeChangesHandle;
   readonly #timeline: WorktreeTimelineHandle;
 
-  constructor(
-    store: WorktreeRepository,
-    objects: ObjectDatabase,
-    repo: Repository,
-    projectId: number,
-    branchName: string,
-  ) {
+  constructor(session: WorktreeSession) {
     super();
-    this.#session = new WorktreeSession(store, objects, repo, projectId, branchName);
+    this.#session = session;
     this.#resources = new ResourceLibraryHandleImpl(this.#session);
     this.#manuscript = new ManuscriptHandleImpl(this.#session);
     this.#search = new WorktreeSearchHandleImpl(this.#session);
