@@ -78,6 +78,7 @@ const RESOURCES_FILES_DIR_NAME = "files";
 const RESOURCES_INDEX_PATH = `${RESOURCES_DIR}/${RESOURCES_INDEX_FILE}`;
 const RESOURCES_FILES_DIR = `${RESOURCES_DIR}/${RESOURCES_FILES_DIR_NAME}`;
 const AUTOSAVE_JOURNAL_MERGE_WINDOW_MS = 5 * 60 * 1000;
+const RESTORE_HUNK_JOURNAL_MERGE_WINDOW_MS = 5 * 60 * 1000;
 
 type ResourceIndexNode =
   | {
@@ -1174,6 +1175,90 @@ export class WorktreeSession {
     throw new Error(`Unknown timeline entry: ${entryId}`);
   }
 
+  restoreTimelineEntryContentHunk(
+    entryId: string,
+    expectedContent: string,
+    nextContent: string,
+  ): void {
+    const journalEntryId = this.#parseJournalTimelineEntryId(entryId);
+    if (journalEntryId === null) {
+      throw new Error(`Unknown timeline entry: ${entryId}`);
+    }
+
+    const timelineEntry = this.#store.getJournalTimelineEntry(
+      this.#projectId,
+      this.#branchName,
+      journalEntryId,
+    );
+    if (timelineEntry === null) {
+      throw new Error(`Unknown journal timeline entry: ${entryId}`);
+    }
+    if (timelineEntry.afterContent === null) {
+      throw new Error("此记录没有可恢复内容。");
+    }
+
+    if (timelineEntry.domain === "manuscript") {
+      const entry = this.#currentManuscript.entries.get(timelineEntry.entityId);
+      if (entry?.type !== "chapter") {
+        throw new Error(`Manuscript chapter is missing: ${timelineEntry.entityId}`);
+      }
+      if (entry.content !== expectedContent) {
+        throw new Error("当前内容已变化，请重新打开时间线预览后再试。");
+      }
+      if (entry.content === nextContent) {
+        return;
+      }
+      entry.content = nextContent;
+      this.#persistAndEmit(false, {
+        source: "restore",
+        title: "局部恢复",
+        groupKey: `restore:hunk:${timelineEntry.domain}:${timelineEntry.entityId}`,
+        operations: [
+          {
+            kind: "restore",
+            domain: timelineEntry.domain,
+            entityId: timelineEntry.entityId,
+            entityKind: "chapter",
+            label: entry.title,
+            displayPath: entry.displayPath,
+            beforeContent: expectedContent,
+            afterContent: nextContent,
+          },
+        ],
+      });
+      return;
+    }
+
+    const entry = this.#currentResources.entries.get(timelineEntry.entityId);
+    if (entry?.type !== "file") {
+      throw new Error(`Resource file is missing: ${timelineEntry.entityId}`);
+    }
+    if (entry.content !== expectedContent) {
+      throw new Error("当前内容已变化，请重新打开时间线预览后再试。");
+    }
+    if (entry.content === nextContent) {
+      return;
+    }
+    entry.content = nextContent;
+    this.#persistAndEmit(false, {
+      source: "restore",
+      title: "局部恢复",
+      groupKey: `restore:hunk:${timelineEntry.domain}:${timelineEntry.entityId}`,
+      operations: [
+        {
+          kind: "restore",
+          domain: timelineEntry.domain,
+          entityId: timelineEntry.entityId,
+          entityKind: "file",
+          label: entry.name,
+          displayPath: entry.displayPath,
+          beforeContent: expectedContent,
+          afterContent: nextContent,
+        },
+      ],
+    });
+  }
+
   searchWorktree(options: WorktreeSearchQuery): WorktreeSearchResult {
     return executeWorktreeSearch(
       this.#currentManuscript.entries.values(),
@@ -2003,18 +2088,22 @@ export class WorktreeSession {
       const beforeContent = this.#journalContentForOperation(capture.source, operation, "before");
       const afterContent = this.#journalContentForOperation(capture.source, operation, "after");
 
-      if (
-        capture.source === "autosave" &&
-        capture.groupKey !== null &&
-        operation.kind === "content"
-      ) {
-        const existing = this.#store.getMergeableAutosaveJournalEntry(
+      const mergeWindowMs =
+        capture.source === "autosave" && operation.kind === "content"
+          ? AUTOSAVE_JOURNAL_MERGE_WINDOW_MS
+          : capture.source === "restore" && operation.kind === "restore"
+            ? RESTORE_HUNK_JOURNAL_MERGE_WINDOW_MS
+            : null;
+      if (mergeWindowMs !== null && capture.groupKey !== null) {
+        const existing = this.#store.getMergeableJournalEntry(
           this.#projectId,
           this.#branchName,
           operation.domain,
           operation.entityId,
+          capture.source,
+          operation.kind,
           capture.groupKey,
-          now - AUTOSAVE_JOURNAL_MERGE_WINDOW_MS,
+          now - mergeWindowMs,
         );
         if (existing !== null) {
           const mergedBeforeContent =

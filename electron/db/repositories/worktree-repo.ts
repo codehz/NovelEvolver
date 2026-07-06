@@ -614,11 +614,13 @@ export class WorktreeRepository {
     return row === undefined ? null : rowToJournalEntryRecord(row);
   }
 
-  getMergeableAutosaveJournalEntry(
+  getMergeableJournalEntry(
     projectId: number,
     branchName: string,
     domain: WorktreeJournalDomain,
     entityId: string,
+    source: WorktreeJournalSource,
+    kind: WorktreeJournalOperationKind,
     groupKey: string,
     minUpdatedAt: number,
   ): WorktreeJournalEntryRecord | null {
@@ -671,8 +673,8 @@ export class WorktreeRepository {
       .get(projectId, branchName, domain, entityId) as WorktreeJournalEntrySqlRow | undefined;
     if (
       row === undefined ||
-      row.source !== "autosave" ||
-      row.kind !== "content" ||
+      row.source !== source ||
+      row.kind !== kind ||
       row.group_key !== groupKey ||
       row.updated_at < minUpdatedAt
     ) {

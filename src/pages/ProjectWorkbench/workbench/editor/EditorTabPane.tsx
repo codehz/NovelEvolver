@@ -3,10 +3,15 @@ import { useAtomValue, useSetAtom } from "jotai";
 import { useCallback } from "react";
 
 import { PlainTextEditor } from "#app/components/PlainTextEditor";
+import { notificationApi } from "#app/lib/notifications";
 
-import { editorTabMolecule, editorTabScope } from "../state/molecules";
+import { useWorktreeTimeline } from "../branch/branch-scopes";
+import { editorTabMolecule, editorTabScope, workbenchEditorMolecule } from "../state/molecules";
 import type { ContentWorkbenchEditorTab, WorkbenchEditorTab } from "../state/types";
-import { TimelineMergePreviewEditor } from "./TimelineMergePreviewEditor";
+import {
+  TimelineMergePreviewEditor,
+  type TimelineMergePreviewRestoreHunkChange,
+} from "./TimelineMergePreviewEditor";
 import type { WorkbenchEditorDocumentRuntime } from "./use-workbench-editor-document-runtime";
 
 type EditorTabPaneProps = {
@@ -59,6 +64,37 @@ function EditorTabPlainTextEditor({
 }
 
 export function EditorTabPane({ tab, active, transient, documentRuntime }: EditorTabPaneProps) {
+  const timeline = useWorktreeTimeline();
+  const { editorStateAtom } = useMolecule(workbenchEditorMolecule);
+  const setEditorState = useSetAtom(editorStateAtom);
+  const handleRestoreTimelineHunk = useCallback(
+    async ({ beforeContent, afterContent }: TimelineMergePreviewRestoreHunkChange) => {
+      if (tab.kind !== "timeline-comparison") {
+        return;
+      }
+
+      try {
+        await Promise.resolve(
+          timeline.restoreTimelineEntryContentHunk(tab.entryId, beforeContent, afterContent),
+        );
+        setEditorState((state) => ({
+          ...state,
+          tabs: state.tabs.map((candidate) =>
+            candidate.id === tab.id && candidate.kind === "timeline-comparison"
+              ? { ...candidate, currentContent: afterContent }
+              : candidate,
+          ),
+        }));
+      } catch (error) {
+        notificationApi.error(error instanceof Error ? error.message : "局部回滚失败", {
+          source: "时间线",
+        });
+        throw error;
+      }
+    },
+    [setEditorState, tab, timeline],
+  );
+
   return (
     <ScopeProvider scope={editorTabScope} value={tab.id}>
       <div
@@ -70,6 +106,7 @@ export function EditorTabPane({ tab, active, transient, documentRuntime }: Edito
             active={active}
             currentContent={tab.currentContent}
             originalContent={tab.originalContent}
+            onRestoreHunk={handleRestoreTimelineHunk}
           />
         ) : (
           <EditorTabPlainTextEditor

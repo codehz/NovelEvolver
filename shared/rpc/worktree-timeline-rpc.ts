@@ -68,4 +68,9 @@ export type TimelineEntryContent = {
 export interface WorktreeTimelineHandle extends RpcTarget {
   listFileTimeline(target: TimelineTarget, limit?: number): TimelineEntry[];
   readTimelineEntryContent(entryId: string): TimelineEntryContent;
+  restoreTimelineEntryContentHunk(
+    entryId: string,
+    expectedContent: string,
+    nextContent: string,
+  ): void;
 }

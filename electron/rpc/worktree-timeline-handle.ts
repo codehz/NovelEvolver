@@ -24,4 +24,12 @@ export class WorktreeTimelineHandleImpl extends RpcTarget implements WorktreeTim
   readTimelineEntryContent(entryId: string): TimelineEntryContent {
     return this.#session.readTimelineEntryContent(entryId);
   }
+
+  restoreTimelineEntryContentHunk(
+    entryId: string,
+    expectedContent: string,
+    nextContent: string,
+  ): void {
+    this.#session.restoreTimelineEntryContentHunk(entryId, expectedContent, nextContent);
+  }
 }
