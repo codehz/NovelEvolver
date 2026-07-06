@@ -27,7 +27,7 @@ function parentIdForCreating(
 
 export function useResourceLibraryTreeActions() {
   const resources = useResourceLibrary();
-  const { openResourceTab } = useWorkbenchEditorActions();
+  const { focusTarget, openTarget } = useWorkbenchEditorActions();
   const { treeAtom } = useMolecule(resourceLibraryTreeMolecule);
   const store = useStore();
   const dispatch = useSetAtom(treeAtom);
@@ -91,12 +91,7 @@ export function useResourceLibraryTreeActions() {
         dispatch({ type: "expandPath", id: editing.parentId });
         dispatch({ type: "select", id: result.nodeId, nodeType: editing.kind });
         if (editing.kind === "file") {
-          void openResourceTab(
-            result.nodeId,
-            normalized,
-            (resourceId) => resources.readFile(resourceId),
-            { mode: "permanent" },
-          );
+          openTarget({ kind: "resource", resourceId: result.nodeId });
         }
       } catch (error) {
         notificationApi.error(error instanceof Error ? error.message : "创建失败", {
@@ -104,7 +99,7 @@ export function useResourceLibraryTreeActions() {
         });
       }
     },
-    [dispatch, openResourceTab, resources],
+    [dispatch, openTarget, resources],
   );
 
   const submitRenaming = useCallback(
@@ -148,15 +143,20 @@ export function useResourceLibraryTreeActions() {
   );
 
   const activateNode = useCallback(
-    (id: string, type: "file" | "folder", name: string, mode: "preview" | "permanent") => {
+    (id: string, type: "file" | "folder", _name: string, intent: "focus" | "open") => {
       dispatch({ type: "select", id, nodeType: type });
       if (type === "folder") {
         dispatch({ type: "toggleFolder", id });
         return;
       }
-      void openResourceTab(id, name, (resourceId) => resources.readFile(resourceId), { mode });
+      const target = { kind: "resource" as const, resourceId: id };
+      if (intent === "focus") {
+        focusTarget(target);
+        return;
+      }
+      openTarget(target);
     },
-    [dispatch, openResourceTab, resources],
+    [dispatch, focusTarget, openTarget],
   );
 
   const deleteNode = useCallback(async () => {

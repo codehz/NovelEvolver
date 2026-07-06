@@ -8,12 +8,12 @@ import { contentEditorTabDefaultIconClass } from "#app/pages/ProjectWorkbench/wo
 export type TabItem = {
   id: string;
   label: string;
-  active?: boolean;
-  preview?: boolean;
 };
 
 type TabBarProps<T extends TabItem> = {
   tabs: readonly T[];
+  activeId: string | null;
+  transientId?: string | null;
   onActivate: (id: string) => void;
   onClose?: (id: string) => void;
   renderIcon?: (tab: T) => ReactNode;
@@ -35,6 +35,8 @@ const tabTransition = preset({
 
 export function TabBar<T extends TabItem>({
   tabs,
+  activeId,
+  transientId = null,
   onActivate,
   onClose,
   renderIcon,
@@ -51,49 +53,53 @@ export function TabBar<T extends TabItem>({
       role="tablist"
       transition={tabTransition}
     >
-      {tabs.map((tab) => (
-        <div
-          key={tab.id}
-          className={cn(
-            "group relative flex max-w-xs cursor-pointer items-center pr-1.5 pl-3 text-sm",
-            tab.active
-              ? "bg-app-background text-ctp-mauve before:absolute before:inset-x-0 before:top-0 before:h-px before:bg-ctp-mauve before:content-['']"
-              : "bg-app-surface text-ctp-subtext0",
-          )}
-          role="tab"
-          aria-selected={tab.active}
-          onClick={() => onActivate(tab.id)}
-          onKeyDown={(event) => {
-            if (event.key === "Enter" || event.key === " ") {
-              event.preventDefault();
-              onActivate(tab.id);
-            }
-          }}
-          tabIndex={0}
-        >
-          {renderIcon?.(tab) ?? (
-            <span aria-hidden="true" className={contentEditorTabDefaultIconClass()} />
-          )}
-          <SlotText className={cn("truncate", tab.preview && "italic")} text={tab.label} />
-          {onClose && (
-            <button
-              aria-label={`关闭 ${tab.label}`}
-              className={cn(
-                "ml-1 inline-flex items-center justify-center rounded p-0.5 text-[17px] text-ctp-mauve opacity-0 transition-opacity",
-                "group-hover:opacity-100 hover:bg-ctp-text/8",
-                tab.active && "opacity-100",
-              )}
-              type="button"
-              onClick={(event) => {
-                event.stopPropagation();
-                onClose(tab.id);
-              }}
-            >
-              <span aria-hidden="true" className="icon-[codicon--close]" />
-            </button>
-          )}
-        </div>
-      ))}
+      {tabs.map((tab) => {
+        const active = tab.id === activeId;
+        const transient = tab.id === transientId;
+        return (
+          <div
+            key={tab.id}
+            className={cn(
+              "group relative flex max-w-xs cursor-pointer items-center pr-1.5 pl-3 text-sm",
+              active
+                ? "bg-app-background text-ctp-mauve before:absolute before:inset-x-0 before:top-0 before:h-px before:bg-ctp-mauve before:content-['']"
+                : "bg-app-surface text-ctp-subtext0",
+            )}
+            role="tab"
+            aria-selected={active}
+            onClick={() => onActivate(tab.id)}
+            onKeyDown={(event) => {
+              if (event.key === "Enter" || event.key === " ") {
+                event.preventDefault();
+                onActivate(tab.id);
+              }
+            }}
+            tabIndex={0}
+          >
+            {renderIcon?.(tab) ?? (
+              <span aria-hidden="true" className={contentEditorTabDefaultIconClass()} />
+            )}
+            <SlotText className={cn("truncate", transient && "italic")} text={tab.label} />
+            {onClose && (
+              <button
+                aria-label={`关闭 ${tab.label}`}
+                className={cn(
+                  "ml-1 inline-flex items-center justify-center rounded p-0.5 text-[17px] text-ctp-mauve opacity-0 transition-opacity",
+                  "group-hover:opacity-100 hover:bg-ctp-text/8",
+                  active && "opacity-100",
+                )}
+                type="button"
+                onClick={(event) => {
+                  event.stopPropagation();
+                  onClose(tab.id);
+                }}
+              >
+                <span aria-hidden="true" className="icon-[codicon--close]" />
+              </button>
+            )}
+          </div>
+        );
+      })}
     </AutoTransition>
   );
 }

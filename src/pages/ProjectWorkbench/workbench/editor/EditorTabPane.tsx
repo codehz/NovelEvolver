@@ -17,15 +17,21 @@ import { useWorkbenchEditorActions } from "./use-workbench-editor-actions";
 
 type EditorTabPaneProps = {
   tab: WorkbenchEditorTab;
+  active: boolean;
+  transient: boolean;
   editorRef?: Ref<PlainTextEditorHandle>;
 };
 
 function EditorTabPlainTextEditor({
   ref,
   tab,
+  active,
+  transient,
 }: {
   ref?: Ref<PlainTextEditorHandle>;
   tab: ContentWorkbenchEditorTab;
+  active: boolean;
+  transient: boolean;
 }) {
   const { caretPositionAtom, selectionSnapshotAtom } = useMolecule(editorTabMolecule);
   const selectionSnapshot = useAtomValue(selectionSnapshotAtom);
@@ -33,7 +39,7 @@ function EditorTabPlainTextEditor({
   const setSelectionSnapshot = useSetAtom(selectionSnapshotAtom);
   const resources = useResourceLibrary();
   const manuscript = useManuscript();
-  const { promoteTab } = useWorkbenchEditorActions();
+  const { pinTab } = useWorkbenchEditorActions();
 
   const writeFile = useCallback(
     async (id: string, content: string) => {
@@ -55,8 +61,8 @@ function EditorTabPlainTextEditor({
   const scheduleChapterSave = useTextAutosave(chapterId, writeChapter, "正文");
   const handleChange = useCallback(
     (next: string) => {
-      if (tab.preview) {
-        promoteTab(tab.id);
+      if (transient) {
+        pinTab(tab.id);
       }
       if (resourceId != null) {
         scheduleSave(next);
@@ -66,13 +72,13 @@ function EditorTabPlainTextEditor({
         scheduleChapterSave(next);
       }
     },
-    [chapterId, promoteTab, resourceId, scheduleChapterSave, scheduleSave, tab.id, tab.preview],
+    [chapterId, pinTab, resourceId, scheduleChapterSave, scheduleSave, tab.id, transient],
   );
 
   return (
     <PlainTextEditor
       ref={ref}
-      active={tab.active}
+      active={active}
       defaultValue={tab.initialContent}
       selectionSnapshot={selectionSnapshot}
       onSelectionSnapshotChange={setSelectionSnapshot}
@@ -82,21 +88,26 @@ function EditorTabPlainTextEditor({
   );
 }
 
-export function EditorTabPane({ tab, editorRef }: EditorTabPaneProps) {
+export function EditorTabPane({ tab, active, transient, editorRef }: EditorTabPaneProps) {
   return (
     <ScopeProvider scope={editorTabScope} value={tab.id}>
       <div
-        className={tab.active ? "flex min-h-0 min-w-0 flex-1 flex-col" : "hidden"}
-        aria-hidden={!tab.active}
+        className={active ? "flex min-h-0 min-w-0 flex-1 flex-col" : "hidden"}
+        aria-hidden={!active}
       >
-        {tab.kind === "timeline-preview" ? (
+        {tab.kind === "timeline-comparison" ? (
           <TimelineMergePreviewEditor
-            active={tab.active}
+            active={active}
             currentContent={tab.currentContent}
             originalContent={tab.originalContent}
           />
         ) : (
-          <EditorTabPlainTextEditor ref={editorRef} tab={tab} />
+          <EditorTabPlainTextEditor
+            ref={editorRef}
+            tab={tab}
+            active={active}
+            transient={transient}
+          />
         )}
       </div>
     </ScopeProvider>

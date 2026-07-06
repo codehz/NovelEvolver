@@ -68,7 +68,7 @@ function SearchFlatRowView({
   onToggleDomain: (id: string) => void;
   onToggleFolder: (key: string) => void;
   onToggleLeaf: (key: string) => void;
-  onOpen: (hit: WorktreeSearchHit, mode: "preview" | "permanent") => void;
+  onOpen: (hit: WorktreeSearchHit, intent: "focus" | "open") => void;
 }) {
   if (row.kind === "domain") {
     return (
@@ -117,9 +117,9 @@ function SearchFlatRowView({
         paddingLeftPx={searchTreeMatchPaddingLeft(row.leafDepth)}
         className="cursor-pointer text-2xs text-ctp-subtext1 hover:bg-ctp-surface0/50"
         tabIndex={0}
-        onClick={() => onOpen(row.hit, "preview")}
-        onDoubleClick={() => onOpen(row.hit, "permanent")}
-        onKeyDown={activateOnEnterSpace(() => onOpen(row.hit, "preview"))}
+        onClick={() => onOpen(row.hit, "focus")}
+        onDoubleClick={() => onOpen(row.hit, "open")}
+        onKeyDown={activateOnEnterSpace(() => onOpen(row.hit, "focus"))}
       >
         <span className="icon-[codicon--list-flat] shrink-0 text-sm text-ctp-overlay0" />
         <span className="truncate font-mono text-ctp-text">
@@ -133,9 +133,9 @@ function SearchFlatRowView({
   const leaf = row.leaf;
   const primaryHit = leaf.hits[0];
 
-  const openPrimary = (mode: "preview" | "permanent") => {
+  const openPrimary = (intent: "focus" | "open") => {
     if (primaryHit !== undefined) {
-      onOpen(primaryHit, mode);
+      onOpen(primaryHit, intent);
     }
   };
 
@@ -145,7 +145,7 @@ function SearchFlatRowView({
       return;
     }
     if (primaryHit !== undefined) {
-      openPrimary("preview");
+      openPrimary("focus");
     }
   };
 
@@ -158,7 +158,7 @@ function SearchFlatRowView({
       aria-expanded={row.showMatches ? row.expanded : undefined}
       tabIndex={0}
       onClick={onActivate}
-      onDoubleClick={() => openPrimary("permanent")}
+      onDoubleClick={() => openPrimary("open")}
       onKeyDown={activateOnEnterSpace(onActivate)}
     >
       {row.showMatches ? (
@@ -182,7 +182,7 @@ export function SearchResultTree({
 }: {
   roots: SearchResultDomainRoot[];
   highlightQuery: string;
-  onOpenHit: (hit: WorktreeSearchHit, mode: "preview" | "permanent") => void;
+  onOpenHit: (hit: WorktreeSearchHit, intent: "focus" | "open") => void;
 }) {
   const highlightContainerRef = useRef<HTMLDivElement>(null);
 

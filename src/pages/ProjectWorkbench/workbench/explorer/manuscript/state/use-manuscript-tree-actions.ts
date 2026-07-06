@@ -55,7 +55,7 @@ export function useManuscriptTreeActions() {
   const { treeAtom } = useMolecule(manuscriptTreeMolecule);
   const dispatch = useSetAtom(treeAtom);
   const store = useStore();
-  const { openManuscriptTab } = useWorkbenchEditorActions();
+  const { focusTarget, openTarget } = useWorkbenchEditorActions();
 
   const startCreating = useCallback(
     (kind: ManuscriptTreeNode["type"]) => {
@@ -93,12 +93,7 @@ export function useManuscriptTreeActions() {
               : await manuscript.createChapter(editing.parentId, title, editing.index)
             : (await manuscript.renameNode(editing.id, title), null);
         if (editing.mode === "creating" && editing.kind === "chapter" && result !== null) {
-          void openManuscriptTab(
-            result.nodeId,
-            title,
-            (chapterId) => manuscript.readChapter(chapterId),
-            { mode: "permanent" },
-          );
+          openTarget({ kind: "manuscript", chapterId: result.nodeId });
         }
       } catch (error) {
         notificationApi.error(error instanceof Error ? error.message : "正文操作失败", {
@@ -106,26 +101,24 @@ export function useManuscriptTreeActions() {
         });
       }
     },
-    [dispatch, manuscript, openManuscriptTab],
+    [dispatch, manuscript, openTarget],
   );
 
   const activateNode = useCallback(
-    (
-      id: string,
-      type: ManuscriptTreeNode["type"],
-      title: string,
-      mode: "preview" | "permanent",
-    ) => {
+    (id: string, type: ManuscriptTreeNode["type"], _title: string, intent: "focus" | "open") => {
       dispatch({ type: "select", id });
       if (type === "folder") {
         dispatch({ type: "toggleFolder", id });
         return;
       }
-      void openManuscriptTab(id, title, (chapterId) => manuscript.readChapter(chapterId), {
-        mode,
-      });
+      const target = { kind: "manuscript" as const, chapterId: id };
+      if (intent === "focus") {
+        focusTarget(target);
+        return;
+      }
+      openTarget(target);
     },
-    [dispatch, manuscript, openManuscriptTab],
+    [dispatch, focusTarget, openTarget],
   );
 
   const deleteNode = useCallback(async () => {

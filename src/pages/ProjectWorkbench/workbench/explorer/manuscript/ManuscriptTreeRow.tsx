@@ -30,7 +30,7 @@ type ManuscriptTreeRowProps = {
     id: string,
     type: ManuscriptTreeNode["type"],
     title: string,
-    mode: "preview" | "permanent",
+    intent: "focus" | "open",
   ) => void;
   onCancelEditing: () => void;
   onSubmitEditing: (editing: ManuscriptEditingState, title: string) => Promise<void>;
@@ -103,13 +103,13 @@ export function ManuscriptTreeRow({
               listRef,
               resolveDropTarget,
               onActivate: () => {
-                onActivate(id, type, title, "preview");
+                onActivate(id, type, title, "focus");
               },
               onDoubleActivate:
                 type === "folder"
                   ? () => {}
                   : () => {
-                      onActivate(id, type, title, "permanent");
+                      onActivate(id, type, title, "open");
                     },
               onDragStart: () => {
                 onDragStart(id, type);

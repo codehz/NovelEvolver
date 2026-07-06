@@ -6,7 +6,7 @@ import { cn } from "#app/lib/cn";
 import { notificationApi } from "#app/lib/notifications";
 import type { TimelineEntry, TimelineTarget } from "#shared/rpc/worktree-timeline-rpc";
 
-import { useManuscript, useResourceLibrary, useWorktreeTimeline } from "../branch/branch-scopes";
+import { useWorktreeTimeline } from "../branch/branch-scopes";
 import { useWorktreeScmRevision } from "../branch/use-worktree-scm-revision";
 import { useWorkbenchEditorActions } from "../editor/use-workbench-editor-actions";
 import { workbenchEditorMolecule } from "../state/molecules";
@@ -72,12 +72,10 @@ function TimelineEmptyState({ active }: { active: boolean }) {
 
 export function TimelineSidebarSection() {
   const timeline = useWorktreeTimeline();
-  const manuscript = useManuscript();
-  const resources = useResourceLibrary();
   const revision = useWorktreeScmRevision();
   const { activeEditorTabAtom } = useMolecule(workbenchEditorMolecule);
   const activeTab = useAtomValue(activeEditorTabAtom);
-  const { openTimelinePreviewTab } = useWorkbenchEditorActions();
+  const { focusTarget, openTarget } = useWorkbenchEditorActions();
   const [entries, setEntries] = useState<TimelineEntry[] | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -91,7 +89,7 @@ export function TimelineSidebarSection() {
         entityId: activeTab.chapterId,
       };
     }
-    if (activeTab.kind === "timeline-preview") {
+    if (activeTab.kind === "timeline-comparison") {
       return activeTab.target;
     }
     return {
@@ -132,56 +130,29 @@ export function TimelineSidebarSection() {
   }, [revision, target, timeline]);
 
   const openPreviewEntry = useCallback(
-    (entry: TimelineEntry, mode: "preview" | "permanent") => {
+    (entry: TimelineEntry, intent: "focus" | "open") => {
       if (target === null) {
         return;
       }
 
-      const currentContent = (
-        target.domain === "manuscript"
-          ? Promise.resolve(manuscript.readChapter(target.entityId))
-          : Promise.resolve(resources.readFile(target.entityId))
-      ).catch((error: unknown) => {
-        if (entry.kind === "delete") {
-          return "";
-        }
-        throw error;
-      });
-
-      void Promise.all([
-        Promise.resolve(timeline.readTimelineEntryContent(entry.id)),
-        currentContent,
-      ])
-        .then(([historyContent, current]) => {
-          if (historyContent.content === null) {
-            notificationApi.error("此记录没有可预览内容。", { source: "时间线" });
-            return;
-          }
-
-          openTimelinePreviewTab(
-            {
-              id: `timeline-preview:${entry.id}`,
-              kind: "timeline-preview",
-              label: `预览：${entry.label}`,
-              target,
-              entryId: entry.id,
-              entryMessage: entry.message,
-              entryTimestamp: entry.timestamp,
-              entryShortHash: entry.shortHash,
-              displayPath: entry.displayPath,
-              originalContent: historyContent.content,
-              currentContent: current,
-            },
-            { mode },
-          );
-        })
-        .catch((error) => {
-          notificationApi.error(error instanceof Error ? error.message : "无法打开时间线预览", {
-            source: "时间线",
-          });
-        });
+      const editorTarget = {
+        kind: "timeline-entry" as const,
+        entryId: entry.id,
+        sourceTarget: target,
+        entryKind: entry.kind,
+        label: entry.label,
+        message: entry.message,
+        timestamp: entry.timestamp,
+        shortHash: entry.shortHash,
+        displayPath: entry.displayPath,
+      };
+      if (intent === "focus") {
+        focusTarget(editorTarget);
+        return;
+      }
+      openTarget(editorTarget);
     },
-    [manuscript, openTimelinePreviewTab, resources, target, timeline],
+    [focusTarget, openTarget, target],
   );
 
   return (
@@ -203,8 +174,8 @@ export function TimelineSidebarSection() {
               className={timelineRowClass}
               disabled={!entry.hasContent}
               type="button"
-              onClick={() => openPreviewEntry(entry, "preview")}
-              onDoubleClick={() => openPreviewEntry(entry, "permanent")}
+              onClick={() => openPreviewEntry(entry, "focus")}
+              onDoubleClick={() => openPreviewEntry(entry, "open")}
             >
               <span
                 aria-hidden="true"

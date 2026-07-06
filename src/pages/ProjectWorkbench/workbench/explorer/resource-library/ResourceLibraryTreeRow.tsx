@@ -24,7 +24,7 @@ type ResourceLibraryTreeRowProps = {
     id: string,
     type: ResourceTreeNode["type"],
     name: string,
-    mode: "preview" | "permanent",
+    intent: "focus" | "open",
   ) => void;
   onCancelEditing: () => void;
   onSubmitEditing: (
@@ -109,13 +109,13 @@ export function ResourceLibraryTreeRow({
               listRef,
               resolveDropTarget,
               onActivate: () => {
-                onActivate(rowId, item.type, item.name, "preview");
+                onActivate(rowId, item.type, item.name, "focus");
               },
               onDoubleActivate:
                 item.type === "folder"
                   ? () => {}
                   : () => {
-                      onActivate(rowId, item.type, item.name, "permanent");
+                      onActivate(rowId, item.type, item.name, "open");
                     },
               onDragStart: () => {
                 onDragStart(rowId, item.type);

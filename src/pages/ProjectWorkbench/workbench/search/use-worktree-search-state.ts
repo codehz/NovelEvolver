@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 
 import type { WorktreeSearchHit, WorktreeSearchResult } from "#shared/rpc/worktree-search-rpc";
 
-import { useManuscript, useResourceLibrary, useWorktreeSearch } from "../branch/branch-scopes";
+import { useWorktreeSearch } from "../branch/branch-scopes";
 import { useWorkbenchEditorActions } from "../editor/use-workbench-editor-actions";
 import { contentDomainIconClass } from "../tree/content-tree-icons";
 import { buildSearchPathTree } from "./build-search-path-tree";
@@ -19,9 +19,7 @@ const emptyResult = (query: string): WorktreeSearchResult => ({
 
 export function useWorktreeSearchState() {
   const searchHandle = useWorktreeSearch();
-  const manuscript = useManuscript();
-  const resources = useResourceLibrary();
-  const { openManuscriptTab, openResourceTab } = useWorkbenchEditorActions();
+  const { focusTarget, openTarget } = useWorkbenchEditorActions();
 
   const [query, setQuery] = useState("");
   const [debouncedQuery, setDebouncedQuery] = useState("");
@@ -112,26 +110,26 @@ export function useWorktreeSearchState() {
   }, [result?.manuscript, result?.resources]);
 
   const openHit = useCallback(
-    (hit: WorktreeSearchHit, mode: "preview" | "permanent") => {
+    (hit: WorktreeSearchHit, intent: "focus" | "open") => {
       if (hit.domain === "manuscript" && hit.entityKind === "chapter") {
-        void openManuscriptTab(
-          hit.nodeId,
-          hit.label,
-          (chapterId) => manuscript.readChapter(chapterId),
-          { mode },
-        );
+        const target = { kind: "manuscript" as const, chapterId: hit.nodeId };
+        if (intent === "focus") {
+          focusTarget(target);
+          return;
+        }
+        openTarget(target);
         return;
       }
       if (hit.domain === "resource" && hit.entityKind === "file") {
-        void openResourceTab(
-          hit.nodeId,
-          hit.label,
-          (resourceId) => resources.readFile(resourceId),
-          { mode },
-        );
+        const target = { kind: "resource" as const, resourceId: hit.nodeId };
+        if (intent === "focus") {
+          focusTarget(target);
+          return;
+        }
+        openTarget(target);
       }
     },
-    [manuscript, openManuscriptTab, openResourceTab, resources],
+    [focusTarget, openTarget],
   );
 
   return {

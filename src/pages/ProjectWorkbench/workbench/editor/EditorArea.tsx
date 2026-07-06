@@ -19,8 +19,11 @@ export function EditorArea() {
   const editorHandlesRef = useRef(new Map<string, PlainTextEditorHandle>());
   useWorkbenchEditorTreeSync();
   useWorkbenchEditorScmSync(editorHandlesRef);
-  const { activeEditorTabAtom } = useMolecule(workbenchEditorMolecule);
+  const { activeEditorTabAtom, activeTabIdAtom, transientTabIdAtom } =
+    useMolecule(workbenchEditorMolecule);
   const activeTab = useAtomValue(activeEditorTabAtom);
+  const activeTabId = useAtomValue(activeTabIdAtom);
+  const transientTabId = useAtomValue(transientTabIdAtom);
   const { tabs, activateTab, closeTab } = useWorkbenchEditorActions();
 
   return (
@@ -31,6 +34,8 @@ export function EditorArea() {
     >
       <TabBar
         tabs={tabs}
+        activeId={activeTabId}
+        transientId={transientTabId}
         onActivate={activateTab}
         onClose={closeTab}
         renderIcon={(tab) => (
@@ -52,8 +57,10 @@ export function EditorArea() {
             <EditorTabPane
               key={tab.id}
               tab={tab}
+              active={tab.id === activeTabId}
+              transient={tab.id === transientTabId}
               editorRef={(handle) => {
-                if (tab.kind === "timeline-preview") {
+                if (tab.kind === "timeline-comparison") {
                   return;
                 }
                 if (handle === null) {

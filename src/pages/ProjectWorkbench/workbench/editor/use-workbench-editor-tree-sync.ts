@@ -1,27 +1,25 @@
 import { useMolecule } from "bunshi/react";
-import { useAtom, useAtomValue, useSetAtom } from "jotai";
+import { useAtom } from "jotai";
 import { useEffect } from "react";
 
 import { useWorktreeTreeSnapshot } from "../branch/use-worktree-tree-snapshot";
 import { workbenchEditorMolecule } from "../state/molecules";
 import type { WorkbenchEditorTab } from "../state/types";
-import { areWorkbenchEditorTabsEqual, normalizeWorkbenchEditorTabs } from "./editor-tab-state";
+import { areWorkbenchEditorStatesEqual, normalizeWorkbenchEditorState } from "./editor-tab-manager";
 
 export function useWorkbenchEditorTreeSync(): void {
   const snapshot = useWorktreeTreeSnapshot();
-  const { tabsAtom, activeTabIdAtom } = useMolecule(workbenchEditorMolecule);
-  const [tabs, setTabs] = useAtom(tabsAtom);
-  const activeTabId = useAtomValue(activeTabIdAtom);
-  const setActiveTabId = useSetAtom(activeTabIdAtom);
+  const { editorStateAtom } = useMolecule(workbenchEditorMolecule);
+  const [editorState, setEditorState] = useAtom(editorStateAtom);
 
   useEffect(() => {
-    if (snapshot === null || tabs.length === 0) {
+    if (snapshot === null || editorState.tabs.length === 0) {
       return;
     }
 
-    const nextTabs = tabs
+    const nextTabs = editorState.tabs
       .map((tab): WorkbenchEditorTab | null => {
-        if (tab.kind === "timeline-preview") {
+        if (tab.kind === "timeline-comparison") {
           return tab;
         }
         if (tab.kind === "manuscript") {
@@ -46,12 +44,14 @@ export function useWorkbenchEditorTreeSync(): void {
       })
       .filter((tab): tab is WorkbenchEditorTab => tab !== null);
 
-    const { tabs: normalizedTabs, activeId } = normalizeWorkbenchEditorTabs(nextTabs, activeTabId);
-    if (areWorkbenchEditorTabsEqual(tabs, normalizedTabs)) {
+    const nextState = normalizeWorkbenchEditorState({
+      ...editorState,
+      tabs: nextTabs,
+    });
+    if (areWorkbenchEditorStatesEqual(editorState, nextState)) {
       return;
     }
 
-    setActiveTabId(activeId);
-    setTabs(normalizedTabs);
-  }, [activeTabId, setActiveTabId, setTabs, snapshot, tabs]);
+    setEditorState(nextState);
+  }, [editorState, setEditorState, snapshot]);
 }

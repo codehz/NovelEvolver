@@ -6,8 +6,8 @@ import { atom } from "jotai";
 import { projectsService } from "#app/lib/app-rpc";
 import { ProjectHandleWithMetadata } from "#shared/rpc/projects-rpc";
 
+import { emptyWorkbenchEditorState } from "../editor/editor-tab-manager";
 import type { EditorCaretPosition, EditorSelectionSnapshot } from "./editor-caret";
-import type { WorkbenchEditorTab } from "./types";
 
 export const projectIdScope = createScope<number>(-1);
 
@@ -29,17 +29,18 @@ const defaultCaret: EditorCaretPosition = { line: 1, column: 1, selectionLength:
 export const workbenchEditorMolecule = molecule(() => {
   use(projectIdScope);
 
-  const tabsAtom = atom<WorkbenchEditorTab[]>([]);
-  const activeTabIdAtom = atom<string | null>(null);
+  const editorStateAtom = atom(emptyWorkbenchEditorState);
+  const tabsAtom = atom((get) => get(editorStateAtom).tabs);
+  const activeTabIdAtom = atom((get) => get(editorStateAtom).activeTabId);
+  const transientTabIdAtom = atom((get) => get(editorStateAtom).transientTabId);
 
   const activeEditorTabAtom = atom((get) => {
-    const tabs = get(tabsAtom);
+    const { activeTabId, tabs } = get(editorStateAtom);
     if (tabs.length === 0) {
       return undefined;
     }
-    const activeId = get(activeTabIdAtom);
-    if (activeId !== null) {
-      const match = tabs.find((tab) => tab.id === activeId);
+    if (activeTabId !== null) {
+      const match = tabs.find((tab) => tab.id === activeTabId);
       if (match) {
         return match;
       }
@@ -48,8 +49,10 @@ export const workbenchEditorMolecule = molecule(() => {
   });
 
   return {
+    editorStateAtom,
     tabsAtom,
     activeTabIdAtom,
+    transientTabIdAtom,
     activeEditorTabAtom,
   };
 });

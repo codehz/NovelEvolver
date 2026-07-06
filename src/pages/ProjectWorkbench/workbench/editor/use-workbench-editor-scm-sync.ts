@@ -1,6 +1,6 @@
 import { useMolecule } from "bunshi/react";
 import type { RpcPromise } from "capnweb";
-import { useAtom, useAtomValue, useSetAtom } from "jotai";
+import { useAtom } from "jotai";
 import type { RefObject } from "react";
 import { useEffect } from "react";
 
@@ -12,7 +12,7 @@ import { useManuscript, useResourceLibrary } from "../branch/branch-scopes";
 import { useWorktreeScmRevision } from "../branch/use-worktree-scm-revision";
 import { workbenchEditorMolecule } from "../state/molecules";
 import { type WorkbenchEditorTab } from "../state/types";
-import { areWorkbenchEditorTabsEqual, normalizeWorkbenchEditorTabs } from "./editor-tab-state";
+import { areWorkbenchEditorStatesEqual, normalizeWorkbenchEditorState } from "./editor-tab-manager";
 
 async function syncManuscriptTab(
   tab: Extract<WorkbenchEditorTab, { kind: "manuscript" }>,
@@ -50,21 +50,19 @@ export function useWorkbenchEditorScmSync(
   const revision = useWorktreeScmRevision();
   const manuscript = useManuscript();
   const resources = useResourceLibrary();
-  const { tabsAtom, activeTabIdAtom } = useMolecule(workbenchEditorMolecule);
-  const [tabs, setTabs] = useAtom(tabsAtom);
-  const activeTabId = useAtomValue(activeTabIdAtom);
-  const setActiveTabId = useSetAtom(activeTabIdAtom);
+  const { editorStateAtom } = useMolecule(workbenchEditorMolecule);
+  const [editorState, setEditorState] = useAtom(editorStateAtom);
 
   useEffect(() => {
     let cancelled = false;
 
-    if (tabs.length === 0) {
+    if (editorState.tabs.length === 0) {
       return;
     }
 
     void Promise.all(
-      tabs.map((tab) => {
-        if (tab.kind === "timeline-preview") {
+      editorState.tabs.map((tab) => {
+        if (tab.kind === "timeline-comparison") {
           return Promise.resolve(tab);
         }
         const editorHandle = editorHandlesRef.current.get(tab.id);
@@ -79,30 +77,20 @@ export function useWorkbenchEditorScmSync(
           return;
         }
 
-        const { tabs: normalizedTabs, activeId } = normalizeWorkbenchEditorTabs(
-          nextTabs.filter((tab): tab is WorkbenchEditorTab => tab !== null),
-          activeTabId,
-        );
-        if (areWorkbenchEditorTabsEqual(tabs, normalizedTabs)) {
+        const nextState = normalizeWorkbenchEditorState({
+          ...editorState,
+          tabs: nextTabs.filter((tab): tab is WorkbenchEditorTab => tab !== null),
+        });
+        if (areWorkbenchEditorStatesEqual(editorState, nextState)) {
           return;
         }
 
-        setActiveTabId(activeId);
-        setTabs(normalizedTabs);
+        setEditorState(nextState);
       })
       .catch(() => undefined);
 
     return () => {
       cancelled = true;
     };
-  }, [
-    activeTabId,
-    editorHandlesRef,
-    manuscript,
-    resources,
-    revision,
-    setActiveTabId,
-    setTabs,
-    tabs,
-  ]);
+  }, [editorHandlesRef, editorState, manuscript, resources, revision, setEditorState]);
 }

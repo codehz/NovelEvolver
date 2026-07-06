@@ -15,7 +15,7 @@ import { resourceLibraryTreeMolecule } from "../explorer/resource-library/state/
 import type {
   ManuscriptWorkbenchEditorTab,
   ResourceWorkbenchEditorTab,
-  TimelinePreviewWorkbenchEditorTab,
+  TimelineComparisonWorkbenchEditorTab,
   WorkbenchEditorTab,
 } from "../state/types";
 
@@ -115,8 +115,8 @@ function buildEditorBreadcrumbModel<TTab extends WorkbenchEditorTab, TNode>(
   };
 }
 
-function buildTimelinePreviewBreadcrumbModel(
-  tab: TimelinePreviewWorkbenchEditorTab,
+function buildTimelineComparisonBreadcrumbModel(
+  tab: TimelineComparisonWorkbenchEditorTab,
   context: EditorBreadcrumbContext,
 ): EditorBreadcrumbModel {
   const targetModel =
@@ -128,8 +128,6 @@ function buildTimelinePreviewBreadcrumbModel(
             kind: "manuscript",
             chapterId: tab.target.entityId,
             label: tab.label,
-            active: tab.active,
-            preview: false,
             initialContent: tab.currentContent,
           },
           context,
@@ -141,8 +139,6 @@ function buildTimelinePreviewBreadcrumbModel(
             kind: "resource",
             resourceId: tab.target.entityId,
             label: tab.label,
-            active: tab.active,
-            preview: false,
             initialContent: tab.currentContent,
           },
           context,
@@ -152,7 +148,7 @@ function buildTimelinePreviewBreadcrumbModel(
     targetModel.segments.length === 0
       ? [
           {
-            key: "timeline-preview-path",
+            key: "timeline-comparison-path",
             label: tab.displayPath,
             clickable: false,
             current: false,
@@ -168,7 +164,7 @@ function buildTimelinePreviewBreadcrumbModel(
     segments: [
       ...segments,
       {
-        key: `timeline-preview:${tab.entryId}`,
+        key: `timeline-comparison:${tab.entryId}`,
         label: `预览 ${tab.entryShortHash ?? tab.entryMessage}`,
         clickable: false,
         current: true,
@@ -198,7 +194,7 @@ export function useEditorBreadcrumb(tab: WorkbenchEditorTab): EditorBreadcrumbMo
       return buildEditorBreadcrumbModel(resourceBreadcrumbDefinition, tab, context);
     case "manuscript":
       return buildEditorBreadcrumbModel(manuscriptBreadcrumbDefinition, tab, context);
-    case "timeline-preview":
-      return buildTimelinePreviewBreadcrumbModel(tab, context);
+    case "timeline-comparison":
+      return buildTimelineComparisonBreadcrumbModel(tab, context);
   }
 }

@@ -60,11 +60,11 @@ export function resourceTreeNodeIconClass(
   return contentFileLeafIconClass(type);
 }
 
-/** 编辑器 Tab 图标：正文章节为 book，资源文件为 file-text，时间线预览为 diff。 */
+/** 编辑器 Tab 图标：正文章节为 book，资源文件为 file-text，时间线对比为 diff。 */
 export function contentEditorTabIconClass(
-  kind: "manuscript" | "resource" | "timeline-preview",
+  kind: "manuscript" | "resource" | "timeline-comparison",
 ): string {
-  if (kind === "timeline-preview") {
+  if (kind === "timeline-comparison") {
     return cn("icon-[codicon--diff]", "mr-2 text-ctp-green", contentTreeIconLayoutClass);
   }
   return cn(contentFileLeafIconClass(kind === "manuscript" ? "chapter" : "file"), "mr-2");

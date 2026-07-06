@@ -1,12 +1,10 @@
-import type { TimelineTarget } from "#shared/rpc/worktree-timeline-rpc";
+import type { TimelineEntryKind, TimelineTarget } from "#shared/rpc/worktree-timeline-rpc";
 
 export type ResourceWorkbenchEditorTab = {
   id: string;
   kind: "resource";
   resourceId: string;
   label: string;
-  active: boolean;
-  preview: boolean;
   initialContent: string;
 };
 
@@ -15,17 +13,13 @@ export type ManuscriptWorkbenchEditorTab = {
   kind: "manuscript";
   chapterId: string;
   label: string;
-  active: boolean;
-  preview: boolean;
   initialContent: string;
 };
 
-export type TimelinePreviewWorkbenchEditorTab = {
+export type TimelineComparisonWorkbenchEditorTab = {
   id: string;
-  kind: "timeline-preview";
+  kind: "timeline-comparison";
   label: string;
-  active: boolean;
-  preview: boolean;
   target: TimelineTarget;
   entryId: string;
   entryMessage: string;
@@ -38,4 +32,33 @@ export type TimelinePreviewWorkbenchEditorTab = {
 
 export type ContentWorkbenchEditorTab = ResourceWorkbenchEditorTab | ManuscriptWorkbenchEditorTab;
 
-export type WorkbenchEditorTab = ContentWorkbenchEditorTab | TimelinePreviewWorkbenchEditorTab;
+export type WorkbenchEditorTab = ContentWorkbenchEditorTab | TimelineComparisonWorkbenchEditorTab;
+
+export type WorkbenchEditorOpenIntent = "focus" | "open";
+
+export type WorkbenchEditorTarget =
+  | {
+      kind: "resource";
+      resourceId: string;
+    }
+  | {
+      kind: "manuscript";
+      chapterId: string;
+    }
+  | {
+      kind: "timeline-entry";
+      entryId: string;
+      sourceTarget: TimelineTarget;
+      entryKind: TimelineEntryKind;
+      label: string;
+      message: string;
+      timestamp: number;
+      shortHash?: string;
+      displayPath: string;
+    };
+
+export type WorkbenchEditorState = {
+  tabs: WorkbenchEditorTab[];
+  activeTabId: string | null;
+  transientTabId: string | null;
+};
