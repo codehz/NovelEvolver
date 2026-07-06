@@ -32,9 +32,25 @@ export const workbenchEditorMolecule = molecule(() => {
   const tabsAtom = atom<WorkbenchEditorTab[]>([]);
   const activeTabIdAtom = atom<string | null>(null);
 
+  const activeEditorTabAtom = atom((get) => {
+    const tabs = get(tabsAtom);
+    if (tabs.length === 0) {
+      return undefined;
+    }
+    const activeId = get(activeTabIdAtom);
+    if (activeId !== null) {
+      const match = tabs.find((tab) => tab.id === activeId);
+      if (match) {
+        return match;
+      }
+    }
+    return tabs[0];
+  });
+
   return {
     tabsAtom,
     activeTabIdAtom,
+    activeEditorTabAtom,
   };
 });
 

@@ -1,5 +1,5 @@
 import { useMolecule } from "bunshi/react";
-import { useAtom, useSetAtom } from "jotai";
+import { useAtom, useSetAtom, useStore } from "jotai";
 import { useCallback } from "react";
 
 import { notificationApi } from "#app/lib/notifications";
@@ -9,6 +9,7 @@ import { type WorkbenchEditorTab } from "../state/types";
 
 export function useWorkbenchEditorActions() {
   const { tabsAtom, activeTabIdAtom } = useMolecule(workbenchEditorMolecule);
+  const store = useStore();
   const [tabs, setTabs] = useAtom(tabsAtom);
   const setActiveTabId = useSetAtom(activeTabIdAtom);
 
@@ -34,7 +35,7 @@ export function useWorkbenchEditorActions() {
     (tabId: string) => {
       setTabs((current) => {
         const next = current.filter((tab) => tab.id !== tabId);
-        const closedWasActive = current.some((tab) => tab.id === tabId && tab.active);
+        const closedWasActive = store.get(activeTabIdAtom) === tabId;
         if (closedWasActive) {
           const fallback = next[next.length - 1];
           setActiveTabId(fallback?.id ?? null);
@@ -46,7 +47,7 @@ export function useWorkbenchEditorActions() {
         return next;
       });
     },
-    [setActiveTabId, setTabs],
+    [activeTabIdAtom, setActiveTabId, setTabs, store],
   );
 
   const openResourceTab = useCallback(
@@ -55,7 +56,9 @@ export function useWorkbenchEditorActions() {
       label: string,
       readFile: (resourceId: string) => Promise<string>,
     ) => {
-      const existing = tabs.find((tab) => tab.kind === "resource" && tab.resourceId === resourceId);
+      const existing = store
+        .get(tabsAtom)
+        .find((tab) => tab.kind === "resource" && tab.resourceId === resourceId);
       if (existing) {
         activateTab(existing.id);
         return;
@@ -79,12 +82,14 @@ export function useWorkbenchEditorActions() {
         });
       }
     },
-    [activateTab, setActiveTabId, setTabs, tabs],
+    [activateTab, setActiveTabId, setTabs, store, tabsAtom],
   );
 
   const openManuscriptTab = useCallback(
     async (chapterId: string, title: string, readChapter: (id: string) => Promise<string>) => {
-      const existing = tabs.find((tab) => tab.kind === "manuscript" && tab.chapterId === chapterId);
+      const existing = store
+        .get(tabsAtom)
+        .find((tab) => tab.kind === "manuscript" && tab.chapterId === chapterId);
       if (existing) {
         activateTab(existing.id);
         return;
@@ -108,7 +113,7 @@ export function useWorkbenchEditorActions() {
         });
       }
     },
-    [activateTab, setActiveTabId, setTabs, tabs],
+    [activateTab, setActiveTabId, setTabs, store, tabsAtom],
   );
 
   return {

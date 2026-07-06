@@ -1,9 +1,12 @@
 import { AutoTransition } from "@codehz/auto-transition";
+import { useMolecule } from "bunshi/react";
+import { useAtomValue } from "jotai";
 import { useRef } from "react";
 
 import type { PlainTextEditorHandle } from "#app/components/PlainTextEditor";
-import { TabBar, type TabItem } from "#app/components/TabBar";
+import { TabBar } from "#app/components/TabBar";
 
+import { workbenchEditorMolecule } from "../state/molecules";
 import { contentEditorTabIconClass } from "../tree/content-tree-icons";
 import { EditorBreadcrumb } from "./EditorBreadcrumb";
 import { EditorEmptyState } from "./EditorEmptyState";
@@ -16,9 +19,9 @@ export function EditorArea() {
   const editorHandlesRef = useRef(new Map<string, PlainTextEditorHandle>());
   useWorkbenchEditorTreeSync();
   useWorkbenchEditorScmSync(editorHandlesRef);
+  const { activeEditorTabAtom } = useMolecule(workbenchEditorMolecule);
+  const activeTab = useAtomValue(activeEditorTabAtom);
   const { tabs, activateTab, closeTab } = useWorkbenchEditorActions();
-
-  const activeTab = tabs.find((tab) => tab.active) ?? tabs[0];
 
   return (
     <AutoTransition
@@ -27,16 +30,12 @@ export function EditorArea() {
       className="relative flex min-h-0 min-w-0 flex-1 flex-col bg-app-background"
     >
       <TabBar
-        tabs={tabs as TabItem[]}
+        tabs={tabs}
         onActivate={activateTab}
         onClose={closeTab}
-        renderIcon={(tab) => {
-          const editorTab = tabs.find((item) => item.id === tab.id);
-          if (!editorTab) {
-            return null;
-          }
-          return <span aria-hidden="true" className={contentEditorTabIconClass(editorTab.kind)} />;
-        }}
+        renderIcon={(tab) => (
+          <span aria-hidden="true" className={contentEditorTabIconClass(tab.kind)} />
+        )}
       />
 
       {activeTab && (

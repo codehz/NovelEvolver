@@ -11,11 +11,11 @@ export type TabItem = {
   active?: boolean;
 };
 
-type TabBarProps = {
-  tabs: readonly TabItem[];
+type TabBarProps<T extends TabItem> = {
+  tabs: readonly T[];
   onActivate: (id: string) => void;
   onClose?: (id: string) => void;
-  renderIcon?: (tab: TabItem) => ReactNode;
+  renderIcon?: (tab: T) => ReactNode;
   className?: string;
 };
 
@@ -32,7 +32,13 @@ const tabTransition = preset({
   },
 });
 
-export function TabBar({ tabs, onActivate, onClose, renderIcon, className }: TabBarProps) {
+export function TabBar<T extends TabItem>({
+  tabs,
+  onActivate,
+  onClose,
+  renderIcon,
+  className,
+}: TabBarProps<T>) {
   if (tabs.length === 0) {
     return null;
   }
