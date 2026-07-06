@@ -1,16 +1,16 @@
-import type { ScmChange } from "#shared/rpc/worktree-scm";
+import type { Change } from "#shared/rpc/worktree-changes";
 
 export type ScmChangeTreeFolderNode = {
   type: "folder";
   segment: string;
   pathKey: string;
-  selfChanges: ScmChange[];
+  selfChanges: Change[];
   children: ScmChangeTreeNode[];
 };
 
 export type ScmChangeTreeLeafNode = {
   type: "leaf";
-  item: ScmChange;
+  item: Change;
 };
 
 export type ScmChangeTreeNode = ScmChangeTreeFolderNode | ScmChangeTreeLeafNode;
@@ -39,12 +39,12 @@ export type ScmChangeFlatRow =
       depth: number;
       expanded: boolean;
       childCount: number;
-      inlineChange: ScmChange | null;
+      inlineChange: Change | null;
     }
   | {
       kind: "change";
       key: string;
-      item: ScmChange;
+      item: Change;
       depth: number;
     };
 
@@ -122,7 +122,7 @@ function ensureFolderAtPath(
   return current;
 }
 
-function insertChange(root: ScmChangeTreeFolderNode, change: ScmChange): void {
+function insertChange(root: ScmChangeTreeFolderNode, change: Change): void {
   const segments = change.displayPath.split("/").filter((segment) => segment !== "");
 
   if (change.entityKind === "folder") {
@@ -146,7 +146,7 @@ function insertChange(root: ScmChangeTreeFolderNode, change: ScmChange): void {
   parent.children.push({ type: "leaf", item: change });
 }
 
-export function buildScmChangeTree(changes: readonly ScmChange[]): ScmChangeTreeNode[] {
+export function buildScmChangeTree(changes: readonly Change[]): ScmChangeTreeNode[] {
   const root: ScmChangeTreeFolderNode = {
     type: "folder",
     segment: "",

@@ -1,14 +1,14 @@
 import { useCallback, useEffect, useState } from "react";
 
 import { consumeRpcStream } from "#app/lib/app-rpc-react";
-import type { ScmSnapshot } from "#shared/rpc/worktree-scm";
+import type { ChangesSnapshot } from "#shared/rpc/worktree-changes";
 
-import { useWorktreeScm } from "../branch/branch-scopes";
+import { useWorktreeChanges } from "../branch/branch-scopes";
 import { SCM_COMMIT_AUTHOR } from "./constants";
 
 export function useScmChangesState() {
-  const scmHandle = useWorktreeScm();
-  const [result, setResult] = useState<ScmSnapshot | null>(null);
+  const changesHandle = useWorktreeChanges();
+  const [result, setResult] = useState<ChangesSnapshot | null>(null);
   const [error, setError] = useState(false);
   const [loading, setLoading] = useState(true);
   const [retryKey, setRetryKey] = useState(0);
@@ -20,9 +20,46 @@ export function useScmChangesState() {
     setLoading(true);
     setError(false);
     return consumeRpcStream({
-      subscribe: () => scmHandle.subscribeSnapshot(),
-      onValue: (snapshot) => {
-        setResult(snapshot);
+      subscribe: () => changesHandle.subscribe(),
+      onValue: (event) => {
+        if (event.kind === "snapshot") {
+          setResult(event.snapshot);
+          setLoading(false);
+          return;
+        }
+        // 处理增量更新
+        setResult((previous) => {
+          if (previous === null) {
+            return null;
+          }
+          const { delta } = event;
+          const removedChangeIds = new Set(delta.removedChangeIds);
+
+          // 过滤掉已删除的变更
+          const manuscriptChanges = previous.manuscriptChanges.filter(
+            (c) => !removedChangeIds.has(c.id),
+          );
+          const resourceChanges = previous.resourceChanges.filter(
+            (c) => !removedChangeIds.has(c.id),
+          );
+
+          // 添加新的变更
+          for (const change of delta.addedChanges) {
+            if (change.domain === "manuscript") {
+              manuscriptChanges.push(change);
+            } else {
+              resourceChanges.push(change);
+            }
+          }
+
+          return {
+            ...previous,
+            revision: delta.toRevision,
+            manuscriptChanges,
+            resourceChanges,
+            hasChanges: manuscriptChanges.length > 0 || resourceChanges.length > 0,
+          };
+        });
         setLoading(false);
       },
       onError: () => {
@@ -31,7 +68,7 @@ export function useScmChangesState() {
       },
       cancelReason: "SCM subscription disposed.",
     });
-  }, [scmHandle, retryKey]);
+  }, [changesHandle, retryKey]);
 
   const retry = useCallback(() => {
     setRetryKey((current) => current + 1);
@@ -39,7 +76,7 @@ export function useScmChangesState() {
 
   const revertChange = useCallback(
     (changeId: string) => {
-      scmHandle
+      changesHandle
         .revertChange(changeId)
         .then((updated) => {
           setResult(updated);
@@ -48,7 +85,7 @@ export function useScmChangesState() {
           setError(true);
         });
     },
-    [scmHandle],
+    [changesHandle],
   );
 
   const commit = useCallback(() => {
@@ -56,7 +93,7 @@ export function useScmChangesState() {
     if (message === "" || committing) return;
 
     setCommitting(true);
-    scmHandle
+    changesHandle
       .commit(message, SCM_COMMIT_AUTHOR)
       .then((updated) => {
         setResult(updated);
@@ -68,13 +105,13 @@ export function useScmChangesState() {
         setCommitting(false);
         setError(true);
       });
-  }, [scmHandle, commitMessage, committing]);
+  }, [changesHandle, commitMessage, committing]);
 
   const listCommits = useCallback(
     (maxCount?: number) => {
-      return scmHandle.listCommits(maxCount);
+      return changesHandle.listCommits(maxCount);
     },
-    [scmHandle],
+    [changesHandle],
   );
 
   return {

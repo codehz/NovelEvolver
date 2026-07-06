@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 
-import type { ScmSnapshot } from "#shared/rpc/worktree-scm";
+import type { ChangesSnapshot } from "#shared/rpc/worktree-changes";
 
 import { ScmChangesList } from "./ScmChangesList";
 import { ScmCommitForm } from "./ScmCommitForm";
@@ -20,7 +20,7 @@ function resolveChangesPanelContent({
 }: {
   loading: boolean;
   error: boolean;
-  result: ScmSnapshot | null;
+  result: ChangesSnapshot | null;
   onRetry: () => void;
   onRevert: (changeId: string) => void;
 }): ReactNode {
@@ -71,7 +71,7 @@ export function ScmChangesBody({
   committing: boolean;
   loading: boolean;
   error: boolean;
-  result: ScmSnapshot | null;
+  result: ChangesSnapshot | null;
   onCommitMessageChange: (value: string) => void;
   onCommit: () => void;
   onRetry: () => void;

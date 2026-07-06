@@ -1,26 +1,28 @@
 import { useEffect, useState } from "react";
 
-import type { ScmSnapshot } from "#shared/rpc/worktree-scm";
+import type { WorktreeChangesEvent } from "#shared/rpc/worktree-changes";
 
-import { useWorktreeScm } from "./branch-scopes";
+import { useWorktreeChanges } from "./branch-scopes";
 
 function isAbortError(error: unknown): boolean {
   return error instanceof DOMException && error.name === "AbortError";
 }
 
 export function useWorktreeScmRevision(): number {
-  const scmHandle = useWorktreeScm();
+  const changesHandle = useWorktreeChanges();
   const [revision, setRevision] = useState(0);
 
   useEffect(() => {
     let canceled = false;
     let abortSubscription: (() => void) | null = null;
 
-    void scmHandle
-      .subscribeSnapshot()
+    void changesHandle
+      .subscribe()
       .then((stream) => {
         if (canceled) {
-          void stream.cancel("Worktree SCM revision subscription disposed.").catch(() => undefined);
+          void stream
+            .cancel("Worktree changes revision subscription disposed.")
+            .catch(() => undefined);
           return;
         }
 
@@ -31,9 +33,13 @@ export function useWorktreeScmRevision(): number {
 
         void stream
           .pipeTo(
-            new WritableStream<ScmSnapshot>({
-              write: (snapshot) => {
-                setRevision(snapshot.revision);
+            new WritableStream<WorktreeChangesEvent>({
+              write: (event) => {
+                if (event.kind === "snapshot") {
+                  setRevision(event.snapshot.revision);
+                } else {
+                  setRevision(event.delta.toRevision);
+                }
               },
             }),
             { signal: abortController.signal },
@@ -59,7 +65,7 @@ export function useWorktreeScmRevision(): number {
       canceled = true;
       abortSubscription?.();
     };
-  }, [scmHandle]);
+  }, [changesHandle]);
 
   return revision;
 }

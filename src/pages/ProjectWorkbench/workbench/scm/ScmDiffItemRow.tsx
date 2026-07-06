@@ -6,11 +6,11 @@ import {
   treeRowDisclosureSpacerClass,
 } from "#app/pages/ProjectWorkbench/workbench/tree/tree-row-motion";
 import { TreeMotionRow } from "#app/pages/ProjectWorkbench/workbench/tree/TreeMotionRow";
-import type { ScmChange } from "#shared/rpc/worktree-scm";
+import type { Change } from "#shared/rpc/worktree-changes";
 
 import { ScmDiffStats } from "./ScmDiffStats";
 
-function scmChangeKindIconClass(kind: ScmChange["kind"]): string {
+function scmChangeKindIconClass(kind: Change["kind"]): string {
   return cn(
     kind === "create" && "icon-[codicon--diff-added] text-ctp-green",
     kind === "delete" && "icon-[codicon--diff-removed] text-ctp-red",
@@ -21,7 +21,7 @@ function scmChangeKindIconClass(kind: ScmChange["kind"]): string {
   );
 }
 
-function scmEntityIconClass(entityKind: ScmChange["entityKind"]): string {
+function scmEntityIconClass(entityKind: Change["entityKind"]): string {
   return cn(
     entityKind === "chapter" && "icon-[codicon--book] text-ctp-blue",
     entityKind === "folder" && "icon-[codicon--folder] text-ctp-mauve",
@@ -68,7 +68,7 @@ export function ScmDiffItemRow({
   onKeyDown,
   onRevert,
 }: {
-  item: ScmChange;
+  item: Change;
   depth: number;
   layout: { y: number; height: number; animateEnter: boolean };
   label?: string;

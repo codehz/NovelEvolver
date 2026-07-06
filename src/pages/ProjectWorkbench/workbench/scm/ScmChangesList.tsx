@@ -9,7 +9,7 @@ import {
   treeRowDisclosureSpacerClass,
 } from "#app/pages/ProjectWorkbench/workbench/tree/tree-row-motion";
 import { TreeMotionRow } from "#app/pages/ProjectWorkbench/workbench/tree/TreeMotionRow";
-import type { ScmChange } from "#shared/rpc/worktree-scm";
+import type { Change } from "#shared/rpc/worktree-changes";
 
 import {
   buildScmChangeTree,
@@ -39,8 +39,8 @@ function activateOnEnterSpace(onActivate: () => void) {
 }
 
 function buildScmChangeRoots(
-  manuscriptChanges: ScmChange[],
-  resourceChanges: ScmChange[],
+  manuscriptChanges: Change[],
+  resourceChanges: Change[],
 ): ScmChangeDomainRoot[] {
   const roots: ScmChangeDomainRoot[] = [
     {
@@ -143,8 +143,8 @@ export function ScmChangesList({
   resourceChanges,
   onRevert,
 }: {
-  manuscriptChanges: ScmChange[];
-  resourceChanges: ScmChange[];
+  manuscriptChanges: Change[];
+  resourceChanges: Change[];
   onRevert: (changeId: string) => void;
 }) {
   const roots = useMemo(

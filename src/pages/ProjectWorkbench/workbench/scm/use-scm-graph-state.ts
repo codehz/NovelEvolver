@@ -1,13 +1,17 @@
 import { useCallback, useEffect, useState } from "react";
 
-import type { ScmCommitSummary } from "#shared/rpc/worktree-scm";
-
-import { useWorktreeScm } from "../branch/branch-scopes";
+import { useWorktreeChanges } from "../branch/branch-scopes";
 import { SCM_GRAPH_MAX_COMMITS } from "./constants";
 
 export function useScmGraphState(commitsRefreshKey: number) {
-  const scmHandle = useWorktreeScm();
-  const [commits, setCommits] = useState<ScmCommitSummary[] | null>(null);
+  const changesHandle = useWorktreeChanges();
+  const [commits, setCommits] = useState<Array<{
+    hash: string;
+    shortHash: string;
+    message: string;
+    authorName: string;
+    committedAt: number;
+  }> | null>(null);
   const [error, setError] = useState(false);
   const [loading, setLoading] = useState(true);
   const [retryKey, setRetryKey] = useState(0);
@@ -17,7 +21,7 @@ export function useScmGraphState(commitsRefreshKey: number) {
     setLoading(true);
     setError(false);
 
-    void Promise.resolve(scmHandle.listCommits(SCM_GRAPH_MAX_COMMITS))
+    void Promise.resolve(changesHandle.listCommits(SCM_GRAPH_MAX_COMMITS))
       .then((list) => {
         if (!canceled) {
           setCommits(list);
@@ -34,7 +38,7 @@ export function useScmGraphState(commitsRefreshKey: number) {
     return () => {
       canceled = true;
     };
-  }, [scmHandle, commitsRefreshKey, retryKey]);
+  }, [changesHandle, commitsRefreshKey, retryKey]);
 
   const retry = useCallback(() => {
     setRetryKey((current) => current + 1);
