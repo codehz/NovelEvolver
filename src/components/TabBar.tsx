@@ -3,6 +3,7 @@ import type { ReactNode } from "react";
 
 import { SlotText } from "#app/components/SlotText";
 import { cn } from "#app/lib/cn";
+import { contentEditorTabDefaultIconClass } from "#app/pages/ProjectWorkbench/workbench/tree/content-tree-icons";
 
 export type TabItem = {
   id: string;
@@ -64,7 +65,7 @@ export function TabBar({ tabs, onActivate, onClose, renderIcon, className }: Tab
           tabIndex={0}
         >
           {renderIcon?.(tab) ?? (
-            <span aria-hidden="true" className="mr-2 icon-[codicon--file] text-sm" />
+            <span aria-hidden="true" className={contentEditorTabDefaultIconClass()} />
           )}
           <SlotText className="truncate" text={tab.label} />
           {onClose && (

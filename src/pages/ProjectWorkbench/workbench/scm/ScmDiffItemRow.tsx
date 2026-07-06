@@ -6,6 +6,7 @@ import { treeRowDisclosureSpacerClass } from "#app/pages/ProjectWorkbench/workbe
 import { TreeMotionRow } from "#app/pages/ProjectWorkbench/workbench/tree/TreeMotionRow";
 import type { Change } from "#shared/rpc/worktree-changes-rpc";
 
+import { contentEntityIconClass } from "../tree/content-tree-icons";
 import { ScmDiffStats } from "./ScmDiffStats";
 
 function scmChangeKindIconClass(kind: Change["kind"]): string {
@@ -16,14 +17,6 @@ function scmChangeKindIconClass(kind: Change["kind"]): string {
     kind === "rename" && "icon-[codicon--edit] text-ctp-yellow",
     kind === "move" && "icon-[codicon--diff-modified] text-ctp-yellow",
     kind === "reorder" && "icon-[codicon--list-flat] text-ctp-subtext0",
-  );
-}
-
-function scmEntityIconClass(entityKind: Change["entityKind"]): string {
-  return cn(
-    entityKind === "chapter" && "icon-[codicon--book] text-ctp-blue",
-    entityKind === "folder" && "icon-[codicon--folder] text-ctp-mauve",
-    entityKind === "file" && "icon-[codicon--file] text-ctp-overlay0",
   );
 }
 
@@ -75,9 +68,7 @@ export function ScmDiffItemRow({
       onKeyDown={onKeyDown}
     >
       {disclosure ?? <span className={treeRowDisclosureSpacerClass} />}
-      <span
-        className={cn(iconClassName ?? scmEntityIconClass(item.entityKind), "shrink-0 text-sm")}
-      />
+      <span className={iconClassName ?? contentEntityIconClass(item.entityKind)} />
       <span className="truncate">{label ?? item.label}</span>
       {item.kind === "reorder" ? (
         <span className="shrink-0 text-[10px] text-ctp-overlay0">顺序</span>
@@ -110,5 +101,3 @@ export function ScmDiffItemRow({
     </TreeMotionRow>
   );
 }
-
-export { scmEntityIconClass };

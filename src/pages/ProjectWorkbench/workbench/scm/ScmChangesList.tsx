@@ -3,6 +3,10 @@ import type { KeyboardEvent } from "react";
 
 import { DisclosureChevron } from "#app/components/DisclosureChevron";
 import { cn } from "#app/lib/cn";
+import {
+  contentDomainIconClass,
+  contentFolderIconClass,
+} from "#app/pages/ProjectWorkbench/workbench/tree/content-tree-icons";
 import { FlatTreeList } from "#app/pages/ProjectWorkbench/workbench/tree/FlatTreeList";
 import type { TreeRowLayout } from "#app/pages/ProjectWorkbench/workbench/tree/tree-row-layout";
 import {
@@ -21,11 +25,8 @@ import {
   type ScmChangeFlatRow,
   type ScmChangeTreeFolderNode,
 } from "./scm-change-tree-projector";
-import { ScmDiffItemRow, scmEntityIconClass } from "./ScmDiffItemRow";
+import { ScmDiffItemRow } from "./ScmDiffItemRow";
 import { ScmDomainRow } from "./ScmDomainRow";
-
-const manuscriptGroupIconClass = cn("icon-[codicon--symbol-method]");
-const resourceGroupIconClass = cn("icon-[codicon--symbol-file]");
 const scmFolderRowClass = cn("cursor-pointer text-xs text-ctp-subtext1 hover:bg-ctp-surface0/50");
 const scmFolderCountClass = cn(
   "ml-auto shrink-0 bg-ctp-surface0 px-1 py-px font-mono text-[10px] text-ctp-subtext0",
@@ -48,13 +49,13 @@ function buildScmChangeRoots(
     {
       id: "manuscript",
       title: "正文变更",
-      iconClass: manuscriptGroupIconClass,
+      iconClass: contentDomainIconClass("manuscript"),
       nodes: buildScmChangeTree(manuscriptChanges),
     },
     {
       id: "resource",
       title: "资源变更",
-      iconClass: resourceGroupIconClass,
+      iconClass: contentDomainIconClass("resource"),
       nodes: buildScmChangeTree(resourceChanges),
     },
   ];
@@ -62,15 +63,8 @@ function buildScmChangeRoots(
 }
 
 function folderIconClass(node: ScmChangeTreeFolderNode, expanded: boolean): string {
-  const hasInlineChange = node.selfChanges.length === 1;
-  if (hasInlineChange) {
-    return expanded || node.children.length > 0
-      ? cn("icon-[codicon--folder-opened] text-ctp-mauve")
-      : scmEntityIconClass("folder");
-  }
-  return expanded || node.children.length > 0
-    ? cn("icon-[codicon--folder-opened] text-ctp-mauve")
-    : cn("icon-[codicon--folder] text-ctp-mauve");
+  const showOpened = expanded || node.children.length > 0;
+  return contentFolderIconClass(showOpened);
 }
 
 function ScmFolderRow({
@@ -131,7 +125,7 @@ function ScmFolderRow({
       ) : (
         <span className={treeRowDisclosureSpacerClass} />
       )}
-      <span className={cn(folderIconClass(row.node, row.expanded), "shrink-0 text-sm")} />
+      <span className={folderIconClass(row.node, row.expanded)} />
       <span className="truncate">{row.node.segment}</span>
       <span className={scmFolderCountClass}>{row.childCount}</span>
     </TreeMotionRow>

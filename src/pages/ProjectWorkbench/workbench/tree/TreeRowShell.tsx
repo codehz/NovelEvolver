@@ -85,7 +85,7 @@ export function TreeRowShell<RowType extends string, DropTarget>({
       ) : (
         <span aria-hidden="true" className={treeRowDisclosureSpacerClass} />
       )}
-      <span aria-hidden="true" className={cn(iconClassName, "shrink-0 text-base")} />
+      <span aria-hidden="true" className={iconClassName} />
       {input ? (
         <TreeInlineInput
           ariaLabel={input.ariaLabel}

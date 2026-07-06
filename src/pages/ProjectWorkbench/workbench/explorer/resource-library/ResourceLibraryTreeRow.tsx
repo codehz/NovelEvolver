@@ -1,8 +1,8 @@
 import type { RefObject } from "react";
 
-import { cn } from "#app/lib/cn";
 import type { ResourceTreeNode } from "#shared/rpc/worktree-tree-rpc";
 
+import { resourceTreeNodeIconClass } from "../../tree/content-tree-icons";
 import { TreeChangeStatusBadge, treeChangeStatusLabelClass } from "../../tree/tree-change-status";
 import type { TreeResolvedDrop } from "../../tree/tree-drag";
 import type { TreeRowLayout } from "../../tree/tree-row-layout";
@@ -30,13 +30,6 @@ type ResourceLibraryTreeRowProps = {
   onDragMove: (resolved: TreeResolvedDrop<string> | null) => void;
   onDragEnd: () => void;
 };
-
-function getRowIcon(item: ResourceRenderItem) {
-  if (item.type === "folder") {
-    return item.expanded ? cn("icon-[codicon--folder-opened]") : cn("icon-[codicon--folder]");
-  }
-  return cn("icon-[codicon--file]");
-}
 
 export function ResourceLibraryTreeRow({
   item,
@@ -77,7 +70,7 @@ export function ResourceLibraryTreeRow({
       disclosureExpanded={item.type === "folder" ? item.expanded : undefined}
       selected={isSelected}
       dragging={dragging}
-      iconClassName={getRowIcon(item)}
+      iconClassName={resourceTreeNodeIconClass(item.type, item.expanded)}
       label={item.name}
       labelClassName={treeChangeStatusLabelClass(item.changeStatus, item.type)}
       trailingContent={

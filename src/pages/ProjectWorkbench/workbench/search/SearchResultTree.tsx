@@ -3,6 +3,10 @@ import type { KeyboardEvent } from "react";
 
 import { DisclosureChevron } from "#app/components/DisclosureChevron";
 import { cn } from "#app/lib/cn";
+import {
+  contentEntityIconClass,
+  contentFolderIconClass,
+} from "#app/pages/ProjectWorkbench/workbench/tree/content-tree-icons";
 import { FlatTreeList } from "#app/pages/ProjectWorkbench/workbench/tree/FlatTreeList";
 import type { TreeRowLayout } from "#app/pages/ProjectWorkbench/workbench/tree/tree-row-layout";
 import {
@@ -33,13 +37,6 @@ function searchTreeMatchPaddingLeft(leafDepth: number): number {
 const searchResultCountPillClass = cn(
   "ml-auto shrink-0 rounded-full bg-ctp-surface0 px-1 py-px font-mono text-[10px] text-ctp-subtext0",
 );
-
-function entityIconClass(entityKind: WorktreeSearchHit["entityKind"]): string {
-  return cn(
-    entityKind === "chapter" && "icon-[codicon--book] text-ctp-blue",
-    entityKind === "file" && "icon-[codicon--file] text-ctp-overlay0",
-  );
-}
 
 function activateOnEnterSpace(onActivate: () => void) {
   return (event: KeyboardEvent) => {
@@ -86,7 +83,7 @@ function SearchFlatRowView({
         onKeyDown={activateOnEnterSpace(() => onToggleDomain(row.key))}
       >
         <DisclosureChevron expanded={row.expanded} />
-        <span className={cn(row.iconClass, "shrink-0 text-sm")} />
+        <span className={row.iconClass} />
         <span className="truncate">{row.title}</span>
       </TreeMotionRow>
     );
@@ -105,7 +102,7 @@ function SearchFlatRowView({
         onKeyDown={activateOnEnterSpace(() => onToggleFolder(row.key))}
       >
         <DisclosureChevron expanded={row.expanded} />
-        <span className="icon-[codicon--folder] shrink-0 text-sm text-ctp-mauve" />
+        <span className={contentFolderIconClass(row.expanded)} />
         <span className="truncate">{row.segment}</span>
         <span className={searchResultCountPillClass}>{row.childCount}</span>
       </TreeMotionRow>
@@ -167,7 +164,7 @@ function SearchFlatRowView({
       ) : (
         <span className={treeRowDisclosureSpacerClass} />
       )}
-      <span className={cn(entityIconClass(leaf.entityKind), "shrink-0 text-sm")} />
+      <span className={contentEntityIconClass(leaf.entityKind)} />
       <span className="truncate">{leaf.name}</span>
       {row.showMatches ? (
         <span className={searchResultCountPillClass}>{leaf.hits.length}</span>

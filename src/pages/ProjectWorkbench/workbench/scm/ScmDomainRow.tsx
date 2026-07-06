@@ -49,7 +49,7 @@ export function ScmDomainRow({
       onKeyDown={activateOnEnterSpace(onToggle)}
     >
       <DisclosureChevron expanded={expanded} />
-      <span className={cn(iconClass, "shrink-0 text-sm")} />
+      <span className={iconClass} />
       <span className="truncate">{title}</span>
       <span className={scmGroupCountClass}>{childCount}</span>
     </TreeMotionRow>

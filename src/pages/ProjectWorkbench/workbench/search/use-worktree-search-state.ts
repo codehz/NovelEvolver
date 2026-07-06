@@ -1,10 +1,10 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 
-import { cn } from "#app/lib/cn";
 import type { WorktreeSearchHit, WorktreeSearchResult } from "#shared/rpc/worktree-search-rpc";
 
 import { useManuscript, useResourceLibrary, useWorktreeSearch } from "../branch/branch-scopes";
 import { useWorkbenchEditorActions } from "../editor/use-workbench-editor-actions";
+import { contentDomainIconClass } from "../tree/content-tree-icons";
 import { buildSearchPathTree } from "./build-search-path-tree";
 import { SEARCH_DEBOUNCE_MS, SEARCH_MAX_RESULTS_PER_DOMAIN } from "./constants";
 import { formatSearchStatsLine, summarizeSearchHits } from "./search-stats";
@@ -96,7 +96,7 @@ export function useWorktreeSearchState() {
       list.push({
         id: "manuscript",
         title: "正文",
-        iconClass: cn("icon-[codicon--book]", "text-ctp-blue"),
+        iconClass: contentDomainIconClass("manuscript"),
         nodes: manuscriptTree,
       });
     }
@@ -104,7 +104,7 @@ export function useWorktreeSearchState() {
       list.push({
         id: "resources",
         title: "资源库",
-        iconClass: cn("icon-[codicon--folder]", "text-ctp-mauve"),
+        iconClass: contentDomainIconClass("resource"),
         nodes: resourceTree,
       });
     }

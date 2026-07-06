@@ -1,8 +1,8 @@
 import type { RefObject } from "react";
 
-import { cn } from "#app/lib/cn";
 import type { FileChangeStatus, ManuscriptTreeNode } from "#shared/rpc/worktree-tree-rpc";
 
+import { manuscriptTreeNodeIconClass } from "../../tree/content-tree-icons";
 import { TreeChangeStatusBadge, treeChangeStatusLabelClass } from "../../tree/tree-change-status";
 import type { TreeResolvedDrop } from "../../tree/tree-drag";
 import type { TreeRowLayout } from "../../tree/tree-row-layout";
@@ -33,13 +33,6 @@ type ManuscriptTreeRowProps = {
   onDragMove: (resolved: TreeResolvedDrop<ManuscriptMoveTarget> | null) => void;
   onDragEnd: () => void;
 };
-
-function rowIcon(type: ManuscriptTreeNode["type"], expanded: boolean) {
-  if (type === "folder") {
-    return expanded ? cn("icon-[codicon--folder-opened]") : cn("icon-[codicon--folder]");
-  }
-  return cn("icon-[codicon--book]");
-}
 
 export function ManuscriptTreeRow({
   id,
@@ -77,7 +70,7 @@ export function ManuscriptTreeRow({
       disclosureExpanded={type === "folder" ? expanded : undefined}
       selected={selected}
       dragging={dragging}
-      iconClassName={rowIcon(type, expanded)}
+      iconClassName={manuscriptTreeNodeIconClass(type, expanded)}
       label={title}
       labelClassName={treeChangeStatusLabelClass(changeStatus, type)}
       trailingContent={
