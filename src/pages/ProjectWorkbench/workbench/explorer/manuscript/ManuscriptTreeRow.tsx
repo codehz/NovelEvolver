@@ -8,16 +8,11 @@ import { TreeRowShell } from "../../tree/TreeRowShell";
 import type { TreeDropResolveInput } from "../../tree/use-tree-row-pointer-drag";
 import type { ManuscriptEditingState, ManuscriptMoveTarget } from "./state/types";
 
-function changeStatusClass(status: FileChangeStatus | undefined) {
-  if (status === "added") return cn("text-ctp-green");
-  if (status === "modified") return cn("text-ctp-yellow");
-  return undefined;
-}
-
-function changeStatusLabel(status: FileChangeStatus | undefined) {
-  if (status === "added") return "A";
-  if (status === "modified") return "M";
-  return undefined;
+function changeStatusIconClass(status: FileChangeStatus | undefined) {
+  return cn(
+    status === "added" && "icon-[codicon--diff-added] text-ctp-green",
+    status === "modified" && "icon-[codicon--diff-modified] text-ctp-yellow",
+  );
 }
 
 type ManuscriptTreeRowProps = {
@@ -101,13 +96,9 @@ export function ManuscriptTreeRow({
       trailingContent={
         changeStatus ? (
           <span
-            className={cn(
-              "ml-auto shrink-0 text-[10px] leading-5 font-semibold",
-              changeStatusClass(changeStatus),
-            )}
-          >
-            {changeStatusLabel(changeStatus)}
-          </span>
+            className={cn("ml-auto shrink-0 text-sm", changeStatusIconClass(changeStatus))}
+            aria-hidden="true"
+          />
         ) : null
       }
       input={
