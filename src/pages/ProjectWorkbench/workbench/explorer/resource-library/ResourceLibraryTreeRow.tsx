@@ -78,6 +78,7 @@ export function ResourceLibraryTreeRow({
       rowIndex={index}
       rowType={item.type}
       depth={item.depth}
+      showDisclosure={item.type === "folder"}
       expanded={item.expanded}
       y={y}
       height={height}

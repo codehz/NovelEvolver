@@ -79,6 +79,7 @@ export function ManuscriptTreeRow({
       rowIndex={index}
       rowType={type}
       depth={depth}
+      showDisclosure={type === "folder"}
       expanded={expanded}
       y={y}
       height={height}

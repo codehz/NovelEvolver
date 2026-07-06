@@ -1,16 +1,12 @@
-import { motion } from "motion/react";
 import type { ReactNode, RefObject } from "react";
 
 import { DisclosureChevron } from "#app/components/DisclosureChevron";
 import { cn } from "#app/lib/cn";
 
 import type { TreeResolvedDrop } from "./tree-drag";
-import {
-  treeRowDisclosureSpacerClass,
-  treeRowPaddingVariants,
-  treeRowVariants,
-} from "./tree-row-motion";
+import { treeRowDisclosureSpacerClass } from "./tree-row-motion";
 import { TreeInlineInput } from "./TreeInlineInput";
+import { TreeMotionRow } from "./TreeMotionRow";
 import type { TreeDropResolveInput } from "./use-tree-row-pointer-drag";
 import { useTreeRowPointerDrag } from "./use-tree-row-pointer-drag";
 
@@ -27,6 +23,7 @@ type TreeRowShellProps<RowType extends string, DropTarget> = {
   rowIndex: number;
   rowType: RowType;
   depth: number;
+  showDisclosure: boolean;
   expanded: boolean;
   y: number;
   height: number;
@@ -51,6 +48,7 @@ export function TreeRowShell<RowType extends string, DropTarget>({
   rowIndex,
   rowType,
   depth,
+  showDisclosure,
   expanded,
   y,
   height,
@@ -89,7 +87,7 @@ export function TreeRowShell<RowType extends string, DropTarget>({
 
   const rowContent = (
     <>
-      {rowType === "folder" ? (
+      {showDisclosure ? (
         <DisclosureChevron expanded={expanded} />
       ) : (
         <span aria-hidden="true" className={treeRowDisclosureSpacerClass} />
@@ -112,43 +110,32 @@ export function TreeRowShell<RowType extends string, DropTarget>({
     </>
   );
 
-  return (
-    <motion.li
-      className="absolute inset-x-0 z-10"
-      role="none"
-      style={{ top: 0, height }}
-      variants={treeRowVariants}
-      custom={y}
-      initial={animateEnter ? "hidden" : false}
-      animate="visible"
-      exit="exit"
+  return isEditing || rowId === null ? (
+    <TreeMotionRow
+      y={y}
+      height={height}
+      animateEnter={animateEnter}
+      depth={depth}
+      className={rowClasses}
+      aria-expanded={showDisclosure ? expanded : undefined}
     >
-      {isEditing || rowId === null ? (
-        <motion.div
-          className={rowClasses}
-          variants={treeRowPaddingVariants}
-          custom={depth}
-          initial={false}
-          animate="visible"
-        >
-          {rowContent}
-        </motion.div>
-      ) : (
-        <motion.button
-          className={rowClasses}
-          data-tree-row-id={rowId}
-          data-tree-row-index={rowIndex}
-          data-tree-row-type={rowType}
-          type="button"
-          variants={treeRowPaddingVariants}
-          custom={depth}
-          initial={false}
-          animate="visible"
-          {...pointerHandlers}
-        >
-          {rowContent}
-        </motion.button>
-      )}
-    </motion.li>
+      {rowContent}
+    </TreeMotionRow>
+  ) : (
+    <TreeMotionRow
+      as="button"
+      y={y}
+      height={height}
+      animateEnter={animateEnter}
+      depth={depth}
+      className={rowClasses}
+      aria-expanded={showDisclosure ? expanded : undefined}
+      data-tree-row-id={rowId}
+      data-tree-row-index={rowIndex}
+      data-tree-row-type={rowType}
+      {...pointerHandlers}
+    >
+      {rowContent}
+    </TreeMotionRow>
   );
 }

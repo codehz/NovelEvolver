@@ -1,11 +1,12 @@
 import { motion } from "motion/react";
-import type { KeyboardEvent, ReactNode } from "react";
+import type { HTMLMotionProps } from "motion/react";
+import type { ReactNode } from "react";
 
 import { cn } from "#app/lib/cn";
 
 import { treeRowPaddingVariants, treeRowVariants } from "./tree-row-motion";
 
-type TreeMotionRowProps = {
+type TreeMotionRowBaseProps = {
   y: number;
   height: number;
   animateEnter: boolean;
@@ -13,29 +14,46 @@ type TreeMotionRowProps = {
   /** 覆盖 depth 缩进（例如搜索匹配行额外缩进）。 */
   paddingLeftPx?: number;
   className?: string;
-  role?: "treeitem";
-  "aria-expanded"?: boolean;
-  tabIndex?: number;
-  onClick?: () => void;
-  onKeyDown?: (event: KeyboardEvent) => void;
+  role?: HTMLMotionProps<"div">["role"];
   children: ReactNode;
 };
 
-export function TreeMotionRow({
-  y,
-  height,
-  animateEnter,
-  depth,
-  paddingLeftPx,
-  className,
-  role = "treeitem",
-  "aria-expanded": ariaExpanded,
-  tabIndex,
-  onClick,
-  onKeyDown,
-  children,
-}: TreeMotionRowProps) {
+type TreeMotionRowDivProps = TreeMotionRowBaseProps &
+  Omit<HTMLMotionProps<"div">, keyof TreeMotionRowBaseProps> & {
+    as?: "div";
+  };
+
+type TreeMotionRowButtonProps = TreeMotionRowBaseProps &
+  Omit<HTMLMotionProps<"button">, keyof TreeMotionRowBaseProps> & {
+    as: "button";
+  };
+
+type TreeMotionRowProps = TreeMotionRowDivProps | TreeMotionRowButtonProps;
+
+export function TreeMotionRow(props: TreeMotionRowProps) {
+  const {
+    as = "div",
+    y,
+    height,
+    animateEnter,
+    depth,
+    paddingLeftPx,
+    className,
+    role = "treeitem",
+    children,
+    ...domProps
+  } = props;
   const useDepthPadding = paddingLeftPx === undefined;
+  const rowClassName = cn("flex size-full items-center gap-1 overflow-hidden pr-2", className);
+  const sharedMotionProps = {
+    role,
+    className: rowClassName,
+    variants: useDepthPadding ? treeRowPaddingVariants : undefined,
+    custom: useDepthPadding ? depth : undefined,
+    initial: false,
+    animate: useDepthPadding ? "visible" : undefined,
+    style: useDepthPadding ? undefined : { paddingLeft: paddingLeftPx },
+  } as const;
 
   return (
     <motion.li
@@ -48,21 +66,25 @@ export function TreeMotionRow({
       animate="visible"
       exit="exit"
     >
-      <motion.div
-        role={role}
-        aria-expanded={ariaExpanded}
-        tabIndex={tabIndex}
-        className={cn("flex size-full items-center gap-1 overflow-hidden pr-2", className)}
-        variants={useDepthPadding ? treeRowPaddingVariants : undefined}
-        custom={useDepthPadding ? depth : undefined}
-        initial={false}
-        animate={useDepthPadding ? "visible" : undefined}
-        style={useDepthPadding ? undefined : { paddingLeft: paddingLeftPx }}
-        onClick={onClick}
-        onKeyDown={onKeyDown}
-      >
-        {children}
-      </motion.div>
+      {as === "button" ? (
+        <motion.button
+          type={
+            (domProps as Omit<TreeMotionRowButtonProps, keyof TreeMotionRowBaseProps | "as">)
+              .type ?? "button"
+          }
+          {...sharedMotionProps}
+          {...(domProps as Omit<TreeMotionRowButtonProps, keyof TreeMotionRowBaseProps | "as">)}
+        >
+          {children}
+        </motion.button>
+      ) : (
+        <motion.div
+          {...sharedMotionProps}
+          {...(domProps as Omit<TreeMotionRowDivProps, keyof TreeMotionRowBaseProps | "as">)}
+        >
+          {children}
+        </motion.div>
+      )}
     </motion.li>
   );
 }
