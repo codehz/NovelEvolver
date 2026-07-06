@@ -50,6 +50,10 @@ export class ChangeTracker {
   #lastCurrentResources: ResourceSnapshotState | null = null;
   #lastChanges: ChangesSnapshot | null = null;
 
+  get lastChanges(): ChangesSnapshot | null {
+    return this.#lastChanges;
+  }
+
   /**
    * 计算变更快照
    *
@@ -113,15 +117,22 @@ export class ChangeTracker {
    *
    * 比较当前快照与上次快照，返回新增和删除的变更
    */
-  computeDelta(current: ChangesSnapshot): {
+  computeDelta(
+    current: ChangesSnapshot,
+    currentRevision: number,
+  ): {
     addedChanges: Change[];
     removedChangeIds: string[];
+    fromRevision: number;
+    toRevision: number;
   } {
     if (this.#lastChanges === null) {
       // 首次计算，返回所有变更
       return {
         addedChanges: [...current.manuscriptChanges, ...current.resourceChanges],
         removedChangeIds: [],
+        fromRevision: currentRevision - 1,
+        toRevision: currentRevision,
       };
     }
 
@@ -160,7 +171,12 @@ export class ChangeTracker {
       }
     }
 
-    return { addedChanges, removedChangeIds };
+    return {
+      addedChanges,
+      removedChangeIds,
+      fromRevision: previous.revision,
+      toRevision: currentRevision,
+    };
   }
 
   /**

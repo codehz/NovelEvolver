@@ -1021,20 +1021,27 @@ export class WorktreeSession {
     if (currentSnapshot.kind !== "snapshot") {
       return;
     }
-    const delta = this.#changeTracker.computeDelta(currentSnapshot.snapshot);
-    if (delta.addedChanges.length === 0 && delta.removedChangeIds.length === 0) {
-      // 没有变更，不发送事件
+    const delta = this.#changeTracker.computeDelta(currentSnapshot.snapshot, this.#revision);
+    // 如果是首次（没有上次变更），发送完整 snapshot
+    if (this.#changeTracker.lastChanges === null) {
+      this.#changesPublisher.emit(currentSnapshot);
       return;
     }
-    this.#changesPublisher.emit({
-      kind: "delta",
-      delta: {
-        fromRevision: this.#revision - 1,
-        toRevision: this.#revision,
-        addedChanges: delta.addedChanges,
-        removedChangeIds: delta.removedChangeIds,
-      },
-    });
+    // 即使没有增量变更，也发送更新（用于同步 revision 和 hasChanges 状态）
+    if (delta.addedChanges.length === 0 && delta.removedChangeIds.length === 0) {
+      // 发送完整的 snapshot 以同步状态
+      this.#changesPublisher.emit(currentSnapshot);
+    } else {
+      this.#changesPublisher.emit({
+        kind: "delta",
+        delta: {
+          fromRevision: delta.fromRevision,
+          toRevision: delta.toRevision,
+          addedChanges: delta.addedChanges,
+          removedChangeIds: delta.removedChangeIds,
+        },
+      });
+    }
   }
 
   #persistState(includeCommitted: boolean): void {

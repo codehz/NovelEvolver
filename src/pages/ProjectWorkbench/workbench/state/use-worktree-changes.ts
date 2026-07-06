@@ -43,12 +43,22 @@ export function useWorktreeChangesState() {
             (c) => !removedChangeIds.has(c.id),
           );
 
-          // 添加新的变更
+          // 添加新的变更（去重）
+          const currentChangeIds = new Set<string>();
+          for (const c of manuscriptChanges) {
+            currentChangeIds.add(c.id);
+          }
+          for (const c of resourceChanges) {
+            currentChangeIds.add(c.id);
+          }
+
           for (const change of delta.addedChanges) {
-            if (change.domain === "manuscript") {
-              manuscriptChanges.push(change);
-            } else {
-              resourceChanges.push(change);
+            if (!currentChangeIds.has(change.id)) {
+              if (change.domain === "manuscript") {
+                manuscriptChanges.push(change);
+              } else {
+                resourceChanges.push(change);
+              }
             }
           }
 
