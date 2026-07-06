@@ -85,38 +85,6 @@ export function applyWorktreeTreeDelta(
   };
 }
 
-export type WorktreeTreeDomain = "manuscript" | "resources";
-
-export function applyWorktreeTreeFromChangesEvent(
-  current: ManuscriptTreeSnapshot | ResourceTreeSnapshot | null,
-  event: WorktreeChangesEvent,
-  domain: WorktreeTreeDomain,
-): ManuscriptTreeSnapshot | ResourceTreeSnapshot | null {
-  if (event.kind === "snapshot") {
-    return domain === "manuscript" ? event.treeSnapshot.manuscript : event.treeSnapshot.resources;
-  }
-
-  if (domain === "manuscript") {
-    const patch = event.treeDelta?.manuscript;
-    if (patch === undefined) {
-      return current;
-    }
-    if (current === null) {
-      return null;
-    }
-    return applyManuscriptTreeDelta(current as ManuscriptTreeSnapshot, patch);
-  }
-
-  const patch = event.treeDelta?.resources;
-  if (patch === undefined) {
-    return current;
-  }
-  if (current === null) {
-    return null;
-  }
-  return applyResourceTreeDelta(current as ResourceTreeSnapshot, patch);
-}
-
 export function applyCombinedWorktreeTreeFromChangesEvent(
   current: WorktreeTreeSnapshot | null,
   event: WorktreeChangesEvent,
@@ -146,18 +114,4 @@ export function applyCombinedWorktreeTreeFromChangesEvent(
         ? current.resources
         : applyResourceTreeDelta(current.resources, treeDelta.resources),
   };
-}
-
-/** @deprecated Prefer {@link applyWorktreeTreeFromChangesEvent} per domain or {@link applyCombinedWorktreeTreeFromChangesEvent}. */
-export function extractWorktreeTreeFromChanges(
-  event: WorktreeChangesEvent,
-): WorktreeTreeSnapshot | null {
-  if (event.kind === "snapshot") {
-    return {
-      revision: event.snapshot.revision,
-      manuscript: event.treeSnapshot.manuscript,
-      resources: event.treeSnapshot.resources,
-    };
-  }
-  return null;
 }
