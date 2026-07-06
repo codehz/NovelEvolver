@@ -10,10 +10,14 @@ import { projectDisplayName } from "#app/lib/project-display-name";
 import { convertRpcPromise } from "#app/lib/rpc-utils";
 import { useTitleBarTitle } from "#app/lib/titlebar-title";
 
+import { AuxiliaryPanel } from "./workbench/auxiliary/AuxiliaryPanel";
 import { BranchScopeProvider } from "./workbench/branch/BranchScopeProvider";
+import { EditorArea } from "./workbench/editor/EditorArea";
+import { ExplorerSidebar } from "./workbench/sidebar/ExplorerSidebar";
+import { ScmSidebarSection } from "./workbench/sidebar/ScmSidebarSection";
+import { SearchSidebarSection } from "./workbench/sidebar/SearchSidebarSection";
 import { projectIdScope, projectMolecule } from "./workbench/state/molecules";
 import { WorkbenchStatusBar } from "./workbench/statusbar/WorkbenchStatusBar";
-import { buildWorkbenchSlots } from "./workbench/workbench-slots";
 
 export function ProjectWorkbench() {
   const { projectId } = useParams<{ projectId: string }>();
@@ -66,7 +70,30 @@ function ProjectWorkbenchInner() {
   useTitleBarTitle(displayName);
   return (
     <BranchScopeProvider>
-      <WorkbenchLayout {...buildWorkbenchSlots(displayName)} />
+      <WorkbenchLayout
+        primaryViews={[
+          {
+            id: "explorer",
+            title: "资源管理器",
+            iconClass: cn("icon-[codicon--files]"),
+            content: <ExplorerSidebar projectLabel={displayName} />,
+          },
+          {
+            id: "search",
+            title: "搜索",
+            iconClass: cn("icon-[codicon--search]"),
+            content: <SearchSidebarSection />,
+          },
+          {
+            id: "scm",
+            title: "源代码管理",
+            iconClass: cn("icon-[codicon--source-control]"),
+            content: <ScmSidebarSection />,
+          },
+        ]}
+        editor={<EditorArea />}
+        auxiliary={<AuxiliaryPanel />}
+      />
       <WorkbenchStatusBar />
     </BranchScopeProvider>
   );
