@@ -5,6 +5,7 @@ import type { ResourceTreeNode } from "#shared/rpc/worktree-tree-rpc";
 
 import { TreeChangeStatusBadge, treeChangeStatusLabelClass } from "../../tree/tree-change-status";
 import type { TreeResolvedDrop } from "../../tree/tree-drag";
+import type { TreeRowLayout } from "../../tree/tree-row-layout";
 import { TreeRowShell } from "../../tree/TreeRowShell";
 import type { TreeDropResolveInput } from "../../tree/use-tree-row-pointer-drag";
 import type { ResourceRenderItem } from "./resource-tree-projector";
@@ -12,9 +13,7 @@ import type { ResourceRenderItem } from "./resource-tree-projector";
 type ResourceLibraryTreeRowProps = {
   item: ResourceRenderItem;
   index: number;
-  y: number;
-  height: number;
-  animateEnter: boolean;
+  layout: TreeRowLayout;
   selectedId: string | null;
   dragging: boolean;
   listRef: RefObject<HTMLUListElement | null>;
@@ -42,9 +41,7 @@ function getRowIcon(item: ResourceRenderItem) {
 export function ResourceLibraryTreeRow({
   item,
   index,
-  y,
-  height,
-  animateEnter,
+  layout,
   selectedId,
   dragging,
   listRef,
@@ -57,6 +54,7 @@ export function ResourceLibraryTreeRow({
   onDragEnd,
 }: ResourceLibraryTreeRowProps) {
   const isSelected = item.id !== null && selectedId === item.id;
+  const rowId = item.id;
   const editing = item.editing;
   const inputAriaLabel =
     editing?.mode === "creating"
@@ -74,15 +72,9 @@ export function ResourceLibraryTreeRow({
       : undefined;
   return (
     <TreeRowShell<ResourceTreeNode["type"], string>
-      rowId={item.id}
-      rowIndex={index}
-      rowType={item.type}
+      layout={layout}
       depth={item.depth}
-      showDisclosure={item.type === "folder"}
-      expanded={item.expanded}
-      y={y}
-      height={height}
-      animateEnter={animateEnter}
+      disclosureExpanded={item.type === "folder" ? item.expanded : undefined}
       selected={isSelected}
       dragging={dragging}
       iconClassName={getRowIcon(item)}
@@ -109,20 +101,25 @@ export function ResourceLibraryTreeRow({
             }
           : null
       }
-      listRef={listRef}
-      resolveDropTarget={resolveDropTarget}
-      onActivate={() => {
-        if (item.id !== null) {
-          onActivate(item.id, item.type, item.name);
-        }
-      }}
-      onDragStart={() => {
-        if (item.id !== null) {
-          onDragStart(item.id, item.type);
-        }
-      }}
-      onDragMove={onDragMove}
-      onDragEnd={onDragEnd}
+      interaction={
+        rowId === null
+          ? null
+          : {
+              rowId,
+              rowIndex: index,
+              rowType: item.type,
+              listRef,
+              resolveDropTarget,
+              onActivate: () => {
+                onActivate(rowId, item.type, item.name);
+              },
+              onDragStart: () => {
+                onDragStart(rowId, item.type);
+              },
+              onDragMove,
+              onDragEnd,
+            }
+      }
     />
   );
 }

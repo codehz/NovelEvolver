@@ -5,14 +5,9 @@ import type { ReactNode, RefObject } from "react";
 import { cn } from "#app/lib/cn";
 
 import type { TreeDropPreview } from "./tree-drag";
+import type { TreeRowLayout } from "./tree-row-layout";
 import { TREE_ROW_HEIGHT_PX } from "./tree-row-motion";
 import { TreeDropIndicator } from "./TreeDropIndicator";
-
-type TreeRowLayout = {
-  animateEnter: boolean;
-  height: number;
-  y: number;
-};
 
 type FlatTreeListProps<TItem> = {
   items: readonly TItem[];

@@ -4,12 +4,11 @@ import type { ReactNode } from "react";
 
 import { cn } from "#app/lib/cn";
 
+import type { TreeRowLayout } from "./tree-row-layout";
 import { treeRowPaddingVariants, treeRowVariants } from "./tree-row-motion";
 
 type TreeMotionRowBaseProps = {
-  y: number;
-  height: number;
-  animateEnter: boolean;
+  layout: TreeRowLayout;
   depth: number;
   /** 覆盖 depth 缩进（例如搜索匹配行额外缩进）。 */
   paddingLeftPx?: number;
@@ -33,9 +32,7 @@ type TreeMotionRowProps = TreeMotionRowDivProps | TreeMotionRowButtonProps;
 export function TreeMotionRow(props: TreeMotionRowProps) {
   const {
     as = "div",
-    y,
-    height,
-    animateEnter,
+    layout,
     depth,
     paddingLeftPx,
     className,
@@ -43,6 +40,7 @@ export function TreeMotionRow(props: TreeMotionRowProps) {
     children,
     ...domProps
   } = props;
+  const { y, height, animateEnter } = layout;
   const useDepthPadding = paddingLeftPx === undefined;
   const rowClassName = cn("flex size-full items-center gap-1 overflow-hidden pr-2", className);
   const sharedMotionProps = {

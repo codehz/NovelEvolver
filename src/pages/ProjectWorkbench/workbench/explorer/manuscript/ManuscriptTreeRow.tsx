@@ -5,6 +5,7 @@ import type { FileChangeStatus, ManuscriptTreeNode } from "#shared/rpc/worktree-
 
 import { TreeChangeStatusBadge, treeChangeStatusLabelClass } from "../../tree/tree-change-status";
 import type { TreeResolvedDrop } from "../../tree/tree-drag";
+import type { TreeRowLayout } from "../../tree/tree-row-layout";
 import { TreeRowShell } from "../../tree/TreeRowShell";
 import type { TreeDropResolveInput } from "../../tree/use-tree-row-pointer-drag";
 import type { ManuscriptEditingState, ManuscriptMoveTarget } from "./state/types";
@@ -16,9 +17,7 @@ type ManuscriptTreeRowProps = {
   depth: number;
   expanded: boolean;
   index: number;
-  y: number;
-  height: number;
-  animateEnter: boolean;
+  layout: TreeRowLayout;
   selected: boolean;
   editing: ManuscriptEditingState | null;
   dragging: boolean;
@@ -49,9 +48,7 @@ export function ManuscriptTreeRow({
   depth,
   expanded,
   index,
-  y,
-  height,
-  animateEnter,
+  layout,
   selected,
   editing,
   dragging,
@@ -75,15 +72,9 @@ export function ManuscriptTreeRow({
         : "重命名章节";
   return (
     <TreeRowShell<ManuscriptTreeNode["type"], ManuscriptMoveTarget>
-      rowId={id}
-      rowIndex={index}
-      rowType={type}
+      layout={layout}
       depth={depth}
-      showDisclosure={type === "folder"}
-      expanded={expanded}
-      y={y}
-      height={height}
-      animateEnter={animateEnter}
+      disclosureExpanded={type === "folder" ? expanded : undefined}
       selected={selected}
       dragging={dragging}
       iconClassName={rowIcon(type, expanded)}
@@ -104,20 +95,25 @@ export function ManuscriptTreeRow({
             }
           : null
       }
-      listRef={listRef}
-      resolveDropTarget={resolveDropTarget}
-      onActivate={() => {
-        if (id !== null) {
-          onActivate(id, type, title);
-        }
-      }}
-      onDragStart={() => {
-        if (id !== null) {
-          onDragStart(id, type);
-        }
-      }}
-      onDragMove={onDragMove}
-      onDragEnd={onDragEnd}
+      interaction={
+        id === null
+          ? null
+          : {
+              rowId: id,
+              rowIndex: index,
+              rowType: type,
+              listRef,
+              resolveDropTarget,
+              onActivate: () => {
+                onActivate(id, type, title);
+              },
+              onDragStart: () => {
+                onDragStart(id, type);
+              },
+              onDragMove,
+              onDragEnd,
+            }
+      }
     />
   );
 }

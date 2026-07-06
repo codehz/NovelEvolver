@@ -1,6 +1,7 @@
 import type { KeyboardEvent, ReactNode } from "react";
 
 import { cn } from "#app/lib/cn";
+import type { TreeRowLayout } from "#app/pages/ProjectWorkbench/workbench/tree/tree-row-layout";
 import { treeRowDisclosureSpacerClass } from "#app/pages/ProjectWorkbench/workbench/tree/tree-row-motion";
 import { TreeMotionRow } from "#app/pages/ProjectWorkbench/workbench/tree/TreeMotionRow";
 import type { Change } from "#shared/rpc/worktree-changes-rpc";
@@ -53,7 +54,7 @@ export function ScmDiffItemRow({
 }: {
   item: Change;
   depth: number;
-  layout: { y: number; height: number; animateEnter: boolean };
+  layout: TreeRowLayout;
   label?: string;
   disclosure?: ReactNode;
   iconClassName?: string;
@@ -65,9 +66,7 @@ export function ScmDiffItemRow({
 }) {
   return (
     <TreeMotionRow
-      y={layout.y}
-      height={layout.height}
-      animateEnter={layout.animateEnter}
+      layout={layout}
       depth={depth}
       className={cn(scmChangeRowClass, className)}
       aria-expanded={ariaExpanded}

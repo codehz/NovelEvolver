@@ -4,6 +4,7 @@ import { DisclosureChevron } from "#app/components/DisclosureChevron";
 import { cn } from "#app/lib/cn";
 
 import type { TreeResolvedDrop } from "./tree-drag";
+import type { TreeRowLayout } from "./tree-row-layout";
 import { treeRowDisclosureSpacerClass } from "./tree-row-motion";
 import { TreeInlineInput } from "./TreeInlineInput";
 import { TreeMotionRow } from "./TreeMotionRow";
@@ -18,23 +19,10 @@ type TreeRowShellInput = {
   onConfirm: (value: string) => void;
 };
 
-type TreeRowShellProps<RowType extends string, DropTarget> = {
-  rowId: string | null;
+type TreeRowShellInteraction<RowType extends string, DropTarget> = {
+  rowId: string;
   rowIndex: number;
   rowType: RowType;
-  depth: number;
-  showDisclosure: boolean;
-  expanded: boolean;
-  y: number;
-  height: number;
-  animateEnter: boolean;
-  selected: boolean;
-  dragging: boolean;
-  iconClassName: string;
-  label: string;
-  labelClassName?: string;
-  trailingContent?: ReactNode;
-  input: TreeRowShellInput | null;
   listRef?: RefObject<HTMLElement | null>;
   resolveDropTarget: (input: TreeDropResolveInput<RowType>) => TreeResolvedDrop<DropTarget> | null;
   onActivate: () => void;
@@ -43,16 +31,24 @@ type TreeRowShellProps<RowType extends string, DropTarget> = {
   onDragEnd: () => void;
 };
 
+type TreeRowShellProps<RowType extends string, DropTarget> = {
+  layout: TreeRowLayout;
+  depth: number;
+  disclosureExpanded?: boolean;
+  selected: boolean;
+  dragging: boolean;
+  iconClassName: string;
+  label: string;
+  labelClassName?: string;
+  trailingContent?: ReactNode;
+  input: TreeRowShellInput | null;
+  interaction?: TreeRowShellInteraction<RowType, DropTarget> | null;
+};
+
 export function TreeRowShell<RowType extends string, DropTarget>({
-  rowId,
-  rowIndex,
-  rowType,
+  layout,
   depth,
-  showDisclosure,
-  expanded,
-  y,
-  height,
-  animateEnter,
+  disclosureExpanded,
   selected,
   dragging,
   iconClassName,
@@ -60,35 +56,32 @@ export function TreeRowShell<RowType extends string, DropTarget>({
   labelClassName,
   trailingContent,
   input,
-  listRef,
-  resolveDropTarget,
-  onActivate,
-  onDragStart,
-  onDragMove,
-  onDragEnd,
+  interaction = null,
 }: TreeRowShellProps<RowType, DropTarget>) {
   const isEditing = input !== null;
+  const isInteractive = !isEditing && interaction !== null;
   const rowClasses = cn(
-    "flex size-full items-center gap-1 overflow-hidden pr-4 text-left text-app-foreground",
+    "pr-4 text-left text-app-foreground",
     !dragging && (selected || isEditing)
       ? "bg-app-background"
       : !dragging && "hover:bg-app-background/60",
   );
   const pointerHandlers = useTreeRowPointerDrag<RowType, DropTarget>({
-    disabled: isEditing || rowId === null,
-    dragSource: rowId === null ? null : { rowId, rowType },
-    listRef,
-    onActivate,
-    onDragStart,
-    onDragMove,
-    onDragEnd,
-    resolveDropTarget,
+    disabled: !isInteractive,
+    dragSource:
+      interaction === null ? null : { rowId: interaction.rowId, rowType: interaction.rowType },
+    listRef: interaction?.listRef,
+    onActivate: interaction?.onActivate ?? (() => {}),
+    onDragStart: interaction?.onDragStart ?? (() => {}),
+    onDragMove: interaction?.onDragMove ?? (() => {}),
+    onDragEnd: interaction?.onDragEnd ?? (() => {}),
+    resolveDropTarget: interaction?.resolveDropTarget ?? (() => null),
   });
 
   const rowContent = (
     <>
-      {showDisclosure ? (
-        <DisclosureChevron expanded={expanded} />
+      {disclosureExpanded !== undefined ? (
+        <DisclosureChevron expanded={disclosureExpanded} />
       ) : (
         <span aria-hidden="true" className={treeRowDisclosureSpacerClass} />
       )}
@@ -110,29 +103,25 @@ export function TreeRowShell<RowType extends string, DropTarget>({
     </>
   );
 
-  return isEditing || rowId === null ? (
+  return !isInteractive ? (
     <TreeMotionRow
-      y={y}
-      height={height}
-      animateEnter={animateEnter}
+      layout={layout}
       depth={depth}
       className={rowClasses}
-      aria-expanded={showDisclosure ? expanded : undefined}
+      aria-expanded={disclosureExpanded}
     >
       {rowContent}
     </TreeMotionRow>
   ) : (
     <TreeMotionRow
       as="button"
-      y={y}
-      height={height}
-      animateEnter={animateEnter}
+      layout={layout}
       depth={depth}
       className={rowClasses}
-      aria-expanded={showDisclosure ? expanded : undefined}
-      data-tree-row-id={rowId}
-      data-tree-row-index={rowIndex}
-      data-tree-row-type={rowType}
+      aria-expanded={disclosureExpanded}
+      data-tree-row-id={interaction.rowId}
+      data-tree-row-index={interaction.rowIndex}
+      data-tree-row-type={interaction.rowType}
       {...pointerHandlers}
     >
       {rowContent}

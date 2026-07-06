@@ -5,6 +5,7 @@ import { SidebarSectionActionsPortalContent } from "#app/components/workbench";
 
 import { FlatTreeList } from "./FlatTreeList";
 import type { TreeResolvedDrop } from "./tree-drag";
+import type { TreeRowLayout } from "./tree-row-layout";
 import { TREE_ROW_HEIGHT_PX } from "./tree-row-motion";
 import type { TreeDropResolveInput } from "./use-tree-row-pointer-drag";
 
@@ -16,11 +17,7 @@ export type TreePaneDragSession<RowType extends string, DropTarget> = {
   resolved: TreeResolvedDrop<DropTarget> | null;
 };
 
-export type TreePaneRowLayout = {
-  animateEnter: boolean;
-  height: number;
-  y: number;
-};
+export type TreePaneRowLayout = TreeRowLayout;
 
 export type TreePaneRenderRowArgs<TItem, RowType extends string, DropTarget> = {
   item: TItem;

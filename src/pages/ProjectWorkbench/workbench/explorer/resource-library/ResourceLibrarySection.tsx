@@ -149,15 +149,13 @@ export function ResourceLibrarySectionBody() {
         onDragEnd,
       }) => (
         <ResourceLibraryTreeRow
-          animateEnter={layout.animateEnter}
           dragging={dragging}
-          height={layout.height}
           index={index}
           item={item}
+          layout={layout}
           listRef={rowListRef}
           resolveDropTarget={resolveDrop}
           selectedId={state.selected?.id ?? null}
-          y={layout.y}
           onActivate={activateNode}
           onCancelEditing={cancelEditing}
           onDragEnd={onDragEnd}

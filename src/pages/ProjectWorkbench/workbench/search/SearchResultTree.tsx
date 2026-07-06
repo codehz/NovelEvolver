@@ -4,6 +4,7 @@ import type { KeyboardEvent } from "react";
 import { DisclosureChevron } from "#app/components/DisclosureChevron";
 import { cn } from "#app/lib/cn";
 import { FlatTreeList } from "#app/pages/ProjectWorkbench/workbench/tree/FlatTreeList";
+import type { TreeRowLayout } from "#app/pages/ProjectWorkbench/workbench/tree/tree-row-layout";
 import {
   getTreeRowPaddingLeft,
   TREE_ROW_CONTENT_GAP_PX,
@@ -66,20 +67,16 @@ function SearchFlatRowView({
   onOpen,
 }: {
   row: SearchResultFlatRow;
-  layout: { y: number; height: number; animateEnter: boolean };
+  layout: TreeRowLayout;
   onToggleDomain: (id: string) => void;
   onToggleFolder: (key: string) => void;
   onToggleLeaf: (key: string) => void;
   onOpen: (hit: WorktreeSearchHit) => void;
 }) {
-  const { y, height, animateEnter } = layout;
-
   if (row.kind === "domain") {
     return (
       <TreeMotionRow
-        y={y}
-        height={height}
-        animateEnter={animateEnter}
+        layout={layout}
         depth={row.depth}
         paddingLeftPx={getTreeRowPaddingLeft(row.depth)}
         className="cursor-pointer text-xs font-medium text-ctp-text hover:bg-ctp-surface0/50"
@@ -98,9 +95,7 @@ function SearchFlatRowView({
   if (row.kind === "folder") {
     return (
       <TreeMotionRow
-        y={y}
-        height={height}
-        animateEnter={animateEnter}
+        layout={layout}
         depth={row.depth}
         paddingLeftPx={getTreeRowPaddingLeft(row.depth)}
         className="cursor-pointer text-xs text-ctp-subtext1 hover:bg-ctp-surface0/50"
@@ -120,9 +115,7 @@ function SearchFlatRowView({
   if (row.kind === "match") {
     return (
       <TreeMotionRow
-        y={y}
-        height={height}
-        animateEnter={animateEnter}
+        layout={layout}
         depth={row.leafDepth}
         paddingLeftPx={searchTreeMatchPaddingLeft(row.leafDepth)}
         className="cursor-pointer text-2xs text-ctp-subtext1 hover:bg-ctp-surface0/50"
@@ -160,9 +153,7 @@ function SearchFlatRowView({
 
   return (
     <TreeMotionRow
-      y={y}
-      height={height}
-      animateEnter={animateEnter}
+      layout={layout}
       depth={row.depth}
       paddingLeftPx={getTreeRowPaddingLeft(row.depth)}
       className={cn("text-xs text-ctp-subtext1", "cursor-pointer hover:bg-ctp-surface0/50")}

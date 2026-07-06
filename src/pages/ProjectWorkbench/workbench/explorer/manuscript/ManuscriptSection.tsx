@@ -158,9 +158,7 @@ export function ManuscriptSectionBody() {
           depth={item.depth}
           expanded={item.expanded}
           index={index}
-          animateEnter={layout.animateEnter}
-          y={layout.y}
-          height={layout.height}
+          layout={layout}
           selected={item.id !== null && item.id === state.selectedId}
           editing={item.editing}
           dragging={dragging}

@@ -4,6 +4,7 @@ import type { KeyboardEvent } from "react";
 import { DisclosureChevron } from "#app/components/DisclosureChevron";
 import { cn } from "#app/lib/cn";
 import { FlatTreeList } from "#app/pages/ProjectWorkbench/workbench/tree/FlatTreeList";
+import type { TreeRowLayout } from "#app/pages/ProjectWorkbench/workbench/tree/tree-row-layout";
 import {
   TREE_ROW_HEIGHT_PX,
   getTreeRowPaddingLeft,
@@ -79,7 +80,7 @@ function ScmFolderRow({
   onRevert,
 }: {
   row: Extract<ScmChangeFlatRow, { kind: "folder" }>;
-  layout: { y: number; height: number; animateEnter: boolean };
+  layout: TreeRowLayout;
   onToggle: (key: string) => void;
   onRevert: (changeId: string) => void;
 }) {
@@ -116,9 +117,7 @@ function ScmFolderRow({
 
   return (
     <TreeMotionRow
-      y={layout.y}
-      height={layout.height}
-      animateEnter={layout.animateEnter}
+      layout={layout}
       depth={row.depth}
       paddingLeftPx={getTreeRowPaddingLeft(row.depth)}
       className={scmFolderRowClass}

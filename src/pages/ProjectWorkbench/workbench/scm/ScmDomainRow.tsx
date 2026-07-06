@@ -2,6 +2,7 @@ import type { KeyboardEvent } from "react";
 
 import { DisclosureChevron } from "#app/components/DisclosureChevron";
 import { cn } from "#app/lib/cn";
+import type { TreeRowLayout } from "#app/pages/ProjectWorkbench/workbench/tree/tree-row-layout";
 import { getTreeRowPaddingLeft } from "#app/pages/ProjectWorkbench/workbench/tree/tree-row-motion";
 import { TreeMotionRow } from "#app/pages/ProjectWorkbench/workbench/tree/TreeMotionRow";
 
@@ -33,14 +34,12 @@ export function ScmDomainRow({
   iconClass: string;
   expanded: boolean;
   childCount: number;
-  layout: { y: number; height: number; animateEnter: boolean };
+  layout: TreeRowLayout;
   onToggle: () => void;
 }) {
   return (
     <TreeMotionRow
-      y={layout.y}
-      height={layout.height}
-      animateEnter={layout.animateEnter}
+      layout={layout}
       depth={0}
       paddingLeftPx={getTreeRowPaddingLeft(0)}
       className={scmGroupRowClass}
