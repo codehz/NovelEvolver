@@ -180,11 +180,6 @@ function SearchFlatRowView({
       <span className="truncate">{leaf.name}</span>
       {row.showMatches ? (
         <span className={searchResultCountPillClass}>{leaf.hits.length}</span>
-      ) : primaryHit !== undefined ? (
-        <span className="min-w-0 flex-1 truncate font-mono text-2xs text-ctp-overlay1">
-          <span className="mr-1 text-ctp-overlay0">{primaryHit.line}:</span>
-          <SearchHighlightText>{primaryHit.snippet}</SearchHighlightText>
-        </span>
       ) : null}
     </TreeMotionRow>
   );

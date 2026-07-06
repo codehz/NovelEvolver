@@ -95,6 +95,14 @@ function visitNodes(
           leafDepth: depth,
         });
       }
+    } else if (!showMatches && node.hits.length === 1) {
+      const hit = node.hits[0]!;
+      out.push({
+        kind: "match",
+        key: `${key}::${hit.line}:${hit.column}:0`,
+        hit,
+        leafDepth: depth,
+      });
     }
   }
 }
