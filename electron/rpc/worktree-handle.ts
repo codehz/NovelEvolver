@@ -7,6 +7,7 @@ import type {
   ResourceLibraryHandle,
   WorktreeHandle,
 } from "#shared/rpc/projects-rpc";
+import type { WorktreeChangesHandle } from "#shared/rpc/worktree-changes";
 import type { WorktreeScmHandle } from "#shared/rpc/worktree-scm";
 import type { WorktreeSearchHandle } from "#shared/rpc/worktree-search";
 import type { WorktreeTreeHandle } from "#shared/rpc/worktree-tree";
@@ -15,6 +16,7 @@ import type { WorktreeRepository } from "../db/repositories/worktree-repo";
 import { WorktreeSession } from "../worktree/session";
 import { ManuscriptHandleImpl } from "./manuscript-handle";
 import { ResourceLibraryHandleImpl } from "./resource-library-handle";
+import { WorktreeChangesHandleImpl } from "./worktree-changes-handle";
 import { WorktreeScmHandleImpl } from "./worktree-scm-handle";
 import { WorktreeSearchHandleImpl } from "./worktree-search-handle";
 import { WorktreeTreeHandleImpl } from "./worktree-tree-handle";
@@ -32,6 +34,7 @@ export class WorktreeHandleImpl extends RpcTarget implements WorktreeHandle {
   readonly #scm: WorktreeScmHandle;
   readonly #tree: WorktreeTreeHandle;
   readonly #search: WorktreeSearchHandle;
+  readonly #changes: WorktreeChangesHandle;
 
   constructor(
     store: WorktreeRepository,
@@ -47,6 +50,7 @@ export class WorktreeHandleImpl extends RpcTarget implements WorktreeHandle {
     this.#scm = new WorktreeScmHandleImpl(this.#session);
     this.#tree = new WorktreeTreeHandleImpl(this.#session);
     this.#search = new WorktreeSearchHandleImpl(this.#session);
+    this.#changes = new WorktreeChangesHandleImpl(this.#session);
   }
 
   get baseTree(): string {
@@ -71,5 +75,9 @@ export class WorktreeHandleImpl extends RpcTarget implements WorktreeHandle {
 
   get search(): WorktreeSearchHandle {
     return this.#search;
+  }
+
+  get changes(): WorktreeChangesHandle {
+    return this.#changes;
   }
 }

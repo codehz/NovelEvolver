@@ -7,6 +7,7 @@ import type {
   ResourceLibraryHandle,
   WorktreeHandle,
 } from "#shared/rpc/projects-rpc";
+import type { WorktreeChangesHandle } from "#shared/rpc/worktree-changes";
 import type { WorktreeScmHandle } from "#shared/rpc/worktree-scm";
 import type { WorktreeSearchHandle } from "#shared/rpc/worktree-search";
 import type { WorktreeTreeHandle } from "#shared/rpc/worktree-tree";
@@ -52,6 +53,9 @@ export const worktreeTreeMolecule = molecule(() => use(worktreeMolecule).tree);
 /** 当前分支全文搜索（`openWorktree(...).search` 级联，不在此 await）。 */
 export const worktreeSearchMolecule = molecule(() => use(worktreeMolecule).search);
 
+/** 当前分支变更跟踪句柄（`openWorktree(...).changes` 级联，不在此 await）。 */
+export const worktreeChangesMolecule = molecule(() => use(worktreeMolecule).changes);
+
 export function useActiveBranchName(): string {
   return useMolecule(activeBranchNameMolecule);
 }
@@ -78,4 +82,8 @@ export function useWorktreeTree(): RpcPromise<WorktreeTreeHandle> {
 
 export function useWorktreeSearch(): RpcPromise<WorktreeSearchHandle> {
   return useMolecule(worktreeSearchMolecule);
+}
+
+export function useWorktreeChanges(): RpcPromise<WorktreeChangesHandle> {
+  return useMolecule(worktreeChangesMolecule);
 }

@@ -5,6 +5,7 @@ import { nanoid } from "nanoid";
 
 import { normalizeResourceNameInput } from "#shared/resource-library-path";
 import type { WorktreeNodeIdResult } from "#shared/rpc/projects-rpc";
+import type { WorktreeChangesEvent } from "#shared/rpc/worktree-changes";
 import type { ScmCommitSummary, ScmSnapshot } from "#shared/rpc/worktree-scm";
 import type { WorktreeSearchQuery, WorktreeSearchResult } from "#shared/rpc/worktree-search";
 import type {
@@ -38,13 +39,10 @@ import { assertValidResourceRelativePath, RESOURCES_DIR } from "../resource-libr
 import { RpcStreamPublisher } from "../rpc/stream-publisher";
 import { executeWorktreeSearch } from "../search/worktree-search";
 import { refreshAllFolderChangeStatuses } from "./change-status";
+import { ChangeTracker, type ResourceSnapshotState } from "./change-tracker";
 import { readTextFromTree, type ObjectDatabase } from "./diff-utils";
 import { computeMinimalReorderedManuscriptIds } from "./manuscript-reorder";
-import {
-  buildDetailedScmSnapshot,
-  type ResourceSnapshotEntry,
-  type ResourceSnapshotState,
-} from "./scm-snapshot-builder";
+import { buildDetailedScmSnapshot, type ResourceSnapshotEntry } from "./scm-snapshot-builder";
 import {
   buildBaseManuscriptSnapshot,
   buildBaseResourceSnapshot,
@@ -415,6 +413,8 @@ export class WorktreeSession {
   readonly #branchName: string;
   readonly #scmPublisher = new RpcStreamPublisher<ScmSnapshot>();
   readonly #treePublisher = new RpcStreamPublisher<WorktreeTreeEvent>();
+  readonly #changesPublisher = new RpcStreamPublisher<WorktreeChangesEvent>();
+  readonly #changeTracker = new ChangeTracker();
 
   #baseCommitSha: SHA1 | null = null;
   #revision = 0;
@@ -465,6 +465,12 @@ export class WorktreeSession {
           this.#resourceTree,
         ),
       }),
+    });
+  }
+
+  subscribeChanges(): ReadableStream<WorktreeChangesEvent> {
+    return this.#changesPublisher.subscribe({
+      getInitialValue: () => this.#currentChangesSnapshot(),
     });
   }
 
@@ -729,6 +735,7 @@ export class WorktreeSession {
     this.#baseResourceTree = cloneResourceTreeSnapshot(this.#resourceTree);
     this.#baseManuscript = cloneManuscriptSnapshotState(this.#currentManuscript);
     this.#baseResources = cloneResourceSnapshotState(this.#currentResources);
+    this.#changeTracker.clearCache();
     this.#persistAndEmit(true);
     return this.#currentScmSnapshot();
   }
@@ -1006,6 +1013,28 @@ export class WorktreeSession {
       snapshot: buildWorktreeTreeSnapshot(this.#revision, this.#manuscriptTree, this.#resourceTree),
     });
     this.#scmPublisher.emit(this.#currentScmSnapshot());
+    this.#emitChanges();
+  }
+
+  #emitChanges(): void {
+    const currentSnapshot = this.#currentChangesSnapshot();
+    if (currentSnapshot.kind !== "snapshot") {
+      return;
+    }
+    const delta = this.#changeTracker.computeDelta(currentSnapshot.snapshot);
+    if (delta.addedChanges.length === 0 && delta.removedChangeIds.length === 0) {
+      // 没有变更，不发送事件
+      return;
+    }
+    this.#changesPublisher.emit({
+      kind: "delta",
+      delta: {
+        fromRevision: this.#revision - 1,
+        toRevision: this.#revision,
+        addedChanges: delta.addedChanges,
+        removedChangeIds: delta.removedChangeIds,
+      },
+    });
   }
 
   #persistState(includeCommitted: boolean): void {
@@ -1568,6 +1597,26 @@ export class WorktreeSession {
       baseResources: this.#baseResources,
       currentResources: this.#currentResources,
     });
+  }
+
+  #currentChangesSnapshot(): WorktreeChangesEvent {
+    const changesSnapshot = this.#changeTracker.computeChanges({
+      revision: this.#revision,
+      baseTree: this.baseTree,
+      warning: this.#warning,
+      baseManuscript: this.#baseManuscript,
+      currentManuscript: this.#currentManuscript,
+      baseResources: this.#baseResources,
+      currentResources: this.#currentResources,
+    });
+    return {
+      kind: "snapshot",
+      snapshot: changesSnapshot,
+      treeSnapshot: {
+        manuscript: this.#manuscriptTree,
+        resources: this.#resourceTree,
+      },
+    };
   }
 
   #resolveBaseTree(): SHA1 {

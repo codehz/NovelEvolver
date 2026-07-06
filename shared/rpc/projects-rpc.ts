@@ -2,6 +2,7 @@ import type { RpcTarget } from "capnweb";
 
 import type { ProjectMetadata } from "#shared/project";
 
+import type { WorktreeChangesHandle } from "./worktree-changes";
 import type { WorktreeScmHandle } from "./worktree-scm";
 import type { WorktreeSearchHandle } from "./worktree-search";
 import type { WorktreeTreeHandle } from "./worktree-tree";
@@ -123,6 +124,7 @@ export interface WorktreeHandle extends RpcTarget {
   readonly scm: WorktreeScmHandle;
   readonly tree: WorktreeTreeHandle;
   readonly search: WorktreeSearchHandle;
+  readonly changes: WorktreeChangesHandle;
 }
 
 /**
