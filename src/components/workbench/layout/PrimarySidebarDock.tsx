@@ -1,4 +1,4 @@
-import type { CSSProperties, ReactNode } from "react";
+import { memo, type CSSProperties, type ReactNode } from "react";
 
 import { cn } from "#app/lib/cn";
 
@@ -20,7 +20,7 @@ const primarySidebarDockPanelClass = cn(
   primarySidebarDockMotionClass,
 );
 
-export function PrimarySidebarDock({
+export const PrimarySidebarDock = memo(function PrimarySidebarDock({
   visible,
   spacerWidth,
   panelWidth,
@@ -56,15 +56,10 @@ export function PrimarySidebarDock({
         )}
         style={panelStyle}
       >
-        <PrimarySidebar
-          aria-hidden={!visible}
-          className="h-full min-h-0"
-          title={title}
-          width={panelWidth}
-        >
+        <PrimarySidebar aria-hidden={!visible} className="h-full min-h-0" title={title}>
           {children}
         </PrimarySidebar>
       </div>
     </div>
   );
-}
+});

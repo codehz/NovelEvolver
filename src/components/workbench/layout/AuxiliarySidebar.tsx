@@ -1,24 +1,23 @@
+import { memo, type ReactNode } from "react";
+
 import { cn } from "#app/lib/cn";
 
 import { sidebarHeaderActionClass, sidebarHeaderIconClass } from "../sidebar/sidebar-chrome";
 
-export function AuxiliarySidebar({
-  width,
+export const AuxiliarySidebar = memo(function AuxiliarySidebar({
   className,
   "aria-hidden": ariaHidden,
   children,
 }: {
-  width: number;
   className?: string;
   "aria-hidden"?: boolean;
-  children?: React.ReactNode;
+  children?: ReactNode;
 }) {
   return (
     <aside
       aria-hidden={ariaHidden}
       aria-label="AI 助手"
-      className={cn("flex w-80 shrink-0 flex-col bg-app-surface", className)}
-      style={{ width }}
+      className={cn("flex w-full shrink-0 flex-col bg-app-surface", className)}
     >
       <header className="flex h-workbench-tab shrink-0 items-center justify-between gap-2 px-3">
         <div className="flex min-w-0 items-center gap-2 text-sm font-medium text-app-foreground">
@@ -47,4 +46,4 @@ export function AuxiliarySidebar({
       <div className="flex min-h-0 flex-1 flex-col">{children}</div>
     </aside>
   );
-}
+});

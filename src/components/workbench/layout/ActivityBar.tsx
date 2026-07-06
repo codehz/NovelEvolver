@@ -1,3 +1,4 @@
+import { memo } from "react";
 import { Link } from "wouter";
 
 import { cn } from "#app/lib/cn";
@@ -19,7 +20,7 @@ const activityIconClass = cn(
   "inline-flex size-6 shrink-0 items-center justify-center text-[1.375rem] leading-none",
 );
 
-export function ActivityBar({
+export const ActivityBar = memo(function ActivityBar({
   items,
   activeView,
   primarySidebarVisible,
@@ -67,4 +68,4 @@ export function ActivityBar({
       </div>
     </nav>
   );
-}
+});

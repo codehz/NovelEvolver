@@ -1,4 +1,4 @@
-import type { CSSProperties, ReactNode } from "react";
+import { memo, type CSSProperties, type ReactNode } from "react";
 
 import { cn } from "#app/lib/cn";
 
@@ -20,7 +20,7 @@ const auxiliarySidebarDockPanelClass = cn(
   auxiliarySidebarDockMotionClass,
 );
 
-export function AuxiliarySidebarDock({
+export const AuxiliarySidebarDock = memo(function AuxiliarySidebarDock({
   visible,
   spacerWidth,
   panelWidth,
@@ -57,10 +57,10 @@ export function AuxiliarySidebarDock({
         )}
         style={panelStyle}
       >
-        <AuxiliarySidebar aria-hidden={!visible} className="h-full min-h-0" width={panelWidth}>
+        <AuxiliarySidebar aria-hidden={!visible} className="h-full min-h-0">
           {children}
         </AuxiliarySidebar>
       </div>
     </div>
   );
-}
+});

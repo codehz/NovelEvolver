@@ -1,10 +1,10 @@
 import { AutoTransition } from "@codehz/auto-transition";
 import { ScopeProvider, useMolecule } from "bunshi/react";
-import { Suspense, use } from "react";
+import { Suspense, use, useMemo } from "react";
 import { ErrorBoundary } from "react-error-boundary";
 import { Link, useParams } from "wouter";
 
-import { WorkbenchLayout } from "#app/components/workbench";
+import { WorkbenchLayout, type WorkbenchPrimaryView } from "#app/components/workbench";
 import { cn } from "#app/lib/cn";
 import { projectDisplayName } from "#app/lib/project-display-name";
 import { convertRpcPromise } from "#app/lib/rpc-utils";
@@ -68,32 +68,35 @@ function ProjectWorkbenchInner() {
   const project = use(useMolecule(projectPromiseMolecule));
   const displayName = projectDisplayName(project.metadata.path);
   useTitleBarTitle(displayName);
+  const primaryViews = useMemo<readonly WorkbenchPrimaryView[]>(
+    () => [
+      {
+        id: "explorer",
+        title: "资源管理器",
+        iconClass: cn("icon-[codicon--files]"),
+        content: <ExplorerSidebar projectLabel={displayName} />,
+      },
+      {
+        id: "search",
+        title: "搜索",
+        iconClass: cn("icon-[codicon--search]"),
+        content: <SearchSidebarSection />,
+      },
+      {
+        id: "scm",
+        title: "源代码管理",
+        iconClass: cn("icon-[codicon--source-control]"),
+        content: <ScmSidebarSection />,
+      },
+    ],
+    [displayName],
+  );
+  const editorSlot = useMemo(() => <EditorArea />, []);
+  const auxiliarySlot = useMemo(() => <AuxiliaryPanel />, []);
+
   return (
     <BranchScopeProvider>
-      <WorkbenchLayout
-        primaryViews={[
-          {
-            id: "explorer",
-            title: "资源管理器",
-            iconClass: cn("icon-[codicon--files]"),
-            content: <ExplorerSidebar projectLabel={displayName} />,
-          },
-          {
-            id: "search",
-            title: "搜索",
-            iconClass: cn("icon-[codicon--search]"),
-            content: <SearchSidebarSection />,
-          },
-          {
-            id: "scm",
-            title: "源代码管理",
-            iconClass: cn("icon-[codicon--source-control]"),
-            content: <ScmSidebarSection />,
-          },
-        ]}
-        editor={<EditorArea />}
-        auxiliary={<AuxiliaryPanel />}
-      />
+      <WorkbenchLayout primaryViews={primaryViews} editor={editorSlot} auxiliary={auxiliarySlot} />
       <WorkbenchStatusBar />
     </BranchScopeProvider>
   );

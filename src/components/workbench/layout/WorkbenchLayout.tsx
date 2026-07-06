@@ -1,4 +1,10 @@
-import { useMemo, type PointerEvent as ReactPointerEvent, type ReactNode } from "react";
+import {
+  memo,
+  useCallback,
+  useMemo,
+  type PointerEvent as ReactPointerEvent,
+  type ReactNode,
+} from "react";
 
 import { cn } from "#app/lib/cn";
 
@@ -27,7 +33,7 @@ const resizeHandleClass = cn(
   "hover:opacity-100 hover:delay-300 focus-visible:opacity-100 focus-visible:delay-150",
 );
 
-function ResizeHandle({
+const ResizeHandle = memo(function ResizeHandle({
   active,
   ariaLabel,
   position,
@@ -48,7 +54,7 @@ function ResizeHandle({
       onPointerDown={onPointerDown}
     />
   );
-}
+});
 
 export type WorkbenchLayoutProps = {
   primaryViews: readonly WorkbenchPrimaryView[];
@@ -79,12 +85,17 @@ export function WorkbenchLayout({
   const { ref: containerRef, width: containerWidth } = useMeasuredElementWidth<HTMLDivElement>(
     ACTIVITY_BAR_WIDTH + DEFAULT_PRIMARY_WIDTH + DEFAULT_AUXILIARY_WIDTH + MIN_EDITOR_WIDTH,
   );
-  const chromeLayout = deriveWorkbenchChromeLayout({
-    layoutPreferences,
-    containerWidth,
-    canShowPrimary: hasPrimaryViews && activePrimaryView != null,
-    hasAuxiliary,
-  });
+  const canShowPrimary = hasPrimaryViews && activePrimaryView != null;
+  const chromeLayout = useMemo(
+    () =>
+      deriveWorkbenchChromeLayout({
+        layoutPreferences,
+        containerWidth,
+        canShowPrimary,
+        hasAuxiliary,
+      }),
+    [canShowPrimary, containerWidth, hasAuxiliary, layoutPreferences],
+  );
   const {
     resolved: resolvedLayout,
     primary: primaryChrome,
@@ -111,19 +122,47 @@ export function WorkbenchLayout({
       })),
     [primaryViews],
   );
+  const handlePrimaryTitleBarToggle = useCallback(() => {
+    handlePrimarySidebarToggle(primarySidebarVisible);
+  }, [handlePrimarySidebarToggle, primarySidebarVisible]);
+  const handleAuxiliaryTitleBarToggle = useCallback(() => {
+    toggleAuxiliarySidebar(auxiliaryVisible);
+  }, [auxiliaryVisible, toggleAuxiliarySidebar]);
+  const handleActivitySelectView = useCallback(
+    (viewId: string) => {
+      handleSelectView(viewId, primarySidebarVisible);
+    },
+    [handleSelectView, primarySidebarVisible],
+  );
+  const handlePrimaryResizePointerDown = useCallback(
+    (event: ReactPointerEvent<HTMLDivElement>) => {
+      startResizeDrag("primary", event);
+    },
+    [startResizeDrag],
+  );
+  const handleAuxiliaryResizePointerDown = useCallback(
+    (event: ReactPointerEvent<HTMLDivElement>) => {
+      startResizeDrag("auxiliary", event);
+    },
+    [startResizeDrag],
+  );
+  const primarySidebarContent = useMemo(
+    () => <PrimarySidebarViewStack activeViewId={activeViewId} views={primaryViews} />,
+    [activeViewId, primaryViews],
+  );
 
   return (
     <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
       {hasPrimaryViews ? (
         <TitleBarPrimarySidebarToggle
           visible={primarySidebarVisible}
-          onToggle={() => handlePrimarySidebarToggle(primarySidebarVisible)}
+          onToggle={handlePrimaryTitleBarToggle}
         />
       ) : null}
       {hasAuxiliary ? (
         <TitleBarAuxiliaryToggle
           visible={auxiliaryVisible}
-          onToggle={() => toggleAuxiliarySidebar(auxiliaryVisible)}
+          onToggle={handleAuxiliaryTitleBarToggle}
         />
       ) : null}
       <div ref={containerRef} className="relative flex min-h-0 flex-1 overflow-hidden">
@@ -131,7 +170,7 @@ export function WorkbenchLayout({
           items={activityItems}
           activeView={activeViewId}
           primarySidebarVisible={primarySidebarVisible}
-          onSelectView={(viewId) => handleSelectView(viewId, primarySidebarVisible)}
+          onSelectView={handleActivitySelectView}
         />
         {hasPrimaryViews ? (
           <PrimarySidebarDock
@@ -141,7 +180,7 @@ export function WorkbenchLayout({
             title={activePrimaryView?.title ?? primaryViews[0]!.title}
             visible={primarySidebarVisible}
           >
-            <PrimarySidebarViewStack activeViewId={activeViewId} views={primaryViews} />
+            {primarySidebarContent}
           </PrimarySidebarDock>
         ) : null}
         <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">{editor}</div>
@@ -160,7 +199,7 @@ export function WorkbenchLayout({
             active={activeResizeSide === "primary"}
             ariaLabel="调整主侧边栏宽度"
             position={ACTIVITY_BAR_WIDTH + primaryChrome.spacerWidth}
-            onPointerDown={(event) => startResizeDrag("primary", event)}
+            onPointerDown={handlePrimaryResizePointerDown}
           />
         ) : null}
         {auxiliaryVisible ? (
@@ -168,7 +207,7 @@ export function WorkbenchLayout({
             active={activeResizeSide === "auxiliary"}
             ariaLabel="调整辅助侧边栏宽度"
             position={containerWidth - auxiliaryChrome.spacerWidth - 1}
-            onPointerDown={(event) => startResizeDrag("auxiliary", event)}
+            onPointerDown={handleAuxiliaryResizePointerDown}
           />
         ) : null}
       </div>

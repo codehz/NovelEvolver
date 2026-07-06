@@ -56,40 +56,82 @@ export function useWorkbenchSidebarResize({
         resolvedLayout,
         hasAuxiliary,
       );
+      let pendingDeltaX = 0;
+      let animationFrameId: number | null = null;
+
+      const applyPendingResize = () => {
+        animationFrameId = null;
+        const deltaX = pendingDeltaX;
+
+        setLayoutPreferences((value) => {
+          if (side === "primary") {
+            const nextPrimaryWidth = startLayout.primaryWidth + deltaX;
+            const nextPrimaryVisible = nextPrimaryWidth >= CLOSE_SIDEBAR_THRESHOLD;
+            const normalizedPrimaryWidth = normalizeSidebarWidth(
+              nextPrimaryWidth,
+              MIN_PRIMARY_WIDTH,
+            );
+
+            if (
+              value.priority === "primary" &&
+              value.primaryVisible === nextPrimaryVisible &&
+              value.primaryWidth === normalizedPrimaryWidth
+            ) {
+              return value;
+            }
+
+            return {
+              ...value,
+              priority: "primary",
+              primaryVisible: nextPrimaryVisible,
+              primaryWidth: normalizedPrimaryWidth,
+            };
+          }
+
+          const nextAuxiliaryWidth = startLayout.auxiliaryWidth - deltaX;
+          const nextAuxiliaryVisible = nextAuxiliaryWidth >= CLOSE_SIDEBAR_THRESHOLD;
+          const normalizedAuxiliaryWidth = normalizeSidebarWidth(
+            nextAuxiliaryWidth,
+            MIN_AUXILIARY_WIDTH,
+          );
+
+          if (
+            value.priority === "auxiliary" &&
+            value.auxiliaryVisible === nextAuxiliaryVisible &&
+            value.auxiliaryWidth === normalizedAuxiliaryWidth
+          ) {
+            return value;
+          }
+
+          return {
+            ...value,
+            priority: "auxiliary",
+            auxiliaryVisible: nextAuxiliaryVisible,
+            auxiliaryWidth: normalizedAuxiliaryWidth,
+          };
+        });
+      };
 
       setActiveResizeSide(side);
       document.body.style.cursor = "col-resize";
       document.body.style.userSelect = "none";
 
       const handlePointerMove = (moveEvent: PointerEvent) => {
-        const deltaX = moveEvent.clientX - startX;
+        pendingDeltaX = moveEvent.clientX - startX;
 
-        setLayoutPreferences((value) => {
-          if (side === "primary") {
-            const nextPrimaryWidth = startLayout.primaryWidth + deltaX;
-            const nextPrimaryVisible = nextPrimaryWidth >= CLOSE_SIDEBAR_THRESHOLD;
+        if (animationFrameId !== null) {
+          return;
+        }
 
-            return {
-              ...value,
-              priority: "primary",
-              primaryVisible: nextPrimaryVisible,
-              primaryWidth: normalizeSidebarWidth(nextPrimaryWidth, MIN_PRIMARY_WIDTH),
-            };
-          }
-
-          const nextAuxiliaryWidth = startLayout.auxiliaryWidth - deltaX;
-          const nextAuxiliaryVisible = nextAuxiliaryWidth >= CLOSE_SIDEBAR_THRESHOLD;
-
-          return {
-            ...value,
-            priority: "auxiliary",
-            auxiliaryVisible: nextAuxiliaryVisible,
-            auxiliaryWidth: normalizeSidebarWidth(nextAuxiliaryWidth, MIN_AUXILIARY_WIDTH),
-          };
-        });
+        animationFrameId = window.requestAnimationFrame(applyPendingResize);
       };
 
       const cleanup = () => {
+        if (animationFrameId !== null) {
+          window.cancelAnimationFrame(animationFrameId);
+          applyPendingResize();
+        }
+
         window.removeEventListener("pointermove", handlePointerMove);
         window.removeEventListener("pointerup", cleanup);
         window.removeEventListener("pointercancel", cleanup);

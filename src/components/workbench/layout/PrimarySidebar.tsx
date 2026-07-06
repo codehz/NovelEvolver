@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import { memo, type ReactNode } from "react";
 
 import { SlotText } from "#app/components/SlotText";
 import { cn } from "#app/lib/cn";
@@ -9,15 +9,13 @@ import {
   sidebarHeaderIconClass,
 } from "../sidebar/sidebar-chrome";
 
-export function PrimarySidebar({
+export const PrimarySidebar = memo(function PrimarySidebar({
   title,
-  width,
   className,
   "aria-hidden": ariaHidden,
   children,
 }: {
   title: string;
-  width: number;
   className?: string;
   "aria-hidden"?: boolean;
   children?: ReactNode;
@@ -26,8 +24,7 @@ export function PrimarySidebar({
     <aside
       aria-hidden={ariaHidden}
       aria-label={title}
-      className={cn("flex min-h-0 w-64 shrink-0 flex-col bg-app-surface", className)}
-      style={{ width }}
+      className={cn("flex min-h-0 w-full shrink-0 flex-col bg-app-surface", className)}
     >
       <header
         className={cn("flex h-workbench-tab shrink-0 items-center justify-between gap-2 pr-3 pl-5")}
@@ -46,4 +43,4 @@ export function PrimarySidebar({
       <div className="flex min-h-0 min-w-0 flex-1 flex-col text-sm">{children}</div>
     </aside>
   );
-}
+});
