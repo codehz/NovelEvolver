@@ -1,7 +1,6 @@
 import type { Change, ChangesSnapshot } from "#shared/rpc/worktree-changes-rpc";
 import type { ScmChange, ScmSnapshot } from "#shared/rpc/worktree-scm-rpc";
 
-import type { WorktreeJournalEntryRecord } from "../db/repositories/worktree-repo";
 import { computeStats } from "./diff-utils";
 import { computeMinimalReorderedManuscriptIds } from "./manuscript-reorder";
 import type { ResourceSnapshotEntry, ResourceSnapshotState } from "./resource-snapshot-state";
@@ -11,7 +10,6 @@ type PendingProjectionOptions = {
   revision: number;
   baseTree: string;
   warning: string | null;
-  journalEntries: readonly WorktreeJournalEntryRecord[];
   baseManuscript: ManuscriptSnapshotState;
   currentManuscript: ManuscriptSnapshotState;
   baseResources: ResourceSnapshotState;
@@ -52,16 +50,8 @@ export function buildJournalChangesSnapshot(options: PendingProjectionOptions): 
 }
 
 function buildProjectedPendingChanges(options: PendingProjectionOptions): ProjectedPendingChanges {
-  const touchedManuscript = new Set<string>();
-  const touchedResources = new Set<string>();
-
-  for (const entry of options.journalEntries) {
-    const target = entry.domain === "manuscript" ? touchedManuscript : touchedResources;
-    target.add(entry.entityId);
-  }
-
-  const manuscriptChanges = collectManuscriptChanges(options, touchedManuscript);
-  const resourceChanges = collectResourceChanges(options, touchedResources);
+  const manuscriptChanges = collectManuscriptChanges(options);
+  const resourceChanges = collectResourceChanges(options);
   sortChanges(manuscriptChanges);
   sortChanges(resourceChanges);
 
@@ -71,17 +61,18 @@ function buildProjectedPendingChanges(options: PendingProjectionOptions): Projec
   };
 }
 
-function collectManuscriptChanges(
-  options: PendingProjectionOptions,
-  touched: ReadonlySet<string>,
-): ProjectedChange[] {
+function collectManuscriptChanges(options: PendingProjectionOptions): ProjectedChange[] {
   const changes: ProjectedChange[] = [];
+  const ids = new Set([
+    ...options.baseManuscript.entries.keys(),
+    ...options.currentManuscript.entries.keys(),
+  ]);
   const reorderedIds = computeMinimalReorderedManuscriptIds(
     options.baseManuscript,
     options.currentManuscript,
   );
 
-  for (const id of touched) {
+  for (const id of ids) {
     const previous = options.baseManuscript.entries.get(id) ?? null;
     const current = options.currentManuscript.entries.get(id) ?? null;
     appendManuscriptChange(changes, id, previous, current, reorderedIds.has(id));
@@ -201,13 +192,14 @@ function appendManuscriptChange(
   }
 }
 
-function collectResourceChanges(
-  options: PendingProjectionOptions,
-  touched: ReadonlySet<string>,
-): ProjectedChange[] {
+function collectResourceChanges(options: PendingProjectionOptions): ProjectedChange[] {
   const changes: ProjectedChange[] = [];
+  const ids = new Set([
+    ...options.baseResources.entries.keys(),
+    ...options.currentResources.entries.keys(),
+  ]);
 
-  for (const id of touched) {
+  for (const id of ids) {
     const previous = options.baseResources.entries.get(id) ?? null;
     const current = options.currentResources.entries.get(id) ?? null;
     appendResourceChange(changes, id, previous, current);

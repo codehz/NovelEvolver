@@ -77,6 +77,7 @@ const RESOURCES_INDEX_FILE = "index.json";
 const RESOURCES_FILES_DIR_NAME = "files";
 const RESOURCES_INDEX_PATH = `${RESOURCES_DIR}/${RESOURCES_INDEX_FILE}`;
 const RESOURCES_FILES_DIR = `${RESOURCES_DIR}/${RESOURCES_FILES_DIR_NAME}`;
+const AUTOSAVE_JOURNAL_MERGE_WINDOW_MS = 5 * 60 * 1000;
 
 type ResourceIndexNode =
   | {
@@ -122,7 +123,7 @@ type JournalRevisionCapture = {
   source: WorktreeJournalSource;
   title: string;
   commitHash?: string | null;
-  groupId: string | null;
+  groupKey: string | null;
   operations: JournalOperationCapture[];
 };
 
@@ -130,8 +131,8 @@ function sha1Text(content: string): string {
   return createHash("sha1").update(content).digest("hex");
 }
 
-function journalTimelineEntryId(revisionId: string, operationId: string): string {
-  return `journal:${revisionId}:${operationId}`;
+function journalTimelineEntryId(entryId: string): string {
+  return `journal:${entryId}`;
 }
 
 function parseResourceIndex(content: string | null): ResourceIndex {
@@ -623,7 +624,7 @@ export class WorktreeSession {
     this.#persistAndEmit(false, {
       source: "structure-edit",
       title: "创建文件夹",
-      groupId: null,
+      groupKey: null,
       operations: [
         {
           kind: "create",
@@ -655,7 +656,7 @@ export class WorktreeSession {
     this.#persistAndEmit(false, {
       source: "structure-edit",
       title: "创建章节",
-      groupId: null,
+      groupKey: null,
       operations: [
         {
           kind: "create",
@@ -684,7 +685,7 @@ export class WorktreeSession {
     this.#persistAndEmit(false, {
       source: "structure-edit",
       title: "重命名",
-      groupId: null,
+      groupKey: null,
       operations: [
         {
           kind: "rename",
@@ -729,7 +730,7 @@ export class WorktreeSession {
     this.#persistAndEmit(false, {
       source: "structure-edit",
       title: sourceParent.id === targetParent.id ? "调整顺序" : "移动",
-      groupId: null,
+      groupKey: null,
       operations: [
         {
           kind: sourceParent.id === targetParent.id ? "reorder" : "move",
@@ -763,7 +764,7 @@ export class WorktreeSession {
     this.#persistAndEmit(false, {
       source: "structure-edit",
       title: "删除",
-      groupId: null,
+      groupKey: null,
       operations,
     });
   }
@@ -806,7 +807,7 @@ export class WorktreeSession {
     this.#persistAndEmit(false, {
       source: "autosave",
       title: "自动保存",
-      groupId: `autosave:manuscript:${id}`,
+      groupKey: `autosave:manuscript:${id}`,
       operations: [
         {
           kind: "content",
@@ -841,7 +842,7 @@ export class WorktreeSession {
     this.#persistAndEmit(false, {
       source: "structure-edit",
       title: "创建文件",
-      groupId: null,
+      groupKey: null,
       operations: [
         {
           kind: "create",
@@ -876,7 +877,7 @@ export class WorktreeSession {
     this.#persistAndEmit(false, {
       source: "structure-edit",
       title: "创建文件夹",
-      groupId: null,
+      groupKey: null,
       operations: [
         {
           kind: "create",
@@ -913,7 +914,7 @@ export class WorktreeSession {
     this.#persistAndEmit(false, {
       source: "structure-edit",
       title: "重命名",
-      groupId: null,
+      groupKey: null,
       operations: [
         {
           kind: "rename",
@@ -959,7 +960,7 @@ export class WorktreeSession {
     this.#persistAndEmit(false, {
       source: "structure-edit",
       title: "移动",
-      groupId: null,
+      groupKey: null,
       operations: [
         {
           kind: "move",
@@ -993,7 +994,7 @@ export class WorktreeSession {
     this.#persistAndEmit(false, {
       source: "structure-edit",
       title: "删除",
-      groupId: null,
+      groupKey: null,
       operations,
     });
   }
@@ -1036,7 +1037,7 @@ export class WorktreeSession {
     this.#persistAndEmit(false, {
       source: "autosave",
       title: "自动保存",
-      groupId: `autosave:resource:${id}`,
+      groupKey: `autosave:resource:${id}`,
       operations: [
         {
           kind: "content",
@@ -1075,7 +1076,7 @@ export class WorktreeSession {
     this.#persistAndEmit(false, {
       source: "restore",
       title: "恢复更改",
-      groupId: `restore:${change.id}`,
+      groupKey: `restore:${change.id}`,
       operations: [
         {
           kind: "restore",
@@ -1154,20 +1155,18 @@ export class WorktreeSession {
   }
 
   readTimelineEntryContent(entryId: string): TimelineEntryContent {
-    const journalTarget = this.#parseJournalTimelineEntryId(entryId);
-    if (journalTarget !== null) {
+    const journalEntryId = this.#parseJournalTimelineEntryId(entryId);
+    if (journalEntryId !== null) {
       const entry = this.#store.getJournalTimelineEntry(
         this.#projectId,
         this.#branchName,
-        journalTarget.revisionId,
-        journalTarget.operationId,
+        journalEntryId,
       );
       if (entry === null) {
         throw new Error(`Unknown journal timeline entry: ${entryId}`);
       }
       return {
-        content:
-          entry.afterContent?.toString("utf-8") ?? entry.beforeContent?.toString("utf-8") ?? null,
+        content: entry.afterContent?.toString("utf-8") ?? null,
         beforeContent: entry.beforeContent?.toString("utf-8") ?? null,
       };
     }
@@ -1487,7 +1486,7 @@ export class WorktreeSession {
         );
       }
       if (journalCapture !== undefined) {
-        this.#recordJournalRevision(journalCapture);
+        this.#recordJournalEntries(journalCapture);
       }
     });
   }
@@ -1993,54 +1992,107 @@ export class WorktreeSession {
     return this.#repo.createTree(entries);
   }
 
-  #recordJournalRevision(capture: JournalRevisionCapture): void {
+  #recordJournalEntries(capture: JournalRevisionCapture): void {
     if (capture.operations.length === 0) {
       return;
     }
-    const revisionId = nanoid(12);
-    this.#store.recordJournalRevision(
-      {
+    const now = Date.now();
+    const entries: WorktreeJournalEntryRecord[] = [];
+
+    for (const operation of capture.operations) {
+      const beforeContent = this.#journalContentForOperation(capture.source, operation, "before");
+      const afterContent = this.#journalContentForOperation(capture.source, operation, "after");
+
+      if (
+        capture.source === "autosave" &&
+        capture.groupKey !== null &&
+        operation.kind === "content"
+      ) {
+        const existing = this.#store.getMergeableAutosaveJournalEntry(
+          this.#projectId,
+          this.#branchName,
+          operation.domain,
+          operation.entityId,
+          capture.groupKey,
+          now - AUTOSAVE_JOURNAL_MERGE_WINDOW_MS,
+        );
+        if (existing !== null) {
+          const mergedBeforeContent =
+            existing.beforeContent?.toString("utf-8") ?? beforeContent ?? null;
+          const afterBlobId = this.#upsertJournalContentBlob(afterContent);
+          const stats =
+            mergedBeforeContent !== null && afterContent !== null
+              ? computeStats(mergedBeforeContent, afterContent)
+              : null;
+          this.#store.updateJournalEntryAfterContent({
+            projectId: this.#projectId,
+            branchName: this.#branchName,
+            entryId: existing.entryId,
+            updatedAt: now,
+            worktreeRevision: this.#revision,
+            label: operation.label,
+            displayPath: operation.displayPath,
+            afterBlobId,
+            statsAdded: stats?.added ?? null,
+            statsRemoved: stats?.removed ?? null,
+          });
+          continue;
+        }
+      }
+
+      const beforeBlobId = this.#upsertJournalContentBlob(beforeContent);
+      const afterBlobId = this.#upsertJournalContentBlob(afterContent);
+      const stats =
+        beforeContent !== null && afterContent !== null
+          ? computeStats(beforeContent, afterContent)
+          : null;
+      entries.push({
         projectId: this.#projectId,
         branchName: this.#branchName,
-        revisionId,
-        parentRevisionId: null,
-        createdAt: Date.now(),
+        entryId: nanoid(12),
+        createdAt: now,
+        updatedAt: now,
         worktreeRevision: this.#revision,
         actor: "user",
         source: capture.source,
         title: capture.title,
+        kind: operation.kind,
+        domain: operation.domain,
+        entityId: operation.entityId,
+        entityKind: operation.entityKind,
+        label: operation.label,
+        displayPath: operation.displayPath,
+        previousLabel: operation.previousLabel ?? null,
+        previousPath: operation.previousPath ?? null,
+        beforeBlobId,
+        afterBlobId,
+        statsAdded: stats?.added ?? null,
+        statsRemoved: stats?.removed ?? null,
         commitHash: capture.commitHash ?? null,
-        groupId: capture.groupId,
-      },
-      capture.operations.map((operation, index) => {
-        const beforeBlobId = this.#upsertJournalContentBlob(operation.beforeContent ?? null);
-        const afterBlobId = this.#upsertJournalContentBlob(operation.afterContent ?? null);
-        const stats =
-          operation.beforeContent != null && operation.afterContent != null
-            ? computeStats(operation.beforeContent, operation.afterContent)
-            : null;
-        return {
-          projectId: this.#projectId,
-          branchName: this.#branchName,
-          revisionId,
-          operationId: nanoid(12),
-          orderIndex: index,
-          kind: operation.kind,
-          domain: operation.domain,
-          entityId: operation.entityId,
-          entityKind: operation.entityKind,
-          label: operation.label,
-          displayPath: operation.displayPath,
-          previousLabel: operation.previousLabel ?? null,
-          previousPath: operation.previousPath ?? null,
-          beforeBlobId,
-          afterBlobId,
-          statsAdded: stats?.added ?? null,
-          statsRemoved: stats?.removed ?? null,
-          metadataJson: null,
-        };
-      }),
-    );
+        groupKey: capture.groupKey,
+        metadataJson: null,
+        beforeContent: null,
+        afterContent: null,
+      });
+    }
+
+    this.#store.insertJournalEntries(entries);
+  }
+
+  #journalContentForOperation(
+    source: WorktreeJournalSource,
+    operation: JournalOperationCapture,
+    side: "before" | "after",
+  ): string | null {
+    if (operation.kind === "rename" || operation.kind === "move" || operation.kind === "reorder") {
+      return null;
+    }
+    if (source !== "autosave" && operation.kind === "content") {
+      return side === "before"
+        ? (operation.beforeContent ?? null)
+        : (operation.afterContent ?? null);
+    }
+    return side === "before" ? (operation.beforeContent ?? null) : (operation.afterContent ?? null);
   }
 
   #upsertJournalContentBlob(content: string | null): string | null {
@@ -2073,7 +2125,7 @@ export class WorktreeSession {
       source: "commit",
       title,
       commitHash,
-      groupId: `commit:${commitHash}`,
+      groupKey: `commit:${commitHash}`,
       operations,
     };
   }
@@ -2135,7 +2187,7 @@ export class WorktreeSession {
 
   #journalEntryToTimelineEntry(entry: WorktreeJournalEntryRecord): TimelineEntry {
     return {
-      id: journalTimelineEntryId(entry.revisionId, entry.operationId),
+      id: journalTimelineEntryId(entry.entryId),
       source: "journal",
       revisionSource: entry.source,
       actor: entry.actor,
@@ -2144,7 +2196,7 @@ export class WorktreeSession {
       entityId: entry.entityId,
       label: entry.label,
       displayPath: entry.displayPath,
-      timestamp: entry.createdAt,
+      timestamp: entry.updatedAt,
       message: entry.title,
       stats:
         entry.statsAdded === null || entry.statsRemoved === null
@@ -2152,10 +2204,9 @@ export class WorktreeSession {
           : { added: entry.statsAdded, removed: entry.statsRemoved },
       commitHash: entry.commitHash ?? undefined,
       shortHash: entry.commitHash?.slice(0, 7),
-      revisionId: entry.revisionId,
-      operationId: entry.operationId,
-      groupId: entry.groupId ?? undefined,
-      hasContent: entry.afterContent !== null || entry.beforeContent !== null,
+      revisionId: entry.entryId,
+      groupId: entry.groupKey ?? undefined,
+      hasContent: entry.afterContent !== null,
     };
   }
 
@@ -2165,17 +2216,12 @@ export class WorktreeSession {
     );
   }
 
-  #parseJournalTimelineEntryId(
-    entryId: string,
-  ): { revisionId: string; operationId: string } | null {
-    const match = /^journal:([^:]+):([^:]+)$/.exec(entryId);
+  #parseJournalTimelineEntryId(entryId: string): string | null {
+    const match = /^journal:([^:]+)$/.exec(entryId);
     if (match === null) {
       return null;
     }
-    return {
-      revisionId: match[1]!,
-      operationId: match[2]!,
-    };
+    return match[1]!;
   }
 
   #currentScmSnapshot(): ScmSnapshot {
@@ -2183,7 +2229,6 @@ export class WorktreeSession {
       revision: this.#revision,
       baseTree: this.baseTree,
       warning: this.#warning,
-      journalEntries: this.#store.readPendingJournalEntries(this.#projectId, this.#branchName),
       baseManuscript: this.#baseManuscript,
       currentManuscript: this.#currentManuscript,
       baseResources: this.#baseResources,
@@ -2196,7 +2241,6 @@ export class WorktreeSession {
       revision: this.#revision,
       baseTree: this.baseTree,
       warning: this.#warning,
-      journalEntries: this.#store.readPendingJournalEntries(this.#projectId, this.#branchName),
       baseManuscript: this.#baseManuscript,
       currentManuscript: this.#currentManuscript,
       baseResources: this.#baseResources,

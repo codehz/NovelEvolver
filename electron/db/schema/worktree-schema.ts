@@ -73,6 +73,9 @@ export function initWorktreeSchema(db: DatabaseSync): void {
         REFERENCES worktree(project_id, branch_name) ON DELETE CASCADE
     );
 
+    DROP TABLE IF EXISTS worktree_journal_operation;
+    DROP TABLE IF EXISTS worktree_journal_revision;
+
     CREATE TABLE IF NOT EXISTS worktree_blob (
       project_id INTEGER NOT NULL,
       blob_id TEXT NOT NULL,
@@ -83,29 +86,16 @@ export function initWorktreeSchema(db: DatabaseSync): void {
       FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE
     );
 
-    CREATE TABLE IF NOT EXISTS worktree_journal_revision (
+    CREATE TABLE IF NOT EXISTS worktree_journal_entry (
       project_id INTEGER NOT NULL,
       branch_name TEXT NOT NULL,
-      revision_id TEXT NOT NULL,
-      parent_revision_id TEXT,
+      entry_id TEXT NOT NULL,
       created_at INTEGER NOT NULL,
+      updated_at INTEGER NOT NULL,
       worktree_revision INTEGER NOT NULL,
       actor TEXT NOT NULL,
       source TEXT NOT NULL,
       title TEXT NOT NULL,
-      commit_hash TEXT,
-      group_id TEXT,
-      PRIMARY KEY (project_id, branch_name, revision_id),
-      FOREIGN KEY (project_id, branch_name)
-        REFERENCES worktree(project_id, branch_name) ON DELETE CASCADE
-    );
-
-    CREATE TABLE IF NOT EXISTS worktree_journal_operation (
-      project_id INTEGER NOT NULL,
-      branch_name TEXT NOT NULL,
-      revision_id TEXT NOT NULL,
-      operation_id TEXT NOT NULL,
-      order_index INTEGER NOT NULL,
       kind TEXT NOT NULL,
       domain TEXT NOT NULL,
       entity_id TEXT NOT NULL,
@@ -118,11 +108,12 @@ export function initWorktreeSchema(db: DatabaseSync): void {
       after_blob_id TEXT,
       stats_added INTEGER,
       stats_removed INTEGER,
+      commit_hash TEXT,
+      group_key TEXT,
       metadata_json TEXT,
-      PRIMARY KEY (project_id, branch_name, revision_id, operation_id),
-      FOREIGN KEY (project_id, branch_name, revision_id)
-        REFERENCES worktree_journal_revision(project_id, branch_name, revision_id)
-        ON DELETE CASCADE
+      PRIMARY KEY (project_id, branch_name, entry_id),
+      FOREIGN KEY (project_id, branch_name)
+        REFERENCES worktree(project_id, branch_name) ON DELETE CASCADE
     );
 
     CREATE INDEX IF NOT EXISTS idx_manuscript_current_parent
@@ -133,11 +124,11 @@ export function initWorktreeSchema(db: DatabaseSync): void {
       ON resource_node_current(project_id, branch_name, parent_id);
     CREATE INDEX IF NOT EXISTS idx_resource_committed_parent
       ON resource_node_committed(project_id, branch_name, parent_id);
-    CREATE INDEX IF NOT EXISTS idx_worktree_journal_revision_branch
-      ON worktree_journal_revision(project_id, branch_name, created_at DESC, worktree_revision DESC);
-    CREATE INDEX IF NOT EXISTS idx_worktree_journal_revision_source
-      ON worktree_journal_revision(project_id, branch_name, source, worktree_revision DESC);
-    CREATE INDEX IF NOT EXISTS idx_worktree_journal_operation_entity
-      ON worktree_journal_operation(project_id, branch_name, domain, entity_id, kind);
+    CREATE INDEX IF NOT EXISTS idx_worktree_journal_entry_branch
+      ON worktree_journal_entry(project_id, branch_name, updated_at DESC, worktree_revision DESC);
+    CREATE INDEX IF NOT EXISTS idx_worktree_journal_entry_entity
+      ON worktree_journal_entry(project_id, branch_name, domain, entity_id, updated_at DESC);
+    CREATE INDEX IF NOT EXISTS idx_worktree_journal_entry_group
+      ON worktree_journal_entry(project_id, branch_name, group_key, updated_at DESC);
   `);
 }
