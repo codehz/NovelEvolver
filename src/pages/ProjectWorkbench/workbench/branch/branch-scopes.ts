@@ -8,9 +8,7 @@ import type {
   WorktreeHandle,
 } from "#shared/rpc/projects-rpc";
 import type { WorktreeChangesHandle } from "#shared/rpc/worktree-changes";
-import type { WorktreeScmHandle } from "#shared/rpc/worktree-scm";
 import type { WorktreeSearchHandle } from "#shared/rpc/worktree-search";
-import type { WorktreeTreeHandle } from "#shared/rpc/worktree-tree";
 
 import { projectMolecule } from "../state/molecules";
 
@@ -44,12 +42,6 @@ export const resourceLibraryMolecule = molecule(() => use(worktreeMolecule).reso
 /** 当前分支正文根（`openWorktree(...).manuscript` 级联，不在此 await）。 */
 export const manuscriptMolecule = molecule(() => use(worktreeMolecule).manuscript);
 
-/** 当前分支 SCM 句柄（`openWorktree(...).scm` 级联，不在此 await）。 */
-export const worktreeScmMolecule = molecule(() => use(worktreeMolecule).scm);
-
-/** 当前分支树同步句柄（`openWorktree(...).tree` 级联，不在此 await）。 */
-export const worktreeTreeMolecule = molecule(() => use(worktreeMolecule).tree);
-
 /** 当前分支全文搜索（`openWorktree(...).search` 级联，不在此 await）。 */
 export const worktreeSearchMolecule = molecule(() => use(worktreeMolecule).search);
 
@@ -70,14 +62,6 @@ export function useResourceLibrary(): RpcPromise<ResourceLibraryHandle> {
 
 export function useManuscript(): RpcPromise<ManuscriptHandle> {
   return useMolecule(manuscriptMolecule);
-}
-
-export function useWorktreeScm(): RpcPromise<WorktreeScmHandle> {
-  return useMolecule(worktreeScmMolecule);
-}
-
-export function useWorktreeTree(): RpcPromise<WorktreeTreeHandle> {
-  return useMolecule(worktreeTreeMolecule);
 }
 
 export function useWorktreeSearch(): RpcPromise<WorktreeSearchHandle> {

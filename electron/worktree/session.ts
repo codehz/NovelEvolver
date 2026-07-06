@@ -1040,6 +1040,12 @@ export class WorktreeSession {
           addedChanges: delta.addedChanges,
           removedChangeIds: delta.removedChangeIds,
         },
+        // 始终携带完整树快照：树结构（创建/移动/重命名/删除）与变更列表同步演变，
+        // 前端树同步 hook 需要据此做全量替换。类型上 treeDelta 为可选全量快照。
+        treeDelta: {
+          manuscript: this.#manuscriptTree,
+          resources: this.#resourceTree,
+        },
       });
     }
   }

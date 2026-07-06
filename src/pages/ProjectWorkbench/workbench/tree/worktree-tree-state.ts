@@ -1,3 +1,4 @@
+import type { WorktreeChangesEvent } from "#shared/rpc/worktree-changes";
 import type {
   ManuscriptTreeDelta,
   ManuscriptTreeSnapshot,
@@ -99,4 +100,31 @@ export function applyWorktreeTreeEvent(
         };
   }
   return applyWorktreeTreeDelta(current, event);
+}
+
+/**
+ * 从统一的 changes 事件中提取完整树快照。
+ *
+ * 后端在 snapshot 与 delta 两种事件中均携带完整树（snapshot 经 `treeSnapshot`，
+ * delta 经 `treeDelta`）。若该事件未携带完整树（缺任一半），返回 null，调用方保留旧状态。
+ */
+export function extractWorktreeTreeFromChanges(
+  event: WorktreeChangesEvent,
+): WorktreeTreeSnapshot | null {
+  if (event.kind === "snapshot") {
+    return {
+      revision: event.snapshot.revision,
+      manuscript: event.treeSnapshot.manuscript,
+      resources: event.treeSnapshot.resources,
+    };
+  }
+  const { treeDelta, delta } = event;
+  if (treeDelta?.manuscript === undefined || treeDelta?.resources === undefined) {
+    return null;
+  }
+  return {
+    revision: delta.toRevision,
+    manuscript: treeDelta.manuscript,
+    resources: treeDelta.resources,
+  };
 }
