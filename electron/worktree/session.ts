@@ -115,6 +115,12 @@ type JournalOperationCapture = {
   afterContent?: string | null;
 };
 
+type JournalEntitySnapshot = {
+  label: string;
+  displayPath: string;
+  content: string | null;
+};
+
 type JournalRevisionCapture = {
   source: WorktreeJournalSource;
   title: string;
@@ -1058,6 +1064,7 @@ export class WorktreeSession {
       throw new Error(`Unknown SCM change: ${changeId}`);
     }
 
+    const beforeRestore = this.#currentJournalEntitySnapshot(change);
     const [domain, kind, entityId] = changeId.split(":", 3);
     if (domain === "manuscript") {
       this.#revertManuscriptChange(kind, entityId);
@@ -1067,7 +1074,26 @@ export class WorktreeSession {
       throw new Error(`Unsupported SCM domain: ${domain}`);
     }
 
-    this.#persistAndEmit();
+    const afterRestore = this.#currentJournalEntitySnapshot(change);
+    this.#persistAndEmit(false, {
+      source: "restore",
+      title: "恢复更改",
+      groupId: `restore:${change.id}`,
+      operations: [
+        {
+          kind: "restore",
+          domain: change.domain,
+          entityId: change.entityId,
+          entityKind: change.entityKind,
+          label: afterRestore?.label ?? beforeRestore?.label ?? change.label,
+          displayPath:
+            afterRestore?.displayPath ?? beforeRestore?.displayPath ?? change.displayPath,
+          previousPath: beforeRestore?.displayPath ?? null,
+          beforeContent: beforeRestore?.content ?? null,
+          afterContent: afterRestore?.content ?? null,
+        },
+      ],
+    });
     return this.#currentScmSnapshot();
   }
 
@@ -2084,6 +2110,30 @@ export class WorktreeSession {
     const state = side === "before" ? this.#baseResources : this.#currentResources;
     const entry = state.entries.get(change.entityId);
     return entry?.type === "file" ? entry.content : null;
+  }
+
+  #currentJournalEntitySnapshot(change: ScmChange): JournalEntitySnapshot | null {
+    if (change.domain === "manuscript") {
+      const entry = this.#currentManuscript.entries.get(change.entityId);
+      if (entry === undefined) {
+        return null;
+      }
+      return {
+        label: entry.title,
+        displayPath: entry.displayPath,
+        content: entry.type === "chapter" ? entry.content : null,
+      };
+    }
+
+    const entry = this.#currentResources.entries.get(change.entityId);
+    if (entry === undefined) {
+      return null;
+    }
+    return {
+      label: entry.name,
+      displayPath: entry.displayPath,
+      content: entry.type === "file" ? entry.content : null,
+    };
   }
 
   #journalEntryToTimelineEntry(entry: WorktreeJournalEntryRecord): TimelineEntry {
