@@ -64,6 +64,9 @@ export function useWorkbenchEditorScmSync(
 
     void Promise.all(
       tabs.map((tab) => {
+        if (tab.kind === "timeline-preview") {
+          return Promise.resolve(tab);
+        }
         const editorHandle = editorHandlesRef.current.get(tab.id);
         if (tab.kind === "manuscript") {
           return syncManuscriptTab(tab, manuscript, editorHandle).catch(() => tab);

@@ -21,6 +21,9 @@ export function useWorkbenchEditorTreeSync(): void {
 
     const nextTabs = tabs
       .map((tab): WorkbenchEditorTab | null => {
+        if (tab.kind === "timeline-preview") {
+          return tab;
+        }
         if (tab.kind === "manuscript") {
           const node = snapshot.manuscript.nodes[tab.chapterId];
           if (node?.type !== "chapter") {

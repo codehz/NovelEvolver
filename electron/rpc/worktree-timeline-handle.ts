@@ -2,6 +2,7 @@ import { RpcTarget } from "capnweb";
 
 import type {
   TimelineEntry,
+  TimelineEntryContent,
   TimelineTarget,
   WorktreeTimelineHandle,
 } from "#shared/rpc/worktree-timeline-rpc";
@@ -18,5 +19,9 @@ export class WorktreeTimelineHandleImpl extends RpcTarget implements WorktreeTim
 
   listFileTimeline(target: TimelineTarget, limit?: number): TimelineEntry[] {
     return this.#session.listFileTimeline(target, limit);
+  }
+
+  readTimelineEntryContent(entryId: string): TimelineEntryContent {
+    return this.#session.readTimelineEntryContent(entryId);
   }
 }

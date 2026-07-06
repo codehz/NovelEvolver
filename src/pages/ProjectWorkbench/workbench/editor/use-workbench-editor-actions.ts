@@ -5,7 +5,7 @@ import { useCallback } from "react";
 import { notificationApi } from "#app/lib/notifications";
 
 import { workbenchEditorMolecule } from "../state/molecules";
-import { type WorkbenchEditorTab } from "../state/types";
+import { type TimelinePreviewWorkbenchEditorTab, type WorkbenchEditorTab } from "../state/types";
 
 export function useWorkbenchEditorActions() {
   const { tabsAtom, activeTabIdAtom } = useMolecule(workbenchEditorMolecule);
@@ -116,6 +116,24 @@ export function useWorkbenchEditorActions() {
     [activateTab, setActiveTabId, setTabs, store, tabsAtom],
   );
 
+  const openTimelinePreviewTab = useCallback(
+    (preview: Omit<TimelinePreviewWorkbenchEditorTab, "active">) => {
+      const existing = store.get(tabsAtom).find((tab) => tab.id === preview.id);
+      if (existing) {
+        activateTab(existing.id);
+        return;
+      }
+
+      const newTab: WorkbenchEditorTab = {
+        ...preview,
+        active: true,
+      };
+      setActiveTabId(newTab.id);
+      setTabs((current) => [...current.map((tab) => ({ ...tab, active: false })), newTab]);
+    },
+    [activateTab, setActiveTabId, setTabs, store, tabsAtom],
+  );
+
   return {
     tabs,
     activateTab,
@@ -123,5 +141,6 @@ export function useWorkbenchEditorActions() {
     closeTab,
     openResourceTab,
     openManuscriptTab,
+    openTimelinePreviewTab,
   };
 }

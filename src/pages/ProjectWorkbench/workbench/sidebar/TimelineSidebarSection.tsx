@@ -1,18 +1,24 @@
 import { useMolecule } from "bunshi/react";
 import { useAtomValue } from "jotai";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 
 import { cn } from "#app/lib/cn";
 import { notificationApi } from "#app/lib/notifications";
 import type { TimelineEntry, TimelineTarget } from "#shared/rpc/worktree-timeline-rpc";
 
-import { useWorktreeTimeline } from "../branch/branch-scopes";
+import { useManuscript, useResourceLibrary, useWorktreeTimeline } from "../branch/branch-scopes";
 import { useWorktreeScmRevision } from "../branch/use-worktree-scm-revision";
+import { useWorkbenchEditorActions } from "../editor/use-workbench-editor-actions";
 import { workbenchEditorMolecule } from "../state/molecules";
 
 const timelineRowClass = cn(
-  "group flex w-full min-w-0 border-b border-titlebar-border p-2 text-left",
+  "group flex w-full min-w-0 flex-col gap-1 border-b border-titlebar-border p-2 text-left",
   "hover:bg-ctp-surface0/40",
+);
+
+const timelineButtonClass = cn(
+  "inline-flex h-6 items-center gap-1 rounded-sm px-1.5 text-2xs text-ctp-green",
+  "hover:bg-ctp-text/8 disabled:pointer-events-none disabled:text-ctp-overlay0",
 );
 
 function formatTimelineTime(timestampMs: number): string {
@@ -63,9 +69,12 @@ function TimelineEmptyState({ active }: { active: boolean }) {
 
 export function TimelineSidebarSection() {
   const timeline = useWorktreeTimeline();
+  const manuscript = useManuscript();
+  const resources = useResourceLibrary();
   const revision = useWorktreeScmRevision();
   const { activeEditorTabAtom } = useMolecule(workbenchEditorMolecule);
   const activeTab = useAtomValue(activeEditorTabAtom);
+  const { openTimelinePreviewTab } = useWorkbenchEditorActions();
   const [entries, setEntries] = useState<TimelineEntry[] | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -78,6 +87,9 @@ export function TimelineSidebarSection() {
         domain: "manuscript",
         entityId: activeTab.chapterId,
       };
+    }
+    if (activeTab.kind === "timeline-preview") {
+      return activeTab.target;
     }
     return {
       domain: "resource",
@@ -116,6 +128,50 @@ export function TimelineSidebarSection() {
     };
   }, [revision, target, timeline]);
 
+  const openPreviewEntry = useCallback(
+    (entry: TimelineEntry) => {
+      if (target === null) {
+        return;
+      }
+
+      const currentContent =
+        target.domain === "manuscript"
+          ? Promise.resolve(manuscript.readChapter(target.entityId))
+          : Promise.resolve(resources.readFile(target.entityId));
+
+      void Promise.all([
+        Promise.resolve(timeline.readTimelineEntryContent(entry.id)),
+        currentContent,
+      ])
+        .then(([historyContent, current]) => {
+          if (historyContent.content === null) {
+            notificationApi.error("此记录没有可预览内容。", { source: "时间线" });
+            return;
+          }
+
+          openTimelinePreviewTab({
+            id: `timeline-preview:${entry.id}:${crypto.randomUUID()}`,
+            kind: "timeline-preview",
+            label: `预览：${entry.label}`,
+            target,
+            entryId: entry.id,
+            entryMessage: entry.message,
+            entryTimestamp: entry.timestamp,
+            entryShortHash: entry.shortHash,
+            displayPath: entry.displayPath,
+            originalContent: historyContent.content,
+            currentContent: current,
+          });
+        })
+        .catch((error) => {
+          notificationApi.error(error instanceof Error ? error.message : "无法打开时间线预览", {
+            source: "时间线",
+          });
+        });
+    },
+    [manuscript, openTimelinePreviewTab, resources, target, timeline],
+  );
+
   return (
     <>
       {target === null ? (
@@ -152,6 +208,17 @@ export function TimelineSidebarSection() {
                     ) : null}
                   </p>
                 </div>
+              </div>
+              <div className="flex flex-wrap gap-1 pl-6">
+                <button
+                  className={timelineButtonClass}
+                  disabled={!entry.hasContent}
+                  type="button"
+                  onClick={() => openPreviewEntry(entry)}
+                >
+                  <span aria-hidden="true" className="icon-[codicon--diff]" />
+                  预览
+                </button>
               </div>
             </div>
           ))}

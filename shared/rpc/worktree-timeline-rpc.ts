@@ -35,8 +35,14 @@ export type TimelineEntry = {
   commitHash?: string;
   shortHash?: string;
   authorName?: string;
+  hasContent: boolean;
+};
+
+export type TimelineEntryContent = {
+  content: string | null;
 };
 
 export interface WorktreeTimelineHandle extends RpcTarget {
   listFileTimeline(target: TimelineTarget, limit?: number): TimelineEntry[];
+  readTimelineEntryContent(entryId: string): TimelineEntryContent;
 }

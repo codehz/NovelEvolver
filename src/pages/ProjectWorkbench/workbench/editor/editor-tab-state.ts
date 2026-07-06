@@ -49,14 +49,35 @@ export function areWorkbenchEditorTabsEqual(
     if (
       tab.id !== candidate.id ||
       tab.label !== candidate.label ||
-      tab.active !== candidate.active ||
-      tab.initialContent !== candidate.initialContent
+      tab.active !== candidate.active
     ) {
       return false;
     }
     if (tab.kind === "resource") {
-      return candidate.kind === "resource" && tab.resourceId === candidate.resourceId;
+      return (
+        candidate.kind === "resource" &&
+        tab.resourceId === candidate.resourceId &&
+        tab.initialContent === candidate.initialContent
+      );
     }
-    return candidate.kind === "manuscript" && tab.chapterId === candidate.chapterId;
+    if (tab.kind === "manuscript") {
+      return (
+        candidate.kind === "manuscript" &&
+        tab.chapterId === candidate.chapterId &&
+        tab.initialContent === candidate.initialContent
+      );
+    }
+    return (
+      candidate.kind === "timeline-preview" &&
+      tab.entryId === candidate.entryId &&
+      tab.entryMessage === candidate.entryMessage &&
+      tab.entryTimestamp === candidate.entryTimestamp &&
+      tab.entryShortHash === candidate.entryShortHash &&
+      tab.displayPath === candidate.displayPath &&
+      tab.originalContent === candidate.originalContent &&
+      tab.currentContent === candidate.currentContent &&
+      tab.target.domain === candidate.target.domain &&
+      tab.target.entityId === candidate.target.entityId
+    );
   });
 }

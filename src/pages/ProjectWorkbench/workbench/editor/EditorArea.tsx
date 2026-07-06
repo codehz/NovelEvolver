@@ -51,18 +51,17 @@ export function EditorArea() {
           tabs.map((tab) => (
             <EditorTabPane
               key={tab.id}
-              tabId={tab.id}
-              active={tab.active}
-              defaultValue={tab.initialContent}
+              tab={tab}
               editorRef={(handle) => {
+                if (tab.kind === "timeline-preview") {
+                  return;
+                }
                 if (handle === null) {
                   editorHandlesRef.current.delete(tab.id);
                   return;
                 }
                 editorHandlesRef.current.set(tab.id, handle);
               }}
-              resourceId={tab.kind === "resource" ? tab.resourceId : undefined}
-              chapterId={tab.kind === "manuscript" ? tab.chapterId : undefined}
             />
           ))
         )}

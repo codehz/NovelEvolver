@@ -913,11 +913,41 @@ export class WorktreeSession {
         displayPath: snapshot.displayPath,
         timestamp: snapshot.capturedAt,
         message: "本地保存",
+        hasContent: true,
       }));
     const commitEntries = this.#listCommitTimelineEntries(target, boundedLimit);
     return [...localEntries, ...commitEntries]
       .sort((left, right) => right.timestamp - left.timestamp)
       .slice(0, boundedLimit);
+  }
+
+  readTimelineEntryContent(entryId: string): { content: string | null } {
+    const localSnapshotId = this.#parseLocalTimelineEntryId(entryId);
+    if (localSnapshotId !== null) {
+      const snapshot = this.#store.getLocalSnapshot(
+        this.#projectId,
+        this.#branchName,
+        localSnapshotId,
+      );
+      if (snapshot === null) {
+        throw new Error(`Unknown timeline snapshot: ${entryId}`);
+      }
+      return {
+        content: snapshot.content.toString("utf-8"),
+      };
+    }
+
+    const commitTarget = this.#parseCommitTimelineEntryId(entryId);
+    if (commitTarget === null) {
+      throw new Error(`Unknown timeline entry: ${entryId}`);
+    }
+    const object = this.#repo.catFile(commitTarget.commitHash as SHA1);
+    if (object.type !== "commit") {
+      throw new Error(`Timeline entry is not a commit: ${commitTarget.commitHash}`);
+    }
+    return {
+      content: this.#readTimelineTargetState(object.tree, commitTarget.target)?.content ?? null,
+    };
   }
 
   searchWorktree(options: WorktreeSearchQuery): WorktreeSearchResult {
@@ -1822,6 +1852,7 @@ export class WorktreeSession {
         commitHash: entry.hash,
         shortHash: entry.hash.slice(0, 7),
         authorName: entry.commit.author.name,
+        hasContent: current?.content != null,
       });
       if (entries.length >= limit) {
         break;
@@ -1911,6 +1942,26 @@ export class WorktreeSession {
     return resourceTreeFromIndex(
       parseResourceIndex(readTextFromTree(this.#objects, treeHash, RESOURCES_INDEX_PATH)),
     );
+  }
+
+  #parseLocalTimelineEntryId(entryId: string): string | null {
+    return entryId.startsWith("local:") ? entryId.slice("local:".length) : null;
+  }
+
+  #parseCommitTimelineEntryId(
+    entryId: string,
+  ): { commitHash: string; target: TimelineTarget } | null {
+    const match = /^commit:([^:]+):(manuscript|resource):([^:]+)$/.exec(entryId);
+    if (match === null) {
+      return null;
+    }
+    return {
+      commitHash: match[1]!,
+      target: {
+        domain: match[2] as "manuscript" | "resource",
+        entityId: match[3]!,
+      },
+    };
   }
 
   #currentScmSnapshot(): ScmSnapshot {

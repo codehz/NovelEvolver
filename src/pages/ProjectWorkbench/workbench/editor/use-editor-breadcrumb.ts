@@ -135,5 +135,23 @@ export function useEditorBreadcrumb(tab: WorkbenchEditorTab): EditorBreadcrumbMo
       return buildEditorBreadcrumbModel(resourceBreadcrumbDefinition, tab, context);
     case "manuscript":
       return buildEditorBreadcrumbModel(manuscriptBreadcrumbDefinition, tab, context);
+    case "timeline-preview":
+      return {
+        ariaLabel: "时间线预览",
+        segments: [
+          {
+            key: "timeline",
+            label: "时间线",
+            clickable: false,
+            current: false,
+          },
+          {
+            key: tab.entryId,
+            label: tab.entryMessage,
+            clickable: false,
+            current: true,
+          },
+        ],
+      };
   }
 }
