@@ -6,7 +6,6 @@ import { consumeRpcStream } from "#app/lib/app-rpc-react";
 import type { WorktreeChangesEvent } from "#shared/rpc/worktree-changes";
 
 import { useWorktreeChanges } from "../../../branch/branch-scopes";
-import { extractWorktreeTreeFromChanges } from "../../../tree/worktree-tree-state";
 import { resourceLibraryTreeMolecule } from "./resource-tree-molecule";
 
 export function useResourceTreeSync(): void {
@@ -19,11 +18,19 @@ export function useResourceTreeSync(): void {
     return consumeRpcStream<WorktreeChangesEvent>({
       subscribe: () => changesHandle.subscribe(),
       onValue: (event) => {
-        const tree = extractWorktreeTreeFromChanges(event);
-        if (tree === null) {
+        if (event.kind === "snapshot") {
+          dispatch({ type: "loadSuccess", snapshot: event.treeSnapshot.resources });
           return;
         }
-        dispatch({ type: "loadSuccess", snapshot: tree.resources });
+        const patch = event.treeDelta?.resources;
+        if (patch === undefined) {
+          return;
+        }
+        dispatch({
+          type: "applyDelta",
+          delta: patch,
+          revision: event.delta.toRevision,
+        });
       },
       onError: () => {
         dispatch({ type: "loadError", message: "加载资源库失败" });

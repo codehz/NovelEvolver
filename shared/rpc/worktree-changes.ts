@@ -1,7 +1,12 @@
 import type { RpcTarget } from "capnweb";
 
 import type { RpcSubscriptionStream } from "./stream";
-import type { ManuscriptTreeSnapshot, ResourceTreeSnapshot } from "./worktree-tree";
+import type {
+  ManuscriptTreeDelta,
+  ManuscriptTreeSnapshot,
+  ResourceTreeDelta,
+  ResourceTreeSnapshot,
+} from "./worktree-tree";
 
 export type ChangeDomain = "manuscript" | "resource";
 export type ChangeKind = "create" | "delete" | "rename" | "move" | "reorder" | "content";
@@ -85,13 +90,16 @@ export type WorktreeChangesSnapshotEvent = {
   };
 };
 
+/** 订阅首包为 snapshot（整树）；后续 delta 仅携带树 patch，不再重复整棵快照。 */
+export type WorktreeChangesTreeDelta = {
+  manuscript?: ManuscriptTreeDelta;
+  resources?: ResourceTreeDelta;
+};
+
 export type WorktreeChangesDeltaEvent = {
   kind: "delta";
   delta: ChangesDelta;
-  treeDelta?: {
-    manuscript?: ManuscriptTreeSnapshot;
-    resources?: ResourceTreeSnapshot;
-  };
+  treeDelta?: WorktreeChangesTreeDelta;
 };
 
 export type WorktreeChangesEvent = WorktreeChangesSnapshotEvent | WorktreeChangesDeltaEvent;

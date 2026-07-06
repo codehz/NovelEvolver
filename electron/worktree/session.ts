@@ -5,7 +5,11 @@ import { nanoid } from "nanoid";
 
 import { normalizeResourceNameInput } from "#shared/resource-library-path";
 import type { WorktreeNodeIdResult } from "#shared/rpc/projects-rpc";
-import type { WorktreeChangesEvent } from "#shared/rpc/worktree-changes";
+import type {
+  ChangesSnapshot,
+  WorktreeChangesEvent,
+  WorktreeChangesTreeDelta,
+} from "#shared/rpc/worktree-changes";
 import type { ScmCommitSummary, ScmSnapshot } from "#shared/rpc/worktree-scm";
 import type { WorktreeSearchQuery, WorktreeSearchResult } from "#shared/rpc/worktree-search";
 import type {
@@ -50,6 +54,12 @@ import {
   type ManuscriptEntry,
   type ManuscriptSnapshotState,
 } from "./snapshot-state";
+import {
+  computeManuscriptTreeDelta,
+  computeResourceTreeDelta,
+  isEmptyManuscriptTreeDelta,
+  isEmptyResourceTreeDelta,
+} from "./tree-delta";
 
 const MANUSCRIPT_ID_SIZE = 10;
 const RESOURCE_ID_SIZE = 10;
@@ -429,6 +439,8 @@ export class WorktreeSession {
   #baseResources!: ResourceSnapshotState;
   readonly #resourcePathById = new Map<string, string>();
   readonly #resourceIdByPath = new Map<string, string>();
+  #lastPublishedManuscriptTree: ManuscriptTreeSnapshot | null = null;
+  #lastPublishedResourceTree: ResourceTreeSnapshot | null = null;
 
   constructor(
     store: WorktreeRepository,
@@ -736,6 +748,7 @@ export class WorktreeSession {
     this.#baseManuscript = cloneManuscriptSnapshotState(this.#currentManuscript);
     this.#baseResources = cloneResourceSnapshotState(this.#currentResources);
     this.#changeTracker.clearCache();
+    this.#resetChangesStreamBaseline();
     this.#persistAndEmit(true);
     return this.#currentScmSnapshot();
   }
@@ -1008,12 +1021,54 @@ export class WorktreeSession {
     this.#recomputeAllChangeStatuses();
     this.#revision += 1;
     this.#persistState(includeCommitted);
-    this.#treePublisher.emit({
-      kind: "snapshot",
-      snapshot: buildWorktreeTreeSnapshot(this.#revision, this.#manuscriptTree, this.#resourceTree),
-    });
     this.#scmPublisher.emit(this.#currentScmSnapshot());
     this.#emitChanges();
+  }
+
+  #resetChangesStreamBaseline(): void {
+    this.#lastPublishedManuscriptTree = null;
+    this.#lastPublishedResourceTree = null;
+  }
+
+  #recordChangesStreamEmit(changesSnapshot: ChangesSnapshot): void {
+    this.#changeTracker.markChangesEmitted(changesSnapshot);
+    this.#lastPublishedManuscriptTree = cloneManuscriptTreeSnapshot(this.#manuscriptTree);
+    this.#lastPublishedResourceTree = cloneResourceTreeSnapshot(this.#resourceTree);
+  }
+
+  #buildChangesSnapshotEvent(
+    changesSnapshot: ChangesSnapshot,
+  ): Extract<WorktreeChangesEvent, { kind: "snapshot" }> {
+    return {
+      kind: "snapshot",
+      snapshot: changesSnapshot,
+      treeSnapshot: {
+        manuscript: cloneManuscriptTreeSnapshot(this.#manuscriptTree),
+        resources: cloneResourceTreeSnapshot(this.#resourceTree),
+      },
+    };
+  }
+
+  #buildTreeDeltaFromLastPublished(): WorktreeChangesTreeDelta | undefined {
+    if (this.#lastPublishedManuscriptTree === null || this.#lastPublishedResourceTree === null) {
+      return undefined;
+    }
+    const treeDelta: WorktreeChangesTreeDelta = {};
+    const manuscriptDelta = computeManuscriptTreeDelta(
+      this.#lastPublishedManuscriptTree,
+      this.#manuscriptTree,
+    );
+    if (manuscriptDelta !== undefined && !isEmptyManuscriptTreeDelta(manuscriptDelta)) {
+      treeDelta.manuscript = manuscriptDelta;
+    }
+    const resourceDelta = computeResourceTreeDelta(
+      this.#lastPublishedResourceTree,
+      this.#resourceTree,
+    );
+    if (resourceDelta !== undefined && !isEmptyResourceTreeDelta(resourceDelta)) {
+      treeDelta.resources = resourceDelta;
+    }
+    return Object.keys(treeDelta).length > 0 ? treeDelta : undefined;
   }
 
   #emitChanges(): void {
@@ -1021,33 +1076,39 @@ export class WorktreeSession {
     if (currentSnapshot.kind !== "snapshot") {
       return;
     }
-    const delta = this.#changeTracker.computeDelta(currentSnapshot.snapshot, this.#revision);
-    // 如果是首次（没有上次变更），发送完整 snapshot
-    if (this.#changeTracker.lastChanges === null) {
-      this.#changesPublisher.emit(currentSnapshot);
+    const changesSnapshot = currentSnapshot.snapshot;
+
+    const needsFullSnapshot =
+      this.#lastPublishedManuscriptTree === null ||
+      this.#lastPublishedResourceTree === null ||
+      !this.#changeTracker.hasEmittedChanges();
+
+    if (needsFullSnapshot) {
+      const event = this.#buildChangesSnapshotEvent(changesSnapshot);
+      this.#changesPublisher.emit(event);
+      this.#recordChangesStreamEmit(changesSnapshot);
       return;
     }
-    // 即使没有增量变更，也发送更新（用于同步 revision 和 hasChanges 状态）
+
+    const delta = this.#changeTracker.computeDelta(changesSnapshot, this.#revision);
     if (delta.addedChanges.length === 0 && delta.removedChangeIds.length === 0) {
-      // 发送完整的 snapshot 以同步状态
-      this.#changesPublisher.emit(currentSnapshot);
-    } else {
-      this.#changesPublisher.emit({
-        kind: "delta",
-        delta: {
-          fromRevision: delta.fromRevision,
-          toRevision: delta.toRevision,
-          addedChanges: delta.addedChanges,
-          removedChangeIds: delta.removedChangeIds,
-        },
-        // 始终携带完整树快照：树结构（创建/移动/重命名/删除）与变更列表同步演变，
-        // 前端树同步 hook 需要据此做全量替换。类型上 treeDelta 为可选全量快照。
-        treeDelta: {
-          manuscript: this.#manuscriptTree,
-          resources: this.#resourceTree,
-        },
-      });
+      const event = this.#buildChangesSnapshotEvent(changesSnapshot);
+      this.#changesPublisher.emit(event);
+      this.#recordChangesStreamEmit(changesSnapshot);
+      return;
     }
+
+    this.#changesPublisher.emit({
+      kind: "delta",
+      delta: {
+        fromRevision: delta.fromRevision,
+        toRevision: delta.toRevision,
+        addedChanges: delta.addedChanges,
+        removedChangeIds: delta.removedChangeIds,
+      },
+      treeDelta: this.#buildTreeDeltaFromLastPublished(),
+    });
+    this.#recordChangesStreamEmit(changesSnapshot);
   }
 
   #persistState(includeCommitted: boolean): void {

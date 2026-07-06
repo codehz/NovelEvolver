@@ -6,7 +6,6 @@ import { consumeRpcStream } from "#app/lib/app-rpc-react";
 import type { WorktreeChangesEvent } from "#shared/rpc/worktree-changes";
 
 import { useWorktreeChanges } from "../../../branch/branch-scopes";
-import { extractWorktreeTreeFromChanges } from "../../../tree/worktree-tree-state";
 import { manuscriptTreeMolecule } from "./manuscript-tree-molecule";
 
 export function useManuscriptTreeSync(): void {
@@ -19,11 +18,19 @@ export function useManuscriptTreeSync(): void {
     return consumeRpcStream<WorktreeChangesEvent>({
       subscribe: () => changesHandle.subscribe(),
       onValue: (event) => {
-        const tree = extractWorktreeTreeFromChanges(event);
-        if (tree === null) {
+        if (event.kind === "snapshot") {
+          dispatch({ type: "loadSuccess", snapshot: event.treeSnapshot.manuscript });
           return;
         }
-        dispatch({ type: "loadSuccess", snapshot: tree.manuscript });
+        const patch = event.treeDelta?.manuscript;
+        if (patch === undefined) {
+          return;
+        }
+        dispatch({
+          type: "applyDelta",
+          delta: patch,
+          revision: event.delta.toRevision,
+        });
       },
       onError: () => {
         dispatch({ type: "loadError", message: "加载正文失败" });

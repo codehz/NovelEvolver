@@ -49,9 +49,22 @@ export class ChangeTracker {
   #lastBaseResources: ResourceSnapshotState | null = null;
   #lastCurrentResources: ResourceSnapshotState | null = null;
   #lastChanges: ChangesSnapshot | null = null;
+  #lastEmittedChanges: ChangesSnapshot | null = null;
 
   get lastChanges(): ChangesSnapshot | null {
     return this.#lastChanges;
+  }
+
+  hasEmittedChanges(): boolean {
+    return this.#lastEmittedChanges !== null;
+  }
+
+  markChangesEmitted(snapshot: ChangesSnapshot): void {
+    this.#lastEmittedChanges = {
+      ...snapshot,
+      manuscriptChanges: [...snapshot.manuscriptChanges],
+      resourceChanges: [...snapshot.resourceChanges],
+    };
   }
 
   /**
@@ -126,7 +139,7 @@ export class ChangeTracker {
     fromRevision: number;
     toRevision: number;
   } {
-    if (this.#lastChanges === null) {
+    if (this.#lastEmittedChanges === null) {
       // 首次计算，返回所有变更
       return {
         addedChanges: [...current.manuscriptChanges, ...current.resourceChanges],
@@ -136,7 +149,7 @@ export class ChangeTracker {
       };
     }
 
-    const previous = this.#lastChanges;
+    const previous = this.#lastEmittedChanges;
 
     // 计算新增的变更
     const addedChanges: Change[] = [];
@@ -188,6 +201,7 @@ export class ChangeTracker {
     this.#lastBaseResources = null;
     this.#lastCurrentResources = null;
     this.#lastChanges = null;
+    this.#lastEmittedChanges = null;
   }
 
   #computeManuscriptChanges(
