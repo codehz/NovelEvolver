@@ -154,3 +154,60 @@ export function useChangesStats() {
     resource: result.resourceChanges.length,
   };
 }
+
+/**
+ * 获取文件夹的变更统计（聚合子项变更）
+ */
+export function useFolderChangeStats(folderId: string) {
+  const { result } = useWorktreeChangesState();
+  if (result === null) {
+    return { count: 0, added: 0, removed: 0, modified: 0 };
+  }
+
+  const allChanges = [...result.manuscriptChanges, ...result.resourceChanges];
+  const folderChanges = allChanges.filter((change) => {
+    // 检查变更是否在文件夹内（通过displayPath前缀匹配）
+    const folderPath = folderId === "root" ? "" : folderId;
+    if (folderPath === "") {
+      return true; // 根文件夹包含所有变更
+    }
+    return change.displayPath.startsWith(`${folderPath}/`);
+  });
+
+  const stats = {
+    count: folderChanges.length,
+    added: folderChanges.filter((c) => c.kind === "create").length,
+    removed: folderChanges.filter((c) => c.kind === "delete").length,
+    modified: folderChanges.filter(
+      (c) =>
+        c.kind === "content" || c.kind === "rename" || c.kind === "move" || c.kind === "reorder",
+    ).length,
+  };
+
+  return stats;
+}
+
+/**
+ * 获取实体的变更状态（用于资源管理器显示）
+ */
+export function useEntityChangeStatus(entityId: string, domain: "manuscript" | "resource") {
+  const { result } = useWorktreeChangesState();
+  if (result === null) {
+    return null;
+  }
+
+  const changes = domain === "manuscript" ? result.manuscriptChanges : result.resourceChanges;
+  const entityChanges = changes.filter((c) => c.entityId === entityId);
+
+  if (entityChanges.length === 0) {
+    return null;
+  }
+
+  // 如果有create变更，返回added
+  if (entityChanges.some((c) => c.kind === "create")) {
+    return "added";
+  }
+
+  // 否则返回modified
+  return "modified";
+}

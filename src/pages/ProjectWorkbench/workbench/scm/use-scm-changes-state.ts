@@ -70,6 +70,13 @@ export function useScmChangesState() {
       });
   }, [scmHandle, commitMessage, committing]);
 
+  const listCommits = useCallback(
+    (maxCount?: number) => {
+      return scmHandle.listCommits(maxCount);
+    },
+    [scmHandle],
+  );
+
   return {
     commit,
     commitMessage,
@@ -81,5 +88,6 @@ export function useScmChangesState() {
     retry,
     revertChange,
     setCommitMessage,
+    listCommits,
   };
 }
