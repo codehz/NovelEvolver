@@ -34,6 +34,7 @@ type TreeRowShellProps<RowType extends string, DropTarget> = {
   dragging: boolean;
   iconClassName: string;
   label: string;
+  labelClassName?: string;
   trailingContent?: ReactNode;
   input: TreeRowShellInput | null;
   listRef?: RefObject<HTMLElement | null>;
@@ -57,6 +58,7 @@ export function TreeRowShell<RowType extends string, DropTarget>({
   dragging,
   iconClassName,
   label,
+  labelClassName,
   trailingContent,
   input,
   listRef,
@@ -108,7 +110,7 @@ export function TreeRowShell<RowType extends string, DropTarget>({
         />
       ) : (
         <>
-          <span className="truncate text-xs leading-5">{label}</span>
+          <span className={cn("truncate text-xs leading-5", labelClassName)}>{label}</span>
           {trailingContent}
         </>
       )}

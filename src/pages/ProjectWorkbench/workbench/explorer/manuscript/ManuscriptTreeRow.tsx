@@ -24,6 +24,19 @@ function changeStatusIconClass(
   );
 }
 
+function changeStatusLabelClass(
+  status: FileChangeStatus | undefined,
+  rowType: ManuscriptTreeNode["type"],
+) {
+  if (!status) {
+    return undefined;
+  }
+  if (rowType === "folder") {
+    return cn("text-ctp-yellow");
+  }
+  return cn(status === "added" && "text-ctp-green", status === "modified" && "text-ctp-yellow");
+}
+
 type ManuscriptTreeRowProps = {
   id: string | null;
   title: string;
@@ -102,6 +115,7 @@ export function ManuscriptTreeRow({
       dragging={dragging}
       iconClassName={rowIcon(type, expanded)}
       label={title}
+      labelClassName={changeStatusLabelClass(changeStatus, type)}
       trailingContent={
         changeStatus ? (
           <span
