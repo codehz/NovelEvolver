@@ -52,14 +52,11 @@ import { assertValidResourceRelativePath, RESOURCES_DIR } from "../resource-libr
 import { RpcStreamPublisher } from "../rpc/stream-publisher";
 import { executeWorktreeSearch } from "../search/worktree-search";
 import { refreshAllFolderChangeStatuses } from "./change-status";
-import {
-  ChangeTracker,
-  type ResourceSnapshotEntry as JournalResourceSnapshotEntry,
-  type ResourceSnapshotState,
-} from "./change-tracker";
+import { ChangeTracker } from "./change-tracker";
 import { computeStats, readTextFromTree, type ObjectDatabase } from "./diff-utils";
+import { buildJournalChangesSnapshot, buildJournalScmSnapshot } from "./journal-pending-projector";
 import { computeMinimalReorderedManuscriptIds } from "./manuscript-reorder";
-import { buildDetailedScmSnapshot, type ResourceSnapshotEntry } from "./scm-snapshot-builder";
+import type { ResourceSnapshotEntry, ResourceSnapshotState } from "./resource-snapshot-state";
 import {
   buildBaseManuscriptSnapshot,
   buildManuscriptSnapshot,
@@ -2182,10 +2179,11 @@ export class WorktreeSession {
   }
 
   #currentScmSnapshot(): ScmSnapshot {
-    return buildDetailedScmSnapshot({
+    return buildJournalScmSnapshot({
       revision: this.#revision,
       baseTree: this.baseTree,
       warning: this.#warning,
+      journalEntries: this.#store.readPendingJournalEntries(this.#projectId, this.#branchName),
       baseManuscript: this.#baseManuscript,
       currentManuscript: this.#currentManuscript,
       baseResources: this.#baseResources,
@@ -2194,10 +2192,11 @@ export class WorktreeSession {
   }
 
   #currentChangesSnapshot(): WorktreeChangesEvent {
-    const changesSnapshot = this.#changeTracker.computeChanges({
+    const changesSnapshot = buildJournalChangesSnapshot({
       revision: this.#revision,
       baseTree: this.baseTree,
       warning: this.#warning,
+      journalEntries: this.#store.readPendingJournalEntries(this.#projectId, this.#branchName),
       baseManuscript: this.#baseManuscript,
       currentManuscript: this.#currentManuscript,
       baseResources: this.#baseResources,
@@ -2264,7 +2263,7 @@ export class WorktreeSession {
     return node as ResourceTreeNode & { type: "folder" };
   }
 
-  #requireResourceJournalEntry(id: string): JournalResourceSnapshotEntry {
+  #requireResourceJournalEntry(id: string): ResourceSnapshotEntry {
     const entry = this.#currentResources.entries.get(id);
     if (entry === undefined) {
       throw new Error(`Resource journal entry does not exist: ${id}`);

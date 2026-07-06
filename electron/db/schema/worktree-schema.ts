@@ -135,6 +135,8 @@ export function initWorktreeSchema(db: DatabaseSync): void {
       ON resource_node_committed(project_id, branch_name, parent_id);
     CREATE INDEX IF NOT EXISTS idx_worktree_journal_revision_branch
       ON worktree_journal_revision(project_id, branch_name, created_at DESC, worktree_revision DESC);
+    CREATE INDEX IF NOT EXISTS idx_worktree_journal_revision_source
+      ON worktree_journal_revision(project_id, branch_name, source, worktree_revision DESC);
     CREATE INDEX IF NOT EXISTS idx_worktree_journal_operation_entity
       ON worktree_journal_operation(project_id, branch_name, domain, entity_id, kind);
   `);

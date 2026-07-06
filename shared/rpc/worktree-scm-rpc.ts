@@ -16,6 +16,7 @@ type ScmChangeBase = {
   label: string;
   displayPath: string;
   depth: number;
+  order: number;
   stats?: ScmChangeStats;
 };
 

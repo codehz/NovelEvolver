@@ -613,6 +613,72 @@ export class WorktreeRepository {
     return rows.map(rowToJournalEntryRecord);
   }
 
+  readPendingJournalEntries(projectId: number, branchName: string): WorktreeJournalEntryRecord[] {
+    const rows = this.#db
+      .prepare(
+        `
+          WITH latest_commit AS (
+            SELECT worktree_revision
+            FROM worktree_journal_revision
+            WHERE project_id = ? AND branch_name = ? AND source = 'commit'
+            ORDER BY worktree_revision DESC, created_at DESC, revision_id DESC
+            LIMIT 1
+          )
+          SELECT
+            revision.project_id,
+            revision.branch_name,
+            revision.revision_id,
+            revision.parent_revision_id,
+            revision.created_at,
+            revision.worktree_revision,
+            revision.actor,
+            revision.source,
+            revision.title,
+            revision.commit_hash,
+            revision.group_id,
+            operation.operation_id,
+            operation.order_index,
+            operation.kind,
+            operation.domain,
+            operation.entity_id,
+            operation.entity_kind,
+            operation.label,
+            operation.display_path,
+            operation.previous_label,
+            operation.previous_path,
+            operation.before_blob_id,
+            operation.after_blob_id,
+            operation.stats_added,
+            operation.stats_removed,
+            operation.metadata_json,
+            before_blob.content AS before_content,
+            after_blob.content AS after_content
+          FROM worktree_journal_operation operation
+          INNER JOIN worktree_journal_revision revision
+            ON revision.project_id = operation.project_id
+            AND revision.branch_name = operation.branch_name
+            AND revision.revision_id = operation.revision_id
+          LEFT JOIN worktree_blob before_blob
+            ON before_blob.project_id = operation.project_id
+            AND before_blob.blob_id = operation.before_blob_id
+          LEFT JOIN worktree_blob after_blob
+            ON after_blob.project_id = operation.project_id
+            AND after_blob.blob_id = operation.after_blob_id
+          WHERE
+            operation.project_id = ?
+            AND operation.branch_name = ?
+            AND revision.source <> 'commit'
+            AND revision.worktree_revision > COALESCE(
+              (SELECT worktree_revision FROM latest_commit),
+              -1
+            )
+          ORDER BY revision.worktree_revision ASC, revision.created_at ASC, operation.order_index ASC
+        `,
+      )
+      .all(projectId, branchName, projectId, branchName) as WorktreeJournalEntrySqlRow[];
+    return rows.map(rowToJournalEntryRecord);
+  }
+
   getJournalTimelineEntry(
     projectId: number,
     branchName: string,

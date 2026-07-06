@@ -6,6 +6,7 @@ import type {
   WorktreeChangesEvent,
   WorktreeChangesHandle,
 } from "#shared/rpc/worktree-changes-rpc";
+import type { ScmSnapshot } from "#shared/rpc/worktree-scm-rpc";
 
 import type { WorktreeSession } from "../worktree/session";
 
@@ -45,65 +46,14 @@ export class WorktreeChangesHandleImpl extends RpcTarget implements WorktreeChan
     return this.#session.listBranchCommits(maxCount);
   }
 
-  #convertScmSnapshotToChangesSnapshot(scmSnapshot: {
-    revision: number;
-    baseTree: string;
-    hasChanges: boolean;
-    warning: string | null;
-    manuscriptChanges: Array<{
-      id: string;
-      domain: string;
-      kind: string;
-      entityId: string;
-      entityKind: string;
-      label: string;
-      displayPath: string;
-      depth: number;
-      stats?: { added: number; removed: number };
-      previousLabel?: string;
-      previousPath?: string;
-    }>;
-    resourceChanges: Array<{
-      id: string;
-      domain: string;
-      kind: string;
-      entityId: string;
-      entityKind: string;
-      label: string;
-      displayPath: string;
-      depth: number;
-      stats?: { added: number; removed: number };
-      previousLabel?: string;
-      previousPath?: string;
-    }>;
-  }): ChangesSnapshot {
-    // 为变更添加 order 字段（按 displayPath 排序）
-    const addOrder = (changes: typeof scmSnapshot.manuscriptChanges) => {
-      return changes
-        .sort((a, b) => a.displayPath.localeCompare(b.displayPath))
-        .map((change, index) => ({ ...change, order: index }));
-    };
-
-    const manuscriptChangesWithOrder = addOrder(scmSnapshot.manuscriptChanges);
-    const resourceChangesWithOrder = addOrder(scmSnapshot.resourceChanges);
-
+  #convertScmSnapshotToChangesSnapshot(scmSnapshot: ScmSnapshot): ChangesSnapshot {
     return {
       revision: scmSnapshot.revision,
       baseTree: scmSnapshot.baseTree,
       hasChanges: scmSnapshot.hasChanges,
       warning: scmSnapshot.warning,
-      manuscriptChanges: manuscriptChangesWithOrder.map((change) => ({
-        ...change,
-        domain: change.domain as "manuscript" | "resource",
-        kind: change.kind as "create" | "delete" | "rename" | "move" | "reorder" | "content",
-        entityKind: change.entityKind as "chapter" | "folder" | "file",
-      })) as Change[],
-      resourceChanges: resourceChangesWithOrder.map((change) => ({
-        ...change,
-        domain: change.domain as "manuscript" | "resource",
-        kind: change.kind as "create" | "delete" | "rename" | "move" | "reorder" | "content",
-        entityKind: change.entityKind as "chapter" | "folder" | "file",
-      })) as Change[],
+      manuscriptChanges: scmSnapshot.manuscriptChanges as Change[],
+      resourceChanges: scmSnapshot.resourceChanges as Change[],
     };
   }
 }
