@@ -1152,7 +1152,8 @@ export class WorktreeSession {
         throw new Error(`Unknown journal timeline entry: ${entryId}`);
       }
       return {
-        content: entry.afterContent?.toString("utf-8") ?? null,
+        content:
+          entry.afterContent?.toString("utf-8") ?? entry.beforeContent?.toString("utf-8") ?? null,
         beforeContent: entry.beforeContent?.toString("utf-8") ?? null,
       };
     }
@@ -1165,8 +1166,15 @@ export class WorktreeSession {
     if (object.type !== "commit") {
       throw new Error(`Timeline entry is not a commit: ${commitTarget.commitHash}`);
     }
+    const previousTree =
+      object.parents[0] === undefined
+        ? this.#repo.createTree([])
+        : this.#commitTree(object.parents[0]);
+    const previous = this.#readTimelineTargetState(previousTree, commitTarget.target);
+    const current = this.#readTimelineTargetState(object.tree, commitTarget.target);
     return {
-      content: this.#readTimelineTargetState(object.tree, commitTarget.target)?.content ?? null,
+      content: current?.content ?? previous?.content ?? null,
+      beforeContent: previous?.content ?? null,
     };
   }
 
@@ -2074,7 +2082,7 @@ export class WorktreeSession {
       revisionId: entry.revisionId,
       operationId: entry.operationId,
       groupId: entry.groupId ?? undefined,
-      hasContent: entry.afterContent !== null,
+      hasContent: entry.afterContent !== null || entry.beforeContent !== null,
     };
   }
 

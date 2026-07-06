@@ -27,14 +27,14 @@ function formatTimelineTime(timestampMs: number): string {
 }
 
 function entryIconClass(entry: TimelineEntry): string {
-  if (entry.source === "journal") {
-    return "icon-[codicon--save]";
-  }
   if (entry.kind === "delete") {
     return "icon-[codicon--diff-removed]";
   }
   if (entry.kind === "create") {
     return "icon-[codicon--diff-added]";
+  }
+  if (entry.kind === "content" && entry.source === "journal") {
+    return "icon-[codicon--save]";
   }
   return "icon-[codicon--git-commit]";
 }
@@ -134,10 +134,16 @@ export function TimelineSidebarSection() {
         return;
       }
 
-      const currentContent =
+      const currentContent = (
         target.domain === "manuscript"
           ? Promise.resolve(manuscript.readChapter(target.entityId))
-          : Promise.resolve(resources.readFile(target.entityId));
+          : Promise.resolve(resources.readFile(target.entityId))
+      ).catch((error: unknown) => {
+        if (entry.kind === "delete") {
+          return "";
+        }
+        throw error;
+      });
 
       void Promise.all([
         Promise.resolve(timeline.readTimelineEntryContent(entry.id)),
