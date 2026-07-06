@@ -1,24 +1,18 @@
 import { AutoTransition } from "@codehz/auto-transition";
 import { useMolecule } from "bunshi/react";
 import { useAtomValue } from "jotai";
-import { useRef } from "react";
 
-import type { PlainTextEditorHandle } from "#app/components/PlainTextEditor";
 import { TabBar } from "#app/components/TabBar";
 
 import { workbenchEditorMolecule } from "../state/molecules";
 import { contentEditorTabIconClass } from "../tree/content-tree-icons";
 import { EditorBreadcrumb } from "./EditorBreadcrumb";
-import { EditorEmptyState } from "./EditorEmptyState";
-import { EditorTabPane } from "./EditorTabPane";
+import { EditorPaneDeck } from "./EditorPaneDeck";
 import { useWorkbenchEditorActions } from "./use-workbench-editor-actions";
-import { useWorkbenchEditorScmSync } from "./use-workbench-editor-scm-sync";
 import { useWorkbenchEditorTreeSync } from "./use-workbench-editor-tree-sync";
 
 export function EditorArea() {
-  const editorHandlesRef = useRef(new Map<string, PlainTextEditorHandle>());
   useWorkbenchEditorTreeSync();
-  useWorkbenchEditorScmSync(editorHandlesRef);
   const { activeEditorTabAtom, activeTabIdAtom, transientTabIdAtom } =
     useMolecule(workbenchEditorMolecule);
   const activeTab = useAtomValue(activeEditorTabAtom);
@@ -50,30 +44,7 @@ export function EditorArea() {
         </div>
       )}
 
-      <div key={+(tabs.length === 0)} className="flex min-h-0 min-w-0 flex-1 flex-col">
-        {tabs.length === 0 ? (
-          <EditorEmptyState />
-        ) : (
-          tabs.map((tab) => (
-            <EditorTabPane
-              key={tab.id}
-              tab={tab}
-              active={tab.id === activeTabId}
-              transient={tab.id === transientTabId}
-              editorRef={(handle) => {
-                if (tab.kind === "timeline-comparison") {
-                  return;
-                }
-                if (handle === null) {
-                  editorHandlesRef.current.delete(tab.id);
-                  return;
-                }
-                editorHandlesRef.current.set(tab.id, handle);
-              }}
-            />
-          ))
-        )}
-      </div>
+      <EditorPaneDeck tabs={tabs} activeTabId={activeTabId} transientTabId={transientTabId} />
     </AutoTransition>
   );
 }

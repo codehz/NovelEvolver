@@ -8,6 +8,7 @@ import { useManuscript, useResourceLibrary, useWorktreeTimeline } from "../branc
 import { useWorktreeTreeSnapshot } from "../branch/use-worktree-tree-snapshot";
 import { workbenchEditorMolecule } from "../state/molecules";
 import type {
+  WorkbenchEditorDocument,
   WorkbenchEditorOpenIntent,
   WorkbenchEditorTab,
   WorkbenchEditorTarget,
@@ -20,6 +21,11 @@ import {
   openWorkbenchEditorTab,
   pinWorkbenchEditorTab,
 } from "./editor-tab-manager";
+
+type ResolvedWorkbenchEditorTarget = {
+  tab: WorkbenchEditorTab;
+  document?: WorkbenchEditorDocument;
+};
 
 function workbenchEditorTargetLabel(target: WorkbenchEditorTarget): string {
   switch (target.kind) {
@@ -44,30 +50,46 @@ export function useWorkbenchEditorActions() {
   const focusRequestIdRef = useRef(0);
 
   const resolveTargetTab = useCallback(
-    async (target: WorkbenchEditorTarget): Promise<WorkbenchEditorTab> => {
+    async (target: WorkbenchEditorTarget): Promise<ResolvedWorkbenchEditorTarget> => {
       switch (target.kind) {
         case "resource": {
           const node = snapshot?.resources.nodes[target.resourceId];
           const label = node?.type === "file" ? node.name : workbenchEditorTargetLabel(target);
           const content = await Promise.resolve(resources.readFile(target.resourceId));
+          const key = `resource:${target.resourceId}`;
           return {
-            id: `resource:${target.resourceId}`,
-            kind: "resource",
-            resourceId: target.resourceId,
-            label,
-            initialContent: content,
+            tab: {
+              id: key,
+              kind: "resource",
+              resourceId: target.resourceId,
+              label,
+            },
+            document: {
+              key,
+              kind: "resource",
+              resourceId: target.resourceId,
+              baselineContent: content,
+            },
           };
         }
         case "manuscript": {
           const node = snapshot?.manuscript.nodes[target.chapterId];
           const label = node?.type === "chapter" ? node.title : workbenchEditorTargetLabel(target);
           const content = await Promise.resolve(manuscript.readChapter(target.chapterId));
+          const key = `manuscript:${target.chapterId}`;
           return {
-            id: `manuscript:${target.chapterId}`,
-            kind: "manuscript",
-            chapterId: target.chapterId,
-            label,
-            initialContent: content,
+            tab: {
+              id: key,
+              kind: "manuscript",
+              chapterId: target.chapterId,
+              label,
+            },
+            document: {
+              key,
+              kind: "manuscript",
+              chapterId: target.chapterId,
+              baselineContent: content,
+            },
           };
         }
         case "timeline-entry": {
@@ -89,17 +111,19 @@ export function useWorkbenchEditorActions() {
             throw new Error("此记录没有可预览内容。");
           }
           return {
-            id: `timeline-entry:${target.entryId}`,
-            kind: "timeline-comparison",
-            label: workbenchEditorTargetLabel(target),
-            target: target.sourceTarget,
-            entryId: target.entryId,
-            entryMessage: target.message,
-            entryTimestamp: target.timestamp,
-            entryShortHash: target.shortHash,
-            displayPath: target.displayPath,
-            originalContent: historyContent.content,
-            currentContent: current,
+            tab: {
+              id: `timeline-entry:${target.entryId}`,
+              kind: "timeline-comparison",
+              label: workbenchEditorTargetLabel(target),
+              target: target.sourceTarget,
+              entryId: target.entryId,
+              entryMessage: target.message,
+              entryTimestamp: target.timestamp,
+              entryShortHash: target.shortHash,
+              displayPath: target.displayPath,
+              originalContent: historyContent.content,
+              currentContent: current,
+            },
           };
         }
       }
@@ -120,11 +144,11 @@ export function useWorkbenchEditorActions() {
         intent === "focus" ? (focusRequestIdRef.current += 1) : focusRequestIdRef.current;
 
       try {
-        const tab = await resolveTargetTab(target);
+        const { document, tab } = await resolveTargetTab(target);
         if (intent === "focus" && requestId !== focusRequestIdRef.current) {
           return;
         }
-        setEditorState((state) => openWorkbenchEditorTab(state, tab, intent));
+        setEditorState((state) => openWorkbenchEditorTab(state, tab, intent, document));
       } catch (error) {
         notificationApi.error(
           error instanceof Error ? error.message : `无法打开${workbenchEditorTargetLabel(target)}`,

@@ -1,85 +1,55 @@
 import { ScopeProvider, useMolecule } from "bunshi/react";
 import { useAtomValue, useSetAtom } from "jotai";
-import type { Ref } from "react";
 import { useCallback } from "react";
 
-import { PlainTextEditor, type PlainTextEditorHandle } from "#app/components/PlainTextEditor";
+import { PlainTextEditor } from "#app/components/PlainTextEditor";
 
-import { useManuscript, useResourceLibrary } from "../branch/branch-scopes";
-import {
-  useResourceAutosave,
-  useTextAutosave,
-} from "../explorer/resource-library/use-resource-autosave";
 import { editorTabMolecule, editorTabScope } from "../state/molecules";
 import type { ContentWorkbenchEditorTab, WorkbenchEditorTab } from "../state/types";
 import { TimelineMergePreviewEditor } from "./TimelineMergePreviewEditor";
-import { useWorkbenchEditorActions } from "./use-workbench-editor-actions";
+import type { WorkbenchEditorDocumentRuntime } from "./use-workbench-editor-document-runtime";
 
 type EditorTabPaneProps = {
   tab: WorkbenchEditorTab;
   active: boolean;
   transient: boolean;
-  editorRef?: Ref<PlainTextEditorHandle>;
+  documentRuntime: WorkbenchEditorDocumentRuntime;
 };
 
 function EditorTabPlainTextEditor({
-  ref,
   tab,
   active,
   transient,
+  documentRuntime,
 }: {
-  ref?: Ref<PlainTextEditorHandle>;
   tab: ContentWorkbenchEditorTab;
   active: boolean;
   transient: boolean;
+  documentRuntime: WorkbenchEditorDocumentRuntime;
 }) {
   const { caretPositionAtom, selectionSnapshotAtom } = useMolecule(editorTabMolecule);
   const selectionSnapshot = useAtomValue(selectionSnapshotAtom);
   const setCaretPosition = useSetAtom(caretPositionAtom);
   const setSelectionSnapshot = useSetAtom(selectionSnapshotAtom);
-  const resources = useResourceLibrary();
-  const manuscript = useManuscript();
-  const { pinTab } = useWorkbenchEditorActions();
-
-  const writeFile = useCallback(
-    async (id: string, content: string) => {
-      await resources.writeFile(id, content);
+  const document = documentRuntime.getDocument(tab);
+  const registerEditor = useCallback(
+    (handle: Parameters<WorkbenchEditorDocumentRuntime["registerEditor"]>[1]) => {
+      documentRuntime.registerEditor(tab, handle);
     },
-    [resources],
+    [documentRuntime, tab],
   );
-
-  const writeChapter = useCallback(
-    async (id: string, content: string) => {
-      await manuscript.writeChapter(id, content);
-    },
-    [manuscript],
-  );
-
-  const resourceId = tab.kind === "resource" ? tab.resourceId : undefined;
-  const chapterId = tab.kind === "manuscript" ? tab.chapterId : undefined;
-  const scheduleSave = useResourceAutosave(resourceId, writeFile);
-  const scheduleChapterSave = useTextAutosave(chapterId, writeChapter, "正文");
   const handleChange = useCallback(
     (next: string) => {
-      if (transient) {
-        pinTab(tab.id);
-      }
-      if (resourceId != null) {
-        scheduleSave(next);
-        return;
-      }
-      if (chapterId != null) {
-        scheduleChapterSave(next);
-      }
+      documentRuntime.handleContentChange(tab, next, transient);
     },
-    [chapterId, pinTab, resourceId, scheduleChapterSave, scheduleSave, tab.id, transient],
+    [documentRuntime, tab, transient],
   );
 
   return (
     <PlainTextEditor
-      ref={ref}
+      ref={registerEditor}
       active={active}
-      defaultValue={tab.initialContent}
+      defaultValue={document?.baselineContent ?? ""}
       selectionSnapshot={selectionSnapshot}
       onSelectionSnapshotChange={setSelectionSnapshot}
       onCaretChange={setCaretPosition}
@@ -88,7 +58,7 @@ function EditorTabPlainTextEditor({
   );
 }
 
-export function EditorTabPane({ tab, active, transient, editorRef }: EditorTabPaneProps) {
+export function EditorTabPane({ tab, active, transient, documentRuntime }: EditorTabPaneProps) {
   return (
     <ScopeProvider scope={editorTabScope} value={tab.id}>
       <div
@@ -103,10 +73,10 @@ export function EditorTabPane({ tab, active, transient, editorRef }: EditorTabPa
           />
         ) : (
           <EditorTabPlainTextEditor
-            ref={editorRef}
             tab={tab}
             active={active}
             transient={transient}
+            documentRuntime={documentRuntime}
           />
         )}
       </div>

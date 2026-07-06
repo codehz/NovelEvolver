@@ -1,4 +1,7 @@
 import type {
+  ContentWorkbenchEditorTab,
+  WorkbenchEditorDocument,
+  WorkbenchEditorDocuments,
   WorkbenchEditorState,
   WorkbenchEditorTab,
   WorkbenchEditorTarget,
@@ -6,6 +9,7 @@ import type {
 
 export const emptyWorkbenchEditorState: WorkbenchEditorState = {
   tabs: [],
+  documents: {},
   activeTabId: null,
   transientTabId: null,
 };
@@ -32,6 +36,24 @@ export function getWorkbenchEditorTabTargetKey(tab: WorkbenchEditorTab): string 
   }
 }
 
+export function getWorkbenchEditorContentTabDocumentKey(tab: ContentWorkbenchEditorTab): string {
+  switch (tab.kind) {
+    case "resource":
+      return `resource:${tab.resourceId}`;
+    case "manuscript":
+      return `manuscript:${tab.chapterId}`;
+  }
+}
+
+export function getWorkbenchEditorDocumentKey(document: WorkbenchEditorDocument): string {
+  switch (document.kind) {
+    case "resource":
+      return `resource:${document.resourceId}`;
+    case "manuscript":
+      return `manuscript:${document.chapterId}`;
+  }
+}
+
 export function findWorkbenchEditorTabByTarget(
   state: WorkbenchEditorState,
   target: WorkbenchEditorTarget,
@@ -53,6 +75,25 @@ function resolveActiveTabId(
   return tabs[tabs.length - 1]?.id ?? null;
 }
 
+function pruneWorkbenchEditorDocuments(
+  tabs: readonly WorkbenchEditorTab[],
+  documents: WorkbenchEditorDocuments,
+): WorkbenchEditorDocuments {
+  const documentKeys = new Set(
+    tabs
+      .filter((tab): tab is ContentWorkbenchEditorTab => tab.kind !== "timeline-comparison")
+      .map(getWorkbenchEditorContentTabDocumentKey),
+  );
+  const nextDocuments: WorkbenchEditorDocuments = {};
+  for (const key of documentKeys) {
+    const document = documents[key];
+    if (document !== undefined) {
+      nextDocuments[key] = document;
+    }
+  }
+  return nextDocuments;
+}
+
 export function normalizeWorkbenchEditorState(state: WorkbenchEditorState): WorkbenchEditorState {
   const activeTabId = resolveActiveTabId(state.tabs, state.activeTabId);
   const transientTabId =
@@ -62,6 +103,7 @@ export function normalizeWorkbenchEditorState(state: WorkbenchEditorState): Work
 
   return {
     tabs: [...state.tabs],
+    documents: pruneWorkbenchEditorDocuments(state.tabs, state.documents),
     activeTabId,
     transientTabId,
   };
@@ -92,6 +134,7 @@ export function closeWorkbenchEditorTab(
 
   return normalizeWorkbenchEditorState({
     tabs,
+    documents: state.documents,
     activeTabId,
     transientTabId,
   });
@@ -111,8 +154,16 @@ export function openWorkbenchEditorTab(
   state: WorkbenchEditorState,
   nextTab: WorkbenchEditorTab,
   intent: "focus" | "open",
+  nextDocument?: WorkbenchEditorDocument,
 ): WorkbenchEditorState {
   const nextKey = getWorkbenchEditorTabTargetKey(nextTab);
+  const documents =
+    nextDocument === undefined
+      ? state.documents
+      : {
+          ...state.documents,
+          [getWorkbenchEditorDocumentKey(nextDocument)]: nextDocument,
+        };
   const existingIndex = state.tabs.findIndex(
     (tab) => getWorkbenchEditorTabTargetKey(tab) === nextKey,
   );
@@ -124,6 +175,7 @@ export function openWorkbenchEditorTab(
     );
     return normalizeWorkbenchEditorState({
       tabs,
+      documents,
       activeTabId: existing.id,
       transientTabId:
         intent === "open" && state.transientTabId === existing.id ? null : state.transientTabId,
@@ -136,6 +188,7 @@ export function openWorkbenchEditorTab(
       const tabs = state.tabs.map((tab, index) => (index === transientIndex ? nextTab : tab));
       return normalizeWorkbenchEditorState({
         tabs,
+        documents,
         activeTabId: nextTab.id,
         transientTabId: nextTab.id,
       });
@@ -144,6 +197,7 @@ export function openWorkbenchEditorTab(
 
   return normalizeWorkbenchEditorState({
     tabs: [...state.tabs, nextTab],
+    documents,
     activeTabId: nextTab.id,
     transientTabId: intent === "focus" ? nextTab.id : state.transientTabId,
   });
@@ -165,18 +219,10 @@ export function areWorkbenchEditorTabsEqual(
       return false;
     }
     if (tab.kind === "resource") {
-      return (
-        candidate.kind === "resource" &&
-        tab.resourceId === candidate.resourceId &&
-        tab.initialContent === candidate.initialContent
-      );
+      return candidate.kind === "resource" && tab.resourceId === candidate.resourceId;
     }
     if (tab.kind === "manuscript") {
-      return (
-        candidate.kind === "manuscript" &&
-        tab.chapterId === candidate.chapterId &&
-        tab.initialContent === candidate.initialContent
-      );
+      return candidate.kind === "manuscript" && tab.chapterId === candidate.chapterId;
     }
     return (
       candidate.kind === "timeline-comparison" &&
@@ -193,6 +239,39 @@ export function areWorkbenchEditorTabsEqual(
   });
 }
 
+export function areWorkbenchEditorDocumentsEqual(
+  left: WorkbenchEditorDocuments,
+  right: WorkbenchEditorDocuments,
+): boolean {
+  const leftKeys = Object.keys(left);
+  const rightKeys = Object.keys(right);
+  if (leftKeys.length !== rightKeys.length) {
+    return false;
+  }
+  return leftKeys.every((key) => {
+    const leftDocument = left[key];
+    const rightDocument = right[key];
+    if (leftDocument === undefined || rightDocument === undefined) {
+      return false;
+    }
+    if (
+      leftDocument.kind !== rightDocument.kind ||
+      leftDocument.key !== rightDocument.key ||
+      leftDocument.baselineContent !== rightDocument.baselineContent
+    ) {
+      return false;
+    }
+    if (leftDocument.kind === "resource") {
+      return (
+        rightDocument.kind === "resource" && leftDocument.resourceId === rightDocument.resourceId
+      );
+    }
+    return (
+      rightDocument.kind === "manuscript" && leftDocument.chapterId === rightDocument.chapterId
+    );
+  });
+}
+
 export function areWorkbenchEditorStatesEqual(
   left: WorkbenchEditorState,
   right: WorkbenchEditorState,
@@ -200,6 +279,7 @@ export function areWorkbenchEditorStatesEqual(
   return (
     left.activeTabId === right.activeTabId &&
     left.transientTabId === right.transientTabId &&
-    areWorkbenchEditorTabsEqual(left.tabs, right.tabs)
+    areWorkbenchEditorTabsEqual(left.tabs, right.tabs) &&
+    areWorkbenchEditorDocumentsEqual(left.documents, right.documents)
   );
 }

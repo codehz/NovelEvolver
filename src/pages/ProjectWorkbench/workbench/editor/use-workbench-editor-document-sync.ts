@@ -11,52 +11,52 @@ import type { ResourceLibraryHandle } from "#shared/rpc/resource-library-rpc";
 import { useManuscript, useResourceLibrary } from "../branch/branch-scopes";
 import { useWorktreeScmRevision } from "../branch/use-worktree-scm-revision";
 import { workbenchEditorMolecule } from "../state/molecules";
-import { type ContentWorkbenchEditorTab, type WorkbenchEditorTab } from "../state/types";
+import type { WorkbenchEditorDocument } from "../state/types";
 import { areWorkbenchEditorStatesEqual, normalizeWorkbenchEditorState } from "./editor-tab-manager";
 
 function applySyncedContent(
-  tab: ContentWorkbenchEditorTab,
+  document: WorkbenchEditorDocument,
   content: string,
   editorHandle: PlainTextEditorHandle | undefined,
-): WorkbenchEditorTab {
+): WorkbenchEditorDocument {
   const currentValue = editorHandle?.getValue();
   if (currentValue === content) {
     return {
-      ...tab,
-      initialContent: content,
+      ...document,
+      baselineContent: content,
     };
   }
 
-  if (currentValue === undefined || currentValue === tab.initialContent) {
+  if (currentValue === undefined || currentValue === document.baselineContent) {
     editorHandle?.setValue(content);
     return {
-      ...tab,
-      initialContent: content,
+      ...document,
+      baselineContent: content,
     };
   }
 
-  return tab;
+  return document;
 }
 
-async function syncManuscriptTab(
-  tab: Extract<WorkbenchEditorTab, { kind: "manuscript" }>,
+async function syncManuscriptDocument(
+  document: Extract<WorkbenchEditorDocument, { kind: "manuscript" }>,
   manuscript: RpcPromise<ManuscriptHandle>,
   editorHandle: PlainTextEditorHandle | undefined,
-): Promise<WorkbenchEditorTab | null> {
-  const content = await Promise.resolve(manuscript.readChapter(tab.chapterId));
-  return applySyncedContent(tab, content, editorHandle);
+): Promise<WorkbenchEditorDocument> {
+  const content = await Promise.resolve(manuscript.readChapter(document.chapterId));
+  return applySyncedContent(document, content, editorHandle);
 }
 
-async function syncResourceTab(
-  tab: Extract<WorkbenchEditorTab, { kind: "resource" }>,
+async function syncResourceDocument(
+  document: Extract<WorkbenchEditorDocument, { kind: "resource" }>,
   resources: RpcPromise<ResourceLibraryHandle>,
   editorHandle: PlainTextEditorHandle | undefined,
-): Promise<WorkbenchEditorTab | null> {
-  const content = await Promise.resolve(resources.readFile(tab.resourceId));
-  return applySyncedContent(tab, content, editorHandle);
+): Promise<WorkbenchEditorDocument> {
+  const content = await Promise.resolve(resources.readFile(document.resourceId));
+  return applySyncedContent(document, content, editorHandle);
 }
 
-export function useWorkbenchEditorScmSync(
+export function useWorkbenchEditorDocumentSync(
   editorHandlesRef: RefObject<Map<string, PlainTextEditorHandle>>,
 ): void {
   const revision = useWorktreeScmRevision();
@@ -70,37 +70,38 @@ export function useWorkbenchEditorScmSync(
   useEffect(() => {
     let cancelled = false;
     const sourceState = editorStateRef.current;
+    const documents = Object.values(sourceState.documents);
 
-    if (sourceState.tabs.length === 0) {
+    if (documents.length === 0) {
       return;
     }
 
     void Promise.all(
-      sourceState.tabs.map((tab) => {
-        if (tab.kind === "timeline-comparison") {
-          return Promise.resolve(tab);
+      documents.map((document) => {
+        const editorHandle = editorHandlesRef.current.get(document.key);
+        if (document.kind === "manuscript") {
+          return syncManuscriptDocument(document, manuscript, editorHandle).catch(() => document);
         }
-        const editorHandle = editorHandlesRef.current.get(tab.id);
-        if (tab.kind === "manuscript") {
-          return syncManuscriptTab(tab, manuscript, editorHandle).catch(() => tab);
-        }
-        return syncResourceTab(tab, resources, editorHandle).catch(() => tab);
+        return syncResourceDocument(document, resources, editorHandle).catch(() => document);
       }),
     )
-      .then((nextTabs) => {
+      .then((nextDocuments) => {
         if (cancelled) {
           return;
         }
 
-        const syncedTabsById = new Map(
-          nextTabs
-            .filter((tab): tab is WorkbenchEditorTab => tab !== null)
-            .map((tab) => [tab.id, tab]),
+        const syncedDocumentsByKey = new Map(
+          nextDocuments.map((document) => [document.key, document]),
         );
         setEditorState((currentState) => {
           const nextState = normalizeWorkbenchEditorState({
             ...currentState,
-            tabs: currentState.tabs.map((tab) => syncedTabsById.get(tab.id) ?? tab),
+            documents: Object.fromEntries(
+              Object.entries(currentState.documents).map(([key, document]) => [
+                key,
+                syncedDocumentsByKey.get(key) ?? document,
+              ]),
+            ),
           });
           if (areWorkbenchEditorStatesEqual(currentState, nextState)) {
             return currentState;

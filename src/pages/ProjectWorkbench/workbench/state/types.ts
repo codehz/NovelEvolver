@@ -5,7 +5,6 @@ export type ResourceWorkbenchEditorTab = {
   kind: "resource";
   resourceId: string;
   label: string;
-  initialContent: string;
 };
 
 export type ManuscriptWorkbenchEditorTab = {
@@ -13,7 +12,6 @@ export type ManuscriptWorkbenchEditorTab = {
   kind: "manuscript";
   chapterId: string;
   label: string;
-  initialContent: string;
 };
 
 export type TimelineComparisonWorkbenchEditorTab = {
@@ -33,6 +31,26 @@ export type TimelineComparisonWorkbenchEditorTab = {
 export type ContentWorkbenchEditorTab = ResourceWorkbenchEditorTab | ManuscriptWorkbenchEditorTab;
 
 export type WorkbenchEditorTab = ContentWorkbenchEditorTab | TimelineComparisonWorkbenchEditorTab;
+
+export type ResourceWorkbenchEditorDocument = {
+  key: string;
+  kind: "resource";
+  resourceId: string;
+  baselineContent: string;
+};
+
+export type ManuscriptWorkbenchEditorDocument = {
+  key: string;
+  kind: "manuscript";
+  chapterId: string;
+  baselineContent: string;
+};
+
+export type WorkbenchEditorDocument =
+  | ResourceWorkbenchEditorDocument
+  | ManuscriptWorkbenchEditorDocument;
+
+export type WorkbenchEditorDocuments = Record<string, WorkbenchEditorDocument>;
 
 export type WorkbenchEditorOpenIntent = "focus" | "open";
 
@@ -59,6 +77,7 @@ export type WorkbenchEditorTarget =
 
 export type WorkbenchEditorState = {
   tabs: WorkbenchEditorTab[];
+  documents: WorkbenchEditorDocuments;
   activeTabId: string | null;
   transientTabId: string | null;
 };

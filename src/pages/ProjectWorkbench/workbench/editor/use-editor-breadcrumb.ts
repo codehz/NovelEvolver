@@ -128,7 +128,6 @@ function buildTimelineComparisonBreadcrumbModel(
             kind: "manuscript",
             chapterId: tab.target.entityId,
             label: tab.label,
-            initialContent: tab.currentContent,
           },
           context,
         )
@@ -139,7 +138,6 @@ function buildTimelineComparisonBreadcrumbModel(
             kind: "resource",
             resourceId: tab.target.entityId,
             label: tab.label,
-            initialContent: tab.currentContent,
           },
           context,
         );

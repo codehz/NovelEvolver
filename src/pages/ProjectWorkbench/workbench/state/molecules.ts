@@ -31,6 +31,7 @@ export const workbenchEditorMolecule = molecule(() => {
 
   const editorStateAtom = atom(emptyWorkbenchEditorState);
   const tabsAtom = atom((get) => get(editorStateAtom).tabs);
+  const documentsAtom = atom((get) => get(editorStateAtom).documents);
   const activeTabIdAtom = atom((get) => get(editorStateAtom).activeTabId);
   const transientTabIdAtom = atom((get) => get(editorStateAtom).transientTabId);
 
@@ -51,6 +52,7 @@ export const workbenchEditorMolecule = molecule(() => {
   return {
     editorStateAtom,
     tabsAtom,
+    documentsAtom,
     activeTabIdAtom,
     transientTabIdAtom,
     activeEditorTabAtom,
