@@ -3,39 +3,11 @@ import type { RefObject } from "react";
 import { cn } from "#app/lib/cn";
 import type { FileChangeStatus, ManuscriptTreeNode } from "#shared/rpc/worktree-tree";
 
+import { TreeChangeStatusBadge, treeChangeStatusLabelClass } from "../../tree/tree-change-status";
 import type { TreeResolvedDrop } from "../../tree/tree-drag";
 import { TreeRowShell } from "../../tree/TreeRowShell";
 import type { TreeDropResolveInput } from "../../tree/use-tree-row-pointer-drag";
 import type { ManuscriptEditingState, ManuscriptMoveTarget } from "./state/types";
-
-function changeStatusIconClass(
-  status: FileChangeStatus | undefined,
-  rowType: ManuscriptTreeNode["type"],
-) {
-  if (!status) {
-    return undefined;
-  }
-  if (rowType === "folder") {
-    return cn("icon-[codicon--circle-filled] text-ctp-yellow/45");
-  }
-  return cn(
-    status === "added" && "icon-[codicon--diff-added] text-ctp-green",
-    status === "modified" && "icon-[codicon--diff-modified] text-ctp-yellow",
-  );
-}
-
-function changeStatusLabelClass(
-  status: FileChangeStatus | undefined,
-  rowType: ManuscriptTreeNode["type"],
-) {
-  if (!status) {
-    return undefined;
-  }
-  if (rowType === "folder") {
-    return cn("text-ctp-yellow");
-  }
-  return cn(status === "added" && "text-ctp-green", status === "modified" && "text-ctp-yellow");
-}
 
 type ManuscriptTreeRowProps = {
   id: string | null;
@@ -115,14 +87,9 @@ export function ManuscriptTreeRow({
       dragging={dragging}
       iconClassName={rowIcon(type, expanded)}
       label={title}
-      labelClassName={changeStatusLabelClass(changeStatus, type)}
+      labelClassName={treeChangeStatusLabelClass(changeStatus, type)}
       trailingContent={
-        changeStatus ? (
-          <span
-            className={cn("ml-auto shrink-0 text-sm", changeStatusIconClass(changeStatus, type))}
-            aria-hidden="true"
-          />
-        ) : null
+        changeStatus ? <TreeChangeStatusBadge status={changeStatus} rowType={type} /> : null
       }
       input={
         editing
