@@ -118,20 +118,20 @@ export function useWorkbenchEditorActions() {
 
   const openTimelinePreviewTab = useCallback(
     (preview: Omit<TimelinePreviewWorkbenchEditorTab, "active">) => {
-      const existing = store.get(tabsAtom).find((tab) => tab.id === preview.id);
-      if (existing) {
-        activateTab(existing.id);
-        return;
-      }
-
       const newTab: WorkbenchEditorTab = {
         ...preview,
         active: true,
       };
       setActiveTabId(newTab.id);
-      setTabs((current) => [...current.map((tab) => ({ ...tab, active: false })), newTab]);
+      setTabs((current) => {
+        const existing = current.some((tab) => tab.id === preview.id);
+        if (existing) {
+          return current.map((tab) => (tab.id === preview.id ? newTab : { ...tab, active: false }));
+        }
+        return [...current.map((tab) => ({ ...tab, active: false })), newTab];
+      });
     },
-    [activateTab, setActiveTabId, setTabs, store, tabsAtom],
+    [setActiveTabId, setTabs],
   );
 
   return {

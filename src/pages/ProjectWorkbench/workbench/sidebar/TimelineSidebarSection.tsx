@@ -12,13 +12,9 @@ import { useWorkbenchEditorActions } from "../editor/use-workbench-editor-action
 import { workbenchEditorMolecule } from "../state/molecules";
 
 const timelineRowClass = cn(
-  "group flex w-full min-w-0 flex-col gap-1 border-b border-titlebar-border p-2 text-left",
-  "hover:bg-ctp-surface0/40",
-);
-
-const timelineButtonClass = cn(
-  "inline-flex h-6 items-center gap-1 rounded-sm px-1.5 text-2xs text-ctp-green",
-  "hover:bg-ctp-text/8 disabled:pointer-events-none disabled:text-ctp-overlay0",
+  "group flex w-full min-w-0 items-start gap-2 border-b border-titlebar-border p-2 text-left",
+  "hover:bg-ctp-surface0/40 focus-visible:bg-ctp-surface0/40 focus-visible:outline-none",
+  "disabled:cursor-default hover:disabled:bg-transparent",
 );
 
 function formatTimelineTime(timestampMs: number): string {
@@ -150,7 +146,7 @@ export function TimelineSidebarSection() {
           }
 
           openTimelinePreviewTab({
-            id: `timeline-preview:${entry.id}:${crypto.randomUUID()}`,
+            id: `timeline-preview:${entry.id}`,
             kind: "timeline-preview",
             label: `预览：${entry.label}`,
             target,
@@ -186,41 +182,34 @@ export function TimelineSidebarSection() {
       ) : (
         <div className="flex min-w-0 flex-col text-xs">
           {entries.map((entry) => (
-            <div key={entry.id} className={timelineRowClass}>
-              <div className="flex min-w-0 items-start gap-2">
-                <span
-                  aria-hidden="true"
-                  className={cn("mt-0.5 shrink-0 text-sm text-ctp-overlay0", entryIconClass(entry))}
-                />
-                <div className="min-w-0 flex-1">
-                  <p className="truncate text-ctp-subtext1" title={entry.message}>
-                    {entry.message}
-                  </p>
-                  <p className="truncate text-2xs text-ctp-overlay0" title={entry.displayPath}>
-                    {kindLabel(entry.kind)}
-                    <span className="mx-1 text-ctp-surface2">·</span>
-                    {formatTimelineTime(entry.timestamp)}
-                    {entry.shortHash ? (
-                      <>
-                        <span className="mx-1 text-ctp-surface2">·</span>
-                        <span className="font-mono">{entry.shortHash}</span>
-                      </>
-                    ) : null}
-                  </p>
-                </div>
+            <button
+              key={entry.id}
+              className={timelineRowClass}
+              disabled={!entry.hasContent}
+              type="button"
+              onClick={() => openPreviewEntry(entry)}
+            >
+              <span
+                aria-hidden="true"
+                className={cn("mt-0.5 shrink-0 text-sm text-ctp-overlay0", entryIconClass(entry))}
+              />
+              <div className="min-w-0 flex-1">
+                <p className="truncate text-ctp-subtext1" title={entry.message}>
+                  {entry.message}
+                </p>
+                <p className="truncate text-2xs text-ctp-overlay0" title={entry.displayPath}>
+                  {kindLabel(entry.kind)}
+                  <span className="mx-1 text-ctp-surface2">·</span>
+                  {formatTimelineTime(entry.timestamp)}
+                  {entry.shortHash ? (
+                    <>
+                      <span className="mx-1 text-ctp-surface2">·</span>
+                      <span className="font-mono">{entry.shortHash}</span>
+                    </>
+                  ) : null}
+                </p>
               </div>
-              <div className="flex flex-wrap gap-1 pl-6">
-                <button
-                  className={timelineButtonClass}
-                  disabled={!entry.hasContent}
-                  type="button"
-                  onClick={() => openPreviewEntry(entry)}
-                >
-                  <span aria-hidden="true" className="icon-[codicon--diff]" />
-                  预览
-                </button>
-              </div>
-            </div>
+            </button>
           ))}
         </div>
       )}

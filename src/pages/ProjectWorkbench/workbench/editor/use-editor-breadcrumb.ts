@@ -15,6 +15,7 @@ import { resourceLibraryTreeMolecule } from "../explorer/resource-library/state/
 import type {
   ManuscriptWorkbenchEditorTab,
   ResourceWorkbenchEditorTab,
+  TimelinePreviewWorkbenchEditorTab,
   WorkbenchEditorTab,
 } from "../state/types";
 
@@ -114,6 +115,66 @@ function buildEditorBreadcrumbModel<TTab extends WorkbenchEditorTab, TNode>(
   };
 }
 
+function buildTimelinePreviewBreadcrumbModel(
+  tab: TimelinePreviewWorkbenchEditorTab,
+  context: EditorBreadcrumbContext,
+): EditorBreadcrumbModel {
+  const targetModel =
+    tab.target.domain === "manuscript"
+      ? buildEditorBreadcrumbModel(
+          manuscriptBreadcrumbDefinition,
+          {
+            id: `timeline-target:${tab.target.entityId}`,
+            kind: "manuscript",
+            chapterId: tab.target.entityId,
+            label: tab.label,
+            active: tab.active,
+            initialContent: tab.currentContent,
+          },
+          context,
+        )
+      : buildEditorBreadcrumbModel(
+          resourceBreadcrumbDefinition,
+          {
+            id: `timeline-target:${tab.target.entityId}`,
+            kind: "resource",
+            resourceId: tab.target.entityId,
+            label: tab.label,
+            active: tab.active,
+            initialContent: tab.currentContent,
+          },
+          context,
+        );
+
+  const segments =
+    targetModel.segments.length === 0
+      ? [
+          {
+            key: "timeline-preview-path",
+            label: tab.displayPath,
+            clickable: false,
+            current: false,
+          },
+        ]
+      : targetModel.segments.map((segment) => ({
+          ...segment,
+          current: false,
+        }));
+
+  return {
+    ariaLabel: `${targetModel.ariaLabel}时间线预览`,
+    segments: [
+      ...segments,
+      {
+        key: `timeline-preview:${tab.entryId}`,
+        label: `预览 ${tab.entryShortHash ?? tab.entryMessage}`,
+        clickable: false,
+        current: true,
+      },
+    ],
+  };
+}
+
 export function useEditorBreadcrumb(tab: WorkbenchEditorTab): EditorBreadcrumbModel {
   const { treeAtom: resourceTreeAtom, revealInTree: revealResource } = useMolecule(
     resourceLibraryTreeMolecule,
@@ -136,22 +197,6 @@ export function useEditorBreadcrumb(tab: WorkbenchEditorTab): EditorBreadcrumbMo
     case "manuscript":
       return buildEditorBreadcrumbModel(manuscriptBreadcrumbDefinition, tab, context);
     case "timeline-preview":
-      return {
-        ariaLabel: "时间线预览",
-        segments: [
-          {
-            key: "timeline",
-            label: "时间线",
-            clickable: false,
-            current: false,
-          },
-          {
-            key: tab.entryId,
-            label: tab.entryMessage,
-            clickable: false,
-            current: true,
-          },
-        ],
-      };
+      return buildTimelinePreviewBreadcrumbModel(tab, context);
   }
 }
