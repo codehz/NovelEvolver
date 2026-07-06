@@ -9,6 +9,7 @@ export type TabItem = {
   id: string;
   label: string;
   active?: boolean;
+  preview?: boolean;
 };
 
 type TabBarProps<T extends TabItem> = {
@@ -73,7 +74,7 @@ export function TabBar<T extends TabItem>({
           {renderIcon?.(tab) ?? (
             <span aria-hidden="true" className={contentEditorTabDefaultIconClass()} />
           )}
-          <SlotText className="truncate" text={tab.label} />
+          <SlotText className={cn("truncate", tab.preview && "italic")} text={tab.label} />
           {onClose && (
             <button
               aria-label={`关闭 ${tab.label}`}

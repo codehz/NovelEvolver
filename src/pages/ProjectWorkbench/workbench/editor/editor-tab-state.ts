@@ -49,7 +49,8 @@ export function areWorkbenchEditorTabsEqual(
     if (
       tab.id !== candidate.id ||
       tab.label !== candidate.label ||
-      tab.active !== candidate.active
+      tab.active !== candidate.active ||
+      tab.preview !== candidate.preview
     ) {
       return false;
     }

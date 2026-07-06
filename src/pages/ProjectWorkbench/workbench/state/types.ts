@@ -6,6 +6,7 @@ export type ResourceWorkbenchEditorTab = {
   resourceId: string;
   label: string;
   active: boolean;
+  preview: boolean;
   initialContent: string;
 };
 
@@ -15,6 +16,7 @@ export type ManuscriptWorkbenchEditorTab = {
   chapterId: string;
   label: string;
   active: boolean;
+  preview: boolean;
   initialContent: string;
 };
 
@@ -23,6 +25,7 @@ export type TimelinePreviewWorkbenchEditorTab = {
   kind: "timeline-preview";
   label: string;
   active: boolean;
+  preview: boolean;
   target: TimelineTarget;
   entryId: string;
   entryMessage: string;

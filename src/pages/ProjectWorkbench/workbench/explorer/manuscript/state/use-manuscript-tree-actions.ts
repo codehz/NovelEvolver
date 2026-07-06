@@ -93,8 +93,11 @@ export function useManuscriptTreeActions() {
               : await manuscript.createChapter(editing.parentId, title, editing.index)
             : (await manuscript.renameNode(editing.id, title), null);
         if (editing.mode === "creating" && editing.kind === "chapter" && result !== null) {
-          void openManuscriptTab(result.nodeId, title, (chapterId) =>
-            manuscript.readChapter(chapterId),
+          void openManuscriptTab(
+            result.nodeId,
+            title,
+            (chapterId) => manuscript.readChapter(chapterId),
+            { mode: "permanent" },
           );
         }
       } catch (error) {
@@ -107,13 +110,20 @@ export function useManuscriptTreeActions() {
   );
 
   const activateNode = useCallback(
-    (id: string, type: ManuscriptTreeNode["type"], title: string) => {
+    (
+      id: string,
+      type: ManuscriptTreeNode["type"],
+      title: string,
+      mode: "preview" | "permanent",
+    ) => {
       dispatch({ type: "select", id });
       if (type === "folder") {
         dispatch({ type: "toggleFolder", id });
         return;
       }
-      void openManuscriptTab(id, title, (chapterId) => manuscript.readChapter(chapterId));
+      void openManuscriptTab(id, title, (chapterId) => manuscript.readChapter(chapterId), {
+        mode,
+      });
     },
     [dispatch, manuscript, openManuscriptTab],
   );

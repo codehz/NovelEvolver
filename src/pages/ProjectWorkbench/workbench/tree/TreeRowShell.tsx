@@ -26,6 +26,7 @@ type TreeRowShellInteraction<RowType extends string, DropTarget> = {
   listRef?: RefObject<HTMLElement | null>;
   resolveDropTarget: (input: TreeDropResolveInput<RowType>) => TreeResolvedDrop<DropTarget> | null;
   onActivate: () => void;
+  onDoubleActivate?: () => void;
   onDragStart: () => void;
   onDragMove: (resolved: TreeResolvedDrop<DropTarget> | null) => void;
   onDragEnd: () => void;
@@ -72,6 +73,7 @@ export function TreeRowShell<RowType extends string, DropTarget>({
       interaction === null ? null : { rowId: interaction.rowId, rowType: interaction.rowType },
     listRef: interaction?.listRef,
     onActivate: interaction?.onActivate ?? (() => {}),
+    onDoubleActivate: interaction?.onDoubleActivate ?? interaction?.onActivate ?? (() => {}),
     onDragStart: interaction?.onDragStart ?? (() => {}),
     onDragMove: interaction?.onDragMove ?? (() => {}),
     onDragEnd: interaction?.onDragEnd ?? (() => {}),
@@ -122,6 +124,7 @@ export function TreeRowShell<RowType extends string, DropTarget>({
       data-tree-row-id={interaction.rowId}
       data-tree-row-index={interaction.rowIndex}
       data-tree-row-type={interaction.rowType}
+      onDoubleClick={interaction.onDoubleActivate}
       {...pointerHandlers}
     >
       {rowContent}

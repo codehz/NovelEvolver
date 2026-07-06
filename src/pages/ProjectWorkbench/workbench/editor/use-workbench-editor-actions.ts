@@ -7,6 +7,60 @@ import { notificationApi } from "#app/lib/notifications";
 import { workbenchEditorMolecule } from "../state/molecules";
 import { type TimelinePreviewWorkbenchEditorTab, type WorkbenchEditorTab } from "../state/types";
 
+export type WorkbenchEditorOpenMode = "preview" | "permanent";
+
+export type WorkbenchEditorOpenOptions = {
+  mode: WorkbenchEditorOpenMode;
+};
+
+function openWorkbenchEditorTab(
+  current: readonly WorkbenchEditorTab[],
+  nextTab: WorkbenchEditorTab,
+  mode: WorkbenchEditorOpenMode,
+  matches: (tab: WorkbenchEditorTab) => boolean,
+): { tabs: WorkbenchEditorTab[]; activeId: string } {
+  const existingIndex = current.findIndex(matches);
+  if (existingIndex >= 0) {
+    const existing = current[existingIndex]!;
+    const preview = mode === "permanent" ? false : existing.preview;
+    return {
+      activeId: existing.id,
+      tabs: current.map((tab, index) =>
+        index === existingIndex
+          ? {
+              ...nextTab,
+              id: existing.id,
+              active: true,
+              preview,
+            }
+          : { ...tab, active: false },
+      ),
+    };
+  }
+
+  const tabToOpen: WorkbenchEditorTab = {
+    ...nextTab,
+    active: true,
+    preview: mode === "preview",
+  };
+  if (mode === "preview") {
+    const previewIndex = current.findIndex((tab) => tab.preview);
+    if (previewIndex >= 0) {
+      return {
+        activeId: tabToOpen.id,
+        tabs: current.map((tab, index) =>
+          index === previewIndex ? tabToOpen : { ...tab, active: false },
+        ),
+      };
+    }
+  }
+
+  return {
+    activeId: tabToOpen.id,
+    tabs: [...current.map((tab) => ({ ...tab, active: false })), tabToOpen],
+  };
+}
+
 export function useWorkbenchEditorActions() {
   const { tabsAtom, activeTabIdAtom } = useMolecule(workbenchEditorMolecule);
   const store = useStore();
@@ -50,48 +104,94 @@ export function useWorkbenchEditorActions() {
     [activeTabIdAtom, setActiveTabId, setTabs, store],
   );
 
+  const promoteTab = useCallback(
+    (tabId: string) => {
+      setTabs((current) =>
+        current.map((tab) => (tab.id === tabId ? { ...tab, preview: false } : tab)),
+      );
+    },
+    [setTabs],
+  );
+
   const openResourceTab = useCallback(
     async (
       resourceId: string,
       label: string,
       readFile: (resourceId: string) => Promise<string>,
+      options: WorkbenchEditorOpenOptions = { mode: "permanent" },
     ) => {
       const existing = store
         .get(tabsAtom)
         .find((tab) => tab.kind === "resource" && tab.resourceId === resourceId);
       if (existing) {
-        activateTab(existing.id);
+        setActiveTabId(existing.id);
+        setTabs((current) =>
+          current.map((tab) =>
+            tab.id === existing.id
+              ? {
+                  ...tab,
+                  active: true,
+                  preview: options.mode === "permanent" ? false : tab.preview,
+                }
+              : { ...tab, active: false },
+          ),
+        );
         return;
       }
 
       try {
         const content = await readFile(resourceId);
         const newTab: WorkbenchEditorTab = {
-          id: `resource:${crypto.randomUUID()}`,
+          id: `resource:${resourceId}`,
           kind: "resource",
           resourceId,
           label,
           active: true,
+          preview: options.mode === "preview",
           initialContent: content,
         };
-        setActiveTabId(newTab.id);
-        setTabs((current) => [...current.map((tab) => ({ ...tab, active: false })), newTab]);
+        setTabs((current) => {
+          const result = openWorkbenchEditorTab(
+            current,
+            newTab,
+            options.mode,
+            (tab) => tab.kind === "resource" && tab.resourceId === resourceId,
+          );
+          setActiveTabId(result.activeId);
+          return result.tabs;
+        });
       } catch (error) {
         notificationApi.error(error instanceof Error ? error.message : "无法打开资源库文件", {
           source: "资源库",
         });
       }
     },
-    [activateTab, setActiveTabId, setTabs, store, tabsAtom],
+    [setActiveTabId, setTabs, store, tabsAtom],
   );
 
   const openManuscriptTab = useCallback(
-    async (chapterId: string, title: string, readChapter: (id: string) => Promise<string>) => {
+    async (
+      chapterId: string,
+      title: string,
+      readChapter: (id: string) => Promise<string>,
+      options: WorkbenchEditorOpenOptions = { mode: "permanent" },
+    ) => {
       const existing = store
         .get(tabsAtom)
         .find((tab) => tab.kind === "manuscript" && tab.chapterId === chapterId);
       if (existing) {
-        activateTab(existing.id);
+        setActiveTabId(existing.id);
+        setTabs((current) =>
+          current.map((tab) =>
+            tab.id === existing.id
+              ? {
+                  ...tab,
+                  active: true,
+                  preview: options.mode === "permanent" ? false : tab.preview,
+                }
+              : { ...tab, active: false },
+          ),
+        );
         return;
       }
 
@@ -103,32 +203,47 @@ export function useWorkbenchEditorActions() {
           chapterId,
           label: title,
           active: true,
+          preview: options.mode === "preview",
           initialContent: content,
         };
-        setActiveTabId(newTab.id);
-        setTabs((current) => [...current.map((tab) => ({ ...tab, active: false })), newTab]);
+        setTabs((current) => {
+          const result = openWorkbenchEditorTab(
+            current,
+            newTab,
+            options.mode,
+            (tab) => tab.kind === "manuscript" && tab.chapterId === chapterId,
+          );
+          setActiveTabId(result.activeId);
+          return result.tabs;
+        });
       } catch (error) {
         notificationApi.error(error instanceof Error ? error.message : "无法打开章节", {
           source: "正文",
         });
       }
     },
-    [activateTab, setActiveTabId, setTabs, store, tabsAtom],
+    [setActiveTabId, setTabs, store, tabsAtom],
   );
 
   const openTimelinePreviewTab = useCallback(
-    (preview: Omit<TimelinePreviewWorkbenchEditorTab, "active">) => {
+    (
+      preview: Omit<TimelinePreviewWorkbenchEditorTab, "active" | "preview">,
+      options: WorkbenchEditorOpenOptions = { mode: "permanent" },
+    ) => {
       const newTab: WorkbenchEditorTab = {
         ...preview,
         active: true,
+        preview: options.mode === "preview",
       };
-      setActiveTabId(newTab.id);
       setTabs((current) => {
-        const existing = current.some((tab) => tab.id === preview.id);
-        if (existing) {
-          return current.map((tab) => (tab.id === preview.id ? newTab : { ...tab, active: false }));
-        }
-        return [...current.map((tab) => ({ ...tab, active: false })), newTab];
+        const result = openWorkbenchEditorTab(
+          current,
+          newTab,
+          options.mode,
+          (tab) => tab.kind === "timeline-preview" && tab.entryId === preview.entryId,
+        );
+        setActiveTabId(result.activeId);
+        return result.tabs;
       });
     },
     [setActiveTabId, setTabs],
@@ -139,6 +254,7 @@ export function useWorkbenchEditorActions() {
     activateTab,
     clearAllTabs,
     closeTab,
+    promoteTab,
     openResourceTab,
     openManuscriptTab,
     openTimelinePreviewTab,

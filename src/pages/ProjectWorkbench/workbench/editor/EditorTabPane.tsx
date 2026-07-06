@@ -13,6 +13,7 @@ import {
 import { editorTabMolecule, editorTabScope } from "../state/molecules";
 import type { ContentWorkbenchEditorTab, WorkbenchEditorTab } from "../state/types";
 import { TimelineMergePreviewEditor } from "./TimelineMergePreviewEditor";
+import { useWorkbenchEditorActions } from "./use-workbench-editor-actions";
 
 type EditorTabPaneProps = {
   tab: WorkbenchEditorTab;
@@ -32,6 +33,7 @@ function EditorTabPlainTextEditor({
   const setSelectionSnapshot = useSetAtom(selectionSnapshotAtom);
   const resources = useResourceLibrary();
   const manuscript = useManuscript();
+  const { promoteTab } = useWorkbenchEditorActions();
 
   const writeFile = useCallback(
     async (id: string, content: string) => {
@@ -51,6 +53,21 @@ function EditorTabPlainTextEditor({
   const chapterId = tab.kind === "manuscript" ? tab.chapterId : undefined;
   const scheduleSave = useResourceAutosave(resourceId, writeFile);
   const scheduleChapterSave = useTextAutosave(chapterId, writeChapter, "正文");
+  const handleChange = useCallback(
+    (next: string) => {
+      if (tab.preview) {
+        promoteTab(tab.id);
+      }
+      if (resourceId != null) {
+        scheduleSave(next);
+        return;
+      }
+      if (chapterId != null) {
+        scheduleChapterSave(next);
+      }
+    },
+    [chapterId, promoteTab, resourceId, scheduleChapterSave, scheduleSave, tab.id, tab.preview],
+  );
 
   return (
     <PlainTextEditor
@@ -60,9 +77,7 @@ function EditorTabPlainTextEditor({
       selectionSnapshot={selectionSnapshot}
       onSelectionSnapshotChange={setSelectionSnapshot}
       onCaretChange={setCaretPosition}
-      onChange={
-        resourceId != null ? scheduleSave : chapterId != null ? scheduleChapterSave : undefined
-      }
+      onChange={handleChange}
     />
   );
 }

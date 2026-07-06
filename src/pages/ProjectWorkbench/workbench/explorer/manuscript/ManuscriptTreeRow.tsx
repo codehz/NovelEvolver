@@ -26,7 +26,12 @@ type ManuscriptTreeRowProps = {
   resolveDropTarget: (
     input: TreeDropResolveInput<ManuscriptTreeNode["type"]>,
   ) => TreeResolvedDrop<ManuscriptMoveTarget> | null;
-  onActivate: (id: string, type: ManuscriptTreeNode["type"], title: string) => void;
+  onActivate: (
+    id: string,
+    type: ManuscriptTreeNode["type"],
+    title: string,
+    mode: "preview" | "permanent",
+  ) => void;
   onCancelEditing: () => void;
   onSubmitEditing: (editing: ManuscriptEditingState, title: string) => Promise<void>;
   onDragStart: (id: string, type: ManuscriptTreeNode["type"]) => void;
@@ -98,8 +103,14 @@ export function ManuscriptTreeRow({
               listRef,
               resolveDropTarget,
               onActivate: () => {
-                onActivate(id, type, title);
+                onActivate(id, type, title, "preview");
               },
+              onDoubleActivate:
+                type === "folder"
+                  ? () => {}
+                  : () => {
+                      onActivate(id, type, title, "permanent");
+                    },
               onDragStart: () => {
                 onDragStart(id, type);
               },

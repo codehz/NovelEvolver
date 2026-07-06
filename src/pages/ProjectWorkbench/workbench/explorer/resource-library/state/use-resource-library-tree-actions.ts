@@ -91,8 +91,11 @@ export function useResourceLibraryTreeActions() {
         dispatch({ type: "expandPath", id: editing.parentId });
         dispatch({ type: "select", id: result.nodeId, nodeType: editing.kind });
         if (editing.kind === "file") {
-          void openResourceTab(result.nodeId, normalized, (resourceId) =>
-            resources.readFile(resourceId),
+          void openResourceTab(
+            result.nodeId,
+            normalized,
+            (resourceId) => resources.readFile(resourceId),
+            { mode: "permanent" },
           );
         }
       } catch (error) {
@@ -145,13 +148,13 @@ export function useResourceLibraryTreeActions() {
   );
 
   const activateNode = useCallback(
-    (id: string, type: "file" | "folder", name: string) => {
+    (id: string, type: "file" | "folder", name: string, mode: "preview" | "permanent") => {
       dispatch({ type: "select", id, nodeType: type });
       if (type === "folder") {
         dispatch({ type: "toggleFolder", id });
         return;
       }
-      void openResourceTab(id, name, (resourceId) => resources.readFile(resourceId));
+      void openResourceTab(id, name, (resourceId) => resources.readFile(resourceId), { mode });
     },
     [dispatch, openResourceTab, resources],
   );

@@ -132,7 +132,7 @@ export function TimelineSidebarSection() {
   }, [revision, target, timeline]);
 
   const openPreviewEntry = useCallback(
-    (entry: TimelineEntry) => {
+    (entry: TimelineEntry, mode: "preview" | "permanent") => {
       if (target === null) {
         return;
       }
@@ -158,19 +158,22 @@ export function TimelineSidebarSection() {
             return;
           }
 
-          openTimelinePreviewTab({
-            id: `timeline-preview:${entry.id}`,
-            kind: "timeline-preview",
-            label: `预览：${entry.label}`,
-            target,
-            entryId: entry.id,
-            entryMessage: entry.message,
-            entryTimestamp: entry.timestamp,
-            entryShortHash: entry.shortHash,
-            displayPath: entry.displayPath,
-            originalContent: historyContent.content,
-            currentContent: current,
-          });
+          openTimelinePreviewTab(
+            {
+              id: `timeline-preview:${entry.id}`,
+              kind: "timeline-preview",
+              label: `预览：${entry.label}`,
+              target,
+              entryId: entry.id,
+              entryMessage: entry.message,
+              entryTimestamp: entry.timestamp,
+              entryShortHash: entry.shortHash,
+              displayPath: entry.displayPath,
+              originalContent: historyContent.content,
+              currentContent: current,
+            },
+            { mode },
+          );
         })
         .catch((error) => {
           notificationApi.error(error instanceof Error ? error.message : "无法打开时间线预览", {
@@ -200,7 +203,8 @@ export function TimelineSidebarSection() {
               className={timelineRowClass}
               disabled={!entry.hasContent}
               type="button"
-              onClick={() => openPreviewEntry(entry)}
+              onClick={() => openPreviewEntry(entry, "preview")}
+              onDoubleClick={() => openPreviewEntry(entry, "permanent")}
             >
               <span
                 aria-hidden="true"

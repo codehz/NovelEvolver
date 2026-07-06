@@ -112,15 +112,23 @@ export function useWorktreeSearchState() {
   }, [result?.manuscript, result?.resources]);
 
   const openHit = useCallback(
-    (hit: WorktreeSearchHit) => {
+    (hit: WorktreeSearchHit, mode: "preview" | "permanent") => {
       if (hit.domain === "manuscript" && hit.entityKind === "chapter") {
-        void openManuscriptTab(hit.nodeId, hit.label, (chapterId) =>
-          manuscript.readChapter(chapterId),
+        void openManuscriptTab(
+          hit.nodeId,
+          hit.label,
+          (chapterId) => manuscript.readChapter(chapterId),
+          { mode },
         );
         return;
       }
       if (hit.domain === "resource" && hit.entityKind === "file") {
-        void openResourceTab(hit.nodeId, hit.label, (resourceId) => resources.readFile(resourceId));
+        void openResourceTab(
+          hit.nodeId,
+          hit.label,
+          (resourceId) => resources.readFile(resourceId),
+          { mode },
+        );
       }
     },
     [manuscript, openManuscriptTab, openResourceTab, resources],

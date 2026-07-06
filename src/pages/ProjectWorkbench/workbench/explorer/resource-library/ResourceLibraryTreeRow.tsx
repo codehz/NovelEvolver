@@ -20,7 +20,12 @@ type ResourceLibraryTreeRowProps = {
   resolveDropTarget: (
     input: TreeDropResolveInput<ResourceTreeNode["type"]>,
   ) => TreeResolvedDrop<string> | null;
-  onActivate: (id: string, type: ResourceTreeNode["type"], name: string) => void;
+  onActivate: (
+    id: string,
+    type: ResourceTreeNode["type"],
+    name: string,
+    mode: "preview" | "permanent",
+  ) => void;
   onCancelEditing: () => void;
   onSubmitEditing: (
     editing: NonNullable<ResourceRenderItem["editing"]>,
@@ -104,8 +109,14 @@ export function ResourceLibraryTreeRow({
               listRef,
               resolveDropTarget,
               onActivate: () => {
-                onActivate(rowId, item.type, item.name);
+                onActivate(rowId, item.type, item.name, "preview");
               },
+              onDoubleActivate:
+                item.type === "folder"
+                  ? () => {}
+                  : () => {
+                      onActivate(rowId, item.type, item.name, "permanent");
+                    },
               onDragStart: () => {
                 onDragStart(rowId, item.type);
               },

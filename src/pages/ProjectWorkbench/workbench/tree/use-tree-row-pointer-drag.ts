@@ -30,6 +30,7 @@ type UseTreeRowPointerDragOptions<RowType extends string, DropTarget> = {
   dragSource: { rowId: string; rowType: RowType } | null;
   listRef?: RefObject<HTMLElement | null>;
   onActivate: () => void;
+  onDoubleActivate: () => void;
   onDragStart: () => void;
   onDragMove: (target: TreeResolvedDrop<DropTarget> | null) => void;
   onDragEnd: () => void;
@@ -52,6 +53,7 @@ export function useTreeRowPointerDrag<RowType extends string, DropTarget>({
   dragSource,
   listRef,
   onActivate,
+  onDoubleActivate,
   onDragStart,
   onDragMove,
   onDragEnd,
@@ -129,9 +131,13 @@ export function useTreeRowPointerDrag<RowType extends string, DropTarget>({
         onDragEnd();
         return;
       }
+      if (event.detail >= 2) {
+        onDoubleActivate();
+        return;
+      }
       onActivate();
     },
-    [onActivate, onDragEnd],
+    [onActivate, onDoubleActivate, onDragEnd],
   );
 
   const onPointerCancel = useCallback<PointerEventHandler<HTMLButtonElement>>(

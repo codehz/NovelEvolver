@@ -68,7 +68,7 @@ function SearchFlatRowView({
   onToggleDomain: (id: string) => void;
   onToggleFolder: (key: string) => void;
   onToggleLeaf: (key: string) => void;
-  onOpen: (hit: WorktreeSearchHit) => void;
+  onOpen: (hit: WorktreeSearchHit, mode: "preview" | "permanent") => void;
 }) {
   if (row.kind === "domain") {
     return (
@@ -117,8 +117,9 @@ function SearchFlatRowView({
         paddingLeftPx={searchTreeMatchPaddingLeft(row.leafDepth)}
         className="cursor-pointer text-2xs text-ctp-subtext1 hover:bg-ctp-surface0/50"
         tabIndex={0}
-        onClick={() => onOpen(row.hit)}
-        onKeyDown={activateOnEnterSpace(() => onOpen(row.hit))}
+        onClick={() => onOpen(row.hit, "preview")}
+        onDoubleClick={() => onOpen(row.hit, "permanent")}
+        onKeyDown={activateOnEnterSpace(() => onOpen(row.hit, "preview"))}
       >
         <span className="icon-[codicon--list-flat] shrink-0 text-sm text-ctp-overlay0" />
         <span className="truncate font-mono text-ctp-text">
@@ -132,9 +133,9 @@ function SearchFlatRowView({
   const leaf = row.leaf;
   const primaryHit = leaf.hits[0];
 
-  const openPrimary = () => {
+  const openPrimary = (mode: "preview" | "permanent") => {
     if (primaryHit !== undefined) {
-      onOpen(primaryHit);
+      onOpen(primaryHit, mode);
     }
   };
 
@@ -144,7 +145,7 @@ function SearchFlatRowView({
       return;
     }
     if (primaryHit !== undefined) {
-      openPrimary();
+      openPrimary("preview");
     }
   };
 
@@ -157,6 +158,7 @@ function SearchFlatRowView({
       aria-expanded={row.showMatches ? row.expanded : undefined}
       tabIndex={0}
       onClick={onActivate}
+      onDoubleClick={() => openPrimary("permanent")}
       onKeyDown={activateOnEnterSpace(onActivate)}
     >
       {row.showMatches ? (
@@ -180,7 +182,7 @@ export function SearchResultTree({
 }: {
   roots: SearchResultDomainRoot[];
   highlightQuery: string;
-  onOpenHit: (hit: WorktreeSearchHit) => void;
+  onOpenHit: (hit: WorktreeSearchHit, mode: "preview" | "permanent") => void;
 }) {
   const highlightContainerRef = useRef<HTMLDivElement>(null);
 
