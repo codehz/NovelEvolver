@@ -13,34 +13,6 @@ export type BranchInfo = {
   commit: string | null;
 };
 
-export type ResourceNodeType = "file" | "folder";
-
-export type ResourceNode = {
-  name: string;
-  type: ResourceNodeType;
-};
-
-export type ResourceFileTreeNode = {
-  path: string;
-  name: string;
-  type: "file";
-};
-
-export type ResourceFolderTreeNode = {
-  path: string;
-  name: string;
-  type: "folder";
-  children: string[];
-};
-
-export type ResourceTreeNode = ResourceFileTreeNode | ResourceFolderTreeNode;
-
-export type ResourceTreeSnapshot = {
-  version: 1;
-  rootPath: "";
-  nodes: Record<string, ResourceTreeNode>;
-};
-
 export type ManuscriptNodeType = "folder" | "chapter";
 
 export type ManuscriptFolderNode = {
