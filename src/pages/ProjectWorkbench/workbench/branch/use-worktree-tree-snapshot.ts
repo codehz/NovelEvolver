@@ -1,8 +1,8 @@
 import { useEffect, useState } from "react";
 
 import { consumeRpcStream } from "#app/lib/app-rpc-react";
-import type { WorktreeChangesEvent } from "#shared/rpc/worktree-changes";
-import type { WorktreeTreeSnapshot } from "#shared/rpc/worktree-tree";
+import type { WorktreeChangesEvent } from "#shared/rpc/worktree-changes-rpc";
+import type { WorktreeTreeSnapshot } from "#shared/rpc/worktree-tree-rpc";
 
 import { applyCombinedWorktreeTreeFromChangesEvent } from "../tree/worktree-tree-state";
 import { useWorktreeChanges } from "./branch-scopes";

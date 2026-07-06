@@ -1,7 +1,7 @@
 import type { RefObject } from "react";
 
 import { cn } from "#app/lib/cn";
-import type { FileChangeStatus, ManuscriptTreeNode } from "#shared/rpc/worktree-tree";
+import type { FileChangeStatus, ManuscriptTreeNode } from "#shared/rpc/worktree-tree-rpc";
 
 import { TreeChangeStatusBadge, treeChangeStatusLabelClass } from "../../tree/tree-change-status";
 import type { TreeResolvedDrop } from "../../tree/tree-drag";

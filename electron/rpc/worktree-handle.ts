@@ -2,13 +2,11 @@ import { RpcTarget } from "capnweb";
 import type { Repository } from "nano-git/repository/core";
 import { readTreeSnapshot } from "nano-git/repository/tree/tree-diff";
 
-import type {
-  ManuscriptHandle,
-  ResourceLibraryHandle,
-  WorktreeHandle,
-} from "#shared/rpc/projects-rpc";
-import type { WorktreeChangesHandle } from "#shared/rpc/worktree-changes";
-import type { WorktreeSearchHandle } from "#shared/rpc/worktree-search";
+import type { ManuscriptHandle } from "#shared/rpc/manuscript-rpc";
+import type { WorktreeHandle } from "#shared/rpc/projects-rpc";
+import type { ResourceLibraryHandle } from "#shared/rpc/resource-library-rpc";
+import type { WorktreeChangesHandle } from "#shared/rpc/worktree-changes-rpc";
+import type { WorktreeSearchHandle } from "#shared/rpc/worktree-search-rpc";
 
 import type { WorktreeRepository } from "../db/repositories/worktree-repo";
 import { WorktreeSession } from "../worktree/session";

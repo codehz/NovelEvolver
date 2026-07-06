@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 
-import type { WorktreeChangesEvent } from "#shared/rpc/worktree-changes";
+import type { WorktreeChangesEvent } from "#shared/rpc/worktree-changes-rpc";
 
 import { useWorktreeChanges } from "./branch-scopes";
 

@@ -3,7 +3,7 @@ import type {
   ChangeDomain,
   ChangeKind,
   ChangesSnapshot,
-} from "#shared/rpc/worktree-changes";
+} from "#shared/rpc/worktree-changes-rpc";
 
 import { computeStats } from "./diff-utils";
 import { computeMinimalReorderedManuscriptIds } from "./manuscript-reorder";

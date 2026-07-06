@@ -6,7 +6,7 @@ import {
   treeRowDisclosureSpacerClass,
 } from "#app/pages/ProjectWorkbench/workbench/tree/tree-row-motion";
 import { TreeMotionRow } from "#app/pages/ProjectWorkbench/workbench/tree/TreeMotionRow";
-import type { Change } from "#shared/rpc/worktree-changes";
+import type { Change } from "#shared/rpc/worktree-changes-rpc";
 
 import { ScmDiffStats } from "./ScmDiffStats";
 

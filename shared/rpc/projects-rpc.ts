@@ -2,8 +2,10 @@ import type { RpcTarget } from "capnweb";
 
 import type { ProjectMetadata } from "#shared/project";
 
-import type { WorktreeChangesHandle } from "./worktree-changes";
-import type { WorktreeSearchHandle } from "./worktree-search";
+import type { ManuscriptHandle } from "./manuscript-rpc";
+import type { ResourceLibraryHandle } from "./resource-library-rpc";
+import type { WorktreeChangesHandle } from "./worktree-changes-rpc";
+import type { WorktreeSearchHandle } from "./worktree-search-rpc";
 
 /** Branch info for the HEAD of a project repository. */
 export type BranchInfo = {
@@ -12,78 +14,6 @@ export type BranchInfo = {
   /** Commit SHA of HEAD. null if the repository has no commits yet. */
   commit: string | null;
 };
-
-export type ManuscriptNodeType = "folder" | "chapter";
-
-export type ManuscriptFolderNode = {
-  id: string;
-  type: "folder";
-  title: string;
-  children: string[];
-};
-
-export type ManuscriptChapterNode = {
-  id: string;
-  type: "chapter";
-  title: string;
-};
-
-export type ManuscriptNode = ManuscriptFolderNode | ManuscriptChapterNode;
-
-export type ManuscriptOutline = {
-  version: 1;
-  rootId: "root";
-  nodes: Record<string, ManuscriptNode>;
-};
-
-export type WorktreeNodeIdResult = {
-  nodeId: string;
-};
-
-/**
- * File operations under the branch worktree's `resources/` directory.
- *
- * All `path` arguments are relative to that directory; `""` denotes the library root.
- * `getTree` and structure-changing operations return a full metadata snapshot keyed by path.
- * `readFile` / `writeFile` use UTF-8 text. `unlink` removes files or folders recursively.
- */
-export interface ResourceLibraryHandle extends RpcTarget {
-  /** Create an empty file under `parentId`. */
-  createFile(parentId: string, name: string): WorktreeNodeIdResult;
-
-  /** Create a folder under `parentId`. */
-  createFolder(parentId: string, name: string): WorktreeNodeIdResult;
-
-  /** Read a file as UTF-8 text. */
-  readFile(id: string): string;
-
-  /** Write a file as UTF-8 text. */
-  writeFile(id: string, content: string): void;
-
-  /** Rename a file or folder within its current parent. */
-  renameNode(id: string, name: string): void;
-
-  /** Remove a file or folder recursively. */
-  deleteNode(id: string): void;
-
-  moveNode(id: string, targetParentId: string): void;
-}
-
-/**
- * Ordered manuscript tree under the branch worktree's `manuscript/` directory.
- *
- * `outline.json` is the source of truth for structure, title, and ordering. Chapter
- * body files are addressed by stable node IDs and are not human-readable paths.
- */
-export interface ManuscriptHandle extends RpcTarget {
-  createFolder(parentId: string, title: string, index?: number): WorktreeNodeIdResult;
-  createChapter(parentId: string, title: string, index?: number): WorktreeNodeIdResult;
-  renameNode(id: string, title: string): void;
-  moveNode(id: string, targetParentId: string, index?: number): void;
-  deleteNode(id: string): void;
-  readChapter(id: string): string;
-  writeChapter(id: string, content: string): void;
-}
 
 /** Live RPC handle for a branch-scoped virtual worktree (SQLite-backed in app userData). */
 export interface WorktreeHandle extends RpcTarget {

@@ -5,7 +5,7 @@ import { readTreeSnapshot } from "nano-git/repository/tree/tree-diff";
 import type { VirtualWorktree } from "nano-git/worktree/core";
 
 import { resourceBaseName, resourceParentPath } from "#shared/resource-library-path";
-import type { ManuscriptNode, ManuscriptOutline } from "#shared/rpc/projects-rpc";
+import type { ManuscriptNode, ManuscriptOutline } from "#shared/rpc/manuscript-rpc";
 
 import {
   cloneOutline,

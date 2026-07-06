@@ -1,4 +1,4 @@
-import type { ScmCommitSummary } from "#shared/rpc/worktree-scm";
+import type { ScmCommitSummary } from "#shared/rpc/worktree-scm-rpc";
 
 import { formatCommitTime } from "./format-commit-time";
 import { ScmGraphTimelineGlyph } from "./ScmGraphTimelineGlyph";

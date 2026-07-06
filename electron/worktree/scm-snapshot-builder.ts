@@ -1,4 +1,4 @@
-import type { ScmChange, ScmSnapshot } from "#shared/rpc/worktree-scm";
+import type { ScmChange, ScmSnapshot } from "#shared/rpc/worktree-scm-rpc";
 
 import { computeStats } from "./diff-utils";
 import { computeMinimalReorderedManuscriptIds } from "./manuscript-reorder";

@@ -6,7 +6,7 @@ import type {
   ManuscriptTreeSnapshot,
   ResourceTreeDelta,
   ResourceTreeSnapshot,
-} from "./worktree-tree";
+} from "./worktree-tree-rpc";
 
 export type ChangeDomain = "manuscript" | "resource";
 export type ChangeKind = "create" | "delete" | "rename" | "move" | "reorder" | "content";

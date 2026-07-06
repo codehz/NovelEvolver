@@ -1,4 +1,4 @@
-import type { WorktreeSearchHit } from "#shared/rpc/worktree-search";
+import type { WorktreeSearchHit } from "#shared/rpc/worktree-search-rpc";
 
 import type { SearchPathTreeLeaf, SearchPathTreeNode } from "./build-search-path-tree";
 

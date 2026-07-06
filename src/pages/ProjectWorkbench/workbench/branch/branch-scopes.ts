@@ -2,13 +2,11 @@ import { createScope, molecule, use, useMolecule } from "bunshi/react";
 import type { RpcPromise } from "capnweb";
 import { atom, useSetAtom } from "jotai";
 
-import type {
-  ManuscriptHandle,
-  ResourceLibraryHandle,
-  WorktreeHandle,
-} from "#shared/rpc/projects-rpc";
-import type { WorktreeChangesHandle } from "#shared/rpc/worktree-changes";
-import type { WorktreeSearchHandle } from "#shared/rpc/worktree-search";
+import type { ManuscriptHandle } from "#shared/rpc/manuscript-rpc";
+import type { WorktreeHandle } from "#shared/rpc/projects-rpc";
+import type { ResourceLibraryHandle } from "#shared/rpc/resource-library-rpc";
+import type { WorktreeChangesHandle } from "#shared/rpc/worktree-changes-rpc";
+import type { WorktreeSearchHandle } from "#shared/rpc/worktree-search-rpc";
 
 import { projectMolecule } from "../state/molecules";
 

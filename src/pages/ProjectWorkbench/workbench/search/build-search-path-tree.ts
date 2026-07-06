@@ -1,4 +1,4 @@
-import type { WorktreeSearchHit } from "#shared/rpc/worktree-search";
+import type { WorktreeSearchHit } from "#shared/rpc/worktree-search-rpc";
 
 export type SearchPathTreeFolder = {
   type: "folder";

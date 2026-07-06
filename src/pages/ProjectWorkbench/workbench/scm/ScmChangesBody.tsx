@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 
-import type { ChangesSnapshot } from "#shared/rpc/worktree-changes";
+import type { ChangesSnapshot } from "#shared/rpc/worktree-changes-rpc";
 
 import { ScmChangesList } from "./ScmChangesList";
 import { ScmCommitForm } from "./ScmCommitForm";

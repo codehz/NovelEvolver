@@ -2,7 +2,7 @@ import type {
   ManuscriptTreeDelta,
   ManuscriptTreeNode,
   ManuscriptTreeSnapshot,
-} from "#shared/rpc/worktree-tree";
+} from "#shared/rpc/worktree-tree-rpc";
 
 import type { TreeResolvedDrop } from "../../../tree/tree-drag";
 import { applyWorktreeTreeDelta } from "../../../tree/worktree-tree-state";

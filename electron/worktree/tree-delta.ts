@@ -6,7 +6,7 @@ import type {
   ResourceTreeNode,
   ResourceTreeSnapshot,
   TreeChildrenPatch,
-} from "#shared/rpc/worktree-tree";
+} from "#shared/rpc/worktree-tree-rpc";
 
 function childIdsEqual(left: readonly string[], right: readonly string[]): boolean {
   if (left.length !== right.length) {

@@ -12,7 +12,7 @@ import {
   treeRowDisclosureSpacerClass,
 } from "#app/pages/ProjectWorkbench/workbench/tree/tree-row-motion";
 import { TreeMotionRow } from "#app/pages/ProjectWorkbench/workbench/tree/TreeMotionRow";
-import type { WorktreeSearchHit } from "#shared/rpc/worktree-search";
+import type { WorktreeSearchHit } from "#shared/rpc/worktree-search-rpc";
 
 import {
   collectSearchTreeFolderKeys,

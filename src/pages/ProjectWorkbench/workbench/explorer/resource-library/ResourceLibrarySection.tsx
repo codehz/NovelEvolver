@@ -3,7 +3,7 @@ import { useAtomValue, useSetAtom, useStore } from "jotai";
 import { useCallback, useMemo, useRef } from "react";
 
 import { SidebarHeaderActionButton } from "#app/components/workbench";
-import type { ResourceTreeNode } from "#shared/rpc/worktree-tree";
+import type { ResourceTreeNode } from "#shared/rpc/worktree-tree-rpc";
 
 import { queryTreeRowById } from "../../tree/tree-row-dom";
 import { TreePane } from "../../tree/TreePane";

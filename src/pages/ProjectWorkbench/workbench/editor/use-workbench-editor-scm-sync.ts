@@ -5,7 +5,8 @@ import type { RefObject } from "react";
 import { useEffect } from "react";
 
 import type { PlainTextEditorHandle } from "#app/components/PlainTextEditor";
-import type { ManuscriptHandle, ResourceLibraryHandle } from "#shared/rpc/projects-rpc";
+import type { ManuscriptHandle } from "#shared/rpc/manuscript-rpc";
+import type { ResourceLibraryHandle } from "#shared/rpc/resource-library-rpc";
 
 import { useManuscript, useResourceLibrary } from "../branch/branch-scopes";
 import { useWorktreeScmRevision } from "../branch/use-worktree-scm-revision";

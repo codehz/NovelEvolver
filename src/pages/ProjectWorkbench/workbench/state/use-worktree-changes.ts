@@ -1,7 +1,11 @@
 import { useCallback, useEffect, useState } from "react";
 
 import { consumeRpcStream } from "#app/lib/app-rpc-react";
-import type { Change, ChangesSnapshot, WorktreeChangesEvent } from "#shared/rpc/worktree-changes";
+import type {
+  Change,
+  ChangesSnapshot,
+  WorktreeChangesEvent,
+} from "#shared/rpc/worktree-changes-rpc";
 
 import { useWorktreeChanges } from "../branch/branch-scopes";
 import { SCM_COMMIT_AUTHOR } from "../scm/constants";

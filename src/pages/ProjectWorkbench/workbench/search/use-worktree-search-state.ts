@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 
 import { cn } from "#app/lib/cn";
-import type { WorktreeSearchHit, WorktreeSearchResult } from "#shared/rpc/worktree-search";
+import type { WorktreeSearchHit, WorktreeSearchResult } from "#shared/rpc/worktree-search-rpc";
 
 import { useManuscript, useResourceLibrary, useWorktreeSearch } from "../branch/branch-scopes";
 import { useWorkbenchEditorActions } from "../editor/use-workbench-editor-actions";

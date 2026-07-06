@@ -4,21 +4,21 @@ import type { Repository } from "nano-git/repository/core";
 import { nanoid } from "nanoid";
 
 import { normalizeResourceNameInput } from "#shared/resource-library-path";
-import type { WorktreeNodeIdResult } from "#shared/rpc/projects-rpc";
+import type { WorktreeNodeIdResult } from "#shared/rpc/manuscript-rpc";
 import type {
   ChangesSnapshot,
   WorktreeChangesEvent,
   WorktreeChangesTreeDelta,
-} from "#shared/rpc/worktree-changes";
-import type { ScmCommitSummary, ScmSnapshot } from "#shared/rpc/worktree-scm";
-import type { WorktreeSearchQuery, WorktreeSearchResult } from "#shared/rpc/worktree-search";
+} from "#shared/rpc/worktree-changes-rpc";
+import type { ScmCommitSummary, ScmSnapshot } from "#shared/rpc/worktree-scm-rpc";
+import type { WorktreeSearchQuery, WorktreeSearchResult } from "#shared/rpc/worktree-search-rpc";
 import type {
   FileChangeStatus,
   ManuscriptTreeNode,
   ManuscriptTreeSnapshot,
   ResourceTreeNode,
   ResourceTreeSnapshot,
-} from "#shared/rpc/worktree-tree";
+} from "#shared/rpc/worktree-tree-rpc";
 
 import type {
   ManuscriptNodeCommittedRow,
