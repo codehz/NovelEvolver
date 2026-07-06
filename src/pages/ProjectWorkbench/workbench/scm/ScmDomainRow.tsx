@@ -1,25 +1,9 @@
-import type { KeyboardEvent, ReactNode } from "react";
+import type { KeyboardEvent } from "react";
 
+import { DisclosureChevron } from "#app/components/DisclosureChevron";
 import { cn } from "#app/lib/cn";
-import {
-  getTreeRowPaddingLeft,
-  treeRowDisclosureChevronSlotClass,
-} from "#app/pages/ProjectWorkbench/workbench/tree/tree-row-motion";
+import { getTreeRowPaddingLeft } from "#app/pages/ProjectWorkbench/workbench/tree/tree-row-motion";
 import { TreeMotionRow } from "#app/pages/ProjectWorkbench/workbench/tree/TreeMotionRow";
-
-function disclosureChevron(expanded: boolean): ReactNode {
-  return (
-    <span
-      aria-hidden="true"
-      className={cn(
-        treeRowDisclosureChevronSlotClass,
-        "icon-[codicon--chevron-right]",
-        "motion-safe:transition-transform motion-safe:duration-220 motion-safe:ease-[cubic-bezier(0.22,1,0.36,1)]",
-        expanded && "rotate-90",
-      )}
-    />
-  );
-}
 
 function activateOnEnterSpace(onActivate: () => void) {
   return (event: KeyboardEvent) => {
@@ -65,7 +49,7 @@ export function ScmDomainRow({
       onClick={onToggle}
       onKeyDown={activateOnEnterSpace(onToggle)}
     >
-      {disclosureChevron(expanded)}
+      <DisclosureChevron expanded={expanded} />
       <span className={cn(iconClass, "shrink-0 text-sm")} />
       <span className="truncate">{title}</span>
       <span className={scmGroupCountClass}>{childCount}</span>

@@ -1,10 +1,7 @@
 import type { KeyboardEvent, ReactNode } from "react";
 
 import { cn } from "#app/lib/cn";
-import {
-  treeRowDisclosureChevronSlotClass,
-  treeRowDisclosureSpacerClass,
-} from "#app/pages/ProjectWorkbench/workbench/tree/tree-row-motion";
+import { treeRowDisclosureSpacerClass } from "#app/pages/ProjectWorkbench/workbench/tree/tree-row-motion";
 import { TreeMotionRow } from "#app/pages/ProjectWorkbench/workbench/tree/TreeMotionRow";
 import type { Change } from "#shared/rpc/worktree-changes-rpc";
 
@@ -40,20 +37,6 @@ const scmChangeRevertButtonClass = cn(
   "hidden size-5 shrink-0 cursor-pointer items-center justify-center text-ctp-overlay0",
   "group-focus-within:flex group-hover:flex hover:bg-ctp-surface1 hover:text-ctp-subtext1",
 );
-
-function disclosureChevron(expanded: boolean): ReactNode {
-  return (
-    <span
-      aria-hidden="true"
-      className={cn(
-        treeRowDisclosureChevronSlotClass,
-        "icon-[codicon--chevron-right]",
-        "motion-safe:transition-transform motion-safe:duration-220 motion-safe:ease-[cubic-bezier(0.22,1,0.36,1)]",
-        expanded && "rotate-90",
-      )}
-    />
-  );
-}
 
 export function ScmDiffItemRow({
   item,
@@ -129,4 +112,4 @@ export function ScmDiffItemRow({
   );
 }
 
-export { disclosureChevron, scmEntityIconClass };
+export { scmEntityIconClass };

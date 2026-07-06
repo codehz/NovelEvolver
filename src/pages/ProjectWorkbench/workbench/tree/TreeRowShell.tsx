@@ -1,11 +1,12 @@
 import { motion } from "motion/react";
 import type { ReactNode, RefObject } from "react";
 
+import { DisclosureChevron } from "#app/components/DisclosureChevron";
 import { cn } from "#app/lib/cn";
 
 import type { TreeResolvedDrop } from "./tree-drag";
 import {
-  treeRowDisclosureChevronSlotClass,
+  treeRowDisclosureSpacerClass,
   treeRowPaddingVariants,
   treeRowVariants,
 } from "./tree-row-motion";
@@ -88,17 +89,11 @@ export function TreeRowShell<RowType extends string, DropTarget>({
 
   const rowContent = (
     <>
-      <span aria-hidden="true" className={treeRowDisclosureChevronSlotClass}>
-        {rowType === "folder" ? (
-          <span
-            className={cn(
-              "icon-[codicon--chevron-right]",
-              "motion-safe:transition-transform motion-safe:duration-220 motion-safe:ease-[cubic-bezier(0.22,1,0.36,1)]",
-              expanded && "rotate-90",
-            )}
-          />
-        ) : null}
-      </span>
+      {rowType === "folder" ? (
+        <DisclosureChevron expanded={expanded} />
+      ) : (
+        <span aria-hidden="true" className={treeRowDisclosureSpacerClass} />
+      )}
       <span aria-hidden="true" className={cn(iconClassName, "shrink-0 text-base")} />
       {input ? (
         <TreeInlineInput

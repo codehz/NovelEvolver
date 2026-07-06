@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import type { KeyboardEvent, ReactNode } from "react";
+import type { KeyboardEvent } from "react";
 
+import { DisclosureChevron } from "#app/components/DisclosureChevron";
 import { cn } from "#app/lib/cn";
 import { FlatTreeList } from "#app/pages/ProjectWorkbench/workbench/tree/FlatTreeList";
 import {
@@ -8,7 +9,6 @@ import {
   TREE_ROW_CONTENT_GAP_PX,
   TREE_ROW_DISCLOSURE_WIDTH_PX,
   TREE_ROW_HEIGHT_PX,
-  treeRowDisclosureChevronSlotClass,
   treeRowDisclosureSpacerClass,
 } from "#app/pages/ProjectWorkbench/workbench/tree/tree-row-motion";
 import { TreeMotionRow } from "#app/pages/ProjectWorkbench/workbench/tree/TreeMotionRow";
@@ -37,20 +37,6 @@ function entityIconClass(entityKind: WorktreeSearchHit["entityKind"]): string {
   return cn(
     entityKind === "chapter" && "icon-[codicon--book] text-ctp-blue",
     entityKind === "file" && "icon-[codicon--file] text-ctp-overlay0",
-  );
-}
-
-function disclosureChevron(expanded: boolean): ReactNode {
-  return (
-    <span
-      aria-hidden="true"
-      className={cn(
-        treeRowDisclosureChevronSlotClass,
-        "icon-[codicon--chevron-right]",
-        "motion-safe:transition-transform motion-safe:duration-220 motion-safe:ease-[cubic-bezier(0.22,1,0.36,1)]",
-        expanded && "rotate-90",
-      )}
-    />
   );
 }
 
@@ -102,7 +88,7 @@ function SearchFlatRowView({
         onClick={() => onToggleDomain(row.key)}
         onKeyDown={activateOnEnterSpace(() => onToggleDomain(row.key))}
       >
-        {disclosureChevron(row.expanded)}
+        <DisclosureChevron expanded={row.expanded} />
         <span className={cn(row.iconClass, "shrink-0 text-sm")} />
         <span className="truncate">{row.title}</span>
       </TreeMotionRow>
@@ -123,7 +109,7 @@ function SearchFlatRowView({
         onClick={() => onToggleFolder(row.key)}
         onKeyDown={activateOnEnterSpace(() => onToggleFolder(row.key))}
       >
-        {disclosureChevron(row.expanded)}
+        <DisclosureChevron expanded={row.expanded} />
         <span className="icon-[codicon--folder] shrink-0 text-sm text-ctp-mauve" />
         <span className="truncate">{row.segment}</span>
         <span className={searchResultCountPillClass}>{row.childCount}</span>
@@ -186,7 +172,7 @@ function SearchFlatRowView({
       onKeyDown={activateOnEnterSpace(onActivate)}
     >
       {row.showMatches ? (
-        disclosureChevron(row.expanded)
+        <DisclosureChevron expanded={row.expanded} />
       ) : (
         <span className={treeRowDisclosureSpacerClass} />
       )}

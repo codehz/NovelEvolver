@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { KeyboardEvent } from "react";
 
+import { DisclosureChevron } from "#app/components/DisclosureChevron";
 import { cn } from "#app/lib/cn";
 import { FlatTreeList } from "#app/pages/ProjectWorkbench/workbench/tree/FlatTreeList";
 import {
@@ -19,7 +20,7 @@ import {
   type ScmChangeFlatRow,
   type ScmChangeTreeFolderNode,
 } from "./scm-change-tree-projector";
-import { ScmDiffItemRow, disclosureChevron, scmEntityIconClass } from "./ScmDiffItemRow";
+import { ScmDiffItemRow, scmEntityIconClass } from "./ScmDiffItemRow";
 import { ScmDomainRow } from "./ScmDomainRow";
 
 const manuscriptGroupIconClass = cn("icon-[codicon--symbol-method]");
@@ -98,7 +99,7 @@ function ScmFolderRow({
         label={row.node.segment}
         disclosure={
           hasChildren ? (
-            disclosureChevron(row.expanded)
+            <DisclosureChevron expanded={row.expanded} />
           ) : (
             <span className={treeRowDisclosureSpacerClass} />
           )
@@ -127,7 +128,7 @@ function ScmFolderRow({
       onKeyDown={hasChildren ? activateOnEnterSpace(toggle) : undefined}
     >
       {hasChildren ? (
-        disclosureChevron(row.expanded)
+        <DisclosureChevron expanded={row.expanded} />
       ) : (
         <span className={treeRowDisclosureSpacerClass} />
       )}
