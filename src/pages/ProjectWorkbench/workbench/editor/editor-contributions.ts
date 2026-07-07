@@ -1,8 +1,9 @@
 import type { RpcPromise } from "capnweb";
 
+import { cn } from "#app/lib/cn";
 import type { ManuscriptHandle } from "#shared/rpc/manuscript-rpc";
 import type { ResourceLibraryHandle } from "#shared/rpc/resource-library-rpc";
-import type { WorktreeTimelineHandle } from "#shared/rpc/worktree-timeline-rpc";
+import type { TimelineTarget, WorktreeTimelineHandle } from "#shared/rpc/worktree-timeline-rpc";
 import type { WorktreeTreeSnapshot } from "#shared/rpc/worktree-tree-rpc";
 
 import type {
@@ -10,6 +11,7 @@ import type {
   WorkbenchEditorTab,
   WorkbenchEditorTarget,
 } from "../state/types";
+import { contentFileLeafIconClass, contentTreeIconLayoutClass } from "../tree/content-tree-icons";
 
 export type ResolvedWorkbenchEditorTarget = {
   tab: WorkbenchEditorTab;
@@ -26,10 +28,16 @@ export type WorkbenchEditorTargetContributionContext = {
 type WorkbenchEditorTargetContribution = {
   targetKind: WorkbenchEditorTarget["kind"];
   tabKind: WorkbenchEditorTab["kind"];
+  iconClass: string;
   label: (target: WorkbenchEditorTarget) => string;
   notificationSource: string;
   getTargetKey: (target: WorkbenchEditorTarget) => string;
   getTabTargetKey: (tab: WorkbenchEditorTab) => string;
+  getTimelineTarget: (tab: WorkbenchEditorTab) => TimelineTarget | null;
+  syncTabWithTree: (
+    tab: WorkbenchEditorTab,
+    snapshot: WorktreeTreeSnapshot,
+  ) => WorkbenchEditorTab | null;
   resolveTarget: (
     target: WorkbenchEditorTarget,
     context: WorkbenchEditorTargetContributionContext,
@@ -39,12 +47,29 @@ type WorkbenchEditorTargetContribution = {
 const resourceEditorContribution: WorkbenchEditorTargetContribution = {
   targetKind: "resource",
   tabKind: "resource",
+  iconClass: cn(contentFileLeafIconClass("file"), "mr-2"),
   label: () => "资源文件",
   notificationSource: "资源库",
   getTargetKey: (target) =>
     `resource:${(target as Extract<WorkbenchEditorTarget, { kind: "resource" }>).resourceId}`,
   getTabTargetKey: (tab) =>
     `resource:${(tab as Extract<WorkbenchEditorTab, { kind: "resource" }>).resourceId}`,
+  getTimelineTarget: (tab) => ({
+    domain: "resource",
+    entityId: (tab as Extract<WorkbenchEditorTab, { kind: "resource" }>).resourceId,
+  }),
+  syncTabWithTree: (tab, snapshot) => {
+    const resourceTab = tab as Extract<WorkbenchEditorTab, { kind: "resource" }>;
+    const node = snapshot.resources.nodes[resourceTab.resourceId];
+    if (node?.type !== "file") {
+      return null;
+    }
+
+    return {
+      ...resourceTab,
+      label: node.name,
+    };
+  },
   resolveTarget: async (target, context) => {
     const resourceTarget = target as Extract<WorkbenchEditorTarget, { kind: "resource" }>;
     const node = context.snapshot?.resources.nodes[resourceTarget.resourceId];
@@ -72,12 +97,29 @@ const resourceEditorContribution: WorkbenchEditorTargetContribution = {
 const manuscriptEditorContribution: WorkbenchEditorTargetContribution = {
   targetKind: "manuscript",
   tabKind: "manuscript",
+  iconClass: cn(contentFileLeafIconClass("chapter"), "mr-2"),
   label: () => "章节",
   notificationSource: "正文",
   getTargetKey: (target) =>
     `manuscript:${(target as Extract<WorkbenchEditorTarget, { kind: "manuscript" }>).chapterId}`,
   getTabTargetKey: (tab) =>
     `manuscript:${(tab as Extract<WorkbenchEditorTab, { kind: "manuscript" }>).chapterId}`,
+  getTimelineTarget: (tab) => ({
+    domain: "manuscript",
+    entityId: (tab as Extract<WorkbenchEditorTab, { kind: "manuscript" }>).chapterId,
+  }),
+  syncTabWithTree: (tab, snapshot) => {
+    const manuscriptTab = tab as Extract<WorkbenchEditorTab, { kind: "manuscript" }>;
+    const node = snapshot.manuscript.nodes[manuscriptTab.chapterId];
+    if (node?.type !== "chapter") {
+      return null;
+    }
+
+    return {
+      ...manuscriptTab,
+      label: node.title,
+    };
+  },
   resolveTarget: async (target, context) => {
     const manuscriptTarget = target as Extract<WorkbenchEditorTarget, { kind: "manuscript" }>;
     const node = context.snapshot?.manuscript.nodes[manuscriptTarget.chapterId];
@@ -107,6 +149,7 @@ const manuscriptEditorContribution: WorkbenchEditorTargetContribution = {
 const timelineComparisonEditorContribution: WorkbenchEditorTargetContribution = {
   targetKind: "timeline-entry",
   tabKind: "timeline-comparison",
+  iconClass: cn("icon-[codicon--diff]", "mr-2 text-ctp-green", contentTreeIconLayoutClass),
   label: (target) =>
     `预览：${(target as Extract<WorkbenchEditorTarget, { kind: "timeline-entry" }>).label}`,
   notificationSource: "时间线",
@@ -114,6 +157,9 @@ const timelineComparisonEditorContribution: WorkbenchEditorTargetContribution = 
     `timeline-entry:${(target as Extract<WorkbenchEditorTarget, { kind: "timeline-entry" }>).entryId}`,
   getTabTargetKey: (tab) =>
     `timeline-entry:${(tab as Extract<WorkbenchEditorTab, { kind: "timeline-comparison" }>).entryId}`,
+  getTimelineTarget: (tab) =>
+    (tab as Extract<WorkbenchEditorTab, { kind: "timeline-comparison" }>).target,
+  syncTabWithTree: (tab) => tab,
   resolveTarget: async (target, context) => {
     const timelineTarget = target as Extract<WorkbenchEditorTarget, { kind: "timeline-entry" }>;
     const currentContent = (
@@ -195,8 +241,25 @@ export function getWorkbenchEditorTargetKey(target: WorkbenchEditorTarget): stri
   return getWorkbenchEditorTargetContribution(target).getTargetKey(target);
 }
 
+export function getWorkbenchEditorTabIconClass(tab: WorkbenchEditorTab): string {
+  return getWorkbenchEditorTabContribution(tab).iconClass;
+}
+
 export function getWorkbenchEditorTabTargetKey(tab: WorkbenchEditorTab): string {
   return getWorkbenchEditorTabContribution(tab).getTabTargetKey(tab);
+}
+
+export function getWorkbenchEditorTabTimelineTarget(
+  tab: WorkbenchEditorTab,
+): TimelineTarget | null {
+  return getWorkbenchEditorTabContribution(tab).getTimelineTarget(tab);
+}
+
+export function syncWorkbenchEditorTabWithTree(
+  tab: WorkbenchEditorTab,
+  snapshot: WorktreeTreeSnapshot,
+): WorkbenchEditorTab | null {
+  return getWorkbenchEditorTabContribution(tab).syncTabWithTree(tab, snapshot);
 }
 
 export function resolveWorkbenchEditorTarget(

@@ -8,6 +8,7 @@ import type { TimelineEntry, TimelineTarget } from "#shared/rpc/worktree-timelin
 
 import { useWorktreeTimeline } from "../branch/branch-scopes";
 import { useWorktreeScmRevision } from "../branch/use-worktree-scm-revision";
+import { getWorkbenchEditorTabTimelineTarget } from "../editor/editor-contributions";
 import { useWorkbenchEditorActions } from "../editor/use-workbench-editor-actions";
 import { workbenchEditorMolecule } from "../state/molecules";
 
@@ -83,19 +84,7 @@ export function TimelineSidebarSection() {
     if (activeTab === undefined) {
       return null;
     }
-    if (activeTab.kind === "manuscript") {
-      return {
-        domain: "manuscript",
-        entityId: activeTab.chapterId,
-      };
-    }
-    if (activeTab.kind === "timeline-comparison") {
-      return activeTab.target;
-    }
-    return {
-      domain: "resource",
-      entityId: activeTab.resourceId,
-    };
+    return getWorkbenchEditorTabTimelineTarget(activeTab);
   }, [activeTab]);
 
   useEffect(() => {

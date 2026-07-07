@@ -5,7 +5,7 @@ import { useAtomValue } from "jotai";
 import { TabBar } from "#app/components/TabBar";
 
 import { workbenchEditorMolecule } from "../state/molecules";
-import { contentEditorTabIconClass } from "../tree/content-tree-icons";
+import { getWorkbenchEditorTabIconClass } from "./editor-contributions";
 import { EditorBreadcrumb } from "./EditorBreadcrumb";
 import { EditorPaneDeck } from "./EditorPaneDeck";
 import { useWorkbenchEditorActions } from "./use-workbench-editor-actions";
@@ -34,7 +34,7 @@ export function EditorArea() {
         onClose={closeTab}
         onPin={pinTab}
         renderIcon={(tab) => (
-          <span aria-hidden="true" className={contentEditorTabIconClass(tab.kind)} />
+          <span aria-hidden="true" className={getWorkbenchEditorTabIconClass(tab)} />
         )}
       />
 
