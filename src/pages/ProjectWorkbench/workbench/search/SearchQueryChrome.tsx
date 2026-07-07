@@ -1,3 +1,5 @@
+import { useRef } from "react";
+
 import { SlotText } from "#app/components/SlotText";
 import { cn } from "#app/lib/cn";
 
@@ -20,6 +22,12 @@ export function SearchQueryChrome({
   statsLine: string | null;
   onQueryChange: (value: string) => void;
 }) {
+  const lastStatsLineRef = useRef<string>("请输入搜索内容");
+  if (statsLine !== null) {
+    lastStatsLineRef.current = statsLine;
+  }
+  const displayStatsLine = statsLine ?? lastStatsLineRef.current;
+
   return (
     <div className="shrink-0 pt-1.5 pr-3 pl-5">
       <label className="sr-only" htmlFor="workbench-search-input">
@@ -51,7 +59,7 @@ export function SearchQueryChrome({
         ) : null}
       </div>
       <p className="mt-1.5 px-0.5 text-[10px] leading-snug text-ctp-subtext0">
-        <SlotText text={statsLine ?? "请输入搜索内容"} options={{ skipUnchanged: true }} />
+        <SlotText text={displayStatsLine} options={{ skipUnchanged: true, interrupt: false }} />
       </p>
     </div>
   );

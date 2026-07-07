@@ -87,13 +87,13 @@ export function useWorktreeSearchState() {
 
   const statsLine = useMemo(() => {
     if (debouncedQuery === "") {
-      return null;
+      return "请输入搜索内容";
     }
     if (status === "loading") {
-      return "搜索中…";
+      return null;
     }
     if (status === "error") {
-      return null;
+      return "搜索失败";
     }
     const allHits = [...(result?.manuscript ?? []), ...(result?.resources ?? [])];
     return formatSearchStatsLine(summarizeSearchHits(allHits));
