@@ -2,6 +2,7 @@ import { createScope, molecule, use, useMolecule } from "bunshi/react";
 import type { RpcPromise } from "capnweb";
 import { atom, useSetAtom } from "jotai";
 
+import { wrapDisposable } from "#app/lib/rpc-utils";
 import type { BranchWorkspace } from "#shared/rpc/branch-workspace-rpc";
 import type { HistoryHandle } from "#shared/rpc/history-rpc";
 import type { ManuscriptHandle } from "#shared/rpc/manuscript-rpc";
@@ -32,7 +33,7 @@ const activeBranchNameMolecule = molecule(() => use(branchNameScope));
 export const branchWorkspaceMolecule = molecule(() => {
   const project = use(projectMolecule);
   const branchName = use(branchNameScope);
-  return project.openBranchWorkspace(branchName);
+  return wrapDisposable(project.openBranchWorkspace(branchName));
 });
 
 /** 当前分支资源库根（`openBranchWorkspace(...).resources` 级联，不在此 await）。 */

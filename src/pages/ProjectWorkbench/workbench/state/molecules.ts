@@ -5,6 +5,7 @@ import { atom } from "jotai";
 
 import { workspaceService } from "#app/lib/app-rpc";
 import { createOneShotRequestChannel } from "#app/lib/one-shot-request";
+import { wrapDisposable } from "#app/lib/rpc-utils";
 import { ProjectSession } from "#shared/rpc/project-session-rpc";
 
 import { emptyWorkbenchEditorState } from "../editor/editor-tab-manager";
@@ -19,7 +20,7 @@ export const projectIdScope = createScope<number>(-1);
 export const projectMolecule = molecule(() => {
   const id = use(projectIdScope);
 
-  return workspaceService.openProject(id);
+  return wrapDisposable(workspaceService.openProject(id));
 });
 
 export function useProjectContext(): RpcPromise<ProjectSession> {
