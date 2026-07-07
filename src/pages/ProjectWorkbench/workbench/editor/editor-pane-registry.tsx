@@ -97,6 +97,7 @@ function ComparisonEditorPane({
 }: WorkbenchEditorPaneProps & {
   tab: Extract<WorkbenchEditorTab, { kind: "comparison" }>;
 }) {
+  const noScmTextDiffErrorMessage = "此节点当前没有可预览的文本差异。";
   const changes = useWorktreeChanges();
   const timeline = useWorktreeTimeline();
   const { editorStateAtom } = useMolecule(workbenchEditorMolecule);
@@ -118,23 +119,35 @@ function ComparisonEditorPane({
           );
           const next = await Promise.resolve(
             changes.readChangeTextComparisonByTarget(tab.target.sourceTarget),
-          );
+          ).catch((error: unknown) => {
+            if (error instanceof Error && error.message === noScmTextDiffErrorMessage) {
+              return null;
+            }
+            throw error;
+          });
           setEditorState((state) => ({
             ...state,
             tabs: state.tabs.map((candidate) =>
               candidate.id === tab.id
                 ? {
                     ...tab,
-                    target: {
-                      kind: "scm-change",
-                      sourceTarget: next.target,
-                      changeId: next.changeId,
-                      changeKind: next.kind,
-                    },
-                    label: `更改：${next.label}`,
-                    displayPath: next.displayPath,
-                    originalContent: next.originalContent,
-                    currentContent: next.currentContent,
+                    ...(next === null
+                      ? {
+                          originalContent: afterContent,
+                          currentContent: afterContent,
+                        }
+                      : {
+                          target: {
+                            kind: "scm-change" as const,
+                            sourceTarget: next.target,
+                            changeId: next.changeId,
+                            changeKind: next.kind,
+                          },
+                          label: `更改：${next.label}`,
+                          displayPath: next.displayPath,
+                          originalContent: next.originalContent,
+                          currentContent: next.currentContent,
+                        }),
                   }
                 : candidate,
             ),
@@ -154,7 +167,7 @@ function ComparisonEditorPane({
         throw error;
       }
     },
-    [changes, setEditorState, tab, timeline],
+    [changes, noScmTextDiffErrorMessage, setEditorState, tab, timeline],
   );
 
   return (
