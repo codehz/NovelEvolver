@@ -1,11 +1,8 @@
-import { createHash } from "node:crypto";
-
 import type { SHA1 } from "nano-git";
 import { walkLogEntries } from "nano-git/log";
 import type { Repository } from "nano-git/repository/core";
 import { nanoid } from "nanoid";
 
-import { normalizeResourceNameInput } from "#shared/resource-library-path";
 import type {
   CommitSummary,
   HistoryEntry,
@@ -35,30 +32,38 @@ import type {
   ManuscriptNodeCurrentRow,
   ResourceNodeCommittedRow,
   ResourceNodeCurrentRow,
-  WorktreeJournalEntityKind,
   WorktreeJournalEntryRecord,
-  WorktreeJournalOperationKind,
   WorktreeJournalSource,
   WorktreeRecord,
   WorktreeRepository,
 } from "../db/repositories/worktree-repo";
 import {
-  cloneOutline,
   clampChildIndex,
   createEmptyOutline,
   MANUSCRIPT_ROOT_ID,
   normalizeManuscriptTitle,
-  validateOutline,
 } from "../manuscript-outline";
 import { chapterBodyPath } from "../manuscript-path";
-import { assertValidResourceRelativePath, RESOURCES_DIR } from "../resource-library-path";
+import { RESOURCES_DIR } from "../resource-library-path";
 import { RpcStreamPublisher } from "../rpc/stream-publisher";
 import { executeWorktreeSearch } from "../search/worktree-search";
 import { refreshAllFolderChangeStatuses } from "./change-status";
 import { ChangeTracker } from "./change-tracker";
 import { computeStats, readTextFromTree, type ObjectDatabase } from "./diff-utils";
 import { buildJournalChangesSnapshot } from "./journal-pending-projector";
+import type {
+  JournalEntitySnapshot,
+  JournalOperationCapture,
+  JournalRevisionCapture,
+} from "./journal-types";
+import { journalHistoryEntryId, parseJournalHistoryEntryId, sha1Text } from "./journal-types";
 import { computeMinimalReorderedManuscriptIds } from "./manuscript-reorder";
+import {
+  parseResourceIndex,
+  RESOURCE_ROOT_ID,
+  resourceIndexFromTree,
+  resourceTreeFromIndex,
+} from "./resource-index";
 import type { ResourceSnapshotEntry, ResourceSnapshotState } from "./resource-snapshot-state";
 import {
   buildBaseManuscriptSnapshot,
@@ -67,499 +72,43 @@ import {
   type ManuscriptSnapshotState,
 } from "./snapshot-state";
 import {
+  cloneManuscriptSnapshotState,
+  cloneManuscriptTreeNode,
+  cloneManuscriptTreeSnapshot,
+  cloneResourceSnapshotState,
+  cloneResourceTreeNode,
+  cloneResourceTreeSnapshot,
+} from "./tree-clone";
+import {
   computeManuscriptTreeDelta,
   computeResourceTreeDelta,
   isEmptyManuscriptTreeDelta,
   isEmptyResourceTreeDelta,
 } from "./tree-delta";
+import {
+  buildManuscriptTreeFromCommittedRows,
+  buildManuscriptTreeFromCurrentRows,
+  buildResourceTreeFromCommittedRows,
+  buildResourceTreeFromCurrentRows,
+} from "./tree-from-rows";
+import {
+  buildResourceSnapshotFromTree,
+  clearChangeStatuses,
+  manuscriptTreeFromOutline,
+  manuscriptTreeToOutline,
+  normalizeResourceNodeName,
+  sortResourceChildrenByName,
+  sortedEntryValues,
+} from "./worktree-tree-bridge";
 
 const MANUSCRIPT_ID_SIZE = 10;
 const RESOURCE_ID_SIZE = 10;
-const RESOURCE_ROOT_ID = "root";
 const RESOURCES_INDEX_FILE = "index.json";
 const RESOURCES_FILES_DIR_NAME = "files";
 const RESOURCES_INDEX_PATH = `${RESOURCES_DIR}/${RESOURCES_INDEX_FILE}`;
 const RESOURCES_FILES_DIR = `${RESOURCES_DIR}/${RESOURCES_FILES_DIR_NAME}`;
 const AUTOSAVE_JOURNAL_MERGE_WINDOW_MS = 5 * 60 * 1000;
 const RESTORE_HUNK_JOURNAL_MERGE_WINDOW_MS = 5 * 60 * 1000;
-
-type ResourceIndexNode =
-  | {
-      id: string;
-      type: "folder";
-      name: string;
-      parentId: string | null;
-      children: string[];
-    }
-  | {
-      id: string;
-      type: "file";
-      name: string;
-      parentId: string | null;
-    };
-
-type ResourceIndex = {
-  version: 1;
-  rootId: typeof RESOURCE_ROOT_ID;
-  nodes: Record<string, ResourceIndexNode>;
-};
-
-type JournalOperationCapture = {
-  kind: WorktreeJournalOperationKind;
-  domain: "manuscript" | "resource";
-  entityId: string;
-  entityKind: WorktreeJournalEntityKind;
-  label: string;
-  displayPath: string;
-  previousLabel?: string | null;
-  previousPath?: string | null;
-  beforeContent?: string | null;
-  afterContent?: string | null;
-};
-
-type JournalEntitySnapshot = {
-  label: string;
-  displayPath: string;
-  content: string | null;
-};
-
-type JournalRevisionCapture = {
-  source: WorktreeJournalSource;
-  title: string;
-  commitHash?: string | null;
-  groupKey: string | null;
-  operations: JournalOperationCapture[];
-};
-
-function sha1Text(content: string): string {
-  return createHash("sha1").update(content).digest("hex");
-}
-
-function journalHistoryEntryId(entryId: string): string {
-  return `journal:${entryId}`;
-}
-
-function parseResourceIndex(content: string | null): ResourceIndex {
-  if (content === null) {
-    return {
-      version: 1,
-      rootId: RESOURCE_ROOT_ID,
-      nodes: {
-        [RESOURCE_ROOT_ID]: {
-          id: RESOURCE_ROOT_ID,
-          type: "folder",
-          name: "",
-          parentId: null,
-          children: [],
-        },
-      },
-    };
-  }
-
-  const value: unknown = JSON.parse(content);
-  if (
-    typeof value !== "object" ||
-    value === null ||
-    (value as { version?: unknown }).version !== 1 ||
-    (value as { rootId?: unknown }).rootId !== RESOURCE_ROOT_ID ||
-    typeof (value as { nodes?: unknown }).nodes !== "object" ||
-    (value as { nodes?: unknown }).nodes === null
-  ) {
-    throw new Error("Invalid resource index.");
-  }
-
-  const nodes = (value as ResourceIndex).nodes;
-  const root = nodes[RESOURCE_ROOT_ID];
-  if (root?.type !== "folder" || root.parentId !== null) {
-    throw new Error("Invalid resource index root.");
-  }
-  return value as ResourceIndex;
-}
-
-function resourceIndexFromTree(tree: ResourceTreeSnapshot): ResourceIndex {
-  const nodes: Record<string, ResourceIndexNode> = {};
-  for (const [id, node] of Object.entries(tree.nodes)) {
-    nodes[id] =
-      node.type === "folder"
-        ? {
-            id,
-            type: "folder",
-            name: node.name,
-            parentId: node.parentId,
-            children: [...node.childIds],
-          }
-        : {
-            id,
-            type: "file",
-            name: node.name,
-            parentId: node.parentId,
-          };
-  }
-  return {
-    version: 1,
-    rootId: RESOURCE_ROOT_ID,
-    nodes,
-  };
-}
-
-function resourceTreeFromIndex(index: ResourceIndex): ResourceTreeSnapshot {
-  const nodes: Record<string, ResourceTreeNode> = {};
-  for (const [id, node] of Object.entries(index.nodes)) {
-    nodes[id] = {
-      id,
-      type: node.type,
-      name: node.name,
-      parentId: node.parentId,
-      childIds: node.type === "folder" ? [...node.children] : [],
-    };
-  }
-  const root = nodes[RESOURCE_ROOT_ID];
-  if (root === undefined || root.type !== "folder" || root.parentId !== null) {
-    throw new Error("Resource root is missing.");
-  }
-  return {
-    rootId: RESOURCE_ROOT_ID,
-    nodes,
-  };
-}
-
-function cloneManuscriptTreeNode(node: ManuscriptTreeNode): ManuscriptTreeNode {
-  return {
-    ...node,
-    childIds: [...node.childIds],
-  };
-}
-
-function cloneResourceTreeNode(node: ResourceTreeNode): ResourceTreeNode {
-  return {
-    ...node,
-    childIds: [...node.childIds],
-  };
-}
-
-function cloneManuscriptTreeSnapshot(snapshot: ManuscriptTreeSnapshot): ManuscriptTreeSnapshot {
-  return {
-    rootId: snapshot.rootId,
-    nodes: Object.fromEntries(
-      Object.entries(snapshot.nodes).map(([id, node]) => [id, cloneManuscriptTreeNode(node)]),
-    ),
-  };
-}
-
-function cloneResourceTreeSnapshot(snapshot: ResourceTreeSnapshot): ResourceTreeSnapshot {
-  return {
-    rootId: snapshot.rootId,
-    nodes: Object.fromEntries(
-      Object.entries(snapshot.nodes).map(([id, node]) => [id, cloneResourceTreeNode(node)]),
-    ),
-  };
-}
-
-function cloneManuscriptSnapshotState(state: ManuscriptSnapshotState): ManuscriptSnapshotState {
-  return {
-    outline: cloneOutline(state.outline),
-    entries: new Map(
-      [...state.entries.entries()].map(([id, entry]) => [
-        id,
-        {
-          ...entry,
-          childIds: [...entry.childIds],
-        },
-      ]),
-    ),
-  };
-}
-
-function cloneResourceSnapshotState(state: ResourceSnapshotState): ResourceSnapshotState {
-  return {
-    entries: new Map(
-      [...state.entries.entries()].map(([id, entry]) => [
-        id,
-        {
-          ...entry,
-        },
-      ]),
-    ),
-  };
-}
-
-function normalizeResourceNodeName(name: string): string {
-  const normalized = normalizeResourceNameInput(name);
-  if (normalized === "") {
-    throw new Error("Name must not be empty.");
-  }
-  assertValidResourceRelativePath(normalized);
-  if (normalized.includes("/")) {
-    throw new Error("Name must not contain '/'.");
-  }
-  return normalized;
-}
-
-function manuscriptTreeFromOutline(
-  outline: ReturnType<typeof createEmptyOutline>,
-): ManuscriptTreeSnapshot;
-function manuscriptTreeFromOutline(
-  outline: ManuscriptSnapshotState["outline"],
-): ManuscriptTreeSnapshot;
-function manuscriptTreeFromOutline(
-  outline: ManuscriptSnapshotState["outline"],
-): ManuscriptTreeSnapshot {
-  const nodes: Record<string, ManuscriptTreeNode> = {};
-
-  const visit = (id: string, parentId: string | null): void => {
-    const node = outline.nodes[id];
-    if (node === undefined) {
-      throw new Error(`Missing manuscript node: ${id}`);
-    }
-    nodes[id] = {
-      id,
-      type: node.type,
-      title: node.title,
-      parentId,
-      childIds: node.type === "folder" ? [...node.children] : [],
-    };
-    if (node.type === "folder") {
-      for (const childId of node.children) {
-        visit(childId, id);
-      }
-    }
-  };
-
-  visit(outline.rootId, null);
-  return {
-    rootId: outline.rootId,
-    nodes,
-  };
-}
-
-function manuscriptTreeToOutline(snapshot: ManuscriptTreeSnapshot) {
-  const nodes = Object.fromEntries(
-    Object.entries(snapshot.nodes).map(([id, node]) => [
-      id,
-      node.type === "folder"
-        ? {
-            id,
-            type: "folder" as const,
-            title: node.title,
-            children: [...node.childIds],
-          }
-        : {
-            id,
-            type: "chapter" as const,
-            title: node.title,
-          },
-    ]),
-  );
-  return validateOutline({
-    version: 1,
-    rootId: snapshot.rootId,
-    nodes,
-  });
-}
-
-function sortResourceChildrenByName(tree: ResourceTreeSnapshot, folderId: string): void {
-  const folder = tree.nodes[folderId];
-  if (folder === undefined || folder.type !== "folder") {
-    return;
-  }
-  folder.childIds.sort((leftId, rightId) => {
-    const left = tree.nodes[leftId];
-    const right = tree.nodes[rightId];
-    if (left === undefined || right === undefined) {
-      return leftId.localeCompare(rightId);
-    }
-    if (left.type === right.type) {
-      return left.name.localeCompare(right.name);
-    }
-    return left.type === "folder" ? -1 : 1;
-  });
-}
-
-function clearChangeStatuses<TNode extends { changeStatus?: FileChangeStatus }>(
-  nodes: Record<string, TNode>,
-): void {
-  for (const node of Object.values(nodes)) {
-    delete node.changeStatus;
-  }
-}
-
-function buildResourceSnapshotFromTree(
-  tree: ResourceTreeSnapshot,
-  readContent: (id: string) => string,
-): {
-  snapshot: ResourceSnapshotState;
-  pathById: Map<string, string>;
-  idByPath: Map<string, string>;
-} {
-  const entries = new Map<string, ResourceSnapshotEntry>();
-  const pathById = new Map<string, string>([[tree.rootId, ""]]);
-  const idByPath = new Map<string, string>([["", tree.rootId]]);
-  let order = 0;
-
-  const visit = (parentId: string, parentPath: string, depth: number): void => {
-    const parent = tree.nodes[parentId];
-    if (parent?.type !== "folder") {
-      return;
-    }
-    parent.childIds.forEach((childId, index) => {
-      const child = tree.nodes[childId];
-      if (child === undefined) {
-        throw new Error(`Missing resource node: ${childId}`);
-      }
-      const displayPath = parentPath === "" ? child.name : `${parentPath}/${child.name}`;
-      pathById.set(child.id, displayPath);
-      idByPath.set(displayPath, child.id);
-      entries.set(child.id, {
-        id: child.id,
-        type: child.type,
-        name: child.name,
-        parentId,
-        index,
-        depth,
-        displayPath,
-        order,
-        content: child.type === "file" ? readContent(child.id) : "",
-      });
-      order += 1;
-      if (child.type === "folder") {
-        visit(child.id, displayPath, depth + 1);
-      }
-    });
-  };
-
-  visit(tree.rootId, "", 0);
-  return {
-    snapshot: { entries },
-    pathById,
-    idByPath,
-  };
-}
-
-function buildResourceTreeFromCurrentRows(
-  rows: readonly ResourceNodeCurrentRow[],
-): ResourceTreeSnapshot {
-  const nodes: Record<string, ResourceTreeNode> = {};
-  const childRowsByParentId = new Map<string, ResourceNodeCurrentRow[]>();
-
-  for (const row of rows) {
-    nodes[row.id] = {
-      id: row.id,
-      type: row.type,
-      name: row.name,
-      parentId: row.parentId,
-      childIds: [],
-    };
-    if (row.parentId !== null) {
-      const siblings = childRowsByParentId.get(row.parentId) ?? [];
-      siblings.push(row);
-      childRowsByParentId.set(row.parentId, siblings);
-    }
-  }
-
-  for (const [parentId, childRows] of childRowsByParentId.entries()) {
-    const parent = nodes[parentId];
-    if (parent === undefined || parent.type !== "folder") {
-      throw new Error(`Invalid resource parent: ${parentId}`);
-    }
-    childRows
-      .sort((left, right) => {
-        if (left.type !== right.type) {
-          return left.type === "folder" ? -1 : 1;
-        }
-        return left.name.localeCompare(right.name) || left.id.localeCompare(right.id);
-      })
-      .forEach((row) => parent.childIds.push(row.id));
-  }
-
-  const root = nodes[RESOURCE_ROOT_ID];
-  if (root === undefined || root.type !== "folder" || root.parentId !== null) {
-    throw new Error("Resource root is missing.");
-  }
-
-  return {
-    rootId: RESOURCE_ROOT_ID,
-    nodes,
-  };
-}
-
-function buildResourceTreeFromCommittedRows(
-  rows: readonly ResourceNodeCommittedRow[],
-): ResourceTreeSnapshot {
-  return buildResourceTreeFromCurrentRows(
-    rows.map((row) => ({
-      projectId: row.projectId,
-      branchName: row.branchName,
-      id: row.id,
-      parentId: row.parentId,
-      type: row.type,
-      name: row.name,
-      content: null,
-    })),
-  );
-}
-
-function buildManuscriptTreeFromCurrentRows(
-  rows: readonly ManuscriptNodeCurrentRow[],
-): ManuscriptTreeSnapshot {
-  const nodes: Record<string, ManuscriptTreeNode> = {};
-  const childRowsByParentId = new Map<string, ManuscriptNodeCurrentRow[]>();
-
-  for (const row of rows) {
-    nodes[row.id] = {
-      id: row.id,
-      type: row.type,
-      title: row.title,
-      parentId: row.parentId,
-      childIds: [],
-    };
-    if (row.parentId !== null) {
-      const siblings = childRowsByParentId.get(row.parentId) ?? [];
-      siblings.push(row);
-      childRowsByParentId.set(row.parentId, siblings);
-    }
-  }
-
-  for (const [parentId, childRows] of childRowsByParentId.entries()) {
-    const parent = nodes[parentId];
-    if (parent === undefined || parent.type !== "folder") {
-      throw new Error(`Invalid manuscript parent: ${parentId}`);
-    }
-    childRows
-      .sort((left, right) => left.sortIndex - right.sortIndex || left.id.localeCompare(right.id))
-      .forEach((row) => parent.childIds.push(row.id));
-  }
-
-  const root = nodes[MANUSCRIPT_ROOT_ID];
-  if (root === undefined || root.type !== "folder" || root.parentId !== null) {
-    throw new Error("Manuscript root is missing.");
-  }
-
-  return {
-    rootId: MANUSCRIPT_ROOT_ID,
-    nodes,
-  };
-}
-
-function buildManuscriptTreeFromCommittedRows(
-  rows: readonly ManuscriptNodeCommittedRow[],
-): ManuscriptTreeSnapshot {
-  return buildManuscriptTreeFromCurrentRows(
-    rows.map((row) => ({
-      projectId: row.projectId,
-      branchName: row.branchName,
-      id: row.id,
-      parentId: row.parentId,
-      type: row.type,
-      title: row.title,
-      sortIndex: row.sortIndex,
-      content: null,
-    })),
-  );
-}
-
-function sortedEntryValues<T extends { order: number }>(entries: Map<string, T>): T[] {
-  return [...entries.values()].sort((left, right) => left.order - right.order);
-}
 
 export class WorktreeSession {
   readonly #store: WorktreeRepository;
@@ -1183,7 +732,7 @@ export class WorktreeSession {
   }
 
   readHistoryEntryContent(entryId: string): HistoryEntryContent {
-    const journalEntryId = this.#parseJournalHistoryEntryId(entryId);
+    const journalEntryId = parseJournalHistoryEntryId(entryId);
     if (journalEntryId !== null) {
       const entry = this.#store.getJournalHistoryEntry(
         this.#projectId,
@@ -1207,7 +756,7 @@ export class WorktreeSession {
     expectedContent: string,
     nextContent: string,
   ): void {
-    const journalEntryId = this.#parseJournalHistoryEntryId(entryId);
+    const journalEntryId = parseJournalHistoryEntryId(entryId);
     if (journalEntryId === null) {
       throw new Error(`Unknown history entry: ${entryId}`);
     }
@@ -2474,14 +2023,6 @@ export class WorktreeSession {
     return resourceTreeFromIndex(
       parseResourceIndex(readTextFromTree(this.#objects, treeHash, RESOURCES_INDEX_PATH)),
     );
-  }
-
-  #parseJournalHistoryEntryId(entryId: string): string | null {
-    const match = /^journal:([^:]+)$/.exec(entryId);
-    if (match === null) {
-      return null;
-    }
-    return match[1]!;
   }
 
   #currentChangesOnlySnapshot(): ChangesSnapshot {
