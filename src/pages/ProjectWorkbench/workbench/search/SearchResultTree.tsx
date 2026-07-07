@@ -177,19 +177,13 @@ function SearchFlatRowView({
 
 export function SearchResultTree({
   status,
-  idleContent,
-  loadingContent,
   errorContent,
-  emptyContent,
   roots,
   highlightQuery,
   onOpenHit,
 }: {
   status: TreeBodyStatus;
-  idleContent?: ReactNode;
-  loadingContent?: ReactNode;
   errorContent?: ReactNode;
-  emptyContent?: ReactNode;
   roots: SearchResultDomainRoot[];
   highlightQuery: string;
   onOpenHit: (hit: WorktreeSearchHit, intent: "focus" | "open") => void;
@@ -266,10 +260,7 @@ export function SearchResultTree({
         items={flatRows}
         isEmpty={flatRows.length === 0}
         getItemKey={getItemKey}
-        idleContent={idleContent}
-        loadingContent={loadingContent}
         errorContent={errorContent}
-        emptyContent={emptyContent}
         className="w-full"
         rowHeight={TREE_ROW_HEIGHT_PX}
         renderRow={({ item: row, layout }) => (

@@ -27,10 +27,7 @@ export function SearchSidebarSection() {
         <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
           <SearchResultTree
             status={status}
-            idleContent={<p className="px-5 py-2 text-xs text-ctp-subtext0">输入内容开始搜索。</p>}
-            loadingContent={<p className="px-5 py-2 text-xs text-ctp-subtext0">搜索中…</p>}
             errorContent={<ErrorRetryView message="无法加载搜索结果。" onRetry={retry} />}
-            emptyContent={<p className="px-5 py-2 text-xs text-ctp-subtext0">未找到结果。</p>}
             roots={roots}
             highlightQuery={highlightQuery}
             onOpenHit={openHit}
