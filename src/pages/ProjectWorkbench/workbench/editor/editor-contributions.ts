@@ -285,7 +285,7 @@ const comparisonEditorContribution: WorkbenchEditorTargetContribution = {
         id: `scm-change:${comparison.target.domain}:${comparison.target.entityId}`,
         kind: "comparison",
         label: `更改：${comparison.label}`,
-        canEditCurrent: comparison.kind !== "delete",
+        canEditCurrent: true,
         target: {
           kind: "scm-change",
           sourceTarget: comparison.target,

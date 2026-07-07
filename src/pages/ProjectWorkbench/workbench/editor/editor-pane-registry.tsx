@@ -79,6 +79,10 @@ function writeComparisonTargetCurrentContent(
   return Promise.resolve(resources.writeFile(target.entityId, content));
 }
 
+function isNoScmTextDiffError(error: unknown): boolean {
+  return error instanceof Error && error.message === "此节点当前没有可预览的文本差异。";
+}
+
 function TextDocumentEditorPane({
   tab,
   active,
@@ -150,7 +154,6 @@ function ComparisonEditorPane({
 }: WorkbenchEditorPaneProps & {
   tab: Extract<WorkbenchEditorTab, { kind: "comparison" }>;
 }) {
-  const noScmTextDiffErrorMessage = "此节点当前没有可预览的文本差异。";
   const manuscript = useManuscript();
   const resources = useResourceLibrary();
   const changes = useWorktreeChanges();
@@ -200,6 +203,52 @@ function ComparisonEditorPane({
     [setEditorState, tab.id],
   );
 
+  const syncScmComparisonTab = useCallback(
+    async (
+      sourceTarget: ComparisonWorkbenchEditorTab["target"]["sourceTarget"],
+      fallback: string,
+    ) => {
+      const next = await Promise.resolve(
+        changes.readChangeTextComparisonByTarget(sourceTarget),
+      ).catch((error: unknown) => {
+        if (isNoScmTextDiffError(error)) {
+          return null;
+        }
+        throw error;
+      });
+      setEditorState((state) => ({
+        ...state,
+        tabs: state.tabs.map((candidate) =>
+          candidate.id === tab.id && candidate.kind === "comparison"
+            ? {
+                ...candidate,
+                ...(next === null
+                  ? {
+                      canEditCurrent: true,
+                      originalContent: fallback,
+                      currentContent: fallback,
+                    }
+                  : {
+                      canEditCurrent: true,
+                      target: {
+                        kind: "scm-change" as const,
+                        sourceTarget: next.target,
+                        changeId: next.changeId,
+                        changeKind: next.kind,
+                      },
+                      label: `更改：${next.label}`,
+                      displayPath: next.displayPath,
+                      originalContent: next.originalContent,
+                      currentContent: next.currentContent,
+                    }),
+              }
+            : candidate,
+        ),
+      }));
+    },
+    [changes, setEditorState, tab.id],
+  );
+
   const handleChange = useCallback(
     (next: string) => {
       updateComparisonTab((candidate) => ({
@@ -219,12 +268,34 @@ function ComparisonEditorPane({
           return;
         }
 
-        void writeComparisonTargetCurrentContent(
-          currentTab.target.sourceTarget,
-          currentTab.currentContent,
-          manuscriptRef.current,
-          resourcesRef.current,
-        ).catch((error) => {
+        const save =
+          currentTab.target.kind === "scm-change" && currentTab.target.changeKind === "delete"
+            ? Promise.resolve(
+                changes.restoreChangeTextHunk(
+                  currentTab.target.sourceTarget,
+                  "",
+                  currentTab.currentContent,
+                ),
+              ).then(() =>
+                syncScmComparisonTab(currentTab.target.sourceTarget, currentTab.currentContent),
+              )
+            : writeComparisonTargetCurrentContent(
+                currentTab.target.sourceTarget,
+                currentTab.currentContent,
+                manuscriptRef.current,
+                resourcesRef.current,
+              );
+
+        void Promise.resolve(save).catch((error) => {
+          if (
+            currentTab.target.kind === "scm-change" &&
+            currentTab.target.changeKind === "delete" &&
+            isNoScmTextDiffError(error)
+          ) {
+            void syncScmComparisonTab(currentTab.target.sourceTarget, currentTab.currentContent);
+            return;
+          }
+
           notificationApi.error(error instanceof Error ? error.message : "自动保存失败", {
             source: currentTab.target.kind === "timeline-entry" ? "时间线" : "SCM",
           });
@@ -249,7 +320,7 @@ function ComparisonEditorPane({
         });
       }, COMPARISON_AUTOSAVE_DEBOUNCE_MS);
     },
-    [clearPendingAutosave, updateComparisonTab],
+    [changes, clearPendingAutosave, syncScmComparisonTab, updateComparisonTab],
   );
 
   const handleRestoreTimelineHunk = useCallback(
@@ -268,43 +339,7 @@ function ComparisonEditorPane({
           await Promise.resolve(
             changes.restoreChangeTextHunk(tab.target.sourceTarget, beforeContent, afterContent),
           );
-          const next = await Promise.resolve(
-            changes.readChangeTextComparisonByTarget(tab.target.sourceTarget),
-          ).catch((error: unknown) => {
-            if (error instanceof Error && error.message === noScmTextDiffErrorMessage) {
-              return null;
-            }
-            throw error;
-          });
-          setEditorState((state) => ({
-            ...state,
-            tabs: state.tabs.map((candidate) =>
-              candidate.id === tab.id && candidate.kind === "comparison"
-                ? {
-                    ...candidate,
-                    ...(next === null
-                      ? {
-                          canEditCurrent: true,
-                          originalContent: afterContent,
-                          currentContent: afterContent,
-                        }
-                      : {
-                          canEditCurrent: next.kind !== "delete",
-                          target: {
-                            kind: "scm-change" as const,
-                            sourceTarget: next.target,
-                            changeId: next.changeId,
-                            changeKind: next.kind,
-                          },
-                          label: `更改：${next.label}`,
-                          displayPath: next.displayPath,
-                          originalContent: next.originalContent,
-                          currentContent: next.currentContent,
-                        }),
-                  }
-                : candidate,
-            ),
-          }));
+          await syncScmComparisonTab(tab.target.sourceTarget, afterContent);
           return;
         }
         setEditorState((state) => ({
@@ -325,7 +360,7 @@ function ComparisonEditorPane({
         throw error;
       }
     },
-    [changes, clearPendingAutosave, noScmTextDiffErrorMessage, setEditorState, tab, timeline],
+    [changes, clearPendingAutosave, setEditorState, syncScmComparisonTab, tab, timeline],
   );
 
   return (
