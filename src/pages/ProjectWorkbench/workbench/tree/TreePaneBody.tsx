@@ -1,28 +1,26 @@
 import { useCallback, useRef } from "react";
 import type { ReactNode, RefObject } from "react";
 
-import { SidebarSectionActionsPortalContent } from "#app/components/workbench";
-
 import { FlatTreeList } from "./FlatTreeList";
 import type { TreeResolvedDrop } from "./tree-drag";
 import type { TreeRowLayout } from "./tree-row-layout";
 import { TREE_ROW_HEIGHT_PX } from "./tree-row-motion";
 import type { TreeDropResolveInput } from "./use-tree-row-pointer-drag";
 
-type TreePaneStatus = "idle" | "loading" | "ready" | "error";
+type TreePaneBodyStatus = "idle" | "loading" | "ready" | "error";
 
-export type TreePaneDragSession<RowType extends string, DropTarget> = {
+export type TreePaneBodyDragSession<RowType extends string, DropTarget> = {
   sourceId: string;
   sourceType: RowType;
   resolved: TreeResolvedDrop<DropTarget> | null;
 };
 
-export type TreePaneRowLayout = TreeRowLayout;
+export type TreePaneBodyRowLayout = TreeRowLayout;
 
-export type TreePaneRenderRowArgs<TItem, RowType extends string, DropTarget> = {
+export type TreePaneBodyRenderRowArgs<TItem, RowType extends string, DropTarget> = {
   item: TItem;
   index: number;
-  layout: TreePaneRowLayout;
+  layout: TreePaneBodyRowLayout;
   listRef: RefObject<HTMLUListElement | null>;
   dragging: boolean;
   resolveDropTarget: (input: TreeDropResolveInput<RowType>) => TreeResolvedDrop<DropTarget> | null;
@@ -31,22 +29,21 @@ export type TreePaneRenderRowArgs<TItem, RowType extends string, DropTarget> = {
   onDragEnd: () => void;
 };
 
-export type TreePaneProps<TItem, RowType extends string, DropTarget> = {
-  headerActions?: ReactNode;
-  status: TreePaneStatus;
+export type TreePaneBodyProps<TItem, RowType extends string, DropTarget> = {
+  status: TreePaneBodyStatus;
   error: string | null;
   isEmpty: boolean;
   loadingLabel: string;
   emptyLabel: string;
   items: readonly TItem[];
   getItemKey: (item: TItem) => string;
-  renderRow: (args: TreePaneRenderRowArgs<TItem, RowType, DropTarget>) => ReactNode;
-  getCurrentDrag: () => TreePaneDragSession<RowType, DropTarget> | null;
+  renderRow: (args: TreePaneBodyRenderRowArgs<TItem, RowType, DropTarget>) => ReactNode;
+  getCurrentDrag: () => TreePaneBodyDragSession<RowType, DropTarget> | null;
   dispatchDragStart: (sourceId: string, sourceType: RowType) => void;
   dispatchDragMove: (resolved: TreeResolvedDrop<DropTarget> | null) => void;
   dispatchDragEnd: () => void;
   commitResolvedDrop: (
-    drag: TreePaneDragSession<RowType, DropTarget> & {
+    drag: TreePaneBodyDragSession<RowType, DropTarget> & {
       resolved: TreeResolvedDrop<DropTarget>;
     },
   ) => void | Promise<void>;
@@ -58,14 +55,13 @@ export type TreePaneProps<TItem, RowType extends string, DropTarget> = {
   onRequestRename?: () => void;
   onRequestDelete?: () => void | Promise<void>;
   shouldCommitDrop?: (
-    drag: TreePaneDragSession<RowType, DropTarget> & {
+    drag: TreePaneBodyDragSession<RowType, DropTarget> & {
       resolved: TreeResolvedDrop<DropTarget>;
     },
   ) => boolean;
 };
 
-export function TreePane<TItem, RowType extends string, DropTarget>({
-  headerActions,
+export function TreePaneBody<TItem, RowType extends string, DropTarget>({
   status,
   error,
   isEmpty,
@@ -87,7 +83,7 @@ export function TreePane<TItem, RowType extends string, DropTarget>({
   onRequestRename,
   onRequestDelete,
   shouldCommitDrop,
-}: TreePaneProps<TItem, RowType, DropTarget>) {
+}: TreePaneBodyProps<TItem, RowType, DropTarget>) {
   const fallbackListRef = useRef<HTMLUListElement>(null);
   const listRef = providedListRef ?? fallbackListRef;
 
@@ -116,7 +112,7 @@ export function TreePane<TItem, RowType extends string, DropTarget>({
       return;
     }
 
-    const resolvedDrag = currentDrag as TreePaneDragSession<RowType, DropTarget> & {
+    const resolvedDrag = currentDrag as TreePaneBodyDragSession<RowType, DropTarget> & {
       resolved: TreeResolvedDrop<DropTarget>;
     };
     if (shouldCommitDrop !== undefined && !shouldCommitDrop(resolvedDrag)) {
@@ -166,12 +162,5 @@ export function TreePane<TItem, RowType extends string, DropTarget>({
     );
   }
 
-  return (
-    <>
-      {headerActions ? (
-        <SidebarSectionActionsPortalContent>{headerActions}</SidebarSectionActionsPortalContent>
-      ) : null}
-      {content}
-    </>
-  );
+  return content;
 }

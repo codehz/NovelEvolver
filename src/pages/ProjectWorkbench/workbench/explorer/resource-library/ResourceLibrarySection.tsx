@@ -2,11 +2,11 @@ import { useMolecule } from "bunshi/react";
 import { useAtomValue, useSetAtom, useStore } from "jotai";
 import { useCallback, useMemo, useRef } from "react";
 
-import { SidebarHeaderActionButton } from "#app/components/workbench";
+import { SidebarHeaderActionButton, SidebarSectionHeaderActions } from "#app/components/workbench";
 import type { ResourceTreeNode } from "#shared/rpc/worktree-tree-rpc";
 
 import { queryTreeRowById } from "../../tree/tree-row-dom";
-import { TreePane } from "../../tree/TreePane";
+import { TreePaneBody } from "../../tree/TreePaneBody";
 import { useTreeRevealRequest } from "../../tree/use-tree-reveal-request";
 import type { TreeDropResolveInput } from "../../tree/use-tree-row-pointer-drag";
 import { resourceParentChain } from "./resource-tree";
@@ -91,79 +91,79 @@ export function ResourceLibrarySectionBody() {
   );
 
   return (
-    <TreePane<ResourceRenderItem, ResourceTreeNode["type"], string>
-      listRef={listRef}
-      headerActions={
-        <>
-          <SidebarHeaderActionButton
-            label="新建文件"
-            icon="icon-[codicon--new-file]"
-            onClick={() => {
-              startCreating("file");
-            }}
-          />
-          <SidebarHeaderActionButton
-            label="新建文件夹"
-            icon="icon-[codicon--new-folder]"
-            onClick={() => {
-              startCreating("folder");
-            }}
-          />
-        </>
-      }
-      status={state.status}
-      error={state.error}
-      isEmpty={projection.items.length === 0}
-      loadingLabel="加载资源库…"
-      emptyLabel="资源库为空。"
-      items={projection.items}
-      getItemKey={(item) => item.key}
-      dropPreview={state.drag?.resolved?.preview ?? null}
-      dragging={state.drag !== null}
-      onRequestRename={startRenaming}
-      onRequestDelete={deleteNode}
-      getCurrentDrag={() => store.get(treeAtom).drag}
-      dispatchDragStart={(sourceId, sourceType) => {
-        dispatch({ type: "dragStart", sourceId, sourceType });
-      }}
-      dispatchDragMove={(resolved) => {
-        dispatch({ type: "dragMove", resolved });
-      }}
-      dispatchDragEnd={() => {
-        dispatch({ type: "dragEnd" });
-      }}
-      commitResolvedDrop={async (drag) => {
-        await moveNode(drag.sourceId, drag.sourceType, drag.resolved.target);
-      }}
-      shouldCommitDrop={(drag) => drag.resolved.target !== drag.sourceId}
-      resolveDropTarget={resolveDropTarget}
-      renderRow={({
-        item,
-        index,
-        layout,
-        listRef: rowListRef,
-        dragging,
-        resolveDropTarget: resolveDrop,
-        onDragStart,
-        onDragMove,
-        onDragEnd,
-      }) => (
-        <ResourceLibraryTreeRow
-          dragging={dragging}
-          index={index}
-          item={item}
-          layout={layout}
-          listRef={rowListRef}
-          resolveDropTarget={resolveDrop}
-          selectedId={state.selected?.id ?? null}
-          onActivate={activateNode}
-          onCancelEditing={cancelEditing}
-          onDragEnd={onDragEnd}
-          onDragMove={onDragMove}
-          onDragStart={onDragStart}
-          onSubmitEditing={submitEditing}
+    <>
+      <SidebarSectionHeaderActions>
+        <SidebarHeaderActionButton
+          label="新建文件"
+          icon="icon-[codicon--new-file]"
+          onClick={() => {
+            startCreating("file");
+          }}
         />
-      )}
-    />
+        <SidebarHeaderActionButton
+          label="新建文件夹"
+          icon="icon-[codicon--new-folder]"
+          onClick={() => {
+            startCreating("folder");
+          }}
+        />
+      </SidebarSectionHeaderActions>
+      <TreePaneBody<ResourceRenderItem, ResourceTreeNode["type"], string>
+        listRef={listRef}
+        status={state.status}
+        error={state.error}
+        isEmpty={projection.items.length === 0}
+        loadingLabel="加载资源库…"
+        emptyLabel="资源库为空。"
+        items={projection.items}
+        getItemKey={(item) => item.key}
+        dropPreview={state.drag?.resolved?.preview ?? null}
+        dragging={state.drag !== null}
+        onRequestRename={startRenaming}
+        onRequestDelete={deleteNode}
+        getCurrentDrag={() => store.get(treeAtom).drag}
+        dispatchDragStart={(sourceId, sourceType) => {
+          dispatch({ type: "dragStart", sourceId, sourceType });
+        }}
+        dispatchDragMove={(resolved) => {
+          dispatch({ type: "dragMove", resolved });
+        }}
+        dispatchDragEnd={() => {
+          dispatch({ type: "dragEnd" });
+        }}
+        commitResolvedDrop={async (drag) => {
+          await moveNode(drag.sourceId, drag.sourceType, drag.resolved.target);
+        }}
+        shouldCommitDrop={(drag) => drag.resolved.target !== drag.sourceId}
+        resolveDropTarget={resolveDropTarget}
+        renderRow={({
+          item,
+          index,
+          layout,
+          listRef: rowListRef,
+          dragging,
+          resolveDropTarget: resolveDrop,
+          onDragStart,
+          onDragMove,
+          onDragEnd,
+        }) => (
+          <ResourceLibraryTreeRow
+            dragging={dragging}
+            index={index}
+            item={item}
+            layout={layout}
+            listRef={rowListRef}
+            resolveDropTarget={resolveDrop}
+            selectedId={state.selected?.id ?? null}
+            onActivate={activateNode}
+            onCancelEditing={cancelEditing}
+            onDragEnd={onDragEnd}
+            onDragMove={onDragMove}
+            onDragStart={onDragStart}
+            onSubmitEditing={submitEditing}
+          />
+        )}
+      />
+    </>
   );
 }
