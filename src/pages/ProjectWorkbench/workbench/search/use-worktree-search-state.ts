@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 
+import type { TreeBodyStatus } from "#app/pages/ProjectWorkbench/workbench/tree/TreeBody";
 import type { WorktreeSearchHit, WorktreeSearchResult } from "#shared/rpc/worktree-search-rpc";
 
 import { useWorktreeSearch } from "../branch/branch-scopes";
@@ -24,7 +25,7 @@ export function useWorktreeSearchState() {
   const [query, setQuery] = useState("");
   const [debouncedQuery, setDebouncedQuery] = useState("");
   const [result, setResult] = useState<WorktreeSearchResult | null>(null);
-  const [error, setError] = useState(false);
+  const [status, setStatus] = useState<TreeBodyStatus>("idle");
   const [retryKey, setRetryKey] = useState(0);
 
   useEffect(() => {
@@ -44,12 +45,12 @@ export function useWorktreeSearchState() {
   useEffect(() => {
     if (debouncedQuery === "") {
       setResult(null);
-      setError(false);
+      setStatus("idle");
       return;
     }
 
     let cancelled = false;
-    setError(false);
+    setStatus("loading");
 
     searchHandle
       .search({
@@ -60,12 +61,13 @@ export function useWorktreeSearchState() {
       .then((next) => {
         if (!cancelled) {
           setResult(next);
+          setStatus("ready");
         }
       })
       .catch(() => {
         if (!cancelled) {
-          setError(true);
           setResult(emptyResult(debouncedQuery));
+          setStatus("error");
         }
       });
 
@@ -84,12 +86,18 @@ export function useWorktreeSearchState() {
   }, [query]);
 
   const statsLine = useMemo(() => {
-    if (debouncedQuery === "" || error) {
+    if (debouncedQuery === "") {
+      return null;
+    }
+    if (status === "loading") {
+      return "搜索中…";
+    }
+    if (status === "error") {
       return null;
     }
     const allHits = [...(result?.manuscript ?? []), ...(result?.resources ?? [])];
     return formatSearchStatsLine(summarizeSearchHits(allHits));
-  }, [debouncedQuery, error, result]);
+  }, [debouncedQuery, result, status]);
 
   const roots = useMemo((): SearchResultDomainRoot[] => {
     const manuscriptTree = buildSearchPathTree(result?.manuscript ?? []);
@@ -140,8 +148,8 @@ export function useWorktreeSearchState() {
   return {
     query,
     setQuery,
+    status,
     highlightQuery: debouncedQuery,
-    error,
     statsLine,
     roots,
     retry,

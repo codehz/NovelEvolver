@@ -6,7 +6,7 @@ import { SidebarHeaderActionButton, SidebarHeaderActions } from "#app/components
 import type { ResourceTreeNode } from "#shared/rpc/worktree-tree-rpc";
 
 import { queryTreeRowById } from "../../tree/tree-row-dom";
-import { TreePaneBody } from "../../tree/TreePaneBody";
+import { TreeBody } from "../../tree/TreeBody";
 import { useTreeRevealRequest } from "../../tree/use-tree-reveal-request";
 import type { TreeDropResolveInput } from "../../tree/use-tree-row-pointer-drag";
 import { resourceParentChain } from "./resource-tree";
@@ -108,34 +108,42 @@ export function ResourceLibrarySectionBody() {
           }}
         />
       </SidebarHeaderActions>
-      <TreePaneBody<ResourceRenderItem, ResourceTreeNode["type"], string>
+      <TreeBody<ResourceRenderItem, ResourceTreeNode["type"], string>
         listRef={listRef}
         status={state.status}
-        error={state.error}
         isEmpty={projection.items.length === 0}
-        loadingLabel="加载资源库…"
-        emptyLabel="资源库为空。"
+        loadingContent={<p className="px-2 py-1 text-xs text-ctp-subtext0">加载资源库…</p>}
+        errorContent={
+          state.error === null ? null : (
+            <p className="px-2 py-1 text-xs text-ctp-red" role="alert">
+              {state.error}
+            </p>
+          )
+        }
+        emptyContent={<p className="px-2 py-1 text-xs text-ctp-subtext0">资源库为空。</p>}
         items={projection.items}
         getItemKey={(item) => item.key}
         dropPreview={state.drag?.resolved?.preview ?? null}
         dragging={state.drag !== null}
         onRequestRename={startRenaming}
         onRequestDelete={deleteNode}
-        getCurrentDrag={() => store.get(treeAtom).drag}
-        dispatchDragStart={(sourceId, sourceType) => {
-          dispatch({ type: "dragStart", sourceId, sourceType });
+        dragController={{
+          getCurrentDrag: () => store.get(treeAtom).drag,
+          dispatchDragStart: (sourceId, sourceType) => {
+            dispatch({ type: "dragStart", sourceId, sourceType });
+          },
+          dispatchDragMove: (resolved) => {
+            dispatch({ type: "dragMove", resolved });
+          },
+          dispatchDragEnd: () => {
+            dispatch({ type: "dragEnd" });
+          },
+          commitResolvedDrop: async (drag) => {
+            await moveNode(drag.sourceId, drag.sourceType, drag.resolved.target);
+          },
+          shouldCommitDrop: (drag) => drag.resolved.target !== drag.sourceId,
+          resolveDropTarget,
         }}
-        dispatchDragMove={(resolved) => {
-          dispatch({ type: "dragMove", resolved });
-        }}
-        dispatchDragEnd={() => {
-          dispatch({ type: "dragEnd" });
-        }}
-        commitResolvedDrop={async (drag) => {
-          await moveNode(drag.sourceId, drag.sourceType, drag.resolved.target);
-        }}
-        shouldCommitDrop={(drag) => drag.resolved.target !== drag.sourceId}
-        resolveDropTarget={resolveDropTarget}
         renderRow={({
           item,
           index,

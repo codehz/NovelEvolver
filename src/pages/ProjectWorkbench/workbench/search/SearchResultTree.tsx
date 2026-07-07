@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import type { KeyboardEvent } from "react";
+import type { KeyboardEvent, ReactNode } from "react";
 
 import { DisclosureChevron } from "#app/components/DisclosureChevron";
 import { cn } from "#app/lib/cn";
@@ -7,7 +7,6 @@ import {
   contentEntityIconClass,
   contentFolderIconClass,
 } from "#app/pages/ProjectWorkbench/workbench/tree/content-tree-icons";
-import { FlatTreeList } from "#app/pages/ProjectWorkbench/workbench/tree/FlatTreeList";
 import type { TreeRowLayout } from "#app/pages/ProjectWorkbench/workbench/tree/tree-row-layout";
 import {
   getTreeRowPaddingLeft,
@@ -16,6 +15,7 @@ import {
   TREE_ROW_HEIGHT_PX,
   treeRowDisclosureSpacerClass,
 } from "#app/pages/ProjectWorkbench/workbench/tree/tree-row-motion";
+import { TreeBody, type TreeBodyStatus } from "#app/pages/ProjectWorkbench/workbench/tree/TreeBody";
 import { TreeMotionRow } from "#app/pages/ProjectWorkbench/workbench/tree/TreeMotionRow";
 import type { WorktreeSearchHit } from "#shared/rpc/worktree-search-rpc";
 
@@ -176,10 +176,20 @@ function SearchFlatRowView({
 }
 
 export function SearchResultTree({
+  status,
+  idleContent,
+  loadingContent,
+  errorContent,
+  emptyContent,
   roots,
   highlightQuery,
   onOpenHit,
 }: {
+  status: TreeBodyStatus;
+  idleContent?: ReactNode;
+  loadingContent?: ReactNode;
+  errorContent?: ReactNode;
+  emptyContent?: ReactNode;
   roots: SearchResultDomainRoot[];
   highlightQuery: string;
   onOpenHit: (hit: WorktreeSearchHit, intent: "focus" | "open") => void;
@@ -251,12 +261,18 @@ export function SearchResultTree({
 
   return (
     <div ref={highlightContainerRef} className="py-1">
-      <FlatTreeList
+      <TreeBody<SearchResultFlatRow>
+        status={status}
         items={flatRows}
+        isEmpty={flatRows.length === 0}
         getItemKey={getItemKey}
-        rowHeight={TREE_ROW_HEIGHT_PX}
+        idleContent={idleContent}
+        loadingContent={loadingContent}
+        errorContent={errorContent}
+        emptyContent={emptyContent}
         className="w-full"
-        renderRow={(row, _index, layout) => (
+        rowHeight={TREE_ROW_HEIGHT_PX}
+        renderRow={({ item: row, layout }) => (
           <SearchFlatRowView
             row={row}
             layout={layout}
