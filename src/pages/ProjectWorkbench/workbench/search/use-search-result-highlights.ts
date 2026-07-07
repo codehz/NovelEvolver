@@ -60,20 +60,49 @@ export function useSearchResultHighlights(
       return;
     }
 
-    const targets = root.querySelectorAll<HTMLElement>("[data-search-highlight]");
-    const ranges: Range[] = [];
-    for (const target of targets) {
-      ranges.push(...collectRangesInElement(target, needle));
-    }
+    let frameId = 0;
 
-    if (ranges.length === 0) {
-      CSS.highlights.delete(HIGHLIGHT_REGISTRY_NAME);
-      return;
-    }
+    const applyHighlights = () => {
+      const targets = root.querySelectorAll<HTMLElement>("[data-search-highlight]");
+      const ranges: Range[] = [];
+      for (const target of targets) {
+        ranges.push(...collectRangesInElement(target, needle));
+      }
 
-    CSS.highlights.set(HIGHLIGHT_REGISTRY_NAME, new Highlight(...ranges));
+      if (ranges.length === 0) {
+        CSS.highlights.delete(HIGHLIGHT_REGISTRY_NAME);
+        return;
+      }
+
+      CSS.highlights.set(HIGHLIGHT_REGISTRY_NAME, new Highlight(...ranges));
+    };
+
+    const scheduleApplyHighlights = () => {
+      if (frameId !== 0) {
+        cancelAnimationFrame(frameId);
+      }
+      frameId = window.requestAnimationFrame(() => {
+        frameId = 0;
+        applyHighlights();
+      });
+    };
+
+    applyHighlights();
+
+    const observer = new MutationObserver(() => {
+      scheduleApplyHighlights();
+    });
+    observer.observe(root, {
+      subtree: true,
+      childList: true,
+      characterData: true,
+    });
 
     return () => {
+      observer.disconnect();
+      if (frameId !== 0) {
+        cancelAnimationFrame(frameId);
+      }
       CSS.highlights.delete(HIGHLIGHT_REGISTRY_NAME);
     };
   }, [containerRef, layoutRevision, needle, query]);
