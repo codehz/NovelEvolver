@@ -27,6 +27,8 @@ type WorktreeSearchHitBase = {
   line: number;
   /** 该行内首个命中列，0-based UTF-16 偏移。 */
   column: number;
+  /** 该行内首个命中的 UTF-16 长度。 */
+  matchLength: number;
 };
 
 export type ManuscriptSearchHit = WorktreeSearchHitBase & {

@@ -8,6 +8,10 @@ import { ProjectHandleWithMetadata } from "#shared/rpc/projects-rpc";
 
 import { emptyWorkbenchEditorState } from "../editor/editor-tab-manager";
 import type { EditorCaretPosition, EditorSelectionSnapshot } from "./editor-caret";
+import type {
+  WorkbenchEditorNavigationRequest,
+  WorkbenchEditorNavigationRequestResult,
+} from "./types";
 
 export const projectIdScope = createScope<number>(-1);
 
@@ -49,6 +53,24 @@ export const workbenchEditorMolecule = molecule(() => {
     return tabs[0];
   });
 
+  const navigationHandlers = new Set<
+    (request: WorkbenchEditorNavigationRequest) => WorkbenchEditorNavigationRequestResult
+  >();
+  let pendingNavigationRequest: WorkbenchEditorNavigationRequest | null = null;
+
+  const dispatchPendingNavigationRequest = () => {
+    const request = pendingNavigationRequest;
+    if (request === null) {
+      return;
+    }
+    for (const handler of navigationHandlers) {
+      if (handler(request) === "done") {
+        pendingNavigationRequest = null;
+        return;
+      }
+    }
+  };
+
   return {
     editorStateAtom,
     tabsAtom,
@@ -56,6 +78,22 @@ export const workbenchEditorMolecule = molecule(() => {
     activeTabIdAtom,
     transientTabIdAtom,
     activeEditorTabAtom,
+    requestNavigation: (request: WorkbenchEditorNavigationRequest): void => {
+      pendingNavigationRequest = request;
+      dispatchPendingNavigationRequest();
+    },
+    retryPendingNavigation: (): void => {
+      dispatchPendingNavigationRequest();
+    },
+    onNavigationRequest: (
+      handler: (
+        request: WorkbenchEditorNavigationRequest,
+      ) => WorkbenchEditorNavigationRequestResult,
+    ): (() => void) => {
+      navigationHandlers.add(handler);
+      dispatchPendingNavigationRequest();
+      return () => navigationHandlers.delete(handler);
+    },
   };
 });
 

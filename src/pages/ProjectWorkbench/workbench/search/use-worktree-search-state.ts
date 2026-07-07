@@ -5,6 +5,7 @@ import type { WorktreeSearchHit, WorktreeSearchResult } from "#shared/rpc/worktr
 
 import { useWorktreeSearch } from "../branch/branch-scopes";
 import { useWorkbenchEditorActions } from "../editor/use-workbench-editor-actions";
+import type { WorkbenchEditorNavigationRequest } from "../state/types";
 import { contentDomainIconClass } from "../tree/content-tree-icons";
 import { buildSearchPathTree } from "./build-search-path-tree";
 import { SEARCH_DEBOUNCE_MS, SEARCH_MAX_RESULTS_PER_DOMAIN } from "./constants";
@@ -17,6 +18,18 @@ const emptyResult = (query: string): WorktreeSearchResult => ({
   manuscript: [],
   resources: [],
 });
+
+function createSearchHitNavigation(
+  hit: WorktreeSearchHit,
+): Omit<WorkbenchEditorNavigationRequest, "targetKey"> {
+  return {
+    kind: "text-range",
+    selection: {
+      anchor: { lineIndex: hit.line - 1, offset: hit.column },
+      focus: { lineIndex: hit.line - 1, offset: hit.column + hit.matchLength },
+    },
+  };
+}
 
 export function useWorktreeSearchState() {
   const searchHandle = useWorktreeSearch();
@@ -124,22 +137,25 @@ export function useWorktreeSearchState() {
 
   const openHit = useCallback(
     (hit: WorktreeSearchHit, intent: "focus" | "open") => {
+      const options = {
+        navigation: createSearchHitNavigation(hit),
+      };
       if (hit.domain === "manuscript" && hit.entityKind === "chapter") {
         const target = { kind: "manuscript" as const, chapterId: hit.nodeId };
         if (intent === "focus") {
-          focusTarget(target);
+          focusTarget(target, options);
           return;
         }
-        openTarget(target);
+        openTarget(target, options);
         return;
       }
       if (hit.domain === "resource" && hit.entityKind === "file") {
         const target = { kind: "resource" as const, resourceId: hit.nodeId };
         if (intent === "focus") {
-          focusTarget(target);
+          focusTarget(target, options);
           return;
         }
-        openTarget(target);
+        openTarget(target, options);
       }
     },
     [focusTarget, openTarget],

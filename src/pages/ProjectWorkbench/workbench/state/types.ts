@@ -1,5 +1,7 @@
 import type { TimelineEntryKind, TimelineTarget } from "#shared/rpc/worktree-timeline-rpc";
 
+import type { EditorSelectionSnapshot } from "./editor-caret";
+
 export type ResourceWorkbenchEditorTab = {
   id: string;
   kind: "resource";
@@ -53,6 +55,18 @@ export type WorkbenchEditorDocument =
 export type WorkbenchEditorDocuments = Record<string, WorkbenchEditorDocument>;
 
 export type WorkbenchEditorOpenIntent = "focus" | "open";
+
+export type WorkbenchEditorNavigationRequest = {
+  kind: "text-range";
+  targetKey: string;
+  selection: EditorSelectionSnapshot;
+};
+
+export type WorkbenchEditorNavigationRequestResult = "done" | "retry" | "skip";
+
+export type WorkbenchEditorOpenOptions = {
+  navigation?: Omit<WorkbenchEditorNavigationRequest, "targetKey">;
+};
 
 export type WorkbenchEditorTarget =
   | {

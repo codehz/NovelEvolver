@@ -1,19 +1,21 @@
 import { useMolecule } from "bunshi/react";
 import { useAtomValue, useSetAtom } from "jotai";
-import { useCallback } from "react";
+import { useCallback, useRef, useState } from "react";
 import type { ComponentType } from "react";
 
-import { PlainTextEditor } from "#app/components/PlainTextEditor";
+import { PlainTextEditor, type PlainTextEditorHandle } from "#app/components/PlainTextEditor";
 import { notificationApi } from "#app/lib/notifications";
 
 import { useWorktreeTimeline } from "../branch/branch-scopes";
 import { editorTabMolecule, workbenchEditorMolecule } from "../state/molecules";
 import type { ContentWorkbenchEditorTab, WorkbenchEditorTab } from "../state/types";
+import { getWorkbenchEditorTabTargetKey } from "./editor-contributions";
 import {
   TimelineMergePreviewEditor,
   type TimelineMergePreviewRestoreHunkChange,
 } from "./TimelineMergePreviewEditor";
 import type { WorkbenchEditorDocumentRuntime } from "./use-workbench-editor-document-runtime";
+import { useWorkbenchEditorNavigationRequest } from "./use-workbench-editor-navigation-request";
 
 export type WorkbenchEditorPaneProps = {
   tab: WorkbenchEditorTab;
@@ -34,12 +36,18 @@ function TextDocumentEditorPane({
   documentRuntime,
 }: WorkbenchEditorPaneProps & { tab: ContentWorkbenchEditorTab }) {
   const { caretPositionAtom, selectionSnapshotAtom } = useMolecule(editorTabMolecule);
+  const { onNavigationRequest, retryPendingNavigation } = useMolecule(workbenchEditorMolecule);
   const selectionSnapshot = useAtomValue(selectionSnapshotAtom);
   const setCaretPosition = useSetAtom(caretPositionAtom);
   const setSelectionSnapshot = useSetAtom(selectionSnapshotAtom);
   const document = documentRuntime.getDocument(tab);
+  const editorRef = useRef<PlainTextEditorHandle | null>(null);
+  const [hasEditor, setHasEditor] = useState(false);
+  const targetKey = getWorkbenchEditorTabTargetKey(tab);
   const registerEditor = useCallback(
     (handle: Parameters<WorkbenchEditorDocumentRuntime["registerEditor"]>[1]) => {
+      editorRef.current = handle;
+      setHasEditor(handle !== null);
       documentRuntime.registerEditor(tab, handle);
     },
     [documentRuntime, tab],
@@ -50,6 +58,29 @@ function TextDocumentEditorPane({
     },
     [documentRuntime, tab, transient],
   );
+
+  useWorkbenchEditorNavigationRequest({
+    onNavigationRequest,
+    retryPendingNavigation,
+    retryDeps: [active, hasEditor, targetKey],
+    consume: (request) => {
+      if (request.targetKey !== targetKey) {
+        return "skip";
+      }
+      if (request.kind !== "text-range") {
+        return "skip";
+      }
+      if (!active || editorRef.current === null) {
+        return "retry";
+      }
+      editorRef.current.applySelection(request.selection, {
+        focus: true,
+        scrollIntoView: true,
+      });
+      return "done";
+    },
+  });
+
   return (
     <PlainTextEditor
       ref={registerEditor}

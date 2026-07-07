@@ -7,8 +7,13 @@ import { notificationApi } from "#app/lib/notifications";
 import { useManuscript, useResourceLibrary, useWorktreeTimeline } from "../branch/branch-scopes";
 import { useWorktreeTreeSnapshot } from "../branch/use-worktree-tree-snapshot";
 import { workbenchEditorMolecule } from "../state/molecules";
-import type { WorkbenchEditorOpenIntent, WorkbenchEditorTarget } from "../state/types";
+import type {
+  WorkbenchEditorOpenIntent,
+  WorkbenchEditorOpenOptions,
+  WorkbenchEditorTarget,
+} from "../state/types";
 import {
+  getWorkbenchEditorTargetKey,
   getWorkbenchEditorTargetLabel,
   getWorkbenchEditorTargetNotificationSource,
   resolveWorkbenchEditorTarget,
@@ -23,7 +28,7 @@ import {
 } from "./editor-tab-manager";
 
 export function useWorkbenchEditorActions() {
-  const { editorStateAtom, tabsAtom } = useMolecule(workbenchEditorMolecule);
+  const { editorStateAtom, requestNavigation, tabsAtom } = useMolecule(workbenchEditorMolecule);
   const store = useStore();
   const tabs = useAtomValue(tabsAtom);
   const setEditorState = useSetAtom(editorStateAtom);
@@ -34,11 +39,21 @@ export function useWorkbenchEditorActions() {
   const focusRequestIdRef = useRef(0);
 
   const openEditorTarget = useCallback(
-    async (target: WorkbenchEditorTarget, intent: WorkbenchEditorOpenIntent) => {
+    async (
+      target: WorkbenchEditorTarget,
+      intent: WorkbenchEditorOpenIntent,
+      options?: WorkbenchEditorOpenOptions,
+    ) => {
+      const targetKey = getWorkbenchEditorTargetKey(target);
+      const navigationRequest =
+        options?.navigation === undefined ? undefined : { targetKey, ...options.navigation };
       const currentState = store.get(editorStateAtom);
       const existing = findWorkbenchEditorTabByTarget(currentState, target);
       if (existing !== undefined) {
         setEditorState((state) => openWorkbenchEditorTab(state, existing, intent));
+        if (navigationRequest !== undefined) {
+          requestNavigation(navigationRequest);
+        }
         return;
       }
 
@@ -56,6 +71,9 @@ export function useWorkbenchEditorActions() {
           return;
         }
         setEditorState((state) => openWorkbenchEditorTab(state, tab, intent, document));
+        if (navigationRequest !== undefined) {
+          requestNavigation(navigationRequest);
+        }
       } catch (error) {
         notificationApi.error(
           error instanceof Error
@@ -67,19 +85,28 @@ export function useWorkbenchEditorActions() {
         );
       }
     },
-    [editorStateAtom, manuscript, resources, setEditorState, snapshot, store, timeline],
+    [
+      editorStateAtom,
+      manuscript,
+      requestNavigation,
+      resources,
+      setEditorState,
+      snapshot,
+      store,
+      timeline,
+    ],
   );
 
   const focusTarget = useCallback(
-    (target: WorkbenchEditorTarget) => {
-      void openEditorTarget(target, "focus");
+    (target: WorkbenchEditorTarget, options?: WorkbenchEditorOpenOptions) => {
+      void openEditorTarget(target, "focus", options);
     },
     [openEditorTarget],
   );
 
   const openTarget = useCallback(
-    (target: WorkbenchEditorTarget) => {
-      void openEditorTarget(target, "open");
+    (target: WorkbenchEditorTarget, options?: WorkbenchEditorOpenOptions) => {
+      void openEditorTarget(target, "open", options);
     },
     [openEditorTarget],
   );

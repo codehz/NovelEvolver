@@ -56,7 +56,10 @@ function snippetAroundMatch(line: string, matchIndex: number, needleLength: numb
   return snippet;
 }
 
-function collectLineHits<TEntry, THit extends { snippet: string; line: number; column: number }>(
+function collectLineHits<
+  TEntry,
+  THit extends { snippet: string; line: number; column: number; matchLength: number },
+>(
   entries: Iterable<TEntry>,
   needle: string,
   maxResults: number,
@@ -113,6 +116,7 @@ function searchManuscript(
       snippet,
       line,
       column,
+      matchLength: needle.length,
     }),
   );
 }
@@ -136,6 +140,7 @@ function searchResources(
       snippet,
       line,
       column,
+      matchLength: needle.length,
     }),
   );
 }

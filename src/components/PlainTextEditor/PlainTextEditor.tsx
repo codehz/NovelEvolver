@@ -23,9 +23,18 @@ import type { PlainTextEditorCaretPosition, PlainTextEditorSelectionSnapshot } f
 
 const editorRootClass = cn("min-h-0 min-w-0 flex-1");
 
+export type PlainTextEditorApplySelectionOptions = {
+  focus?: boolean;
+  scrollIntoView?: boolean;
+};
+
 export type PlainTextEditorHandle = {
   focus: () => void;
   restoreSelection: () => void;
+  applySelection: (
+    snapshot: PlainTextEditorSelectionSnapshot,
+    options?: PlainTextEditorApplySelectionOptions,
+  ) => void;
   getValue: () => string;
   setValue: (value: string) => void;
   getCaret: () => PlainTextEditorCaretPosition | null;
@@ -175,20 +184,45 @@ export function PlainTextEditor({
     };
   }, [ariaLabel, publishSelectionState]);
 
+  const applySelection = useCallback(
+    (
+      snapshot: PlainTextEditorSelectionSnapshot,
+      { focus = true, scrollIntoView = false }: PlainTextEditorApplySelectionOptions = {},
+    ) => {
+      const view = viewRef.current;
+      if (!view) {
+        return;
+      }
+
+      const selection = editorSelectionFromSnapshot(view.state.doc, snapshot);
+      const effects = scrollIntoView
+        ? [EditorView.scrollIntoView(selection.main.head, { y: "center" })]
+        : [];
+      view.dispatch({
+        selection,
+        effects,
+      });
+      if (focus) {
+        view.focus();
+      }
+      publishSelectionState(view);
+    },
+    [publishSelectionState],
+  );
+
   const restoreSelection = useCallback(() => {
     const view = viewRef.current;
     if (!view) {
       return;
     }
-    view.focus();
     const snapshot = selectionSnapshotRef.current;
     if (snapshot) {
-      view.dispatch({
-        selection: editorSelectionFromSnapshot(view.state.doc, snapshot),
-      });
+      applySelection(snapshot);
+      return;
     }
+    view.focus();
     publishSelectionState(view);
-  }, [publishSelectionState]);
+  }, [applySelection, publishSelectionState]);
 
   useLayoutEffect(() => {
     const shouldRestore = active && !wasActiveRef.current;
@@ -206,6 +240,7 @@ export function PlainTextEditor({
         viewRef.current?.focus();
       },
       restoreSelection,
+      applySelection,
       getValue: () => viewRef.current?.state.doc.toString() ?? "",
       setValue: (nextValue: string) => {
         const view = viewRef.current;
@@ -230,7 +265,7 @@ export function PlainTextEditor({
         return caretPositionFromState(view.state);
       },
     }),
-    [publishSelectionState, restoreSelection],
+    [applySelection, publishSelectionState, restoreSelection],
   );
 
   return (
