@@ -73,11 +73,11 @@ function TextDocumentEditorPane({
       if (!active || editorRef.current === null) {
         return "retry";
       }
-      editorRef.current.applySelection(request.selection, {
+      const applied = editorRef.current.applySelection(request.selection, {
         focus: true,
         scrollIntoView: true,
       });
-      return "done";
+      return applied ? "done" : "retry";
     },
   });
 

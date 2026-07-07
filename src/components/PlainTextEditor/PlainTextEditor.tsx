@@ -34,7 +34,7 @@ export type PlainTextEditorHandle = {
   applySelection: (
     snapshot: PlainTextEditorSelectionSnapshot,
     options?: PlainTextEditorApplySelectionOptions,
-  ) => void;
+  ) => boolean;
   getValue: () => string;
   setValue: (value: string) => void;
   getCaret: () => PlainTextEditorCaretPosition | null;
@@ -188,10 +188,10 @@ export function PlainTextEditor({
     (
       snapshot: PlainTextEditorSelectionSnapshot,
       { focus = true, scrollIntoView = false }: PlainTextEditorApplySelectionOptions = {},
-    ) => {
+    ): boolean => {
       const view = viewRef.current;
       if (!view) {
-        return;
+        return false;
       }
 
       const selection = editorSelectionFromSnapshot(view.state.doc, snapshot);
@@ -206,6 +206,7 @@ export function PlainTextEditor({
         view.focus();
       }
       publishSelectionState(view);
+      return true;
     },
     [publishSelectionState],
   );
@@ -217,8 +218,9 @@ export function PlainTextEditor({
     }
     const snapshot = selectionSnapshotRef.current;
     if (snapshot) {
-      applySelection(snapshot);
-      return;
+      if (applySelection(snapshot)) {
+        return;
+      }
     }
     view.focus();
     publishSelectionState(view);
