@@ -6,8 +6,7 @@ import type {
 } from "#shared/rpc/worktree-tree-rpc";
 
 import { cloneOutline } from "../manuscript/outline";
-import type { ResourceSnapshotState } from "../resource-snapshot-state";
-import type { ManuscriptSnapshotState } from "../snapshot-state";
+import type { ManuscriptSnapshotState } from "../snapshots/manuscript";
 
 export function cloneManuscriptTreeNode(node: ManuscriptTreeNode): ManuscriptTreeNode {
   return {
@@ -54,19 +53,6 @@ export function cloneManuscriptSnapshotState(
         {
           ...entry,
           childIds: [...entry.childIds],
-        },
-      ]),
-    ),
-  };
-}
-
-export function cloneResourceSnapshotState(state: ResourceSnapshotState): ResourceSnapshotState {
-  return {
-    entries: new Map(
-      [...state.entries.entries()].map(([id, entry]) => [
-        id,
-        {
-          ...entry,
         },
       ]),
     ),

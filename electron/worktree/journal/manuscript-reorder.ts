@@ -1,4 +1,4 @@
-import type { ManuscriptSnapshotState } from "../snapshot-state";
+import type { ManuscriptSnapshotState } from "../snapshots/manuscript";
 
 function longestIncreasingSubsequenceIndices(values: readonly number[]): Set<number> {
   if (values.length === 0) {

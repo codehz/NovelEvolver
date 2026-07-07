@@ -13,3 +13,16 @@ export type ResourceSnapshotEntry = {
 export type ResourceSnapshotState = {
   entries: Map<string, ResourceSnapshotEntry>;
 };
+
+export function cloneResourceSnapshotState(state: ResourceSnapshotState): ResourceSnapshotState {
+  return {
+    entries: new Map(
+      [...state.entries.entries()].map(([id, entry]) => [
+        id,
+        {
+          ...entry,
+        },
+      ]),
+    ),
+  };
+}

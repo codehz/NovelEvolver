@@ -59,7 +59,6 @@ import {
   normalizeManuscriptTitle,
 } from "./manuscript/outline";
 import { chapterBodyPath } from "./manuscript/paths";
-import type { ResourceSnapshotEntry, ResourceSnapshotState } from "./resource-snapshot-state";
 import {
   parseResourceIndex,
   RESOURCE_ROOT_ID,
@@ -73,13 +72,14 @@ import {
   buildManuscriptSnapshot,
   type ManuscriptEntry,
   type ManuscriptSnapshotState,
-} from "./snapshot-state";
+} from "./snapshots/manuscript";
+import type { ResourceSnapshotEntry, ResourceSnapshotState } from "./snapshots/resource";
+import { cloneResourceSnapshotState } from "./snapshots/resource";
 import { refreshAllFolderChangeStatuses } from "./trees/change-status";
 import {
   cloneManuscriptSnapshotState,
   cloneManuscriptTreeNode,
   cloneManuscriptTreeSnapshot,
-  cloneResourceSnapshotState,
   cloneResourceTreeNode,
   cloneResourceTreeSnapshot,
 } from "./trees/tree-clone";
