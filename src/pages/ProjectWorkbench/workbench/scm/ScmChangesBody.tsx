@@ -2,6 +2,7 @@ import type { ReactNode } from "react";
 
 import { ErrorRetryView } from "#app/components/workbench";
 import type { ChangesSnapshot } from "#shared/rpc/worktree-changes-rpc";
+import type { Change } from "#shared/rpc/worktree-changes-rpc";
 
 import { ScmChangesList } from "./ScmChangesList";
 import { ScmCommitForm } from "./ScmCommitForm";
@@ -13,12 +14,14 @@ function resolveChangesPanelContent({
   result,
   onRetry,
   onRevert,
+  onOpenChange,
 }: {
   loading: boolean;
   error: boolean;
   result: ChangesSnapshot | null;
   onRetry: () => void;
   onRevert: (changeId: string) => void;
+  onOpenChange: (change: Change) => void;
 }): ReactNode {
   if (loading) {
     return <ScmDiffLoading />;
@@ -47,6 +50,7 @@ function resolveChangesPanelContent({
         manuscriptChanges={result.manuscriptChanges}
         resourceChanges={result.resourceChanges}
         onRevert={onRevert}
+        onOpenChange={onOpenChange}
       />
     </>
   );
@@ -62,6 +66,7 @@ export function ScmChangesBody({
   onCommit,
   onRetry,
   onRevert,
+  onOpenChange,
 }: {
   commitMessage: string;
   committing: boolean;
@@ -72,6 +77,7 @@ export function ScmChangesBody({
   onCommit: () => void;
   onRetry: () => void;
   onRevert: (changeId: string) => void;
+  onOpenChange: (change: Change) => void;
 }) {
   return (
     <div className="flex min-h-0 flex-col">
@@ -81,7 +87,7 @@ export function ScmChangesBody({
         onCommit={onCommit}
         onCommitMessageChange={onCommitMessageChange}
       />
-      {resolveChangesPanelContent({ loading, error, result, onRetry, onRevert })}
+      {resolveChangesPanelContent({ loading, error, result, onRetry, onRevert, onOpenChange })}
     </div>
   );
 }

@@ -2,6 +2,7 @@ import { useMemo, useState } from "react";
 
 import { SidebarPaneStack } from "#app/components/workbench";
 
+import { useWorkbenchEditorActions } from "../editor/use-workbench-editor-actions";
 import { SCM_CHANGES_DEFAULT_BODY_HEIGHT, SCM_GRAPH_DEFAULT_BODY_HEIGHT } from "../scm/constants";
 import { ScmChangesBody } from "../scm/ScmChangesBody";
 import { ScmGraphBody } from "../scm/ScmGraphBody";
@@ -22,6 +23,7 @@ export function ScmSidebarSection() {
     setCommitMessage,
   } = useScmChangesState();
   const graph = useScmGraphState(commitsRefreshKey);
+  const { focusTarget } = useWorkbenchEditorActions();
   const [changesExpanded, setChangesExpanded] = useState(true);
   const [graphExpanded, setGraphExpanded] = useState(true);
 
@@ -43,6 +45,19 @@ export function ScmSidebarSection() {
             result={result}
             onCommit={commit}
             onCommitMessageChange={setCommitMessage}
+            onOpenChange={(change) =>
+              focusTarget({
+                kind: "scm-change",
+                changeId: change.id,
+                sourceTarget: {
+                  domain: change.domain,
+                  entityId: change.entityId,
+                },
+                changeKind: change.kind,
+                label: change.label,
+                displayPath: change.displayPath,
+              })
+            }
             onRetry={retry}
             onRevert={revertChange}
           />
@@ -79,6 +94,7 @@ export function ScmSidebarSection() {
       graph.retry,
       graphExpanded,
       loading,
+      focusTarget,
       result,
       retry,
       revertChange,

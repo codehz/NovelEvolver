@@ -18,6 +18,21 @@ export type ChangeStats = {
   removed: number;
 };
 
+export type ChangeTextComparisonTarget = {
+  domain: ChangeDomain;
+  entityId: string;
+};
+
+export type ChangeTextComparison = {
+  target: ChangeTextComparisonTarget;
+  changeId: string;
+  kind: ChangeKind;
+  label: string;
+  displayPath: string;
+  originalContent: string;
+  currentContent: string;
+};
+
 type ChangeBase = {
   id: string;
   domain: ChangeDomain;
@@ -108,6 +123,13 @@ export type WorktreeChangesEvent = WorktreeChangesSnapshotEvent | WorktreeChange
 export interface WorktreeChangesHandle extends RpcTarget {
   subscribe(): RpcSubscriptionStream<WorktreeChangesEvent>;
   revertChange(changeId: string): ChangesSnapshot;
+  readChangeTextComparison(changeId: string): ChangeTextComparison;
+  readChangeTextComparisonByTarget(target: ChangeTextComparisonTarget): ChangeTextComparison;
+  restoreChangeTextHunk(
+    target: ChangeTextComparisonTarget,
+    expectedContent: string,
+    nextContent: string,
+  ): void;
   commit(message: string, author: { name: string; email: string }): ChangesSnapshot;
   listCommits(maxCount?: number): {
     hash: string;

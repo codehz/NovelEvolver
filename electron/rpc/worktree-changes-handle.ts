@@ -2,6 +2,8 @@ import { RpcTarget } from "capnweb";
 
 import type {
   Change,
+  ChangeTextComparison,
+  ChangeTextComparisonTarget,
   ChangesSnapshot,
   WorktreeChangesEvent,
   WorktreeChangesHandle,
@@ -27,6 +29,22 @@ export class WorktreeChangesHandleImpl extends RpcTarget implements WorktreeChan
     const scmSnapshot = this.#session.revertScmChange(changeId);
     // 转换为 ChangesSnapshot
     return this.#convertScmSnapshotToChangesSnapshot(scmSnapshot);
+  }
+
+  readChangeTextComparison(changeId: string): ChangeTextComparison {
+    return this.#session.readScmChangeTextComparison(changeId);
+  }
+
+  readChangeTextComparisonByTarget(target: ChangeTextComparisonTarget): ChangeTextComparison {
+    return this.#session.readScmChangeTextComparisonByTarget(target);
+  }
+
+  restoreChangeTextHunk(
+    target: ChangeTextComparisonTarget,
+    expectedContent: string,
+    nextContent: string,
+  ): void {
+    this.#session.restoreScmChangeTextHunk(target, expectedContent, nextContent);
   }
 
   commit(message: string, author: { name: string; email: string }): ChangesSnapshot {

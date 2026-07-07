@@ -41,6 +41,13 @@ function activateOnEnterSpace(onActivate: () => void) {
   };
 }
 
+function isPreviewableChange(change: Change): boolean {
+  return (
+    (change.kind === "create" || change.kind === "delete" || change.kind === "content") &&
+    (change.entityKind === "chapter" || change.entityKind === "file")
+  );
+}
+
 function buildScmChangeRoots(
   manuscriptChanges: Change[],
   resourceChanges: Change[],
@@ -72,11 +79,13 @@ function ScmFolderRow({
   layout,
   onToggle,
   onRevert,
+  onOpenChange,
 }: {
   row: Extract<ScmChangeFlatRow, { kind: "folder" }>;
   layout: TreeRowLayout;
   onToggle: (key: string) => void;
   onRevert: (changeId: string) => void;
+  onOpenChange: (change: Change) => void;
 }) {
   const hasChildren = row.childCount > 0;
   const toggle = () => {
@@ -105,6 +114,7 @@ function ScmFolderRow({
         onClick={hasChildren ? toggle : undefined}
         onKeyDown={hasChildren ? activateOnEnterSpace(toggle) : undefined}
         onRevert={onRevert}
+        onOpen={isPreviewableChange(row.inlineChange) ? onOpenChange : undefined}
       />
     );
   }
@@ -136,10 +146,12 @@ export function ScmChangesList({
   manuscriptChanges,
   resourceChanges,
   onRevert,
+  onOpenChange,
 }: {
   manuscriptChanges: Change[];
   resourceChanges: Change[];
   onRevert: (changeId: string) => void;
+  onOpenChange: (change: Change) => void;
 }) {
   const roots = useMemo(
     () => buildScmChangeRoots(manuscriptChanges, resourceChanges),
@@ -228,9 +240,28 @@ export function ScmChangesList({
               onToggle={() => onToggleDomain(row.key)}
             />
           ) : row.kind === "folder" ? (
-            <ScmFolderRow row={row} layout={layout} onToggle={onToggleFolder} onRevert={onRevert} />
+            <ScmFolderRow
+              row={row}
+              layout={layout}
+              onToggle={onToggleFolder}
+              onRevert={onRevert}
+              onOpenChange={onOpenChange}
+            />
           ) : (
-            <ScmDiffItemRow item={row.item} depth={row.depth} layout={layout} onRevert={onRevert} />
+            <ScmDiffItemRow
+              item={row.item}
+              depth={row.depth}
+              layout={layout}
+              onRevert={onRevert}
+              onOpen={isPreviewableChange(row.item) ? onOpenChange : undefined}
+              onClick={isPreviewableChange(row.item) ? () => onOpenChange(row.item) : undefined}
+              onKeyDown={
+                isPreviewableChange(row.item)
+                  ? activateOnEnterSpace(() => onOpenChange(row.item))
+                  : undefined
+              }
+              className={isPreviewableChange(row.item) ? cn("cursor-pointer") : undefined}
+            />
           )
         }
       />

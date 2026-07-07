@@ -13,9 +13,9 @@ import { manuscriptTreeMolecule } from "../explorer/manuscript/state/manuscript-
 import { resourceParentChain } from "../explorer/resource-library/resource-tree";
 import { resourceLibraryTreeMolecule } from "../explorer/resource-library/state/resource-tree-molecule";
 import type {
+  ComparisonWorkbenchEditorTab,
   ManuscriptWorkbenchEditorTab,
   ResourceWorkbenchEditorTab,
-  TimelineComparisonWorkbenchEditorTab,
   WorkbenchEditorTab,
 } from "../state/types";
 
@@ -115,18 +115,18 @@ function buildEditorBreadcrumbModel<TTab extends WorkbenchEditorTab, TNode>(
   };
 }
 
-function buildTimelineComparisonBreadcrumbModel(
-  tab: TimelineComparisonWorkbenchEditorTab,
+function buildComparisonBreadcrumbModel(
+  tab: ComparisonWorkbenchEditorTab,
   context: EditorBreadcrumbContext,
 ): EditorBreadcrumbModel {
   const targetModel =
-    tab.target.domain === "manuscript"
+    tab.target.sourceTarget.domain === "manuscript"
       ? buildEditorBreadcrumbModel(
           manuscriptBreadcrumbDefinition,
           {
-            id: `timeline-target:${tab.target.entityId}`,
+            id: `comparison-target:${tab.target.sourceTarget.entityId}`,
             kind: "manuscript",
-            chapterId: tab.target.entityId,
+            chapterId: tab.target.sourceTarget.entityId,
             label: tab.label,
           },
           context,
@@ -134,9 +134,9 @@ function buildTimelineComparisonBreadcrumbModel(
       : buildEditorBreadcrumbModel(
           resourceBreadcrumbDefinition,
           {
-            id: `timeline-target:${tab.target.entityId}`,
+            id: `comparison-target:${tab.target.sourceTarget.entityId}`,
             kind: "resource",
-            resourceId: tab.target.entityId,
+            resourceId: tab.target.sourceTarget.entityId,
             label: tab.label,
           },
           context,
@@ -146,7 +146,7 @@ function buildTimelineComparisonBreadcrumbModel(
     targetModel.segments.length === 0
       ? [
           {
-            key: "timeline-comparison-path",
+            key: "comparison-path",
             label: tab.displayPath,
             clickable: false,
             current: false,
@@ -158,12 +158,18 @@ function buildTimelineComparisonBreadcrumbModel(
         }));
 
   return {
-    ariaLabel: `${targetModel.ariaLabel}时间线预览`,
+    ariaLabel: `${targetModel.ariaLabel}${tab.target.kind === "timeline-entry" ? "时间线预览" : "更改预览"}`,
     segments: [
       ...segments,
       {
-        key: `timeline-comparison:${tab.entryId}`,
-        label: `预览 ${tab.entryShortHash ?? tab.entryMessage}`,
+        key:
+          tab.target.kind === "timeline-entry"
+            ? `timeline-comparison:${tab.target.entryId}`
+            : `scm-comparison:${tab.target.sourceTarget.domain}:${tab.target.sourceTarget.entityId}`,
+        label:
+          tab.target.kind === "timeline-entry"
+            ? `预览 ${tab.target.entryShortHash ?? tab.target.entryMessage}`
+            : `预览 ${tab.target.changeKind}`,
         clickable: false,
         current: true,
       },
@@ -182,10 +188,10 @@ const workbenchEditorBreadcrumbBuilders = {
     context: EditorBreadcrumbContext,
   ): EditorBreadcrumbModel =>
     buildEditorBreadcrumbModel(manuscriptBreadcrumbDefinition, tab, context),
-  "timeline-comparison": (
-    tab: TimelineComparisonWorkbenchEditorTab,
+  comparison: (
+    tab: ComparisonWorkbenchEditorTab,
     context: EditorBreadcrumbContext,
-  ): EditorBreadcrumbModel => buildTimelineComparisonBreadcrumbModel(tab, context),
+  ): EditorBreadcrumbModel => buildComparisonBreadcrumbModel(tab, context),
 } satisfies {
   [K in WorkbenchEditorTab["kind"]]: (
     tab: Extract<WorkbenchEditorTab, { kind: K }>,

@@ -4,7 +4,12 @@ import { useCallback, useRef } from "react";
 
 import { notificationApi } from "#app/lib/notifications";
 
-import { useManuscript, useResourceLibrary, useWorktreeTimeline } from "../branch/branch-scopes";
+import {
+  useManuscript,
+  useResourceLibrary,
+  useWorktreeChanges,
+  useWorktreeTimeline,
+} from "../branch/branch-scopes";
 import { useWorktreeTreeSnapshot } from "../branch/use-worktree-tree-snapshot";
 import { workbenchEditorMolecule } from "../state/molecules";
 import type {
@@ -34,6 +39,7 @@ export function useWorkbenchEditorActions() {
   const setEditorState = useSetAtom(editorStateAtom);
   const manuscript = useManuscript();
   const resources = useResourceLibrary();
+  const changes = useWorktreeChanges();
   const timeline = useWorktreeTimeline();
   const snapshot = useWorktreeTreeSnapshot();
   const focusRequestIdRef = useRef(0);
@@ -64,6 +70,7 @@ export function useWorkbenchEditorActions() {
         const { document, tab } = await resolveWorkbenchEditorTarget(target, {
           manuscript,
           resources,
+          changes,
           timeline,
           snapshot,
         });
@@ -88,6 +95,7 @@ export function useWorkbenchEditorActions() {
     [
       editorStateAtom,
       manuscript,
+      changes,
       requestNavigation,
       resources,
       setEditorState,

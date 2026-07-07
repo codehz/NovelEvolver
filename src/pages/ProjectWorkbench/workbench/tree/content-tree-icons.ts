@@ -64,16 +64,10 @@ export function resourceTreeNodeIconClass(
 const contentEditorTabIconClassByKind = {
   manuscript: cn(contentFileLeafIconClass("chapter"), "mr-2"),
   resource: cn(contentFileLeafIconClass("file"), "mr-2"),
-  "timeline-comparison": cn(
-    "icon-[codicon--diff]",
-    "mr-2 text-ctp-green",
-    contentTreeIconLayoutClass,
-  ),
-} satisfies Record<"manuscript" | "resource" | "timeline-comparison", string>;
+  comparison: cn("icon-[codicon--diff]", "mr-2 text-ctp-green", contentTreeIconLayoutClass),
+} satisfies Record<"manuscript" | "resource" | "comparison", string>;
 
-export function contentEditorTabIconClass(
-  kind: "manuscript" | "resource" | "timeline-comparison",
-): string {
+export function contentEditorTabIconClass(kind: "manuscript" | "resource" | "comparison"): string {
   return contentEditorTabIconClassByKind[kind];
 }
 

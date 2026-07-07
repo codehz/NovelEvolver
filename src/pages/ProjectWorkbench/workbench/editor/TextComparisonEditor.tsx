@@ -7,9 +7,9 @@ import { editorHostClass } from "#app/components/PlainTextEditor/codemirror-them
 import { plainTextEditorViewExtensions } from "#app/components/PlainTextEditor/codemirror-view-extensions";
 import { cn } from "#app/lib/cn";
 
-const timelineMergePreviewRootClass = cn("min-h-0 min-w-0 flex-1");
+const textComparisonRootClass = cn("min-h-0 min-w-0 flex-1");
 
-const timelineMergePreviewTheme = EditorView.theme(
+const textComparisonTheme = EditorView.theme(
   {
     ".cm-deletedChunk": {
       backgroundColor: "color-mix(in srgb, var(--color-ctp-red) 12%, transparent)",
@@ -60,26 +60,26 @@ const timelineMergePreviewTheme = EditorView.theme(
   { dark: true },
 );
 
-export type TimelineMergePreviewRestoreHunkChange = {
+export type TextComparisonRestoreHunkChange = {
   beforeContent: string;
   afterContent: string;
 };
 
-type TimelineMergePreviewEditorProps = {
+type TextComparisonEditorProps = {
   active: boolean;
   originalContent: string;
   currentContent: string;
-  onRestoreHunk?: (change: TimelineMergePreviewRestoreHunkChange) => Promise<void> | void;
+  onRestoreHunk?: (change: TextComparisonRestoreHunkChange) => Promise<void> | void;
   "aria-label"?: string;
 };
 
-export function TimelineMergePreviewEditor({
+export function TextComparisonEditor({
   active,
   originalContent,
   currentContent,
   onRestoreHunk,
-  "aria-label": ariaLabel = "时间线差异预览",
-}: TimelineMergePreviewEditorProps) {
+  "aria-label": ariaLabel = "文本差异预览",
+}: TextComparisonEditorProps) {
   const hostRef = useRef<HTMLDivElement>(null);
   const viewRef = useRef<EditorView | null>(null);
   const onRestoreHunkRef = useRef(onRestoreHunk);
@@ -96,7 +96,7 @@ export function TimelineMergePreviewEditor({
     const extensions: Extension[] = [
       ...plainTextEditorViewExtensions,
       drawSelection(),
-      timelineMergePreviewTheme,
+      textComparisonTheme,
       EditorState.readOnly.of(true),
       EditorView.editable.of(false),
       EditorView.updateListener.of((update) => {
@@ -136,31 +136,35 @@ export function TimelineMergePreviewEditor({
       }),
       unifiedMergeView({
         original: originalContent,
-        mergeControls: (type, action) => {
-          if (type === "accept") {
-            const hidden = document.createElement("span");
-            hidden.style.display = "none";
-            return hidden;
-          }
+        ...(onRestoreHunk === undefined
+          ? {}
+          : {
+              mergeControls: (type: "accept" | "reject", action: (event: MouseEvent) => void) => {
+                if (type === "accept") {
+                  const hidden = document.createElement("span");
+                  hidden.style.display = "none";
+                  return hidden;
+                }
 
-          const button = document.createElement("button");
-          button.type = "button";
-          button.setAttribute("aria-label", "回滚此块");
-          button.title = "回滚此块";
-          button.onmousedown = (event) => {
-            if (restoreInFlightRef.current) {
-              event.preventDefault();
-              return;
-            }
-            action(event);
-          };
+                const button = document.createElement("button");
+                button.type = "button";
+                button.setAttribute("aria-label", "回滚此块");
+                button.title = "回滚此块";
+                button.onmousedown = (event) => {
+                  if (restoreInFlightRef.current) {
+                    event.preventDefault();
+                    return;
+                  }
+                  action(event);
+                };
 
-          const icon = button.appendChild(document.createElement("span"));
-          icon.className = "icon-[codicon--discard]";
-          icon.setAttribute("aria-hidden", "true");
-          button.append("回滚此块");
-          return button;
-        },
+                const icon = button.appendChild(document.createElement("span"));
+                icon.className = "icon-[codicon--discard]";
+                icon.setAttribute("aria-hidden", "true");
+                button.append("回滚此块");
+                return button;
+              },
+            }),
         allowInlineDiffs: true,
         collapseUnchanged: {
           margin: 3,
@@ -182,7 +186,7 @@ export function TimelineMergePreviewEditor({
       view.destroy();
       viewRef.current = null;
     };
-  }, [ariaLabel, currentContent, originalContent]);
+  }, [ariaLabel, currentContent, onRestoreHunk, originalContent]);
 
   useLayoutEffect(() => {
     if (active) {
@@ -191,7 +195,7 @@ export function TimelineMergePreviewEditor({
   }, [active]);
 
   return (
-    <div className={timelineMergePreviewRootClass}>
+    <div className={textComparisonRootClass}>
       <div ref={hostRef} className={editorHostClass} />
     </div>
   );

@@ -1,3 +1,4 @@
+import type { ChangeDomain, ChangeKind } from "#shared/rpc/worktree-changes-rpc";
 import type { TimelineEntryKind, TimelineTarget } from "#shared/rpc/worktree-timeline-rpc";
 
 import type { EditorSelectionSnapshot } from "./editor-caret";
@@ -16,15 +17,28 @@ export type ManuscriptWorkbenchEditorTab = {
   label: string;
 };
 
-export type TimelineComparisonWorkbenchEditorTab = {
+export type ComparisonWorkbenchEditorTab = {
   id: string;
-  kind: "timeline-comparison";
+  kind: "comparison";
   label: string;
-  target: TimelineTarget;
-  entryId: string;
-  entryMessage: string;
-  entryTimestamp: number;
-  entryShortHash?: string;
+  target:
+    | {
+        kind: "timeline-entry";
+        sourceTarget: TimelineTarget;
+        entryId: string;
+        entryMessage: string;
+        entryTimestamp: number;
+        entryShortHash?: string;
+      }
+    | {
+        kind: "scm-change";
+        sourceTarget: {
+          domain: ChangeDomain;
+          entityId: string;
+        };
+        changeId: string;
+        changeKind: ChangeKind;
+      };
   displayPath: string;
   originalContent: string;
   currentContent: string;
@@ -32,7 +46,7 @@ export type TimelineComparisonWorkbenchEditorTab = {
 
 export type ContentWorkbenchEditorTab = ResourceWorkbenchEditorTab | ManuscriptWorkbenchEditorTab;
 
-export type WorkbenchEditorTab = ContentWorkbenchEditorTab | TimelineComparisonWorkbenchEditorTab;
+export type WorkbenchEditorTab = ContentWorkbenchEditorTab | ComparisonWorkbenchEditorTab;
 
 export type ResourceWorkbenchEditorDocument = {
   key: string;
@@ -86,6 +100,17 @@ export type WorkbenchEditorTarget =
       message: string;
       timestamp: number;
       shortHash?: string;
+      displayPath: string;
+    }
+  | {
+      kind: "scm-change";
+      changeId: string;
+      sourceTarget: {
+        domain: ChangeDomain;
+        entityId: string;
+      };
+      changeKind: ChangeKind;
+      label: string;
       displayPath: string;
     };
 

@@ -8,6 +8,8 @@ import { nanoid } from "nanoid";
 import { normalizeResourceNameInput } from "#shared/resource-library-path";
 import type { WorktreeNodeIdResult } from "#shared/rpc/manuscript-rpc";
 import type {
+  ChangeTextComparison,
+  ChangeTextComparisonTarget,
   ChangesSnapshot,
   WorktreeChangesEvent,
   WorktreeChangesTreeDelta,
@@ -1055,13 +1057,7 @@ export class WorktreeSession {
   }
 
   revertScmChange(changeId: string): ScmSnapshot {
-    const snapshot = this.#currentScmSnapshot();
-    const change = [...snapshot.manuscriptChanges, ...snapshot.resourceChanges].find(
-      (candidate) => candidate.id === changeId,
-    );
-    if (change === undefined) {
-      throw new Error(`Unknown SCM change: ${changeId}`);
-    }
+    const change = this.#requireScmChange(changeId);
 
     const beforeRestore = this.#currentJournalEntitySnapshot(change);
     const [domain, kind, entityId] = changeId.split(":", 3);
@@ -1094,6 +1090,36 @@ export class WorktreeSession {
       ],
     });
     return this.#currentScmSnapshot();
+  }
+
+  readScmChangeTextComparison(changeId: string): ChangeTextComparison {
+    const change = this.#requireScmChange(changeId);
+    return this.#buildScmChangeTextComparison(change);
+  }
+
+  readScmChangeTextComparisonByTarget(target: ChangeTextComparisonTarget): ChangeTextComparison {
+    return this.#buildScmChangeTextComparison(this.#requireTextComparisonChangeByTarget(target));
+  }
+
+  restoreScmChangeTextHunk(
+    target: ChangeTextComparisonTarget,
+    expectedContent: string,
+    nextContent: string,
+  ): void {
+    const change = this.#requireTextComparisonChangeByTarget(target);
+    const { currentContent } = this.#requireTextComparisonContent(change);
+    if (currentContent !== expectedContent) {
+      throw new Error("当前内容已变化，请重新打开差异预览后再试。");
+    }
+    if (currentContent === nextContent) {
+      return;
+    }
+
+    if (change.domain === "manuscript") {
+      this.#restoreManuscriptTextHunk(change, expectedContent, nextContent);
+    } else {
+      this.#restoreResourceTextHunk(change, expectedContent, nextContent);
+    }
   }
 
   commitScm(message: string, author: { name: string; email: string }): ScmSnapshot {
@@ -2248,6 +2274,154 @@ export class WorktreeSession {
     const state = side === "before" ? this.#baseResources : this.#currentResources;
     const entry = state.entries.get(change.entityId);
     return entry?.type === "file" ? entry.content : null;
+  }
+
+  #requireScmChange(changeId: string): ScmChange {
+    const snapshot = this.#currentScmSnapshot();
+    const change = [...snapshot.manuscriptChanges, ...snapshot.resourceChanges].find(
+      (candidate) => candidate.id === changeId,
+    );
+    if (change === undefined) {
+      throw new Error(`Unknown SCM change: ${changeId}`);
+    }
+    return change;
+  }
+
+  #requireTextComparisonChangeByTarget(target: ChangeTextComparisonTarget): ScmChange {
+    const snapshot = this.#currentScmSnapshot();
+    const change = [...snapshot.manuscriptChanges, ...snapshot.resourceChanges].find(
+      (candidate) =>
+        candidate.domain === target.domain &&
+        candidate.entityId === target.entityId &&
+        (candidate.kind === "create" ||
+          candidate.kind === "delete" ||
+          candidate.kind === "content") &&
+        (candidate.entityKind === "chapter" || candidate.entityKind === "file"),
+    );
+    if (change === undefined) {
+      throw new Error("此节点当前没有可预览的文本差异。");
+    }
+    return change;
+  }
+
+  #buildScmChangeTextComparison(change: ScmChange): ChangeTextComparison {
+    const { originalContent, currentContent } = this.#requireTextComparisonContent(change);
+    return {
+      target: {
+        domain: change.domain,
+        entityId: change.entityId,
+      },
+      changeId: change.id,
+      kind: change.kind,
+      label: change.label,
+      displayPath: change.displayPath,
+      originalContent,
+      currentContent,
+    };
+  }
+
+  #requireTextComparisonContent(change: ScmChange): {
+    originalContent: string;
+    currentContent: string;
+  } {
+    if (change.kind !== "create" && change.kind !== "delete" && change.kind !== "content") {
+      throw new Error("此类变更暂不支持文本差异预览。");
+    }
+    if (change.entityKind !== "chapter" && change.entityKind !== "file") {
+      throw new Error("只有文本叶子节点支持差异预览。");
+    }
+
+    const originalContent = this.#journalContentForScmChange(change, "before");
+    const currentContent = this.#journalContentForScmChange(change, "after");
+
+    return {
+      originalContent: originalContent ?? "",
+      currentContent: currentContent ?? "",
+    };
+  }
+
+  #restoreManuscriptTextHunk(
+    change: ScmChange,
+    expectedContent: string,
+    nextContent: string,
+  ): void {
+    if (change.entityKind !== "chapter") {
+      throw new Error("Only manuscript chapter changes support text restore.");
+    }
+
+    if (change.kind === "delete") {
+      this.#restoreManuscriptSubtreeFromBase(change.entityId);
+      const restoredEntry = this.#currentManuscript.entries.get(change.entityId);
+      if (restoredEntry?.type !== "chapter") {
+        throw new Error(`Manuscript chapter is missing: ${change.entityId}`);
+      }
+      restoredEntry.content = nextContent;
+    } else {
+      const entry = this.#currentManuscript.entries.get(change.entityId);
+      if (entry?.type !== "chapter") {
+        throw new Error(`Manuscript chapter is missing: ${change.entityId}`);
+      }
+      entry.content = nextContent;
+    }
+
+    this.#persistAndEmit(false, {
+      source: "restore",
+      title: "局部恢复",
+      groupKey: `restore:hunk:${change.domain}:${change.entityId}`,
+      operations: [
+        {
+          kind: "restore",
+          domain: change.domain,
+          entityId: change.entityId,
+          entityKind: "chapter",
+          label: this.#currentManuscript.entries.get(change.entityId)?.title ?? change.label,
+          displayPath:
+            this.#currentManuscript.entries.get(change.entityId)?.displayPath ?? change.displayPath,
+          beforeContent: expectedContent,
+          afterContent: nextContent,
+        },
+      ],
+    });
+  }
+
+  #restoreResourceTextHunk(change: ScmChange, expectedContent: string, nextContent: string): void {
+    if (change.entityKind !== "file") {
+      throw new Error("Only resource file changes support text restore.");
+    }
+
+    if (change.kind === "delete") {
+      this.#restoreResourceSubtreeFromBase(change.entityId);
+      const restoredEntry = this.#currentResources.entries.get(change.entityId);
+      if (restoredEntry?.type !== "file") {
+        throw new Error(`Resource file is missing: ${change.entityId}`);
+      }
+      restoredEntry.content = nextContent;
+    } else {
+      const entry = this.#currentResources.entries.get(change.entityId);
+      if (entry?.type !== "file") {
+        throw new Error(`Resource file is missing: ${change.entityId}`);
+      }
+      entry.content = nextContent;
+    }
+
+    this.#persistAndEmit(false, {
+      source: "restore",
+      title: "局部恢复",
+      groupKey: `restore:hunk:${change.domain}:${change.entityId}`,
+      operations: [
+        {
+          kind: "restore",
+          domain: change.domain,
+          entityId: change.entityId,
+          entityKind: "file",
+          label: this.#currentResources.entries.get(change.entityId)?.name ?? change.label,
+          displayPath:
+            this.#currentResources.entries.get(change.entityId)?.displayPath ?? change.displayPath,
+          beforeContent: expectedContent,
+          afterContent: nextContent,
+        },
+      ],
+    });
   }
 
   #currentJournalEntitySnapshot(change: ScmChange): JournalEntitySnapshot | null {

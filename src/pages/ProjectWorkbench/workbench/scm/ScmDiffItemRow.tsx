@@ -44,6 +44,7 @@ export function ScmDiffItemRow({
   onClick,
   onKeyDown,
   onRevert,
+  onOpen,
 }: {
   item: Change;
   depth: number;
@@ -56,6 +57,7 @@ export function ScmDiffItemRow({
   onClick?: () => void;
   onKeyDown?: (event: KeyboardEvent) => void;
   onRevert: (changeId: string) => void;
+  onOpen?: (change: Change) => void;
 }) {
   return (
     <TreeMotionRow
@@ -66,6 +68,7 @@ export function ScmDiffItemRow({
       tabIndex={0}
       onClick={onClick}
       onKeyDown={onKeyDown}
+      onDoubleClick={onOpen ? () => onOpen(item) : undefined}
     >
       {disclosure ?? <span className={treeRowDisclosureSpacerClass} />}
       <span className={iconClassName ?? contentEntityIconClass(item.entityKind)} />

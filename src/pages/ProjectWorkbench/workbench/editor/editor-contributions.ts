@@ -3,6 +3,7 @@ import type { RpcPromise } from "capnweb";
 import { cn } from "#app/lib/cn";
 import type { ManuscriptHandle } from "#shared/rpc/manuscript-rpc";
 import type { ResourceLibraryHandle } from "#shared/rpc/resource-library-rpc";
+import type { WorktreeChangesHandle } from "#shared/rpc/worktree-changes-rpc";
 import type { TimelineTarget, WorktreeTimelineHandle } from "#shared/rpc/worktree-timeline-rpc";
 import type { WorktreeTreeSnapshot } from "#shared/rpc/worktree-tree-rpc";
 
@@ -21,6 +22,7 @@ export type ResolvedWorkbenchEditorTarget = {
 export type WorkbenchEditorTargetContributionContext = {
   manuscript: RpcPromise<ManuscriptHandle>;
   resources: RpcPromise<ResourceLibraryHandle>;
+  changes: RpcPromise<WorktreeChangesHandle>;
   timeline: RpcPromise<WorktreeTimelineHandle>;
   snapshot: WorktreeTreeSnapshot | null;
 };
@@ -157,71 +159,112 @@ const manuscriptEditorContribution: WorkbenchEditorTargetContribution = {
   },
 };
 
-const timelineComparisonEditorContribution: WorkbenchEditorTargetContribution = {
+const comparisonEditorContribution: WorkbenchEditorTargetContribution = {
   targetKind: "timeline-entry",
-  tabKind: "timeline-comparison",
+  tabKind: "comparison",
   iconClass: cn("icon-[codicon--diff]", "mr-2 text-ctp-green", contentTreeIconLayoutClass),
-  label: (target) =>
-    `预览：${(target as Extract<WorkbenchEditorTarget, { kind: "timeline-entry" }>).label}`,
+  label: (target) => {
+    if (target.kind === "timeline-entry") {
+      return `预览：${target.label}`;
+    }
+    const scmTarget = target as Extract<WorkbenchEditorTarget, { kind: "scm-change" }>;
+    return `更改：${scmTarget.label}`;
+  },
   notificationSource: "时间线",
   getTargetKey: (target) =>
-    `timeline-entry:${(target as Extract<WorkbenchEditorTarget, { kind: "timeline-entry" }>).entryId}`,
+    target.kind === "timeline-entry"
+      ? `timeline-entry:${target.entryId}`
+      : `scm-change:${
+          (target as Extract<WorkbenchEditorTarget, { kind: "scm-change" }>).sourceTarget.domain
+        }:${
+          (target as Extract<WorkbenchEditorTarget, { kind: "scm-change" }>).sourceTarget.entityId
+        }`,
   getTabTargetKey: (tab) =>
-    `timeline-entry:${(tab as Extract<WorkbenchEditorTab, { kind: "timeline-comparison" }>).entryId}`,
+    (() => {
+      const comparisonTab = tab as Extract<WorkbenchEditorTab, { kind: "comparison" }>;
+      return comparisonTab.target.kind === "timeline-entry"
+        ? `timeline-entry:${comparisonTab.target.entryId}`
+        : `scm-change:${comparisonTab.target.sourceTarget.domain}:${comparisonTab.target.sourceTarget.entityId}`;
+    })(),
   getTimelineTarget: (tab) =>
-    (tab as Extract<WorkbenchEditorTab, { kind: "timeline-comparison" }>).target,
+    (() => {
+      const comparisonTab = tab as Extract<WorkbenchEditorTab, { kind: "comparison" }>;
+      return comparisonTab.target.kind === "timeline-entry"
+        ? comparisonTab.target.sourceTarget
+        : comparisonTab.target.sourceTarget;
+    })(),
   syncTabWithTree: (tab) => tab,
   areTabsEqual: (left, right) => {
-    const timelineTab = left as Extract<WorkbenchEditorTab, { kind: "timeline-comparison" }>;
-    const candidate = right as Extract<WorkbenchEditorTab, { kind: "timeline-comparison" }>;
+    const timelineTab = left as Extract<WorkbenchEditorTab, { kind: "comparison" }>;
+    const candidate = right as Extract<WorkbenchEditorTab, { kind: "comparison" }>;
     return (
       timelineTab.id === candidate.id &&
       timelineTab.label === candidate.label &&
-      timelineTab.entryId === candidate.entryId &&
-      timelineTab.entryMessage === candidate.entryMessage &&
-      timelineTab.entryTimestamp === candidate.entryTimestamp &&
-      timelineTab.entryShortHash === candidate.entryShortHash &&
       timelineTab.displayPath === candidate.displayPath &&
       timelineTab.originalContent === candidate.originalContent &&
       timelineTab.currentContent === candidate.currentContent &&
-      timelineTab.target.domain === candidate.target.domain &&
-      timelineTab.target.entityId === candidate.target.entityId
+      JSON.stringify(timelineTab.target) === JSON.stringify(candidate.target)
     );
   },
   resolveTarget: async (target, context) => {
-    const timelineTarget = target as Extract<WorkbenchEditorTarget, { kind: "timeline-entry" }>;
-    const currentContent = (
-      timelineTarget.sourceTarget.domain === "manuscript"
-        ? Promise.resolve(context.manuscript.readChapter(timelineTarget.sourceTarget.entityId))
-        : Promise.resolve(context.resources.readFile(timelineTarget.sourceTarget.entityId))
-    ).catch((error: unknown) => {
-      if (timelineTarget.entryKind === "delete") {
-        return "";
-      }
-      throw error;
-    });
-    const [historyContent, current] = await Promise.all([
-      Promise.resolve(context.timeline.readTimelineEntryContent(timelineTarget.entryId)),
-      currentContent,
-    ]);
+    if (target.kind === "timeline-entry") {
+      const currentContent = (
+        target.sourceTarget.domain === "manuscript"
+          ? Promise.resolve(context.manuscript.readChapter(target.sourceTarget.entityId))
+          : Promise.resolve(context.resources.readFile(target.sourceTarget.entityId))
+      ).catch((error: unknown) => {
+        if (target.entryKind === "delete") {
+          return "";
+        }
+        throw error;
+      });
+      const [historyContent, current] = await Promise.all([
+        Promise.resolve(context.timeline.readTimelineEntryContent(target.entryId)),
+        currentContent,
+      ]);
 
-    if (historyContent.content === null) {
-      throw new Error("此记录没有可预览内容。");
+      if (historyContent.content === null) {
+        throw new Error("此记录没有可预览内容。");
+      }
+
+      return {
+        tab: {
+          id: `timeline-entry:${target.entryId}`,
+          kind: "comparison",
+          label: `预览：${target.label}`,
+          target: {
+            kind: "timeline-entry",
+            sourceTarget: target.sourceTarget,
+            entryId: target.entryId,
+            entryMessage: target.message,
+            entryTimestamp: target.timestamp,
+            entryShortHash: target.shortHash,
+          },
+          displayPath: target.displayPath,
+          originalContent: historyContent.content,
+          currentContent: current,
+        },
+      };
     }
 
+    const scmTarget = target as Extract<WorkbenchEditorTarget, { kind: "scm-change" }>;
+    const comparison = await Promise.resolve(
+      context.changes.readChangeTextComparison(scmTarget.changeId),
+    );
     return {
       tab: {
-        id: `timeline-entry:${timelineTarget.entryId}`,
-        kind: "timeline-comparison",
-        label: `预览：${timelineTarget.label}`,
-        target: timelineTarget.sourceTarget,
-        entryId: timelineTarget.entryId,
-        entryMessage: timelineTarget.message,
-        entryTimestamp: timelineTarget.timestamp,
-        entryShortHash: timelineTarget.shortHash,
-        displayPath: timelineTarget.displayPath,
-        originalContent: historyContent.content,
-        currentContent: current,
+        id: `scm-change:${comparison.target.domain}:${comparison.target.entityId}`,
+        kind: "comparison",
+        label: `更改：${comparison.label}`,
+        target: {
+          kind: "scm-change",
+          sourceTarget: comparison.target,
+          changeId: comparison.changeId,
+          changeKind: comparison.kind,
+        },
+        displayPath: comparison.displayPath,
+        originalContent: comparison.originalContent,
+        currentContent: comparison.currentContent,
       },
     };
   },
@@ -230,12 +273,15 @@ const timelineComparisonEditorContribution: WorkbenchEditorTargetContribution = 
 const workbenchEditorTargetContributions = [
   resourceEditorContribution,
   manuscriptEditorContribution,
-  timelineComparisonEditorContribution,
+  comparisonEditorContribution,
 ] as const;
 
 function getWorkbenchEditorTargetContribution(
   target: WorkbenchEditorTarget,
 ): WorkbenchEditorTargetContribution {
+  if (target.kind === "scm-change") {
+    return comparisonEditorContribution;
+  }
   const contribution = workbenchEditorTargetContributions.find(
     (candidate) => candidate.targetKind === target.kind,
   );

@@ -7,14 +7,11 @@ import { PlainTextEditor, type PlainTextEditorHandle } from "#app/components/Pla
 import { notificationApi } from "#app/lib/notifications";
 import { useOneShotRequestConsumer } from "#app/lib/one-shot-request";
 
-import { useWorktreeTimeline } from "../branch/branch-scopes";
+import { useWorktreeChanges, useWorktreeTimeline } from "../branch/branch-scopes";
 import { editorTabMolecule, workbenchEditorMolecule } from "../state/molecules";
 import type { ContentWorkbenchEditorTab, WorkbenchEditorTab } from "../state/types";
 import { getWorkbenchEditorTabTargetKey } from "./editor-contributions";
-import {
-  TimelineMergePreviewEditor,
-  type TimelineMergePreviewRestoreHunkChange,
-} from "./TimelineMergePreviewEditor";
+import { TextComparisonEditor, type TextComparisonRestoreHunkChange } from "./TextComparisonEditor";
 import type { WorkbenchEditorDocumentRuntime } from "./use-workbench-editor-document-runtime";
 
 export type WorkbenchEditorPaneProps = {
@@ -94,21 +91,56 @@ function TextDocumentEditorPane({
   );
 }
 
-function TimelineComparisonEditorPane({
+function ComparisonEditorPane({
   tab,
   active,
 }: WorkbenchEditorPaneProps & {
-  tab: Extract<WorkbenchEditorTab, { kind: "timeline-comparison" }>;
+  tab: Extract<WorkbenchEditorTab, { kind: "comparison" }>;
 }) {
+  const changes = useWorktreeChanges();
   const timeline = useWorktreeTimeline();
   const { editorStateAtom } = useMolecule(workbenchEditorMolecule);
   const setEditorState = useSetAtom(editorStateAtom);
   const handleRestoreTimelineHunk = useCallback(
-    async ({ beforeContent, afterContent }: TimelineMergePreviewRestoreHunkChange) => {
+    async ({ beforeContent, afterContent }: TextComparisonRestoreHunkChange) => {
       try {
-        await Promise.resolve(
-          timeline.restoreTimelineEntryContentHunk(tab.entryId, beforeContent, afterContent),
-        );
+        if (tab.target.kind === "timeline-entry") {
+          await Promise.resolve(
+            timeline.restoreTimelineEntryContentHunk(
+              tab.target.entryId,
+              beforeContent,
+              afterContent,
+            ),
+          );
+        } else {
+          await Promise.resolve(
+            changes.restoreChangeTextHunk(tab.target.sourceTarget, beforeContent, afterContent),
+          );
+          const next = await Promise.resolve(
+            changes.readChangeTextComparisonByTarget(tab.target.sourceTarget),
+          );
+          setEditorState((state) => ({
+            ...state,
+            tabs: state.tabs.map((candidate) =>
+              candidate.id === tab.id
+                ? {
+                    ...tab,
+                    target: {
+                      kind: "scm-change",
+                      sourceTarget: next.target,
+                      changeId: next.changeId,
+                      changeKind: next.kind,
+                    },
+                    label: `更改：${next.label}`,
+                    displayPath: next.displayPath,
+                    originalContent: next.originalContent,
+                    currentContent: next.currentContent,
+                  }
+                : candidate,
+            ),
+          }));
+          return;
+        }
         setEditorState((state) => ({
           ...state,
           tabs: state.tabs.map((candidate) =>
@@ -116,21 +148,22 @@ function TimelineComparisonEditorPane({
           ),
         }));
       } catch (error) {
-        notificationApi.error(error instanceof Error ? error.message : "局部回滚失败", {
-          source: "时间线",
+        notificationApi.error(error instanceof Error ? error.message : "局部恢复失败", {
+          source: tab.target.kind === "timeline-entry" ? "时间线" : "SCM",
         });
         throw error;
       }
     },
-    [setEditorState, tab, timeline],
+    [changes, setEditorState, tab, timeline],
   );
 
   return (
-    <TimelineMergePreviewEditor
+    <TextComparisonEditor
       active={active}
       currentContent={tab.currentContent}
       originalContent={tab.originalContent}
       onRestoreHunk={handleRestoreTimelineHunk}
+      aria-label={tab.target.kind === "timeline-entry" ? "时间线差异预览" : "SCM 差异预览"}
     />
   );
 }
@@ -145,8 +178,8 @@ const workbenchEditorPaneContributions: readonly WorkbenchEditorPaneContribution
     Pane: TextDocumentEditorPane as ComponentType<WorkbenchEditorPaneProps>,
   },
   {
-    tabKind: "timeline-comparison",
-    Pane: TimelineComparisonEditorPane as ComponentType<WorkbenchEditorPaneProps>,
+    tabKind: "comparison",
+    Pane: ComparisonEditorPane as ComponentType<WorkbenchEditorPaneProps>,
   },
 ] as const;
 
