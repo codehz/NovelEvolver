@@ -1,26 +1,8 @@
-import { molecule, use } from "bunshi/react";
-import { atomWithReducer } from "jotai/utils";
-
-import { createOneShotRequestChannel } from "#app/shared/lib/ui/one-shot-request";
-
-import { branchNameScope } from "../../../branch/branch-scopes";
-import { projectIdScope } from "../../../state/molecules";
-import { resourceTreeReducer } from "./tree-data-reducer";
+import { createContentTreeMolecule } from "../../shared/create-content-tree-molecule";
+import { resourceTreeReducer } from "./resource-tree-reducer";
 import { initialResourceTreeState } from "./types";
 
-export const resourceLibraryTreeMolecule = molecule(() => {
-  use(projectIdScope);
-  use(branchNameScope);
-
-  const treeAtom = atomWithReducer(initialResourceTreeState, resourceTreeReducer);
-  const revealChannel = createOneShotRequestChannel<string>();
-
-  return {
-    treeAtom,
-    onRevealRequest: revealChannel.subscribe,
-    retryPendingReveal: revealChannel.replay,
-    revealInTree: (path: string): void => {
-      revealChannel.publish(path);
-    },
-  };
-});
+export const resourceLibraryTreeMolecule = createContentTreeMolecule(
+  resourceTreeReducer,
+  initialResourceTreeState,
+);

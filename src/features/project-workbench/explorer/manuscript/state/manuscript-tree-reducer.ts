@@ -5,7 +5,7 @@ import type {
 } from "#shared/rpc/worktree-tree-rpc";
 
 import type { TreeResolvedDrop } from "../../../tree/tree-drag";
-import { applyWorktreeTreeDelta } from "../../../worktree/worktree-tree-state";
+import { applyManuscriptTreeDelta } from "../../../worktree/worktree-tree-state";
 import { findManuscriptParentId } from "../manuscript-tree";
 import { isValidManuscriptMoveTarget } from "../manuscript-tree-placement-policy";
 import type { ManuscriptMoveTarget, ManuscriptTreeState } from "./types";
@@ -67,19 +67,7 @@ export function manuscriptTreeReducer(
       if (state.snapshot === null) {
         return state;
       }
-      const nextSnapshot = applyWorktreeTreeDelta(
-        {
-          revision: action.revision - 1,
-          manuscript: state.snapshot,
-          resources: { rootId: "root", nodes: {} },
-        },
-        {
-          kind: "delta",
-          fromRevision: action.revision - 1,
-          toRevision: action.revision,
-          manuscript: action.delta,
-        },
-      ).manuscript;
+      const nextSnapshot = applyManuscriptTreeDelta(state.snapshot, action.delta);
       return {
         ...state,
         status: "ready",

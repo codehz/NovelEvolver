@@ -2,13 +2,12 @@ import { useMolecule } from "bunshi/react";
 import { useAtomValue, useSetAtom, useStore } from "jotai";
 import { useCallback, useMemo, useRef } from "react";
 
-import { useOneShotRequestConsumer } from "#app/shared/lib/ui/one-shot-request";
 import type { ManuscriptTreeNode } from "#shared/rpc/worktree-tree-rpc";
 import { SidebarHeaderActionButton, SidebarHeaderActions } from "#workbench/chrome";
 
-import { queryTreeRowById } from "../../tree/tree-row-dom";
 import { TreeBody } from "../../tree/TreeBody";
 import type { TreeDropResolveInput } from "../../tree/use-tree-row-pointer-drag";
+import { useContentTreeReveal } from "../shared/content-tree-reveal";
 import { manuscriptParentChain } from "./manuscript-tree";
 import { resolveManuscriptDropTarget } from "./manuscript-tree-placement-policy";
 import {
@@ -39,44 +38,26 @@ export function ManuscriptSectionBody() {
     moveNode,
   } = useManuscriptTreeActions();
 
-  useOneShotRequestConsumer({
-    subscribe: onRevealRequest,
-    replay: retryPendingReveal,
-    retryDeps: [projection.items],
-    consume: (targetId) => {
-      const snapshot = state.snapshot;
-      if (snapshot === null) {
-        return "retry";
-      }
-      const targetNode = snapshot.nodes[targetId];
-      if (targetNode === undefined) {
-        return "done";
-      }
-
-      if (targetId === snapshot.rootId) {
-        listRef.current?.scrollIntoView({ block: "start" });
+  useContentTreeReveal({
+    snapshot: state.snapshot,
+    projection,
+    listRef,
+    onRevealRequest,
+    retryPendingReveal,
+    handlers: {
+      parentChain: manuscriptParentChain,
+      revealRoot: (snapshot) => {
         dispatch({ type: "expand", id: snapshot.rootId });
         dispatch({ type: "select", id: snapshot.rootId });
-        return "done";
-      }
-
-      const ancestorIds = manuscriptParentChain(snapshot, targetId)
-        .map((node) => node.id)
-        .slice(0, -1);
-      for (const ancestorId of ancestorIds) {
-        dispatch({ type: "expand", id: ancestorId });
-      }
-
-      const itemIndex = projection.rowIndexById.get(targetId);
-      const item = itemIndex === undefined ? undefined : projection.items[itemIndex];
-      if (item === undefined) {
-        return "retry";
-      }
-
-      dispatch({ type: "select", id: targetId });
-      const row = listRef.current ? queryTreeRowById(listRef.current, targetId) : null;
-      row?.scrollIntoView({ block: "nearest" });
-      return "done";
+      },
+      expandAncestors: (ancestorIds) => {
+        for (const ancestorId of ancestorIds) {
+          dispatch({ type: "expand", id: ancestorId });
+        }
+      },
+      selectTarget: (targetId) => {
+        dispatch({ type: "select", id: targetId });
+      },
     },
   });
 

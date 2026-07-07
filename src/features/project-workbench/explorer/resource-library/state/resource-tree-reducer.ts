@@ -5,7 +5,7 @@ import type {
 } from "#shared/rpc/worktree-tree-rpc";
 
 import type { TreeResolvedDrop } from "../../../tree/tree-drag";
-import { applyWorktreeTreeDelta } from "../../../worktree/worktree-tree-state";
+import { applyResourceTreeDelta } from "../../../worktree/worktree-tree-state";
 import { findResourceParentId } from "../resource-tree";
 import { isInvalidDropTarget } from "../resource-tree-placement-policy";
 import type { ResourceTreeEditingState, ResourceTreeState } from "./types";
@@ -190,22 +190,7 @@ export function resourceTreeReducer(
       if (state.snapshot === null) {
         return state;
       }
-      return applySnapshot(
-        state,
-        applyWorktreeTreeDelta(
-          {
-            revision: action.revision - 1,
-            manuscript: { rootId: "root", nodes: {} },
-            resources: state.snapshot,
-          },
-          {
-            kind: "delta",
-            fromRevision: action.revision - 1,
-            toRevision: action.revision,
-            resources: action.delta,
-          },
-        ).resources,
-      );
+      return applySnapshot(state, applyResourceTreeDelta(state.snapshot, action.delta));
     case "select":
       return {
         ...state,

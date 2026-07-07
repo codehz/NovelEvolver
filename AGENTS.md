@@ -14,7 +14,16 @@ This project is currently in **prototype development phase** — **no changes ne
 
 ## Project Structure & Module Organization
 
-`src/` contains the Vite renderer application (`App.tsx`, `main.tsx`, `index.css`). `electron/` contains the Electron main and preload processes. Build output goes to `dist/` for the renderer and `dist-electron/` for Electron; do not edit generated files directly. Root config files include `vite.config.ts`, `tsconfig.json`, `.oxlintrc.json`, `.oxfmtrc.json`, and `scripts/build-electron.mjs`. RPC contracts shared between renderer and Electron live in `shared/rpc/`.
+`src/` contains the Vite renderer application (`main.tsx`, `index.css`). `electron/` contains the Electron main and preload processes. Build output goes to `dist/` for the renderer and `dist-electron/` for Electron; do not edit generated files directly. Root config files include `vite.config.ts`, `tsconfig.json`, `.oxlintrc.json`, `.oxfmtrc.json`, and `scripts/build-electron.mjs`. RPC contracts shared between renderer and Electron live in `shared/rpc/`.
+
+Renderer layout (`src/`):
+
+- `app/` — bootstrap (`App.tsx`, `routes.tsx`)
+- `shell/` — global desktop chrome (`WindowFrame`, notifications, quick-pick)
+- `shared/` — cross-feature UI primitives (`shared/ui/`) and utilities (`shared/lib/` grouped as `rpc/`, `shell/`, `ui/`, `notifications/`, `quick-pick/`)
+- `features/` — domain features (`project-list/`, `project-workbench/`)
+
+`features/project-workbench/` domains: `chrome/` (layout shell barrel), `branch/`, `worktree/`, `history/`, `tree/`, `editor/` (`state/`, `contributions/`, `panes/`), `explorer/` (`shared/`, `manuscript/`, `resource-library/`), `changes/`, `search/`, `sidebar/`, `statusbar/`, `auxiliary/`, `state/` (project scope only), `lib/` (workbench-local micro-utils).
 
 `electron/` layout (high level):
 
@@ -27,12 +36,13 @@ This project is currently in **prototype development phase** — **no changes ne
 
 ### Path Aliases
 
-Two path aliases are configured in both `tsconfig.json` (`compilerOptions.paths`) and `path-aliases.ts` (`resolve.alias`, consumed by Vite):
+Three path aliases are configured in both `tsconfig.json` (`compilerOptions.paths`) and `path-aliases.ts` (`resolve.alias`, consumed by Vite):
 
-- `#app/*` → `./src/*` — for imports reaching `src/lib`, `src/components`, `src/pages`, `src/routes`, `App`, etc. from outside `src/` or across feature folders.
-- `#shared/*` → `./shared/*` — for importing shared types and utilities from `electron/` or `src/` renderer code.
+- `#app/*` → `./src/*` — renderer root (`#app/app/App`, `#app/shared/lib/ui/cn`, `#app/features/project-list`, etc.)
+- `#shared/*` → `./shared/*` — IPC/RPC contracts shared with `electron/`
+- `#workbench/*` → `./src/features/project-workbench/*` — workbench-internal cross-domain imports (`#workbench/tree/TreeBody`, `#workbench/editor/state/molecules`)
 
-**Rules:** Prefer aliases over deep relative paths (`../../../lib/cn` → `#app/lib/cn`). Keep single-dot relative imports within the same feature folder (e.g. `workbench/layout` importing `./ActivityBar`, `rpc/server` importing `./transport`). Do not add a `#electron` alias — Electron internals stay as relative (`../db/app-database`, `./changes-ops`). For the workbench barrel (`src/components/workbench/index.ts`), always import via `#app/components/workbench` from outside the workbench folder; inside workbench keep subdirectory-relative imports.
+**Rules:** Prefer aliases over deep relative paths (`../../../shared/lib/ui/cn` → `#app/shared/lib/ui/cn`). Keep single-dot relative imports within the same domain folder (e.g. `chrome/layout` importing `./WorkbenchLayout`, `rpc/server` importing `./transport`). Do not add a `#electron` alias — Electron internals stay as relative (`../db/app-database`, `./changes-ops`). Import workbench chrome via `#workbench/chrome` (barrel), not internal `chrome/layout/` / `chrome/sidebar/` subpaths. Use `#workbench/*` only inside `features/project-workbench/`; feature entrypoints export through `features/project-workbench/index.ts` for external consumers.
 
 ### Electron RPC
 
@@ -82,7 +92,7 @@ Follow the existing Conventional Commit style: `feat(electron): ...`, `fix: ...`
 
 ## ScrollArea usage
 
-`ScrollArea` (`src/components/ScrollArea.tsx`) wraps a single controlled viewport driven by the shared `ScrollbarController` (`src/lib/scrollbar/`). It is designed to be the **outermost scroll container** of a panel/section, not a nested inner wrapper.
+`ScrollArea` (`src/shared/ui/ScrollArea.tsx`) wraps a single controlled viewport driven by the shared `ScrollbarController` (`src/shared/lib/ui/scrollbar/`). It is designed to be the **outermost scroll container** of a panel/section, not a nested inner wrapper.
 
 - **Do not nest `ScrollArea` inside another `ScrollArea`.** The controller listens to scroll/resize on its viewport and renders a sticky rail; nesting produces overlapping sticky rails, double scrollbar metrics, and broken thumb sizing because the inner controller reads a viewport that is itself scrolled by the outer one.
 - Each scrollable surface in a layout should have **exactly one** `ScrollArea`. If a sub-region needs to scroll independently, model it as its own sibling `ScrollArea` (with its own `fill` / flex container) rather than placing it inside an outer `ScrollArea`'s children.

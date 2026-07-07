@@ -8,64 +8,20 @@ import type {
   WorktreeTreeSnapshot,
 } from "#shared/rpc/worktree-tree-rpc";
 
-function applyManuscriptTreeDelta(
+import { applyTreeDelta } from "./apply-tree-delta";
+
+export function applyManuscriptTreeDelta(
   snapshot: ManuscriptTreeSnapshot,
   delta: ManuscriptTreeDelta,
 ): ManuscriptTreeSnapshot {
-  const nodes = { ...snapshot.nodes };
-  for (const nodeId of delta.deleteNodeIds) {
-    delete nodes[nodeId];
-  }
-  for (const [nodeId, node] of Object.entries(delta.putNodes)) {
-    nodes[nodeId] = {
-      ...node,
-      childIds: [...node.childIds],
-    };
-  }
-  for (const patch of delta.setChildren) {
-    const current = nodes[patch.parentId];
-    if (current === undefined) {
-      continue;
-    }
-    nodes[patch.parentId] = {
-      ...current,
-      childIds: [...patch.childIds],
-    };
-  }
-  return {
-    rootId: snapshot.rootId,
-    nodes,
-  };
+  return applyTreeDelta(snapshot, delta);
 }
 
-function applyResourceTreeDelta(
+export function applyResourceTreeDelta(
   snapshot: ResourceTreeSnapshot,
   delta: ResourceTreeDelta,
 ): ResourceTreeSnapshot {
-  const nodes = { ...snapshot.nodes };
-  for (const nodeId of delta.deleteNodeIds) {
-    delete nodes[nodeId];
-  }
-  for (const [nodeId, node] of Object.entries(delta.putNodes)) {
-    nodes[nodeId] = {
-      ...node,
-      childIds: [...node.childIds],
-    };
-  }
-  for (const patch of delta.setChildren) {
-    const current = nodes[patch.parentId];
-    if (current === undefined) {
-      continue;
-    }
-    nodes[patch.parentId] = {
-      ...current,
-      childIds: [...patch.childIds],
-    };
-  }
-  return {
-    rootId: snapshot.rootId,
-    nodes,
-  };
+  return applyTreeDelta(snapshot, delta);
 }
 
 export function applyWorktreeTreeDelta(
