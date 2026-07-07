@@ -177,7 +177,6 @@ export function WorkbenchLayout({
             panelWidth={primarySidebarPanelWidth}
             resizeTransitionDisabled={activeResizeSide === "primary"}
             spacerWidth={primarySidebarSpacerWidth}
-            title={activePrimaryView?.title ?? primaryViews[0]!.title}
             visible={primarySidebarVisible}
           >
             {primarySidebarContent}
