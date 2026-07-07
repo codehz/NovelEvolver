@@ -1,5 +1,5 @@
-import { unifiedMergeView } from "@codemirror/merge";
-import { EditorState, type Extension } from "@codemirror/state";
+import { getOriginalDoc, originalDocChangeEffect, unifiedMergeView } from "@codemirror/merge";
+import { ChangeSet, Compartment, EditorState, type Extension } from "@codemirror/state";
 import { drawSelection, EditorView } from "@codemirror/view";
 import { useEffect, useLayoutEffect, useRef } from "react";
 
@@ -65,10 +65,24 @@ export type TextComparisonRestoreHunkChange = {
   afterContent: string;
 };
 
+function editableStateExtensions(editable: boolean): Extension[] {
+  return [EditorState.readOnly.of(!editable), EditorView.editable.of(editable)];
+}
+
+function contentAttributesExtension(ariaLabel: string): Extension {
+  return EditorView.contentAttributes.of({
+    "aria-label": ariaLabel,
+    "aria-multiline": "true",
+    role: "textbox",
+  });
+}
+
 type TextComparisonEditorProps = {
   active: boolean;
   originalContent: string;
   currentContent: string;
+  editable?: boolean;
+  onChange?: (next: string) => void;
   onRestoreHunk?: (change: TextComparisonRestoreHunkChange) => Promise<void> | void;
   "aria-label"?: string;
 };
@@ -77,14 +91,25 @@ export function TextComparisonEditor({
   active,
   originalContent,
   currentContent,
+  editable = false,
+  onChange,
   onRestoreHunk,
   "aria-label": ariaLabel = "文本差异预览",
 }: TextComparisonEditorProps) {
   const hostRef = useRef<HTMLDivElement>(null);
   const viewRef = useRef<EditorView | null>(null);
+  const editableCompartmentRef = useRef(new Compartment());
+  const contentAttributesCompartmentRef = useRef(new Compartment());
+  const initialAriaLabelRef = useRef(ariaLabel);
+  const initialCurrentContentRef = useRef(currentContent);
+  const initialEditableRef = useRef(editable);
+  const initialOriginalContentRef = useRef(originalContent);
+  const onChangeRef = useRef(onChange);
   const onRestoreHunkRef = useRef(onRestoreHunk);
   const restoreInFlightRef = useRef(false);
+  const suppressOnChangeRef = useRef(false);
 
+  onChangeRef.current = onChange;
   onRestoreHunkRef.current = onRestoreHunk;
 
   useEffect(() => {
@@ -97,74 +122,74 @@ export function TextComparisonEditor({
       ...plainTextEditorViewExtensions,
       drawSelection(),
       textComparisonTheme,
-      EditorState.readOnly.of(true),
-      EditorView.editable.of(false),
+      editableCompartmentRef.current.of(editableStateExtensions(initialEditableRef.current)),
       EditorView.updateListener.of((update) => {
-        if (
-          !update.docChanged ||
-          !update.transactions.some((transaction) => transaction.isUserEvent("revert"))
-        ) {
+        if (!update.docChanged) {
           return;
         }
 
-        const beforeContent = update.startState.doc.toString();
-        const afterContent = update.state.doc.toString();
-        const restoreHunk = onRestoreHunkRef.current;
-        if (beforeContent === afterContent || restoreHunk === undefined) {
-          return;
-        }
+        if (update.transactions.some((transaction) => transaction.isUserEvent("revert"))) {
+          const beforeContent = update.startState.doc.toString();
+          const afterContent = update.state.doc.toString();
+          const restoreHunk = onRestoreHunkRef.current;
+          if (beforeContent === afterContent || restoreHunk === undefined) {
+            return;
+          }
 
-        restoreInFlightRef.current = true;
-        void Promise.resolve(restoreHunk({ beforeContent, afterContent }))
-          .catch(() => {
-            update.view.dispatch({
-              changes: {
-                from: 0,
-                to: update.view.state.doc.length,
-                insert: beforeContent,
-              },
+          restoreInFlightRef.current = true;
+          void Promise.resolve(restoreHunk({ beforeContent, afterContent }))
+            .catch(() => {
+              suppressOnChangeRef.current = true;
+              update.view.dispatch({
+                changes: {
+                  from: 0,
+                  to: update.view.state.doc.length,
+                  insert: beforeContent,
+                },
+              });
+            })
+            .finally(() => {
+              restoreInFlightRef.current = false;
             });
-          })
-          .finally(() => {
-            restoreInFlightRef.current = false;
-          });
+          return;
+        }
+
+        const shouldNotify = !suppressOnChangeRef.current;
+        suppressOnChangeRef.current = false;
+        if (shouldNotify) {
+          onChangeRef.current?.(update.state.doc.toString());
+        }
       }),
-      EditorView.contentAttributes.of({
-        "aria-label": ariaLabel,
-        "aria-multiline": "true",
-        role: "textbox",
-      }),
+      contentAttributesCompartmentRef.current.of(
+        contentAttributesExtension(initialAriaLabelRef.current),
+      ),
       unifiedMergeView({
-        original: originalContent,
-        ...(onRestoreHunk === undefined
-          ? {}
-          : {
-              mergeControls: (type: "accept" | "reject", action: (event: MouseEvent) => void) => {
-                if (type === "accept") {
-                  const hidden = document.createElement("span");
-                  hidden.style.display = "none";
-                  return hidden;
-                }
+        original: initialOriginalContentRef.current,
+        mergeControls: (type: "accept" | "reject", action: (event: MouseEvent) => void) => {
+          if (type === "accept" || onRestoreHunkRef.current === undefined) {
+            const hidden = document.createElement("span");
+            hidden.style.display = "none";
+            return hidden;
+          }
 
-                const button = document.createElement("button");
-                button.type = "button";
-                button.setAttribute("aria-label", "回滚此块");
-                button.title = "回滚此块";
-                button.onmousedown = (event) => {
-                  if (restoreInFlightRef.current) {
-                    event.preventDefault();
-                    return;
-                  }
-                  action(event);
-                };
+          const button = document.createElement("button");
+          button.type = "button";
+          button.setAttribute("aria-label", "回滚此块");
+          button.title = "回滚此块";
+          button.onmousedown = (event) => {
+            if (restoreInFlightRef.current) {
+              event.preventDefault();
+              return;
+            }
+            action(event);
+          };
 
-                const icon = button.appendChild(document.createElement("span"));
-                icon.className = "icon-[codicon--discard]";
-                icon.setAttribute("aria-hidden", "true");
-                button.append("回滚此块");
-                return button;
-              },
-            }),
+          const icon = button.appendChild(document.createElement("span"));
+          icon.className = "icon-[codicon--discard]";
+          icon.setAttribute("aria-hidden", "true");
+          button.append("回滚此块");
+          return button;
+        },
         allowInlineDiffs: true,
         collapseUnchanged: {
           margin: 3,
@@ -176,7 +201,7 @@ export function TextComparisonEditor({
     const view = new EditorView({
       parent: host,
       state: EditorState.create({
-        doc: currentContent,
+        doc: initialCurrentContentRef.current,
         extensions,
       }),
     });
@@ -186,7 +211,75 @@ export function TextComparisonEditor({
       view.destroy();
       viewRef.current = null;
     };
-  }, [ariaLabel, currentContent, onRestoreHunk, originalContent]);
+  }, []);
+
+  useEffect(() => {
+    const view = viewRef.current;
+    if (!view) {
+      return;
+    }
+
+    view.dispatch({
+      effects: editableCompartmentRef.current.reconfigure(editableStateExtensions(editable)),
+    });
+  }, [editable]);
+
+  useEffect(() => {
+    const view = viewRef.current;
+    if (!view) {
+      return;
+    }
+
+    view.dispatch({
+      effects: contentAttributesCompartmentRef.current.reconfigure(
+        contentAttributesExtension(ariaLabel),
+      ),
+    });
+  }, [ariaLabel]);
+
+  useEffect(() => {
+    const view = viewRef.current;
+    if (!view || view.state.doc.toString() === currentContent) {
+      return;
+    }
+
+    suppressOnChangeRef.current = true;
+    view.dispatch({
+      changes: {
+        from: 0,
+        to: view.state.doc.length,
+        insert: currentContent,
+      },
+    });
+  }, [currentContent]);
+
+  useEffect(() => {
+    const view = viewRef.current;
+    if (!view) {
+      return;
+    }
+
+    const currentOriginal = getOriginalDoc(view.state);
+    if (currentOriginal.toString() === originalContent) {
+      return;
+    }
+
+    view.dispatch({
+      effects: originalDocChangeEffect(
+        view.state,
+        ChangeSet.of(
+          [
+            {
+              from: 0,
+              to: currentOriginal.length,
+              insert: originalContent,
+            },
+          ],
+          currentOriginal.length,
+        ),
+      ),
+    });
+  }, [originalContent]);
 
   useLayoutEffect(() => {
     if (active) {

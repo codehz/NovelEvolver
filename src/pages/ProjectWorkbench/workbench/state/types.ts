@@ -21,6 +21,7 @@ export type ComparisonWorkbenchEditorTab = {
   id: string;
   kind: "comparison";
   label: string;
+  canEditCurrent: boolean;
   target:
     | {
         kind: "timeline-entry";

@@ -1,15 +1,24 @@
 import { useMolecule } from "bunshi/react";
 import { useAtomValue, useSetAtom } from "jotai";
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import type { ComponentType } from "react";
 
 import { PlainTextEditor, type PlainTextEditorHandle } from "#app/components/PlainTextEditor";
 import { notificationApi } from "#app/lib/notifications";
 import { useOneShotRequestConsumer } from "#app/lib/one-shot-request";
 
-import { useWorktreeChanges, useWorktreeTimeline } from "../branch/branch-scopes";
+import {
+  useManuscript,
+  useResourceLibrary,
+  useWorktreeChanges,
+  useWorktreeTimeline,
+} from "../branch/branch-scopes";
 import { editorTabMolecule, workbenchEditorMolecule } from "../state/molecules";
-import type { ContentWorkbenchEditorTab, WorkbenchEditorTab } from "../state/types";
+import type {
+  ComparisonWorkbenchEditorTab,
+  ContentWorkbenchEditorTab,
+  WorkbenchEditorTab,
+} from "../state/types";
 import { getWorkbenchEditorTabTargetKey } from "./editor-contributions";
 import { TextComparisonEditor, type TextComparisonRestoreHunkChange } from "./TextComparisonEditor";
 import type { WorkbenchEditorDocumentRuntime } from "./use-workbench-editor-document-runtime";
@@ -25,6 +34,50 @@ type WorkbenchEditorPaneContribution<TTab extends WorkbenchEditorTab = Workbench
   tabKind: TTab["kind"];
   Pane: ComponentType<WorkbenchEditorPaneProps>;
 };
+
+const COMPARISON_AUTOSAVE_DEBOUNCE_MS = 600;
+
+function isMissingComparisonTargetError(error: unknown): boolean {
+  if (!(error instanceof Error)) {
+    return false;
+  }
+
+  return (
+    error.message.startsWith("Manuscript node does not exist:") ||
+    error.message.startsWith("Manuscript chapter is missing:") ||
+    error.message.startsWith("Resource node does not exist:") ||
+    error.message.startsWith("Resource file is missing:")
+  );
+}
+
+function readComparisonTargetCurrentContent(
+  target: ComparisonWorkbenchEditorTab["target"]["sourceTarget"],
+  manuscript: ReturnType<typeof useManuscript>,
+  resources: ReturnType<typeof useResourceLibrary>,
+): Promise<string | null> {
+  const read =
+    target.domain === "manuscript"
+      ? Promise.resolve(manuscript.readChapter(target.entityId))
+      : Promise.resolve(resources.readFile(target.entityId));
+  return read.catch((error: unknown) => {
+    if (isMissingComparisonTargetError(error)) {
+      return null;
+    }
+    throw error;
+  });
+}
+
+function writeComparisonTargetCurrentContent(
+  target: ComparisonWorkbenchEditorTab["target"]["sourceTarget"],
+  content: string,
+  manuscript: ReturnType<typeof useManuscript>,
+  resources: ReturnType<typeof useResourceLibrary>,
+): Promise<void> {
+  if (target.domain === "manuscript") {
+    return Promise.resolve(manuscript.writeChapter(target.entityId, content));
+  }
+  return Promise.resolve(resources.writeFile(target.entityId, content));
+}
 
 function TextDocumentEditorPane({
   tab,
@@ -98,13 +151,111 @@ function ComparisonEditorPane({
   tab: Extract<WorkbenchEditorTab, { kind: "comparison" }>;
 }) {
   const noScmTextDiffErrorMessage = "此节点当前没有可预览的文本差异。";
+  const manuscript = useManuscript();
+  const resources = useResourceLibrary();
   const changes = useWorktreeChanges();
   const timeline = useWorktreeTimeline();
   const { editorStateAtom } = useMolecule(workbenchEditorMolecule);
   const setEditorState = useSetAtom(editorStateAtom);
+  const autosaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const manuscriptRef = useRef(manuscript);
+  const resourcesRef = useRef(resources);
+  const latestTabRef = useRef(tab);
+
+  manuscriptRef.current = manuscript;
+  resourcesRef.current = resources;
+  latestTabRef.current = tab;
+
+  const clearPendingAutosave = useCallback(() => {
+    if (autosaveTimerRef.current !== null) {
+      clearTimeout(autosaveTimerRef.current);
+      autosaveTimerRef.current = null;
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!tab.canEditCurrent) {
+      clearPendingAutosave();
+    }
+  }, [clearPendingAutosave, tab.canEditCurrent]);
+
+  useEffect(
+    () => () => {
+      clearPendingAutosave();
+    },
+    [clearPendingAutosave],
+  );
+
+  const updateComparisonTab = useCallback(
+    (update: (candidate: ComparisonWorkbenchEditorTab) => ComparisonWorkbenchEditorTab) => {
+      setEditorState((state) => ({
+        ...state,
+        tabs: state.tabs.map((candidate) =>
+          candidate.id === tab.id && candidate.kind === "comparison"
+            ? update(candidate)
+            : candidate,
+        ),
+      }));
+    },
+    [setEditorState, tab.id],
+  );
+
+  const handleChange = useCallback(
+    (next: string) => {
+      updateComparisonTab((candidate) => ({
+        ...candidate,
+        currentContent: next,
+      }));
+      if (!latestTabRef.current.canEditCurrent) {
+        clearPendingAutosave();
+        return;
+      }
+
+      clearPendingAutosave();
+      autosaveTimerRef.current = setTimeout(() => {
+        autosaveTimerRef.current = null;
+        const currentTab = latestTabRef.current;
+        if (!currentTab.canEditCurrent) {
+          return;
+        }
+
+        void writeComparisonTargetCurrentContent(
+          currentTab.target.sourceTarget,
+          currentTab.currentContent,
+          manuscriptRef.current,
+          resourcesRef.current,
+        ).catch((error) => {
+          notificationApi.error(error instanceof Error ? error.message : "自动保存失败", {
+            source: currentTab.target.kind === "timeline-entry" ? "时间线" : "SCM",
+          });
+
+          void readComparisonTargetCurrentContent(
+            currentTab.target.sourceTarget,
+            manuscriptRef.current,
+            resourcesRef.current,
+          )
+            .then((content) => {
+              if (content !== null) {
+                return;
+              }
+              clearPendingAutosave();
+              updateComparisonTab((candidate) => ({
+                ...candidate,
+                canEditCurrent: false,
+                currentContent: "",
+              }));
+            })
+            .catch(() => {});
+        });
+      }, COMPARISON_AUTOSAVE_DEBOUNCE_MS);
+    },
+    [clearPendingAutosave, updateComparisonTab],
+  );
+
   const handleRestoreTimelineHunk = useCallback(
     async ({ beforeContent, afterContent }: TextComparisonRestoreHunkChange) => {
       try {
+        clearPendingAutosave();
         if (tab.target.kind === "timeline-entry") {
           await Promise.resolve(
             timeline.restoreTimelineEntryContentHunk(
@@ -128,15 +279,17 @@ function ComparisonEditorPane({
           setEditorState((state) => ({
             ...state,
             tabs: state.tabs.map((candidate) =>
-              candidate.id === tab.id
+              candidate.id === tab.id && candidate.kind === "comparison"
                 ? {
-                    ...tab,
+                    ...candidate,
                     ...(next === null
                       ? {
+                          canEditCurrent: true,
                           originalContent: afterContent,
                           currentContent: afterContent,
                         }
                       : {
+                          canEditCurrent: next.kind !== "delete",
                           target: {
                             kind: "scm-change" as const,
                             sourceTarget: next.target,
@@ -157,7 +310,12 @@ function ComparisonEditorPane({
         setEditorState((state) => ({
           ...state,
           tabs: state.tabs.map((candidate) =>
-            candidate.id === tab.id ? { ...tab, currentContent: afterContent } : candidate,
+            candidate.id === tab.id && candidate.kind === "comparison"
+              ? {
+                  ...candidate,
+                  currentContent: afterContent,
+                }
+              : candidate,
           ),
         }));
       } catch (error) {
@@ -167,7 +325,7 @@ function ComparisonEditorPane({
         throw error;
       }
     },
-    [changes, noScmTextDiffErrorMessage, setEditorState, tab, timeline],
+    [changes, clearPendingAutosave, noScmTextDiffErrorMessage, setEditorState, tab, timeline],
   );
 
   return (
@@ -175,6 +333,8 @@ function ComparisonEditorPane({
       active={active}
       currentContent={tab.currentContent}
       originalContent={tab.originalContent}
+      editable={tab.canEditCurrent}
+      onChange={handleChange}
       onRestoreHunk={handleRestoreTimelineHunk}
       aria-label={tab.target.kind === "timeline-entry" ? "时间线差异预览" : "SCM 差异预览"}
     />

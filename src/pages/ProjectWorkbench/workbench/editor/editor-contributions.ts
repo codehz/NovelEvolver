@@ -27,6 +27,43 @@ export type WorkbenchEditorTargetContributionContext = {
   snapshot: WorktreeTreeSnapshot | null;
 };
 
+function isMissingComparisonTargetError(error: unknown): boolean {
+  if (!(error instanceof Error)) {
+    return false;
+  }
+
+  return (
+    error.message.startsWith("Manuscript node does not exist:") ||
+    error.message.startsWith("Manuscript chapter is missing:") ||
+    error.message.startsWith("Resource node does not exist:") ||
+    error.message.startsWith("Resource file is missing:")
+  );
+}
+
+async function readComparisonTargetCurrentState(
+  target: TimelineTarget,
+  context: Pick<WorkbenchEditorTargetContributionContext, "manuscript" | "resources">,
+): Promise<{ content: string; canEditCurrent: boolean }> {
+  try {
+    const content =
+      target.domain === "manuscript"
+        ? await Promise.resolve(context.manuscript.readChapter(target.entityId))
+        : await Promise.resolve(context.resources.readFile(target.entityId));
+    return {
+      content,
+      canEditCurrent: true,
+    };
+  } catch (error) {
+    if (isMissingComparisonTargetError(error)) {
+      return {
+        content: "",
+        canEditCurrent: false,
+      };
+    }
+    throw error;
+  }
+}
+
 type WorkbenchEditorTargetContribution = {
   targetKind: WorkbenchEditorTarget["kind"];
   tabKind: WorkbenchEditorTab["kind"];
@@ -200,6 +237,7 @@ const comparisonEditorContribution: WorkbenchEditorTargetContribution = {
     return (
       timelineTab.id === candidate.id &&
       timelineTab.label === candidate.label &&
+      timelineTab.canEditCurrent === candidate.canEditCurrent &&
       timelineTab.displayPath === candidate.displayPath &&
       timelineTab.originalContent === candidate.originalContent &&
       timelineTab.currentContent === candidate.currentContent &&
@@ -208,19 +246,9 @@ const comparisonEditorContribution: WorkbenchEditorTargetContribution = {
   },
   resolveTarget: async (target, context) => {
     if (target.kind === "timeline-entry") {
-      const currentContent = (
-        target.sourceTarget.domain === "manuscript"
-          ? Promise.resolve(context.manuscript.readChapter(target.sourceTarget.entityId))
-          : Promise.resolve(context.resources.readFile(target.sourceTarget.entityId))
-      ).catch((error: unknown) => {
-        if (target.entryKind === "delete") {
-          return "";
-        }
-        throw error;
-      });
       const [historyContent, current] = await Promise.all([
         Promise.resolve(context.timeline.readTimelineEntryContent(target.entryId)),
-        currentContent,
+        readComparisonTargetCurrentState(target.sourceTarget, context),
       ]);
 
       if (historyContent.content === null) {
@@ -232,6 +260,7 @@ const comparisonEditorContribution: WorkbenchEditorTargetContribution = {
           id: `timeline-entry:${target.entryId}`,
           kind: "comparison",
           label: `预览：${target.label}`,
+          canEditCurrent: current.canEditCurrent,
           target: {
             kind: "timeline-entry",
             sourceTarget: target.sourceTarget,
@@ -242,7 +271,7 @@ const comparisonEditorContribution: WorkbenchEditorTargetContribution = {
           },
           displayPath: target.displayPath,
           originalContent: historyContent.content,
-          currentContent: current,
+          currentContent: current.content,
         },
       };
     }
@@ -256,6 +285,7 @@ const comparisonEditorContribution: WorkbenchEditorTargetContribution = {
         id: `scm-change:${comparison.target.domain}:${comparison.target.entityId}`,
         kind: "comparison",
         label: `更改：${comparison.label}`,
+        canEditCurrent: comparison.kind !== "delete",
         target: {
           kind: "scm-change",
           sourceTarget: comparison.target,
