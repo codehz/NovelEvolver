@@ -39,25 +39,59 @@ function findNeedleIndex(haystack: string, needle: string): number {
   return haystack.toLowerCase().indexOf(needle);
 }
 
-function lineColumnAtOffset(text: string, offset: number): { line: number; column: number } {
-  const before = text.slice(0, offset);
-  const lineBreaks = before.split("\n");
-  const line = lineBreaks.length;
-  const column = lineBreaks[lineBreaks.length - 1]!.length;
-  return { line, column };
+function normalizeLineText(line: string): string {
+  return line.endsWith("\r") ? line.slice(0, -1) : line;
 }
 
-function snippetAroundMatch(text: string, matchIndex: number, needleLength: number): string {
+function snippetAroundMatch(line: string, matchIndex: number, needleLength: number): string {
   const start = Math.max(0, matchIndex - SNIPPET_CONTEXT_CHARS);
-  const end = Math.min(text.length, matchIndex + needleLength + SNIPPET_CONTEXT_CHARS);
-  let snippet = text.slice(start, end).replace(/\n/g, " ");
+  const end = Math.min(line.length, matchIndex + needleLength + SNIPPET_CONTEXT_CHARS);
+  let snippet = line.slice(start, end);
   if (start > 0) {
     snippet = `…${snippet}`;
   }
-  if (end < text.length) {
+  if (end < line.length) {
     snippet = `${snippet}…`;
   }
   return snippet;
+}
+
+function collectLineHits<TEntry, THit extends { snippet: string; line: number; column: number }>(
+  entries: Iterable<TEntry>,
+  needle: string,
+  maxResults: number,
+  getContent: (entry: TEntry) => string,
+  buildHit: (entry: TEntry, line: number, column: number, snippet: string) => THit,
+): THit[] {
+  const hits: THit[] = [];
+
+  for (const entry of entries) {
+    if (hits.length >= maxResults) {
+      break;
+    }
+
+    const content = getContent(entry);
+    if (content === "") {
+      continue;
+    }
+
+    const lines = content.split("\n");
+    for (const [index, rawLine] of lines.entries()) {
+      if (hits.length >= maxResults) {
+        break;
+      }
+      const lineText = normalizeLineText(rawLine);
+      const column = findNeedleIndex(lineText, needle);
+      if (column === -1) {
+        continue;
+      }
+      hits.push(
+        buildHit(entry, index + 1, column, snippetAroundMatch(lineText, column, needle.length)),
+      );
+    }
+  }
+
+  return hits;
 }
 
 function searchManuscript(
@@ -65,32 +99,22 @@ function searchManuscript(
   needle: string,
   maxResults: number,
 ): ManuscriptSearchHit[] {
-  const hits: ManuscriptSearchHit[] = [];
-
-  for (const entry of entries) {
-    if (hits.length >= maxResults || entry.content === "") {
-      continue;
-    }
-
-    const contentIndex = findNeedleIndex(entry.content, needle);
-    if (contentIndex === -1) {
-      continue;
-    }
-
-    const { line, column } = lineColumnAtOffset(entry.content, contentIndex);
-    hits.push({
+  return collectLineHits(
+    entries,
+    needle,
+    maxResults,
+    (entry) => entry.content,
+    (entry, line, column, snippet) => ({
       domain: "manuscript",
       nodeId: entry.id,
       entityKind: "chapter",
       label: entry.title,
       displayPath: entry.displayPath,
-      snippet: snippetAroundMatch(entry.content, contentIndex, needle.length),
+      snippet,
       line,
       column,
-    });
-  }
-
-  return hits;
+    }),
+  );
 }
 
 function searchResources(
@@ -98,32 +122,22 @@ function searchResources(
   needle: string,
   maxResults: number,
 ): ResourceSearchHit[] {
-  const hits: ResourceSearchHit[] = [];
-
-  for (const entry of entries) {
-    if (hits.length >= maxResults || entry.type !== "file" || entry.content === "") {
-      continue;
-    }
-
-    const contentIndex = findNeedleIndex(entry.content, needle);
-    if (contentIndex === -1) {
-      continue;
-    }
-
-    const { line, column } = lineColumnAtOffset(entry.content, contentIndex);
-    hits.push({
+  return collectLineHits(
+    entries,
+    needle,
+    maxResults,
+    (entry) => (entry.type === "file" ? entry.content : ""),
+    (entry, line, column, snippet) => ({
       domain: "resource",
       nodeId: entry.id,
       entityKind: "file",
       label: entry.name,
       displayPath: entry.displayPath,
-      snippet: snippetAroundMatch(entry.content, contentIndex, needle.length),
+      snippet,
       line,
       column,
-    });
-  }
-
-  return hits;
+    }),
+  );
 }
 
 export function executeWorktreeSearch(

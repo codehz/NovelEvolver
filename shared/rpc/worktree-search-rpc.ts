@@ -21,11 +21,11 @@ type WorktreeSearchHitBase = {
   label: string;
   /** 手稿为章节路径标题；资源为 `resources/` 下相对路径。 */
   displayPath: string;
-  /** 命中的上下文片段（单行或多行，不含高亮标记）。 */
+  /** 命中所在行的上下文片段（单行，不含高亮标记）。 */
   snippet: string;
   /** 命中行号，1-based。 */
   line: number;
-  /** 该行内命中列，0-based UTF-16 偏移。 */
+  /** 该行内首个命中列，0-based UTF-16 偏移。 */
   column: number;
 };
 
