@@ -5,10 +5,10 @@ import type { ProjectMetadata } from "#shared/project";
 import type { BranchWorkspace } from "#shared/rpc/branch-workspace-rpc";
 import type { BranchSummary, ProjectSession } from "#shared/rpc/project-session-rpc";
 
-import type { ProjectDbRecord } from "../db/repositories/projects-repo";
-import type { WorktreeRepository } from "../db/repositories/worktree-repo";
-import { toProjectMetadata } from "../home-path";
-import { WorktreeSession } from "../worktree/session";
+import type { ProjectDbRecord } from "../../db/repositories/projects-repo";
+import type { WorktreeRepository } from "../../db/repositories/worktree-repo";
+import { toProjectMetadata } from "../../projects/home-path";
+import { WorktreeSession } from "../../worktree/session";
 import { BranchWorkspaceImpl } from "./branch-workspace";
 
 /**

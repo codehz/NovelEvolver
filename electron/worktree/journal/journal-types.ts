@@ -4,7 +4,7 @@ import type {
   WorktreeJournalEntityKind,
   WorktreeJournalOperationKind,
   WorktreeJournalSource,
-} from "../db/repositories/worktree-repo";
+} from "../../db/repositories/worktree-repo";
 
 export type JournalOperationCapture = {
   kind: WorktreeJournalOperationKind;

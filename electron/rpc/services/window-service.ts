@@ -4,8 +4,8 @@ import type { BrowserWindow } from "electron";
 import type { WindowService } from "#shared/rpc/window-rpc";
 import type { WindowState } from "#shared/window";
 
-import type { RpcMainDeps } from "./deps";
-import { RpcStreamPublisher } from "./stream-publisher";
+import { RpcStreamPublisher } from "../../lib/stream-publisher";
+import type { RpcMainDeps } from "../server/deps";
 
 export class WindowServiceImpl extends RpcTarget implements WindowService {
   readonly #window: BrowserWindow;

@@ -6,10 +6,10 @@ import type {
   ResourceTreeSnapshot,
 } from "#shared/rpc/worktree-tree-rpc";
 
-import { createEmptyOutline, validateOutline } from "../manuscript-outline";
-import { assertValidResourceRelativePath } from "../resource-library-path";
-import type { ResourceSnapshotEntry, ResourceSnapshotState } from "./resource-snapshot-state";
-import type { ManuscriptSnapshotState } from "./snapshot-state";
+import { createEmptyOutline, validateOutline } from "../manuscript/outline";
+import type { ResourceSnapshotEntry, ResourceSnapshotState } from "../resource-snapshot-state";
+import { assertValidResourceRelativePath } from "../resources/paths";
+import type { ManuscriptSnapshotState } from "../snapshot-state";
 
 export function normalizeResourceNodeName(name: string): string {
   const normalized = normalizeResourceNameInput(name);

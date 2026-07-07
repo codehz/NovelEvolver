@@ -3,7 +3,7 @@ import { RpcTarget } from "capnweb";
 import type { WorktreeNodeIdResult } from "#shared/rpc/manuscript-rpc";
 import type { ResourceLibraryHandle } from "#shared/rpc/resource-library-rpc";
 
-import type { WorktreeSession } from "../worktree/session";
+import type { WorktreeSession } from "../../worktree/session";
 
 export class ResourceLibraryHandleImpl extends RpcTarget implements ResourceLibraryHandle {
   readonly #session: WorktreeSession;

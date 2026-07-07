@@ -1,6 +1,6 @@
 import type { BrowserWindow } from "electron";
 
-import type { AppDatabase } from "../db/app-database";
+import type { AppDatabase } from "../../db/app-database";
 
 export type RpcMainDeps = {
   getAppDb: () => AppDatabase;

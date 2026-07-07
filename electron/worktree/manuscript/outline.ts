@@ -5,7 +5,7 @@ import type {
   ManuscriptOutline,
 } from "#shared/rpc/manuscript-rpc";
 
-import { assertValidManuscriptId } from "./manuscript-path";
+import { assertValidManuscriptId } from "./paths";
 
 export const MANUSCRIPT_ROOT_ID = "root";
 

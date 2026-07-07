@@ -2,7 +2,7 @@ import { RpcTarget } from "capnweb";
 
 import type { ManuscriptHandle, WorktreeNodeIdResult } from "#shared/rpc/manuscript-rpc";
 
-import type { WorktreeSession } from "../worktree/session";
+import type { WorktreeSession } from "../../worktree/session";
 
 export class ManuscriptHandleImpl extends RpcTarget implements ManuscriptHandle {
   readonly #session: WorktreeSession;

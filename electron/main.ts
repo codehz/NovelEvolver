@@ -3,7 +3,7 @@ import { join } from "node:path";
 import { app, BrowserWindow, ipcMain } from "electron";
 
 import { AppDatabase } from "./db/app-database";
-import { ElectronRpcServer } from "./rpc/connect";
+import { ElectronRpcServer } from "./rpc/server/connect";
 
 const isDev = !app.isPackaged;
 

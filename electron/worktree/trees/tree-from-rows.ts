@@ -10,9 +10,9 @@ import type {
   ManuscriptNodeCurrentRow,
   ResourceNodeCommittedRow,
   ResourceNodeCurrentRow,
-} from "../db/repositories/worktree-repo";
-import { MANUSCRIPT_ROOT_ID } from "../manuscript-outline";
-import { RESOURCE_ROOT_ID } from "./resource-index";
+} from "../../db/repositories/worktree-repo";
+import { MANUSCRIPT_ROOT_ID } from "../manuscript/outline";
+import { RESOURCE_ROOT_ID } from "../resources/index";
 
 export function buildResourceTreeFromCurrentRows(
   rows: readonly ResourceNodeCurrentRow[],

@@ -37,40 +37,44 @@ import type {
   WorktreeRecord,
   WorktreeRepository,
 } from "../db/repositories/worktree-repo";
+import { RpcStreamPublisher } from "../lib/stream-publisher";
+import { computeStats, readTextFromTree, type ObjectDatabase } from "./git/diff-utils";
+import { ChangeTracker } from "./journal/change-tracker";
+import { buildJournalChangesSnapshot } from "./journal/journal-pending-projector";
+import type {
+  JournalEntitySnapshot,
+  JournalOperationCapture,
+  JournalRevisionCapture,
+} from "./journal/journal-types";
+import {
+  journalHistoryEntryId,
+  parseJournalHistoryEntryId,
+  sha1Text,
+} from "./journal/journal-types";
+import { computeMinimalReorderedManuscriptIds } from "./journal/manuscript-reorder";
 import {
   clampChildIndex,
   createEmptyOutline,
   MANUSCRIPT_ROOT_ID,
   normalizeManuscriptTitle,
-} from "../manuscript-outline";
-import { chapterBodyPath } from "../manuscript-path";
-import { RESOURCES_DIR } from "../resource-library-path";
-import { RpcStreamPublisher } from "../rpc/stream-publisher";
-import { executeWorktreeSearch } from "../search/worktree-search";
-import { refreshAllFolderChangeStatuses } from "./change-status";
-import { ChangeTracker } from "./change-tracker";
-import { computeStats, readTextFromTree, type ObjectDatabase } from "./diff-utils";
-import { buildJournalChangesSnapshot } from "./journal-pending-projector";
-import type {
-  JournalEntitySnapshot,
-  JournalOperationCapture,
-  JournalRevisionCapture,
-} from "./journal-types";
-import { journalHistoryEntryId, parseJournalHistoryEntryId, sha1Text } from "./journal-types";
-import { computeMinimalReorderedManuscriptIds } from "./manuscript-reorder";
+} from "./manuscript/outline";
+import { chapterBodyPath } from "./manuscript/paths";
+import type { ResourceSnapshotEntry, ResourceSnapshotState } from "./resource-snapshot-state";
 import {
   parseResourceIndex,
   RESOURCE_ROOT_ID,
   resourceIndexFromTree,
   resourceTreeFromIndex,
-} from "./resource-index";
-import type { ResourceSnapshotEntry, ResourceSnapshotState } from "./resource-snapshot-state";
+} from "./resources/index";
+import { RESOURCES_DIR } from "./resources/paths";
+import { executeWorktreeSearch } from "./search";
 import {
   buildBaseManuscriptSnapshot,
   buildManuscriptSnapshot,
   type ManuscriptEntry,
   type ManuscriptSnapshotState,
 } from "./snapshot-state";
+import { refreshAllFolderChangeStatuses } from "./trees/change-status";
 import {
   cloneManuscriptSnapshotState,
   cloneManuscriptTreeNode,
@@ -78,19 +82,19 @@ import {
   cloneResourceSnapshotState,
   cloneResourceTreeNode,
   cloneResourceTreeSnapshot,
-} from "./tree-clone";
+} from "./trees/tree-clone";
 import {
   computeManuscriptTreeDelta,
   computeResourceTreeDelta,
   isEmptyManuscriptTreeDelta,
   isEmptyResourceTreeDelta,
-} from "./tree-delta";
+} from "./trees/tree-delta";
 import {
   buildManuscriptTreeFromCommittedRows,
   buildManuscriptTreeFromCurrentRows,
   buildResourceTreeFromCommittedRows,
   buildResourceTreeFromCurrentRows,
-} from "./tree-from-rows";
+} from "./trees/tree-from-rows";
 import {
   buildResourceSnapshotFromTree,
   clearChangeStatuses,
@@ -99,7 +103,7 @@ import {
   normalizeResourceNodeName,
   sortResourceChildrenByName,
   sortedEntryValues,
-} from "./worktree-tree-bridge";
+} from "./trees/worktree-tree-bridge";
 
 const MANUSCRIPT_ID_SIZE = 10;
 const RESOURCE_ID_SIZE = 10;

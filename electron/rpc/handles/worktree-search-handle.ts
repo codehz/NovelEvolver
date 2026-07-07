@@ -6,7 +6,7 @@ import type {
   WorktreeSearchResult,
 } from "#shared/rpc/worktree-search-rpc";
 
-import type { WorktreeSession } from "../worktree/session";
+import type { WorktreeSession } from "../../worktree/session";
 
 export class WorktreeSearchHandleImpl extends RpcTarget implements WorktreeSearchHandle {
   readonly #session: WorktreeSession;

@@ -8,7 +8,7 @@ import type {
   HistoryTarget,
 } from "#shared/rpc/history-rpc";
 
-import type { WorktreeSession } from "../worktree/session";
+import type { WorktreeSession } from "../../worktree/session";
 
 export class HistoryHandleImpl extends RpcTarget implements HistoryHandle {
   readonly #session: WorktreeSession;

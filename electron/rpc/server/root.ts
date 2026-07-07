@@ -5,9 +5,9 @@ import type { ProjectLibraryService } from "#shared/rpc/project-library-rpc";
 import type { WindowService } from "#shared/rpc/window-rpc";
 import type { WorkspaceService } from "#shared/rpc/workspace-rpc";
 
-import type { ProjectLibraryServiceImpl } from "./project-library-service";
-import type { WindowServiceImpl } from "./window-service";
-import type { WorkspaceServiceImpl } from "./workspace-service";
+import type { ProjectLibraryServiceImpl } from "../services/project-library-service";
+import type { WindowServiceImpl } from "../services/window-service";
+import type { WorkspaceServiceImpl } from "../services/workspace-service";
 
 export class AppRpcRootImpl extends RpcTarget implements AppRpcRoot {
   readonly #windowService: WindowServiceImpl;

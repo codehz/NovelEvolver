@@ -7,9 +7,9 @@ import { createSqliteRepository } from "nano-git/repository/sqlite";
 import type { ProjectMetadata } from "#shared/project";
 import type { ProjectLibraryService } from "#shared/rpc/project-library-rpc";
 
-import { ProjectsRepository } from "../db/repositories/projects-repo";
-import { toProjectMetadata } from "../home-path";
-import type { RpcMainDeps } from "./deps";
+import { ProjectsRepository } from "../../db/repositories/projects-repo";
+import { toProjectMetadata } from "../../projects/home-path";
+import type { RpcMainDeps } from "../server/deps";
 
 export class ProjectLibraryServiceImpl extends RpcTarget implements ProjectLibraryService {
   readonly #window: BrowserWindow;

@@ -1,9 +1,9 @@
 import type { Change, ChangesSnapshot } from "#shared/rpc/worktree-changes-rpc";
 
-import { computeStats } from "./diff-utils";
+import { computeStats } from "../git/diff-utils";
+import type { ResourceSnapshotEntry, ResourceSnapshotState } from "../resource-snapshot-state";
+import type { ManuscriptEntry, ManuscriptSnapshotState } from "../snapshot-state";
 import { computeMinimalReorderedManuscriptIds } from "./manuscript-reorder";
-import type { ResourceSnapshotEntry, ResourceSnapshotState } from "./resource-snapshot-state";
-import type { ManuscriptEntry, ManuscriptSnapshotState } from "./snapshot-state";
 
 type PendingProjectionOptions = {
   revision: number;

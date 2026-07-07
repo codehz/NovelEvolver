@@ -3,10 +3,10 @@ import type { BrowserWindow } from "electron";
 
 import type { WorkspaceService } from "#shared/rpc/workspace-rpc";
 
-import { ProjectsRepository } from "../db/repositories/projects-repo";
-import { WorktreeRepository } from "../db/repositories/worktree-repo";
-import type { RpcMainDeps } from "./deps";
-import { ProjectSessionImpl } from "./project-session";
+import { ProjectsRepository } from "../../db/repositories/projects-repo";
+import { WorktreeRepository } from "../../db/repositories/worktree-repo";
+import type { RpcMainDeps } from "../server/deps";
+import { ProjectSessionImpl } from "../session/project-session";
 
 export class WorkspaceServiceImpl extends RpcTarget implements WorkspaceService {
   readonly #projects: ProjectsRepository;

@@ -5,9 +5,9 @@ import type {
   ResourceTreeSnapshot,
 } from "#shared/rpc/worktree-tree-rpc";
 
-import { cloneOutline } from "../manuscript-outline";
-import type { ResourceSnapshotState } from "./resource-snapshot-state";
-import type { ManuscriptSnapshotState } from "./snapshot-state";
+import { cloneOutline } from "../manuscript/outline";
+import type { ResourceSnapshotState } from "../resource-snapshot-state";
+import type { ManuscriptSnapshotState } from "../snapshot-state";
 
 export function cloneManuscriptTreeNode(node: ManuscriptTreeNode): ManuscriptTreeNode {
   return {

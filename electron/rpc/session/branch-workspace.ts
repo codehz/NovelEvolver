@@ -7,12 +7,12 @@ import type { ResourceLibraryHandle } from "#shared/rpc/resource-library-rpc";
 import type { WorktreeChangesHandle } from "#shared/rpc/worktree-changes-rpc";
 import type { WorktreeSearchHandle } from "#shared/rpc/worktree-search-rpc";
 
-import type { WorktreeSession } from "../worktree/session";
-import { HistoryHandleImpl } from "./history-handle";
-import { ManuscriptHandleImpl } from "./manuscript-handle";
-import { ResourceLibraryHandleImpl } from "./resource-library-handle";
-import { WorktreeChangesHandleImpl } from "./worktree-changes-handle";
-import { WorktreeSearchHandleImpl } from "./worktree-search-handle";
+import type { WorktreeSession } from "../../worktree/session";
+import { HistoryHandleImpl } from "../handles/history-handle";
+import { ManuscriptHandleImpl } from "../handles/manuscript-handle";
+import { ResourceLibraryHandleImpl } from "../handles/resource-library-handle";
+import { WorktreeChangesHandleImpl } from "../handles/worktree-changes-handle";
+import { WorktreeSearchHandleImpl } from "../handles/worktree-search-handle";
 
 /**
  * Server-side RPC target wrapping a SQLite-backed branch worktree session.

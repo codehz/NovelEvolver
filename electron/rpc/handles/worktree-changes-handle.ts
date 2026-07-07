@@ -8,7 +8,7 @@ import type {
   WorktreeChangesHandle,
 } from "#shared/rpc/worktree-changes-rpc";
 
-import type { WorktreeSession } from "../worktree/session";
+import type { WorktreeSession } from "../../worktree/session";
 
 export class WorktreeChangesHandleImpl extends RpcTarget implements WorktreeChangesHandle {
   readonly #session: WorktreeSession;

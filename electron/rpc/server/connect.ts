@@ -12,12 +12,12 @@ import {
   type AppRpcFrame,
 } from "#shared/rpc/transport";
 
+import { ProjectLibraryServiceImpl } from "../services/project-library-service";
+import { WindowServiceImpl } from "../services/window-service";
+import { WorkspaceServiceImpl } from "../services/workspace-service";
 import type { RpcMainDeps } from "./deps";
-import { ProjectLibraryServiceImpl } from "./project-library-service";
 import { AppRpcRootImpl } from "./root";
 import { MainRpcTransport } from "./transport";
-import { WindowServiceImpl } from "./window-service";
-import { WorkspaceServiceImpl } from "./workspace-service";
 
 type RpcSessionRecord = {
   sessionId: string;
