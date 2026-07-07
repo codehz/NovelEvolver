@@ -60,7 +60,7 @@ export function resourceTreeNodeIconClass(
   return contentFileLeafIconClass(type);
 }
 
-/** 编辑器 Tab 图标：正文章节为 book，资源文件为 file-text，时间线对比为 diff。 */
+/** 编辑器 Tab 图标：正文章节为 book，资源文件为 file-text，历史/更改对比为 diff。 */
 const contentEditorTabIconClassByKind = {
   manuscript: cn(contentFileLeafIconClass("chapter"), "mr-2"),
   resource: cn(contentFileLeafIconClass("file"), "mr-2"),

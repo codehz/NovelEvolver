@@ -2,14 +2,17 @@ import { useMemo, useState } from "react";
 
 import { SidebarPaneStack } from "#app/components/workbench";
 
+import { ChangesBody } from "../changes/ChangesBody";
+import {
+  CHANGES_PANEL_DEFAULT_BODY_HEIGHT,
+  HISTORY_GRAPH_DEFAULT_BODY_HEIGHT,
+} from "../changes/constants";
+import { HistoryGraphBody } from "../changes/HistoryGraphBody";
+import { useChangesState } from "../changes/use-changes-state";
+import { useHistoryGraphState } from "../changes/use-history-graph-state";
 import { useWorkbenchEditorActions } from "../editor/use-workbench-editor-actions";
-import { SCM_CHANGES_DEFAULT_BODY_HEIGHT, SCM_GRAPH_DEFAULT_BODY_HEIGHT } from "../scm/constants";
-import { ScmChangesBody } from "../scm/ScmChangesBody";
-import { ScmGraphBody } from "../scm/ScmGraphBody";
-import { useScmChangesState } from "../scm/use-scm-changes-state";
-import { useScmGraphState } from "../scm/use-scm-graph-state";
 
-export function ScmSidebarSection() {
+export function ChangesSidebarSection() {
   const {
     commit,
     commitMessage,
@@ -21,8 +24,8 @@ export function ScmSidebarSection() {
     retry,
     revertChange,
     setCommitMessage,
-  } = useScmChangesState();
-  const graph = useScmGraphState(commitsRefreshKey);
+  } = useChangesState();
+  const graph = useHistoryGraphState(commitsRefreshKey);
   const { focusTarget } = useWorkbenchEditorActions();
   const [changesExpanded, setChangesExpanded] = useState(true);
   const [graphExpanded, setGraphExpanded] = useState(true);
@@ -33,11 +36,11 @@ export function ScmSidebarSection() {
         id: "changes",
         title: "更改",
         ariaLabel: "更改",
-        panelId: "scm-changes-panel",
+        panelId: "changes-panel",
         expanded: changesExpanded,
-        defaultBodyHeight: SCM_CHANGES_DEFAULT_BODY_HEIGHT,
+        defaultBodyHeight: CHANGES_PANEL_DEFAULT_BODY_HEIGHT,
         body: (
-          <ScmChangesBody
+          <ChangesBody
             commitMessage={commitMessage}
             committing={committing}
             error={error}
@@ -47,7 +50,7 @@ export function ScmSidebarSection() {
             onCommitMessageChange={setCommitMessage}
             onOpenChange={(change) =>
               focusTarget({
-                kind: "scm-change",
+                kind: "change",
                 changeId: change.id,
                 sourceTarget: {
                   domain: change.domain,
@@ -66,13 +69,13 @@ export function ScmSidebarSection() {
       },
       {
         id: "graph",
-        title: "图表",
-        ariaLabel: "图表",
-        panelId: "scm-graph-panel",
+        title: "历史",
+        ariaLabel: "历史",
+        panelId: "history-graph-panel",
         expanded: graphExpanded,
-        defaultBodyHeight: SCM_GRAPH_DEFAULT_BODY_HEIGHT,
+        defaultBodyHeight: HISTORY_GRAPH_DEFAULT_BODY_HEIGHT,
         body: (
-          <ScmGraphBody
+          <HistoryGraphBody
             commits={graph.commits}
             error={graph.error}
             loading={graph.loading}

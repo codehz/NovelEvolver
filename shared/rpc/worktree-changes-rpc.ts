@@ -1,6 +1,6 @@
 import type { RpcTarget } from "capnweb";
 
-import type { RpcSubscriptionStream } from "./stream";
+import type { RpcSubscriptionResult } from "./stream";
 import type {
   ManuscriptTreeDelta,
   ManuscriptTreeSnapshot,
@@ -97,7 +97,7 @@ export type ChangesDelta = {
   removedChangeIds: string[];
 };
 
-export type WorktreeChangesSnapshotEvent = {
+export type ChangesSnapshotEvent = {
   kind: "snapshot";
   snapshot: ChangesSnapshot;
   treeSnapshot: {
@@ -106,22 +106,22 @@ export type WorktreeChangesSnapshotEvent = {
   };
 };
 
-/** 订阅首包为 snapshot（整树）；后续 delta 仅携带树 patch，不再重复整棵快照。 */
-export type WorktreeChangesTreeDelta = {
+/** Snapshot-first feed: 首包为 snapshot（整树）；后续 delta 仅携带树 patch。 */
+export type ChangesTreeDelta = {
   manuscript?: ManuscriptTreeDelta;
   resources?: ResourceTreeDelta;
 };
 
-export type WorktreeChangesDeltaEvent = {
+export type ChangesDeltaEvent = {
   kind: "delta";
   delta: ChangesDelta;
-  treeDelta?: WorktreeChangesTreeDelta;
+  treeDelta?: ChangesTreeDelta;
 };
 
-export type WorktreeChangesEvent = WorktreeChangesSnapshotEvent | WorktreeChangesDeltaEvent;
+export type ChangesEvent = ChangesSnapshotEvent | ChangesDeltaEvent;
 
 export interface WorktreeChangesHandle extends RpcTarget {
-  subscribe(): RpcSubscriptionStream<WorktreeChangesEvent>;
+  subscribeChanges(): RpcSubscriptionResult<ChangesEvent>;
   revertChange(changeId: string): ChangesSnapshot;
   readChangeTextComparison(changeId: string): ChangeTextComparison;
   readChangeTextComparisonByTarget(target: ChangeTextComparisonTarget): ChangeTextComparison;
@@ -131,11 +131,4 @@ export interface WorktreeChangesHandle extends RpcTarget {
     nextContent: string,
   ): void;
   commit(message: string, author: { name: string; email: string }): ChangesSnapshot;
-  listCommits(maxCount?: number): {
-    hash: string;
-    shortHash: string;
-    message: string;
-    authorName: string;
-    committedAt: number;
-  }[];
 }

@@ -1,5 +1,4 @@
 import type { Change, ChangesSnapshot } from "#shared/rpc/worktree-changes-rpc";
-import type { ScmChange, ScmSnapshot } from "#shared/rpc/worktree-scm-rpc";
 
 import { computeStats } from "./diff-utils";
 import { computeMinimalReorderedManuscriptIds } from "./manuscript-reorder";
@@ -16,7 +15,7 @@ type PendingProjectionOptions = {
   currentResources: ResourceSnapshotState;
 };
 
-type ProjectedChange = ScmChange & {
+type ProjectedChange = Change & {
   order: number;
 };
 
@@ -24,18 +23,6 @@ type ProjectedPendingChanges = {
   manuscriptChanges: ProjectedChange[];
   resourceChanges: ProjectedChange[];
 };
-
-export function buildJournalScmSnapshot(options: PendingProjectionOptions): ScmSnapshot {
-  const projection = buildProjectedPendingChanges(options);
-  return {
-    revision: options.revision,
-    baseTree: options.baseTree,
-    hasChanges: projection.manuscriptChanges.length > 0 || projection.resourceChanges.length > 0,
-    warning: options.warning,
-    manuscriptChanges: projection.manuscriptChanges,
-    resourceChanges: projection.resourceChanges,
-  };
-}
 
 export function buildJournalChangesSnapshot(options: PendingProjectionOptions): ChangesSnapshot {
   const projection = buildProjectedPendingChanges(options);

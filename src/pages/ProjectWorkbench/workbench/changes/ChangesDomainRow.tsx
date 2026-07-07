@@ -15,14 +15,14 @@ function activateOnEnterSpace(onActivate: () => void) {
   };
 }
 
-const scmGroupCountClass = cn(
+const changeGroupCountClass = cn(
   "ml-auto shrink-0 bg-ctp-surface0 px-1 py-px font-mono text-[10px] text-ctp-subtext0",
 );
-const scmGroupRowClass = cn(
+const changeGroupRowClass = cn(
   "cursor-pointer text-xs font-medium text-ctp-text hover:bg-ctp-surface0/50",
 );
 
-export function ScmDomainRow({
+export function ChangesDomainRow({
   title,
   iconClass,
   expanded,
@@ -42,7 +42,7 @@ export function ScmDomainRow({
       layout={layout}
       depth={0}
       paddingLeftPx={getTreeRowPaddingLeft(0)}
-      className={scmGroupRowClass}
+      className={changeGroupRowClass}
       aria-expanded={expanded}
       tabIndex={0}
       onClick={onToggle}
@@ -51,7 +51,7 @@ export function ScmDomainRow({
       <DisclosureChevron expanded={expanded} />
       <span className={iconClass} />
       <span className="truncate">{title}</span>
-      <span className={scmGroupCountClass}>{childCount}</span>
+      <span className={changeGroupCountClass}>{childCount}</span>
     </TreeMotionRow>
   );
 }

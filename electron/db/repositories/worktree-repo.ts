@@ -505,7 +505,7 @@ export class WorktreeRepository {
       .run(record.projectId, record.blobId, record.contentSha, record.content);
   }
 
-  readJournalTimelineEntries(
+  readJournalHistoryEntries(
     projectId: number,
     branchName: string,
     domain: WorktreeJournalDomain,
@@ -562,7 +562,7 @@ export class WorktreeRepository {
     return rows.map(rowToJournalEntryRecord);
   }
 
-  getJournalTimelineEntry(
+  getJournalHistoryEntry(
     projectId: number,
     branchName: string,
     entryId: string,

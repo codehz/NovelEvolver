@@ -5,14 +5,14 @@ import {
   quickPickApi,
   type QuickPickListItem,
 } from "#app/lib/quick-pick";
-import type { BranchInfo } from "#shared/rpc/projects-rpc";
+import type { BranchSummary } from "#shared/rpc/project-session-rpc";
 
 import { useWorkbenchEditorActions } from "../editor/use-workbench-editor-actions";
 import { useProjectContext } from "../state/molecules";
 import { useBranchPickerSnapshot } from "./branch-data";
 import { useActiveBranchName, useSetActiveBranchAtom } from "./branch-scopes";
 
-function branchToListItem(branch: BranchInfo, activeBranchName: string): QuickPickListItem {
+function branchToListItem(branch: BranchSummary, activeBranchName: string): QuickPickListItem {
   const name = branch.name ?? "";
   return {
     id: name,
@@ -38,7 +38,7 @@ export function useBranchQuickPick() {
         return;
       }
       clearAllTabs();
-      await project.handle.switchBranch(name);
+      await project.checkoutBranch(name);
       setActiveBranchName(name);
       await snapshot.refresh();
     };
@@ -64,7 +64,7 @@ export function useBranchQuickPick() {
       }
       throw error;
     }
-  }, [activeBranchName, clearAllTabs, project.handle, setActiveBranchName, snapshot]);
+  }, [activeBranchName, clearAllTabs, project, setActiveBranchName, snapshot]);
 
   return run;
 }

@@ -1,8 +1,8 @@
-import type { ScmCommitSummary } from "#shared/rpc/worktree-scm-rpc";
+import type { CommitSummary } from "#shared/rpc/history-rpc";
 
-import { ScmGraphCommitRow } from "./ScmGraphCommitRow";
+import { HistoryCommitRow } from "./HistoryCommitRow";
 
-function ScmGraphEmptyState() {
+function HistoryGraphEmptyState() {
   return (
     <div className="flex flex-col items-center gap-2 px-2 py-6 text-center text-xs text-ctp-subtext0">
       <span aria-hidden="true" className="icon-[codicon--history] text-2xl text-ctp-overlay0" />
@@ -11,7 +11,7 @@ function ScmGraphEmptyState() {
   );
 }
 
-function ScmGraphLoading() {
+function HistoryGraphLoading() {
   return (
     <div className="flex flex-col items-center gap-2 px-2 py-6 text-center text-xs text-ctp-subtext0">
       <span aria-hidden="true" className="icon-[codicon--loading] animate-spin text-2xl" />
@@ -20,7 +20,7 @@ function ScmGraphLoading() {
   );
 }
 
-function ScmGraphError({ onRetry }: { onRetry: () => void }) {
+function HistoryGraphError({ onRetry }: { onRetry: () => void }) {
   return (
     <div className="flex flex-col items-center gap-2 px-2 py-6 text-center text-xs text-ctp-subtext0">
       <span aria-hidden="true" className="icon-[codicon--error] text-2xl text-ctp-red" />
@@ -36,12 +36,12 @@ function ScmGraphError({ onRetry }: { onRetry: () => void }) {
   );
 }
 
-function ScmGraphList({ commits }: { commits: ScmCommitSummary[] }) {
+function HistoryGraphList({ commits }: { commits: CommitSummary[] }) {
   return (
     <div className="py-1">
       <ul className="flex flex-col" role="list">
         {commits.map((commit, index) => (
-          <ScmGraphCommitRow
+          <HistoryCommitRow
             key={commit.hash}
             commit={commit}
             isHead={index === 0}
@@ -54,25 +54,25 @@ function ScmGraphList({ commits }: { commits: ScmCommitSummary[] }) {
   );
 }
 
-export function ScmGraphBody({
+export function HistoryGraphBody({
   commits,
   error,
   loading,
   onRetry,
 }: {
-  commits: ScmCommitSummary[] | null;
+  commits: CommitSummary[] | null;
   error: boolean;
   loading: boolean;
   onRetry: () => void;
 }) {
   if (loading) {
-    return <ScmGraphLoading />;
+    return <HistoryGraphLoading />;
   }
   if (error) {
-    return <ScmGraphError onRetry={onRetry} />;
+    return <HistoryGraphError onRetry={onRetry} />;
   }
   if (commits === null || commits.length === 0) {
-    return <ScmGraphEmptyState />;
+    return <HistoryGraphEmptyState />;
   }
-  return <ScmGraphList commits={commits} />;
+  return <HistoryGraphList commits={commits} />;
 }

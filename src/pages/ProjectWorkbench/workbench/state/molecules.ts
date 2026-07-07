@@ -3,9 +3,9 @@ import { useMolecule } from "bunshi/react";
 import { RpcPromise } from "capnweb";
 import { atom } from "jotai";
 
-import { projectsService } from "#app/lib/app-rpc";
+import { workspaceService } from "#app/lib/app-rpc";
 import { createOneShotRequestChannel } from "#app/lib/one-shot-request";
-import { ProjectHandleWithMetadata } from "#shared/rpc/projects-rpc";
+import { ProjectSession } from "#shared/rpc/project-session-rpc";
 
 import { emptyWorkbenchEditorState } from "../editor/editor-tab-manager";
 import type { EditorCaretPosition, EditorSelectionSnapshot } from "./editor-caret";
@@ -19,10 +19,10 @@ export const projectIdScope = createScope<number>(-1);
 export const projectMolecule = molecule(() => {
   const id = use(projectIdScope);
 
-  return projectsService.openProject(id);
+  return workspaceService.openProject(id);
 });
 
-export function useProjectContext(): RpcPromise<ProjectHandleWithMetadata> {
+export function useProjectContext(): RpcPromise<ProjectSession> {
   return useMolecule(projectMolecule);
 }
 

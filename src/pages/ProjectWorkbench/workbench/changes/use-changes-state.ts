@@ -1,13 +1,14 @@
 import { useCallback, useEffect, useState } from "react";
 
-import { consumeRpcStream } from "#app/lib/app-rpc-react";
+import { consumeRpcSubscription } from "#app/lib/app-rpc-react";
 import type { ChangesSnapshot } from "#shared/rpc/worktree-changes-rpc";
 
-import { useWorktreeChanges } from "../branch/branch-scopes";
-import { SCM_COMMIT_AUTHOR } from "./constants";
+import { useHistory, useWorktreeChanges } from "../branch/branch-scopes";
+import { APP_COMMIT_AUTHOR } from "./constants";
 
-export function useScmChangesState() {
+export function useChangesState() {
   const changesHandle = useWorktreeChanges();
+  const history = useHistory();
   const [result, setResult] = useState<ChangesSnapshot | null>(null);
   const [error, setError] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -19,8 +20,8 @@ export function useScmChangesState() {
   useEffect(() => {
     setLoading(true);
     setError(false);
-    return consumeRpcStream({
-      subscribe: () => changesHandle.subscribe(),
+    return consumeRpcSubscription({
+      subscribe: () => changesHandle.subscribeChanges(),
       onValue: (event) => {
         if (event.kind === "snapshot") {
           setResult(event.snapshot);
@@ -66,7 +67,7 @@ export function useScmChangesState() {
         setError(true);
         setLoading(false);
       },
-      cancelReason: "SCM subscription disposed.",
+      cancelReason: "Changes subscription disposed.",
     });
   }, [changesHandle, retryKey]);
 
@@ -94,7 +95,7 @@ export function useScmChangesState() {
 
     setCommitting(true);
     changesHandle
-      .commit(message, SCM_COMMIT_AUTHOR)
+      .commit(message, APP_COMMIT_AUTHOR)
       .then((updated) => {
         setResult(updated);
         setCommitMessage("");
@@ -107,12 +108,7 @@ export function useScmChangesState() {
       });
   }, [changesHandle, commitMessage, committing]);
 
-  const listCommits = useCallback(
-    (maxCount?: number) => {
-      return changesHandle.listCommits(maxCount);
-    },
-    [changesHandle],
-  );
+  const listCommits = useCallback((maxCount?: number) => history.listCommits(maxCount), [history]);
 
   return {
     commit,

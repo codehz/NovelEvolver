@@ -7,9 +7,9 @@ import { TreeMotionRow } from "#app/pages/ProjectWorkbench/workbench/tree/TreeMo
 import type { Change } from "#shared/rpc/worktree-changes-rpc";
 
 import { contentEntityIconClass } from "../tree/content-tree-icons";
-import { ScmDiffStats } from "./ScmDiffStats";
+import { ChangeStatsBadge } from "./ChangeStatsBadge";
 
-function scmChangeKindIconClass(kind: Change["kind"]): string {
+function changeKindIconClass(kind: Change["kind"]): string {
   return cn(
     kind === "create" && "icon-[codicon--diff-added] text-ctp-green",
     kind === "delete" && "icon-[codicon--diff-removed] text-ctp-red",
@@ -20,19 +20,19 @@ function scmChangeKindIconClass(kind: Change["kind"]): string {
   );
 }
 
-const scmChangeRowClass = cn(
+const changeRowClass = cn(
   "group cursor-default text-xs text-ctp-subtext1 hover:bg-ctp-surface0/50",
 );
-const scmChangeMetaClass = cn("ml-auto flex shrink-0 items-center gap-1");
-const scmChangeMetaIdleClass = cn(
+const changeMetaClass = cn("ml-auto flex shrink-0 items-center gap-1");
+const changeMetaIdleClass = cn(
   "flex shrink-0 items-center gap-1 group-focus-within:hidden group-hover:hidden",
 );
-const scmChangeRevertButtonClass = cn(
+const changeRevertButtonClass = cn(
   "hidden size-5 shrink-0 cursor-pointer items-center justify-center text-ctp-overlay0",
   "group-focus-within:flex group-hover:flex hover:bg-ctp-surface1 hover:text-ctp-subtext1",
 );
 
-export function ScmDiffItemRow({
+export function ChangeItemRow({
   item,
   depth,
   layout,
@@ -63,7 +63,7 @@ export function ScmDiffItemRow({
     <TreeMotionRow
       layout={layout}
       depth={depth}
-      className={cn(scmChangeRowClass, className)}
+      className={cn(changeRowClass, className)}
       aria-expanded={ariaExpanded}
       tabIndex={0}
       onClick={onClick}
@@ -76,16 +76,16 @@ export function ScmDiffItemRow({
       {item.kind === "reorder" ? (
         <span className="shrink-0 text-[10px] text-ctp-overlay0">顺序</span>
       ) : null}
-      <span className={scmChangeMetaClass}>
-        <span className={scmChangeMetaIdleClass}>
+      <span className={changeMetaClass}>
+        <span className={changeMetaIdleClass}>
           {item.stats !== undefined ? (
-            <ScmDiffStats added={item.stats.added} removed={item.stats.removed} />
+            <ChangeStatsBadge added={item.stats.added} removed={item.stats.removed} />
           ) : null}
-          <span className={cn(scmChangeKindIconClass(item.kind), "shrink-0 text-sm")} />
+          <span className={cn(changeKindIconClass(item.kind), "shrink-0 text-sm")} />
         </span>
         <button
           type="button"
-          className={scmChangeRevertButtonClass}
+          className={changeRevertButtonClass}
           onClick={(e) => {
             e.stopPropagation();
             onRevert(item.id);

@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 
-import { consumeRpcStream } from "#app/lib/app-rpc-react";
-import type { WorktreeChangesEvent } from "#shared/rpc/worktree-changes-rpc";
+import { consumeRpcSubscription } from "#app/lib/app-rpc-react";
+import type { ChangesEvent } from "#shared/rpc/worktree-changes-rpc";
 import type { WorktreeTreeSnapshot } from "#shared/rpc/worktree-tree-rpc";
 
 import { applyCombinedWorktreeTreeFromChangesEvent } from "../tree/worktree-tree-state";
@@ -12,8 +12,8 @@ export function useWorktreeTreeSnapshot(): WorktreeTreeSnapshot | null {
   const [snapshot, setSnapshot] = useState<WorktreeTreeSnapshot | null>(null);
 
   useEffect(() => {
-    return consumeRpcStream<WorktreeChangesEvent>({
-      subscribe: () => changesHandle.subscribe(),
+    return consumeRpcSubscription<ChangesEvent>({
+      subscribe: () => changesHandle.subscribeChanges(),
       onValue: (event) => {
         setSnapshot((current) => applyCombinedWorktreeTreeFromChangesEvent(current, event));
       },

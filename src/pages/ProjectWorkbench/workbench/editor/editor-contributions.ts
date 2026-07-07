@@ -1,10 +1,10 @@
 import type { RpcPromise } from "capnweb";
 
 import { cn } from "#app/lib/cn";
+import type { HistoryHandle, HistoryTarget } from "#shared/rpc/history-rpc";
 import type { ManuscriptHandle } from "#shared/rpc/manuscript-rpc";
 import type { ResourceLibraryHandle } from "#shared/rpc/resource-library-rpc";
 import type { WorktreeChangesHandle } from "#shared/rpc/worktree-changes-rpc";
-import type { TimelineTarget, WorktreeTimelineHandle } from "#shared/rpc/worktree-timeline-rpc";
 import type { WorktreeTreeSnapshot } from "#shared/rpc/worktree-tree-rpc";
 
 import type {
@@ -23,7 +23,7 @@ export type WorkbenchEditorTargetContributionContext = {
   manuscript: RpcPromise<ManuscriptHandle>;
   resources: RpcPromise<ResourceLibraryHandle>;
   changes: RpcPromise<WorktreeChangesHandle>;
-  timeline: RpcPromise<WorktreeTimelineHandle>;
+  history: RpcPromise<HistoryHandle>;
   snapshot: WorktreeTreeSnapshot | null;
 };
 
@@ -41,7 +41,7 @@ function isMissingComparisonTargetError(error: unknown): boolean {
 }
 
 async function readComparisonTargetCurrentState(
-  target: TimelineTarget,
+  target: HistoryTarget,
   context: Pick<WorkbenchEditorTargetContributionContext, "manuscript" | "resources">,
 ): Promise<{ content: string; canEditCurrent: boolean }> {
   try {
@@ -72,7 +72,7 @@ type WorkbenchEditorTargetContribution = {
   notificationSource: string;
   getTargetKey: (target: WorkbenchEditorTarget) => string;
   getTabTargetKey: (tab: WorkbenchEditorTab) => string;
-  getTimelineTarget: (tab: WorkbenchEditorTab) => TimelineTarget | null;
+  getHistoryTarget: (tab: WorkbenchEditorTab) => HistoryTarget | null;
   syncTabWithTree: (
     tab: WorkbenchEditorTab,
     snapshot: WorktreeTreeSnapshot,
@@ -94,7 +94,7 @@ const resourceEditorContribution: WorkbenchEditorTargetContribution = {
     `resource:${(target as Extract<WorkbenchEditorTarget, { kind: "resource" }>).resourceId}`,
   getTabTargetKey: (tab) =>
     `resource:${(tab as Extract<WorkbenchEditorTab, { kind: "resource" }>).resourceId}`,
-  getTimelineTarget: (tab) => ({
+  getHistoryTarget: (tab) => ({
     domain: "resource",
     entityId: (tab as Extract<WorkbenchEditorTab, { kind: "resource" }>).resourceId,
   }),
@@ -149,7 +149,7 @@ const manuscriptEditorContribution: WorkbenchEditorTargetContribution = {
     `manuscript:${(target as Extract<WorkbenchEditorTarget, { kind: "manuscript" }>).chapterId}`,
   getTabTargetKey: (tab) =>
     `manuscript:${(tab as Extract<WorkbenchEditorTab, { kind: "manuscript" }>).chapterId}`,
-  getTimelineTarget: (tab) => ({
+  getHistoryTarget: (tab) => ({
     domain: "manuscript",
     entityId: (tab as Extract<WorkbenchEditorTab, { kind: "manuscript" }>).chapterId,
   }),
@@ -197,57 +197,55 @@ const manuscriptEditorContribution: WorkbenchEditorTargetContribution = {
 };
 
 const comparisonEditorContribution: WorkbenchEditorTargetContribution = {
-  targetKind: "timeline-entry",
+  targetKind: "history-entry",
   tabKind: "comparison",
   iconClass: cn("icon-[codicon--diff]", "mr-2 text-ctp-green", contentTreeIconLayoutClass),
   label: (target) => {
-    if (target.kind === "timeline-entry") {
+    if (target.kind === "history-entry") {
       return `预览：${target.label}`;
     }
-    const scmTarget = target as Extract<WorkbenchEditorTarget, { kind: "scm-change" }>;
-    return `更改：${scmTarget.label}`;
+    const changeTarget = target as Extract<WorkbenchEditorTarget, { kind: "change" }>;
+    return `更改：${changeTarget.label}`;
   },
-  notificationSource: "时间线",
+  notificationSource: "历史",
   getTargetKey: (target) =>
-    target.kind === "timeline-entry"
-      ? `timeline-entry:${target.entryId}`
-      : `scm-change:${
-          (target as Extract<WorkbenchEditorTarget, { kind: "scm-change" }>).sourceTarget.domain
-        }:${
-          (target as Extract<WorkbenchEditorTarget, { kind: "scm-change" }>).sourceTarget.entityId
-        }`,
+    target.kind === "history-entry"
+      ? `history-entry:${target.entryId}`
+      : `change:${
+          (target as Extract<WorkbenchEditorTarget, { kind: "change" }>).sourceTarget.domain
+        }:${(target as Extract<WorkbenchEditorTarget, { kind: "change" }>).sourceTarget.entityId}`,
   getTabTargetKey: (tab) =>
     (() => {
       const comparisonTab = tab as Extract<WorkbenchEditorTab, { kind: "comparison" }>;
-      return comparisonTab.target.kind === "timeline-entry"
-        ? `timeline-entry:${comparisonTab.target.entryId}`
-        : `scm-change:${comparisonTab.target.sourceTarget.domain}:${comparisonTab.target.sourceTarget.entityId}`;
+      return comparisonTab.target.kind === "history-entry"
+        ? `history-entry:${comparisonTab.target.entryId}`
+        : `change:${comparisonTab.target.sourceTarget.domain}:${comparisonTab.target.sourceTarget.entityId}`;
     })(),
-  getTimelineTarget: (tab) =>
+  getHistoryTarget: (tab) =>
     (() => {
       const comparisonTab = tab as Extract<WorkbenchEditorTab, { kind: "comparison" }>;
-      return comparisonTab.target.kind === "timeline-entry"
+      return comparisonTab.target.kind === "history-entry"
         ? comparisonTab.target.sourceTarget
         : comparisonTab.target.sourceTarget;
     })(),
   syncTabWithTree: (tab) => tab,
   areTabsEqual: (left, right) => {
-    const timelineTab = left as Extract<WorkbenchEditorTab, { kind: "comparison" }>;
+    const comparisonTab = left as Extract<WorkbenchEditorTab, { kind: "comparison" }>;
     const candidate = right as Extract<WorkbenchEditorTab, { kind: "comparison" }>;
     return (
-      timelineTab.id === candidate.id &&
-      timelineTab.label === candidate.label &&
-      timelineTab.canEditCurrent === candidate.canEditCurrent &&
-      timelineTab.displayPath === candidate.displayPath &&
-      timelineTab.originalContent === candidate.originalContent &&
-      timelineTab.currentContent === candidate.currentContent &&
-      JSON.stringify(timelineTab.target) === JSON.stringify(candidate.target)
+      comparisonTab.id === candidate.id &&
+      comparisonTab.label === candidate.label &&
+      comparisonTab.canEditCurrent === candidate.canEditCurrent &&
+      comparisonTab.displayPath === candidate.displayPath &&
+      comparisonTab.originalContent === candidate.originalContent &&
+      comparisonTab.currentContent === candidate.currentContent &&
+      JSON.stringify(comparisonTab.target) === JSON.stringify(candidate.target)
     );
   },
   resolveTarget: async (target, context) => {
-    if (target.kind === "timeline-entry") {
+    if (target.kind === "history-entry") {
       const [historyContent, current] = await Promise.all([
-        Promise.resolve(context.timeline.readTimelineEntryContent(target.entryId)),
+        Promise.resolve(context.history.readHistoryEntryContent(target.entryId)),
         readComparisonTargetCurrentState(target.sourceTarget, context),
       ]);
 
@@ -257,12 +255,12 @@ const comparisonEditorContribution: WorkbenchEditorTargetContribution = {
 
       return {
         tab: {
-          id: `timeline-entry:${target.entryId}`,
+          id: `history-entry:${target.entryId}`,
           kind: "comparison",
           label: `预览：${target.label}`,
           canEditCurrent: current.canEditCurrent,
           target: {
-            kind: "timeline-entry",
+            kind: "history-entry",
             sourceTarget: target.sourceTarget,
             entryId: target.entryId,
             entryMessage: target.message,
@@ -276,18 +274,18 @@ const comparisonEditorContribution: WorkbenchEditorTargetContribution = {
       };
     }
 
-    const scmTarget = target as Extract<WorkbenchEditorTarget, { kind: "scm-change" }>;
+    const changeTarget = target as Extract<WorkbenchEditorTarget, { kind: "change" }>;
     const comparison = await Promise.resolve(
-      context.changes.readChangeTextComparison(scmTarget.changeId),
+      context.changes.readChangeTextComparison(changeTarget.changeId),
     );
     return {
       tab: {
-        id: `scm-change:${comparison.target.domain}:${comparison.target.entityId}`,
+        id: `change:${comparison.target.domain}:${comparison.target.entityId}`,
         kind: "comparison",
         label: `更改：${comparison.label}`,
         canEditCurrent: true,
         target: {
-          kind: "scm-change",
+          kind: "change",
           sourceTarget: comparison.target,
           changeId: comparison.changeId,
           changeKind: comparison.kind,
@@ -309,7 +307,7 @@ const workbenchEditorTargetContributions = [
 function getWorkbenchEditorTargetContribution(
   target: WorkbenchEditorTarget,
 ): WorkbenchEditorTargetContribution {
-  if (target.kind === "scm-change") {
+  if (target.kind === "change") {
     return comparisonEditorContribution;
   }
   const contribution = workbenchEditorTargetContributions.find(
@@ -353,10 +351,8 @@ export function getWorkbenchEditorTabTargetKey(tab: WorkbenchEditorTab): string 
   return getWorkbenchEditorTabContribution(tab).getTabTargetKey(tab);
 }
 
-export function getWorkbenchEditorTabTimelineTarget(
-  tab: WorkbenchEditorTab,
-): TimelineTarget | null {
-  return getWorkbenchEditorTabContribution(tab).getTimelineTarget(tab);
+export function getWorkbenchEditorTabHistoryTarget(tab: WorkbenchEditorTab): HistoryTarget | null {
+  return getWorkbenchEditorTabContribution(tab).getHistoryTarget(tab);
 }
 
 export function syncWorkbenchEditorTabWithTree(

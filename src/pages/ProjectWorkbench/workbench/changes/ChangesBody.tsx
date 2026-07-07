@@ -4,9 +4,9 @@ import { ErrorRetryView } from "#app/components/workbench";
 import type { ChangesSnapshot } from "#shared/rpc/worktree-changes-rpc";
 import type { Change } from "#shared/rpc/worktree-changes-rpc";
 
-import { ScmChangesList } from "./ScmChangesList";
-import { ScmCommitForm } from "./ScmCommitForm";
-import { ScmDiffEmptyState, ScmDiffLoading, ScmWarningBanner } from "./ScmDiffStatusViews";
+import { ChangesCommitForm } from "./ChangesCommitForm";
+import { ChangesList } from "./ChangesList";
+import { ChangesEmptyState, ChangesLoading, ChangesWarningBanner } from "./ChangesStatusViews";
 
 function resolveChangesPanelContent({
   loading,
@@ -24,29 +24,31 @@ function resolveChangesPanelContent({
   onOpenChange: (change: Change) => void;
 }): ReactNode {
   if (loading) {
-    return <ScmDiffLoading />;
+    return <ChangesLoading />;
   }
   if (error) {
     return <ErrorRetryView message="无法加载差异信息。" onRetry={onRetry} />;
   }
   if (result === null) {
-    return <ScmDiffEmptyState />;
+    return <ChangesEmptyState />;
   }
   if (!result.hasChanges) {
     return (
       <>
         {result.warning ? (
-          <ScmWarningBanner message={result.warning} className="px-2 pt-2" />
+          <ChangesWarningBanner message={result.warning} className="px-2 pt-2" />
         ) : null}
-        <ScmDiffEmptyState />
+        <ChangesEmptyState />
       </>
     );
   }
 
   return (
     <>
-      {result.warning ? <ScmWarningBanner message={result.warning} className="mx-2 mb-1" /> : null}
-      <ScmChangesList
+      {result.warning ? (
+        <ChangesWarningBanner message={result.warning} className="mx-2 mb-1" />
+      ) : null}
+      <ChangesList
         manuscriptChanges={result.manuscriptChanges}
         resourceChanges={result.resourceChanges}
         onRevert={onRevert}
@@ -56,7 +58,7 @@ function resolveChangesPanelContent({
   );
 }
 
-export function ScmChangesBody({
+export function ChangesBody({
   commitMessage,
   committing,
   loading,
@@ -81,7 +83,7 @@ export function ScmChangesBody({
 }) {
   return (
     <div className="flex min-h-0 flex-col">
-      <ScmCommitForm
+      <ChangesCommitForm
         commitMessage={commitMessage}
         committing={committing}
         onCommit={onCommit}

@@ -1,20 +1,20 @@
 import { molecule, use, useMolecule } from "bunshi/react";
 
 import { createAsyncLoader, useAsyncLoader } from "#app/lib/async-loader";
-import type { BranchInfo } from "#shared/rpc/projects-rpc";
+import type { BranchSummary } from "#shared/rpc/project-session-rpc";
 
 import { projectMolecule } from "../state/molecules";
 
 export type BranchPickerSnapshot = {
-  branches: BranchInfo[];
+  branches: BranchSummary[];
   headName: string | null;
 };
 
 const branchPickerSnapshotMol = molecule(() => {
   const project = use(projectMolecule);
   return createAsyncLoader(async (): Promise<BranchPickerSnapshot> => {
-    const [branches, head] = await Promise.all([project.handle.branches, project.handle.head]);
-    return { branches, headName: head.name };
+    const [branches, currentBranch] = await Promise.all([project.branches, project.currentBranch]);
+    return { branches, headName: currentBranch.name };
   });
 });
 
@@ -28,7 +28,10 @@ export function normalizeBranchNameInput(raw: string): string {
 
 const invalidBranchNamePattern = /[\s~^:?*[\\]/;
 
-export function getBranchNameValidationError(name: string, existing: BranchInfo[]): string | null {
+export function getBranchNameValidationError(
+  name: string,
+  existing: BranchSummary[],
+): string | null {
   if (name === "") {
     return "分支名不能为空";
   }

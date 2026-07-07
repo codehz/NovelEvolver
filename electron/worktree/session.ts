@@ -6,21 +6,22 @@ import type { Repository } from "nano-git/repository/core";
 import { nanoid } from "nanoid";
 
 import { normalizeResourceNameInput } from "#shared/resource-library-path";
+import type {
+  CommitSummary,
+  HistoryEntry,
+  HistoryEntryContent,
+  HistoryTarget,
+} from "#shared/rpc/history-rpc";
 import type { WorktreeNodeIdResult } from "#shared/rpc/manuscript-rpc";
 import type {
+  Change,
   ChangeTextComparison,
   ChangeTextComparisonTarget,
+  ChangesEvent,
+  ChangesTreeDelta,
   ChangesSnapshot,
-  WorktreeChangesEvent,
-  WorktreeChangesTreeDelta,
 } from "#shared/rpc/worktree-changes-rpc";
-import type { ScmChange, ScmCommitSummary, ScmSnapshot } from "#shared/rpc/worktree-scm-rpc";
 import type { WorktreeSearchQuery, WorktreeSearchResult } from "#shared/rpc/worktree-search-rpc";
-import type {
-  TimelineEntry,
-  TimelineEntryContent,
-  TimelineTarget,
-} from "#shared/rpc/worktree-timeline-rpc";
 import type {
   FileChangeStatus,
   ManuscriptTreeNode,
@@ -56,7 +57,7 @@ import { executeWorktreeSearch } from "../search/worktree-search";
 import { refreshAllFolderChangeStatuses } from "./change-status";
 import { ChangeTracker } from "./change-tracker";
 import { computeStats, readTextFromTree, type ObjectDatabase } from "./diff-utils";
-import { buildJournalChangesSnapshot, buildJournalScmSnapshot } from "./journal-pending-projector";
+import { buildJournalChangesSnapshot } from "./journal-pending-projector";
 import { computeMinimalReorderedManuscriptIds } from "./manuscript-reorder";
 import type { ResourceSnapshotEntry, ResourceSnapshotState } from "./resource-snapshot-state";
 import {
@@ -134,7 +135,7 @@ function sha1Text(content: string): string {
   return createHash("sha1").update(content).digest("hex");
 }
 
-function journalTimelineEntryId(entryId: string): string {
+function journalHistoryEntryId(entryId: string): string {
   return `journal:${entryId}`;
 }
 
@@ -566,7 +567,7 @@ export class WorktreeSession {
   readonly #repo: Repository;
   readonly #projectId: number;
   readonly #branchName: string;
-  readonly #changesPublisher = new RpcStreamPublisher<WorktreeChangesEvent>();
+  readonly #changesPublisher = new RpcStreamPublisher<ChangesEvent>();
   readonly #changeTracker = new ChangeTracker();
 
   #baseCommitSha: SHA1 | null = null;
@@ -604,7 +605,7 @@ export class WorktreeSession {
     return this.#resolveBaseTree();
   }
 
-  subscribeChanges(): ReadableStream<WorktreeChangesEvent> {
+  subscribeChanges(): ReadableStream<ChangesEvent> {
     return this.#changesPublisher.subscribe({
       getInitialValue: () => this.#currentChangesSnapshot(),
     });
@@ -1056,8 +1057,8 @@ export class WorktreeSession {
     });
   }
 
-  revertScmChange(changeId: string): ScmSnapshot {
-    const change = this.#requireScmChange(changeId);
+  revertChange(changeId: string): ChangesSnapshot {
+    const change = this.#requireChange(changeId);
 
     const beforeRestore = this.#currentJournalEntitySnapshot(change);
     const [domain, kind, entityId] = changeId.split(":", 3);
@@ -1066,7 +1067,7 @@ export class WorktreeSession {
     } else if (domain === "resource") {
       this.#revertResourceChange(kind, entityId);
     } else {
-      throw new Error(`Unsupported SCM domain: ${domain}`);
+      throw new Error(`Unsupported change domain: ${domain}`);
     }
 
     const afterRestore = this.#currentJournalEntitySnapshot(change);
@@ -1089,19 +1090,19 @@ export class WorktreeSession {
         },
       ],
     });
-    return this.#currentScmSnapshot();
+    return this.#currentChangesOnlySnapshot();
   }
 
-  readScmChangeTextComparison(changeId: string): ChangeTextComparison {
-    const change = this.#requireScmChange(changeId);
-    return this.#buildScmChangeTextComparison(change);
+  readChangeTextComparison(changeId: string): ChangeTextComparison {
+    const change = this.#requireChange(changeId);
+    return this.#buildChangeTextComparison(change);
   }
 
-  readScmChangeTextComparisonByTarget(target: ChangeTextComparisonTarget): ChangeTextComparison {
-    return this.#buildScmChangeTextComparison(this.#requireTextComparisonChangeByTarget(target));
+  readChangeTextComparisonByTarget(target: ChangeTextComparisonTarget): ChangeTextComparison {
+    return this.#buildChangeTextComparison(this.#requireTextComparisonChangeByTarget(target));
   }
 
-  restoreScmChangeTextHunk(
+  restoreChangeTextHunk(
     target: ChangeTextComparisonTarget,
     expectedContent: string,
     nextContent: string,
@@ -1122,15 +1123,15 @@ export class WorktreeSession {
     }
   }
 
-  commitScm(message: string, author: { name: string; email: string }): ScmSnapshot {
-    const snapshotBeforeCommit = this.#currentScmSnapshot();
+  commitChanges(message: string, author: { name: string; email: string }): ChangesSnapshot {
+    const snapshotBeforeCommit = this.#currentChangesOnlySnapshot();
     const tree = this.#writeCurrentTreeToRepo();
     const parentCommit = this.#repo.readBranch(this.#branchName);
     const parents: SHA1[] = parentCommit !== null ? [parentCommit] : [];
     const now = Math.floor(Date.now() / 1000);
     const gitAuthor = { name: author.name, email: author.email, timestamp: now, timezone: "+0000" };
     const commitHash = this.#repo.createCommit(tree, parents, message, gitAuthor);
-    const journalCapture = this.#journalCaptureFromScmSnapshot(
+    const journalCapture = this.#journalCaptureFromChangesSnapshot(
       snapshotBeforeCommit,
       message,
       commitHash,
@@ -1145,16 +1146,16 @@ export class WorktreeSession {
     this.#changeTracker.clearCache();
     this.#resetChangesStreamBaseline();
     this.#persistAndEmit(true, journalCapture);
-    return this.#currentScmSnapshot();
+    return this.#currentChangesOnlySnapshot();
   }
 
-  listBranchCommits(maxCount = 50): ScmCommitSummary[] {
+  listBranchCommits(maxCount = 50): CommitSummary[] {
     const tip = this.#repo.readBranch(this.#branchName);
     if (tip === null) {
       return [];
     }
 
-    const commits: ScmCommitSummary[] = [];
+    const commits: CommitSummary[] = [];
     for (const entry of walkLogEntries(this.#objects, { from: [tip], maxCount })) {
       const subject = entry.commit.message.split("\n")[0]?.trim() ?? "";
       commits.push({
@@ -1168,29 +1169,29 @@ export class WorktreeSession {
     return commits;
   }
 
-  listFileTimeline(target: TimelineTarget, limit = 50): TimelineEntry[] {
+  listFileHistory(target: HistoryTarget, limit = 50): HistoryEntry[] {
     const boundedLimit = Math.max(1, Math.min(limit, 200));
     return this.#store
-      .readJournalTimelineEntries(
+      .readJournalHistoryEntries(
         this.#projectId,
         this.#branchName,
         target.domain,
         target.entityId,
         boundedLimit,
       )
-      .map((entry) => this.#journalEntryToTimelineEntry(entry));
+      .map((entry) => this.#journalEntryToHistoryEntry(entry));
   }
 
-  readTimelineEntryContent(entryId: string): TimelineEntryContent {
-    const journalEntryId = this.#parseJournalTimelineEntryId(entryId);
+  readHistoryEntryContent(entryId: string): HistoryEntryContent {
+    const journalEntryId = this.#parseJournalHistoryEntryId(entryId);
     if (journalEntryId !== null) {
-      const entry = this.#store.getJournalTimelineEntry(
+      const entry = this.#store.getJournalHistoryEntry(
         this.#projectId,
         this.#branchName,
         journalEntryId,
       );
       if (entry === null) {
-        throw new Error(`Unknown journal timeline entry: ${entryId}`);
+        throw new Error(`Unknown journal history entry: ${entryId}`);
       }
       return {
         content: entry.afterContent?.toString("utf-8") ?? null,
@@ -1198,38 +1199,38 @@ export class WorktreeSession {
       };
     }
 
-    throw new Error(`Unknown timeline entry: ${entryId}`);
+    throw new Error(`Unknown history entry: ${entryId}`);
   }
 
-  restoreTimelineEntryContentHunk(
+  restoreHistoryEntryContentHunk(
     entryId: string,
     expectedContent: string,
     nextContent: string,
   ): void {
-    const journalEntryId = this.#parseJournalTimelineEntryId(entryId);
+    const journalEntryId = this.#parseJournalHistoryEntryId(entryId);
     if (journalEntryId === null) {
-      throw new Error(`Unknown timeline entry: ${entryId}`);
+      throw new Error(`Unknown history entry: ${entryId}`);
     }
 
-    const timelineEntry = this.#store.getJournalTimelineEntry(
+    const historyEntry = this.#store.getJournalHistoryEntry(
       this.#projectId,
       this.#branchName,
       journalEntryId,
     );
-    if (timelineEntry === null) {
-      throw new Error(`Unknown journal timeline entry: ${entryId}`);
+    if (historyEntry === null) {
+      throw new Error(`Unknown journal history entry: ${entryId}`);
     }
-    if (timelineEntry.afterContent === null) {
+    if (historyEntry.afterContent === null) {
       throw new Error("此记录没有可恢复内容。");
     }
 
-    if (timelineEntry.domain === "manuscript") {
-      const entry = this.#currentManuscript.entries.get(timelineEntry.entityId);
+    if (historyEntry.domain === "manuscript") {
+      const entry = this.#currentManuscript.entries.get(historyEntry.entityId);
       if (entry?.type !== "chapter") {
-        throw new Error(`Manuscript chapter is missing: ${timelineEntry.entityId}`);
+        throw new Error(`Manuscript chapter is missing: ${historyEntry.entityId}`);
       }
       if (entry.content !== expectedContent) {
-        throw new Error("当前内容已变化，请重新打开时间线预览后再试。");
+        throw new Error("当前内容已变化，请重新打开历史预览后再试。");
       }
       if (entry.content === nextContent) {
         return;
@@ -1238,12 +1239,12 @@ export class WorktreeSession {
       this.#persistAndEmit(false, {
         source: "restore",
         title: "局部恢复",
-        groupKey: `restore:hunk:${timelineEntry.domain}:${timelineEntry.entityId}`,
+        groupKey: `restore:hunk:${historyEntry.domain}:${historyEntry.entityId}`,
         operations: [
           {
             kind: "restore",
-            domain: timelineEntry.domain,
-            entityId: timelineEntry.entityId,
+            domain: historyEntry.domain,
+            entityId: historyEntry.entityId,
             entityKind: "chapter",
             label: entry.title,
             displayPath: entry.displayPath,
@@ -1255,12 +1256,12 @@ export class WorktreeSession {
       return;
     }
 
-    const entry = this.#currentResources.entries.get(timelineEntry.entityId);
+    const entry = this.#currentResources.entries.get(historyEntry.entityId);
     if (entry?.type !== "file") {
-      throw new Error(`Resource file is missing: ${timelineEntry.entityId}`);
+      throw new Error(`Resource file is missing: ${historyEntry.entityId}`);
     }
     if (entry.content !== expectedContent) {
-      throw new Error("当前内容已变化，请重新打开时间线预览后再试。");
+      throw new Error("当前内容已变化，请重新打开历史预览后再试。");
     }
     if (entry.content === nextContent) {
       return;
@@ -1269,12 +1270,12 @@ export class WorktreeSession {
     this.#persistAndEmit(false, {
       source: "restore",
       title: "局部恢复",
-      groupKey: `restore:hunk:${timelineEntry.domain}:${timelineEntry.entityId}`,
+      groupKey: `restore:hunk:${historyEntry.domain}:${historyEntry.entityId}`,
       operations: [
         {
           kind: "restore",
-          domain: timelineEntry.domain,
-          entityId: timelineEntry.entityId,
+          domain: historyEntry.domain,
+          entityId: historyEntry.entityId,
           entityKind: "file",
           label: entry.name,
           displayPath: entry.displayPath,
@@ -1492,7 +1493,7 @@ export class WorktreeSession {
 
   #buildChangesSnapshotEvent(
     changesSnapshot: ChangesSnapshot,
-  ): Extract<WorktreeChangesEvent, { kind: "snapshot" }> {
+  ): Extract<ChangesEvent, { kind: "snapshot" }> {
     return {
       kind: "snapshot",
       snapshot: changesSnapshot,
@@ -1503,11 +1504,11 @@ export class WorktreeSession {
     };
   }
 
-  #buildTreeDeltaFromLastPublished(): WorktreeChangesTreeDelta | undefined {
+  #buildTreeDeltaFromLastPublished(): ChangesTreeDelta | undefined {
     if (this.#lastPublishedManuscriptTree === null || this.#lastPublishedResourceTree === null) {
       return undefined;
     }
-    const treeDelta: WorktreeChangesTreeDelta = {};
+    const treeDelta: ChangesTreeDelta = {};
     const manuscriptDelta = computeManuscriptTreeDelta(
       this.#lastPublishedManuscriptTree,
       this.#manuscriptTree,
@@ -2224,13 +2225,13 @@ export class WorktreeSession {
     return contentSha;
   }
 
-  #journalCaptureFromScmSnapshot(
-    snapshot: ScmSnapshot,
+  #journalCaptureFromChangesSnapshot(
+    snapshot: ChangesSnapshot,
     message: string,
     commitHash: string,
   ): JournalRevisionCapture | undefined {
     const operations = [...snapshot.manuscriptChanges, ...snapshot.resourceChanges].map((change) =>
-      this.#journalOperationFromScmChange(change),
+      this.#journalOperationFromChange(change),
     );
     if (operations.length === 0) {
       return undefined;
@@ -2245,9 +2246,9 @@ export class WorktreeSession {
     };
   }
 
-  #journalOperationFromScmChange(change: ScmChange): JournalOperationCapture {
-    const beforeContent = this.#journalContentForScmChange(change, "before");
-    const afterContent = this.#journalContentForScmChange(change, "after");
+  #journalOperationFromChange(change: Change): JournalOperationCapture {
+    const beforeContent = this.#journalContentForChange(change, "before");
+    const afterContent = this.#journalContentForChange(change, "after");
     return {
       kind: change.kind,
       domain: change.domain,
@@ -2262,7 +2263,7 @@ export class WorktreeSession {
     };
   }
 
-  #journalContentForScmChange(change: ScmChange, side: "before" | "after"): string | null {
+  #journalContentForChange(change: Change, side: "before" | "after"): string | null {
     if (change.entityKind !== "chapter" && change.entityKind !== "file") {
       return null;
     }
@@ -2276,19 +2277,19 @@ export class WorktreeSession {
     return entry?.type === "file" ? entry.content : null;
   }
 
-  #requireScmChange(changeId: string): ScmChange {
-    const snapshot = this.#currentScmSnapshot();
+  #requireChange(changeId: string): Change {
+    const snapshot = this.#currentChangesOnlySnapshot();
     const change = [...snapshot.manuscriptChanges, ...snapshot.resourceChanges].find(
       (candidate) => candidate.id === changeId,
     );
     if (change === undefined) {
-      throw new Error(`Unknown SCM change: ${changeId}`);
+      throw new Error(`Unknown change: ${changeId}`);
     }
     return change;
   }
 
-  #requireTextComparisonChangeByTarget(target: ChangeTextComparisonTarget): ScmChange {
-    const snapshot = this.#currentScmSnapshot();
+  #requireTextComparisonChangeByTarget(target: ChangeTextComparisonTarget): Change {
+    const snapshot = this.#currentChangesOnlySnapshot();
     const change = [...snapshot.manuscriptChanges, ...snapshot.resourceChanges].find(
       (candidate) =>
         candidate.domain === target.domain &&
@@ -2304,7 +2305,7 @@ export class WorktreeSession {
     return change;
   }
 
-  #buildScmChangeTextComparison(change: ScmChange): ChangeTextComparison {
+  #buildChangeTextComparison(change: Change): ChangeTextComparison {
     const { originalContent, currentContent } = this.#requireTextComparisonContent(change);
     return {
       target: {
@@ -2320,7 +2321,7 @@ export class WorktreeSession {
     };
   }
 
-  #requireTextComparisonContent(change: ScmChange): {
+  #requireTextComparisonContent(change: Change): {
     originalContent: string;
     currentContent: string;
   } {
@@ -2331,8 +2332,8 @@ export class WorktreeSession {
       throw new Error("只有文本叶子节点支持差异预览。");
     }
 
-    const originalContent = this.#journalContentForScmChange(change, "before");
-    const currentContent = this.#journalContentForScmChange(change, "after");
+    const originalContent = this.#journalContentForChange(change, "before");
+    const currentContent = this.#journalContentForChange(change, "after");
 
     return {
       originalContent: originalContent ?? "",
@@ -2340,11 +2341,7 @@ export class WorktreeSession {
     };
   }
 
-  #restoreManuscriptTextHunk(
-    change: ScmChange,
-    expectedContent: string,
-    nextContent: string,
-  ): void {
+  #restoreManuscriptTextHunk(change: Change, expectedContent: string, nextContent: string): void {
     if (change.entityKind !== "chapter") {
       throw new Error("Only manuscript chapter changes support text restore.");
     }
@@ -2384,7 +2381,7 @@ export class WorktreeSession {
     });
   }
 
-  #restoreResourceTextHunk(change: ScmChange, expectedContent: string, nextContent: string): void {
+  #restoreResourceTextHunk(change: Change, expectedContent: string, nextContent: string): void {
     if (change.entityKind !== "file") {
       throw new Error("Only resource file changes support text restore.");
     }
@@ -2424,7 +2421,7 @@ export class WorktreeSession {
     });
   }
 
-  #currentJournalEntitySnapshot(change: ScmChange): JournalEntitySnapshot | null {
+  #currentJournalEntitySnapshot(change: Change): JournalEntitySnapshot | null {
     if (change.domain === "manuscript") {
       const entry = this.#currentManuscript.entries.get(change.entityId);
       if (entry === undefined) {
@@ -2448,9 +2445,9 @@ export class WorktreeSession {
     };
   }
 
-  #journalEntryToTimelineEntry(entry: WorktreeJournalEntryRecord): TimelineEntry {
+  #journalEntryToHistoryEntry(entry: WorktreeJournalEntryRecord): HistoryEntry {
     return {
-      id: journalTimelineEntryId(entry.entryId),
+      id: journalHistoryEntryId(entry.entryId),
       source: "journal",
       revisionSource: entry.source,
       actor: entry.actor,
@@ -2479,7 +2476,7 @@ export class WorktreeSession {
     );
   }
 
-  #parseJournalTimelineEntryId(entryId: string): string | null {
+  #parseJournalHistoryEntryId(entryId: string): string | null {
     const match = /^journal:([^:]+)$/.exec(entryId);
     if (match === null) {
       return null;
@@ -2487,8 +2484,8 @@ export class WorktreeSession {
     return match[1]!;
   }
 
-  #currentScmSnapshot(): ScmSnapshot {
-    return buildJournalScmSnapshot({
+  #currentChangesOnlySnapshot(): ChangesSnapshot {
+    return buildJournalChangesSnapshot({
       revision: this.#revision,
       baseTree: this.baseTree,
       warning: this.#warning,
@@ -2499,16 +2496,8 @@ export class WorktreeSession {
     });
   }
 
-  #currentChangesSnapshot(): WorktreeChangesEvent {
-    const changesSnapshot = buildJournalChangesSnapshot({
-      revision: this.#revision,
-      baseTree: this.baseTree,
-      warning: this.#warning,
-      baseManuscript: this.#baseManuscript,
-      currentManuscript: this.#currentManuscript,
-      baseResources: this.#baseResources,
-      currentResources: this.#currentResources,
-    });
+  #currentChangesSnapshot(): ChangesEvent {
+    const changesSnapshot = this.#currentChangesOnlySnapshot();
     return {
       kind: "snapshot",
       snapshot: changesSnapshot,

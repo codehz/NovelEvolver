@@ -1,29 +1,29 @@
 import { RpcTarget } from "capnweb";
 
+import type { BranchWorkspace } from "#shared/rpc/branch-workspace-rpc";
+import type { HistoryHandle } from "#shared/rpc/history-rpc";
 import type { ManuscriptHandle } from "#shared/rpc/manuscript-rpc";
-import type { WorktreeHandle } from "#shared/rpc/projects-rpc";
 import type { ResourceLibraryHandle } from "#shared/rpc/resource-library-rpc";
 import type { WorktreeChangesHandle } from "#shared/rpc/worktree-changes-rpc";
 import type { WorktreeSearchHandle } from "#shared/rpc/worktree-search-rpc";
-import type { WorktreeTimelineHandle } from "#shared/rpc/worktree-timeline-rpc";
 
 import type { WorktreeSession } from "../worktree/session";
+import { HistoryHandleImpl } from "./history-handle";
 import { ManuscriptHandleImpl } from "./manuscript-handle";
 import { ResourceLibraryHandleImpl } from "./resource-library-handle";
 import { WorktreeChangesHandleImpl } from "./worktree-changes-handle";
 import { WorktreeSearchHandleImpl } from "./worktree-search-handle";
-import { WorktreeTimelineHandleImpl } from "./worktree-timeline-handle";
 
 /**
  * Server-side RPC target wrapping a SQLite-backed branch worktree session.
  */
-export class WorktreeHandleImpl extends RpcTarget implements WorktreeHandle {
+export class BranchWorkspaceImpl extends RpcTarget implements BranchWorkspace {
   readonly #session: WorktreeSession;
   readonly #resources: ResourceLibraryHandle;
   readonly #manuscript: ManuscriptHandle;
   readonly #search: WorktreeSearchHandle;
   readonly #changes: WorktreeChangesHandle;
-  readonly #timeline: WorktreeTimelineHandle;
+  readonly #history: HistoryHandle;
 
   constructor(session: WorktreeSession) {
     super();
@@ -32,7 +32,7 @@ export class WorktreeHandleImpl extends RpcTarget implements WorktreeHandle {
     this.#manuscript = new ManuscriptHandleImpl(this.#session);
     this.#search = new WorktreeSearchHandleImpl(this.#session);
     this.#changes = new WorktreeChangesHandleImpl(this.#session);
-    this.#timeline = new WorktreeTimelineHandleImpl(this.#session);
+    this.#history = new HistoryHandleImpl(this.#session);
   }
 
   get resources(): ResourceLibraryHandle {
@@ -51,7 +51,7 @@ export class WorktreeHandleImpl extends RpcTarget implements WorktreeHandle {
     return this.#changes;
   }
 
-  get timeline(): WorktreeTimelineHandle {
-    return this.#timeline;
+  get history(): HistoryHandle {
+    return this.#history;
   }
 }

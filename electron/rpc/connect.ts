@@ -13,10 +13,11 @@ import {
 } from "#shared/rpc/transport";
 
 import type { RpcMainDeps } from "./deps";
-import { ProjectsServiceImpl } from "./projects-service";
+import { ProjectLibraryServiceImpl } from "./project-library-service";
 import { AppRpcRootImpl } from "./root";
 import { MainRpcTransport } from "./transport";
 import { WindowServiceImpl } from "./window-service";
+import { WorkspaceServiceImpl } from "./workspace-service";
 
 type RpcSessionRecord = {
   sessionId: string;
@@ -80,8 +81,9 @@ export class ElectronRpcServer {
 
     const sessionId = randomUUID();
     const windowService = new WindowServiceImpl(window, this.#deps);
-    const projectsService = new ProjectsServiceImpl(window, this.#deps);
-    const root = new AppRpcRootImpl(windowService, projectsService);
+    const projectLibraryService = new ProjectLibraryServiceImpl(window, this.#deps);
+    const workspaceService = new WorkspaceServiceImpl(window, this.#deps);
+    const root = new AppRpcRootImpl(windowService, projectLibraryService, workspaceService);
     const transport = new MainRpcTransport(webContents, sessionId);
     const session = new RpcSession(transport, root);
 

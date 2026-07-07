@@ -5,32 +5,28 @@ import { dialog, type BrowserWindow } from "electron";
 import { createSqliteRepository } from "nano-git/repository/sqlite";
 
 import type { ProjectMetadata } from "#shared/project";
-import type { ProjectHandleWithMetadata, ProjectsService } from "#shared/rpc/projects-rpc";
+import type { ProjectLibraryService } from "#shared/rpc/project-library-rpc";
 
 import { ProjectsRepository } from "../db/repositories/projects-repo";
-import { WorktreeRepository } from "../db/repositories/worktree-repo";
 import { toProjectMetadata } from "../home-path";
 import type { RpcMainDeps } from "./deps";
-import { ProjectHandleImpl } from "./project-handle";
 
-export class ProjectsServiceImpl extends RpcTarget implements ProjectsService {
+export class ProjectLibraryServiceImpl extends RpcTarget implements ProjectLibraryService {
   readonly #window: BrowserWindow;
   readonly #projects: ProjectsRepository;
-  readonly #worktrees: WorktreeRepository;
 
   constructor(window: BrowserWindow, deps: RpcMainDeps) {
     super();
     this.#window = window;
     const db = deps.getAppDb().db;
     this.#projects = new ProjectsRepository(db);
-    this.#worktrees = new WorktreeRepository(db);
   }
 
-  get recents(): ProjectMetadata[] {
+  get recentProjects(): ProjectMetadata[] {
     return this.#projects.list().map((record) => toProjectMetadata(record));
   }
 
-  async openProjectDialog(): Promise<ProjectMetadata | null> {
+  async showOpenDialog(): Promise<ProjectMetadata | null> {
     const result = await dialog.showOpenDialog(this.#window, {
       properties: ["openFile"],
       title: "打开项目文件",
@@ -49,7 +45,7 @@ export class ProjectsServiceImpl extends RpcTarget implements ProjectsService {
     return toProjectMetadata(this.#projects.upsertByPath(path, Date.now()));
   }
 
-  async createProjectDialog(): Promise<ProjectMetadata | null> {
+  async showCreateDialog(): Promise<ProjectMetadata | null> {
     const result = await dialog.showSaveDialog(this.#window, {
       title: "创建项目",
       filters: [{ name: "NovelEvolver 项目", extensions: ["npk"] }],
@@ -72,22 +68,6 @@ export class ProjectsServiceImpl extends RpcTarget implements ProjectsService {
     using _repo = createSqliteRepository(path);
 
     return toProjectMetadata(this.#projects.upsertByPath(path, Date.now()));
-  }
-
-  openProject(id: number): ProjectHandleWithMetadata {
-    const record = this.#projects.touchById(id, Date.now());
-    if (!record) {
-      throw new Error(`Project with id ${id} not found`);
-    }
-    return {
-      handle: new ProjectHandleImpl(record.id, record.path, this.#worktrees),
-      metadata: toProjectMetadata(record),
-    };
-  }
-
-  recordOpen(id: number): ProjectMetadata | null {
-    const record = this.#projects.touchById(id, Date.now());
-    return record ? toProjectMetadata(record) : null;
   }
 
   removeProject(id: number): boolean {

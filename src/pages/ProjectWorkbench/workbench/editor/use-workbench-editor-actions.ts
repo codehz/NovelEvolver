@@ -5,10 +5,10 @@ import { useCallback, useRef } from "react";
 import { notificationApi } from "#app/lib/notifications";
 
 import {
+  useHistory,
   useManuscript,
   useResourceLibrary,
   useWorktreeChanges,
-  useWorktreeTimeline,
 } from "../branch/branch-scopes";
 import { useWorktreeTreeSnapshot } from "../branch/use-worktree-tree-snapshot";
 import { workbenchEditorMolecule } from "../state/molecules";
@@ -40,7 +40,7 @@ export function useWorkbenchEditorActions() {
   const manuscript = useManuscript();
   const resources = useResourceLibrary();
   const changes = useWorktreeChanges();
-  const timeline = useWorktreeTimeline();
+  const history = useHistory();
   const snapshot = useWorktreeTreeSnapshot();
   const focusRequestIdRef = useRef(0);
 
@@ -71,7 +71,7 @@ export function useWorkbenchEditorActions() {
           manuscript,
           resources,
           changes,
-          timeline,
+          history,
           snapshot,
         });
         if (intent === "focus" && requestId !== focusRequestIdRef.current) {
@@ -101,7 +101,7 @@ export function useWorkbenchEditorActions() {
       setEditorState,
       snapshot,
       store,
-      timeline,
+      history,
     ],
   );
 

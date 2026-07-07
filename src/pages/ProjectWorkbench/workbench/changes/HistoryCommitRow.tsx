@@ -1,15 +1,15 @@
-import type { ScmCommitSummary } from "#shared/rpc/worktree-scm-rpc";
+import type { CommitSummary } from "#shared/rpc/history-rpc";
 
 import { formatCommitTime } from "./format-commit-time";
-import { ScmGraphTimelineGlyph } from "./ScmGraphTimelineGlyph";
+import { HistoryGraphGlyph } from "./HistoryGraphGlyph";
 
-export function ScmGraphCommitRow({
+export function HistoryCommitRow({
   commit,
   isHead,
   showTopConnector,
   showBottomConnector,
 }: {
-  commit: ScmCommitSummary;
+  commit: CommitSummary;
   isHead: boolean;
   showTopConnector: boolean;
   showBottomConnector: boolean;
@@ -17,7 +17,7 @@ export function ScmGraphCommitRow({
   return (
     <li className="relative grid h-10 grid-cols-[1rem_minmax(0,1fr)] gap-2 px-2 text-xs">
       <div className="pointer-events-none absolute inset-y-0 left-2 w-4">
-        <ScmGraphTimelineGlyph
+        <HistoryGraphGlyph
           isHead={isHead}
           showBottomConnector={showBottomConnector}
           showTopConnector={showTopConnector}

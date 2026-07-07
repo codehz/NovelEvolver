@@ -1,4 +1,4 @@
-import type { WorktreeChangesEvent } from "#shared/rpc/worktree-changes-rpc";
+import type { ChangesEvent } from "#shared/rpc/worktree-changes-rpc";
 import type {
   ManuscriptTreeDelta,
   ManuscriptTreeSnapshot,
@@ -87,7 +87,7 @@ export function applyWorktreeTreeDelta(
 
 export function applyCombinedWorktreeTreeFromChangesEvent(
   current: WorktreeTreeSnapshot | null,
-  event: WorktreeChangesEvent,
+  event: ChangesEvent,
 ): WorktreeTreeSnapshot | null {
   if (event.kind === "snapshot") {
     return {

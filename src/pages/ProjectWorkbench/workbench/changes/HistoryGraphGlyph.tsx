@@ -14,7 +14,7 @@ const NODE_RADIUS = 3;
 const HEAD_NODE_RADIUS = 3.5;
 const HEAD_RING_RADIUS = 5.5;
 
-export function ScmGraphTimelineGlyph({
+export function HistoryGraphGlyph({
   isHead,
   showTopConnector,
   showBottomConnector,

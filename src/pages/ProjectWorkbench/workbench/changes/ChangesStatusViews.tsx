@@ -1,6 +1,6 @@
 import { cn } from "#app/lib/cn";
 
-export function ScmDiffEmptyState() {
+export function ChangesEmptyState() {
   return (
     <div className="flex flex-col items-center gap-2 px-2 py-6 text-center text-xs text-ctp-subtext0">
       <span aria-hidden="true" className="icon-[codicon--check] text-2xl text-ctp-green" />
@@ -9,7 +9,7 @@ export function ScmDiffEmptyState() {
   );
 }
 
-export function ScmDiffLoading() {
+export function ChangesLoading() {
   return (
     <div className="flex flex-col items-center gap-2 px-2 py-6 text-center text-xs text-ctp-subtext0">
       <span aria-hidden="true" className="icon-[codicon--loading] animate-spin text-2xl" />
@@ -18,7 +18,13 @@ export function ScmDiffLoading() {
   );
 }
 
-export function ScmWarningBanner({ message, className }: { message: string; className?: string }) {
+export function ChangesWarningBanner({
+  message,
+  className,
+}: {
+  message: string;
+  className?: string;
+}) {
   return (
     <div className={cn(className)}>
       <div className="rounded border border-ctp-yellow/40 bg-ctp-yellow/10 px-2 py-1 text-[10px] text-ctp-yellow">

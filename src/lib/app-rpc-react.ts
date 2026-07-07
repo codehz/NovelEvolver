@@ -1,23 +1,25 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
-import type { RpcStreamSubscribe } from "#shared/rpc/stream";
+import type { RpcSubscribeFn } from "#shared/rpc/stream";
 import type { WindowState } from "#shared/window";
 
 import { windowService } from "./app-rpc";
 
-type RpcStreamSubscriptionOptions<T> = {
-  subscribe: RpcStreamSubscribe<T>;
+const subscribeWindowState: RpcSubscribeFn<WindowState> = () => windowService.subscribeState();
+
+type RpcSubscriptionOptions<T> = {
+  subscribe: RpcSubscribeFn<T>;
   onValue: (value: T) => void;
   onError?: (error: unknown) => void;
   cancelReason?: string;
 };
 
-export function consumeRpcStream<T>({
+export function consumeRpcSubscription<T>({
   subscribe,
   onValue,
   onError,
   cancelReason = "RPC stream subscription disposed.",
-}: RpcStreamSubscriptionOptions<T>): () => void {
+}: RpcSubscriptionOptions<T>): () => void {
   let canceled = false;
   let abortSubscription: (() => void) | null = null;
 
@@ -69,19 +71,49 @@ function isAbortError(error: unknown): boolean {
   return error instanceof DOMException && error.name === "AbortError";
 }
 
-export function useWindowState(fallback: WindowState): WindowState {
-  const [state, setState] = useState<WindowState>(fallback);
+type UseRpcSubscriptionOptions<T> = {
+  subscribe: RpcSubscribeFn<T>;
+  fallback: T;
+  onError?: (error: unknown, fallback: T) => T;
+  cancelReason?: string;
+};
+
+export function useRpcSubscription<T>({
+  subscribe,
+  fallback,
+  onError,
+  cancelReason,
+}: UseRpcSubscriptionOptions<T>): T {
+  const [state, setState] = useState<T>(fallback);
+  const fallbackRef = useRef(fallback);
+  const onErrorRef = useRef(onError);
+
+  fallbackRef.current = fallback;
+  onErrorRef.current = onError;
 
   useEffect(() => {
-    return consumeRpcStream({
-      subscribe: () => windowService.subscribeState(),
+    setState(fallbackRef.current);
+    return consumeRpcSubscription({
+      subscribe,
       onValue: setState,
-      onError: () => {
-        setState(fallback);
+      onError: (error) => {
+        const nextFallback = fallbackRef.current;
+        const nextState = onErrorRef.current
+          ? onErrorRef.current(error, nextFallback)
+          : nextFallback;
+        setState(nextState);
       },
-      cancelReason: "Window state subscription disposed.",
+      cancelReason,
     });
-  }, [fallback]);
+  }, [cancelReason, subscribe]);
 
   return state;
+}
+
+export function useWindowState(fallback: WindowState): WindowState {
+  return useRpcSubscription({
+    subscribe: subscribeWindowState,
+    fallback,
+    cancelReason: "Window state subscription disposed.",
+  });
 }

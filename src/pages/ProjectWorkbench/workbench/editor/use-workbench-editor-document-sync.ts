@@ -6,7 +6,7 @@ import { useEffect, useRef } from "react";
 import type { PlainTextEditorHandle } from "#app/components/PlainTextEditor";
 
 import { useManuscript, useResourceLibrary } from "../branch/branch-scopes";
-import { useWorktreeScmRevision } from "../branch/use-worktree-scm-revision";
+import { useWorktreeChangesRevision } from "../branch/use-worktree-changes-revision";
 import { workbenchEditorMolecule } from "../state/molecules";
 import { syncWorkbenchEditorDocument } from "./editor-document-contributions";
 import { areWorkbenchEditorStatesEqual, normalizeWorkbenchEditorState } from "./editor-tab-manager";
@@ -14,7 +14,7 @@ import { areWorkbenchEditorStatesEqual, normalizeWorkbenchEditorState } from "./
 export function useWorkbenchEditorDocumentSync(
   editorHandlesRef: RefObject<Map<string, PlainTextEditorHandle>>,
 ): void {
-  const revision = useWorktreeScmRevision();
+  const revision = useWorktreeChangesRevision();
   const manuscript = useManuscript();
   const resources = useResourceLibrary();
   const { editorStateAtom } = useMolecule(workbenchEditorMolecule);

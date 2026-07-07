@@ -158,16 +158,16 @@ function buildComparisonBreadcrumbModel(
         }));
 
   return {
-    ariaLabel: `${targetModel.ariaLabel}${tab.target.kind === "timeline-entry" ? "时间线预览" : "更改预览"}`,
+    ariaLabel: `${targetModel.ariaLabel}${tab.target.kind === "history-entry" ? "历史预览" : "更改预览"}`,
     segments: [
       ...segments,
       {
         key:
-          tab.target.kind === "timeline-entry"
-            ? `timeline-comparison:${tab.target.entryId}`
-            : `scm-comparison:${tab.target.sourceTarget.domain}:${tab.target.sourceTarget.entityId}`,
+          tab.target.kind === "history-entry"
+            ? `history-comparison:${tab.target.entryId}`
+            : `change-comparison:${tab.target.sourceTarget.domain}:${tab.target.sourceTarget.entityId}`,
         label:
-          tab.target.kind === "timeline-entry"
+          tab.target.kind === "history-entry"
             ? `预览 ${tab.target.entryShortHash ?? tab.target.entryMessage}`
             : `预览 ${tab.target.changeKind}`,
         clickable: false,

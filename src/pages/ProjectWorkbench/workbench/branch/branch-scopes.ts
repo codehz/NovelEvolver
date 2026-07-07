@@ -2,12 +2,12 @@ import { createScope, molecule, use, useMolecule } from "bunshi/react";
 import type { RpcPromise } from "capnweb";
 import { atom, useSetAtom } from "jotai";
 
+import type { BranchWorkspace } from "#shared/rpc/branch-workspace-rpc";
+import type { HistoryHandle } from "#shared/rpc/history-rpc";
 import type { ManuscriptHandle } from "#shared/rpc/manuscript-rpc";
-import type { WorktreeHandle } from "#shared/rpc/projects-rpc";
 import type { ResourceLibraryHandle } from "#shared/rpc/resource-library-rpc";
 import type { WorktreeChangesHandle } from "#shared/rpc/worktree-changes-rpc";
 import type { WorktreeSearchHandle } from "#shared/rpc/worktree-search-rpc";
-import type { WorktreeTimelineHandle } from "#shared/rpc/worktree-timeline-rpc";
 
 import { projectMolecule } from "../state/molecules";
 
@@ -15,7 +15,7 @@ export const DEFAULT_BRANCH_NAME = "main";
 
 export const activeBranchAtomMolecule = molecule(() => {
   const project = use(projectMolecule);
-  return atom(Promise.resolve(project.handle.head.name) as Promise<string> | string);
+  return atom(Promise.resolve(project.currentBranch.name) as Promise<string> | string);
 });
 
 /** 返回 activeBranchAtom 的 setter，用于在切换分支后更新 atom 值。 */
@@ -28,34 +28,34 @@ export const branchNameScope = createScope<string>(DEFAULT_BRANCH_NAME);
 
 const activeBranchNameMolecule = molecule(() => use(branchNameScope));
 
-/** 当前分支对应的虚拟 worktree RPC 引用（随 project × branchName scope 重建）。 */
-export const worktreeMolecule = molecule(() => {
+/** 当前分支对应的草稿工作区 RPC 引用（随 project × branchName scope 重建）。 */
+export const branchWorkspaceMolecule = molecule(() => {
   const project = use(projectMolecule);
   const branchName = use(branchNameScope);
-  return project.handle.openWorktree(branchName);
+  return project.openBranchWorkspace(branchName);
 });
 
-/** 当前分支资源库根（`openWorktree(...).resources` 级联，不在此 await）。 */
-export const resourceLibraryMolecule = molecule(() => use(worktreeMolecule).resources);
+/** 当前分支资源库根（`openBranchWorkspace(...).resources` 级联，不在此 await）。 */
+export const resourceLibraryMolecule = molecule(() => use(branchWorkspaceMolecule).resources);
 
-/** 当前分支正文根（`openWorktree(...).manuscript` 级联，不在此 await）。 */
-export const manuscriptMolecule = molecule(() => use(worktreeMolecule).manuscript);
+/** 当前分支正文根（`openBranchWorkspace(...).manuscript` 级联，不在此 await）。 */
+export const manuscriptMolecule = molecule(() => use(branchWorkspaceMolecule).manuscript);
 
-/** 当前分支全文搜索（`openWorktree(...).search` 级联，不在此 await）。 */
-export const worktreeSearchMolecule = molecule(() => use(worktreeMolecule).search);
+/** 当前分支全文搜索（`openBranchWorkspace(...).search` 级联，不在此 await）。 */
+export const worktreeSearchMolecule = molecule(() => use(branchWorkspaceMolecule).search);
 
-/** 当前分支变更跟踪句柄（`openWorktree(...).changes` 级联，不在此 await）。 */
-export const worktreeChangesMolecule = molecule(() => use(worktreeMolecule).changes);
+/** 当前分支变更跟踪句柄（`openBranchWorkspace(...).changes` 级联，不在此 await）。 */
+export const worktreeChangesMolecule = molecule(() => use(branchWorkspaceMolecule).changes);
 
-/** 当前分支文件时间线句柄（`openWorktree(...).timeline` 级联，不在此 await）。 */
-export const worktreeTimelineMolecule = molecule(() => use(worktreeMolecule).timeline);
+/** 当前分支文件历史句柄（`openBranchWorkspace(...).history` 级联，不在此 await）。 */
+export const historyMolecule = molecule(() => use(branchWorkspaceMolecule).history);
 
 export function useActiveBranchName(): string {
   return useMolecule(activeBranchNameMolecule);
 }
 
-export function useWorktree(): RpcPromise<WorktreeHandle> {
-  return useMolecule(worktreeMolecule);
+export function useBranchWorkspace(): RpcPromise<BranchWorkspace> {
+  return useMolecule(branchWorkspaceMolecule);
 }
 
 export function useResourceLibrary(): RpcPromise<ResourceLibraryHandle> {
@@ -74,6 +74,6 @@ export function useWorktreeChanges(): RpcPromise<WorktreeChangesHandle> {
   return useMolecule(worktreeChangesMolecule);
 }
 
-export function useWorktreeTimeline(): RpcPromise<WorktreeTimelineHandle> {
-  return useMolecule(worktreeTimelineMolecule);
+export function useHistory(): RpcPromise<HistoryHandle> {
+  return useMolecule(historyMolecule);
 }

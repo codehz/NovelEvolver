@@ -25,7 +25,8 @@ const appRpcState = await createAppRpcClientState();
 
 export const appRpc = appRpcState.root;
 export const windowService = appRpc.window;
-export const projectsService = appRpc.projects;
+export const projectLibraryService = appRpc.projectLibrary;
+export const workspaceService = appRpc.workspace;
 
 window.addEventListener("beforeunload", () => {
   void appRpcState.transport.disconnect("Window unloaded.");

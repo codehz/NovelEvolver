@@ -2,8 +2,8 @@ import { useMolecule } from "bunshi/react";
 import { useSetAtom } from "jotai";
 import { useEffect } from "react";
 
-import { consumeRpcStream } from "#app/lib/app-rpc-react";
-import type { WorktreeChangesEvent } from "#shared/rpc/worktree-changes-rpc";
+import { consumeRpcSubscription } from "#app/lib/app-rpc-react";
+import type { ChangesEvent } from "#shared/rpc/worktree-changes-rpc";
 
 import { useWorktreeChanges } from "../../../branch/branch-scopes";
 import { resourceLibraryTreeMolecule } from "./resource-tree-molecule";
@@ -15,8 +15,8 @@ export function useResourceTreeSync(): void {
 
   useEffect(() => {
     dispatch({ type: "loadStart" });
-    return consumeRpcStream<WorktreeChangesEvent>({
-      subscribe: () => changesHandle.subscribe(),
+    return consumeRpcSubscription<ChangesEvent>({
+      subscribe: () => changesHandle.subscribeChanges(),
       onValue: (event) => {
         if (event.kind === "snapshot") {
           dispatch({ type: "loadSuccess", snapshot: event.treeSnapshot.resources });

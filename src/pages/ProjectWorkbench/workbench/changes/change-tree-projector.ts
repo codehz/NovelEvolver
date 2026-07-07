@@ -1,28 +1,28 @@
 import type { Change } from "#shared/rpc/worktree-changes-rpc";
 
-export type ScmChangeTreeFolderNode = {
+export type ChangeTreeFolderNode = {
   type: "folder";
   segment: string;
   pathKey: string;
   selfChanges: Change[];
-  children: ScmChangeTreeNode[];
+  children: ChangeTreeNode[];
 };
 
-export type ScmChangeTreeLeafNode = {
+export type ChangeTreeLeafNode = {
   type: "leaf";
   item: Change;
 };
 
-export type ScmChangeTreeNode = ScmChangeTreeFolderNode | ScmChangeTreeLeafNode;
+export type ChangeTreeNode = ChangeTreeFolderNode | ChangeTreeLeafNode;
 
-export type ScmChangeDomainRoot = {
+export type ChangeDomainRoot = {
   id: "manuscript" | "resource";
   title: string;
   iconClass: string;
-  nodes: ScmChangeTreeNode[];
+  nodes: ChangeTreeNode[];
 };
 
-export type ScmChangeFlatRow =
+export type ChangeFlatRow =
   | {
       kind: "domain";
       key: string;
@@ -35,7 +35,7 @@ export type ScmChangeFlatRow =
   | {
       kind: "folder";
       key: string;
-      node: ScmChangeTreeFolderNode;
+      node: ChangeTreeFolderNode;
       depth: number;
       expanded: boolean;
       childCount: number;
@@ -52,7 +52,7 @@ function scopeKey(scope: string, key: string): string {
   return `${scope}::${key}`;
 }
 
-function sortTreeNodes(nodes: ScmChangeTreeNode[]): ScmChangeTreeNode[] {
+function sortTreeNodes(nodes: ChangeTreeNode[]): ChangeTreeNode[] {
   return [...nodes].sort((left, right) => {
     if (left.type === right.type) {
       if (left.type === "folder" && right.type === "folder") {
@@ -69,7 +69,7 @@ function sortTreeNodes(nodes: ScmChangeTreeNode[]): ScmChangeTreeNode[] {
   });
 }
 
-function sortTreeRecursive(nodes: ScmChangeTreeNode[]): ScmChangeTreeNode[] {
+function sortTreeRecursive(nodes: ChangeTreeNode[]): ChangeTreeNode[] {
   return sortTreeNodes(nodes).map((node) => {
     if (node.type === "folder") {
       return {
@@ -82,20 +82,19 @@ function sortTreeRecursive(nodes: ScmChangeTreeNode[]): ScmChangeTreeNode[] {
 }
 
 function findFolderChild(
-  parent: ScmChangeTreeFolderNode,
+  parent: ChangeTreeFolderNode,
   segment: string,
-): ScmChangeTreeFolderNode | undefined {
+): ChangeTreeFolderNode | undefined {
   const existing = parent.children.find(
-    (child): child is ScmChangeTreeFolderNode =>
-      child.type === "folder" && child.segment === segment,
+    (child): child is ChangeTreeFolderNode => child.type === "folder" && child.segment === segment,
   );
   return existing;
 }
 
 function ensureFolderAtPath(
-  root: ScmChangeTreeFolderNode,
+  root: ChangeTreeFolderNode,
   segments: readonly string[],
-): ScmChangeTreeFolderNode | undefined {
+): ChangeTreeFolderNode | undefined {
   if (segments.length === 0) {
     return undefined;
   }
@@ -109,7 +108,7 @@ function ensureFolderAtPath(
       current = existing;
       continue;
     }
-    const folder: ScmChangeTreeFolderNode = {
+    const folder: ChangeTreeFolderNode = {
       type: "folder",
       segment,
       pathKey,
@@ -122,7 +121,7 @@ function ensureFolderAtPath(
   return current;
 }
 
-function insertChange(root: ScmChangeTreeFolderNode, change: Change): void {
+function insertChange(root: ChangeTreeFolderNode, change: Change): void {
   const segments = change.displayPath.split("/").filter((segment) => segment !== "");
 
   if (change.entityKind === "folder") {
@@ -146,8 +145,8 @@ function insertChange(root: ScmChangeTreeFolderNode, change: Change): void {
   parent.children.push({ type: "leaf", item: change });
 }
 
-export function buildScmChangeTree(changes: readonly Change[]): ScmChangeTreeNode[] {
-  const root: ScmChangeTreeFolderNode = {
+export function buildChangeTree(changes: readonly Change[]): ChangeTreeNode[] {
+  const root: ChangeTreeFolderNode = {
     type: "folder",
     segment: "",
     pathKey: "",
@@ -162,16 +161,16 @@ export function buildScmChangeTree(changes: readonly Change[]): ScmChangeTreeNod
   return sortTreeRecursive(root.children);
 }
 
-function folderChildCount(node: ScmChangeTreeFolderNode): number {
+function folderChildCount(node: ChangeTreeFolderNode): number {
   return node.children.length + (node.selfChanges.length > 1 ? node.selfChanges.length : 0);
 }
 
 function visitNodes(
-  nodes: readonly ScmChangeTreeNode[],
+  nodes: readonly ChangeTreeNode[],
   scope: string,
   depth: number,
   expandedFolders: ReadonlySet<string>,
-  out: ScmChangeFlatRow[],
+  out: ChangeFlatRow[],
 ): void {
   for (const node of nodes) {
     if (node.type === "folder") {
@@ -213,12 +212,12 @@ function visitNodes(
   }
 }
 
-export function flattenScmChangeTree(
-  roots: readonly ScmChangeDomainRoot[],
+export function flattenChangeTree(
+  roots: readonly ChangeDomainRoot[],
   expandedDomains: ReadonlySet<string>,
   expandedFolders: ReadonlySet<string>,
-): ScmChangeFlatRow[] {
-  const rows: ScmChangeFlatRow[] = [];
+): ChangeFlatRow[] {
+  const rows: ChangeFlatRow[] = [];
   for (const root of roots) {
     const expanded = expandedDomains.has(root.id);
     rows.push({
@@ -237,9 +236,9 @@ export function flattenScmChangeTree(
   return rows;
 }
 
-export function collectScmTreeFolderKeys(roots: readonly ScmChangeDomainRoot[]): string[] {
+export function collectChangeTreeFolderKeys(roots: readonly ChangeDomainRoot[]): string[] {
   const keys: string[] = [];
-  const visit = (nodes: readonly ScmChangeTreeNode[], scope: string) => {
+  const visit = (nodes: readonly ChangeTreeNode[], scope: string) => {
     for (const node of nodes) {
       if (node.type !== "folder") {
         continue;

@@ -1,5 +1,5 @@
+import type { HistoryEntryKind, HistoryTarget } from "#shared/rpc/history-rpc";
 import type { ChangeDomain, ChangeKind } from "#shared/rpc/worktree-changes-rpc";
-import type { TimelineEntryKind, TimelineTarget } from "#shared/rpc/worktree-timeline-rpc";
 
 import type { EditorSelectionSnapshot } from "./editor-caret";
 
@@ -24,15 +24,15 @@ export type ComparisonWorkbenchEditorTab = {
   canEditCurrent: boolean;
   target:
     | {
-        kind: "timeline-entry";
-        sourceTarget: TimelineTarget;
+        kind: "history-entry";
+        sourceTarget: HistoryTarget;
         entryId: string;
         entryMessage: string;
         entryTimestamp: number;
         entryShortHash?: string;
       }
     | {
-        kind: "scm-change";
+        kind: "change";
         sourceTarget: {
           domain: ChangeDomain;
           entityId: string;
@@ -93,10 +93,10 @@ export type WorkbenchEditorTarget =
       chapterId: string;
     }
   | {
-      kind: "timeline-entry";
+      kind: "history-entry";
       entryId: string;
-      sourceTarget: TimelineTarget;
-      entryKind: TimelineEntryKind;
+      sourceTarget: HistoryTarget;
+      entryKind: HistoryEntryKind;
       label: string;
       message: string;
       timestamp: number;
@@ -104,7 +104,7 @@ export type WorkbenchEditorTarget =
       displayPath: string;
     }
   | {
-      kind: "scm-change";
+      kind: "change";
       changeId: string;
       sourceTarget: {
         domain: ChangeDomain;

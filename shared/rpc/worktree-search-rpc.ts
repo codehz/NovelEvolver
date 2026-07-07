@@ -1,6 +1,6 @@
 import type { RpcTarget } from "capnweb";
 
-/** 与 SCM `ScmChangeDomain` 对齐：手稿正文树 vs 资源库树。 */
+/** 与变更域对齐：手稿正文树 vs 资源库树。 */
 export type WorktreeSearchDomain = "manuscript" | "resource";
 
 /** `all` 表示两个域都搜；结果仍分栏返回，便于 UI 区分。 */

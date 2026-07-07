@@ -13,8 +13,8 @@ import { useTitleBarTitle } from "#app/lib/titlebar-title";
 import { AuxiliaryPanel } from "./workbench/auxiliary/AuxiliaryPanel";
 import { BranchScopeProvider } from "./workbench/branch/BranchScopeProvider";
 import { EditorArea } from "./workbench/editor/EditorArea";
+import { ChangesSidebarSection } from "./workbench/sidebar/ChangesSidebarSection";
 import { ExplorerSidebar } from "./workbench/sidebar/ExplorerSidebar";
-import { ScmSidebarSection } from "./workbench/sidebar/ScmSidebarSection";
 import { SearchSidebarSection } from "./workbench/sidebar/SearchSidebarSection";
 import { projectIdScope, projectMolecule } from "./workbench/state/molecules";
 import { WorkbenchStatusBar } from "./workbench/statusbar/WorkbenchStatusBar";
@@ -62,11 +62,14 @@ function ErrorFallback({ error }: { error: unknown }) {
   );
 }
 
-const projectPromiseMolecule = convertRpcPromise(projectMolecule);
+const projectMetadataPromiseMolecule = convertRpcPromise(
+  projectMolecule,
+  async (projectPromise) => (await projectPromise).metadata,
+);
 
 function ProjectWorkbenchInner() {
-  const project = use(useMolecule(projectPromiseMolecule));
-  const displayName = projectDisplayName(project.metadata.path);
+  const metadata = use(useMolecule(projectMetadataPromiseMolecule));
+  const displayName = projectDisplayName(metadata.path);
   useTitleBarTitle(displayName);
   const primaryViews = useMemo<readonly WorkbenchPrimaryView[]>(
     () => [
@@ -83,10 +86,10 @@ function ProjectWorkbenchInner() {
         content: <SearchSidebarSection />,
       },
       {
-        id: "scm",
-        title: "源代码管理",
+        id: "changes",
+        title: "更改",
         iconClass: cn("icon-[codicon--source-control]"),
-        content: <ScmSidebarSection />,
+        content: <ChangesSidebarSection />,
       },
     ],
     [displayName],

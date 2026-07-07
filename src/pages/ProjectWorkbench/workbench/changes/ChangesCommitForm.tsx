@@ -2,7 +2,7 @@ import { cn } from "#app/lib/cn";
 
 import { useActiveBranchName } from "../branch/branch-scopes";
 
-export function ScmCommitForm({
+export function ChangesCommitForm({
   commitMessage,
   committing,
   onCommitMessageChange,

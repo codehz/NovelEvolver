@@ -8,10 +8,10 @@ import { notificationApi } from "#app/lib/notifications";
 import { useOneShotRequestConsumer } from "#app/lib/one-shot-request";
 
 import {
+  useHistory,
   useManuscript,
   useResourceLibrary,
   useWorktreeChanges,
-  useWorktreeTimeline,
 } from "../branch/branch-scopes";
 import { editorTabMolecule, workbenchEditorMolecule } from "../state/molecules";
 import type {
@@ -79,7 +79,7 @@ function writeComparisonTargetCurrentContent(
   return Promise.resolve(resources.writeFile(target.entityId, content));
 }
 
-function isNoScmTextDiffError(error: unknown): boolean {
+function isNoChangeTextDiffError(error: unknown): boolean {
   return error instanceof Error && error.message === "此节点当前没有可预览的文本差异。";
 }
 
@@ -157,7 +157,7 @@ function ComparisonEditorPane({
   const manuscript = useManuscript();
   const resources = useResourceLibrary();
   const changes = useWorktreeChanges();
-  const timeline = useWorktreeTimeline();
+  const history = useHistory();
   const { editorStateAtom } = useMolecule(workbenchEditorMolecule);
   const setEditorState = useSetAtom(editorStateAtom);
   const autosaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -203,7 +203,7 @@ function ComparisonEditorPane({
     [setEditorState, tab.id],
   );
 
-  const syncScmComparisonTab = useCallback(
+  const syncChangeComparisonTab = useCallback(
     async (
       sourceTarget: ComparisonWorkbenchEditorTab["target"]["sourceTarget"],
       fallback: string,
@@ -211,7 +211,7 @@ function ComparisonEditorPane({
       const next = await Promise.resolve(
         changes.readChangeTextComparisonByTarget(sourceTarget),
       ).catch((error: unknown) => {
-        if (isNoScmTextDiffError(error)) {
+        if (isNoChangeTextDiffError(error)) {
           return null;
         }
         throw error;
@@ -231,7 +231,7 @@ function ComparisonEditorPane({
                   : {
                       canEditCurrent: true,
                       target: {
-                        kind: "scm-change" as const,
+                        kind: "change" as const,
                         sourceTarget: next.target,
                         changeId: next.changeId,
                         changeKind: next.kind,
@@ -269,7 +269,7 @@ function ComparisonEditorPane({
         }
 
         const save =
-          currentTab.target.kind === "scm-change" && currentTab.target.changeKind === "delete"
+          currentTab.target.kind === "change" && currentTab.target.changeKind === "delete"
             ? Promise.resolve(
                 changes.restoreChangeTextHunk(
                   currentTab.target.sourceTarget,
@@ -277,7 +277,7 @@ function ComparisonEditorPane({
                   currentTab.currentContent,
                 ),
               ).then(() =>
-                syncScmComparisonTab(currentTab.target.sourceTarget, currentTab.currentContent),
+                syncChangeComparisonTab(currentTab.target.sourceTarget, currentTab.currentContent),
               )
             : writeComparisonTargetCurrentContent(
                 currentTab.target.sourceTarget,
@@ -288,16 +288,16 @@ function ComparisonEditorPane({
 
         void Promise.resolve(save).catch((error) => {
           if (
-            currentTab.target.kind === "scm-change" &&
+            currentTab.target.kind === "change" &&
             currentTab.target.changeKind === "delete" &&
-            isNoScmTextDiffError(error)
+            isNoChangeTextDiffError(error)
           ) {
-            void syncScmComparisonTab(currentTab.target.sourceTarget, currentTab.currentContent);
+            void syncChangeComparisonTab(currentTab.target.sourceTarget, currentTab.currentContent);
             return;
           }
 
           notificationApi.error(error instanceof Error ? error.message : "自动保存失败", {
-            source: currentTab.target.kind === "timeline-entry" ? "时间线" : "SCM",
+            source: currentTab.target.kind === "history-entry" ? "历史" : "更改",
           });
 
           void readComparisonTargetCurrentContent(
@@ -320,26 +320,22 @@ function ComparisonEditorPane({
         });
       }, COMPARISON_AUTOSAVE_DEBOUNCE_MS);
     },
-    [changes, clearPendingAutosave, syncScmComparisonTab, updateComparisonTab],
+    [changes, clearPendingAutosave, syncChangeComparisonTab, updateComparisonTab],
   );
 
-  const handleRestoreTimelineHunk = useCallback(
+  const handleRestoreHistoryHunk = useCallback(
     async ({ beforeContent, afterContent }: TextComparisonRestoreHunkChange) => {
       try {
         clearPendingAutosave();
-        if (tab.target.kind === "timeline-entry") {
+        if (tab.target.kind === "history-entry") {
           await Promise.resolve(
-            timeline.restoreTimelineEntryContentHunk(
-              tab.target.entryId,
-              beforeContent,
-              afterContent,
-            ),
+            history.restoreHistoryEntryContentHunk(tab.target.entryId, beforeContent, afterContent),
           );
         } else {
           await Promise.resolve(
             changes.restoreChangeTextHunk(tab.target.sourceTarget, beforeContent, afterContent),
           );
-          await syncScmComparisonTab(tab.target.sourceTarget, afterContent);
+          await syncChangeComparisonTab(tab.target.sourceTarget, afterContent);
           return;
         }
         setEditorState((state) => ({
@@ -355,12 +351,12 @@ function ComparisonEditorPane({
         }));
       } catch (error) {
         notificationApi.error(error instanceof Error ? error.message : "局部恢复失败", {
-          source: tab.target.kind === "timeline-entry" ? "时间线" : "SCM",
+          source: tab.target.kind === "history-entry" ? "历史" : "更改",
         });
         throw error;
       }
     },
-    [changes, clearPendingAutosave, setEditorState, syncScmComparisonTab, tab, timeline],
+    [changes, clearPendingAutosave, history, setEditorState, syncChangeComparisonTab, tab],
   );
 
   return (
@@ -370,8 +366,8 @@ function ComparisonEditorPane({
       originalContent={tab.originalContent}
       editable={tab.canEditCurrent}
       onChange={handleChange}
-      onRestoreHunk={handleRestoreTimelineHunk}
-      aria-label={tab.target.kind === "timeline-entry" ? "时间线差异预览" : "SCM 差异预览"}
+      onRestoreHunk={handleRestoreHistoryHunk}
+      aria-label={tab.target.kind === "history-entry" ? "历史差异预览" : "更改差异预览"}
     />
   );
 }

@@ -2,18 +2,18 @@ import { useMemo, useState } from "react";
 
 import { SidebarPaneStack } from "#app/components/workbench";
 
+import { HistorySectionBody } from "../explorer/history/HistorySection";
 import { ManuscriptSectionBody } from "../explorer/manuscript/ManuscriptSection";
 import { ResourceLibrarySectionBody } from "../explorer/resource-library/ResourceLibrarySection";
-import { TimelineSectionBody } from "../explorer/timeline/TimelineSection";
 
 const DEFAULT_MANUSCRIPT_BODY_HEIGHT = 168;
 const DEFAULT_REFERENCE_BODY_HEIGHT = 148;
-const DEFAULT_TIMELINE_BODY_HEIGHT = 116;
+const DEFAULT_HISTORY_BODY_HEIGHT = 116;
 
 export function ExplorerSidebar({ projectLabel }: { projectLabel: string }) {
   const [manuscriptExpanded, setManuscriptExpanded] = useState(true);
   const [referenceExpanded, setReferenceExpanded] = useState(true);
-  const [timelineExpanded, setTimelineExpanded] = useState(true);
+  const [historyExpanded, setHistoryExpanded] = useState(true);
 
   const panes = useMemo(
     () => [
@@ -38,17 +38,17 @@ export function ExplorerSidebar({ projectLabel }: { projectLabel: string }) {
         onToggleExpanded: () => setReferenceExpanded((value) => !value),
       },
       {
-        id: "timeline",
-        title: "时间线",
-        ariaLabel: "时间线",
-        panelId: "explorer-timeline-panel",
-        expanded: timelineExpanded,
-        defaultBodyHeight: DEFAULT_TIMELINE_BODY_HEIGHT,
-        body: <TimelineSectionBody />,
-        onToggleExpanded: () => setTimelineExpanded((value) => !value),
+        id: "history",
+        title: "历史",
+        ariaLabel: "历史",
+        panelId: "explorer-history-panel",
+        expanded: historyExpanded,
+        defaultBodyHeight: DEFAULT_HISTORY_BODY_HEIGHT,
+        body: <HistorySectionBody />,
+        onToggleExpanded: () => setHistoryExpanded((value) => !value),
       },
     ],
-    [manuscriptExpanded, projectLabel, referenceExpanded, timelineExpanded],
+    [historyExpanded, manuscriptExpanded, projectLabel, referenceExpanded],
   );
 
   return <SidebarPaneStack panes={panes} />;

@@ -1,6 +1,6 @@
 import { useLocation } from "wouter";
 
-import { projectsService } from "#app/lib/app-rpc";
+import { projectLibraryService } from "#app/lib/app-rpc";
 import { createAsyncLoader, useAsyncLoader } from "#app/lib/async-loader";
 import { useNotifyAction } from "#app/lib/notifications";
 import type { ProjectMetadata } from "#shared/project";
@@ -8,7 +8,7 @@ import type { ProjectMetadata } from "#shared/project";
 import { ProjectListCard } from "./ProjectListCard";
 import { ProjectListHeader } from "./ProjectListHeader";
 
-const projectLoader = createAsyncLoader(() => projectsService.recents);
+const projectLoader = createAsyncLoader(() => projectLibraryService.recentProjects);
 
 export function ProjectList() {
   const [, navigate] = useLocation();
@@ -16,7 +16,7 @@ export function ProjectList() {
   const notifyAction = useNotifyAction();
 
   const handleCreateDialog = async () => {
-    const project = await notifyAction.wrap(() => projectsService.createProjectDialog(), {
+    const project = await notifyAction.wrap(() => projectLibraryService.showCreateDialog(), {
       errorMessage: "创建项目失败",
       toast: { source: "项目" },
     });
@@ -26,7 +26,7 @@ export function ProjectList() {
   };
 
   const handleOpenDialog = async () => {
-    const project = await notifyAction.wrap(() => projectsService.openProjectDialog(), {
+    const project = await notifyAction.wrap(() => projectLibraryService.showOpenDialog(), {
       errorMessage: "打开项目文件失败",
       toast: { source: "项目" },
     });
@@ -40,7 +40,7 @@ export function ProjectList() {
   };
 
   const handleRemoveProject = async (id: number) => {
-    const removed = await notifyAction.wrap(() => projectsService.removeProject(id), {
+    const removed = await notifyAction.wrap(() => projectLibraryService.removeProject(id), {
       errorMessage: "从列表移除失败",
       toast: { source: "项目" },
     });

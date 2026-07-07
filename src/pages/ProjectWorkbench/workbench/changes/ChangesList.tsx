@@ -18,17 +18,19 @@ import { TreeMotionRow } from "#app/pages/ProjectWorkbench/workbench/tree/TreeMo
 import type { Change } from "#shared/rpc/worktree-changes-rpc";
 
 import {
-  buildScmChangeTree,
-  collectScmTreeFolderKeys,
-  flattenScmChangeTree,
-  type ScmChangeDomainRoot,
-  type ScmChangeFlatRow,
-  type ScmChangeTreeFolderNode,
-} from "./scm-change-tree-projector";
-import { ScmDiffItemRow } from "./ScmDiffItemRow";
-import { ScmDomainRow } from "./ScmDomainRow";
-const scmFolderRowClass = cn("cursor-pointer text-xs text-ctp-subtext1 hover:bg-ctp-surface0/50");
-const scmFolderCountClass = cn(
+  buildChangeTree,
+  collectChangeTreeFolderKeys,
+  flattenChangeTree,
+  type ChangeDomainRoot,
+  type ChangeFlatRow,
+  type ChangeTreeFolderNode,
+} from "./change-tree-projector";
+import { ChangeItemRow } from "./ChangeItemRow";
+import { ChangesDomainRow } from "./ChangesDomainRow";
+const changeFolderRowClass = cn(
+  "cursor-pointer text-xs text-ctp-subtext1 hover:bg-ctp-surface0/50",
+);
+const changeFolderCountClass = cn(
   "ml-auto shrink-0 bg-ctp-surface0 px-1 py-px font-mono text-[10px] text-ctp-subtext0",
 );
 
@@ -48,40 +50,40 @@ function isPreviewableChange(change: Change): boolean {
   );
 }
 
-function buildScmChangeRoots(
+function buildChangeRoots(
   manuscriptChanges: Change[],
   resourceChanges: Change[],
-): ScmChangeDomainRoot[] {
-  const roots: ScmChangeDomainRoot[] = [
+): ChangeDomainRoot[] {
+  const roots: ChangeDomainRoot[] = [
     {
       id: "manuscript",
       title: "正文变更",
       iconClass: contentDomainIconClass("manuscript"),
-      nodes: buildScmChangeTree(manuscriptChanges),
+      nodes: buildChangeTree(manuscriptChanges),
     },
     {
       id: "resource",
       title: "资源变更",
       iconClass: contentDomainIconClass("resource"),
-      nodes: buildScmChangeTree(resourceChanges),
+      nodes: buildChangeTree(resourceChanges),
     },
   ];
   return roots.filter((root) => root.nodes.length > 0);
 }
 
-function folderIconClass(node: ScmChangeTreeFolderNode, expanded: boolean): string {
+function folderIconClass(node: ChangeTreeFolderNode, expanded: boolean): string {
   const showOpened = expanded || node.children.length > 0;
   return contentFolderIconClass(showOpened);
 }
 
-function ScmFolderRow({
+function ChangeFolderRow({
   row,
   layout,
   onToggle,
   onRevert,
   onOpenChange,
 }: {
-  row: Extract<ScmChangeFlatRow, { kind: "folder" }>;
+  row: Extract<ChangeFlatRow, { kind: "folder" }>;
   layout: TreeRowLayout;
   onToggle: (key: string) => void;
   onRevert: (changeId: string) => void;
@@ -96,7 +98,7 @@ function ScmFolderRow({
 
   if (row.inlineChange !== null) {
     return (
-      <ScmDiffItemRow
+      <ChangeItemRow
         item={row.inlineChange}
         depth={row.depth}
         layout={layout}
@@ -124,7 +126,7 @@ function ScmFolderRow({
       layout={layout}
       depth={row.depth}
       paddingLeftPx={getTreeRowPaddingLeft(row.depth)}
-      className={scmFolderRowClass}
+      className={changeFolderRowClass}
       aria-expanded={hasChildren ? row.expanded : undefined}
       tabIndex={0}
       onClick={hasChildren ? toggle : undefined}
@@ -137,12 +139,12 @@ function ScmFolderRow({
       )}
       <span className={folderIconClass(row.node, row.expanded)} />
       <span className="truncate">{row.node.segment}</span>
-      <span className={scmFolderCountClass}>{row.childCount}</span>
+      <span className={changeFolderCountClass}>{row.childCount}</span>
     </TreeMotionRow>
   );
 }
 
-export function ScmChangesList({
+export function ChangesList({
   manuscriptChanges,
   resourceChanges,
   onRevert,
@@ -154,11 +156,11 @@ export function ScmChangesList({
   onOpenChange: (change: Change) => void;
 }) {
   const roots = useMemo(
-    () => buildScmChangeRoots(manuscriptChanges, resourceChanges),
+    () => buildChangeRoots(manuscriptChanges, resourceChanges),
     [manuscriptChanges, resourceChanges],
   );
   const domainIds = useMemo(() => roots.map((root) => root.id), [roots]);
-  const folderKeys = useMemo(() => collectScmTreeFolderKeys(roots), [roots]);
+  const folderKeys = useMemo(() => collectChangeTreeFolderKeys(roots), [roots]);
   const [expandedDomainIds, setExpandedDomainIds] = useState<Set<string>>(() => new Set(domainIds));
   const [expandedFolderKeys, setExpandedFolderKeys] = useState<Set<string>>(
     () => new Set(folderKeys),
@@ -195,7 +197,7 @@ export function ScmChangesList({
   }, [folderKeys]);
 
   const flatRows = useMemo(
-    () => flattenScmChangeTree(roots, expandedDomainIds, expandedFolderKeys),
+    () => flattenChangeTree(roots, expandedDomainIds, expandedFolderKeys),
     [roots, expandedDomainIds, expandedFolderKeys],
   );
   const onToggleDomain = useCallback((domainId: string) => {
@@ -220,7 +222,7 @@ export function ScmChangesList({
       return next;
     });
   }, []);
-  const getItemKey = useCallback((row: ScmChangeFlatRow) => row.key, []);
+  const getItemKey = useCallback((row: ChangeFlatRow) => row.key, []);
 
   return (
     <div className="py-1">
@@ -231,7 +233,7 @@ export function ScmChangesList({
         className="w-full"
         renderRow={(row, _index, layout) =>
           row.kind === "domain" ? (
-            <ScmDomainRow
+            <ChangesDomainRow
               title={row.title}
               iconClass={row.iconClass}
               expanded={row.expanded}
@@ -240,7 +242,7 @@ export function ScmChangesList({
               onToggle={() => onToggleDomain(row.key)}
             />
           ) : row.kind === "folder" ? (
-            <ScmFolderRow
+            <ChangeFolderRow
               row={row}
               layout={layout}
               onToggle={onToggleFolder}
@@ -248,7 +250,7 @@ export function ScmChangesList({
               onOpenChange={onOpenChange}
             />
           ) : (
-            <ScmDiffItemRow
+            <ChangeItemRow
               item={row.item}
               depth={row.depth}
               layout={layout}
