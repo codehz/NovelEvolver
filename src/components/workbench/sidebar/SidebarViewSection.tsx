@@ -11,9 +11,9 @@ import {
   sidebarSectionResizeSeamClass,
 } from "./sidebar-chrome";
 import {
-  SidebarSectionActionsPortalProvider,
-  SidebarSectionActionsPortalTarget,
-} from "./sidebar-section-actions-portal";
+  SidebarHeaderActionsPortalProvider,
+  SidebarHeaderActionsPortalTarget,
+} from "./sidebar-header-actions-portal";
 
 /** Layout flow height at the section seam (handle is overlaid, not counted in flex). */
 export const SIDEBAR_SECTION_RESIZE_STRIP_HEIGHT = 0;
@@ -41,7 +41,7 @@ export function SidebarViewSection({
   bodyFillsSection?: boolean;
 }) {
   return (
-    <SidebarSectionActionsPortalProvider>
+    <SidebarHeaderActionsPortalProvider>
       <section
         aria-label={ariaLabel}
         className={cn("flex min-h-0 flex-col", bodyFillsSection && expanded && "min-h-0 flex-1")}
@@ -64,7 +64,7 @@ export function SidebarViewSection({
             />
             <span className="truncate">{title}</span>
           </button>
-          <SidebarSectionActionsPortalTarget as="div" className="flex shrink-0 items-center" />
+          <SidebarHeaderActionsPortalTarget as="div" className="flex shrink-0 items-center" />
         </div>
         {expanded ? (
           <ScrollArea fill={bodyFillsSection} id={panelId} style={bodyStyle}>
@@ -72,7 +72,7 @@ export function SidebarViewSection({
           </ScrollArea>
         ) : null}
       </section>
-    </SidebarSectionActionsPortalProvider>
+    </SidebarHeaderActionsPortalProvider>
   );
 }
 

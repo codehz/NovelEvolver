@@ -2,7 +2,7 @@ import { useMolecule } from "bunshi/react";
 import { useAtomValue, useSetAtom, useStore } from "jotai";
 import { useCallback, useMemo, useRef } from "react";
 
-import { SidebarHeaderActionButton, SidebarSectionHeaderActions } from "#app/components/workbench";
+import { SidebarHeaderActionButton, SidebarHeaderActions } from "#app/components/workbench";
 import type { ManuscriptTreeNode } from "#shared/rpc/worktree-tree-rpc";
 
 import { queryTreeRowById } from "../../tree/tree-row-dom";
@@ -96,7 +96,7 @@ export function ManuscriptSectionBody() {
 
   return (
     <>
-      <SidebarSectionHeaderActions>
+      <SidebarHeaderActions>
         <SidebarHeaderActionButton
           label="新建章节"
           icon="icon-[codicon--new-file]"
@@ -107,7 +107,7 @@ export function ManuscriptSectionBody() {
           icon="icon-[codicon--new-folder]"
           onClick={() => startCreating("folder")}
         />
-      </SidebarSectionHeaderActions>
+      </SidebarHeaderActions>
       <TreePaneBody<ManuscriptRenderItem, ManuscriptTreeNode["type"], ManuscriptMoveTarget>
         listRef={listRef}
         status={state.status}

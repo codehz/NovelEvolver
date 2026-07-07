@@ -12,11 +12,11 @@ export {
   type SidebarPaneStackProps,
 } from "./sidebar/SidebarPaneStack";
 export {
-  SidebarSectionActionsPortalContent,
-  SidebarSectionActionsPortalProvider,
-  SidebarSectionActionsPortalTarget,
-} from "./sidebar/sidebar-section-actions-portal";
-export { SidebarSectionHeaderActions } from "./sidebar/SidebarSectionHeaderActions";
+  SidebarHeaderActionsPortalContent,
+  SidebarHeaderActionsPortalProvider,
+  SidebarHeaderActionsPortalTarget,
+} from "./sidebar/sidebar-header-actions-portal";
+export { SidebarHeaderActions } from "./sidebar/SidebarHeaderActions";
 export { sidebarHeaderActionClass, sidebarHeaderIconClass } from "./sidebar/sidebar-chrome";
 export {
   SidebarHeaderActionButton,
