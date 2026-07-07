@@ -7,12 +7,12 @@ import { notificationApi } from "#app/lib/notifications";
 import { useManuscript, useResourceLibrary, useWorktreeTimeline } from "../branch/branch-scopes";
 import { useWorktreeTreeSnapshot } from "../branch/use-worktree-tree-snapshot";
 import { workbenchEditorMolecule } from "../state/molecules";
-import type {
-  WorkbenchEditorDocument,
-  WorkbenchEditorOpenIntent,
-  WorkbenchEditorTab,
-  WorkbenchEditorTarget,
-} from "../state/types";
+import type { WorkbenchEditorOpenIntent, WorkbenchEditorTarget } from "../state/types";
+import {
+  getWorkbenchEditorTargetLabel,
+  getWorkbenchEditorTargetNotificationSource,
+  resolveWorkbenchEditorTarget,
+} from "./editor-contributions";
 import {
   activateWorkbenchEditorTab,
   clearWorkbenchEditorTabs,
@@ -21,22 +21,6 @@ import {
   openWorkbenchEditorTab,
   pinWorkbenchEditorTab,
 } from "./editor-tab-manager";
-
-type ResolvedWorkbenchEditorTarget = {
-  tab: WorkbenchEditorTab;
-  document?: WorkbenchEditorDocument;
-};
-
-function workbenchEditorTargetLabel(target: WorkbenchEditorTarget): string {
-  switch (target.kind) {
-    case "resource":
-      return "资源文件";
-    case "manuscript":
-      return "章节";
-    case "timeline-entry":
-      return `预览：${target.label}`;
-  }
-}
 
 export function useWorkbenchEditorActions() {
   const { editorStateAtom, tabsAtom } = useMolecule(workbenchEditorMolecule);
@@ -48,88 +32,6 @@ export function useWorkbenchEditorActions() {
   const timeline = useWorktreeTimeline();
   const snapshot = useWorktreeTreeSnapshot();
   const focusRequestIdRef = useRef(0);
-
-  const resolveTargetTab = useCallback(
-    async (target: WorkbenchEditorTarget): Promise<ResolvedWorkbenchEditorTarget> => {
-      switch (target.kind) {
-        case "resource": {
-          const node = snapshot?.resources.nodes[target.resourceId];
-          const label = node?.type === "file" ? node.name : workbenchEditorTargetLabel(target);
-          const content = await Promise.resolve(resources.readFile(target.resourceId));
-          const key = `resource:${target.resourceId}`;
-          return {
-            tab: {
-              id: key,
-              kind: "resource",
-              resourceId: target.resourceId,
-              label,
-            },
-            document: {
-              key,
-              kind: "resource",
-              resourceId: target.resourceId,
-              baselineContent: content,
-            },
-          };
-        }
-        case "manuscript": {
-          const node = snapshot?.manuscript.nodes[target.chapterId];
-          const label = node?.type === "chapter" ? node.title : workbenchEditorTargetLabel(target);
-          const content = await Promise.resolve(manuscript.readChapter(target.chapterId));
-          const key = `manuscript:${target.chapterId}`;
-          return {
-            tab: {
-              id: key,
-              kind: "manuscript",
-              chapterId: target.chapterId,
-              label,
-            },
-            document: {
-              key,
-              kind: "manuscript",
-              chapterId: target.chapterId,
-              baselineContent: content,
-            },
-          };
-        }
-        case "timeline-entry": {
-          const currentContent = (
-            target.sourceTarget.domain === "manuscript"
-              ? Promise.resolve(manuscript.readChapter(target.sourceTarget.entityId))
-              : Promise.resolve(resources.readFile(target.sourceTarget.entityId))
-          ).catch((error: unknown) => {
-            if (target.entryKind === "delete") {
-              return "";
-            }
-            throw error;
-          });
-          const [historyContent, current] = await Promise.all([
-            Promise.resolve(timeline.readTimelineEntryContent(target.entryId)),
-            currentContent,
-          ]);
-          if (historyContent.content === null) {
-            throw new Error("此记录没有可预览内容。");
-          }
-          return {
-            tab: {
-              id: `timeline-entry:${target.entryId}`,
-              kind: "timeline-comparison",
-              label: workbenchEditorTargetLabel(target),
-              target: target.sourceTarget,
-              entryId: target.entryId,
-              entryMessage: target.message,
-              entryTimestamp: target.timestamp,
-              entryShortHash: target.shortHash,
-              displayPath: target.displayPath,
-              originalContent: historyContent.content,
-              currentContent: current,
-            },
-          };
-        }
-      }
-    },
-    [manuscript, resources, snapshot, timeline],
-  );
 
   const openEditorTarget = useCallback(
     async (target: WorkbenchEditorTarget, intent: WorkbenchEditorOpenIntent) => {
@@ -144,26 +46,28 @@ export function useWorkbenchEditorActions() {
         intent === "focus" ? (focusRequestIdRef.current += 1) : focusRequestIdRef.current;
 
       try {
-        const { document, tab } = await resolveTargetTab(target);
+        const { document, tab } = await resolveWorkbenchEditorTarget(target, {
+          manuscript,
+          resources,
+          timeline,
+          snapshot,
+        });
         if (intent === "focus" && requestId !== focusRequestIdRef.current) {
           return;
         }
         setEditorState((state) => openWorkbenchEditorTab(state, tab, intent, document));
       } catch (error) {
         notificationApi.error(
-          error instanceof Error ? error.message : `无法打开${workbenchEditorTargetLabel(target)}`,
+          error instanceof Error
+            ? error.message
+            : `无法打开${getWorkbenchEditorTargetLabel(target)}`,
           {
-            source:
-              target.kind === "resource"
-                ? "资源库"
-                : target.kind === "manuscript"
-                  ? "正文"
-                  : "时间线",
+            source: getWorkbenchEditorTargetNotificationSource(target),
           },
         );
       }
     },
-    [editorStateAtom, resolveTargetTab, setEditorState, store],
+    [editorStateAtom, manuscript, resources, setEditorState, snapshot, store, timeline],
   );
 
   const focusTarget = useCallback(

@@ -6,6 +6,10 @@ import type {
   WorkbenchEditorTab,
   WorkbenchEditorTarget,
 } from "../state/types";
+import {
+  getWorkbenchEditorTabTargetKey,
+  getWorkbenchEditorTargetKey,
+} from "./editor-contributions";
 
 export const emptyWorkbenchEditorState: WorkbenchEditorState = {
   tabs: [],
@@ -13,28 +17,6 @@ export const emptyWorkbenchEditorState: WorkbenchEditorState = {
   activeTabId: null,
   transientTabId: null,
 };
-
-export function getWorkbenchEditorTargetKey(target: WorkbenchEditorTarget): string {
-  switch (target.kind) {
-    case "resource":
-      return `resource:${target.resourceId}`;
-    case "manuscript":
-      return `manuscript:${target.chapterId}`;
-    case "timeline-entry":
-      return `timeline-entry:${target.entryId}`;
-  }
-}
-
-export function getWorkbenchEditorTabTargetKey(tab: WorkbenchEditorTab): string {
-  switch (tab.kind) {
-    case "resource":
-      return `resource:${tab.resourceId}`;
-    case "manuscript":
-      return `manuscript:${tab.chapterId}`;
-    case "timeline-comparison":
-      return `timeline-entry:${tab.entryId}`;
-  }
-}
 
 export function getWorkbenchEditorContentTabDocumentKey(tab: ContentWorkbenchEditorTab): string {
   switch (tab.kind) {
