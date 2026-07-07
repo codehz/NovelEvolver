@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { useLocation } from "wouter";
 
 import { projectLibraryService } from "#app/lib/app-rpc";
@@ -14,6 +15,10 @@ export function ProjectList() {
   const [, navigate] = useLocation();
   const projects = useAsyncLoader(projectLoader);
   const notifyAction = useNotifyAction();
+
+  useEffect(() => {
+    void projects.refresh();
+  }, [projects.refresh]);
 
   const handleCreateDialog = async () => {
     const project = await notifyAction.wrap(() => projectLibraryService.showCreateDialog(), {
