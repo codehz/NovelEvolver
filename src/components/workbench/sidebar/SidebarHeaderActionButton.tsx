@@ -7,18 +7,21 @@ export interface SidebarHeaderActionButtonProps {
   label: string;
   /** Tailwind icon class, e.g. `"icon-[codicon--new-file]"`. */
   icon: string;
+  disabled?: boolean;
   onClick: () => void;
 }
 
 export function SidebarHeaderActionButton({
   label,
   icon,
+  disabled = false,
   onClick,
 }: SidebarHeaderActionButtonProps) {
   return (
     <button
       aria-label={label}
       className={sidebarHeaderActionClass}
+      disabled={disabled}
       title={label}
       type="button"
       onClick={onClick}

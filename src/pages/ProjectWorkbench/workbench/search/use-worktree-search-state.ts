@@ -75,8 +75,13 @@ export function useWorktreeSearchState() {
   }, [debouncedQuery, retryKey, searchHandle]);
 
   const retry = useCallback(() => {
+    const trimmed = query.trim();
+    if (trimmed === "") {
+      return;
+    }
+    setDebouncedQuery(trimmed);
     setRetryKey((current) => current + 1);
-  }, []);
+  }, [query]);
 
   const statsLine = useMemo(() => {
     if (debouncedQuery === "" || error) {
@@ -140,6 +145,7 @@ export function useWorktreeSearchState() {
     statsLine,
     roots,
     retry,
+    canRefresh: query.trim() !== "",
     openHit,
   };
 }

@@ -14,6 +14,7 @@ export const primarySidebarChromeTitleTextClass = cn(
 export const sidebarHeaderActionClass = cn(
   "inline-flex size-6 shrink-0 items-center justify-center rounded border-0 bg-transparent p-0",
   "text-ctp-mauve hover:bg-ctp-text/8 hover:text-ctp-mauve",
+  "disabled:pointer-events-none disabled:opacity-40",
   sidebarChromeFocusVisibleClass,
 );
 
