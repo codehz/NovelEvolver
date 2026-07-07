@@ -1,5 +1,4 @@
 import type {
-  ContentWorkbenchEditorTab,
   WorkbenchEditorDocument,
   WorkbenchEditorDocuments,
   WorkbenchEditorState,
@@ -7,9 +6,15 @@ import type {
   WorkbenchEditorTarget,
 } from "../state/types";
 import {
+  areWorkbenchEditorTabsStructurallyEqual,
   getWorkbenchEditorTabTargetKey,
   getWorkbenchEditorTargetKey,
 } from "./editor-contributions";
+import {
+  areWorkbenchEditorDocumentsStructurallyEqual,
+  getWorkbenchEditorDocumentKey,
+  getWorkbenchEditorTabDocumentKey,
+} from "./editor-document-contributions";
 
 export const emptyWorkbenchEditorState: WorkbenchEditorState = {
   tabs: [],
@@ -17,24 +22,6 @@ export const emptyWorkbenchEditorState: WorkbenchEditorState = {
   activeTabId: null,
   transientTabId: null,
 };
-
-export function getWorkbenchEditorContentTabDocumentKey(tab: ContentWorkbenchEditorTab): string {
-  switch (tab.kind) {
-    case "resource":
-      return `resource:${tab.resourceId}`;
-    case "manuscript":
-      return `manuscript:${tab.chapterId}`;
-  }
-}
-
-export function getWorkbenchEditorDocumentKey(document: WorkbenchEditorDocument): string {
-  switch (document.kind) {
-    case "resource":
-      return `resource:${document.resourceId}`;
-    case "manuscript":
-      return `manuscript:${document.chapterId}`;
-  }
-}
 
 export function findWorkbenchEditorTabByTarget(
   state: WorkbenchEditorState,
@@ -62,9 +49,7 @@ function pruneWorkbenchEditorDocuments(
   documents: WorkbenchEditorDocuments,
 ): WorkbenchEditorDocuments {
   const documentKeys = new Set(
-    tabs
-      .filter((tab): tab is ContentWorkbenchEditorTab => tab.kind !== "timeline-comparison")
-      .map(getWorkbenchEditorContentTabDocumentKey),
+    tabs.map(getWorkbenchEditorTabDocumentKey).filter((key) => key !== null),
   );
   const nextDocuments: WorkbenchEditorDocuments = {};
   for (const key of documentKeys) {
@@ -194,30 +179,7 @@ export function areWorkbenchEditorTabsEqual(
   }
   return left.every((tab, index) => {
     const candidate = right[index];
-    if (candidate === undefined || tab.kind !== candidate.kind) {
-      return false;
-    }
-    if (tab.id !== candidate.id || tab.label !== candidate.label) {
-      return false;
-    }
-    if (tab.kind === "resource") {
-      return candidate.kind === "resource" && tab.resourceId === candidate.resourceId;
-    }
-    if (tab.kind === "manuscript") {
-      return candidate.kind === "manuscript" && tab.chapterId === candidate.chapterId;
-    }
-    return (
-      candidate.kind === "timeline-comparison" &&
-      tab.entryId === candidate.entryId &&
-      tab.entryMessage === candidate.entryMessage &&
-      tab.entryTimestamp === candidate.entryTimestamp &&
-      tab.entryShortHash === candidate.entryShortHash &&
-      tab.displayPath === candidate.displayPath &&
-      tab.originalContent === candidate.originalContent &&
-      tab.currentContent === candidate.currentContent &&
-      tab.target.domain === candidate.target.domain &&
-      tab.target.entityId === candidate.target.entityId
-    );
+    return candidate !== undefined && areWorkbenchEditorTabsStructurallyEqual(tab, candidate);
   });
 }
 
@@ -236,21 +198,7 @@ export function areWorkbenchEditorDocumentsEqual(
     if (leftDocument === undefined || rightDocument === undefined) {
       return false;
     }
-    if (
-      leftDocument.kind !== rightDocument.kind ||
-      leftDocument.key !== rightDocument.key ||
-      leftDocument.baselineContent !== rightDocument.baselineContent
-    ) {
-      return false;
-    }
-    if (leftDocument.kind === "resource") {
-      return (
-        rightDocument.kind === "resource" && leftDocument.resourceId === rightDocument.resourceId
-      );
-    }
-    return (
-      rightDocument.kind === "manuscript" && leftDocument.chapterId === rightDocument.chapterId
-    );
+    return areWorkbenchEditorDocumentsStructurallyEqual(leftDocument, rightDocument);
   });
 }
 

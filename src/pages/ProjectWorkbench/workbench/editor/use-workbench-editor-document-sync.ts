@@ -1,60 +1,15 @@
 import { useMolecule } from "bunshi/react";
-import type { RpcPromise } from "capnweb";
 import { useAtom } from "jotai";
 import type { RefObject } from "react";
 import { useEffect, useRef } from "react";
 
 import type { PlainTextEditorHandle } from "#app/components/PlainTextEditor";
-import type { ManuscriptHandle } from "#shared/rpc/manuscript-rpc";
-import type { ResourceLibraryHandle } from "#shared/rpc/resource-library-rpc";
 
 import { useManuscript, useResourceLibrary } from "../branch/branch-scopes";
 import { useWorktreeScmRevision } from "../branch/use-worktree-scm-revision";
 import { workbenchEditorMolecule } from "../state/molecules";
-import type { WorkbenchEditorDocument } from "../state/types";
+import { syncWorkbenchEditorDocument } from "./editor-document-contributions";
 import { areWorkbenchEditorStatesEqual, normalizeWorkbenchEditorState } from "./editor-tab-manager";
-
-function applySyncedContent(
-  document: WorkbenchEditorDocument,
-  content: string,
-  editorHandle: PlainTextEditorHandle | undefined,
-): WorkbenchEditorDocument {
-  const currentValue = editorHandle?.getValue();
-  if (currentValue === content) {
-    return {
-      ...document,
-      baselineContent: content,
-    };
-  }
-
-  if (currentValue === undefined || currentValue === document.baselineContent) {
-    editorHandle?.setValue(content);
-    return {
-      ...document,
-      baselineContent: content,
-    };
-  }
-
-  return document;
-}
-
-async function syncManuscriptDocument(
-  document: Extract<WorkbenchEditorDocument, { kind: "manuscript" }>,
-  manuscript: RpcPromise<ManuscriptHandle>,
-  editorHandle: PlainTextEditorHandle | undefined,
-): Promise<WorkbenchEditorDocument> {
-  const content = await Promise.resolve(manuscript.readChapter(document.chapterId));
-  return applySyncedContent(document, content, editorHandle);
-}
-
-async function syncResourceDocument(
-  document: Extract<WorkbenchEditorDocument, { kind: "resource" }>,
-  resources: RpcPromise<ResourceLibraryHandle>,
-  editorHandle: PlainTextEditorHandle | undefined,
-): Promise<WorkbenchEditorDocument> {
-  const content = await Promise.resolve(resources.readFile(document.resourceId));
-  return applySyncedContent(document, content, editorHandle);
-}
 
 export function useWorkbenchEditorDocumentSync(
   editorHandlesRef: RefObject<Map<string, PlainTextEditorHandle>>,
@@ -79,10 +34,10 @@ export function useWorkbenchEditorDocumentSync(
     void Promise.all(
       documents.map((document) => {
         const editorHandle = editorHandlesRef.current.get(document.key);
-        if (document.kind === "manuscript") {
-          return syncManuscriptDocument(document, manuscript, editorHandle).catch(() => document);
-        }
-        return syncResourceDocument(document, resources, editorHandle).catch(() => document);
+        return syncWorkbenchEditorDocument(document, editorHandle, {
+          manuscript,
+          resources,
+        }).catch(() => document);
       }),
     )
       .then((nextDocuments) => {

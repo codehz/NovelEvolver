@@ -171,6 +171,28 @@ function buildTimelineComparisonBreadcrumbModel(
   };
 }
 
+const workbenchEditorBreadcrumbBuilders = {
+  resource: (
+    tab: ResourceWorkbenchEditorTab,
+    context: EditorBreadcrumbContext,
+  ): EditorBreadcrumbModel =>
+    buildEditorBreadcrumbModel(resourceBreadcrumbDefinition, tab, context),
+  manuscript: (
+    tab: ManuscriptWorkbenchEditorTab,
+    context: EditorBreadcrumbContext,
+  ): EditorBreadcrumbModel =>
+    buildEditorBreadcrumbModel(manuscriptBreadcrumbDefinition, tab, context),
+  "timeline-comparison": (
+    tab: TimelineComparisonWorkbenchEditorTab,
+    context: EditorBreadcrumbContext,
+  ): EditorBreadcrumbModel => buildTimelineComparisonBreadcrumbModel(tab, context),
+} satisfies {
+  [K in WorkbenchEditorTab["kind"]]: (
+    tab: Extract<WorkbenchEditorTab, { kind: K }>,
+    context: EditorBreadcrumbContext,
+  ) => EditorBreadcrumbModel;
+};
+
 export function useEditorBreadcrumb(tab: WorkbenchEditorTab): EditorBreadcrumbModel {
   const { treeAtom: resourceTreeAtom, revealInTree: revealResource } = useMolecule(
     resourceLibraryTreeMolecule,
@@ -187,12 +209,5 @@ export function useEditorBreadcrumb(tab: WorkbenchEditorTab): EditorBreadcrumbMo
     revealResource,
   };
 
-  switch (tab.kind) {
-    case "resource":
-      return buildEditorBreadcrumbModel(resourceBreadcrumbDefinition, tab, context);
-    case "manuscript":
-      return buildEditorBreadcrumbModel(manuscriptBreadcrumbDefinition, tab, context);
-    case "timeline-comparison":
-      return buildTimelineComparisonBreadcrumbModel(tab, context);
-  }
+  return workbenchEditorBreadcrumbBuilders[tab.kind](tab as never, context);
 }

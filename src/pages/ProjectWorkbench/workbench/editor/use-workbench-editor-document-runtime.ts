@@ -14,8 +14,10 @@ import type {
 } from "../state/types";
 import {
   getWorkbenchEditorContentTabDocumentKey,
-  pinWorkbenchEditorTab,
-} from "./editor-tab-manager";
+  getWorkbenchEditorContentTabNotificationSource,
+  writeWorkbenchEditorContentTab,
+} from "./editor-document-contributions";
+import { pinWorkbenchEditorTab } from "./editor-tab-manager";
 import { useWorkbenchEditorDocumentSync } from "./use-workbench-editor-document-sync";
 
 const AUTOSAVE_DEBOUNCE_MS = 600;
@@ -113,14 +115,16 @@ export function useWorkbenchEditorDocumentRuntime(): WorkbenchEditorDocumentRunt
         key,
         setTimeout(() => {
           autosaveTimersRef.current.delete(key);
-          const write =
-            tab.kind === "resource"
-              ? Promise.resolve(resourcesRef.current.writeFile(tab.resourceId, content))
-              : Promise.resolve(manuscriptRef.current.writeChapter(tab.chapterId, content));
+          const write = Promise.resolve(
+            writeWorkbenchEditorContentTab(tab, content, {
+              manuscript: manuscriptRef.current,
+              resources: resourcesRef.current,
+            }),
+          );
 
           void write.catch((error) => {
             notificationApi.error(error instanceof Error ? error.message : "自动保存失败", {
-              source: tab.kind === "resource" ? "资源库" : "正文",
+              source: getWorkbenchEditorContentTabNotificationSource(tab),
             });
           });
         }, AUTOSAVE_DEBOUNCE_MS),

@@ -38,6 +38,7 @@ type WorkbenchEditorTargetContribution = {
     tab: WorkbenchEditorTab,
     snapshot: WorktreeTreeSnapshot,
   ) => WorkbenchEditorTab | null;
+  areTabsEqual: (left: WorkbenchEditorTab, right: WorkbenchEditorTab) => boolean;
   resolveTarget: (
     target: WorkbenchEditorTarget,
     context: WorkbenchEditorTargetContributionContext,
@@ -70,6 +71,11 @@ const resourceEditorContribution: WorkbenchEditorTargetContribution = {
       label: node.name,
     };
   },
+  areTabsEqual: (left, right) =>
+    left.id === right.id &&
+    left.label === right.label &&
+    (left as Extract<WorkbenchEditorTab, { kind: "resource" }>).resourceId ===
+      (right as Extract<WorkbenchEditorTab, { kind: "resource" }>).resourceId,
   resolveTarget: async (target, context) => {
     const resourceTarget = target as Extract<WorkbenchEditorTarget, { kind: "resource" }>;
     const node = context.snapshot?.resources.nodes[resourceTarget.resourceId];
@@ -120,6 +126,11 @@ const manuscriptEditorContribution: WorkbenchEditorTargetContribution = {
       label: node.title,
     };
   },
+  areTabsEqual: (left, right) =>
+    left.id === right.id &&
+    left.label === right.label &&
+    (left as Extract<WorkbenchEditorTab, { kind: "manuscript" }>).chapterId ===
+      (right as Extract<WorkbenchEditorTab, { kind: "manuscript" }>).chapterId,
   resolveTarget: async (target, context) => {
     const manuscriptTarget = target as Extract<WorkbenchEditorTarget, { kind: "manuscript" }>;
     const node = context.snapshot?.manuscript.nodes[manuscriptTarget.chapterId];
@@ -160,6 +171,23 @@ const timelineComparisonEditorContribution: WorkbenchEditorTargetContribution = 
   getTimelineTarget: (tab) =>
     (tab as Extract<WorkbenchEditorTab, { kind: "timeline-comparison" }>).target,
   syncTabWithTree: (tab) => tab,
+  areTabsEqual: (left, right) => {
+    const timelineTab = left as Extract<WorkbenchEditorTab, { kind: "timeline-comparison" }>;
+    const candidate = right as Extract<WorkbenchEditorTab, { kind: "timeline-comparison" }>;
+    return (
+      timelineTab.id === candidate.id &&
+      timelineTab.label === candidate.label &&
+      timelineTab.entryId === candidate.entryId &&
+      timelineTab.entryMessage === candidate.entryMessage &&
+      timelineTab.entryTimestamp === candidate.entryTimestamp &&
+      timelineTab.entryShortHash === candidate.entryShortHash &&
+      timelineTab.displayPath === candidate.displayPath &&
+      timelineTab.originalContent === candidate.originalContent &&
+      timelineTab.currentContent === candidate.currentContent &&
+      timelineTab.target.domain === candidate.target.domain &&
+      timelineTab.target.entityId === candidate.target.entityId
+    );
+  },
   resolveTarget: async (target, context) => {
     const timelineTarget = target as Extract<WorkbenchEditorTarget, { kind: "timeline-entry" }>;
     const currentContent = (
@@ -260,6 +288,18 @@ export function syncWorkbenchEditorTabWithTree(
   snapshot: WorktreeTreeSnapshot,
 ): WorkbenchEditorTab | null {
   return getWorkbenchEditorTabContribution(tab).syncTabWithTree(tab, snapshot);
+}
+
+export function areWorkbenchEditorTabsStructurallyEqual(
+  left: WorkbenchEditorTab,
+  right: WorkbenchEditorTab,
+): boolean {
+  const leftContribution = getWorkbenchEditorTabContribution(left);
+  const rightContribution = getWorkbenchEditorTabContribution(right);
+  if (leftContribution.tabKind !== rightContribution.tabKind) {
+    return false;
+  }
+  return leftContribution.areTabsEqual(left, right);
 }
 
 export function resolveWorkbenchEditorTarget(

@@ -81,9 +81,7 @@ function TimelineComparisonEditorPane({
         setEditorState((state) => ({
           ...state,
           tabs: state.tabs.map((candidate) =>
-            candidate.id === tab.id && candidate.kind === "timeline-comparison"
-              ? { ...candidate, currentContent: afterContent }
-              : candidate,
+            candidate.id === tab.id ? { ...tab, currentContent: afterContent } : candidate,
           ),
         }));
       } catch (error) {
