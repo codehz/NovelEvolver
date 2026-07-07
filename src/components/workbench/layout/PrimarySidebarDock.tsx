@@ -1,6 +1,9 @@
 import { memo, type CSSProperties, type ReactNode } from "react";
 
+import { SlotText } from "#app/components/SlotText";
 import { cn } from "#app/lib/cn";
+
+import { primarySidebarChromeTitleTextClass } from "../sidebar/sidebar-chrome";
 
 const primarySidebarDockMotionClass = cn("duration-200 ease-out");
 
@@ -18,17 +21,23 @@ const primarySidebarDockPanelClass = cn(
   primarySidebarDockMotionClass,
 );
 
+const primarySidebarDockTitleOverlayClass = cn(
+  "pointer-events-none absolute inset-x-0 top-0 z-20 flex h-workbench-tab items-center pr-3 pl-5",
+);
+
 export const PrimarySidebarDock = memo(function PrimarySidebarDock({
   visible,
   spacerWidth,
   panelWidth,
   resizeTransitionDisabled,
+  title,
   children,
 }: {
   visible: boolean;
   spacerWidth: number;
   panelWidth: number;
   resizeTransitionDisabled: boolean;
+  title: string;
   children?: ReactNode;
 }) {
   const spacerStyle: CSSProperties = { width: spacerWidth };
@@ -52,6 +61,9 @@ export const PrimarySidebarDock = memo(function PrimarySidebarDock({
         )}
         style={panelStyle}
       >
+        <div aria-hidden="true" className={primarySidebarDockTitleOverlayClass}>
+          <SlotText text={title} className={primarySidebarChromeTitleTextClass} />
+        </div>
         {children}
       </div>
     </div>

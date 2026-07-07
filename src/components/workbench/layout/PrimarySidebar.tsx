@@ -1,6 +1,5 @@
 import { memo, type ReactNode } from "react";
 
-import { SlotText } from "#app/components/SlotText";
 import { cn } from "#app/lib/cn";
 
 import { primarySidebarChromeTitleTextClass } from "../sidebar/sidebar-chrome";
@@ -32,7 +31,14 @@ export const PrimarySidebar = memo(function PrimarySidebar({
             "flex h-workbench-tab shrink-0 items-center justify-between gap-2 pr-3 pl-5",
           )}
         >
-          <SlotText text={title} className={primarySidebarChromeTitleTextClass} />
+          <span
+            className={cn(
+              primarySidebarChromeTitleTextClass,
+              "pointer-events-none text-transparent",
+            )}
+          >
+            {title}
+          </span>
           <SidebarHeaderActionsPortalTarget
             as="div"
             className="flex shrink-0 items-center gap-0.5"
