@@ -54,7 +54,7 @@ function HistoryGraphList({ commits }: { commits: CommitSummary[] }) {
   );
 }
 
-export function HistoryGraphBody({
+export function CommitGraphBody({
   commits,
   error,
   loading,

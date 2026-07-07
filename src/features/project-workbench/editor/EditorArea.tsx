@@ -4,10 +4,10 @@ import { useAtomValue } from "jotai";
 
 import { TabBar } from "#workbench/editor/TabBar";
 
-import { workbenchEditorMolecule } from "../state/molecules";
 import { getWorkbenchEditorTabIconClass } from "./editor-contributions";
 import { EditorBreadcrumb } from "./EditorBreadcrumb";
 import { EditorPaneDeck } from "./EditorPaneDeck";
+import { workbenchEditorMolecule } from "./state/molecules";
 import { useWorkbenchEditorActions } from "./use-workbench-editor-actions";
 import { useWorkbenchEditorTreeSync } from "./use-workbench-editor-tree-sync";
 

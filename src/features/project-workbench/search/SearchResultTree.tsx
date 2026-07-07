@@ -1,9 +1,10 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import type { KeyboardEvent, ReactNode } from "react";
+import type { ReactNode } from "react";
 
 import { cn } from "#app/shared/lib/ui/cn";
 import { DisclosureChevron } from "#app/shared/ui/DisclosureChevron";
 import type { WorktreeSearchHit } from "#shared/rpc/worktree-search-rpc";
+import { activateOnEnterSpace } from "#workbench/lib/activate-on-enter-space";
 import { contentEntityIconClass, contentFolderIconClass } from "#workbench/tree/content-tree-icons";
 import type { TreeRowLayout } from "#workbench/tree/tree-row-layout";
 import {
@@ -34,15 +35,6 @@ function searchTreeMatchPaddingLeft(leafDepth: number): number {
 const searchResultCountPillClass = cn(
   "ml-auto shrink-0 rounded-full bg-ctp-surface0 px-1 py-px font-mono text-[10px] text-ctp-subtext0",
 );
-
-function activateOnEnterSpace(onActivate: () => void) {
-  return (event: KeyboardEvent) => {
-    if (event.key === "Enter" || event.key === " ") {
-      event.preventDefault();
-      onActivate();
-    }
-  };
-}
 
 function SearchHighlightText({ children, className }: { children: string; className?: string }) {
   return (

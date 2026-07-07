@@ -1,6 +1,6 @@
 import type { CommitSummary } from "#shared/rpc/history-rpc";
+import { formatCommitTime } from "#workbench/lib/format-history-time";
 
-import { formatCommitTime } from "./format-commit-time";
 import { HistoryGraphGlyph } from "./HistoryGraphGlyph";
 
 export function HistoryCommitRow({

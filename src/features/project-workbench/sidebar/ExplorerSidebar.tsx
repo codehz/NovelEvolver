@@ -2,9 +2,9 @@ import { useMemo, useState } from "react";
 
 import { SidebarPaneStack } from "#workbench/chrome";
 
-import { HistorySectionBody } from "../explorer/history/HistorySection";
 import { ManuscriptSectionBody } from "../explorer/manuscript/ManuscriptSection";
 import { ResourceLibrarySectionBody } from "../explorer/resource-library/ResourceLibrarySection";
+import { FileHistorySectionBody } from "../history/FileHistorySection";
 
 const DEFAULT_MANUSCRIPT_BODY_HEIGHT = 168;
 const DEFAULT_REFERENCE_BODY_HEIGHT = 148;
@@ -44,7 +44,7 @@ export function ExplorerSidebar({ projectLabel }: { projectLabel: string }) {
         panelId: "explorer-history-panel",
         expanded: historyExpanded,
         defaultBodyHeight: DEFAULT_HISTORY_BODY_HEIGHT,
-        body: <HistorySectionBody />,
+        body: <FileHistorySectionBody />,
         onToggleExpanded: () => setHistoryExpanded((value) => !value),
       },
     ],

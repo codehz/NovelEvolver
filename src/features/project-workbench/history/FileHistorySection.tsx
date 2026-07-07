@@ -5,27 +5,18 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { notificationApi } from "#app/shared/lib/notifications";
 import { cn } from "#app/shared/lib/ui/cn";
 import type { HistoryEntry, HistoryTarget } from "#shared/rpc/history-rpc";
-
-import { useHistory } from "../../branch/branch-scopes";
-import { useWorktreeChangesRevision } from "../../branch/use-worktree-changes-revision";
-import { getWorkbenchEditorTabHistoryTarget } from "../../editor/editor-contributions";
-import { useWorkbenchEditorActions } from "../../editor/use-workbench-editor-actions";
-import { workbenchEditorMolecule } from "../../state/molecules";
+import { useHistory } from "#workbench/branch/branch-scopes";
+import { getWorkbenchEditorTabHistoryTarget } from "#workbench/editor/contributions/registry";
+import { workbenchEditorMolecule } from "#workbench/editor/state/molecules";
+import { useWorkbenchEditorActions } from "#workbench/editor/use-workbench-editor-actions";
+import { formatHistoryTime } from "#workbench/lib/format-history-time";
+import { useWorktreeChangesRevision } from "#workbench/worktree/use-worktree-changes-revision";
 
 const historyRowClass = cn(
   "group flex w-full min-w-0 items-start gap-2 border-b border-titlebar-border p-2 text-left",
   "hover:bg-ctp-surface0/40 focus-visible:bg-ctp-surface0/40 focus-visible:outline-none",
   "disabled:cursor-default hover:disabled:bg-transparent",
 );
-
-function formatHistoryTime(timestampMs: number): string {
-  const date = new Date(timestampMs);
-  const month = String(date.getMonth() + 1).padStart(2, "0");
-  const day = String(date.getDate()).padStart(2, "0");
-  const hours = String(date.getHours()).padStart(2, "0");
-  const minutes = String(date.getMinutes()).padStart(2, "0");
-  return `${month}-${day} ${hours}:${minutes}`;
-}
 
 function entryIconClass(entry: HistoryEntry): string {
   if (entry.kind === "delete") {
@@ -71,7 +62,7 @@ function HistoryEmptyState({ active }: { active: boolean }) {
   );
 }
 
-export function HistorySectionBody() {
+export function FileHistorySectionBody() {
   const history = useHistory();
   const revision = useWorktreeChangesRevision();
   const { activeEditorTabAtom } = useMolecule(workbenchEditorMolecule);

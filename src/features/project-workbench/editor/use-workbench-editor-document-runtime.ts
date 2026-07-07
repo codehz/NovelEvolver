@@ -6,18 +6,18 @@ import { notificationApi } from "#app/shared/lib/notifications";
 import type { PlainTextEditorHandle } from "#workbench/editor/PlainTextEditor";
 
 import { useManuscript, useResourceLibrary } from "../branch/branch-scopes";
-import { workbenchEditorMolecule } from "../state/molecules";
-import type {
-  ContentWorkbenchEditorTab,
-  WorkbenchEditorDocument,
-  WorkbenchEditorDocuments,
-} from "../state/types";
 import {
   getWorkbenchEditorContentTabDocumentKey,
   getWorkbenchEditorContentTabNotificationSource,
   writeWorkbenchEditorContentTab,
 } from "./editor-document-contributions";
 import { pinWorkbenchEditorTab } from "./editor-tab-manager";
+import { workbenchEditorMolecule } from "./state/molecules";
+import type {
+  ContentWorkbenchEditorTab,
+  WorkbenchEditorDocument,
+  WorkbenchEditorDocuments,
+} from "./state/types";
 import { useWorkbenchEditorDocumentSync } from "./use-workbench-editor-document-sync";
 
 const AUTOSAVE_DEBOUNCE_MS = 600;

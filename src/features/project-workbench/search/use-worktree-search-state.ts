@@ -4,8 +4,8 @@ import type { WorktreeSearchHit, WorktreeSearchResult } from "#shared/rpc/worktr
 import type { TreeBodyStatus } from "#workbench/tree/TreeBody";
 
 import { useWorktreeSearch } from "../branch/branch-scopes";
+import type { WorkbenchEditorNavigationRequest } from "../editor/state/types";
 import { useWorkbenchEditorActions } from "../editor/use-workbench-editor-actions";
-import type { WorkbenchEditorNavigationRequest } from "../state/types";
 import { contentDomainIconClass } from "../tree/content-tree-icons";
 import { buildSearchPathTree } from "./build-search-path-tree";
 import { SEARCH_DEBOUNCE_MS, SEARCH_MAX_RESULTS_PER_DOMAIN } from "./constants";

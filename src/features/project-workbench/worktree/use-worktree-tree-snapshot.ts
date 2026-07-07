@@ -4,8 +4,8 @@ import { consumeRpcSubscription } from "#app/shared/lib/rpc/app-rpc-react";
 import type { ChangesEvent } from "#shared/rpc/worktree-changes-rpc";
 import type { WorktreeTreeSnapshot } from "#shared/rpc/worktree-tree-rpc";
 
-import { applyCombinedWorktreeTreeFromChangesEvent } from "../tree/worktree-tree-state";
-import { useWorktreeChanges } from "./branch-scopes";
+import { useWorktreeChanges } from "../branch/branch-scopes";
+import { applyCombinedWorktreeTreeFromChangesEvent } from "./worktree-tree-state";
 
 export function useWorktreeTreeSnapshot(): WorktreeTreeSnapshot | null {
   const changesHandle = useWorktreeChanges();

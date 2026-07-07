@@ -1,10 +1,3 @@
-import type {
-  WorkbenchEditorDocument,
-  WorkbenchEditorDocuments,
-  WorkbenchEditorState,
-  WorkbenchEditorTab,
-  WorkbenchEditorTarget,
-} from "../state/types";
 import {
   areWorkbenchEditorTabsStructurallyEqual,
   getWorkbenchEditorTabTargetKey,
@@ -15,6 +8,13 @@ import {
   getWorkbenchEditorDocumentKey,
   getWorkbenchEditorTabDocumentKey,
 } from "./editor-document-contributions";
+import type {
+  WorkbenchEditorDocument,
+  WorkbenchEditorDocuments,
+  WorkbenchEditorState,
+  WorkbenchEditorTab,
+  WorkbenchEditorTarget,
+} from "./state/types";
 
 export const emptyWorkbenchEditorState: WorkbenchEditorState = {
   tabs: [],

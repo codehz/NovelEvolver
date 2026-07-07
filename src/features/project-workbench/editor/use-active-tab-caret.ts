@@ -2,8 +2,8 @@ import { useMolecule } from "bunshi/react";
 import { atom, useAtomValue } from "jotai";
 import { useMemo } from "react";
 
-import type { EditorCaretPosition } from "../state/editor-caret";
-import { editorTabMolecule, editorTabScope, workbenchEditorMolecule } from "../state/molecules";
+import type { EditorCaretPosition } from "./state/editor-caret";
+import { editorTabMolecule, editorTabScope, workbenchEditorMolecule } from "./state/molecules";
 
 const fallbackCaret: EditorCaretPosition = { line: 1, column: 1, selectionLength: 0 };
 

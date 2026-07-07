@@ -6,10 +6,10 @@ import { useEffect, useRef } from "react";
 import type { PlainTextEditorHandle } from "#workbench/editor/PlainTextEditor";
 
 import { useManuscript, useResourceLibrary } from "../branch/branch-scopes";
-import { useWorktreeChangesRevision } from "../branch/use-worktree-changes-revision";
-import { workbenchEditorMolecule } from "../state/molecules";
+import { useWorktreeChangesRevision } from "../worktree/use-worktree-changes-revision";
 import { syncWorkbenchEditorDocument } from "./editor-document-contributions";
 import { areWorkbenchEditorStatesEqual, normalizeWorkbenchEditorState } from "./editor-tab-manager";
+import { workbenchEditorMolecule } from "./state/molecules";
 
 export function useWorkbenchEditorDocumentSync(
   editorHandlesRef: RefObject<Map<string, PlainTextEditorHandle>>,

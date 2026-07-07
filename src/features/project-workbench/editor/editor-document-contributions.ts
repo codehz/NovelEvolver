@@ -8,7 +8,7 @@ import type {
   ContentWorkbenchEditorTab,
   WorkbenchEditorDocument,
   WorkbenchEditorTab,
-} from "../state/types";
+} from "./state/types";
 
 export type WorkbenchEditorDocumentContributionContext = {
   manuscript: RpcPromise<ManuscriptHandle>;

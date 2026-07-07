@@ -3,7 +3,7 @@ import { Fragment } from "react";
 
 import { cn } from "#app/shared/lib/ui/cn";
 
-import type { WorkbenchEditorTab } from "../state/types";
+import type { WorkbenchEditorTab } from "./state/types";
 import { useEditorBreadcrumb } from "./use-editor-breadcrumb";
 
 const breadcrumbButtonClass = cn("max-w-48 truncate rounded px-1 py-0.5 text-xs");

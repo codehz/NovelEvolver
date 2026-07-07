@@ -10,13 +10,7 @@ import {
   useResourceLibrary,
   useWorktreeChanges,
 } from "../branch/branch-scopes";
-import { useWorktreeTreeSnapshot } from "../branch/use-worktree-tree-snapshot";
-import { workbenchEditorMolecule } from "../state/molecules";
-import type {
-  WorkbenchEditorOpenIntent,
-  WorkbenchEditorOpenOptions,
-  WorkbenchEditorTarget,
-} from "../state/types";
+import { useWorktreeTreeSnapshot } from "../worktree/use-worktree-tree-snapshot";
 import {
   getWorkbenchEditorTargetKey,
   getWorkbenchEditorTargetLabel,
@@ -31,6 +25,12 @@ import {
   openWorkbenchEditorTab,
   pinWorkbenchEditorTab,
 } from "./editor-tab-manager";
+import { workbenchEditorMolecule } from "./state/molecules";
+import type {
+  WorkbenchEditorOpenIntent,
+  WorkbenchEditorOpenOptions,
+  WorkbenchEditorTarget,
+} from "./state/types";
 
 export function useWorkbenchEditorActions() {
   const { editorStateAtom, requestNavigation, tabsAtom } = useMolecule(workbenchEditorMolecule);

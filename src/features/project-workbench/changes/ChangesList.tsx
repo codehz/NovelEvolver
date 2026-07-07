@@ -1,9 +1,9 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import type { KeyboardEvent } from "react";
 
 import { cn } from "#app/shared/lib/ui/cn";
 import { DisclosureChevron } from "#app/shared/ui/DisclosureChevron";
 import type { Change } from "#shared/rpc/worktree-changes-rpc";
+import { activateOnEnterSpace } from "#workbench/lib/activate-on-enter-space";
 import { contentDomainIconClass, contentFolderIconClass } from "#workbench/tree/content-tree-icons";
 import { FlatTreeList } from "#workbench/tree/FlatTreeList";
 import type { TreeRowLayout } from "#workbench/tree/tree-row-layout";
@@ -30,15 +30,6 @@ const changeFolderRowClass = cn(
 const changeFolderCountClass = cn(
   "ml-auto shrink-0 bg-ctp-surface0 px-1 py-px font-mono text-[10px] text-ctp-subtext0",
 );
-
-function activateOnEnterSpace(onActivate: () => void) {
-  return (event: KeyboardEvent) => {
-    if (event.key === "Enter" || event.key === " ") {
-      event.preventDefault();
-      onActivate();
-    }
-  };
-}
 
 function isPreviewableChange(change: Change): boolean {
   return (

@@ -1,8 +1,8 @@
 import { ScopeProvider } from "bunshi/react";
 
-import { editorTabScope } from "../state/molecules";
-import type { WorkbenchEditorTab } from "../state/types";
 import { getWorkbenchEditorPane } from "./editor-pane-registry";
+import { editorTabScope } from "./state/molecules";
+import type { WorkbenchEditorTab } from "./state/types";
 import type { WorkbenchEditorDocumentRuntime } from "./use-workbench-editor-document-runtime";
 
 type EditorTabPaneProps = {

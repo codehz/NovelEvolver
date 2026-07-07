@@ -1,6 +1,6 @@
-import type { WorkbenchEditorTab } from "../state/types";
 import { EditorEmptyState } from "./EditorEmptyState";
 import { EditorTabPane } from "./EditorTabPane";
+import type { WorkbenchEditorTab } from "./state/types";
 import { useWorkbenchEditorDocumentRuntime } from "./use-workbench-editor-document-runtime";
 
 type EditorPaneDeckProps = {

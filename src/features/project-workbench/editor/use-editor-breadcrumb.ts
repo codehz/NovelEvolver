@@ -17,7 +17,7 @@ import type {
   ManuscriptWorkbenchEditorTab,
   ResourceWorkbenchEditorTab,
   WorkbenchEditorTab,
-} from "../state/types";
+} from "./state/types";
 
 export type EditorBreadcrumbSegment = {
   key: string;

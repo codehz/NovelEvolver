@@ -3,9 +3,9 @@ import { useCallback, useEffect, useState } from "react";
 import type { CommitSummary } from "#shared/rpc/history-rpc";
 
 import { useHistory } from "../branch/branch-scopes";
-import { HISTORY_GRAPH_MAX_COMMITS } from "./constants";
+import { HISTORY_GRAPH_MAX_COMMITS } from "../changes/constants";
 
-export function useHistoryGraphState(commitsRefreshKey: number) {
+export function useCommitGraphState(commitsRefreshKey: number) {
   const history = useHistory();
   const [commits, setCommits] = useState<CommitSummary[] | null>(null);
   const [error, setError] = useState(false);

@@ -1,19 +1,9 @@
-import type { KeyboardEvent } from "react";
-
 import { cn } from "#app/shared/lib/ui/cn";
 import { DisclosureChevron } from "#app/shared/ui/DisclosureChevron";
+import { activateOnEnterSpace } from "#workbench/lib/activate-on-enter-space";
 import type { TreeRowLayout } from "#workbench/tree/tree-row-layout";
 import { getTreeRowPaddingLeft } from "#workbench/tree/tree-row-motion";
 import { TreeMotionRow } from "#workbench/tree/TreeMotionRow";
-
-function activateOnEnterSpace(onActivate: () => void) {
-  return (event: KeyboardEvent) => {
-    if (event.key === "Enter" || event.key === " ") {
-      event.preventDefault();
-      onActivate();
-    }
-  };
-}
 
 const changeGroupCountClass = cn(
   "ml-auto shrink-0 bg-ctp-surface0 px-1 py-px font-mono text-[10px] text-ctp-subtext0",

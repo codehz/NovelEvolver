@@ -5,7 +5,7 @@ import type {
 } from "#shared/rpc/worktree-tree-rpc";
 
 import type { TreeResolvedDrop } from "../../../tree/tree-drag";
-import { applyWorktreeTreeDelta } from "../../../tree/worktree-tree-state";
+import { applyWorktreeTreeDelta } from "../../../worktree/worktree-tree-state";
 import { findManuscriptParentId } from "../manuscript-tree";
 import { isValidManuscriptMoveTarget } from "../manuscript-tree-placement-policy";
 import type { ManuscriptMoveTarget, ManuscriptTreeState } from "./types";

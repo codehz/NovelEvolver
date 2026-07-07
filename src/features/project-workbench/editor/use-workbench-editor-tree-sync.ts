@@ -2,11 +2,11 @@ import { useMolecule } from "bunshi/react";
 import { useAtom } from "jotai";
 import { useEffect } from "react";
 
-import { useWorktreeTreeSnapshot } from "../branch/use-worktree-tree-snapshot";
-import { workbenchEditorMolecule } from "../state/molecules";
-import type { WorkbenchEditorTab } from "../state/types";
+import { useWorktreeTreeSnapshot } from "../worktree/use-worktree-tree-snapshot";
 import { syncWorkbenchEditorTabWithTree } from "./editor-contributions";
 import { areWorkbenchEditorStatesEqual, normalizeWorkbenchEditorState } from "./editor-tab-manager";
+import { workbenchEditorMolecule } from "./state/molecules";
+import type { WorkbenchEditorTab } from "./state/types";
 
 export function useWorkbenchEditorTreeSync(): void {
   const snapshot = useWorktreeTreeSnapshot();

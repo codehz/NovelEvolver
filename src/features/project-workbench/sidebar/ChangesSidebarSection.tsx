@@ -7,10 +7,10 @@ import {
   CHANGES_PANEL_DEFAULT_BODY_HEIGHT,
   HISTORY_GRAPH_DEFAULT_BODY_HEIGHT,
 } from "../changes/constants";
-import { HistoryGraphBody } from "../changes/HistoryGraphBody";
 import { useChangesState } from "../changes/use-changes-state";
-import { useHistoryGraphState } from "../changes/use-history-graph-state";
 import { useWorkbenchEditorActions } from "../editor/use-workbench-editor-actions";
+import { CommitGraphBody } from "../history/CommitGraphBody";
+import { useCommitGraphState } from "../history/use-commit-graph-state";
 
 export function ChangesSidebarSection() {
   const {
@@ -25,7 +25,7 @@ export function ChangesSidebarSection() {
     revertChange,
     setCommitMessage,
   } = useChangesState();
-  const graph = useHistoryGraphState(commitsRefreshKey);
+  const graph = useCommitGraphState(commitsRefreshKey);
   const { focusTarget } = useWorkbenchEditorActions();
   const [changesExpanded, setChangesExpanded] = useState(true);
   const [graphExpanded, setGraphExpanded] = useState(true);
@@ -75,7 +75,7 @@ export function ChangesSidebarSection() {
         expanded: graphExpanded,
         defaultBodyHeight: HISTORY_GRAPH_DEFAULT_BODY_HEIGHT,
         body: (
-          <HistoryGraphBody
+          <CommitGraphBody
             commits={graph.commits}
             error={graph.error}
             loading={graph.loading}
