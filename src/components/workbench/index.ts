@@ -22,6 +22,7 @@ export {
   SidebarHeaderActionButton,
   type SidebarHeaderActionButtonProps,
 } from "./sidebar/SidebarHeaderActionButton";
+export { ErrorRetryView } from "./sidebar/ErrorRetryView";
 export {
   statusBarIconOnlyButtonClass,
   statusBarItemButtonClass,

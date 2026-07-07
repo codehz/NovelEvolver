@@ -1,6 +1,9 @@
-import { SidebarHeaderActions, SidebarHeaderActionButton } from "#app/components/workbench";
+import {
+  SidebarHeaderActions,
+  SidebarHeaderActionButton,
+  ErrorRetryView,
+} from "#app/components/workbench";
 
-import { ScmDiffError } from "../scm/ScmDiffStatusViews";
 import { SearchQueryChrome } from "../search/SearchQueryChrome";
 import { SearchResultTree } from "../search/SearchResultTree";
 import { useWorktreeSearchState } from "../search/use-worktree-search-state";
@@ -23,7 +26,7 @@ export function SearchSidebarSection() {
         <SearchQueryChrome query={query} statsLine={statsLine} onQueryChange={setQuery} />
         <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
           {error ? (
-            <ScmDiffError onRetry={retry} />
+            <ErrorRetryView message="无法加载搜索结果。" onRetry={retry} />
           ) : (
             <SearchResultTree roots={roots} highlightQuery={highlightQuery} onOpenHit={openHit} />
           )}

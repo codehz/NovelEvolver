@@ -1,15 +1,11 @@
 import type { ReactNode } from "react";
 
+import { ErrorRetryView } from "#app/components/workbench";
 import type { ChangesSnapshot } from "#shared/rpc/worktree-changes-rpc";
 
 import { ScmChangesList } from "./ScmChangesList";
 import { ScmCommitForm } from "./ScmCommitForm";
-import {
-  ScmDiffEmptyState,
-  ScmDiffError,
-  ScmDiffLoading,
-  ScmWarningBanner,
-} from "./ScmDiffStatusViews";
+import { ScmDiffEmptyState, ScmDiffLoading, ScmWarningBanner } from "./ScmDiffStatusViews";
 
 function resolveChangesPanelContent({
   loading,
@@ -28,7 +24,7 @@ function resolveChangesPanelContent({
     return <ScmDiffLoading />;
   }
   if (error) {
-    return <ScmDiffError onRetry={onRetry} />;
+    return <ErrorRetryView message="无法加载差异信息。" onRetry={onRetry} />;
   }
   if (result === null) {
     return <ScmDiffEmptyState />;
