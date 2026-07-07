@@ -11,6 +11,7 @@ const watch = process.argv.includes("--watch");
 const alias = {
   "#app": path.join(projectRoot, "src"),
   "#shared": path.join(projectRoot, "shared"),
+  "#workbench": path.join(projectRoot, "src/features/project-workbench"),
 };
 
 function aliasPlugin() {

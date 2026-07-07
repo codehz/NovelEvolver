@@ -7,4 +7,5 @@ const projectRoot = path.dirname(fileURLToPath(import.meta.url));
 export const pathAlias = {
   "#app": path.join(projectRoot, "src"),
   "#shared": path.join(projectRoot, "shared"),
+  "#workbench": path.join(projectRoot, "src/features/project-workbench"),
 } satisfies Record<string, string>;
