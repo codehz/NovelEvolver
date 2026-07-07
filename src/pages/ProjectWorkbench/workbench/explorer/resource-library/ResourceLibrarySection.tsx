@@ -3,11 +3,11 @@ import { useAtomValue, useSetAtom, useStore } from "jotai";
 import { useCallback, useMemo, useRef } from "react";
 
 import { SidebarHeaderActionButton, SidebarHeaderActions } from "#app/components/workbench";
+import { useOneShotRequestConsumer } from "#app/lib/one-shot-request";
 import type { ResourceTreeNode } from "#shared/rpc/worktree-tree-rpc";
 
 import { queryTreeRowById } from "../../tree/tree-row-dom";
 import { TreeBody } from "../../tree/TreeBody";
-import { useTreeRevealRequest } from "../../tree/use-tree-reveal-request";
 import type { TreeDropResolveInput } from "../../tree/use-tree-row-pointer-drag";
 import { resourceParentChain } from "./resource-tree";
 import { resolveResourceDropTarget } from "./resource-tree-placement-policy";
@@ -19,7 +19,9 @@ import { useResourceTreeSync } from "./state/use-resource-tree-sync";
 
 export function ResourceLibrarySectionBody() {
   useResourceTreeSync();
-  const { treeAtom, onRevealRequest } = useMolecule(resourceLibraryTreeMolecule);
+  const { treeAtom, onRevealRequest, retryPendingReveal } = useMolecule(
+    resourceLibraryTreeMolecule,
+  );
   const state = useAtomValue(treeAtom);
   const dispatch = useSetAtom(treeAtom);
   const store = useStore();
@@ -35,10 +37,11 @@ export function ResourceLibrarySectionBody() {
     moveNode,
   } = useResourceLibraryTreeActions();
 
-  useTreeRevealRequest({
-    onRevealRequest,
+  useOneShotRequestConsumer({
+    subscribe: onRevealRequest,
+    replay: retryPendingReveal,
     retryDeps: [projection.items],
-    reveal: (targetId) => {
+    consume: (targetId) => {
       const currentSnapshot = state.snapshot;
       if (currentSnapshot === null) {
         return "retry";

@@ -5,6 +5,7 @@ import type { ComponentType } from "react";
 
 import { PlainTextEditor, type PlainTextEditorHandle } from "#app/components/PlainTextEditor";
 import { notificationApi } from "#app/lib/notifications";
+import { useOneShotRequestConsumer } from "#app/lib/one-shot-request";
 
 import { useWorktreeTimeline } from "../branch/branch-scopes";
 import { editorTabMolecule, workbenchEditorMolecule } from "../state/molecules";
@@ -15,7 +16,6 @@ import {
   type TimelineMergePreviewRestoreHunkChange,
 } from "./TimelineMergePreviewEditor";
 import type { WorkbenchEditorDocumentRuntime } from "./use-workbench-editor-document-runtime";
-import { useWorkbenchEditorNavigationRequest } from "./use-workbench-editor-navigation-request";
 
 export type WorkbenchEditorPaneProps = {
   tab: WorkbenchEditorTab;
@@ -59,9 +59,9 @@ function TextDocumentEditorPane({
     [documentRuntime, tab, transient],
   );
 
-  useWorkbenchEditorNavigationRequest({
-    onNavigationRequest,
-    retryPendingNavigation,
+  useOneShotRequestConsumer({
+    subscribe: onNavigationRequest,
+    replay: retryPendingNavigation,
     retryDeps: [active, hasEditor, targetKey],
     consume: (request) => {
       if (request.targetKey !== targetKey) {

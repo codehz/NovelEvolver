@@ -4,6 +4,7 @@ import { RpcPromise } from "capnweb";
 import { atom } from "jotai";
 
 import { projectsService } from "#app/lib/app-rpc";
+import { createOneShotRequestChannel } from "#app/lib/one-shot-request";
 import { ProjectHandleWithMetadata } from "#shared/rpc/projects-rpc";
 
 import { emptyWorkbenchEditorState } from "../editor/editor-tab-manager";
@@ -53,23 +54,7 @@ export const workbenchEditorMolecule = molecule(() => {
     return tabs[0];
   });
 
-  const navigationHandlers = new Set<
-    (request: WorkbenchEditorNavigationRequest) => WorkbenchEditorNavigationRequestResult
-  >();
-  let pendingNavigationRequest: WorkbenchEditorNavigationRequest | null = null;
-
-  const dispatchPendingNavigationRequest = () => {
-    const request = pendingNavigationRequest;
-    if (request === null) {
-      return;
-    }
-    for (const handler of navigationHandlers) {
-      if (handler(request) === "done") {
-        pendingNavigationRequest = null;
-        return;
-      }
-    }
-  };
+  const navigationChannel = createOneShotRequestChannel<WorkbenchEditorNavigationRequest>();
 
   return {
     editorStateAtom,
@@ -79,20 +64,17 @@ export const workbenchEditorMolecule = molecule(() => {
     transientTabIdAtom,
     activeEditorTabAtom,
     requestNavigation: (request: WorkbenchEditorNavigationRequest): void => {
-      pendingNavigationRequest = request;
-      dispatchPendingNavigationRequest();
+      navigationChannel.publish(request);
     },
     retryPendingNavigation: (): void => {
-      dispatchPendingNavigationRequest();
+      navigationChannel.replay();
     },
     onNavigationRequest: (
       handler: (
         request: WorkbenchEditorNavigationRequest,
       ) => WorkbenchEditorNavigationRequestResult,
     ): (() => void) => {
-      navigationHandlers.add(handler);
-      dispatchPendingNavigationRequest();
-      return () => navigationHandlers.delete(handler);
+      return navigationChannel.subscribe(handler);
     },
   };
 });
