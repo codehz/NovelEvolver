@@ -49,7 +49,7 @@
               },
               {
                 "name": "slot-text/react",
-                "message": "Use #app/components/SlotText instead of slot-text/react."
+                "message": "Use #app/shared/ui/SlotText instead of slot-text/react."
               }
             ],
             "patterns": [

@@ -1,6 +1,6 @@
 import { memo, type ReactNode } from "react";
 
-import { cn } from "#app/lib/cn";
+import { cn } from "#app/shared/lib/ui/cn";
 
 import { primarySidebarChromeTitleTextClass } from "../sidebar/sidebar-chrome";
 import {

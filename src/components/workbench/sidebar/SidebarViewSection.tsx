@@ -1,7 +1,7 @@
 import type { CSSProperties, PointerEvent as ReactPointerEvent, ReactNode } from "react";
 
-import { ScrollArea } from "#app/components/ScrollArea";
-import { cn } from "#app/lib/cn";
+import { cn } from "#app/shared/lib/ui/cn";
+import { ScrollArea } from "#app/shared/ui/ScrollArea";
 
 import {
   sidebarSectionHeaderButtonClass,

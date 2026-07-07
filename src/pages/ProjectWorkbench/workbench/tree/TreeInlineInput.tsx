@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 
-import { cn } from "#app/lib/cn";
+import { cn } from "#app/shared/lib/ui/cn";
 
 type TreeInlineInputProps = {
   ariaLabel: string;

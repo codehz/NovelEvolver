@@ -1,7 +1,7 @@
 import { molecule, use } from "bunshi/react";
 import { atomWithReducer } from "jotai/utils";
 
-import { createOneShotRequestChannel } from "#app/lib/one-shot-request";
+import { createOneShotRequestChannel } from "#app/shared/lib/ui/one-shot-request";
 
 import { branchNameScope } from "../../../branch/branch-scopes";
 import { projectIdScope } from "../../../state/molecules";

@@ -1,7 +1,7 @@
 import { markdown } from "@codemirror/lang-markdown";
 import { EditorView, lineNumbers } from "@codemirror/view";
 
-import { codeMirrorCustomScrollbarExtension } from "#app/lib/scrollbar";
+import { codeMirrorCustomScrollbarExtension } from "#app/shared/lib/ui/scrollbar";
 
 import { novelEvolverMarkdownSyntaxHighlighting } from "./codemirror-markdown-highlight";
 import { novelEvolverEditorTheme } from "./codemirror-theme";

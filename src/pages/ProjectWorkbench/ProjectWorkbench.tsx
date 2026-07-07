@@ -5,10 +5,10 @@ import { ErrorBoundary } from "react-error-boundary";
 import { Link, useParams } from "wouter";
 
 import { WorkbenchLayout, type WorkbenchPrimaryView } from "#app/components/workbench";
-import { cn } from "#app/lib/cn";
-import { projectDisplayName } from "#app/lib/project-display-name";
-import { convertRpcPromise } from "#app/lib/rpc-utils";
-import { useTitleBarTitle } from "#app/lib/titlebar-title";
+import { projectDisplayName } from "#app/shared/lib/project-display-name";
+import { convertRpcPromise } from "#app/shared/lib/rpc/rpc-utils";
+import { useTitleBarTitle } from "#app/shared/lib/shell/titlebar-title";
+import { cn } from "#app/shared/lib/ui/cn";
 
 import { AuxiliaryPanel } from "./workbench/auxiliary/AuxiliaryPanel";
 import { BranchScopeProvider } from "./workbench/branch/BranchScopeProvider";

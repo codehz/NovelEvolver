@@ -3,15 +3,18 @@ import { useAtomValue } from "jotai";
 import { ForwardedRef, type ReactNode } from "react";
 import { chromatic, type SlotOptions } from "slot-text";
 
-import { NotificationBellButton, NotificationToastStack } from "#app/components/notifications";
-import { QuickPickHost } from "#app/components/quick-pick";
-import { SlotText } from "#app/components/SlotText";
-import { windowService } from "#app/lib/app-rpc";
-import { useWindowState } from "#app/lib/app-rpc-react";
-import { cn } from "#app/lib/cn";
-import { StatusBarLeftPortalTarget, StatusBarRightPortalTarget } from "#app/lib/statusbar-portal";
-import { TitleBarActionsPortalTarget } from "#app/lib/titlebar-portal";
-import { titleBarTitleAtom } from "#app/lib/titlebar-title";
+import { windowService } from "#app/shared/lib/rpc/app-rpc";
+import { useWindowState } from "#app/shared/lib/rpc/app-rpc-react";
+import {
+  StatusBarLeftPortalTarget,
+  StatusBarRightPortalTarget,
+} from "#app/shared/lib/shell/statusbar-portal";
+import { TitleBarActionsPortalTarget } from "#app/shared/lib/shell/titlebar-portal";
+import { titleBarTitleAtom } from "#app/shared/lib/shell/titlebar-title";
+import { cn } from "#app/shared/lib/ui/cn";
+import { SlotText } from "#app/shared/ui/SlotText";
+import { NotificationBellButton, NotificationToastStack } from "#app/shell/notifications";
+import { QuickPickHost } from "#app/shell/quick-pick";
 import type { WindowState } from "#shared/window";
 
 const windowControlButtonClass = cn(

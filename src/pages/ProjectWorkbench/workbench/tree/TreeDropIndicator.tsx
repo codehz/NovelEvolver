@@ -1,6 +1,6 @@
 import { motion } from "motion/react";
 
-import { cn } from "#app/lib/cn";
+import { cn } from "#app/shared/lib/ui/cn";
 
 import type { TreeDropPreview } from "./tree-drag";
 import { getTreeRowInsertIndicatorLeft, treeRowPaddingLeftTransition } from "./tree-row-motion";

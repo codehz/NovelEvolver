@@ -1,9 +1,9 @@
 import { useEffect } from "react";
 import { useLocation } from "wouter";
 
-import { projectLibraryService } from "#app/lib/app-rpc";
-import { createAsyncLoader, useAsyncLoader } from "#app/lib/async-loader";
-import { useNotifyAction } from "#app/lib/notifications";
+import { useNotifyAction } from "#app/shared/lib/notifications";
+import { projectLibraryService } from "#app/shared/lib/rpc/app-rpc";
+import { createAsyncLoader, useAsyncLoader } from "#app/shared/lib/ui/async-loader";
 import type { ProjectMetadata } from "#shared/project";
 
 import { ProjectListCard } from "./ProjectListCard";

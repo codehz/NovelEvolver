@@ -1,7 +1,7 @@
 import { useAtomValue } from "jotai";
 
 import { StatusBarItemButton } from "#app/components/workbench";
-import { quickPickOpenAtom } from "#app/lib/quick-pick";
+import { quickPickOpenAtom } from "#app/shared/lib/quick-pick";
 
 import { useBranchQuickPick } from "./branch-quick-pick";
 import { useActiveBranchName } from "./branch-scopes";

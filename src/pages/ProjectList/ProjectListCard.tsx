@@ -1,5 +1,5 @@
-import { cn } from "#app/lib/cn";
-import { projectDisplayName } from "#app/lib/project-display-name";
+import { projectDisplayName } from "#app/shared/lib/project-display-name";
+import { cn } from "#app/shared/lib/ui/cn";
 import type { ProjectMetadata } from "#shared/project";
 
 import { formatLastOpened } from "./format-last-opened";

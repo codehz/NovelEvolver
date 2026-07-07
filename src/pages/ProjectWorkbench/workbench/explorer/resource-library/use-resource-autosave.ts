@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef } from "react";
 
-import { notificationApi } from "#app/lib/notifications";
+import { notificationApi } from "#app/shared/lib/notifications";
 
 const AUTOSAVE_DEBOUNCE_MS = 600;
 

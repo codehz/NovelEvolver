@@ -1,6 +1,6 @@
 import { useRef } from "react";
 
-import { useAnimatedContentHeight } from "#app/lib/animated-height";
+import { useAnimatedContentHeight } from "#app/shared/lib/ui/animated-height";
 
 import {
   quickPickPanelClass,

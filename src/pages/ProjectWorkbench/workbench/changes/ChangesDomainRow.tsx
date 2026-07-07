@@ -1,10 +1,10 @@
 import type { KeyboardEvent } from "react";
 
-import { DisclosureChevron } from "#app/components/DisclosureChevron";
-import { cn } from "#app/lib/cn";
 import type { TreeRowLayout } from "#app/pages/ProjectWorkbench/workbench/tree/tree-row-layout";
 import { getTreeRowPaddingLeft } from "#app/pages/ProjectWorkbench/workbench/tree/tree-row-motion";
 import { TreeMotionRow } from "#app/pages/ProjectWorkbench/workbench/tree/TreeMotionRow";
+import { cn } from "#app/shared/lib/ui/cn";
+import { DisclosureChevron } from "#app/shared/ui/DisclosureChevron";
 
 function activateOnEnterSpace(onActivate: () => void) {
   return (event: KeyboardEvent) => {

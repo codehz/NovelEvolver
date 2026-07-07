@@ -1,8 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { KeyboardEvent, ReactNode } from "react";
 
-import { DisclosureChevron } from "#app/components/DisclosureChevron";
-import { cn } from "#app/lib/cn";
 import {
   contentEntityIconClass,
   contentFolderIconClass,
@@ -17,6 +15,8 @@ import {
 } from "#app/pages/ProjectWorkbench/workbench/tree/tree-row-motion";
 import { TreeBody, type TreeBodyStatus } from "#app/pages/ProjectWorkbench/workbench/tree/TreeBody";
 import { TreeMotionRow } from "#app/pages/ProjectWorkbench/workbench/tree/TreeMotionRow";
+import { cn } from "#app/shared/lib/ui/cn";
+import { DisclosureChevron } from "#app/shared/ui/DisclosureChevron";
 import type { WorktreeSearchHit } from "#shared/rpc/worktree-search-rpc";
 
 import {

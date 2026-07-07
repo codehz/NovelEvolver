@@ -2,7 +2,7 @@ import { motion } from "motion/react";
 import type { HTMLMotionProps } from "motion/react";
 import type { ReactNode } from "react";
 
-import { cn } from "#app/lib/cn";
+import { cn } from "#app/shared/lib/ui/cn";
 
 import type { TreeRowLayout } from "./tree-row-layout";
 import { treeRowPaddingVariants, treeRowVariants } from "./tree-row-motion";

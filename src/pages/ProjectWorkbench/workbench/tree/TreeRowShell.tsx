@@ -1,7 +1,7 @@
 import type { ReactNode, RefObject } from "react";
 
-import { DisclosureChevron } from "#app/components/DisclosureChevron";
-import { cn } from "#app/lib/cn";
+import { cn } from "#app/shared/lib/ui/cn";
+import { DisclosureChevron } from "#app/shared/ui/DisclosureChevron";
 
 import type { TreeResolvedDrop } from "./tree-drag";
 import type { TreeRowLayout } from "./tree-row-layout";

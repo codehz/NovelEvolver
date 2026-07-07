@@ -2,7 +2,7 @@ import { useMolecule } from "bunshi/react";
 import { useSetAtom, useStore } from "jotai";
 import { useCallback, useRef } from "react";
 
-import { notificationApi } from "#app/lib/notifications";
+import { notificationApi } from "#app/shared/lib/notifications";
 import { normalizeResourceNameInput } from "#shared/resource-library-path";
 import type { ResourceTreeSnapshot } from "#shared/rpc/worktree-tree-rpc";
 

@@ -1,4 +1,4 @@
-import { cn } from "#app/lib/cn";
+import { cn } from "#app/shared/lib/ui/cn";
 
 const glyphRootClass = cn("block h-full w-4 overflow-visible");
 const connectorGroupClass = cn("text-ctp-surface1");

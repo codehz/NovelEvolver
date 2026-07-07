@@ -3,15 +3,15 @@ import { useAtomValue } from "jotai";
 import { LayoutGroup, motion } from "motion/react";
 import { useCallback, useEffect, useId, useMemo, useRef, useState, type ReactNode } from "react";
 
-import { cn } from "#app/lib/cn";
 import {
   activeQuickPickSessionAtom,
   type QuickPickExtraItem,
   type QuickPickInputSession,
   type QuickPickListItem,
   type QuickPickListSession,
-} from "#app/lib/quick-pick";
-import { quickPickHostApi } from "#app/lib/quick-pick/api";
+} from "#app/shared/lib/quick-pick";
+import { quickPickHostApi } from "#app/shared/lib/quick-pick/api";
+import { cn } from "#app/shared/lib/ui/cn";
 
 import {
   quickPickEmptyClass,

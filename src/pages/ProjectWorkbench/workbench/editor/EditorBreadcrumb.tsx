@@ -1,7 +1,7 @@
 import { AutoTransition, effects, preset } from "@codehz/auto-transition";
 import { Fragment } from "react";
 
-import { cn } from "#app/lib/cn";
+import { cn } from "#app/shared/lib/ui/cn";
 
 import type { WorkbenchEditorTab } from "../state/types";
 import { useEditorBreadcrumb } from "./use-editor-breadcrumb";

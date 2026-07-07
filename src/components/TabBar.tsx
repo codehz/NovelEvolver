@@ -1,9 +1,9 @@
 import { AutoTransition, effects, preset } from "@codehz/auto-transition";
 import type { ReactNode } from "react";
 
-import { SlotText } from "#app/components/SlotText";
-import { cn } from "#app/lib/cn";
 import { contentEditorTabDefaultIconClass } from "#app/pages/ProjectWorkbench/workbench/tree/content-tree-icons";
+import { cn } from "#app/shared/lib/ui/cn";
+import { SlotText } from "#app/shared/ui/SlotText";
 
 export type TabItem = {
   id: string;

@@ -1,2 +1,3 @@
-/** Desktop shell chrome (WindowFrame, notifications, quick-pick) — populated in PR2. */
-export {};
+export { WindowFrame } from "./WindowFrame";
+export { NotificationBellButton, NotificationToastStack, notificationApi } from "./notifications";
+export { QuickPickHost } from "./quick-pick";

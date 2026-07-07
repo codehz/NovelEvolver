@@ -1,6 +1,6 @@
 import type { Transition, Variants } from "motion/react";
 
-import { cn } from "#app/lib/cn";
+import { cn } from "#app/shared/lib/ui/cn";
 
 export const TREE_ROW_HEIGHT_PX = 24;
 export const TREE_DROP_INDICATOR_HEIGHT_PX = 4;

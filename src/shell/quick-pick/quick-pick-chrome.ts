@@ -1,4 +1,4 @@
-import { cn } from "#app/lib/cn";
+import { cn } from "#app/shared/lib/ui/cn";
 
 export const quickPickPanelClass = cn(
   "fixed top-titlebar left-1/2 z-quick-pick m-0 w-quick-pick overflow-hidden rounded-lg bg-app-surface text-sm text-app-foreground shadow-quick-pick app-region-no-drag",

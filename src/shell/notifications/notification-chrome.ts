@@ -1,5 +1,5 @@
-import { cn } from "#app/lib/cn";
-import type { NotificationSeverity } from "#app/lib/notifications";
+import type { NotificationSeverity } from "#app/shared/lib/notifications";
+import { cn } from "#app/shared/lib/ui/cn";
 
 const notificationAccentTextClass = cn("text-ctp-mauve");
 const notificationSurfaceClass = cn("border-badge-background bg-app-surface");

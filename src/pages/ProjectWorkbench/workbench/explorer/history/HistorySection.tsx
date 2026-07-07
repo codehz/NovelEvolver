@@ -2,8 +2,8 @@ import { useMolecule } from "bunshi/react";
 import { useAtomValue } from "jotai";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
-import { cn } from "#app/lib/cn";
-import { notificationApi } from "#app/lib/notifications";
+import { notificationApi } from "#app/shared/lib/notifications";
+import { cn } from "#app/shared/lib/ui/cn";
 import type { HistoryEntry, HistoryTarget } from "#shared/rpc/history-rpc";
 
 import { useHistory } from "../../branch/branch-scopes";

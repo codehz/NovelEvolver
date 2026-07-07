@@ -3,9 +3,9 @@ import { useMolecule } from "bunshi/react";
 import { RpcPromise } from "capnweb";
 import { atom } from "jotai";
 
-import { workspaceService } from "#app/lib/app-rpc";
-import { createOneShotRequestChannel } from "#app/lib/one-shot-request";
-import { wrapDisposable } from "#app/lib/rpc-utils";
+import { workspaceService } from "#app/shared/lib/rpc/app-rpc";
+import { wrapDisposable } from "#app/shared/lib/rpc/rpc-utils";
+import { createOneShotRequestChannel } from "#app/shared/lib/ui/one-shot-request";
 import { ProjectSession } from "#shared/rpc/project-session-rpc";
 
 import { emptyWorkbenchEditorState } from "../editor/editor-tab-manager";

@@ -3,7 +3,7 @@ import { useAtomValue, useSetAtom } from "jotai";
 import { useCallback, useEffect, useRef } from "react";
 
 import type { PlainTextEditorHandle } from "#app/components/PlainTextEditor";
-import { notificationApi } from "#app/lib/notifications";
+import { notificationApi } from "#app/shared/lib/notifications";
 
 import { useManuscript, useResourceLibrary } from "../branch/branch-scopes";
 import { workbenchEditorMolecule } from "../state/molecules";

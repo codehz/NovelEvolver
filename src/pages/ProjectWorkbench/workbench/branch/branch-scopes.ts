@@ -2,7 +2,7 @@ import { createScope, molecule, use, useMolecule } from "bunshi/react";
 import type { RpcPromise } from "capnweb";
 import { atom, useSetAtom } from "jotai";
 
-import { wrapDisposable } from "#app/lib/rpc-utils";
+import { wrapDisposable } from "#app/shared/lib/rpc/rpc-utils";
 import type { BranchWorkspace } from "#shared/rpc/branch-workspace-rpc";
 import type { HistoryHandle } from "#shared/rpc/history-rpc";
 import type { ManuscriptHandle } from "#shared/rpc/manuscript-rpc";

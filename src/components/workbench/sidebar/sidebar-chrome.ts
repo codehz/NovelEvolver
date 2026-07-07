@@ -1,4 +1,4 @@
-import { cn } from "#app/lib/cn";
+import { cn } from "#app/shared/lib/ui/cn";
 
 const sidebarChromeFocusVisibleClass = cn(
   "focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-badge-background",

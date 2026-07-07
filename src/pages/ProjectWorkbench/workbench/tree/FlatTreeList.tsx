@@ -2,7 +2,7 @@ import { AnimatePresence } from "motion/react";
 import { Fragment, useLayoutEffect, useMemo, useRef } from "react";
 import type { ReactNode, RefObject } from "react";
 
-import { cn } from "#app/lib/cn";
+import { cn } from "#app/shared/lib/ui/cn";
 
 import type { TreeDropPreview } from "./tree-drag";
 import type { TreeRowLayout } from "./tree-row-layout";

@@ -1,2 +1,2 @@
-/** Application bootstrap (App, routes) — populated in PR2. */
-export {};
+export { default as App } from "./App";
+export { AppRoutes } from "./routes";

@@ -3,7 +3,7 @@ import { useAtomValue, useSetAtom, useStore } from "jotai";
 import { useCallback, useMemo, useRef } from "react";
 
 import { SidebarHeaderActionButton, SidebarHeaderActions } from "#app/components/workbench";
-import { useOneShotRequestConsumer } from "#app/lib/one-shot-request";
+import { useOneShotRequestConsumer } from "#app/shared/lib/ui/one-shot-request";
 import type { ResourceTreeNode } from "#shared/rpc/worktree-tree-rpc";
 
 import { queryTreeRowById } from "../../tree/tree-row-dom";

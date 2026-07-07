@@ -2,10 +2,10 @@ import { useAtomValue } from "jotai";
 import { AnimatePresence } from "motion/react";
 import { useEffect } from "react";
 
-import { cn } from "#app/lib/cn";
-import { activeNotificationsAtom, notificationApi } from "#app/lib/notifications";
+import { activeNotificationsAtom, notificationApi } from "#app/shared/lib/notifications";
+import { cn } from "#app/shared/lib/ui/cn";
+import { ScrollArea } from "#app/shared/ui/ScrollArea";
 
-import { ScrollArea } from "../ScrollArea";
 import { notificationIconButtonClass } from "./notification-chrome";
 import { useNotificationCenterRequestClose } from "./notification-popover";
 import { NotificationItem } from "./NotificationItem";

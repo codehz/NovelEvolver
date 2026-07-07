@@ -1,2 +1,4 @@
-/** Cross-feature utilities (rpc, shell portals, cn, scrollbar, …) — populated in PR2. */
-export {};
+export { cn } from "./ui/cn";
+export { projectDisplayName } from "./project-display-name";
+export { notificationApi } from "./notifications";
+export { quickPickApi } from "./quick-pick";

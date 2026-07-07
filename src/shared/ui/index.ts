@@ -1,2 +1,9 @@
-/** Cross-feature UI primitives — populated in PR2. */
-export {};
+export { DisclosureChevron } from "./DisclosureChevron";
+export { ScrollArea } from "./ScrollArea";
+export { SlotText } from "./SlotText";
+export {
+  createPopover,
+  type CreatePopoverResult,
+  POPOVER_CLOSE_TRANSITION_MS,
+  scheduleAfterPopoverCloseTransition,
+} from "./popover";

@@ -1,9 +1,9 @@
 import { motion, type MotionProps } from "motion/react";
 import type { Ref } from "react";
 
-import { cn } from "#app/lib/cn";
-import type { AppNotification } from "#app/lib/notifications";
-import { notificationApi } from "#app/lib/notifications";
+import type { AppNotification } from "#app/shared/lib/notifications";
+import { notificationApi } from "#app/shared/lib/notifications";
+import { cn } from "#app/shared/lib/ui/cn";
 
 import {
   notificationActionButtonClass,

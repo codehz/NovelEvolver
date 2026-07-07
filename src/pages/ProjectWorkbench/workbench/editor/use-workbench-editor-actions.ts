@@ -2,7 +2,7 @@ import { useMolecule } from "bunshi/react";
 import { useAtomValue, useSetAtom, useStore } from "jotai";
 import { useCallback, useRef } from "react";
 
-import { notificationApi } from "#app/lib/notifications";
+import { notificationApi } from "#app/shared/lib/notifications";
 
 import {
   useHistory,

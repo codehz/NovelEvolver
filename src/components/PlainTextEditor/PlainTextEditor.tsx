@@ -9,7 +9,7 @@ import {
 } from "@codemirror/view";
 import { useCallback, useEffect, useImperativeHandle, useLayoutEffect, useRef } from "react";
 
-import { cn } from "#app/lib/cn";
+import { cn } from "#app/shared/lib/ui/cn";
 
 import {
   caretPositionFromState,

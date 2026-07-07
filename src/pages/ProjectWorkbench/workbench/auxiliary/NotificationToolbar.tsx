@@ -1,5 +1,5 @@
-import { cn } from "#app/lib/cn";
-import { notificationApi } from "#app/lib/notifications";
+import { notificationApi } from "#app/shared/lib/notifications";
+import { cn } from "#app/shared/lib/ui/cn";
 
 const toolbarClass = cn(
   "flex shrink-0 flex-wrap gap-1 border-t border-titlebar-border bg-app-surface p-2",

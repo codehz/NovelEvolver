@@ -1,6 +1,6 @@
 import type { RpcPromise } from "capnweb";
 
-import { cn } from "#app/lib/cn";
+import { cn } from "#app/shared/lib/ui/cn";
 import type { HistoryHandle, HistoryTarget } from "#shared/rpc/history-rpc";
 import type { ManuscriptHandle } from "#shared/rpc/manuscript-rpc";
 import type { ResourceLibraryHandle } from "#shared/rpc/resource-library-rpc";

@@ -1,4 +1,4 @@
-import { cn } from "#app/lib/cn";
+import { cn } from "#app/shared/lib/ui/cn";
 
 import type { ScrollbarControllerSnapshot } from "./scrollbar-controller";
 

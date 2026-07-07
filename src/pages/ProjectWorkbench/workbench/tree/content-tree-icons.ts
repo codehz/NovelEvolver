@@ -1,4 +1,4 @@
-import { cn } from "#app/lib/cn";
+import { cn } from "#app/shared/lib/ui/cn";
 import type { EntityKind, LeafEntityKind } from "#shared/rpc/worktree-changes-rpc";
 import type { WorktreeSearchHit } from "#shared/rpc/worktree-search-rpc";
 import type { ManuscriptTreeNode, ResourceTreeNode } from "#shared/rpc/worktree-tree-rpc";

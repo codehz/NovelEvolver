@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 
-import { cn } from "#app/lib/cn";
+import { cn } from "#app/shared/lib/ui/cn";
 
 /**
  * 展开箭头图标 + 展开时旋转 90° 动画。

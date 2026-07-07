@@ -5,7 +5,7 @@ import { useEffect, useLayoutEffect, useRef } from "react";
 
 import { editorHostClass } from "#app/components/PlainTextEditor/codemirror-theme";
 import { plainTextEditorViewExtensions } from "#app/components/PlainTextEditor/codemirror-view-extensions";
-import { cn } from "#app/lib/cn";
+import { cn } from "#app/shared/lib/ui/cn";
 
 const textComparisonRootClass = cn("min-h-0 min-w-0 flex-1");
 

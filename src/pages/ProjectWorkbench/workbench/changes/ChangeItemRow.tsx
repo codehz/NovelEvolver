@@ -1,9 +1,9 @@
 import type { KeyboardEvent, ReactNode } from "react";
 
-import { cn } from "#app/lib/cn";
 import type { TreeRowLayout } from "#app/pages/ProjectWorkbench/workbench/tree/tree-row-layout";
 import { treeRowDisclosureSpacerClass } from "#app/pages/ProjectWorkbench/workbench/tree/tree-row-motion";
 import { TreeMotionRow } from "#app/pages/ProjectWorkbench/workbench/tree/TreeMotionRow";
+import { cn } from "#app/shared/lib/ui/cn";
 import type { Change } from "#shared/rpc/worktree-changes-rpc";
 
 import { contentEntityIconClass } from "../tree/content-tree-icons";

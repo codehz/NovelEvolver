@@ -4,8 +4,8 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import type { ComponentType } from "react";
 
 import { PlainTextEditor, type PlainTextEditorHandle } from "#app/components/PlainTextEditor";
-import { notificationApi } from "#app/lib/notifications";
-import { useOneShotRequestConsumer } from "#app/lib/one-shot-request";
+import { notificationApi } from "#app/shared/lib/notifications";
+import { useOneShotRequestConsumer } from "#app/shared/lib/ui/one-shot-request";
 
 import {
   useHistory,

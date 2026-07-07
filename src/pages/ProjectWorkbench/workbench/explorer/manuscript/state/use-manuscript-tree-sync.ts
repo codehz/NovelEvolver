@@ -2,7 +2,7 @@ import { useMolecule } from "bunshi/react";
 import { useSetAtom } from "jotai";
 import { useEffect } from "react";
 
-import { consumeRpcSubscription } from "#app/lib/app-rpc-react";
+import { consumeRpcSubscription } from "#app/shared/lib/rpc/app-rpc-react";
 import type { ChangesEvent } from "#shared/rpc/worktree-changes-rpc";
 
 import { useWorktreeChanges } from "../../../branch/branch-scopes";

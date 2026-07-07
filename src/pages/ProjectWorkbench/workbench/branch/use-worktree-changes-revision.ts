@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 
-import { consumeRpcSubscription } from "#app/lib/app-rpc-react";
+import { consumeRpcSubscription } from "#app/shared/lib/rpc/app-rpc-react";
 import type { ChangesEvent } from "#shared/rpc/worktree-changes-rpc";
 
 import { useWorktreeChanges } from "./branch-scopes";

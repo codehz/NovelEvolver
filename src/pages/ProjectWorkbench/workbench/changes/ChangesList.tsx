@@ -1,8 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { KeyboardEvent } from "react";
 
-import { DisclosureChevron } from "#app/components/DisclosureChevron";
-import { cn } from "#app/lib/cn";
 import {
   contentDomainIconClass,
   contentFolderIconClass,
@@ -15,6 +13,8 @@ import {
   treeRowDisclosureSpacerClass,
 } from "#app/pages/ProjectWorkbench/workbench/tree/tree-row-motion";
 import { TreeMotionRow } from "#app/pages/ProjectWorkbench/workbench/tree/TreeMotionRow";
+import { cn } from "#app/shared/lib/ui/cn";
+import { DisclosureChevron } from "#app/shared/ui/DisclosureChevron";
 import type { Change } from "#shared/rpc/worktree-changes-rpc";
 
 import {

@@ -4,7 +4,7 @@ import {
   isQuickPickDismissedError,
   quickPickApi,
   type QuickPickListItem,
-} from "#app/lib/quick-pick";
+} from "#app/shared/lib/quick-pick";
 import type { BranchSummary } from "#shared/rpc/project-session-rpc";
 
 import { useWorkbenchEditorActions } from "../editor/use-workbench-editor-actions";

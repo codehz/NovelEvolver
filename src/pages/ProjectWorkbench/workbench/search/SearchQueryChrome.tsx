@@ -1,7 +1,7 @@
 import { useRef } from "react";
 
-import { SlotText } from "#app/components/SlotText";
-import { cn } from "#app/lib/cn";
+import { cn } from "#app/shared/lib/ui/cn";
+import { SlotText } from "#app/shared/ui/SlotText";
 
 const searchFieldRowClass = cn("flex h-7 items-center gap-1.5 rounded-sm bg-ctp-surface0 px-2");
 

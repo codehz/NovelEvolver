@@ -10,7 +10,7 @@ import {
   type ReactNode,
 } from "react";
 
-import { cn } from "#app/lib/cn";
+import { cn } from "#app/shared/lib/ui/cn";
 
 import {
   SidebarSectionRowResizeHandle,

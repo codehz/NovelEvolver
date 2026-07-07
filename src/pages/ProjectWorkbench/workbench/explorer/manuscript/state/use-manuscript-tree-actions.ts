@@ -2,7 +2,7 @@ import { useMolecule } from "bunshi/react";
 import { useSetAtom, useStore } from "jotai";
 import { useCallback } from "react";
 
-import { notificationApi } from "#app/lib/notifications";
+import { notificationApi } from "#app/shared/lib/notifications";
 import type { ManuscriptTreeNode } from "#shared/rpc/worktree-tree-rpc";
 
 import { useManuscript } from "../../../branch/branch-scopes";

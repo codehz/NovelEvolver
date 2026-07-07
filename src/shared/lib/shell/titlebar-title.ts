@@ -1,7 +1,7 @@
 import { atom, useSetAtom } from "jotai";
 import { useEffect } from "react";
 
-import { windowService } from "#app/lib/app-rpc";
+import { windowService } from "#app/shared/lib/rpc/app-rpc";
 
 export const defaultWindowTitle = "NovelEvolver";
 
