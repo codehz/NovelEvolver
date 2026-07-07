@@ -4,7 +4,7 @@ import { SidebarPaneStack } from "#app/components/workbench";
 
 import { ManuscriptSectionBody } from "../explorer/manuscript/ManuscriptSection";
 import { ResourceLibrarySectionBody } from "../explorer/resource-library/ResourceLibrarySection";
-import { TimelineSidebarSection } from "./TimelineSidebarSection";
+import { TimelineSectionBody } from "../explorer/timeline/TimelineSection";
 
 const DEFAULT_MANUSCRIPT_BODY_HEIGHT = 168;
 const DEFAULT_REFERENCE_BODY_HEIGHT = 148;
@@ -44,7 +44,7 @@ export function ExplorerSidebar({ projectLabel }: { projectLabel: string }) {
         panelId: "explorer-timeline-panel",
         expanded: timelineExpanded,
         defaultBodyHeight: DEFAULT_TIMELINE_BODY_HEIGHT,
-        body: <TimelineSidebarSection />,
+        body: <TimelineSectionBody />,
         onToggleExpanded: () => setTimelineExpanded((value) => !value),
       },
     ],

@@ -6,11 +6,11 @@ import { cn } from "#app/lib/cn";
 import { notificationApi } from "#app/lib/notifications";
 import type { TimelineEntry, TimelineTarget } from "#shared/rpc/worktree-timeline-rpc";
 
-import { useWorktreeTimeline } from "../branch/branch-scopes";
-import { useWorktreeScmRevision } from "../branch/use-worktree-scm-revision";
-import { getWorkbenchEditorTabTimelineTarget } from "../editor/editor-contributions";
-import { useWorkbenchEditorActions } from "../editor/use-workbench-editor-actions";
-import { workbenchEditorMolecule } from "../state/molecules";
+import { useWorktreeTimeline } from "../../branch/branch-scopes";
+import { useWorktreeScmRevision } from "../../branch/use-worktree-scm-revision";
+import { getWorkbenchEditorTabTimelineTarget } from "../../editor/editor-contributions";
+import { useWorkbenchEditorActions } from "../../editor/use-workbench-editor-actions";
+import { workbenchEditorMolecule } from "../../state/molecules";
 
 const timelineRowClass = cn(
   "group flex w-full min-w-0 items-start gap-2 border-b border-titlebar-border p-2 text-left",
@@ -71,7 +71,7 @@ function TimelineEmptyState({ active }: { active: boolean }) {
   );
 }
 
-export function TimelineSidebarSection() {
+export function TimelineSectionBody() {
   const timeline = useWorktreeTimeline();
   const revision = useWorktreeScmRevision();
   const { activeEditorTabAtom } = useMolecule(workbenchEditorMolecule);
