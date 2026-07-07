@@ -5,7 +5,7 @@
 This project is currently in **prototype development phase** — **no changes need to consider backward compatibility**. This includes but is not limited to:
 
 - **Data storage formats**: SQLite schemas, file structures, serialization formats may change at any time without migration paths.
-- **IPC / RPC interfaces**: Channel names, parameter signatures, return types may be arbitrarily modified without retaining deprecated versions.
+- **RPC interfaces**: Channel names, parameter signatures, return types may be arbitrarily modified without retaining deprecated versions.
 - **Component props / state structures**: React component interfaces and state management shapes may be refactored at any time.
 - **Persistent data**: User-local data (project config, window state, draft content, etc.) is not guaranteed to be cross-version compatible during the prototype phase.
 - **Public API**: Any module exports or type definitions may be broken without semver consideration.
@@ -14,7 +14,16 @@ This project is currently in **prototype development phase** — **no changes ne
 
 ## Project Structure & Module Organization
 
-`src/` contains the Vite renderer application (`App.tsx`, `main.tsx`, `index.css`). `electron/` contains the Electron main and preload processes. Build output goes to `dist/` for the renderer and `dist-electron/` for Electron; do not edit generated files directly. Root config files include `vite.config.ts`, `tsconfig.json`, `.oxlintrc.json`, `.oxfmtrc.json`, and `tsdown.electron.mts`. IPC types shared between renderer and Electron live in `shared/`.
+`src/` contains the Vite renderer application (`App.tsx`, `main.tsx`, `index.css`). `electron/` contains the Electron main and preload processes. Build output goes to `dist/` for the renderer and `dist-electron/` for Electron; do not edit generated files directly. Root config files include `vite.config.ts`, `tsconfig.json`, `.oxlintrc.json`, `.oxfmtrc.json`, and `scripts/build-electron.mjs`. RPC contracts shared between renderer and Electron live in `shared/rpc/`.
+
+`electron/` layout (high level):
+
+- `main.ts`, `preload.ts` — bootstrap entrypoints
+- `lib/` — shared main-process utilities (e.g. `stream-publisher.ts`)
+- `projects/` — project-library presentation helpers
+- `db/` — SQLite persistence (`app-state.db`)
+- `rpc/` — capnweb RPC server (`server/`), services (`services/`), session objects (`session/`), handles (`handles/`)
+- `worktree/` — branch workspace domain (`session/` modules, `snapshots/`, `trees/`, `journal/`, etc.)
 
 ### Path Aliases
 
@@ -23,37 +32,25 @@ Two path aliases are configured in both `tsconfig.json` (`compilerOptions.paths`
 - `#app/*` → `./src/*` — for imports reaching `src/lib`, `src/components`, `src/pages`, `src/routes`, `App`, etc. from outside `src/` or across feature folders.
 - `#shared/*` → `./shared/*` — for importing shared types and utilities from `electron/` or `src/` renderer code.
 
-**Rules:** Prefer aliases over deep relative paths (`../../../lib/cn` → `#app/lib/cn`). Keep single-dot relative imports within the same feature folder (e.g. `workbench/layout` importing `./ActivityBar`, `electron/ipc` importing `./deps`). Do not add a `#electron` alias — Electron internals stay as relative (`../home-path`, `./ipc`). For the workbench barrel (`src/components/workbench/index.ts`), always import via `#app/components/workbench` from outside the workbench folder; inside workbench keep subdirectory-relative imports.
+**Rules:** Prefer aliases over deep relative paths (`../../../lib/cn` → `#app/lib/cn`). Keep single-dot relative imports within the same feature folder (e.g. `workbench/layout` importing `./ActivityBar`, `rpc/server` importing `./transport`). Do not add a `#electron` alias — Electron internals stay as relative (`../db/app-database`, `./changes-ops`). For the workbench barrel (`src/components/workbench/index.ts`), always import via `#app/components/workbench` from outside the workbench folder; inside workbench keep subdirectory-relative imports.
 
-### Electron IPC layout & type safety
+### Electron RPC
 
-- Import main-process IPC from `electron/ipc/` (package entry `ipc/index.ts`). **Do not** add a sibling `electron/ipc.ts` file — it shadows the folder and breaks imports.
-- Channel contracts live in `shared/ipc/app-maps.ts` (`AppIpcMethodMap`, `AppIpcEventMap`). Renderer uses `preload` + `shared/ipc/renderer.ts`; main registers handlers via `registerIpcMethods`.
-- Handlers live in `electron/ipc/*-handlers.ts`, merged in `method-handlers.ts`. **Never import `main.ts` from handlers** — pass dependencies through `IpcMainDeps` (or extend that type) to avoid circular imports.
-- When adding or changing invoke channels:
-  1. Update `AppIpcMethodMap` in `shared/ipc/app-maps.ts`.
-  2. Implement the handler in the namespace file (`window-handlers.ts`, `projects-handlers.ts`, or a new `*-handlers.ts` for a new `prefix:` namespace).
-  3. Type each namespace handler as `IpcMainMethodHandlers<WindowIpcMethodMap>` (or the matching `*IpcMethodMap` slice) so **missing keys fail typecheck**.
-  4. `createAppIpcMethodHandlers` spreads namespace handlers and uses `satisfies IpcMainMethodHandlers<AppIpcMethodMap>` so **an unmerged channel fails typecheck**.
-  5. Keep `UncategorizedAppIpcMethodChannels` in `app-maps.ts` as `never` — if you add a channel outside existing prefixes, add a new prefix map + handler file (or extend the partition types); otherwise the partition assertion in `method-handlers.ts` fails.
+Renderer ↔ main communication uses **capnweb** over `shared/rpc/transport.ts`. Contracts live in `shared/rpc/`; implementations live in `electron/rpc/{server,services,session,handles}/`. Branch workspace logic stays in `electron/worktree/session/` — RPC handles are thin delegates only.
 
-### RPC service type conventions
+- **Entry:** `electron/rpc/server/connect.ts` (`ElectronRpcServer`) owns per-`webContents` sessions; `electron/preload.ts` exposes `window.appRpcBridge`.
+- **Deps:** pass main-process dependencies through `RpcMainDeps` (`electron/rpc/server/deps.ts`). Never import `main.ts` from RPC code.
+- **Types:** only live remote objects `extends RpcTarget` (root, services, sessions, handles). Snapshots/DTOs stay plain interfaces. Prefer sync signatures; add `Promise` only for dialogs, real async I/O, or stream subscriptions.
+- **Dispose:** resources opened on the server must implement `[Symbol.dispose]()` and chain from `AppRpcRootImpl` when `ElectronRpcServer.closeRecord()` runs. `electron/worktree/` must not import `electron/rpc/`; shared streaming helpers live in `electron/lib/`.
 
-- Shared RPC contracts live in `shared/rpc/`. Keep service/handle interfaces there, and keep Electron implementations in `electron/rpc/`.
-- Only interfaces representing a live remote object should `extends RpcTarget`. In the current design that includes the root object `AppRpcRoot`, service objects like `ProjectsService` / `WindowService`, and nested live handles like `ProjectHandle`.
-- Plain value objects must **not** `extends RpcTarget`. Use `type`/plain `interface` for snapshots and DTOs such as `BranchInfo` and `OpenProjectResult`.
-- If a method returns another live remote object, model that property/return type with an interface that `extends RpcTarget`, and implement it on the Electron side with a class that `extends RpcTarget`.
-- Prefer synchronous signatures unless the contract is semantically async at the API boundary. Do **not** add `Promise` just because the renderer receives a `RpcStub` — `RpcStub` already lifts remote calls to async usage.
-- Add `Promise` only when the logical result is genuinely asynchronous or streaming-oriented: dialogs, I/O that must be awaited before a value exists, transport/bridge APIs, or subscription factories that explicitly return stream-like handles.
-- When one call needs to return both metadata and a live RPC object, wrap them in a plain result object (for example `{ handle, metadata }`) instead of forcing everything into an RPC target.
-- Document lifecycle-sensitive handles with a short comment when needed, especially if the server keeps underlying resources open until session disposal.
+To add or change an RPC surface: update `shared/rpc/`, implement under `electron/rpc/`, wire into `AppRpcRootImpl` / `ElectronRpcServer.connect()` when needed, and keep domain logic out of handles.
 
 ## Build, Test, and Development Commands
 
 Use Bun for local work because the repo is locked with `bun.lock`.
 
 - `bun install` installs dependencies.
-- `bun run dev` starts Vite, watches Electron with `tsdown`, and launches the desktop app.
+- `bun run dev` starts Vite, watches Electron with `scripts/build-electron.mjs`, and launches the desktop app.
 - `bun run build` builds both renderer and Electron bundles. If you see CSS warnings about `::highlight` (e.g. "Unknown pseudo class" or similar), these are false positives caused by lightningcss's incomplete support for the CSS `::highlight()` pseudo-element — they can be safely ignored.
 - `bun run lint` is the **only** TypeScript validation gate: `oxlint` runs with `typeAware` and `typeCheck` (see `.oxlintrc.json`) on `src/`, `electron/`, and `shared/`, including compiler-style diagnostics. Renderer files must not import `electron` or `electron/` (enforced via `no-restricted-imports`). **Do not** add a `typecheck` script, `tsc --noEmit` npm script, or parallel CI step for standalone `tsc`; extend `.oxlintrc.json` if you need stricter checks. It may take a while to return results, so when invoking it from an agent or terminal tool, use a 5-second result wait timeout (`yield_time_ms`) rather than a shorter default.
 - `bun run lint:fix` applies safe lint fixes.
@@ -61,7 +58,7 @@ Use Bun for local work because the repo is locked with `bun.lock`.
 
 ## Coding Style & Naming Conventions
 
-Write TypeScript with 2-space indentation, semicolons, and double quotes, matching the current codebase. Use PascalCase for React components, camelCase for functions and variables, and descriptive IPC channel names like `window:get-state`. Keep renderer code in `src/`, Electron-only code in `electron/`, and prefer small local types over loosely typed objects. Let `oxlint` and `oxfmt` enforce import order and Tailwind class ordering.
+Write TypeScript with 2-space indentation, semicolons, and double quotes, matching the current codebase. Use PascalCase for React components, camelCase for functions and variables, and descriptive RPC service/handle names. Keep renderer code in `src/`, Electron-only code in `electron/`, and prefer small local types over loosely typed objects. Let `oxlint` and `oxfmt` enforce import order and Tailwind class ordering.
 
 ## Styling & Design Tokens
 
@@ -77,7 +74,7 @@ The renderer uses **Tailwind CSS v4** with theme tokens defined in `src/index.cs
 
 ## Testing Guidelines
 
-There is no automated test suite configured yet. Until one exists, every change should pass `bun run lint` and `bun run build`. If you add tests, keep them close to the feature as `*.test.ts` or `*.test.tsx`, and prioritize renderer behavior plus Electron IPC boundaries.
+There is no automated test suite configured yet. Until one exists, every change should pass `bun run lint` and `bun run build`. If you add tests, keep them close to the feature as `*.test.ts` or `*.test.tsx`, and prioritize renderer behavior plus Electron RPC boundaries.
 
 ## Commit & Pull Request Guidelines
 
