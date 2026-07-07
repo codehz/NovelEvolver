@@ -4,7 +4,15 @@ import { cn } from "#app/lib/cn";
 
 import { sidebarHeaderActionClass, sidebarHeaderIconClass } from "../sidebar/sidebar-chrome";
 
-export const AuxiliarySidebar = memo(function AuxiliarySidebar({
+const auxiliarySidebarFrameClass = cn("flex w-full shrink-0 flex-col bg-app-surface");
+
+const auxiliarySidebarFrameHeaderClass = cn(
+  "flex h-workbench-tab shrink-0 items-center justify-between gap-2 px-3",
+);
+
+const auxiliarySidebarFrameBodyClass = cn("flex min-h-0 flex-1 flex-col");
+
+export const AuxiliarySidebarFrame = memo(function AuxiliarySidebarFrame({
   className,
   "aria-hidden": ariaHidden,
   children,
@@ -17,9 +25,9 @@ export const AuxiliarySidebar = memo(function AuxiliarySidebar({
     <aside
       aria-hidden={ariaHidden}
       aria-label="AI 助手"
-      className={cn("flex w-full shrink-0 flex-col bg-app-surface", className)}
+      className={cn(auxiliarySidebarFrameClass, className)}
     >
-      <header className="flex h-workbench-tab shrink-0 items-center justify-between gap-2 px-3">
+      <header className={auxiliarySidebarFrameHeaderClass}>
         <div className="flex min-w-0 items-center gap-2 text-sm font-medium text-app-foreground">
           <span
             aria-hidden="true"
@@ -43,7 +51,7 @@ export const AuxiliarySidebar = memo(function AuxiliarySidebar({
         </div>
       </header>
 
-      <div className="flex min-h-0 flex-1 flex-col">{children}</div>
+      <div className={auxiliarySidebarFrameBodyClass}>{children}</div>
     </aside>
   );
 });

@@ -2,7 +2,7 @@ import { memo, type CSSProperties, type ReactNode } from "react";
 
 import { cn } from "#app/lib/cn";
 
-import { AuxiliarySidebar } from "./AuxiliarySidebar";
+import { AuxiliarySidebarFrame } from "./AuxiliarySidebarFrame";
 
 const auxiliarySidebarDockMotionClass = cn("duration-200 ease-out");
 
@@ -57,9 +57,9 @@ export const AuxiliarySidebarDock = memo(function AuxiliarySidebarDock({
         )}
         style={panelStyle}
       >
-        <AuxiliarySidebar aria-hidden={!visible} className="h-full min-h-0">
+        <AuxiliarySidebarFrame aria-hidden={!visible} className="h-full min-h-0">
           {children}
-        </AuxiliarySidebar>
+        </AuxiliarySidebarFrame>
       </div>
     </div>
   );

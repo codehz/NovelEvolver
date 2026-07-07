@@ -11,7 +11,6 @@ import { cn } from "#app/lib/cn";
 import { TitleBarAuxiliaryToggle } from "../titlebar/TitleBarAuxiliaryToggle";
 import { TitleBarPrimarySidebarToggle } from "../titlebar/TitleBarPrimarySidebarToggle";
 import type { WorkbenchPrimaryView } from "../types";
-import { ActivityBar } from "./ActivityBar";
 import { AuxiliarySidebarDock } from "./AuxiliarySidebarDock";
 import { PrimarySidebarDock } from "./PrimarySidebarDock";
 import { PrimarySidebarViewStack } from "./PrimarySidebarViewStack";
@@ -26,6 +25,7 @@ import {
   MIN_EDITOR_WIDTH,
   deriveWorkbenchChromeLayout,
 } from "./workbench-layout-resolver";
+import { WorkbenchActivityBar } from "./WorkbenchActivityBar";
 
 const resizeHandleClass = cn(
   "absolute inset-y-0 z-20 w-1 cursor-col-resize touch-none bg-ctp-mauve select-none",
@@ -166,7 +166,7 @@ export function WorkbenchLayout({
         />
       ) : null}
       <div ref={containerRef} className="relative flex min-h-0 flex-1 overflow-hidden">
-        <ActivityBar
+        <WorkbenchActivityBar
           items={activityItems}
           activeView={activeViewId}
           primarySidebarVisible={primarySidebarVisible}

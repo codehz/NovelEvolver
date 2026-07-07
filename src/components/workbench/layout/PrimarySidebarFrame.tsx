@@ -8,7 +8,15 @@ import {
   SidebarHeaderActionsPortalTarget,
 } from "../sidebar/sidebar-header-actions-portal";
 
-export const PrimarySidebar = memo(function PrimarySidebar({
+const primarySidebarFrameClass = cn("flex min-h-0 w-full shrink-0 flex-col bg-app-surface");
+
+const primarySidebarFrameHeaderClass = cn(
+  "flex h-workbench-tab shrink-0 items-center justify-between gap-2 pr-3 pl-5",
+);
+
+const primarySidebarFrameBodyClass = cn("flex min-h-0 min-w-0 flex-1 flex-col text-sm");
+
+export const PrimarySidebarFrame = memo(function PrimarySidebarFrame({
   title,
   className,
   "aria-hidden": ariaHidden,
@@ -24,13 +32,9 @@ export const PrimarySidebar = memo(function PrimarySidebar({
       <aside
         aria-hidden={ariaHidden}
         aria-label={title}
-        className={cn("flex min-h-0 w-full shrink-0 flex-col bg-app-surface", className)}
+        className={cn(primarySidebarFrameClass, className)}
       >
-        <header
-          className={cn(
-            "flex h-workbench-tab shrink-0 items-center justify-between gap-2 pr-3 pl-5",
-          )}
-        >
+        <header className={primarySidebarFrameHeaderClass}>
           <span
             className={cn(
               primarySidebarChromeTitleTextClass,
@@ -45,7 +49,7 @@ export const PrimarySidebar = memo(function PrimarySidebar({
           />
         </header>
 
-        <div className="flex min-h-0 min-w-0 flex-1 flex-col text-sm">{children}</div>
+        <div className={primarySidebarFrameBodyClass}>{children}</div>
       </aside>
     </SidebarHeaderActionsPortalProvider>
   );

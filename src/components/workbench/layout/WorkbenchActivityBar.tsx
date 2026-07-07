@@ -20,7 +20,7 @@ const activityIconClass = cn(
   "inline-flex size-6 shrink-0 items-center justify-center text-[1.375rem] leading-none",
 );
 
-export const ActivityBar = memo(function ActivityBar({
+export const WorkbenchActivityBar = memo(function WorkbenchActivityBar({
   items,
   activeView,
   primarySidebarVisible,
