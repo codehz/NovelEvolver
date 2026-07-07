@@ -54,4 +54,8 @@ export class BranchWorkspaceImpl extends RpcTarget implements BranchWorkspace {
   get history(): HistoryHandle {
     return this.#history;
   }
+
+  [Symbol.dispose](): void {
+    this.#session[Symbol.dispose]();
+  }
 }

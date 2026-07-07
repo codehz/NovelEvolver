@@ -23,8 +23,9 @@ export class ProjectSessionImpl extends RpcTarget implements ProjectSession {
   readonly #projectId: number;
   readonly #repo: ReturnType<typeof createSqliteRepository>;
   readonly #worktrees: WorktreeRepository;
-  readonly #branchWorkspaces = new Map<string, BranchWorkspace>();
+  readonly #branchWorkspaces = new Map<string, BranchWorkspaceImpl>();
   readonly #metadata: ProjectMetadata;
+  #disposed = false;
 
   constructor(
     projectId: number,
@@ -62,6 +63,10 @@ export class ProjectSessionImpl extends RpcTarget implements ProjectSession {
   }
 
   openBranchWorkspace(name: string): BranchWorkspace {
+    if (this.#disposed) {
+      throw new Error("Project session has been disposed.");
+    }
+
     const existing = this.#branchWorkspaces.get(name);
     if (existing !== undefined) {
       return existing;
@@ -80,6 +85,16 @@ export class ProjectSessionImpl extends RpcTarget implements ProjectSession {
   }
 
   [Symbol.dispose](): void {
+    if (this.#disposed) {
+      return;
+    }
+
+    this.#disposed = true;
+
+    for (const workspace of this.#branchWorkspaces.values()) {
+      workspace[Symbol.dispose]();
+    }
+    this.#branchWorkspaces.clear();
     this.#repo[Symbol.dispose]();
   }
 }

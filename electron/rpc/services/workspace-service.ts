@@ -11,6 +11,7 @@ import { ProjectSessionImpl } from "../session/project-session";
 export class WorkspaceServiceImpl extends RpcTarget implements WorkspaceService {
   readonly #projects: ProjectsRepository;
   readonly #worktrees: WorktreeRepository;
+  readonly #openSessions = new Set<ProjectSessionImpl>();
 
   constructor(window: BrowserWindow, deps: RpcMainDeps) {
     super();
@@ -26,6 +27,15 @@ export class WorkspaceServiceImpl extends RpcTarget implements WorkspaceService 
       throw new Error(`Project with id ${projectId} not found`);
     }
 
-    return new ProjectSessionImpl(record.id, record.path, this.#worktrees, record);
+    const session = new ProjectSessionImpl(record.id, record.path, this.#worktrees, record);
+    this.#openSessions.add(session);
+    return session;
+  }
+
+  [Symbol.dispose](): void {
+    for (const session of this.#openSessions) {
+      session[Symbol.dispose]();
+    }
+    this.#openSessions.clear();
   }
 }

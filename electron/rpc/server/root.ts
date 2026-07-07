@@ -39,5 +39,6 @@ export class AppRpcRootImpl extends RpcTarget implements AppRpcRoot {
 
   [Symbol.dispose](): void {
     this.#windowService[Symbol.dispose]();
+    this.#workspaceService[Symbol.dispose]();
   }
 }

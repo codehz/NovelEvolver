@@ -151,4 +151,8 @@ export class WorktreeSession {
   searchWorktree(options: WorktreeSearchQuery): WorktreeSearchResult {
     return searchWorktree(this.#state, options);
   }
+
+  [Symbol.dispose](): void {
+    this.#state.changesPublisher[Symbol.dispose]();
+  }
 }
