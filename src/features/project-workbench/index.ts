@@ -1,2 +1,1 @@
-/** Project workbench feature entry — populated in PR3. */
-export {};
+export { ProjectWorkbench } from "./ProjectWorkbench";

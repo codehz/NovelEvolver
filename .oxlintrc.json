@@ -65,14 +65,6 @@
               },
               {
                 "group": [
-                  "**/components/workbench/layout/**",
-                  "**/components/workbench/titlebar/**",
-                  "**/components/workbench/sidebar/**"
-                ],
-                "message": "Import workbench via components/workbench (barrel), not internal subpaths."
-              },
-              {
-                "group": [
                   "**/features/project-workbench/chrome/layout/**",
                   "**/features/project-workbench/chrome/titlebar/**",
                   "**/features/project-workbench/chrome/sidebar/**"

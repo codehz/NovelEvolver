@@ -1,8 +1,8 @@
 import { AutoTransition } from "@codehz/auto-transition";
 import { Route, Switch } from "wouter";
 
-import { ProjectList } from "#app/pages/ProjectList";
-import { ProjectWorkbench } from "#app/pages/ProjectWorkbench";
+import { ProjectList } from "#app/features/project-list";
+import { ProjectWorkbench } from "#app/features/project-workbench";
 
 export function AppRoutes() {
   return (

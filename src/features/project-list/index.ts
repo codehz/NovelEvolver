@@ -1,2 +1,1 @@
-/** Project list feature — populated in PR3. */
-export {};
+export { ProjectList } from "./ProjectList";
