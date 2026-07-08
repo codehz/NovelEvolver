@@ -3,7 +3,7 @@ import { toolResultItem } from "@codehz/ai";
 
 import type { WorktreeSession } from "../../worktree/session";
 import { toErrorMessage } from "../ai-utils";
-import { parseAskUserArgs } from "./ask-user";
+import { type AskUserChoice, parseAskUserArgs } from "./ask-user";
 import { type AI_TOOL_NAMES } from "./definitions";
 import { executeListResourceFiles } from "./resource-library";
 
@@ -15,6 +15,7 @@ export type ToolExecutionResult = {
     question: string;
     context: string | null;
     placeholder: string | null;
+    choices: AskUserChoice[] | null;
   };
 };
 
@@ -39,6 +40,7 @@ export function createToolRunner(worktree: WorktreeSession): ToolRunner {
                 question: args.question,
                 context: args.context ?? null,
                 placeholder: args.placeholder ?? null,
+                choices: args.choices ?? null,
               },
             };
           }

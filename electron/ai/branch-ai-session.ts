@@ -36,7 +36,6 @@ import {
   createMockClient,
   toInputItem,
 } from "./mock-adapter";
-import { parseAskUserArgs } from "./tools/ask-user";
 import { AI_TOOLS } from "./tools/definitions";
 import { createToolRunner, type ToolRunner } from "./tools/runner";
 
@@ -137,19 +136,10 @@ export class BranchAiSession {
       throw new Error("当前工具调用不是 ask_user。");
     }
 
-    const args = parseAskUserArgs({
-      type: "tool_call",
-      id: toolCall.id,
-      name: toolCall.name,
-      argumentsText: toolCall.argumentsText,
-    });
     const toolResult = toolResultItem(toolCall.id, toolCall.name, "success", [
       {
         type: "json",
         json: {
-          question: args.question,
-          context: args.context ?? null,
-          placeholder: args.placeholder ?? null,
           answer: normalized,
         },
       },
@@ -161,7 +151,6 @@ export class BranchAiSession {
       status: "complete",
       resultText: JSON.stringify(
         {
-          question: args.question,
           answer: normalized,
         },
         null,

@@ -190,14 +190,10 @@ function buildAskUserReply(branchName: string, result: AskUserResult): string {
     `已收到补充信息。当前分支：**${branchName}**。`,
     "这是一次 `ask_user` 工具演示，下面内容来自用户在 UI 中回填的答案。",
     "",
-    `- 问题：${result.question}`,
     `- 用户回答：${result.answer}`,
-    result.context ? `- 上下文：${result.context}` : null,
     "",
     "现在 mock AI 已经拿到这条补充信息，后续就可以继续生成正文、方案或下一步建议。",
-  ]
-    .filter((line) => line !== null)
-    .join("\n");
+  ].join("\n");
 }
 
 function buildResourceListReply(result: ListResourceFilesResult): string {
@@ -297,9 +293,28 @@ export function createMockClient(branchName: string): AIClient {
             id: "mock-ask-user",
             name: AI_TOOL_NAMES.ask_user,
             argumentsText: JSON.stringify({
-              question: "请补充一个你现在最想验证的剧情目标。",
-              context: "这是 ask_user 的交互式工具演示，回答后 mock AI 会继续生成最终回复。",
-              placeholder: "例如：验证主角在第三章的动机是否足够成立",
+              question: "你想优先验证哪类剧情目标？",
+              context:
+                "这是 ask_user 的选项式交互演示，可点击选项快速填入，也可自由输入，mock AI 会继续生成最终回复。",
+              placeholder: "或直接输入你的剧情目标…",
+              choices: [
+                {
+                  title: "角色动机",
+                  description: "验证主角行为是否有足够内在驱动",
+                },
+                {
+                  title: "冲突升级",
+                  description: "检查矛盾是否逐步加码、转折是否合理",
+                },
+                {
+                  title: "伏笔回收",
+                  description: "确认前文埋设是否在合适时机兑现",
+                },
+                {
+                  title: "节奏与篇幅",
+                  description: "评估章节推进速度与信息密度",
+                },
+              ],
             }),
           };
           yield { type: "complete", usage };

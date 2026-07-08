@@ -79,6 +79,12 @@ const toolInputTextareaClass = cn(
 const toolInputSubmitClass = cn(
   "inline-flex self-end rounded-md bg-badge-background px-2.5 py-1 text-2xs font-medium text-badge-foreground hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40",
 );
+const toolInputChoicesClass = cn("flex flex-col gap-1.5");
+const toolInputChoiceClass = cn(
+  "flex flex-col gap-0.5 rounded-md border border-titlebar-border bg-app-background px-2.5 py-1.5 text-left hover:bg-app-surface disabled:cursor-not-allowed disabled:opacity-40",
+);
+const toolInputChoiceTitleClass = cn("text-[0.75rem] leading-5 text-app-foreground");
+const toolInputChoiceDescriptionClass = cn("text-2xs leading-4 text-ctp-subtext1");
 
 function describeToolCallStatus(status: AiChatToolCall["status"]): string {
   switch (status) {
@@ -95,10 +101,16 @@ function describeToolCallStatus(status: AiChatToolCall["status"]): string {
   }
 }
 
+type AskUserToolChoice = {
+  title: string;
+  description?: string;
+};
+
 type AskUserToolArguments = {
   question?: string;
   context?: string;
   placeholder?: string;
+  choices?: AskUserToolChoice[];
 };
 
 function formatToolArguments(argumentsText: string): string {
@@ -156,6 +168,40 @@ function parseAskUserToolArguments(argumentsText: string): AskUserToolArguments 
   }
 }
 
+function normalizeAskUserChoices(choices: unknown): AskUserToolChoice[] {
+  if (!Array.isArray(choices)) {
+    return [];
+  }
+
+  const normalized: AskUserToolChoice[] = [];
+  for (const choice of choices) {
+    if (typeof choice !== "object" || choice === null) {
+      continue;
+    }
+
+    const record = choice as Record<string, unknown>;
+    if (typeof record.title !== "string") {
+      continue;
+    }
+
+    const title = record.title.trim();
+    if (title === "") {
+      continue;
+    }
+
+    const item: AskUserToolChoice = { title };
+    if (typeof record.description === "string") {
+      const description = record.description.trim();
+      if (description !== "") {
+        item.description = description;
+      }
+    }
+    normalized.push(item);
+  }
+
+  return normalized;
+}
+
 function AskUserToolInput({
   toolCall,
   disabled,
@@ -167,10 +213,28 @@ function AskUserToolInput({
 }) {
   const args = parseAskUserToolArguments(toolCall.argumentsText);
   const [draft, setDraft] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+  const choices = normalizeAskUserChoices(args?.choices);
+  const hasChoices = choices.length > 0;
+  const inputDisabled = disabled || submitting;
 
   if (!args?.question) {
     return null;
   }
+
+  const handleSubmit = (text: string) => {
+    if (inputDisabled || text.trim() === "") {
+      return;
+    }
+
+    setSubmitting(true);
+    void onSubmit(toolCall.id, text).then((submitted) => {
+      setSubmitting(false);
+      if (submitted) {
+        setDraft("");
+      }
+    });
+  };
 
   return (
     <div className={toolInputShellClass}>
@@ -180,10 +244,32 @@ function AskUserToolInput({
         {args.context ? <p className="text-2xs text-ctp-subtext1">{args.context}</p> : null}
       </div>
 
+      {hasChoices ? (
+        <div className={toolInputChoicesClass}>
+          <p className="text-2xs font-medium text-ctp-subtext0">参考选项（点击快速填入）</p>
+          {choices.map((choice) => (
+            <button
+              key={choice.title}
+              className={toolInputChoiceClass}
+              disabled={inputDisabled}
+              type="button"
+              onClick={() => {
+                setDraft(choice.title);
+              }}
+            >
+              <span className={toolInputChoiceTitleClass}>{choice.title}</span>
+              {choice.description ? (
+                <span className={toolInputChoiceDescriptionClass}>{choice.description}</span>
+              ) : null}
+            </button>
+          ))}
+        </div>
+      ) : null}
+
       <textarea
         aria-label="回答工具问题"
         className={toolInputTextareaClass}
-        disabled={disabled}
+        disabled={inputDisabled}
         placeholder={args.placeholder ?? "输入你的回答…"}
         rows={3}
         value={draft}
@@ -194,14 +280,10 @@ function AskUserToolInput({
 
       <button
         className={toolInputSubmitClass}
-        disabled={disabled || draft.trim() === ""}
+        disabled={inputDisabled || draft.trim() === ""}
         type="button"
         onClick={() => {
-          void onSubmit(toolCall.id, draft).then((submitted) => {
-            if (submitted) {
-              setDraft("");
-            }
-          });
+          handleSubmit(draft);
         }}
       >
         提交回答

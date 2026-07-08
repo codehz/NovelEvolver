@@ -2,7 +2,8 @@ import type { ToolDefinition } from "@codehz/ai";
 
 export const AI_TOOLS_MAP = {
   ask_user: {
-    description: "当信息不足时向用户提出一个明确问题，并等待用户回答后再继续。",
+    description:
+      "当信息不足时向用户提出一个明确问题，并等待用户回答后再继续。可提供 choices 作为参考选项；用户始终可以自由输入答案。",
     inputSchema: {
       type: "object",
       properties: {
@@ -17,6 +18,25 @@ export const AI_TOOLS_MAP = {
         placeholder: {
           type: "string",
           description: "可选的输入框占位提示。",
+        },
+        choices: {
+          type: "array",
+          items: {
+            type: "object",
+            properties: {
+              title: {
+                type: "string",
+                description: "选项标题，点击后可快速填入回答。",
+              },
+              description: {
+                type: "string",
+                description: "可选的补充解释，帮助用户理解该选项。",
+              },
+            },
+            required: ["title"],
+            additionalProperties: false,
+          },
+          description: "可选的参考选项列表，为用户提供快速填入；用户仍可自由输入其他答案。",
         },
       },
       required: ["question"],
