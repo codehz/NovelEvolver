@@ -3,6 +3,7 @@ import type { RpcPromise } from "capnweb";
 import { atom, useSetAtom } from "jotai";
 
 import { wrapDisposable } from "#app/shared/lib/rpc/rpc-utils";
+import type { AiChatHandle } from "#shared/rpc/ai-rpc";
 import type { BranchWorkspace } from "#shared/rpc/branch-workspace-rpc";
 import type { HistoryHandle } from "#shared/rpc/history-rpc";
 import type { ManuscriptHandle } from "#shared/rpc/manuscript-rpc";
@@ -51,6 +52,9 @@ export const worktreeChangesMolecule = molecule(() => use(branchWorkspaceMolecul
 /** 当前分支文件历史句柄（`openBranchWorkspace(...).history` 级联，不在此 await）。 */
 export const historyMolecule = molecule(() => use(branchWorkspaceMolecule).history);
 
+/** 当前分支 AI 对话句柄（`openBranchWorkspace(...).ai` 级联，不在此 await）。 */
+export const aiChatMolecule = molecule(() => use(branchWorkspaceMolecule).ai);
+
 export function useActiveBranchName(): string {
   return useMolecule(activeBranchNameMolecule);
 }
@@ -77,4 +81,8 @@ export function useWorktreeChanges(): RpcPromise<WorktreeChangesHandle> {
 
 export function useHistory(): RpcPromise<HistoryHandle> {
   return useMolecule(historyMolecule);
+}
+
+export function useAiChat(): RpcPromise<AiChatHandle> {
+  return useMolecule(aiChatMolecule);
 }

@@ -79,7 +79,7 @@ export class ProjectSessionImpl extends RpcTarget implements ProjectSession {
       this.#projectId,
       name,
     );
-    const workspace = new BranchWorkspaceImpl(session);
+    const workspace = new BranchWorkspaceImpl(session, name);
     this.#branchWorkspaces.set(name, workspace);
     return workspace;
   }

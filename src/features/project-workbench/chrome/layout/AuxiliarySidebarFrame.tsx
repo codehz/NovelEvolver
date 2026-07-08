@@ -2,7 +2,7 @@ import { memo, type ReactNode } from "react";
 
 import { cn } from "#app/shared/lib/ui/cn";
 
-import { sidebarHeaderActionClass, sidebarHeaderIconClass } from "../sidebar/sidebar-chrome";
+import { sidebarHeaderIconClass } from "../sidebar/sidebar-chrome";
 
 const auxiliarySidebarFrameClass = cn("flex w-full shrink-0 flex-col bg-app-surface");
 
@@ -34,20 +34,6 @@ export const AuxiliarySidebarFrame = memo(function AuxiliarySidebarFrame({
             className={cn(sidebarHeaderIconClass, "icon-[codicon--sparkle] text-ctp-mauve")}
           />
           <span className="truncate">AI 助手</span>
-        </div>
-        <div className="flex shrink-0 items-center gap-0.5">
-          <button aria-label="新建对话（演示）" className={sidebarHeaderActionClass} type="button">
-            <span
-              aria-hidden="true"
-              className={cn(sidebarHeaderIconClass, "icon-[codicon--add]")}
-            />
-          </button>
-          <button aria-label="更多操作（演示）" className={sidebarHeaderActionClass} type="button">
-            <span
-              aria-hidden="true"
-              className={cn(sidebarHeaderIconClass, "icon-[codicon--ellipsis]")}
-            />
-          </button>
         </div>
       </header>
 
