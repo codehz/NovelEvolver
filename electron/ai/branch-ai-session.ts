@@ -140,23 +140,19 @@ export class BranchAiSession {
 
     const client = createAIClient({
       adapter: new MockAdapter({
-        stream: {
-          charsPerSecond: 48,
-          chunkSize: 2,
-          initialDelayMs: 120,
+        handler: async function* () {
+          yield {
+            type: "message",
+            id: assistantMessage.id,
+            content: mockReply,
+            stream: {
+              charsPerSecond: 48,
+              chunkSize: 2,
+              initialDelayMs: 120,
+            },
+          };
+          yield { type: "complete", usage: mockUsage };
         },
-        turns: [
-          {
-            steps: [
-              {
-                type: "message",
-                id: assistantMessage.id,
-                content: mockReply,
-              },
-              { type: "complete", usage: mockUsage },
-            ],
-          },
-        ],
       }),
       model: AI_MODEL,
     });
