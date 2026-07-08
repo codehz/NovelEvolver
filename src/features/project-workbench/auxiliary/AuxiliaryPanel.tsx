@@ -166,7 +166,11 @@ export function AuxiliaryPanel() {
           {snapshot.messages.map((message) => (
             <AiMessageBlock key={message.id} message={message} />
           ))}
-          <div ref={endRef} />
+          <div
+            aria-hidden="true"
+            className="pointer-events-none absolute inset-x-0 bottom-0 h-0"
+            ref={endRef}
+          />
         </div>
       </ScrollArea>
 
