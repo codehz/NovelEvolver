@@ -133,15 +133,7 @@ function describeAssistantMessageMeta(message: AiChatMessage): string {
 }
 
 function AiToolCallBlock({ toolCall }: { toolCall: AiChatToolCall }) {
-  const [expanded, setExpanded] = useState(
-    toolCall.status === "pending" || toolCall.status === "running",
-  );
-
-  useEffect(() => {
-    if (toolCall.status === "pending" || toolCall.status === "running") {
-      setExpanded(true);
-    }
-  }, [toolCall.status]);
+  const [expanded, setExpanded] = useState(false);
 
   const statusText = describeToolCallStatus(toolCall.status);
 
