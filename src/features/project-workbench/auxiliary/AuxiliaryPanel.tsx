@@ -1,4 +1,3 @@
-import { cjk } from "@streamdown/cjk";
 import {
   useCallback,
   useEffect,
@@ -7,10 +6,10 @@ import {
   type FormEvent,
   type KeyboardEvent,
 } from "react";
-import { Streamdown } from "streamdown";
 
 import { cn } from "#app/shared/lib/ui/cn";
 import { DisclosureChevron } from "#app/shared/ui/DisclosureChevron";
+import { MarkdownStream } from "#app/shared/ui/MarkdownStream";
 import { ScrollArea } from "#app/shared/ui/ScrollArea";
 import type { AiChatMessage, AiChatReasoning } from "#shared/rpc/ai-rpc";
 import { SidebarHeaderActions, sidebarHeaderActionClass } from "#workbench/chrome";
@@ -116,14 +115,7 @@ function AiReasoningBlock({ reasoning }: { reasoning: AiChatReasoning }) {
       {expanded ? (
         <div className={reasoningBodyClass}>
           {reasoning.text !== "" ? (
-            <Streamdown
-              animated
-              className="text-inherit"
-              isAnimating={isAnimating}
-              plugins={{ cjk }}
-            >
-              {reasoning.text}
-            </Streamdown>
+            <MarkdownStream isAnimating={isAnimating}>{reasoning.text}</MarkdownStream>
           ) : (
             <p className="text-ctp-subtext0">...</p>
           )}
@@ -153,9 +145,7 @@ function AiMessageBlock({ message }: { message: AiChatMessage }) {
 
       <div className={assistantMessageBodyClass}>
         {message.text !== "" ? (
-          <Streamdown animated className="text-inherit" isAnimating={isStreaming} plugins={{ cjk }}>
-            {message.text}
-          </Streamdown>
+          <MarkdownStream isAnimating={isStreaming}>{message.text}</MarkdownStream>
         ) : (
           <p className="text-ctp-subtext0">{message.reasoning ? "..." : "思考中..."}</p>
         )}
