@@ -1,4 +1,4 @@
-import { MockAdapter, createAIClient } from "@codehz/ai";
+import { MockAdapter, createAIClient, withMockStreaming } from "@codehz/ai";
 import type { AIClient, InputItem, MessageItem, NormalizedRequest, Usage } from "@codehz/ai";
 
 export const AI_ADAPTER_KIND = "mock" as const;
@@ -73,22 +73,24 @@ function buildMockUsage(prompt: string, reply: string): Usage {
 export function createMockClient(branchName: string): AIClient {
   return createAIClient({
     adapter: new MockAdapter({
-      handler: async function* (request: NormalizedRequest) {
-        const prompt = extractLastUserText(request.input);
-        const reply = buildMockReply(branchName, prompt);
-        const usage = buildMockUsage(prompt, reply);
-        yield {
-          type: "message",
-          id: "mock-message",
-          content: reply,
-          stream: {
-            charsPerSecond: 48,
-            chunkSize: 2,
-            initialDelayMs: 120,
-          },
-        };
-        yield { type: "complete", usage };
-      },
+      handler: withMockStreaming(
+        async function* (request: NormalizedRequest) {
+          const prompt = extractLastUserText(request.input);
+          const reply = buildMockReply(branchName, prompt);
+          const usage = buildMockUsage(prompt, reply);
+          yield {
+            type: "message",
+            id: "mock-message",
+            content: reply,
+          };
+          yield { type: "complete", usage };
+        },
+        {
+          charsPerSecond: 48,
+          chunkSize: 2,
+          initialDelayMs: 120,
+        },
+      ),
     }),
     model: AI_MODEL,
   });
