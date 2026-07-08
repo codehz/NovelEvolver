@@ -1,4 +1,5 @@
 import type { AIClient, AIResponse, AIStreamEvent, InputItem } from "@codehz/ai";
+import { toolResultItem } from "@codehz/ai";
 
 import {
   applyAiChatMessagePatch,
@@ -35,8 +36,16 @@ import {
   createMockClient,
   toInputItem,
 } from "./mock-adapter";
+import { parseAskUserArgs } from "./tools/ask-user";
 import { AI_TOOLS } from "./tools/definitions";
 import { createToolRunner, type ToolRunner } from "./tools/runner";
+
+type PendingUserToolContinuation = {
+  assistantMessageId: string;
+  input: InputItem[];
+  transcript: InputItem[];
+  toolCallId: string;
+};
 
 export class BranchAiSession {
   readonly #client: AIClient;
@@ -47,6 +56,7 @@ export class BranchAiSession {
   readonly #history: InputItem[] = [];
   readonly #providerMessageIds = new Map<string, string>();
   readonly #providerReasoningIds = new Map<string, string>();
+  #pendingUserTool: PendingUserToolContinuation | null = null;
   #pending = false;
   #errorMessage: string | null = null;
   #messageCounter = 0;
@@ -72,6 +82,9 @@ export class BranchAiSession {
     }
     if (this.#pending) {
       throw new Error("AI 请求仍在处理中。");
+    }
+    if (this.#pendingUserTool !== null) {
+      throw new Error("AI 正在等待当前工具步骤的用户回答。");
     }
 
     const userMessage = this.#appendMessage("user", normalized, "complete");
@@ -106,6 +119,74 @@ export class BranchAiSession {
     });
   }
 
+  submitToolResponse(toolCallId: string, text: string): void {
+    const pendingTool = this.#pendingUserTool;
+    const normalized = text.trim();
+    if (pendingTool === null || pendingTool.toolCallId !== toolCallId) {
+      throw new Error("当前没有等待该工具调用的用户回答。");
+    }
+    if (normalized === "") {
+      throw new Error("工具回答不能为空。");
+    }
+    if (this.#pending) {
+      throw new Error("AI 请求仍在处理中。");
+    }
+
+    const toolCall = this.#getToolCall(pendingTool.assistantMessageId, toolCallId);
+    if (!toolCall || toolCall.name !== "ask_user") {
+      throw new Error("当前工具调用不是 ask_user。");
+    }
+
+    const args = parseAskUserArgs({
+      type: "tool_call",
+      id: toolCall.id,
+      name: toolCall.name,
+      argumentsText: toolCall.argumentsText,
+    });
+    const toolResult = toolResultItem(toolCall.id, toolCall.name, "success", [
+      {
+        type: "json",
+        json: {
+          question: args.question,
+          context: args.context ?? null,
+          placeholder: args.placeholder ?? null,
+          answer: normalized,
+        },
+      },
+    ]);
+
+    this.#pending = true;
+    this.#pendingUserTool = null;
+    this.#emitToolCallUpdate(pendingTool.assistantMessageId, toolCallId, {
+      status: "complete",
+      resultText: JSON.stringify(
+        {
+          question: args.question,
+          answer: normalized,
+        },
+        null,
+        2,
+      ),
+      errorMessage: null,
+    });
+    this.#emitDelta([
+      {
+        type: "state.updated",
+        patch: {
+          pending: true,
+          awaitingToolCallId: null,
+          errorMessage: null,
+        },
+      },
+    ]);
+
+    void this.#runRequest({
+      assistantMessageId: pendingTool.assistantMessageId,
+      requestInput: [...pendingTool.input, toolResult],
+      transcript: [...pendingTool.transcript, toolResult],
+    });
+  }
+
   resetConversation(): void {
     if (this.#pending) {
       throw new Error("AI 请求仍在处理中，暂时不能清空对话。");
@@ -116,6 +197,7 @@ export class BranchAiSession {
     this.#history.length = 0;
     this.#providerMessageIds.clear();
     this.#providerReasoningIds.clear();
+    this.#pendingUserTool = null;
     this.#errorMessage = null;
     this.#emitDelta([{ type: "conversation.reset" }]);
   }
@@ -130,6 +212,7 @@ export class BranchAiSession {
       model: AI_MODEL,
       messages: this.#messages.map(cloneAiChatMessage),
       pending: this.#pending,
+      awaitingToolCallId: this.#pendingUserTool?.toolCallId ?? null,
       errorMessage: this.#errorMessage,
     };
   }
@@ -326,9 +409,10 @@ export class BranchAiSession {
   async #runRequest(context: {
     assistantMessageId: string;
     requestInput: InputItem[];
+    transcript?: InputItem[];
   }): Promise<void> {
     let input = [...context.requestInput];
-    const transcript = [...context.requestInput];
+    const transcript = context.transcript ? [...context.transcript] : [...context.requestInput];
     let completedResponse: AIResponse | null = null;
 
     try {
@@ -358,6 +442,32 @@ export class BranchAiSession {
           });
 
           const execution = await this.#toolRunner.execute(call);
+          if (execution.awaitUserInput) {
+            this.#pending = false;
+            this.#pendingUserTool = {
+              assistantMessageId: context.assistantMessageId,
+              input: [...input],
+              transcript: [...transcript],
+              toolCallId: call.id,
+            };
+            this.#emitToolCallUpdate(context.assistantMessageId, call.id, {
+              status: "awaiting_user",
+              resultText: null,
+              errorMessage: null,
+            });
+            this.#emitDelta([
+              {
+                type: "state.updated",
+                patch: {
+                  pending: false,
+                  awaitingToolCallId: call.id,
+                  errorMessage: null,
+                },
+              },
+            ]);
+            return;
+          }
+
           this.#emitToolCallUpdate(context.assistantMessageId, call.id, {
             status: execution.errorMessage === null ? "complete" : "error",
             resultText: execution.resultText,
@@ -401,6 +511,7 @@ export class BranchAiSession {
       this.#history.push(...transcript);
       this.#providerMessageIds.clear();
       this.#providerReasoningIds.clear();
+      this.#pendingUserTool = null;
       this.#pending = false;
       this.#emitDelta([
         {
@@ -412,11 +523,13 @@ export class BranchAiSession {
           type: "state.updated",
           patch: {
             pending: false,
+            awaitingToolCallId: null,
           },
         },
       ]);
     } catch (error) {
       this.#pending = false;
+      this.#pendingUserTool = null;
       this.#errorMessage = toErrorMessage(error);
       this.#providerMessageIds.clear();
       this.#providerReasoningIds.clear();
@@ -451,6 +564,7 @@ export class BranchAiSession {
         type: "state.updated",
         patch: {
           pending: false,
+          awaitingToolCallId: null,
           errorMessage: this.#errorMessage,
         },
       });

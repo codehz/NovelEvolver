@@ -72,6 +72,13 @@ const toolCallBodyClass = cn(
   "flex flex-col gap-2 text-[0.75rem] leading-5 text-app-muted",
   "[&_pre]:overflow-x-auto [&_pre]:rounded-md [&_pre]:bg-app-background [&_pre]:p-2 [&_pre]:font-mono [&_pre]:text-2xs",
 );
+const toolInputShellClass = cn("flex flex-col gap-2 rounded-lg bg-app-background/70 p-2");
+const toolInputTextareaClass = cn(
+  "min-h-20 w-full resize-y rounded-md border border-titlebar-border bg-app-background px-2 py-1.5 text-[0.75rem] leading-5 text-app-foreground outline-none placeholder:text-ctp-overlay0",
+);
+const toolInputSubmitClass = cn(
+  "inline-flex self-end rounded-md bg-badge-background px-2.5 py-1 text-2xs font-medium text-badge-foreground hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40",
+);
 
 function describeToolCallStatus(status: AiChatToolCall["status"]): string {
   switch (status) {
@@ -79,12 +86,20 @@ function describeToolCallStatus(status: AiChatToolCall["status"]): string {
       return "等待参数";
     case "running":
       return "执行中";
+    case "awaiting_user":
+      return "等待你的回答";
     case "complete":
       return "已完成";
     case "error":
       return "失败";
   }
 }
+
+type AskUserToolArguments = {
+  question?: string;
+  context?: string;
+  placeholder?: string;
+};
 
 function formatToolArguments(argumentsText: string): string {
   if (argumentsText.trim() === "") {
@@ -132,10 +147,83 @@ function describeAssistantMessageMeta(message: AiChatMessage): string {
   return parts.length > 0 ? parts.join(" · ") : "已完成";
 }
 
-function AiToolCallBlock({ toolCall }: { toolCall: AiChatToolCall }) {
+function parseAskUserToolArguments(argumentsText: string): AskUserToolArguments | null {
+  try {
+    const parsed = JSON.parse(argumentsText) as AskUserToolArguments;
+    return typeof parsed === "object" && parsed !== null ? parsed : null;
+  } catch {
+    return null;
+  }
+}
+
+function AskUserToolInput({
+  toolCall,
+  disabled,
+  onSubmit,
+}: {
+  toolCall: AiChatToolCall;
+  disabled: boolean;
+  onSubmit: (toolCallId: string, text: string) => Promise<boolean>;
+}) {
+  const args = parseAskUserToolArguments(toolCall.argumentsText);
+  const [draft, setDraft] = useState("");
+
+  if (!args?.question) {
+    return null;
+  }
+
+  return (
+    <div className={toolInputShellClass}>
+      <div className="flex flex-col gap-1">
+        <p className="text-2xs font-medium text-ctp-subtext0">问题</p>
+        <p className="text-[0.75rem] leading-5 text-app-foreground">{args.question}</p>
+        {args.context ? <p className="text-2xs text-ctp-subtext1">{args.context}</p> : null}
+      </div>
+
+      <textarea
+        aria-label="回答工具问题"
+        className={toolInputTextareaClass}
+        disabled={disabled}
+        placeholder={args.placeholder ?? "输入你的回答…"}
+        rows={3}
+        value={draft}
+        onChange={(event) => {
+          setDraft(event.target.value);
+        }}
+      />
+
+      <button
+        className={toolInputSubmitClass}
+        disabled={disabled || draft.trim() === ""}
+        type="button"
+        onClick={() => {
+          void onSubmit(toolCall.id, draft).then((submitted) => {
+            if (submitted) {
+              setDraft("");
+            }
+          });
+        }}
+      >
+        提交回答
+      </button>
+    </div>
+  );
+}
+
+function AiToolCallBlock({
+  toolCall,
+  awaitingToolCallId,
+  onSubmitToolResponse,
+}: {
+  toolCall: AiChatToolCall;
+  awaitingToolCallId: string | null;
+  onSubmitToolResponse: (toolCallId: string, text: string) => Promise<boolean>;
+}) {
   const [expanded, setExpanded] = useState(false);
 
   const statusText = describeToolCallStatus(toolCall.status);
+  const isAskUser = toolCall.name === "ask_user";
+  const isAwaitingThisTool = awaitingToolCallId === toolCall.id;
 
   return (
     <section className={toolCallPanelClass}>
@@ -163,6 +251,14 @@ function AiToolCallBlock({ toolCall }: { toolCall: AiChatToolCall }) {
 
           {toolCall.status === "running" ? (
             <p className="text-ctp-subtext0">执行工具中...</p>
+          ) : null}
+
+          {isAskUser ? (
+            <AskUserToolInput
+              toolCall={toolCall}
+              disabled={!isAwaitingThisTool}
+              onSubmit={onSubmitToolResponse}
+            />
           ) : null}
 
           {toolCall.resultText ? (
@@ -218,7 +314,15 @@ function AiReasoningBlock({ reasoning }: { reasoning: AiChatReasoning }) {
   );
 }
 
-function AiMessageBlock({ message }: { message: AiChatMessage }) {
+function AiMessageBlock({
+  message,
+  awaitingToolCallId,
+  onSubmitToolResponse,
+}: {
+  message: AiChatMessage;
+  awaitingToolCallId: string | null;
+  onSubmitToolResponse: (toolCallId: string, text: string) => Promise<boolean>;
+}) {
   if (message.role === "user") {
     return (
       <div className={userMessageRowClass}>
@@ -238,7 +342,12 @@ function AiMessageBlock({ message }: { message: AiChatMessage }) {
       {message.reasoning ? <AiReasoningBlock reasoning={message.reasoning} /> : null}
 
       {message.toolCalls.map((toolCall) => (
-        <AiToolCallBlock key={toolCall.id} toolCall={toolCall} />
+        <AiToolCallBlock
+          key={toolCall.id}
+          awaitingToolCallId={awaitingToolCallId}
+          toolCall={toolCall}
+          onSubmitToolResponse={onSubmitToolResponse}
+        />
       ))}
 
       <div className={assistantMessageBodyClass}>
@@ -263,7 +372,14 @@ function AiMessageBlock({ message }: { message: AiChatMessage }) {
 }
 
 export function AuxiliaryPanel() {
-  const { snapshot, loading, subscriptionError, sendMessage, resetConversation } = useAiChatState();
+  const {
+    snapshot,
+    loading,
+    subscriptionError,
+    sendMessage,
+    submitToolResponse,
+    resetConversation,
+  } = useAiChatState();
   const [draft, setDraft] = useState("");
   const endRef = useRef<HTMLDivElement | null>(null);
   const composerRef = useRef<HTMLTextAreaElement | null>(null);
@@ -352,7 +468,12 @@ export function AuxiliaryPanel() {
           ) : null}
 
           {snapshot.messages.map((message) => (
-            <AiMessageBlock key={message.id} message={message} />
+            <AiMessageBlock
+              key={message.id}
+              awaitingToolCallId={snapshot.awaitingToolCallId}
+              message={message}
+              onSubmitToolResponse={submitToolResponse}
+            />
           ))}
           <div
             aria-hidden="true"
@@ -375,14 +496,19 @@ export function AuxiliaryPanel() {
               setDraft(event.target.value);
             }}
             onKeyDown={handleComposerKeyDown}
-            disabled={loading || snapshot.pending}
+            disabled={loading || snapshot.pending || snapshot.awaitingToolCallId !== null}
           />
 
           <div className="flex justify-end">
             <button
               aria-label="发送"
               className={sendButtonClass}
-              disabled={loading || snapshot.pending || draft.trim() === ""}
+              disabled={
+                loading ||
+                snapshot.pending ||
+                snapshot.awaitingToolCallId !== null ||
+                draft.trim() === ""
+              }
               title="发送"
               type="button"
               onClick={handleSendClick}

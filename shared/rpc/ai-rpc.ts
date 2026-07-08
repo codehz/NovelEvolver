@@ -17,7 +17,7 @@ export type AiChatReasoning = {
   status: "streaming" | "complete";
 };
 
-export type AiChatToolCallStatus = "pending" | "running" | "complete" | "error";
+export type AiChatToolCallStatus = "pending" | "running" | "awaiting_user" | "complete" | "error";
 
 export type AiChatToolCall = {
   id: string;
@@ -50,6 +50,7 @@ export type AiChatSnapshot = {
   model: string;
   messages: AiChatMessage[];
   pending: boolean;
+  awaitingToolCallId: string | null;
   errorMessage: string | null;
 };
 
@@ -68,6 +69,7 @@ export type AiChatReasoningPatch = {
 
 export type AiChatStatePatch = {
   pending?: boolean;
+  awaitingToolCallId?: string | null;
   errorMessage?: string | null;
 };
 
@@ -129,5 +131,6 @@ export type AiChatEvent = AiChatSnapshotEvent | AiChatDeltaEvent;
 export interface AiChatHandle extends RpcTarget {
   subscribeChat(): RpcSubscriptionResult<AiChatEvent>;
   sendMessage(text: string): void;
+  submitToolResponse(toolCallId: string, text: string): void;
   resetConversation(): void;
 }

@@ -3,6 +3,7 @@ import { toolResultItem } from "@codehz/ai";
 
 import type { WorktreeSession } from "../../worktree/session";
 import { toErrorMessage } from "../ai-utils";
+import { parseAskUserArgs } from "./ask-user";
 import { type AI_TOOL_NAMES } from "./definitions";
 import { executeListResourceFiles } from "./resource-library";
 
@@ -10,6 +11,11 @@ export type ToolExecutionResult = {
   toolResult: ToolResultItem;
   resultText: string | null;
   errorMessage: string | null;
+  awaitUserInput?: {
+    question: string;
+    context: string | null;
+    placeholder: string | null;
+  };
 };
 
 export type ToolRunner = {
@@ -21,6 +27,21 @@ export function createToolRunner(worktree: WorktreeSession): ToolRunner {
     async execute(call: ToolCallItem): Promise<ToolExecutionResult> {
       try {
         switch (call.name as AI_TOOL_NAMES) {
+          case "ask_user": {
+            const args = parseAskUserArgs(call);
+            return {
+              toolResult: toolResultItem(call.id, call.name, "rejected", [
+                { type: "text", text: "等待用户回答。" },
+              ]),
+              resultText: null,
+              errorMessage: null,
+              awaitUserInput: {
+                question: args.question,
+                context: args.context ?? null,
+                placeholder: args.placeholder ?? null,
+              },
+            };
+          }
           case "list_resource_files": {
             const output = executeListResourceFiles(worktree, call);
             const resultText = JSON.stringify(output, null, 2);

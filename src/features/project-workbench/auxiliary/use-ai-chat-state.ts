@@ -35,14 +35,32 @@ export function useAiChatState() {
   const sendMessage = useCallback(
     async (text: string): Promise<boolean> => {
       const normalized = text.trim();
-      if (normalized === "" || snapshot.pending) {
+      if (normalized === "" || snapshot.pending || snapshot.awaitingToolCallId !== null) {
         return false;
       }
 
       await Promise.resolve(aiChat.sendMessage(normalized));
       return true;
     },
-    [aiChat, snapshot.pending],
+    [aiChat, snapshot.awaitingToolCallId, snapshot.pending],
+  );
+
+  const submitToolResponse = useCallback(
+    async (toolCallId: string, text: string): Promise<boolean> => {
+      const normalized = text.trim();
+      if (
+        normalized === "" ||
+        snapshot.pending ||
+        snapshot.awaitingToolCallId === null ||
+        snapshot.awaitingToolCallId !== toolCallId
+      ) {
+        return false;
+      }
+
+      await Promise.resolve(aiChat.submitToolResponse(toolCallId, normalized));
+      return true;
+    },
+    [aiChat, snapshot.awaitingToolCallId, snapshot.pending],
   );
 
   const resetConversation = useCallback(async (): Promise<void> => {
@@ -54,6 +72,7 @@ export function useAiChatState() {
     loading,
     subscriptionError,
     sendMessage,
+    submitToolResponse,
     resetConversation,
   };
 }

@@ -8,6 +8,7 @@ import type {
   Usage,
 } from "@codehz/ai";
 
+import type { AskUserResult } from "./tools/ask-user";
 import { AI_TOOL_NAMES } from "./tools/definitions";
 import type { ListResourceFilesResult } from "./tools/resource-library";
 
@@ -16,6 +17,7 @@ export const AI_MODEL = "mock-assistant";
 export const AI_INSTRUCTIONS =
   "你是 NovelEvolver 原型里的内置写作助手。当前运行在 mock adapter 上，请简洁回应，并明确这是演示数据。";
 
+const ASK_USER_KEYWORDS = /ask_user|先问我|需要我回答|交互测试|互动测试|补充信息/i;
 const LIST_RESOURCE_KEYWORDS =
   /资源库|文件列表|列出.*文件|list\s+files?|list\s+resources?|resources/i;
 
@@ -40,6 +42,10 @@ function extractLastUserText(input: readonly InputItem[]): string {
 
 function shouldListResources(prompt: string): boolean {
   return LIST_RESOURCE_KEYWORDS.test(prompt);
+}
+
+function shouldAskUser(prompt: string): boolean {
+  return ASK_USER_KEYWORDS.test(prompt);
 }
 
 function extractPathFromPrompt(prompt: string): string {
@@ -77,6 +83,17 @@ function hasListResourceToolResultAfterLastUser(input: readonly InputItem[]): bo
   return false;
 }
 
+function hasAskUserToolResultAfterLastUser(input: readonly InputItem[]): boolean {
+  const lastUserIndex = findLastUserMessageIndex(input);
+  for (let i = input.length - 1; i > lastUserIndex; i--) {
+    const item = input[i]!;
+    if (item.type === "tool_result" && item.toolName === AI_TOOL_NAMES.ask_user) {
+      return true;
+    }
+  }
+  return false;
+}
+
 function findListResourceToolResultAfterLastUser(
   input: readonly InputItem[],
 ): ListResourceFilesResult | null {
@@ -91,6 +108,25 @@ function findListResourceToolResultAfterLastUser(
       for (const block of item.content) {
         if (block.type === "json" && block.json !== undefined && typeof block.json === "object") {
           return block.json as ListResourceFilesResult;
+        }
+      }
+    }
+  }
+  return null;
+}
+
+function findAskUserToolResultAfterLastUser(input: readonly InputItem[]): AskUserResult | null {
+  const lastUserIndex = findLastUserMessageIndex(input);
+  for (let i = input.length - 1; i > lastUserIndex; i--) {
+    const item = input[i]!;
+    if (
+      item.type === "tool_result" &&
+      item.toolName === AI_TOOL_NAMES.ask_user &&
+      item.outcome === "success"
+    ) {
+      for (const block of item.content) {
+        if (block.type === "json" && block.json !== undefined && typeof block.json === "object") {
+          return block.json as AskUserResult;
         }
       }
     }
@@ -128,6 +164,17 @@ function buildMockReasoning(branchName: string, prompt: string): string {
   ].join("\n");
 }
 
+function buildAskUserReasoning(branchName: string, prompt: string): string {
+  const excerpt = prompt.trim().replaceAll("\n", " ");
+  const preview = excerpt.length > 96 ? `${excerpt.slice(0, 96)}...` : excerpt;
+  return [
+    "1. 识别到这是一个 ask_user 交互演示请求。",
+    `2. 当前分支为「${branchName}」，先暂停生成并向用户索取缺失信息。`,
+    `3. 用户原始请求摘要：${preview === "" ? "未提供有效文本。" : preview}`,
+    "4. 收到 tool_result 后，再基于用户补充内容继续完成答复。",
+  ].join("\n");
+}
+
 function buildListResourceReasoning(branchName: string, path: string): string {
   const scope = path === "" ? "整个资源库" : `目录「${path}」`;
   return [
@@ -136,6 +183,21 @@ function buildListResourceReasoning(branchName: string, path: string): string {
     `3. 调用工具 \`${AI_TOOL_NAMES.list_resource_files}\` 获取结构化结果。`,
     "4. 收到 tool_result 后，再整理为 markdown 列表回复用户。",
   ].join("\n");
+}
+
+function buildAskUserReply(branchName: string, result: AskUserResult): string {
+  return [
+    `已收到补充信息。当前分支：**${branchName}**。`,
+    "这是一次 `ask_user` 工具演示，下面内容来自用户在 UI 中回填的答案。",
+    "",
+    `- 问题：${result.question}`,
+    `- 用户回答：${result.answer}`,
+    result.context ? `- 上下文：${result.context}` : null,
+    "",
+    "现在 mock AI 已经拿到这条补充信息，后续就可以继续生成正文、方案或下一步建议。",
+  ]
+    .filter((line) => line !== null)
+    .join("\n");
 }
 
 function buildResourceListReply(result: ListResourceFilesResult): string {
@@ -216,10 +278,58 @@ export function createMockClient(branchName: string): AIClient {
           return;
         }
 
+        if (shouldAskUser(prompt) && !hasAskUserToolResultAfterLastUser(request.input)) {
+          const reasoning = buildAskUserReasoning(branchName, prompt);
+          const usage = buildMockUsage(prompt, reasoning, "");
+          yield {
+            type: "reasoning",
+            id: "mock-reasoning",
+            visibility: "summary",
+            content: reasoning,
+            stream: {
+              charsPerSecond: 36,
+              chunkSize: 3,
+              initialDelayMs: 80,
+            },
+          };
+          yield {
+            type: "tool_call",
+            id: "mock-ask-user",
+            name: AI_TOOL_NAMES.ask_user,
+            argumentsText: JSON.stringify({
+              question: "请补充一个你现在最想验证的剧情目标。",
+              context: "这是 ask_user 的交互式工具演示，回答后 mock AI 会继续生成最终回复。",
+              placeholder: "例如：验证主角在第三章的动机是否足够成立",
+            }),
+          };
+          yield { type: "complete", usage };
+          return;
+        }
+
         if (hasListResourceToolResultAfterLastUser(request.input)) {
           const toolResult = findListResourceToolResultAfterLastUser(request.input);
           if (toolResult !== null) {
             const reply = buildResourceListReply(toolResult);
+            const usage = buildMockUsage(prompt, "", reply);
+            yield {
+              type: "message",
+              id: "mock-message",
+              content: reply,
+              stream: {
+                charsPerSecond: 48,
+                chunkSize: 2,
+                initialDelayMs: 120,
+              },
+            };
+            yield { type: "complete", usage };
+            return;
+          }
+        }
+
+        if (hasAskUserToolResultAfterLastUser(request.input)) {
+          const toolResult = findAskUserToolResultAfterLastUser(request.input);
+          if (toolResult !== null) {
+            const reply = buildAskUserReply(branchName, toolResult);
             const usage = buildMockUsage(prompt, "", reply);
             yield {
               type: "message",
