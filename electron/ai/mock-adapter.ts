@@ -8,7 +8,7 @@ import type {
   Usage,
 } from "@codehz/ai";
 
-import { LIST_RESOURCE_FILES_TOOL_NAME } from "./tools/definitions";
+import { AI_TOOL_NAMES } from "./tools/definitions";
 import type { ListResourceFilesResult } from "./tools/resource-library";
 
 export const AI_ADAPTER_KIND = "mock" as const;
@@ -70,7 +70,7 @@ function hasListResourceToolResultAfterLastUser(input: readonly InputItem[]): bo
   const lastUserIndex = findLastUserMessageIndex(input);
   for (let i = input.length - 1; i > lastUserIndex; i--) {
     const item = input[i]!;
-    if (item.type === "tool_result" && item.toolName === LIST_RESOURCE_FILES_TOOL_NAME) {
+    if (item.type === "tool_result" && item.toolName === AI_TOOL_NAMES.list_resource_files) {
       return true;
     }
   }
@@ -85,7 +85,7 @@ function findListResourceToolResultAfterLastUser(
     const item = input[i]!;
     if (
       item.type === "tool_result" &&
-      item.toolName === LIST_RESOURCE_FILES_TOOL_NAME &&
+      item.toolName === AI_TOOL_NAMES.list_resource_files &&
       item.outcome === "success"
     ) {
       for (const block of item.content) {
@@ -133,7 +133,7 @@ function buildListResourceReasoning(branchName: string, path: string): string {
   return [
     "1. 识别用户想查看资源库文件列表。",
     `2. 当前分支为「${branchName}」，将在该分支的 ${scope} 下递归收集文件。`,
-    `3. 调用工具 \`${LIST_RESOURCE_FILES_TOOL_NAME}\` 获取结构化结果。`,
+    `3. 调用工具 \`${AI_TOOL_NAMES.list_resource_files}\` 获取结构化结果。`,
     "4. 收到 tool_result 后，再整理为 markdown 列表回复用户。",
   ].join("\n");
 }
@@ -209,7 +209,7 @@ export function createMockClient(branchName: string): AIClient {
           yield {
             type: "tool_call",
             id: "mock-list-resources",
-            name: LIST_RESOURCE_FILES_TOOL_NAME,
+            name: AI_TOOL_NAMES.list_resource_files,
             argumentsText: JSON.stringify({ path }),
           };
           yield { type: "complete", usage };

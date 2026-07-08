@@ -3,7 +3,7 @@ import { toolResultItem } from "@codehz/ai";
 
 import type { WorktreeSession } from "../../worktree/session";
 import { toErrorMessage } from "../ai-utils";
-import { LIST_RESOURCE_FILES_TOOL_NAME } from "./definitions";
+import { type AI_TOOL_NAMES } from "./definitions";
 import { executeListResourceFiles } from "./resource-library";
 
 export type ToolExecutionResult = {
@@ -20,8 +20,8 @@ export function createToolRunner(worktree: WorktreeSession): ToolRunner {
   return {
     async execute(call: ToolCallItem): Promise<ToolExecutionResult> {
       try {
-        switch (call.name) {
-          case LIST_RESOURCE_FILES_TOOL_NAME: {
+        switch (call.name as AI_TOOL_NAMES) {
+          case "list_resource_files": {
             const output = executeListResourceFiles(worktree, call);
             const resultText = JSON.stringify(output, null, 2);
             return {

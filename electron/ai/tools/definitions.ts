@@ -1,10 +1,7 @@
 import type { ToolDefinition } from "@codehz/ai";
 
-export const LIST_RESOURCE_FILES_TOOL_NAME = "list_resource_files";
-
-export const AI_TOOLS: ToolDefinition[] = [
-  {
-    name: LIST_RESOURCE_FILES_TOOL_NAME,
+export const AI_TOOLS_MAP = {
+  list_resource_files: {
     description:
       "递归列出资源库指定目录下的所有文件（不含文件夹）。path 为空字符串时表示整个资源库。",
     inputSchema: {
@@ -18,4 +15,14 @@ export const AI_TOOLS: ToolDefinition[] = [
       additionalProperties: false,
     },
   },
-];
+} as const satisfies Record<string, Omit<ToolDefinition, "name">>;
+
+export type AI_TOOL_NAMES = keyof typeof AI_TOOLS_MAP;
+export const AI_TOOL_NAMES: { [key in AI_TOOL_NAMES]: key } = Object.fromEntries(
+  Object.keys(AI_TOOLS_MAP).map((name) => [name, name]),
+) as { [key in AI_TOOL_NAMES]: key };
+
+export const AI_TOOLS: ToolDefinition[] = Object.entries(AI_TOOLS_MAP).map(([name, def]) => ({
+  name,
+  ...def,
+}));
