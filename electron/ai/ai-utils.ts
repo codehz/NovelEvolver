@@ -1,6 +1,6 @@
 import type { AIResponse, ContentBlock } from "@codehz/ai";
 
-import type { AiChatMessageUsage, AiChatReasoning } from "#shared/rpc/ai-rpc";
+import type { AiChatMessageUsage, AiChatReasoningPart } from "#shared/rpc/ai-rpc";
 
 /**
  * 从 AIResponse 的 output 中提取纯文本内容。
@@ -80,7 +80,7 @@ export function joinContentBlocksText(content: readonly ContentBlock[]): string 
  */
 export function readResponseReasoning(
   response: AIResponse,
-): Pick<AiChatReasoning, "text" | "visibility"> | null {
+): Pick<AiChatReasoningPart, "text" | "visibility"> | null {
   const reasoningItems = response.output.filter((item) => item.type === "reasoning");
   if (reasoningItems.length === 0) {
     return null;

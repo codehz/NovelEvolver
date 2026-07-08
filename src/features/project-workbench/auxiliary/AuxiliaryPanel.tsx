@@ -11,7 +11,13 @@ import { cn } from "#app/shared/lib/ui/cn";
 import { DisclosureChevron } from "#app/shared/ui/DisclosureChevron";
 import { MarkdownStream } from "#app/shared/ui/MarkdownStream";
 import { ScrollArea } from "#app/shared/ui/ScrollArea";
-import type { AiChatMessage, AiChatReasoning, AiChatToolCall } from "#shared/rpc/ai-rpc";
+import type {
+  AiChatAssistantMessage,
+  AiChatAssistantPart,
+  AiChatMessage,
+  AiChatReasoningPart,
+  AiChatToolCall,
+} from "#shared/rpc/ai-rpc";
 import { SidebarHeaderActions, sidebarHeaderActionClass } from "#workbench/chrome";
 
 import { parseAskUserToolArguments } from "./ask-user-prompt";
@@ -20,7 +26,6 @@ import { useAiChatState } from "./use-ai-chat-state";
 
 const panelSectionClass = cn("mx-auto flex w-full max-w-3xl flex-col");
 const conversationRailClass = cn("gap-4 px-3 py-2.5");
-// Only user-authored messages may use bubble chrome; assistant output stays flat and compact.
 const assistantMessageBlockClass = cn("flex w-full flex-col gap-1");
 const assistantMessageBodyClass = cn(
   "text-[0.8125rem] leading-5 text-app-foreground",
@@ -104,22 +109,22 @@ function formatToolArguments(argumentsText: string): string {
   }
 }
 
-function describeAssistantMessageMeta(message: AiChatMessage): string {
+function describeAssistantMessageMeta(message: AiChatAssistantMessage): string {
   const parts: string[] = [];
 
   if (message.status === "streaming") {
-    const hasRunningTool = message.toolCalls.some((toolCall) => toolCall.status === "running");
-    parts.push(
-      message.reasoning?.status === "streaming"
-        ? "思考中"
-        : hasRunningTool
-          ? "执行工具中"
-          : "流式输出中",
+    const hasRunningTool = message.parts.some(
+      (part) => part.type === "tool_call" && part.status === "running",
     );
+    const hasStreamingReasoning = message.parts.some(
+      (part) => part.type === "reasoning" && part.status === "streaming",
+    );
+    parts.push(hasStreamingReasoning ? "思考中" : hasRunningTool ? "执行工具中" : "流式输出中");
   }
 
-  if (message.toolCalls.length > 0) {
-    parts.push(`工具 ${message.toolCalls.length}`);
+  const toolCount = message.parts.filter((part) => part.type === "tool_call").length;
+  if (toolCount > 0) {
+    parts.push(`工具 ${toolCount}`);
   }
 
   if (typeof message.usage?.inputTokens === "number") {
@@ -218,7 +223,7 @@ function AiToolCallBlock({
   );
 }
 
-function AiReasoningBlock({ reasoning }: { reasoning: AiChatReasoning }) {
+function AiReasoningBlock({ reasoning }: { reasoning: AiChatReasoningPart }) {
   const [expanded, setExpanded] = useState(reasoning.status === "streaming");
 
   useEffect(() => {
@@ -257,6 +262,42 @@ function AiReasoningBlock({ reasoning }: { reasoning: AiChatReasoning }) {
   );
 }
 
+function AiAssistantPartBlock({
+  part,
+  awaitingAskUserToolCallIds,
+  activeAskUserToolCallId,
+  onSelectAskUserToolCall,
+}: {
+  part: AiChatAssistantPart;
+  awaitingAskUserToolCallIds: string[];
+  activeAskUserToolCallId: string | null;
+  onSelectAskUserToolCall: (toolCallId: string) => void;
+}) {
+  switch (part.type) {
+    case "message":
+      return (
+        <div className={assistantMessageBodyClass}>
+          {part.text !== "" ? (
+            <MarkdownStream isAnimating={part.status === "streaming"}>{part.text}</MarkdownStream>
+          ) : (
+            <p className="text-ctp-subtext0">...</p>
+          )}
+        </div>
+      );
+    case "reasoning":
+      return <AiReasoningBlock reasoning={part} />;
+    case "tool_call":
+      return (
+        <AiToolCallBlock
+          activeAskUserToolCallId={activeAskUserToolCallId}
+          awaitingAskUserToolCallIds={awaitingAskUserToolCallIds}
+          toolCall={part}
+          onSelectAskUserToolCall={onSelectAskUserToolCall}
+        />
+      );
+  }
+}
+
 function AiMessageBlock({
   message,
   awaitingAskUserToolCallIds,
@@ -278,37 +319,25 @@ function AiMessageBlock({
     );
   }
 
-  const isStreaming = message.status === "streaming";
-  const hasRunningTool = message.toolCalls.some((toolCall) => toolCall.status === "running");
   const metaText = describeAssistantMessageMeta(message);
 
   return (
     <article className={assistantMessageBlockClass}>
-      {message.reasoning ? <AiReasoningBlock reasoning={message.reasoning} /> : null}
-
-      {message.toolCalls.map((toolCall) => (
-        <AiToolCallBlock
-          key={toolCall.id}
-          activeAskUserToolCallId={activeAskUserToolCallId}
-          awaitingAskUserToolCallIds={awaitingAskUserToolCallIds}
-          toolCall={toolCall}
-          onSelectAskUserToolCall={onSelectAskUserToolCall}
-        />
-      ))}
-
-      <div className={assistantMessageBodyClass}>
-        {message.text !== "" ? (
-          <MarkdownStream isAnimating={isStreaming}>{message.text}</MarkdownStream>
-        ) : (
-          <p className="text-ctp-subtext0">
-            {message.reasoning || message.toolCalls.length > 0
-              ? hasRunningTool
-                ? "执行工具中..."
-                : "..."
-              : "思考中..."}
-          </p>
-        )}
-      </div>
+      {message.parts.length > 0 ? (
+        message.parts.map((part) => (
+          <AiAssistantPartBlock
+            key={part.id}
+            activeAskUserToolCallId={activeAskUserToolCallId}
+            awaitingAskUserToolCallIds={awaitingAskUserToolCallIds}
+            part={part}
+            onSelectAskUserToolCall={onSelectAskUserToolCall}
+          />
+        ))
+      ) : (
+        <div className={assistantMessageBodyClass}>
+          <p className="text-ctp-subtext0">思考中...</p>
+        </div>
+      )}
 
       <p className={reasoningMetaClass} title={metaText}>
         {metaText}

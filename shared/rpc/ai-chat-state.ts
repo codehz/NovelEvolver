@@ -1,10 +1,11 @@
 import type {
+  AiChatAssistantMessage,
+  AiChatAssistantPart,
+  AiChatAssistantPartPatch,
   AiChatEvent,
   AiChatMessage,
   AiChatMessagePatch,
   AiChatSnapshot,
-  AiChatToolCall,
-  AiChatToolCallPatch,
 } from "./ai-rpc";
 
 export function createInitialAiChatSnapshot(model = "mock-assistant"): AiChatSnapshot {
@@ -18,20 +19,25 @@ export function createInitialAiChatSnapshot(model = "mock-assistant"): AiChatSna
   };
 }
 
-export function cloneAiChatToolCall(toolCall: AiChatToolCall): AiChatToolCall {
-  return { ...toolCall };
+export function cloneAiChatAssistantPart(part: AiChatAssistantPart): AiChatAssistantPart {
+  return { ...part };
 }
 
-export function cloneAiChatToolCallPatch(patch: AiChatToolCallPatch): AiChatToolCallPatch {
+export function cloneAiChatAssistantPartPatch(
+  patch: AiChatAssistantPartPatch,
+): AiChatAssistantPartPatch {
   return { ...patch };
 }
 
 export function cloneAiChatMessage(message: AiChatMessage): AiChatMessage {
+  if (message.role === "user") {
+    return { ...message };
+  }
+
   return {
     ...message,
     usage: message.usage ? { ...message.usage } : null,
-    reasoning: message.reasoning ? { ...message.reasoning } : null,
-    toolCalls: message.toolCalls.map(cloneAiChatToolCall),
+    parts: message.parts.map(cloneAiChatAssistantPart),
   };
 }
 
@@ -39,12 +45,6 @@ export function cloneAiChatMessagePatch(patch: AiChatMessagePatch): AiChatMessag
   return {
     ...patch,
     usage: patch.usage ? { ...patch.usage } : patch.usage,
-    reasoning:
-      patch.reasoning === undefined
-        ? undefined
-        : patch.reasoning === null
-          ? null
-          : { ...patch.reasoning },
   };
 }
 
@@ -52,21 +52,82 @@ export function applyAiChatMessagePatch(
   message: AiChatMessage,
   patch: AiChatMessagePatch,
 ): AiChatMessage {
+  if (message.role === "user") {
+    return message;
+  }
+
   return {
     ...message,
-    ...patch,
+    status: patch.status ?? message.status,
     usage: patch.usage !== undefined ? patch.usage : message.usage,
-    reasoning:
-      patch.reasoning === undefined
-        ? message.reasoning
-        : patch.reasoning === null
-          ? null
-          : {
-              text: message.reasoning?.text ?? "",
-              visibility: patch.reasoning.visibility ?? message.reasoning?.visibility ?? "summary",
-              status: patch.reasoning.status ?? message.reasoning?.status ?? "streaming",
-              ...patch.reasoning,
-            },
+  };
+}
+
+export function applyAiChatAssistantPartPatch(
+  part: AiChatAssistantPart,
+  patch: AiChatAssistantPartPatch,
+): AiChatAssistantPart {
+  switch (part.type) {
+    case "message":
+      return {
+        ...part,
+        text: patch.text ?? part.text,
+        status:
+          typeof patch.status === "string" &&
+          patch.status !== "pending" &&
+          patch.status !== "running" &&
+          patch.status !== "awaiting_user" &&
+          patch.status !== "error"
+            ? patch.status
+            : part.status,
+      };
+    case "reasoning":
+      return {
+        ...part,
+        text: patch.text ?? part.text,
+        visibility: patch.visibility ?? part.visibility,
+        status:
+          typeof patch.status === "string" &&
+          patch.status !== "pending" &&
+          patch.status !== "running" &&
+          patch.status !== "awaiting_user" &&
+          patch.status !== "error"
+            ? patch.status
+            : part.status,
+      };
+    case "tool_call":
+      return {
+        ...part,
+        argumentsText: patch.argumentsText ?? part.argumentsText,
+        status:
+          patch.status === undefined || patch.status === "streaming" || patch.status === "complete"
+            ? part.status
+            : patch.status,
+        resultText: patch.resultText !== undefined ? patch.resultText : part.resultText,
+        errorMessage: patch.errorMessage !== undefined ? patch.errorMessage : part.errorMessage,
+      };
+  }
+}
+
+function applyAssistantPartTextDelta(part: AiChatAssistantPart, text: string): AiChatAssistantPart {
+  if (part.type === "tool_call") {
+    return part;
+  }
+
+  return {
+    ...part,
+    text: `${part.text}${text}`,
+  };
+}
+
+function applyAssistantPartUpdate(
+  message: AiChatAssistantMessage,
+  partId: string,
+  updater: (part: AiChatAssistantPart) => AiChatAssistantPart,
+): AiChatAssistantMessage {
+  return {
+    ...message,
+    parts: message.parts.map((part) => (part.id === partId ? updater(part) : part)),
   };
 }
 
@@ -90,37 +151,7 @@ export function applyAiChatEvent(snapshot: AiChatSnapshot, event: AiChatEvent): 
       case "message.added":
         next = {
           ...next,
-          messages: [...next.messages, op.message],
-        };
-        break;
-      case "message.text.delta":
-        next = {
-          ...next,
-          messages: next.messages.map((message) =>
-            message.id === op.messageId
-              ? {
-                  ...message,
-                  text: `${message.text}${op.text}`,
-                }
-              : message,
-          ),
-        };
-        break;
-      case "message.reasoning.delta":
-        next = {
-          ...next,
-          messages: next.messages.map((message) =>
-            message.id === op.messageId
-              ? {
-                  ...message,
-                  reasoning: {
-                    text: `${message.reasoning?.text ?? ""}${op.text}`,
-                    visibility: message.reasoning?.visibility ?? "summary",
-                    status: message.reasoning?.status ?? "streaming",
-                  },
-                }
-              : message,
-          ),
+          messages: [...next.messages, cloneAiChatMessage(op.message)],
         };
         break;
       case "message.updated":
@@ -137,35 +168,39 @@ export function applyAiChatEvent(snapshot: AiChatSnapshot, event: AiChatEvent): 
           messages: next.messages.filter((message) => message.id !== op.messageId),
         };
         break;
-      case "tool_call.added":
+      case "assistant_part.added":
         next = {
           ...next,
           messages: next.messages.map((message) =>
-            message.id === op.messageId
+            message.id === op.messageId && message.role === "assistant"
               ? {
                   ...message,
-                  toolCalls: [...message.toolCalls, cloneAiChatToolCall(op.toolCall)],
+                  parts: [...message.parts, cloneAiChatAssistantPart(op.part)],
                 }
               : message,
           ),
         };
         break;
-      case "tool_call.updated":
+      case "assistant_part.text.delta":
         next = {
           ...next,
           messages: next.messages.map((message) =>
-            message.id === op.messageId
-              ? {
-                  ...message,
-                  toolCalls: message.toolCalls.map((toolCall) =>
-                    toolCall.id === op.toolCallId
-                      ? {
-                          ...toolCall,
-                          ...op.patch,
-                        }
-                      : toolCall,
-                  ),
-                }
+            message.id === op.messageId && message.role === "assistant"
+              ? applyAssistantPartUpdate(message, op.partId, (part) =>
+                  applyAssistantPartTextDelta(part, op.text),
+                )
+              : message,
+          ),
+        };
+        break;
+      case "assistant_part.updated":
+        next = {
+          ...next,
+          messages: next.messages.map((message) =>
+            message.id === op.messageId && message.role === "assistant"
+              ? applyAssistantPartUpdate(message, op.partId, (part) =>
+                  applyAiChatAssistantPartPatch(part, op.patch),
+                )
               : message,
           ),
         };

@@ -192,21 +192,6 @@ function findAskUserToolResultAfterLastUser(input: readonly InputItem[]): AskUse
   return null;
 }
 
-function buildMockReply(branchName: string, prompt: string): string {
-  const excerpt = prompt.length > 180 ? `${prompt.slice(0, 180)}...` : prompt;
-  return [
-    `已收到你的请求。当前分支：**${branchName}**。`,
-    "当前走的是 `@codehz/ai` 的 `MockAdapter`，思维链和正文都来自演示数据。",
-    "你的输入摘录：",
-    `> ${excerpt.replaceAll("\n", "\n> ")}`,
-    "我会先给出一段模拟思维链摘要，再输出最终答复，方便前端验证展示层级。",
-    "下一步可以继续接入：",
-    "- 真实模型 adapter",
-    "- 章节正文、设定卡、检索结果等上下文注入",
-    "- 更多工具调用与结果回填",
-  ].join("\n\n");
-}
-
 function buildMockReasoning(branchName: string, prompt: string): string {
   const excerpt = prompt.trim().replaceAll("\n", " ");
   const summarizedPrompt =
@@ -219,6 +204,55 @@ function buildMockReasoning(branchName: string, prompt: string): string {
     `2. 锁定分支上下文为「${branchName}」，确保后续多分支会话能展示隔离效果。`,
     `3. 从用户输入中截取关键请求：${preview}`,
     "4. 输出策略：先流式给出思维链摘要，再给出 markdown 正文，最后补 usage 数据。",
+  ].join("\n");
+}
+
+function buildMockFollowupReasoning(prompt: string): string {
+  const excerpt = prompt.trim().replaceAll("\n", " ");
+  const preview = excerpt.length > 72 ? `${excerpt.slice(0, 72)}...` : excerpt;
+  return [
+    "1. 第一段输出后，继续检查是否需要补充一个更靠近实现的结论。",
+    `2. 当前摘要回看：${preview === "" ? "用户未提供有效输入。" : preview}`,
+    "3. 在 mock 场景中故意把最终回答拆成多段 message，验证 UI 的真实时间线渲染。",
+  ].join("\n");
+}
+
+function buildToolResultReasoning(toolName: string): string {
+  return [
+    `1. 工具 \`${toolName}\` 已返回，开始将结构化结果重新编排为用户可读内容。`,
+    "2. 这里特意再插入一段 reasoning，验证 tool -> reasoning -> message 的交错输出。",
+  ].join("\n");
+}
+
+function buildMockReplyIntro(branchName: string, prompt: string): string {
+  const excerpt = prompt.length > 96 ? `${prompt.slice(0, 96)}...` : prompt;
+  return [
+    `已收到你的请求。当前分支：**${branchName}**。`,
+    "这一段是第一段正文，用来验证 `reasoning -> message -> reasoning -> message`。",
+    `输入摘录：${excerpt === "" ? "（空）" : excerpt}`,
+  ].join("\n\n");
+}
+
+function buildMockReplyOutro(): string {
+  return [
+    "这是第二段正文。",
+    "它与前一段正文之间隔着一段新的 reasoning，因此不应该被 UI 合并成单一“最终正文区”。",
+    "后续可以继续接入真实模型 adapter、上下文注入和更多工具。",
+  ].join("\n\n");
+}
+
+function buildAskUserPostReasoning(answer: string): string {
+  return [
+    "1. 已拿到 ask_user 的回答。",
+    `2. 用户补充的是：${answer}`,
+    "3. 现在继续收束为最终答复，并验证 ask_user 完成后的续跑仍能插入新的 reasoning。",
+  ].join("\n");
+}
+
+function buildParallelAskUserPostReasoning(count: number): string {
+  return [
+    `1. 已收到 ${count} 个 ask_user 结果。`,
+    "2. 接下来会先给出一段补充 reasoning，再输出最终正文，验证并行 ask_user 批次恢复后的顺序稳定。",
   ].join("\n");
 }
 
@@ -328,7 +362,7 @@ export function createMockClient(branchName: string): AIClient {
           const usage = buildMockUsage(prompt, reasoning, "");
           yield {
             type: "reasoning",
-            id: "mock-reasoning",
+            id: "mock-list-reasoning-1",
             visibility: "summary",
             content: reasoning,
             stream: {
@@ -352,7 +386,7 @@ export function createMockClient(branchName: string): AIClient {
           const usage = buildMockUsage(prompt, reasoning, "");
           yield {
             type: "reasoning",
-            id: "mock-reasoning",
+            id: "mock-parallel-reasoning-1",
             visibility: "summary",
             content: [
               reasoning,
@@ -374,6 +408,18 @@ export function createMockClient(branchName: string): AIClient {
               context: "并行 ask_user 演示 · 问题 1/3",
               placeholder: "例如：主角从被动转为主动…",
             }),
+          };
+          yield {
+            type: "reasoning",
+            id: "mock-parallel-reasoning-2",
+            visibility: "summary",
+            content:
+              "插入第二段 reasoning，强调本轮并不是“单段思考后一次性丢出所有工具”，而是允许在工具之间继续思考。",
+            stream: {
+              charsPerSecond: 36,
+              chunkSize: 3,
+              initialDelayMs: 80,
+            },
           };
           yield {
             type: "tool_call",
@@ -412,7 +458,7 @@ export function createMockClient(branchName: string): AIClient {
           const usage = buildMockUsage(prompt, reasoning, "");
           yield {
             type: "reasoning",
-            id: "mock-reasoning",
+            id: "mock-ask-reasoning-1",
             visibility: "summary",
             content: reasoning,
             stream: {
@@ -450,6 +496,18 @@ export function createMockClient(branchName: string): AIClient {
               ],
             }),
           };
+          yield {
+            type: "reasoning",
+            id: "mock-ask-reasoning-2",
+            visibility: "summary",
+            content:
+              "这里额外插入一段 reasoning，模拟模型在 ask_user 发起后继续形成一个待恢复的内部计划。",
+            stream: {
+              charsPerSecond: 36,
+              chunkSize: 3,
+              initialDelayMs: 80,
+            },
+          };
           yield { type: "complete", usage };
           return;
         }
@@ -458,10 +516,22 @@ export function createMockClient(branchName: string): AIClient {
           const toolResult = findListResourceToolResultAfterLastUser(request.input);
           if (toolResult !== null) {
             const reply = buildResourceListReply(toolResult);
-            const usage = buildMockUsage(prompt, "", reply);
+            const reasoning = buildToolResultReasoning(AI_TOOL_NAMES.list_resource_files);
+            const usage = buildMockUsage(prompt, reasoning, reply);
+            yield {
+              type: "reasoning",
+              id: "mock-list-reasoning-2",
+              visibility: "summary",
+              content: reasoning,
+              stream: {
+                charsPerSecond: 36,
+                chunkSize: 3,
+                initialDelayMs: 80,
+              },
+            };
             yield {
               type: "message",
-              id: "mock-message",
+              id: "mock-list-message",
               content: reply,
               stream: {
                 charsPerSecond: 48,
@@ -478,10 +548,22 @@ export function createMockClient(branchName: string): AIClient {
           const parallelResults = collectParallelAskUserResults(request.input);
           if (parallelResults.length === PARALLEL_ASK_USER_IDS.length) {
             const reply = buildParallelAskUserReply(branchName, parallelResults);
-            const usage = buildMockUsage(prompt, "", reply);
+            const reasoning = buildParallelAskUserPostReasoning(parallelResults.length);
+            const usage = buildMockUsage(prompt, reasoning, reply);
+            yield {
+              type: "reasoning",
+              id: "mock-parallel-reasoning-3",
+              visibility: "summary",
+              content: reasoning,
+              stream: {
+                charsPerSecond: 36,
+                chunkSize: 3,
+                initialDelayMs: 80,
+              },
+            };
             yield {
               type: "message",
-              id: "mock-message",
+              id: "mock-parallel-message",
               content: reply,
               stream: {
                 charsPerSecond: 48,
@@ -498,10 +580,22 @@ export function createMockClient(branchName: string): AIClient {
           const toolResult = findAskUserToolResultAfterLastUser(request.input);
           if (toolResult !== null) {
             const reply = buildAskUserReply(branchName, toolResult);
-            const usage = buildMockUsage(prompt, "", reply);
+            const reasoning = buildAskUserPostReasoning(toolResult.answer);
+            const usage = buildMockUsage(prompt, reasoning, reply);
+            yield {
+              type: "reasoning",
+              id: "mock-ask-reasoning-3",
+              visibility: "summary",
+              content: reasoning,
+              stream: {
+                charsPerSecond: 36,
+                chunkSize: 3,
+                initialDelayMs: 80,
+              },
+            };
             yield {
               type: "message",
-              id: "mock-message",
+              id: "mock-ask-message",
               content: reply,
               stream: {
                 charsPerSecond: 48,
@@ -515,11 +609,17 @@ export function createMockClient(branchName: string): AIClient {
         }
 
         const reasoning = buildMockReasoning(branchName, prompt);
-        const reply = buildMockReply(branchName, prompt);
-        const usage = buildMockUsage(prompt, reasoning, reply);
+        const followupReasoning = buildMockFollowupReasoning(prompt);
+        const replyIntro = buildMockReplyIntro(branchName, prompt);
+        const replyOutro = buildMockReplyOutro();
+        const usage = buildMockUsage(
+          prompt,
+          [reasoning, followupReasoning].join("\n\n"),
+          [replyIntro, replyOutro].join("\n\n"),
+        );
         yield {
           type: "reasoning",
-          id: "mock-reasoning",
+          id: "mock-reasoning-1",
           visibility: "summary",
           content: reasoning,
           stream: {
@@ -530,8 +630,29 @@ export function createMockClient(branchName: string): AIClient {
         };
         yield {
           type: "message",
-          id: "mock-message",
-          content: reply,
+          id: "mock-message-1",
+          content: replyIntro,
+          stream: {
+            charsPerSecond: 48,
+            chunkSize: 2,
+            initialDelayMs: 120,
+          },
+        };
+        yield {
+          type: "reasoning",
+          id: "mock-reasoning-2",
+          visibility: "summary",
+          content: followupReasoning,
+          stream: {
+            charsPerSecond: 36,
+            chunkSize: 3,
+            initialDelayMs: 80,
+          },
+        };
+        yield {
+          type: "message",
+          id: "mock-message-2",
+          content: replyOutro,
           stream: {
             charsPerSecond: 48,
             chunkSize: 2,

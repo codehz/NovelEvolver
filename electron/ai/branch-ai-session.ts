@@ -3,6 +3,7 @@ import type {
   AIResponse,
   AIStreamEvent,
   InputItem,
+  OutputItem,
   ToolCallItem,
   ToolResultItem,
 } from "@codehz/ai";
@@ -10,32 +11,27 @@ import { toolResultItem } from "@codehz/ai";
 
 import {
   applyAiChatMessagePatch,
+  cloneAiChatAssistantPart,
+  cloneAiChatAssistantPartPatch,
   cloneAiChatMessage,
   cloneAiChatMessagePatch,
-  cloneAiChatToolCall,
-  cloneAiChatToolCallPatch,
 } from "#shared/rpc/ai-chat-state";
 import type {
+  AiChatAssistantMessage,
+  AiChatAssistantPart,
+  AiChatAssistantPartPatch,
   AiChatDeltaOp,
   AiChatEvent,
   AiChatMessage,
   AiChatMessagePatch,
-  AiChatReasoning,
-  AiChatReasoningPatch,
   AiChatSnapshot,
   AiChatToolCall,
-  AiChatToolCallPatch,
+  AiChatUserMessage,
 } from "#shared/rpc/ai-rpc";
 
 import { RpcStreamPublisher } from "../lib/stream-publisher";
 import type { WorktreeSession } from "../worktree/session";
-import {
-  joinContentBlocksText,
-  readResponseReasoning,
-  readResponseText,
-  toErrorMessage,
-  toMessageUsage,
-} from "./ai-utils";
+import { joinContentBlocksText, toErrorMessage, toMessageUsage } from "./ai-utils";
 import {
   AI_ADAPTER_KIND,
   AI_INSTRUCTIONS,
@@ -62,8 +58,6 @@ export class BranchAiSession {
   readonly #messages: AiChatMessage[] = [];
   readonly #messageIndexById = new Map<string, number>();
   readonly #history: InputItem[] = [];
-  readonly #providerMessageIds = new Map<string, string>();
-  readonly #providerReasoningIds = new Map<string, string>();
   #pendingToolBatch: PendingToolBatch | null = null;
   #pending = false;
   #errorMessage: string | null = null;
@@ -95,12 +89,10 @@ export class BranchAiSession {
       throw new Error("AI 正在等待当前工具步骤的用户回答。");
     }
 
-    const userMessage = this.#appendMessage("user", normalized, "complete");
-    const assistantMessage = this.#appendMessage("assistant", "", "streaming");
+    const userMessage = this.#appendUserMessage(normalized);
+    const assistantMessage = this.#appendAssistantMessage();
     const requestInput = [...this.#history, toInputItem(userMessage.text)];
 
-    this.#providerMessageIds.clear();
-    this.#providerReasoningIds.clear();
     this.#pending = true;
     this.#errorMessage = null;
     this.#emitDelta([
@@ -156,7 +148,7 @@ export class BranchAiSession {
 
     pendingBatch.resultsByCallId.set(toolCallId, toolResult);
     pendingBatch.awaitingAskUserIds.delete(toolCallId);
-    this.#emitToolCallUpdate(pendingBatch.assistantMessageId, toolCallId, {
+    this.#emitAssistantPartUpdate(pendingBatch.assistantMessageId, toolCallId, {
       status: "complete",
       resultText: JSON.stringify(
         {
@@ -214,8 +206,6 @@ export class BranchAiSession {
     this.#messages.length = 0;
     this.#messageIndexById.clear();
     this.#history.length = 0;
-    this.#providerMessageIds.clear();
-    this.#providerReasoningIds.clear();
     this.#pendingToolBatch = null;
     this.#errorMessage = null;
     this.#emitDelta([{ type: "conversation.reset" }]);
@@ -249,19 +239,25 @@ export class BranchAiSession {
     });
   }
 
-  #appendMessage(
-    role: AiChatMessage["role"],
-    text: string,
-    status: AiChatMessage["status"],
-  ): AiChatMessage {
-    const message: AiChatMessage = {
+  #appendUserMessage(text: string): AiChatUserMessage {
+    const message: AiChatUserMessage = {
       id: `ai-chat-${this.#messageCounter++}`,
-      role,
+      role: "user",
       text,
-      status,
+      status: "complete",
+    };
+    this.#messages.push(message);
+    this.#messageIndexById.set(message.id, this.#messages.length - 1);
+    return message;
+  }
+
+  #appendAssistantMessage(): AiChatAssistantMessage {
+    const message: AiChatAssistantMessage = {
+      id: `ai-chat-${this.#messageCounter++}`,
+      role: "assistant",
+      status: "streaming",
       usage: null,
-      reasoning: null,
-      toolCalls: [],
+      parts: [],
     };
     this.#messages.push(message);
     this.#messageIndexById.set(message.id, this.#messages.length - 1);
@@ -277,9 +273,23 @@ export class BranchAiSession {
     return index === null ? null : (this.#messages[index] ?? null);
   }
 
+  #getAssistantMessage(id: string): AiChatAssistantMessage | null {
+    const message = this.#getMessage(id);
+    return message?.role === "assistant" ? message : null;
+  }
+
   #getToolCall(messageId: string, toolCallId: string): AiChatToolCall | null {
-    const message = this.#getMessage(messageId);
-    return message?.toolCalls.find((toolCall) => toolCall.id === toolCallId) ?? null;
+    const message = this.#getAssistantMessage(messageId);
+    if (!message) {
+      return null;
+    }
+
+    for (const part of message.parts) {
+      if (part.type === "tool_call" && part.id === toolCallId) {
+        return part;
+      }
+    }
+    return null;
   }
 
   #patchMessage(id: string, patch: AiChatMessagePatch): AiChatMessage | null {
@@ -307,102 +317,125 @@ export class BranchAiSession {
     return true;
   }
 
-  #appendMessageText(id: string, text: string): boolean {
-    const message = this.#getMessage(id);
+  #appendAssistantPart(messageId: string, part: AiChatAssistantPart): boolean {
+    const message = this.#getAssistantMessage(messageId);
     if (!message) {
       return false;
     }
 
-    message.text += text;
+    message.parts.push(part);
     return true;
   }
 
-  #ensureMessageReasoning(
-    id: string,
-    patch: Pick<AiChatReasoning, "visibility" | "status">,
-  ): AiChatReasoning | null {
-    const message = this.#getMessage(id);
-    if (!message) {
-      return null;
-    }
-
-    if (message.reasoning === null) {
-      message.reasoning = {
-        text: "",
-        visibility: patch.visibility,
-        status: patch.status,
-      };
-      return message.reasoning;
-    }
-
-    message.reasoning.visibility = patch.visibility;
-    message.reasoning.status = patch.status;
-    return message.reasoning;
+  #countAssistantParts(messageId: string): number {
+    return this.#getAssistantMessage(messageId)?.parts.length ?? 0;
   }
 
-  #appendMessageReasoningText(id: string, text: string): boolean {
-    const message = this.#getMessage(id);
-    if (!message?.reasoning) {
-      return false;
-    }
-
-    message.reasoning.text += text;
-    return true;
-  }
-
-  #appendToolCall(messageId: string, toolCall: AiChatToolCall): void {
-    const message = this.#getMessage(messageId);
-    if (!message) {
-      return;
-    }
-
-    message.toolCalls.push(toolCall);
-  }
-
-  #patchToolCall(
+  #patchAssistantPart(
     messageId: string,
-    toolCallId: string,
-    patch: AiChatToolCallPatch,
-  ): AiChatToolCall | null {
-    const message = this.#getMessage(messageId);
+    partId: string,
+    patch: AiChatAssistantPartPatch,
+  ): AiChatAssistantPart | null {
+    const message = this.#getAssistantMessage(messageId);
     if (!message) {
       return null;
     }
 
-    const index = message.toolCalls.findIndex((toolCall) => toolCall.id === toolCallId);
+    const index = message.parts.findIndex((part) => part.id === partId);
     if (index === -1) {
       return null;
     }
 
-    const next = {
-      ...message.toolCalls[index]!,
-      ...patch,
-    };
-    message.toolCalls[index] = next;
+    const current = message.parts[index]!;
+    let next: AiChatAssistantPart;
+    switch (current.type) {
+      case "message":
+        next = {
+          ...current,
+          text: patch.text ?? current.text,
+          status:
+            patch.status === "streaming" || patch.status === "complete"
+              ? patch.status
+              : current.status,
+        };
+        break;
+      case "reasoning":
+        next = {
+          ...current,
+          text: patch.text ?? current.text,
+          visibility: patch.visibility ?? current.visibility,
+          status:
+            patch.status === "streaming" || patch.status === "complete"
+              ? patch.status
+              : current.status,
+        };
+        break;
+      case "tool_call":
+        next = {
+          ...current,
+          argumentsText: patch.argumentsText ?? current.argumentsText,
+          status:
+            patch.status === undefined ||
+            patch.status === "streaming" ||
+            patch.status === "complete"
+              ? current.status
+              : patch.status,
+          resultText: patch.resultText !== undefined ? patch.resultText : current.resultText,
+          errorMessage:
+            patch.errorMessage !== undefined ? patch.errorMessage : current.errorMessage,
+        };
+        break;
+    }
+
+    message.parts[index] = next;
     return next;
   }
 
-  #appendToolCallArguments(messageId: string, toolCallId: string, text: string): boolean {
-    const toolCall = this.#getToolCall(messageId, toolCallId);
-    if (!toolCall || text === "") {
+  #appendAssistantPartText(messageId: string, partId: string, text: string): boolean {
+    const message = this.#getAssistantMessage(messageId);
+    if (!message || text === "") {
       return false;
     }
 
-    toolCall.argumentsText += text;
+    const part = message.parts.find((candidate) => candidate.id === partId);
+    if (!part || part.type === "tool_call") {
+      return false;
+    }
+
+    part.text += text;
     return true;
   }
 
-  #emitToolCallUpdate(messageId: string, toolCallId: string, patch: AiChatToolCallPatch): void {
-    if (this.#patchToolCall(messageId, toolCallId, patch) === null) {
+  #emitAssistantPartUpdate(
+    messageId: string,
+    partId: string,
+    patch: AiChatAssistantPartPatch,
+  ): void {
+    if (this.#patchAssistantPart(messageId, partId, patch) === null) {
       return;
     }
 
     this.#emitDelta([
       {
-        type: "tool_call.updated",
+        type: "assistant_part.updated",
         messageId,
-        toolCallId,
-        patch: cloneAiChatToolCallPatch(patch),
+        partId,
+        patch: cloneAiChatAssistantPartPatch(patch),
+      },
+    ]);
+  }
+
+  #emitAssistantPartTextDelta(messageId: string, partId: string, text: string): void {
+    if (!this.#appendAssistantPartText(messageId, partId, text)) {
+      return;
+    }
+
+    this.#emitDelta([
+      {
+        type: "assistant_part.text.delta",
+        messageId,
+        partId,
+        text,
       },
     ]);
   }
@@ -438,6 +471,7 @@ export class BranchAiSession {
 
     try {
       while (true) {
+        const streamStartPartCount = this.#countAssistantParts(context.assistantMessageId);
         completedResponse = await this.#consumeStream(
           this.#client.stream({
             instructions: AI_INSTRUCTIONS,
@@ -447,6 +481,11 @@ export class BranchAiSession {
           context.assistantMessageId,
         );
 
+        this.#reconcileAssistantResponse(
+          context.assistantMessageId,
+          streamStartPartCount,
+          completedResponse,
+        );
         transcript.push(...completedResponse.replay);
 
         if (
@@ -472,35 +511,13 @@ export class BranchAiSession {
         throw new Error("AI 流在完成前结束。");
       }
 
-      const finalText = readResponseText(completedResponse);
-      const finalReasoning = readResponseReasoning(completedResponse);
       const completionPatch: AiChatMessagePatch = {
         status: "complete",
         usage: toMessageUsage(completedResponse.usage),
       };
-      const assistantMessage = this.#getMessage(context.assistantMessageId);
-      if (assistantMessage && assistantMessage.text !== finalText) {
-        completionPatch.text = finalText;
-      }
-      if (finalReasoning) {
-        const reasoningPatch: AiChatReasoningPatch = {
-          visibility: finalReasoning.visibility,
-          status: "complete",
-        };
-        if (assistantMessage?.reasoning?.text !== finalReasoning.text) {
-          reasoningPatch.text = finalReasoning.text;
-        }
-        completionPatch.reasoning = reasoningPatch;
-      } else if (assistantMessage?.reasoning) {
-        completionPatch.reasoning = {
-          status: "complete",
-        };
-      }
       this.#patchMessage(context.assistantMessageId, completionPatch);
       this.#history.length = 0;
       this.#history.push(...transcript);
-      this.#providerMessageIds.clear();
-      this.#providerReasoningIds.clear();
       this.#pendingToolBatch = null;
       this.#pending = false;
       this.#emitDelta([
@@ -521,12 +538,10 @@ export class BranchAiSession {
       this.#pending = false;
       this.#pendingToolBatch = null;
       this.#errorMessage = toErrorMessage(error);
-      this.#providerMessageIds.clear();
-      this.#providerReasoningIds.clear();
       const ops: AiChatDeltaOp[] = [];
 
-      const assistantMessage = this.#getMessage(context.assistantMessageId);
-      if (assistantMessage?.text === "" && assistantMessage.toolCalls.length === 0) {
+      const assistantMessage = this.#getAssistantMessage(context.assistantMessageId);
+      if (!assistantMessage || assistantMessage.parts.length === 0) {
         if (this.#removeMessage(context.assistantMessageId)) {
           ops.push({
             type: "message.removed",
@@ -536,11 +551,6 @@ export class BranchAiSession {
       } else {
         const errorPatch: AiChatMessagePatch = {
           status: "complete",
-          reasoning: assistantMessage?.reasoning
-            ? {
-                status: "complete",
-              }
-            : undefined,
         };
         this.#patchMessage(context.assistantMessageId, errorPatch);
         ops.push({
@@ -548,6 +558,7 @@ export class BranchAiSession {
           messageId: context.assistantMessageId,
           patch: cloneAiChatMessagePatch(errorPatch),
         });
+        ops.push(...this.#completeStreamingAssistantParts(context.assistantMessageId));
       }
 
       ops.push({
@@ -572,13 +583,13 @@ export class BranchAiSession {
     const awaitingAskUserIds = new Set<string>();
 
     for (const call of calls) {
-      this.#emitToolCallUpdate(assistantMessageId, call.id, {
+      this.#emitAssistantPartUpdate(assistantMessageId, call.id, {
         status: "running",
       });
 
       const execution = await this.#toolRunner.execute(call);
       if (execution.awaitUserInput) {
-        this.#emitToolCallUpdate(assistantMessageId, call.id, {
+        this.#emitAssistantPartUpdate(assistantMessageId, call.id, {
           status: "awaiting_user",
           resultText: null,
           errorMessage: null,
@@ -587,7 +598,7 @@ export class BranchAiSession {
         continue;
       }
 
-      this.#emitToolCallUpdate(assistantMessageId, call.id, {
+      this.#emitAssistantPartUpdate(assistantMessageId, call.id, {
         status: execution.errorMessage === null ? "complete" : "error",
         resultText: execution.resultText,
         errorMessage: execution.errorMessage,
@@ -645,103 +656,250 @@ export class BranchAiSession {
     }
   }
 
+  #completeStreamingAssistantParts(messageId: string): AiChatDeltaOp[] {
+    const message = this.#getAssistantMessage(messageId);
+    if (!message) {
+      return [];
+    }
+
+    const ops: AiChatDeltaOp[] = [];
+    for (const part of message.parts) {
+      if (part.type === "message" || part.type === "reasoning") {
+        if (part.status !== "complete") {
+          part.status = "complete";
+          ops.push({
+            type: "assistant_part.updated",
+            messageId,
+            partId: part.id,
+            patch: {
+              status: "complete",
+            },
+          });
+        }
+      }
+    }
+    return ops;
+  }
+
+  #createCanonicalPart(
+    item: OutputItem,
+    fallback: AiChatAssistantPart | null,
+    synthId: string,
+  ): AiChatAssistantPart | null {
+    switch (item.type) {
+      case "message":
+        return {
+          id: item.id ?? fallback?.id ?? synthId,
+          type: "message",
+          text: joinContentBlocksText(item.content),
+          status: "complete",
+        };
+      case "reasoning":
+        return {
+          id: item.id ?? fallback?.id ?? synthId,
+          type: "reasoning",
+          text: joinContentBlocksText(item.content),
+          visibility: item.visibility,
+          status: "complete",
+        };
+      case "tool_call":
+        return {
+          id: item.id ?? fallback?.id ?? synthId,
+          type: "tool_call",
+          name: item.name,
+          argumentsText: item.argumentsText,
+          status: fallback?.type === "tool_call" ? fallback.status : "pending",
+          resultText: fallback?.type === "tool_call" ? fallback.resultText : null,
+          errorMessage: fallback?.type === "tool_call" ? fallback.errorMessage : null,
+        };
+      case "opaque":
+        return null;
+    }
+  }
+
+  #findFallbackPart(
+    parts: readonly AiChatAssistantPart[],
+    type: AiChatAssistantPart["type"],
+    usedIds: Set<string>,
+  ): AiChatAssistantPart | null {
+    for (const part of parts) {
+      if (part.type === type && !usedIds.has(part.id)) {
+        usedIds.add(part.id);
+        return part;
+      }
+    }
+    return null;
+  }
+
+  #buildPartPatch(
+    current: AiChatAssistantPart,
+    canonical: AiChatAssistantPart,
+  ): AiChatAssistantPartPatch | null {
+    if (current.type !== canonical.type) {
+      return null;
+    }
+
+    switch (canonical.type) {
+      case "message": {
+        if (current.type !== "message") {
+          return null;
+        }
+        const currentMessage = current;
+        const patch: AiChatAssistantPartPatch = {};
+        if (currentMessage.text !== canonical.text) {
+          patch.text = canonical.text;
+        }
+        if (currentMessage.status !== canonical.status) {
+          patch.status = canonical.status;
+        }
+        return Object.keys(patch).length > 0 ? patch : null;
+      }
+      case "reasoning": {
+        if (current.type !== "reasoning") {
+          return null;
+        }
+        const patch: AiChatAssistantPartPatch = {};
+        if (current.text !== canonical.text) {
+          patch.text = canonical.text;
+        }
+        if (current.visibility !== canonical.visibility) {
+          patch.visibility = canonical.visibility;
+        }
+        if (current.status !== canonical.status) {
+          patch.status = canonical.status;
+        }
+        return Object.keys(patch).length > 0 ? patch : null;
+      }
+      case "tool_call": {
+        if (current.type !== "tool_call") {
+          return null;
+        }
+        const patch: AiChatAssistantPartPatch = {};
+        if (current.argumentsText !== canonical.argumentsText) {
+          patch.argumentsText = canonical.argumentsText;
+        }
+        if (current.status !== canonical.status) {
+          patch.status = canonical.status;
+        }
+        if (current.resultText !== canonical.resultText) {
+          patch.resultText = canonical.resultText;
+        }
+        if (current.errorMessage !== canonical.errorMessage) {
+          patch.errorMessage = canonical.errorMessage;
+        }
+        return Object.keys(patch).length > 0 ? patch : null;
+      }
+    }
+  }
+
+  #reconcileAssistantResponse(
+    messageId: string,
+    streamStartPartCount: number,
+    response: AIResponse,
+  ): void {
+    const message = this.#getAssistantMessage(messageId);
+    if (!message) {
+      return;
+    }
+
+    const streamedParts = message.parts.slice(streamStartPartCount);
+    const usedFallbackIds = new Set<string>();
+    const canonicalParts = response.output.flatMap((item, index) => {
+      const fallback =
+        item.type === "opaque"
+          ? null
+          : this.#findFallbackPart(streamedParts, item.type, usedFallbackIds);
+      const canonical = this.#createCanonicalPart(
+        item,
+        fallback,
+        `${messageId}-part-${streamStartPartCount + index}`,
+      );
+      return canonical ? [canonical] : [];
+    });
+
+    for (let i = 0; i < canonicalParts.length; i++) {
+      const canonical = canonicalParts[i]!;
+      const current = message.parts[streamStartPartCount + i];
+
+      if (!current) {
+        message.parts.push(canonical);
+        this.#emitDelta([
+          {
+            type: "assistant_part.added",
+            messageId,
+            part: cloneAiChatAssistantPart(canonical),
+          },
+        ]);
+        continue;
+      }
+
+      if (current.id !== canonical.id || current.type !== canonical.type) {
+        const patch = this.#buildPartPatch(current, canonical);
+        if (patch) {
+          this.#emitAssistantPartUpdate(messageId, current.id, patch);
+        }
+        continue;
+      }
+
+      const patch = this.#buildPartPatch(current, canonical);
+      if (patch) {
+        this.#emitAssistantPartUpdate(messageId, current.id, patch);
+      }
+    }
+  }
+
   #handleStreamEvent(event: AIStreamEvent, assistantMessageId: string): void {
     if (event.type === "message.started") {
-      this.#providerMessageIds.set(event.item.id, assistantMessageId);
-      return;
-    }
-
-    if (event.type === "tool_call.started") {
-      const toolCall: AiChatToolCall = {
+      const part: AiChatAssistantPart = {
         id: event.item.id,
-        name: event.item.name,
-        argumentsText: "",
-        status: "pending",
-        resultText: null,
-        errorMessage: null,
+        type: "message",
+        text: "",
+        status: "streaming",
       };
-      this.#appendToolCall(assistantMessageId, toolCall);
+      this.#appendAssistantPart(assistantMessageId, part);
       this.#emitDelta([
         {
-          type: "tool_call.added",
+          type: "assistant_part.added",
           messageId: assistantMessageId,
-          toolCall: cloneAiChatToolCall(toolCall),
+          part: cloneAiChatAssistantPart(part),
         },
       ]);
       return;
     }
 
-    if (event.type === "tool_call.delta") {
-      if (
-        !this.#appendToolCallArguments(
-          assistantMessageId,
-          event.itemId,
-          event.delta.argumentsText ?? "",
-        )
-      ) {
-        return;
-      }
-
-      const toolCall = this.#getToolCall(assistantMessageId, event.itemId);
-      if (!toolCall) {
-        return;
-      }
-
-      this.#emitDelta([
-        {
-          type: "tool_call.updated",
-          messageId: assistantMessageId,
-          toolCallId: event.itemId,
-          patch: {
-            argumentsText: toolCall.argumentsText,
-          },
-        },
-      ]);
+    if (event.type === "message.delta") {
+      this.#emitAssistantPartTextDelta(assistantMessageId, event.itemId, event.delta.text);
       return;
     }
 
-    if (event.type === "tool_call.completed") {
-      this.#emitToolCallUpdate(assistantMessageId, event.item.id, {
-        argumentsText: event.item.argumentsText,
-        status: "pending",
+    if (event.type === "message.completed") {
+      this.#emitAssistantPartUpdate(assistantMessageId, event.item.id ?? "", {
+        text: joinContentBlocksText(event.item.content),
+        status: "complete",
       });
       return;
     }
 
     if (event.type === "reasoning.started") {
-      this.#providerReasoningIds.set(event.item.id, assistantMessageId);
-      this.#ensureMessageReasoning(assistantMessageId, {
+      const part: AiChatAssistantPart = {
+        id: event.item.id,
+        type: "reasoning",
+        text: "",
         visibility: event.item.visibility,
         status: "streaming",
-      });
+      };
+      this.#appendAssistantPart(assistantMessageId, part);
       this.#emitDelta([
         {
-          type: "message.updated",
+          type: "assistant_part.added",
           messageId: assistantMessageId,
-          patch: {
-            reasoning: {
-              text: "",
-              visibility: event.item.visibility,
-              status: "streaming",
-            },
-          },
+          part: cloneAiChatAssistantPart(part),
         },
       ]);
       return;
     }
 
     if (event.type === "reasoning.delta") {
-      const messageId = this.#providerReasoningIds.get(event.itemId) ?? assistantMessageId;
-      this.#providerReasoningIds.set(event.itemId, messageId);
-      if (
-        this.#ensureMessageReasoning(messageId, {
-          visibility: "summary",
-          status: "streaming",
-        }) === null
-      ) {
-        return;
-      }
-
       const deltaText =
         event.delta.type === "text"
           ? event.delta.text
@@ -752,69 +910,60 @@ export class BranchAiSession {
               : event.delta.type === "binary_ref"
                 ? `[二进制引用] ${event.delta.ref}`
                 : "[私有内容]";
-      if (deltaText === "" || !this.#appendMessageReasoningText(messageId, deltaText)) {
+      if (deltaText === "") {
         return;
       }
-
-      this.#emitDelta([
-        {
-          type: "message.reasoning.delta",
-          messageId,
-          text: deltaText,
-        },
-      ]);
+      this.#emitAssistantPartTextDelta(assistantMessageId, event.itemId, deltaText);
       return;
     }
 
     if (event.type === "reasoning.completed") {
-      const providerReasoningId = event.item.id;
-      const messageId = providerReasoningId
-        ? (this.#providerReasoningIds.get(providerReasoningId) ?? assistantMessageId)
-        : assistantMessageId;
-      if (providerReasoningId) {
-        this.#providerReasoningIds.delete(providerReasoningId);
-      }
-      const finalText = joinContentBlocksText(event.item.content);
-      const patch: AiChatMessagePatch = {
-        reasoning: {
-          visibility: event.item.visibility,
-          status: "complete",
-        },
+      this.#emitAssistantPartUpdate(assistantMessageId, event.item.id ?? "", {
+        text: joinContentBlocksText(event.item.content),
+        visibility: event.item.visibility,
+        status: "complete",
+      });
+      return;
+    }
+
+    if (event.type === "tool_call.started") {
+      const part: AiChatAssistantPart = {
+        id: event.item.id,
+        type: "tool_call",
+        name: event.item.name,
+        argumentsText: "",
+        status: "pending",
+        resultText: null,
+        errorMessage: null,
       };
-      const message = this.#getMessage(messageId);
-      if (message?.reasoning?.text !== finalText) {
-        patch.reasoning = {
-          ...patch.reasoning,
-          text: finalText,
-        };
-      }
-      this.#patchMessage(messageId, patch);
+      this.#appendAssistantPart(assistantMessageId, part);
       this.#emitDelta([
         {
-          type: "message.updated",
-          messageId,
-          patch: cloneAiChatMessagePatch(patch),
+          type: "assistant_part.added",
+          messageId: assistantMessageId,
+          part: cloneAiChatAssistantPart(part),
         },
       ]);
       return;
     }
 
-    if (event.type !== "message.delta") {
+    if (event.type === "tool_call.delta") {
+      const toolCall = this.#getToolCall(assistantMessageId, event.itemId);
+      if (!toolCall) {
+        return;
+      }
+
+      const argumentsText = `${toolCall.argumentsText}${event.delta.argumentsText ?? ""}`;
+      this.#emitAssistantPartUpdate(assistantMessageId, event.itemId, {
+        argumentsText,
+      });
       return;
     }
 
-    const messageId = this.#providerMessageIds.get(event.itemId) ?? assistantMessageId;
-    this.#providerMessageIds.set(event.itemId, messageId);
-    if (!this.#appendMessageText(messageId, event.delta.text)) {
-      return;
+    if (event.type === "tool_call.completed") {
+      this.#emitAssistantPartUpdate(assistantMessageId, event.item.id, {
+        argumentsText: event.item.argumentsText,
+      });
     }
-
-    this.#emitDelta([
-      {
-        type: "message.text.delta",
-        messageId,
-        text: event.delta.text,
-      },
-    ]);
   }
 }

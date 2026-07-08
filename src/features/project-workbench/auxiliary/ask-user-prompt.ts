@@ -74,7 +74,15 @@ export function listAwaitingAskUserToolCalls(snapshot: AiChatSnapshot): AiChatTo
   const toolCalls: AiChatToolCall[] = [];
 
   for (const message of snapshot.messages) {
-    for (const toolCall of message.toolCalls) {
+    if (message.role !== "assistant") {
+      continue;
+    }
+
+    for (const toolCall of message.parts) {
+      if (toolCall.type !== "tool_call") {
+        continue;
+      }
+
       if (toolCall.name === "ask_user" && awaitingIds.has(toolCall.id)) {
         toolCalls.push(toolCall);
       }
@@ -93,9 +101,18 @@ export function findAskUserToolCall(
   toolCallId: string,
 ): AiChatToolCall | null {
   for (const message of snapshot.messages) {
-    const toolCall = message.toolCalls.find(
-      (candidate) => candidate.id === toolCallId && candidate.name === "ask_user",
-    );
+    if (message.role !== "assistant") {
+      continue;
+    }
+
+    const toolCall =
+      message.parts.find((candidate): candidate is AiChatToolCall => {
+        return (
+          candidate.type === "tool_call" &&
+          candidate.id === toolCallId &&
+          candidate.name === "ask_user"
+        );
+      }) ?? null;
     if (toolCall) {
       return toolCall;
     }
@@ -111,15 +128,22 @@ export function listAskUserToolCallsInActiveBatch(snapshot: AiChatSnapshot): AiC
   }
 
   for (const message of snapshot.messages) {
-    if (!message.toolCalls.some((toolCall) => awaitingIds.has(toolCall.id))) {
+    if (
+      message.role !== "assistant" ||
+      !message.parts.some(
+        (toolCall) => toolCall.type === "tool_call" && awaitingIds.has(toolCall.id),
+      )
+    ) {
       continue;
     }
 
-    return message.toolCalls.filter(
-      (toolCall) =>
+    return message.parts.filter((toolCall): toolCall is AiChatToolCall => {
+      return (
+        toolCall.type === "tool_call" &&
         toolCall.name === "ask_user" &&
-        (toolCall.status === "awaiting_user" || toolCall.status === "complete"),
-    );
+        (toolCall.status === "awaiting_user" || toolCall.status === "complete")
+      );
+    });
   }
 
   return listAwaitingAskUserToolCalls(snapshot);

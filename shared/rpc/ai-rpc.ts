@@ -9,18 +9,28 @@ export type AiChatMessageUsage = {
   totalTokens?: number;
 };
 
+export type AiChatMessageStatus = "streaming" | "complete";
 export type AiChatReasoningVisibility = "full" | "summary" | "redacted" | "opaque";
+export type AiChatToolCallStatus = "pending" | "running" | "awaiting_user" | "complete" | "error";
 
-export type AiChatReasoning = {
+export type AiChatMessagePart = {
+  id: string;
+  type: "message";
   text: string;
-  visibility: AiChatReasoningVisibility;
-  status: "streaming" | "complete";
+  status: AiChatMessageStatus;
 };
 
-export type AiChatToolCallStatus = "pending" | "running" | "awaiting_user" | "complete" | "error";
+export type AiChatReasoningPart = {
+  id: string;
+  type: "reasoning";
+  text: string;
+  visibility: AiChatReasoningVisibility;
+  status: AiChatMessageStatus;
+};
 
 export type AiChatToolCall = {
   id: string;
+  type: "tool_call";
   name: string;
   argumentsText: string;
   status: AiChatToolCallStatus;
@@ -28,22 +38,33 @@ export type AiChatToolCall = {
   errorMessage: string | null;
 };
 
-export type AiChatToolCallPatch = {
+export type AiChatAssistantPart = AiChatMessagePart | AiChatReasoningPart | AiChatToolCall;
+
+export type AiChatAssistantPartPatch = {
+  text?: string;
+  visibility?: AiChatReasoningVisibility;
+  status?: AiChatMessageStatus | AiChatToolCallStatus;
   argumentsText?: string;
-  status?: AiChatToolCallStatus;
   resultText?: string | null;
   errorMessage?: string | null;
 };
 
-export type AiChatMessage = {
+export type AiChatUserMessage = {
   id: string;
-  role: "user" | "assistant";
+  role: "user";
   text: string;
-  status: "streaming" | "complete";
-  usage: AiChatMessageUsage | null;
-  reasoning: AiChatReasoning | null;
-  toolCalls: AiChatToolCall[];
+  status: "complete";
 };
+
+export type AiChatAssistantMessage = {
+  id: string;
+  role: "assistant";
+  status: AiChatMessageStatus;
+  usage: AiChatMessageUsage | null;
+  parts: AiChatAssistantPart[];
+};
+
+export type AiChatMessage = AiChatUserMessage | AiChatAssistantMessage;
 
 export type AiChatSnapshot = {
   adapterKind: "mock";
@@ -55,16 +76,8 @@ export type AiChatSnapshot = {
 };
 
 export type AiChatMessagePatch = {
-  text?: string;
-  status?: AiChatMessage["status"];
-  usage?: AiChatMessage["usage"];
-  reasoning?: AiChatReasoningPatch | null;
-};
-
-export type AiChatReasoningPatch = {
-  text?: string;
-  visibility?: AiChatReasoning["visibility"];
-  status?: AiChatReasoning["status"];
+  status?: AiChatMessageStatus;
+  usage?: AiChatMessageUsage | null;
 };
 
 export type AiChatStatePatch = {
@@ -82,16 +95,6 @@ export type AiChatDeltaOp =
       message: AiChatMessage;
     }
   | {
-      type: "message.text.delta";
-      messageId: string;
-      text: string;
-    }
-  | {
-      type: "message.reasoning.delta";
-      messageId: string;
-      text: string;
-    }
-  | {
       type: "message.updated";
       messageId: string;
       patch: AiChatMessagePatch;
@@ -101,15 +104,21 @@ export type AiChatDeltaOp =
       messageId: string;
     }
   | {
-      type: "tool_call.added";
+      type: "assistant_part.added";
       messageId: string;
-      toolCall: AiChatToolCall;
+      part: AiChatAssistantPart;
     }
   | {
-      type: "tool_call.updated";
+      type: "assistant_part.text.delta";
       messageId: string;
-      toolCallId: string;
-      patch: AiChatToolCallPatch;
+      partId: string;
+      text: string;
+    }
+  | {
+      type: "assistant_part.updated";
+      messageId: string;
+      partId: string;
+      patch: AiChatAssistantPartPatch;
     }
   | {
       type: "state.updated";
