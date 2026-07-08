@@ -1,4 +1,4 @@
-import { MockAdapter, createAIClient, withMockStreaming } from "@codehz/ai";
+import { MockAdapter, createAIClient } from "@codehz/ai";
 import type { AIClient, InputItem, MessageItem, NormalizedRequest, Usage } from "@codehz/ai";
 
 export const AI_ADAPTER_KIND = "mock" as const;
@@ -91,37 +91,34 @@ function buildMockUsage(prompt: string, reasoning: string, reply: string): Usage
 export function createMockClient(branchName: string): AIClient {
   return createAIClient({
     adapter: new MockAdapter({
-      handler: withMockStreaming(
-        async function* (request: NormalizedRequest) {
-          const prompt = extractLastUserText(request.input);
-          const reasoning = buildMockReasoning(branchName, prompt);
-          const reply = buildMockReply(branchName, prompt);
-          const usage = buildMockUsage(prompt, reasoning, reply);
-          yield {
-            type: "reasoning",
-            id: "mock-reasoning",
-            visibility: "summary",
-            content: reasoning,
-            stream: {
-              charsPerSecond: 36,
-              chunkSize: 3,
-              initialDelayMs: 80,
-            },
-          };
-          yield {
-            type: "message",
-            id: "mock-message",
-            content: reply,
-            stream: {
-              charsPerSecond: 48,
-              chunkSize: 2,
-              initialDelayMs: 120,
-            },
-          };
-          yield { type: "complete", usage };
-        },
-        { charsPerSecond: 48, chunkSize: 2, initialDelayMs: 120 },
-      ),
+      handler: async function* (request: NormalizedRequest) {
+        const prompt = extractLastUserText(request.input);
+        const reasoning = buildMockReasoning(branchName, prompt);
+        const reply = buildMockReply(branchName, prompt);
+        const usage = buildMockUsage(prompt, reasoning, reply);
+        yield {
+          type: "reasoning",
+          id: "mock-reasoning",
+          visibility: "summary",
+          content: reasoning,
+          stream: {
+            charsPerSecond: 36,
+            chunkSize: 3,
+            initialDelayMs: 80,
+          },
+        };
+        yield {
+          type: "message",
+          id: "mock-message",
+          content: reply,
+          stream: {
+            charsPerSecond: 48,
+            chunkSize: 2,
+            initialDelayMs: 120,
+          },
+        };
+        yield { type: "complete", usage };
+      },
     }),
     model: AI_MODEL,
   });
