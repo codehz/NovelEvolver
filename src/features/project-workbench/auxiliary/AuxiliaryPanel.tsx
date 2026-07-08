@@ -14,6 +14,8 @@ import { ScrollArea } from "#app/shared/ui/ScrollArea";
 import type { AiChatMessage, AiChatReasoning, AiChatToolCall } from "#shared/rpc/ai-rpc";
 import { SidebarHeaderActions, sidebarHeaderActionClass } from "#workbench/chrome";
 
+import { findAwaitingAskUserToolCall, parseAskUserToolArguments } from "./ask-user-prompt";
+import { AskUserComposer } from "./AskUserComposer";
 import { useAiChatState } from "./use-ai-chat-state";
 
 const panelSectionClass = cn("mx-auto flex w-full max-w-3xl flex-col");
@@ -72,19 +74,7 @@ const toolCallBodyClass = cn(
   "flex flex-col gap-2 text-[0.75rem] leading-5 text-app-muted",
   "[&_pre]:overflow-x-auto [&_pre]:rounded-md [&_pre]:bg-app-background [&_pre]:p-2 [&_pre]:font-mono [&_pre]:text-2xs",
 );
-const toolInputShellClass = cn("flex flex-col gap-2 rounded-lg bg-app-background/70 p-2");
-const toolInputTextareaClass = cn(
-  "min-h-20 w-full resize-y rounded-md border border-titlebar-border bg-app-background px-2 py-1.5 text-[0.75rem] leading-5 text-app-foreground outline-none placeholder:text-ctp-overlay0",
-);
-const toolInputSubmitClass = cn(
-  "inline-flex self-end rounded-md bg-badge-background px-2.5 py-1 text-2xs font-medium text-badge-foreground hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40",
-);
-const toolInputChoicesClass = cn("flex flex-col gap-1.5");
-const toolInputChoiceClass = cn(
-  "flex flex-col gap-0.5 rounded-md border border-titlebar-border bg-app-background px-2.5 py-1.5 text-left hover:bg-app-surface disabled:cursor-not-allowed disabled:opacity-40",
-);
-const toolInputChoiceTitleClass = cn("text-[0.75rem] leading-5 text-app-foreground");
-const toolInputChoiceDescriptionClass = cn("text-2xs leading-4 text-ctp-subtext1");
+const toolCallQuestionClass = cn("text-[0.75rem] leading-5 text-app-foreground");
 
 function describeToolCallStatus(status: AiChatToolCall["status"]): string {
   switch (status) {
@@ -93,25 +83,13 @@ function describeToolCallStatus(status: AiChatToolCall["status"]): string {
     case "running":
       return "执行中";
     case "awaiting_user":
-      return "等待你的回答";
+      return "等待你的回答 ↓";
     case "complete":
       return "已完成";
     case "error":
       return "失败";
   }
 }
-
-type AskUserToolChoice = {
-  title: string;
-  description?: string;
-};
-
-type AskUserToolArguments = {
-  question?: string;
-  context?: string;
-  placeholder?: string;
-  choices?: AskUserToolChoice[];
-};
 
 function formatToolArguments(argumentsText: string): string {
   if (argumentsText.trim() === "") {
@@ -159,153 +137,19 @@ function describeAssistantMessageMeta(message: AiChatMessage): string {
   return parts.length > 0 ? parts.join(" · ") : "已完成";
 }
 
-function parseAskUserToolArguments(argumentsText: string): AskUserToolArguments | null {
-  try {
-    const parsed = JSON.parse(argumentsText) as AskUserToolArguments;
-    return typeof parsed === "object" && parsed !== null ? parsed : null;
-  } catch {
-    return null;
-  }
-}
-
-function normalizeAskUserChoices(choices: unknown): AskUserToolChoice[] {
-  if (!Array.isArray(choices)) {
-    return [];
-  }
-
-  const normalized: AskUserToolChoice[] = [];
-  for (const choice of choices) {
-    if (typeof choice !== "object" || choice === null) {
-      continue;
-    }
-
-    const record = choice as Record<string, unknown>;
-    if (typeof record.title !== "string") {
-      continue;
-    }
-
-    const title = record.title.trim();
-    if (title === "") {
-      continue;
-    }
-
-    const item: AskUserToolChoice = { title };
-    if (typeof record.description === "string") {
-      const description = record.description.trim();
-      if (description !== "") {
-        item.description = description;
-      }
-    }
-    normalized.push(item);
-  }
-
-  return normalized;
-}
-
-function AskUserToolInput({
-  toolCall,
-  disabled,
-  onSubmit,
-}: {
-  toolCall: AiChatToolCall;
-  disabled: boolean;
-  onSubmit: (toolCallId: string, text: string) => Promise<boolean>;
-}) {
-  const args = parseAskUserToolArguments(toolCall.argumentsText);
-  const [draft, setDraft] = useState("");
-  const [submitting, setSubmitting] = useState(false);
-  const choices = normalizeAskUserChoices(args?.choices);
-  const hasChoices = choices.length > 0;
-  const inputDisabled = disabled || submitting;
-
-  if (!args?.question) {
-    return null;
-  }
-
-  const handleSubmit = (text: string) => {
-    if (inputDisabled || text.trim() === "") {
-      return;
-    }
-
-    setSubmitting(true);
-    void onSubmit(toolCall.id, text).then((submitted) => {
-      setSubmitting(false);
-      if (submitted) {
-        setDraft("");
-      }
-    });
-  };
-
-  return (
-    <div className={toolInputShellClass}>
-      <div className="flex flex-col gap-1">
-        <p className="text-2xs font-medium text-ctp-subtext0">问题</p>
-        <p className="text-[0.75rem] leading-5 text-app-foreground">{args.question}</p>
-        {args.context ? <p className="text-2xs text-ctp-subtext1">{args.context}</p> : null}
-      </div>
-
-      {hasChoices ? (
-        <div className={toolInputChoicesClass}>
-          <p className="text-2xs font-medium text-ctp-subtext0">参考选项（点击快速填入）</p>
-          {choices.map((choice) => (
-            <button
-              key={choice.title}
-              className={toolInputChoiceClass}
-              disabled={inputDisabled}
-              type="button"
-              onClick={() => {
-                setDraft(choice.title);
-              }}
-            >
-              <span className={toolInputChoiceTitleClass}>{choice.title}</span>
-              {choice.description ? (
-                <span className={toolInputChoiceDescriptionClass}>{choice.description}</span>
-              ) : null}
-            </button>
-          ))}
-        </div>
-      ) : null}
-
-      <textarea
-        aria-label="回答工具问题"
-        className={toolInputTextareaClass}
-        disabled={inputDisabled}
-        placeholder={args.placeholder ?? "输入你的回答…"}
-        rows={3}
-        value={draft}
-        onChange={(event) => {
-          setDraft(event.target.value);
-        }}
-      />
-
-      <button
-        className={toolInputSubmitClass}
-        disabled={inputDisabled || draft.trim() === ""}
-        type="button"
-        onClick={() => {
-          handleSubmit(draft);
-        }}
-      >
-        提交回答
-      </button>
-    </div>
-  );
-}
-
 function AiToolCallBlock({
   toolCall,
   awaitingToolCallId,
-  onSubmitToolResponse,
 }: {
   toolCall: AiChatToolCall;
   awaitingToolCallId: string | null;
-  onSubmitToolResponse: (toolCallId: string, text: string) => Promise<boolean>;
 }) {
+  const isAwaitingThisTool = awaitingToolCallId === toolCall.id;
+  const isAskUser = toolCall.name === "ask_user";
+  const askUserArgs = isAskUser ? parseAskUserToolArguments(toolCall.argumentsText) : null;
   const [expanded, setExpanded] = useState(false);
 
   const statusText = describeToolCallStatus(toolCall.status);
-  const isAskUser = toolCall.name === "ask_user";
-  const isAwaitingThisTool = awaitingToolCallId === toolCall.id;
 
   return (
     <section className={toolCallPanelClass}>
@@ -335,12 +179,17 @@ function AiToolCallBlock({
             <p className="text-ctp-subtext0">执行工具中...</p>
           ) : null}
 
-          {isAskUser ? (
-            <AskUserToolInput
-              toolCall={toolCall}
-              disabled={!isAwaitingThisTool}
-              onSubmit={onSubmitToolResponse}
-            />
+          {isAskUser && askUserArgs?.question ? (
+            <div>
+              <p className="mb-1 text-2xs font-medium text-ctp-subtext0">问题</p>
+              <p className={toolCallQuestionClass}>{askUserArgs.question}</p>
+              {askUserArgs.context ? (
+                <p className="mt-1 text-2xs text-ctp-subtext1">{askUserArgs.context}</p>
+              ) : null}
+              {isAwaitingThisTool ? (
+                <p className="mt-1 text-2xs text-ctp-blue">请在底部输入框回答。</p>
+              ) : null}
+            </div>
           ) : null}
 
           {toolCall.resultText ? (
@@ -399,11 +248,9 @@ function AiReasoningBlock({ reasoning }: { reasoning: AiChatReasoning }) {
 function AiMessageBlock({
   message,
   awaitingToolCallId,
-  onSubmitToolResponse,
 }: {
   message: AiChatMessage;
   awaitingToolCallId: string | null;
-  onSubmitToolResponse: (toolCallId: string, text: string) => Promise<boolean>;
 }) {
   if (message.role === "user") {
     return (
@@ -428,7 +275,6 @@ function AiMessageBlock({
           key={toolCall.id}
           awaitingToolCallId={awaitingToolCallId}
           toolCall={toolCall}
-          onSubmitToolResponse={onSubmitToolResponse}
         />
       ))}
 
@@ -467,18 +313,25 @@ export function AuxiliaryPanel() {
   const composerRef = useRef<HTMLTextAreaElement | null>(null);
   const shouldRestoreComposerFocusRef = useRef(false);
 
-  useEffect(() => {
-    endRef.current?.scrollIntoView({ block: "end", behavior: "smooth" });
-  }, [snapshot.messages, snapshot.pending]);
+  const awaitingAskUser = findAwaitingAskUserToolCall(snapshot);
 
   useEffect(() => {
-    if (loading || snapshot.pending || !shouldRestoreComposerFocusRef.current) {
+    endRef.current?.scrollIntoView({ block: "end", behavior: "smooth" });
+  }, [snapshot.messages, snapshot.pending, snapshot.awaitingToolCallId]);
+
+  useEffect(() => {
+    if (
+      loading ||
+      snapshot.pending ||
+      awaitingAskUser !== null ||
+      !shouldRestoreComposerFocusRef.current
+    ) {
       return;
     }
 
     composerRef.current?.focus();
     shouldRestoreComposerFocusRef.current = false;
-  }, [loading, snapshot.pending]);
+  }, [awaitingAskUser, loading, snapshot.pending]);
 
   const submitDraft = useCallback(async (): Promise<void> => {
     const submitted = await sendMessage(draft);
@@ -554,7 +407,6 @@ export function AuxiliaryPanel() {
               key={message.id}
               awaitingToolCallId={snapshot.awaitingToolCallId}
               message={message}
-              onSubmitToolResponse={submitToolResponse}
             />
           ))}
           <div
@@ -566,39 +418,42 @@ export function AuxiliaryPanel() {
       </ScrollArea>
 
       <footer className="shrink-0 p-3">
-        <form className={composerShellClass} onSubmit={handleSubmit}>
-          <textarea
-            aria-label="消息输入"
-            className={composerTextareaClass}
-            ref={composerRef}
-            placeholder="输入章节目标、修改要求，或直接粘贴长段正文…"
-            rows={6}
-            value={draft}
-            onChange={(event) => {
-              setDraft(event.target.value);
-            }}
-            onKeyDown={handleComposerKeyDown}
-            disabled={loading || snapshot.pending || snapshot.awaitingToolCallId !== null}
+        {awaitingAskUser ? (
+          <AskUserComposer
+            loading={loading}
+            toolCall={awaitingAskUser}
+            onSubmit={submitToolResponse}
           />
+        ) : (
+          <form className={composerShellClass} onSubmit={handleSubmit}>
+            <textarea
+              aria-label="消息输入"
+              className={composerTextareaClass}
+              ref={composerRef}
+              placeholder="输入章节目标、修改要求，或直接粘贴长段正文…"
+              rows={6}
+              value={draft}
+              onChange={(event) => {
+                setDraft(event.target.value);
+              }}
+              onKeyDown={handleComposerKeyDown}
+              disabled={loading || snapshot.pending}
+            />
 
-          <div className="flex justify-end">
-            <button
-              aria-label="发送"
-              className={sendButtonClass}
-              disabled={
-                loading ||
-                snapshot.pending ||
-                snapshot.awaitingToolCallId !== null ||
-                draft.trim() === ""
-              }
-              title="发送"
-              type="button"
-              onClick={handleSendClick}
-            >
-              <span aria-hidden="true" className="icon-[codicon--send] text-sm" />
-            </button>
-          </div>
-        </form>
+            <div className="flex justify-end">
+              <button
+                aria-label="发送"
+                className={sendButtonClass}
+                disabled={loading || snapshot.pending || draft.trim() === ""}
+                title="发送"
+                type="button"
+                onClick={handleSendClick}
+              >
+                <span aria-hidden="true" className="icon-[codicon--send] text-sm" />
+              </button>
+            </div>
+          </form>
+        )}
       </footer>
     </>
   );
