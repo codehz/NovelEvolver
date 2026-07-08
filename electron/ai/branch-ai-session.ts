@@ -1,7 +1,7 @@
 import { MockAdapter, createAIClient } from "@codehz/ai";
-import type { AIResponse, AIStreamEvent, InputItem } from "@codehz/ai";
+import type { AIResponse, AIStreamEvent, InputItem, Usage } from "@codehz/ai";
 
-import type { AiChatMessage, AiChatSnapshot } from "#shared/rpc/ai-rpc";
+import type { AiChatMessage, AiChatMessageUsage, AiChatSnapshot } from "#shared/rpc/ai-rpc";
 
 import { RpcStreamPublisher } from "../lib/stream-publisher";
 
@@ -45,6 +45,61 @@ function buildMockReply(branchName: string, prompt: string): string {
   ].join("\n\n");
 }
 
+function estimateTokenCount(text: string): number {
+  const normalized = text.trim();
+  if (normalized === "") {
+    return 0;
+  }
+
+  return Math.max(1, Math.ceil(normalized.length / 1.8));
+}
+
+function buildMockUsage(prompt: string, reply: string): Usage {
+  const inputTokens = estimateTokenCount(`${AI_INSTRUCTIONS}\n${prompt}`) + 24;
+  const outputTokens = estimateTokenCount(reply) + 12;
+
+  return {
+    inputTokens,
+    outputTokens,
+    totalTokens: inputTokens + outputTokens,
+  };
+}
+
+function toMessageUsage(usage: AIResponse["usage"]): AiChatMessageUsage | null {
+  if (!usage) {
+    return null;
+  }
+
+  const messageUsage: AiChatMessageUsage = {};
+
+  if (typeof usage.inputTokens === "number") {
+    messageUsage.inputTokens = usage.inputTokens;
+  }
+  if (typeof usage.outputTokens === "number") {
+    messageUsage.outputTokens = usage.outputTokens;
+  }
+  if (typeof usage.reasoningTokens === "number") {
+    messageUsage.reasoningTokens = usage.reasoningTokens;
+  }
+  if (typeof usage.totalTokens === "number") {
+    messageUsage.totalTokens = usage.totalTokens;
+  } else if (
+    typeof messageUsage.inputTokens === "number" &&
+    typeof messageUsage.outputTokens === "number"
+  ) {
+    messageUsage.totalTokens = messageUsage.inputTokens + messageUsage.outputTokens;
+  }
+
+  return Object.keys(messageUsage).length > 0 ? messageUsage : null;
+}
+
+function cloneMessage(message: AiChatMessage): AiChatMessage {
+  return {
+    ...message,
+    usage: message.usage ? { ...message.usage } : null,
+  };
+}
+
 export class BranchAiSession {
   readonly #branchName: string;
   readonly #publisher = new RpcStreamPublisher<AiChatSnapshot>();
@@ -76,6 +131,8 @@ export class BranchAiSession {
     const userMessage = this.#appendMessage("user", normalized, "complete");
     const assistantMessage = this.#appendMessage("assistant", "", "streaming");
     const requestInput = [...this.#history, messageText(userMessage.text)];
+    const mockReply = buildMockReply(this.#branchName, normalized);
+    const mockUsage = buildMockUsage(normalized, mockReply);
 
     this.#pending = true;
     this.#errorMessage = null;
@@ -94,8 +151,9 @@ export class BranchAiSession {
               {
                 type: "message",
                 id: assistantMessage.id,
-                content: buildMockReply(this.#branchName, normalized),
+                content: mockReply,
               },
+              { type: "complete", usage: mockUsage },
             ],
           },
         ],
@@ -128,7 +186,7 @@ export class BranchAiSession {
     return {
       adapterKind: AI_ADAPTER_KIND,
       model: AI_MODEL,
-      messages: this.#messages.map((message) => ({ ...message })),
+      messages: this.#messages.map(cloneMessage),
       pending: this.#pending,
       errorMessage: this.#errorMessage,
     };
@@ -148,6 +206,7 @@ export class BranchAiSession {
       role,
       text,
       status,
+      usage: null,
     };
     this.#messages.push(message);
     return message;
@@ -190,6 +249,7 @@ export class BranchAiSession {
       this.#patchMessage(context.assistantMessageId, {
         text: finalText,
         status: "complete",
+        usage: toMessageUsage(completedResponse.usage),
       });
       this.#history.length = 0;
       this.#history.push(...context.requestInput, ...completedResponse.replay);

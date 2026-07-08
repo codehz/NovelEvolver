@@ -44,6 +44,26 @@ const sendButtonClass = cn(
   "inline-flex size-8 shrink-0 items-center justify-center rounded-lg bg-badge-background text-badge-foreground hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40",
 );
 
+function describeAssistantMessageMeta(message: AiChatMessage): string {
+  if (message.status === "streaming") {
+    return "流式输出中";
+  }
+
+  const parts: string[] = [];
+
+  if (typeof message.usage?.inputTokens === "number") {
+    parts.push(`输入 ${message.usage.inputTokens} tok`);
+  }
+  if (typeof message.usage?.outputTokens === "number") {
+    parts.push(`输出 ${message.usage.outputTokens} tok`);
+  }
+  if (typeof message.usage?.totalTokens === "number") {
+    parts.push(`总计 ${message.usage.totalTokens} tok`);
+  }
+
+  return parts.length > 0 ? parts.join(" · ") : "已完成";
+}
+
 function AiMessageBlock({ message }: { message: AiChatMessage }) {
   if (message.role === "user") {
     return (
@@ -56,6 +76,7 @@ function AiMessageBlock({ message }: { message: AiChatMessage }) {
   }
 
   const isStreaming = message.status === "streaming";
+  const metaText = describeAssistantMessageMeta(message);
 
   return (
     <article className={assistantMessageBlockClass}>
@@ -69,7 +90,12 @@ function AiMessageBlock({ message }: { message: AiChatMessage }) {
         )}
       </div>
 
-      {isStreaming ? <p className="mt-2 text-2xs text-ctp-subtext1">流式输出中…</p> : null}
+      <p
+        className="mt-2 overflow-hidden text-2xs text-ellipsis whitespace-nowrap text-ctp-subtext1 tabular-nums"
+        title={metaText}
+      >
+        {metaText}
+      </p>
     </article>
   );
 }
@@ -82,7 +108,7 @@ export function AuxiliaryPanel() {
   const shouldRestoreComposerFocusRef = useRef(false);
 
   useEffect(() => {
-    endRef.current?.scrollIntoView({ block: "end" });
+    endRef.current?.scrollIntoView({ block: "end", behavior: "smooth" });
   }, [snapshot.messages, snapshot.pending]);
 
   useEffect(() => {
