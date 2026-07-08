@@ -1,104 +1,16 @@
-import { MockAdapter, createAIClient } from "@codehz/ai";
-import type { AIResponse, AIStreamEvent, InputItem, Usage } from "@codehz/ai";
+import type { AIResponse, AIStreamEvent, InputItem } from "@codehz/ai";
 
-import type { AiChatMessage, AiChatMessageUsage, AiChatSnapshot } from "#shared/rpc/ai-rpc";
+import type { AiChatMessage, AiChatSnapshot } from "#shared/rpc/ai-rpc";
 
 import { RpcStreamPublisher } from "../lib/stream-publisher";
-
-const AI_ADAPTER_KIND = "mock" as const;
-const AI_MODEL = "mock-assistant";
-const AI_INSTRUCTIONS =
-  "你是 NovelEvolver 原型里的内置写作助手。当前运行在 mock adapter 上，请简洁回应，并明确这是演示数据。";
-
-function messageText(text: string): InputItem {
-  return {
-    type: "message",
-    role: "user",
-    content: [{ type: "text", text }],
-  };
-}
-
-function readResponseText(response: AIResponse): string {
-  return response.output
-    .filter((item) => item.type === "message")
-    .flatMap((item) => item.content)
-    .filter((block) => block.type === "text")
-    .map((block) => block.text)
-    .join("");
-}
-
-function toErrorMessage(error: unknown): string {
-  return error instanceof Error ? error.message : String(error);
-}
-
-function buildMockReply(branchName: string, prompt: string): string {
-  const excerpt = prompt.length > 180 ? `${prompt.slice(0, 180)}...` : prompt;
-  return [
-    `已收到你的请求。当前分支：**${branchName}**。`,
-    "当前走的是 `@codehz/ai` 的 `MockAdapter`，下面的内容会用演示数据模拟流式输出。",
-    "你的输入摘录：",
-    `> ${excerpt.replaceAll("\n", "\n> ")}`,
-    "下一步可以继续接入：",
-    "- 真实模型 adapter",
-    "- 章节正文、设定卡、检索结果等上下文注入",
-    "- 工具调用与结果回填",
-  ].join("\n\n");
-}
-
-function estimateTokenCount(text: string): number {
-  const normalized = text.trim();
-  if (normalized === "") {
-    return 0;
-  }
-
-  return Math.max(1, Math.ceil(normalized.length / 1.8));
-}
-
-function buildMockUsage(prompt: string, reply: string): Usage {
-  const inputTokens = estimateTokenCount(`${AI_INSTRUCTIONS}\n${prompt}`) + 24;
-  const outputTokens = estimateTokenCount(reply) + 12;
-
-  return {
-    inputTokens,
-    outputTokens,
-    totalTokens: inputTokens + outputTokens,
-  };
-}
-
-function toMessageUsage(usage: AIResponse["usage"]): AiChatMessageUsage | null {
-  if (!usage) {
-    return null;
-  }
-
-  const messageUsage: AiChatMessageUsage = {};
-
-  if (typeof usage.inputTokens === "number") {
-    messageUsage.inputTokens = usage.inputTokens;
-  }
-  if (typeof usage.outputTokens === "number") {
-    messageUsage.outputTokens = usage.outputTokens;
-  }
-  if (typeof usage.reasoningTokens === "number") {
-    messageUsage.reasoningTokens = usage.reasoningTokens;
-  }
-  if (typeof usage.totalTokens === "number") {
-    messageUsage.totalTokens = usage.totalTokens;
-  } else if (
-    typeof messageUsage.inputTokens === "number" &&
-    typeof messageUsage.outputTokens === "number"
-  ) {
-    messageUsage.totalTokens = messageUsage.inputTokens + messageUsage.outputTokens;
-  }
-
-  return Object.keys(messageUsage).length > 0 ? messageUsage : null;
-}
-
-function cloneMessage(message: AiChatMessage): AiChatMessage {
-  return {
-    ...message,
-    usage: message.usage ? { ...message.usage } : null,
-  };
-}
+import { cloneMessage, readResponseText, toErrorMessage, toMessageUsage } from "./ai-utils";
+import {
+  AI_ADAPTER_KIND,
+  AI_INSTRUCTIONS,
+  AI_MODEL,
+  createMockClient,
+  toInputItem,
+} from "./mock-adapter";
 
 export class BranchAiSession {
   readonly #branchName: string;
@@ -130,32 +42,13 @@ export class BranchAiSession {
 
     const userMessage = this.#appendMessage("user", normalized, "complete");
     const assistantMessage = this.#appendMessage("assistant", "", "streaming");
-    const requestInput = [...this.#history, messageText(userMessage.text)];
-    const mockReply = buildMockReply(this.#branchName, normalized);
-    const mockUsage = buildMockUsage(normalized, mockReply);
+    const requestInput = [...this.#history, toInputItem(userMessage.text)];
 
     this.#pending = true;
     this.#errorMessage = null;
     this.#emitSnapshot();
 
-    const client = createAIClient({
-      adapter: new MockAdapter({
-        handler: async function* () {
-          yield {
-            type: "message",
-            id: assistantMessage.id,
-            content: mockReply,
-            stream: {
-              charsPerSecond: 48,
-              chunkSize: 2,
-              initialDelayMs: 120,
-            },
-          };
-          yield { type: "complete", usage: mockUsage };
-        },
-      }),
-      model: AI_MODEL,
-    });
+    const client = createMockClient(this.#branchName, normalized);
 
     void this.#runRequest(client.stream({ instructions: AI_INSTRUCTIONS, input: requestInput }), {
       assistantMessageId: assistantMessage.id,
