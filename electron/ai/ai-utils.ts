@@ -1,6 +1,6 @@
 import type { AIResponse, ContentBlock } from "@codehz/ai";
 
-import type { AiChatMessage, AiChatMessageUsage, AiChatReasoning } from "#shared/rpc/ai-rpc";
+import type { AiChatMessageUsage, AiChatReasoning } from "#shared/rpc/ai-rpc";
 
 /**
  * 从 AIResponse 的 output 中提取纯文本内容。
@@ -53,7 +53,7 @@ export function toMessageUsage(usage: AIResponse["usage"]): AiChatMessageUsage |
   return Object.keys(messageUsage).length > 0 ? messageUsage : null;
 }
 
-function contentBlockToDisplayText(block: ContentBlock): string {
+export function contentBlockToDisplayText(block: ContentBlock): string {
   switch (block.type) {
     case "text":
       return block.text;
@@ -68,6 +68,13 @@ function contentBlockToDisplayText(block: ContentBlock): string {
   }
 }
 
+export function joinContentBlocksText(content: readonly ContentBlock[]): string {
+  return content
+    .map(contentBlockToDisplayText)
+    .filter((part) => part !== "")
+    .join("\n\n");
+}
+
 /**
  * 从 AIResponse 的 output 中提取 reasoning 文本与可见性。
  */
@@ -79,23 +86,8 @@ export function readResponseReasoning(
     return null;
   }
 
-  const text = reasoningItems
-    .flatMap((item) => item.content)
-    .map(contentBlockToDisplayText)
-    .filter((part) => part !== "")
-    .join("\n\n");
+  const text = joinContentBlocksText(reasoningItems.flatMap((item) => item.content));
   const visibility = reasoningItems.at(-1)?.visibility ?? "summary";
 
   return text === "" ? null : { text, visibility };
-}
-
-/**
- * 浅拷贝一条聊天消息（含 usage 的浅拷贝），用于快照输出。
- */
-export function cloneMessage(message: AiChatMessage): AiChatMessage {
-  return {
-    ...message,
-    usage: message.usage ? { ...message.usage } : null,
-    reasoning: message.reasoning ? { ...message.reasoning } : null,
-  };
 }

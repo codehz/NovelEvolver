@@ -67,14 +67,14 @@ function describeAssistantMessageMeta(message: AiChatMessage): string {
   const parts: string[] = [];
 
   if (message.status === "streaming") {
-    parts.push(message.reasoning?.status === "streaming" ? "思维链生成中" : "流式输出中");
+    parts.push(message.reasoning?.status === "streaming" ? "思考中" : "流式输出中");
   }
 
   if (typeof message.usage?.inputTokens === "number") {
     parts.push(`输入 ${message.usage.inputTokens} tok`);
   }
   if (typeof message.usage?.reasoningTokens === "number") {
-    parts.push(`思维链 ${message.usage.reasoningTokens} tok`);
+    parts.push(`思考 ${message.usage.reasoningTokens} tok`);
   }
   if (typeof message.usage?.outputTokens === "number") {
     parts.push(`输出 ${message.usage.outputTokens} tok`);

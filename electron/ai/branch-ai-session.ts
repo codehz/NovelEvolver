@@ -1,5 +1,10 @@
 import type { AIClient, AIResponse, AIStreamEvent, InputItem } from "@codehz/ai";
 
+import {
+  applyAiChatMessagePatch,
+  cloneAiChatMessage,
+  cloneAiChatMessagePatch,
+} from "#shared/rpc/ai-chat-state";
 import type {
   AiChatDeltaOp,
   AiChatEvent,
@@ -12,7 +17,7 @@ import type {
 
 import { RpcStreamPublisher } from "../lib/stream-publisher";
 import {
-  cloneMessage,
+  joinContentBlocksText,
   readResponseReasoning,
   readResponseText,
   toErrorMessage,
@@ -30,6 +35,7 @@ export class BranchAiSession {
   readonly #client: AIClient;
   readonly #publisher = new RpcStreamPublisher<AiChatEvent>();
   readonly #messages: AiChatMessage[] = [];
+  readonly #messageIndexById = new Map<string, number>();
   readonly #history: InputItem[] = [];
   readonly #providerMessageIds = new Map<string, string>();
   readonly #providerReasoningIds = new Map<string, string>();
@@ -70,11 +76,11 @@ export class BranchAiSession {
     this.#emitDelta([
       {
         type: "message.added",
-        message: cloneMessage(userMessage),
+        message: cloneAiChatMessage(userMessage),
       },
       {
         type: "message.added",
-        message: cloneMessage(assistantMessage),
+        message: cloneAiChatMessage(assistantMessage),
       },
       {
         type: "state.updated",
@@ -100,6 +106,7 @@ export class BranchAiSession {
     }
 
     this.#messages.length = 0;
+    this.#messageIndexById.clear();
     this.#history.length = 0;
     this.#providerMessageIds.clear();
     this.#providerReasoningIds.clear();
@@ -115,7 +122,7 @@ export class BranchAiSession {
     return {
       adapterKind: AI_ADAPTER_KIND,
       model: AI_MODEL,
-      messages: this.#messages.map(cloneMessage),
+      messages: this.#messages.map(cloneAiChatMessage),
       pending: this.#pending,
       errorMessage: this.#errorMessage,
     };
@@ -146,46 +153,46 @@ export class BranchAiSession {
       reasoning: null,
     };
     this.#messages.push(message);
+    this.#messageIndexById.set(message.id, this.#messages.length - 1);
     return message;
   }
 
-  #patchMessage(id: string, patch: AiChatMessagePatch): void {
-    const index = this.#messages.findIndex((message) => message.id === id);
-    if (index < 0) {
-      return;
+  #getMessageIndex(id: string): number | null {
+    return this.#messageIndexById.get(id) ?? null;
+  }
+
+  #getMessage(id: string): AiChatMessage | null {
+    const index = this.#getMessageIndex(id);
+    return index === null ? null : (this.#messages[index] ?? null);
+  }
+
+  #patchMessage(id: string, patch: AiChatMessagePatch): AiChatMessage | null {
+    const index = this.#getMessageIndex(id);
+    if (index === null) {
+      return null;
     }
 
-    const current = this.#messages[index]!;
-    this.#messages[index] = {
-      ...current,
-      ...patch,
-      reasoning:
-        patch.reasoning === undefined
-          ? current.reasoning
-          : patch.reasoning === null
-            ? null
-            : {
-                text: current.reasoning?.text ?? "",
-                visibility:
-                  patch.reasoning.visibility ?? current.reasoning?.visibility ?? "summary",
-                status: patch.reasoning.status ?? current.reasoning?.status ?? "streaming",
-                ...patch.reasoning,
-              },
-    };
+    const next = applyAiChatMessagePatch(this.#messages[index]!, patch);
+    this.#messages[index] = next;
+    return next;
   }
 
   #removeMessage(id: string): boolean {
-    const index = this.#messages.findIndex((message) => message.id === id);
-    if (index < 0) {
+    const index = this.#getMessageIndex(id);
+    if (index === null) {
       return false;
     }
 
     this.#messages.splice(index, 1);
+    this.#messageIndexById.delete(id);
+    for (let i = index; i < this.#messages.length; i++) {
+      this.#messageIndexById.set(this.#messages[i]!.id, i);
+    }
     return true;
   }
 
   #appendMessageText(id: string, text: string): boolean {
-    const message = this.#messages.find((candidate) => candidate.id === id);
+    const message = this.#getMessage(id);
     if (!message) {
       return false;
     }
@@ -198,7 +205,7 @@ export class BranchAiSession {
     id: string,
     patch: Pick<AiChatReasoning, "visibility" | "status">,
   ): AiChatReasoning | null {
-    const message = this.#messages.find((candidate) => candidate.id === id);
+    const message = this.#getMessage(id);
     if (!message) {
       return null;
     }
@@ -218,26 +225,13 @@ export class BranchAiSession {
   }
 
   #appendMessageReasoningText(id: string, text: string): boolean {
-    const message = this.#messages.find((candidate) => candidate.id === id);
+    const message = this.#getMessage(id);
     if (!message?.reasoning) {
       return false;
     }
 
     message.reasoning.text += text;
     return true;
-  }
-
-  #cloneMessagePatch(patch: AiChatMessagePatch): AiChatMessagePatch {
-    return {
-      ...patch,
-      usage: patch.usage ? { ...patch.usage } : patch.usage,
-      reasoning:
-        patch.reasoning === undefined
-          ? undefined
-          : patch.reasoning === null
-            ? null
-            : { ...patch.reasoning },
-    };
   }
 
   async #runRequest(
@@ -267,9 +261,7 @@ export class BranchAiSession {
         status: "complete",
         usage: toMessageUsage(completedResponse.usage),
       };
-      const assistantMessage = this.#messages.find(
-        (message) => message.id === context.assistantMessageId,
-      );
+      const assistantMessage = this.#getMessage(context.assistantMessageId);
       if (assistantMessage && assistantMessage.text !== finalText) {
         completionPatch.text = finalText;
       }
@@ -297,7 +289,7 @@ export class BranchAiSession {
         {
           type: "message.updated",
           messageId: context.assistantMessageId,
-          patch: this.#cloneMessagePatch(completionPatch),
+          patch: cloneAiChatMessagePatch(completionPatch),
         },
         {
           type: "state.updated",
@@ -313,9 +305,7 @@ export class BranchAiSession {
       this.#providerReasoningIds.clear();
       const ops: AiChatDeltaOp[] = [];
 
-      const assistantMessage = this.#messages.find(
-        (message) => message.id === context.assistantMessageId,
-      );
+      const assistantMessage = this.#getMessage(context.assistantMessageId);
       if (assistantMessage?.text === "") {
         if (this.#removeMessage(context.assistantMessageId)) {
           ops.push({
@@ -336,7 +326,7 @@ export class BranchAiSession {
         ops.push({
           type: "message.updated",
           messageId: context.assistantMessageId,
-          patch: this.#cloneMessagePatch(errorPatch),
+          patch: cloneAiChatMessagePatch(errorPatch),
         });
       }
 
@@ -423,26 +413,14 @@ export class BranchAiSession {
       if (providerReasoningId) {
         this.#providerReasoningIds.delete(providerReasoningId);
       }
-      const finalText = event.item.content
-        .map((block) =>
-          block.type === "text"
-            ? block.text
-            : block.type === "json"
-              ? JSON.stringify(block.json, null, 2)
-              : block.type === "image"
-                ? `[图片] ${block.imageUrl}`
-                : block.type === "binary_ref"
-                  ? `[二进制引用] ${block.ref}`
-                  : "[私有内容]",
-        )
-        .join("\n\n");
+      const finalText = joinContentBlocksText(event.item.content);
       const patch: AiChatMessagePatch = {
         reasoning: {
           visibility: event.item.visibility,
           status: "complete",
         },
       };
-      const message = this.#messages.find((candidate) => candidate.id === messageId);
+      const message = this.#getMessage(messageId);
       if (message?.reasoning?.text !== finalText) {
         patch.reasoning = {
           ...patch.reasoning,
@@ -454,7 +432,7 @@ export class BranchAiSession {
         {
           type: "message.updated",
           messageId,
-          patch: this.#cloneMessagePatch(patch),
+          patch: cloneAiChatMessagePatch(patch),
         },
       ]);
       return;
