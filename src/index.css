@@ -4,6 +4,9 @@
 @import "misans/lib/Normal/MiSans-Bold.min.css";
 @import "@mogeko/maple-mono-cn/dist/font/result.css";
 @import "slot-text/style.css";
+@import "streamdown/styles.css";
+
+@source "../node_modules/streamdown/dist/*.js";
 
 @plugin "../tools/iconify.js";
 
@@ -19,6 +22,14 @@
   --color-app-foreground: var(--color-ctp-text);
   --color-app-muted: var(--color-ctp-subtext0);
   --color-app-surface: var(--color-ctp-mantle);
+  --color-background: var(--color-app-background);
+  --color-foreground: var(--color-app-foreground);
+  --color-muted: color-mix(in srgb, var(--color-ctp-surface0) 72%, transparent);
+  --color-muted-foreground: var(--color-ctp-subtext0);
+  --color-primary: var(--color-ctp-mauve);
+  --color-primary-foreground: var(--color-ctp-crust);
+  --color-sidebar: var(--color-app-surface);
+  --color-border: var(--color-titlebar-border);
   --color-badge-background: var(--color-ctp-mauve);
   --color-badge-foreground: var(--color-ctp-crust);
   --color-titlebar-border: var(--color-ctp-surface0);
@@ -62,6 +73,17 @@
     font-family: var(--font-display);
     color: var(--color-ctp-text);
     background: var(--color-ctp-base);
+    --background: var(--color-app-background);
+    --foreground: var(--color-app-foreground);
+    --card: var(--color-app-surface);
+    --card-foreground: var(--color-app-foreground);
+    --muted: color-mix(in srgb, var(--color-ctp-surface0) 72%, transparent);
+    --muted-foreground: var(--color-app-muted);
+    --border: var(--color-titlebar-border);
+    --input: var(--color-titlebar-border);
+    --primary: var(--color-badge-background);
+    --primary-foreground: var(--color-badge-foreground);
+    --radius: 0.75rem;
     color-scheme: dark;
     line-height: 1.5;
     font-weight: 400;

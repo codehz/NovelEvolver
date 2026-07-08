@@ -6,6 +6,7 @@ import {
   type FormEvent,
   type KeyboardEvent,
 } from "react";
+import { Streamdown } from "streamdown";
 
 import { cn } from "#app/shared/lib/ui/cn";
 import { ScrollArea } from "#app/shared/ui/ScrollArea";
@@ -18,9 +19,17 @@ const panelSectionClass = cn("mx-auto flex w-full max-w-3xl flex-col");
 const conversationRailClass = cn("gap-4 px-3 py-2.5");
 const assistantMessageBlockClass = cn("w-full px-1");
 const assistantMessageBodyClass = cn(
-  "text-[0.8125rem] leading-5 whitespace-pre-wrap text-app-foreground",
+  "text-[0.8125rem] leading-5 text-app-foreground",
+  "[&_a]:text-ctp-blue [&_a]:underline [&_a]:underline-offset-2",
+  "[&_code]:rounded-md [&_code]:bg-window-chrome [&_code]:px-1.5 [&_code]:py-0.5 [&_code]:font-mono [&_code]:text-[0.75rem]",
+  "**:data-[streamdown='blockquote']:border-ctp-blue/40 **:data-[streamdown='blockquote']:text-app-muted",
+  "**:data-[streamdown='code-block']:border-titlebar-border **:data-[streamdown='code-block']:bg-app-surface",
+  "**:data-[streamdown='code-block-actions']:border-titlebar-border **:data-[streamdown='code-block-actions']:bg-app-surface/80",
+  "**:data-[streamdown='code-block-body']:border-titlebar-border **:data-[streamdown='code-block-body']:bg-window-chrome",
+  "**:data-[streamdown='heading-1']:text-base",
+  "**:data-[streamdown='heading-1']:text-ctp-mauve **:data-[streamdown='heading-2']:text-ctp-mauve **:data-[streamdown='heading-3']:text-ctp-mauve",
+  "**:data-[streamdown='inline-code']:text-ctp-green",
 );
-const assistantMessageParagraphClass = cn("not-last:mb-2.5");
 const userMessageRowClass = cn("flex justify-end");
 const userMessageBubbleClass = cn(
   "max-w-[88%] rounded-xl bg-window-chrome px-3 py-2 text-[0.8125rem] leading-5 text-app-foreground shadow-[inset_0_1px_0_0_color-mix(in_srgb,var(--color-ctp-surface0)_24%,transparent)]",
@@ -35,13 +44,6 @@ const sendButtonClass = cn(
   "inline-flex size-8 shrink-0 items-center justify-center rounded-lg bg-badge-background text-badge-foreground hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40",
 );
 
-function formatAssistantParagraphs(text: string) {
-  return text
-    .split(/\n{2,}/)
-    .map((paragraph) => paragraph.trim())
-    .filter((paragraph) => paragraph !== "");
-}
-
 function AiMessageBlock({ message }: { message: AiChatMessage }) {
   if (message.role === "user") {
     return (
@@ -53,18 +55,15 @@ function AiMessageBlock({ message }: { message: AiChatMessage }) {
     );
   }
 
-  const paragraphs = formatAssistantParagraphs(message.text);
   const isStreaming = message.status === "streaming";
 
   return (
     <article className={assistantMessageBlockClass}>
       <div className={assistantMessageBodyClass}>
-        {paragraphs.length > 0 ? (
-          paragraphs.map((paragraph, index) => (
-            <p key={`${message.id}-${index}`} className={assistantMessageParagraphClass}>
-              {paragraph}
-            </p>
-          ))
+        {message.text !== "" ? (
+          <Streamdown animated className="text-inherit" isAnimating={isStreaming}>
+            {message.text}
+          </Streamdown>
         ) : (
           <p className="text-ctp-subtext0">思考中…</p>
         )}

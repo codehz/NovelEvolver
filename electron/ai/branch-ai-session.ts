@@ -34,10 +34,14 @@ function toErrorMessage(error: unknown): string {
 function buildMockReply(branchName: string, prompt: string): string {
   const excerpt = prompt.length > 180 ? `${prompt.slice(0, 180)}...` : prompt;
   return [
-    `已收到你的请求。当前分支：${branchName}。`,
-    "现在走的是 `@codehz/ai` 的 MockAdapter，RPC 订阅和前端增量渲染已经接通。",
-    `你的输入：${excerpt}`,
-    "下一步可以把这里替换成真实模型 adapter，并把章节正文、设定卡或检索结果注入请求上下文。",
+    `已收到你的请求。当前分支：**${branchName}**。`,
+    "当前走的是 `@codehz/ai` 的 `MockAdapter`，下面的内容会用演示数据模拟流式输出。",
+    "你的输入摘录：",
+    `> ${excerpt.replaceAll("\n", "\n> ")}`,
+    "下一步可以继续接入：",
+    "- 真实模型 adapter",
+    "- 章节正文、设定卡、检索结果等上下文注入",
+    "- 工具调用与结果回填",
   ].join("\n\n");
 }
 
@@ -79,6 +83,11 @@ export class BranchAiSession {
 
     const client = createAIClient({
       adapter: new MockAdapter({
+        stream: {
+          charsPerSecond: 48,
+          chunkSize: 2,
+          initialDelayMs: 120,
+        },
         turns: [
           {
             steps: [
