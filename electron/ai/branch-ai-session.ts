@@ -4,6 +4,8 @@ import {
   applyAiChatMessagePatch,
   cloneAiChatMessage,
   cloneAiChatMessagePatch,
+  cloneAiChatToolCall,
+  cloneAiChatToolCallPatch,
 } from "#shared/rpc/ai-chat-state";
 import type {
   AiChatDeltaOp,
@@ -13,9 +15,12 @@ import type {
   AiChatReasoning,
   AiChatReasoningPatch,
   AiChatSnapshot,
+  AiChatToolCall,
+  AiChatToolCallPatch,
 } from "#shared/rpc/ai-rpc";
 
 import { RpcStreamPublisher } from "../lib/stream-publisher";
+import type { WorktreeSession } from "../worktree/session";
 import {
   joinContentBlocksText,
   readResponseReasoning,
@@ -30,9 +35,12 @@ import {
   createMockClient,
   toInputItem,
 } from "./mock-adapter";
+import { AI_TOOLS } from "./tools/definitions";
+import { createToolRunner, type ToolRunner } from "./tools/runner";
 
 export class BranchAiSession {
   readonly #client: AIClient;
+  readonly #toolRunner: ToolRunner;
   readonly #publisher = new RpcStreamPublisher<AiChatEvent>();
   readonly #messages: AiChatMessage[] = [];
   readonly #messageIndexById = new Map<string, number>();
@@ -43,8 +51,9 @@ export class BranchAiSession {
   #errorMessage: string | null = null;
   #messageCounter = 0;
 
-  constructor(branchName: string) {
+  constructor(branchName: string, worktree: WorktreeSession) {
     this.#client = createMockClient(branchName);
+    this.#toolRunner = createToolRunner(worktree);
   }
 
   subscribe(): ReadableStream<AiChatEvent> {
@@ -91,13 +100,10 @@ export class BranchAiSession {
       },
     ]);
 
-    void this.#runRequest(
-      this.#client.stream({ instructions: AI_INSTRUCTIONS, input: requestInput }),
-      {
-        assistantMessageId: assistantMessage.id,
-        requestInput,
-      },
-    );
+    void this.#runRequest({
+      assistantMessageId: assistantMessage.id,
+      requestInput,
+    });
   }
 
   resetConversation(): void {
@@ -151,6 +157,7 @@ export class BranchAiSession {
       status,
       usage: null,
       reasoning: null,
+      toolCalls: [],
     };
     this.#messages.push(message);
     this.#messageIndexById.set(message.id, this.#messages.length - 1);
@@ -164,6 +171,11 @@ export class BranchAiSession {
   #getMessage(id: string): AiChatMessage | null {
     const index = this.#getMessageIndex(id);
     return index === null ? null : (this.#messages[index] ?? null);
+  }
+
+  #getToolCall(messageId: string, toolCallId: string): AiChatToolCall | null {
+    const message = this.#getMessage(messageId);
+    return message?.toolCalls.find((toolCall) => toolCall.id === toolCallId) ?? null;
   }
 
   #patchMessage(id: string, patch: AiChatMessagePatch): AiChatMessage | null {
@@ -234,20 +246,125 @@ export class BranchAiSession {
     return true;
   }
 
-  async #runRequest(
+  #appendToolCall(messageId: string, toolCall: AiChatToolCall): void {
+    const message = this.#getMessage(messageId);
+    if (!message) {
+      return;
+    }
+
+    message.toolCalls.push(toolCall);
+  }
+
+  #patchToolCall(
+    messageId: string,
+    toolCallId: string,
+    patch: AiChatToolCallPatch,
+  ): AiChatToolCall | null {
+    const message = this.#getMessage(messageId);
+    if (!message) {
+      return null;
+    }
+
+    const index = message.toolCalls.findIndex((toolCall) => toolCall.id === toolCallId);
+    if (index === -1) {
+      return null;
+    }
+
+    const next = {
+      ...message.toolCalls[index]!,
+      ...patch,
+    };
+    message.toolCalls[index] = next;
+    return next;
+  }
+
+  #appendToolCallArguments(messageId: string, toolCallId: string, text: string): boolean {
+    const toolCall = this.#getToolCall(messageId, toolCallId);
+    if (!toolCall || text === "") {
+      return false;
+    }
+
+    toolCall.argumentsText += text;
+    return true;
+  }
+
+  #emitToolCallUpdate(messageId: string, toolCallId: string, patch: AiChatToolCallPatch): void {
+    if (this.#patchToolCall(messageId, toolCallId, patch) === null) {
+      return;
+    }
+
+    this.#emitDelta([
+      {
+        type: "tool_call.updated",
+        messageId,
+        toolCallId,
+        patch: cloneAiChatToolCallPatch(patch),
+      },
+    ]);
+  }
+
+  async #consumeStream(
     stream: AsyncIterable<AIStreamEvent>,
-    context: {
-      assistantMessageId: string;
-      requestInput: InputItem[];
-    },
-  ): Promise<void> {
+    assistantMessageId: string,
+  ): Promise<AIResponse> {
+    let completedResponse: AIResponse | null = null;
+
+    for await (const event of stream) {
+      this.#handleStreamEvent(event, assistantMessageId);
+      if (event.type === "response.completed") {
+        completedResponse = event.response;
+      }
+    }
+
+    if (completedResponse === null) {
+      throw new Error("AI 流在完成前结束。");
+    }
+
+    return completedResponse;
+  }
+
+  async #runRequest(context: {
+    assistantMessageId: string;
+    requestInput: InputItem[];
+  }): Promise<void> {
+    let input = [...context.requestInput];
+    const transcript = [...context.requestInput];
     let completedResponse: AIResponse | null = null;
 
     try {
-      for await (const event of stream) {
-        this.#handleStreamEvent(event, context.assistantMessageId);
-        if (event.type === "response.completed") {
-          completedResponse = event.response;
+      while (true) {
+        completedResponse = await this.#consumeStream(
+          this.#client.stream({
+            instructions: AI_INSTRUCTIONS,
+            input,
+            tools: AI_TOOLS,
+          }),
+          context.assistantMessageId,
+        );
+
+        transcript.push(...completedResponse.replay);
+
+        if (
+          completedResponse.stopReason !== "tool_call" ||
+          completedResponse.toolCalls.length === 0
+        ) {
+          break;
+        }
+
+        input = [...input, ...completedResponse.replay];
+        for (const call of completedResponse.toolCalls) {
+          this.#emitToolCallUpdate(context.assistantMessageId, call.id, {
+            status: "running",
+          });
+
+          const execution = await this.#toolRunner.execute(call);
+          this.#emitToolCallUpdate(context.assistantMessageId, call.id, {
+            status: execution.errorMessage === null ? "complete" : "error",
+            resultText: execution.resultText,
+            errorMessage: execution.errorMessage,
+          });
+          input.push(execution.toolResult);
+          transcript.push(execution.toolResult);
         }
       }
 
@@ -281,7 +398,7 @@ export class BranchAiSession {
       }
       this.#patchMessage(context.assistantMessageId, completionPatch);
       this.#history.length = 0;
-      this.#history.push(...context.requestInput, ...completedResponse.replay);
+      this.#history.push(...transcript);
       this.#providerMessageIds.clear();
       this.#providerReasoningIds.clear();
       this.#pending = false;
@@ -306,7 +423,7 @@ export class BranchAiSession {
       const ops: AiChatDeltaOp[] = [];
 
       const assistantMessage = this.#getMessage(context.assistantMessageId);
-      if (assistantMessage?.text === "") {
+      if (assistantMessage?.text === "" && assistantMessage.toolCalls.length === 0) {
         if (this.#removeMessage(context.assistantMessageId)) {
           ops.push({
             type: "message.removed",
@@ -344,6 +461,63 @@ export class BranchAiSession {
   #handleStreamEvent(event: AIStreamEvent, assistantMessageId: string): void {
     if (event.type === "message.started") {
       this.#providerMessageIds.set(event.item.id, assistantMessageId);
+      return;
+    }
+
+    if (event.type === "tool_call.started") {
+      const toolCall: AiChatToolCall = {
+        id: event.item.id,
+        name: event.item.name,
+        argumentsText: "",
+        status: "pending",
+        resultText: null,
+        errorMessage: null,
+      };
+      this.#appendToolCall(assistantMessageId, toolCall);
+      this.#emitDelta([
+        {
+          type: "tool_call.added",
+          messageId: assistantMessageId,
+          toolCall: cloneAiChatToolCall(toolCall),
+        },
+      ]);
+      return;
+    }
+
+    if (event.type === "tool_call.delta") {
+      if (
+        !this.#appendToolCallArguments(
+          assistantMessageId,
+          event.itemId,
+          event.delta.argumentsText ?? "",
+        )
+      ) {
+        return;
+      }
+
+      const toolCall = this.#getToolCall(assistantMessageId, event.itemId);
+      if (!toolCall) {
+        return;
+      }
+
+      this.#emitDelta([
+        {
+          type: "tool_call.updated",
+          messageId: assistantMessageId,
+          toolCallId: event.itemId,
+          patch: {
+            argumentsText: toolCall.argumentsText,
+          },
+        },
+      ]);
+      return;
+    }
+
+    if (event.type === "tool_call.completed") {
+      this.#emitToolCallUpdate(assistantMessageId, event.item.id, {
+        argumentsText: event.item.argumentsText,
+        status: "pending",
+      });
       return;
     }
 

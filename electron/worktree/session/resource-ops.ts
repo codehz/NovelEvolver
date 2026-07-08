@@ -1,6 +1,7 @@
 import type { WorktreeNodeIdResult } from "#shared/rpc/manuscript-rpc";
 
 import { RESOURCE_ROOT_ID } from "../resources/index";
+import { assertResourceLibraryListPath } from "../resources/paths";
 import {
   normalizeResourceNodeName,
   sortResourceChildrenByName,
@@ -18,6 +19,55 @@ import { persistAndEmit } from "./persistence";
 import { rebuildCurrentResourcesFromTree } from "./rebuild";
 import { deleteResourceNodeFromCurrent } from "./revert";
 import type { WorktreeSessionState } from "./state";
+
+export type ResourceFileListEntry = {
+  id: string;
+  path: string;
+  name: string;
+};
+
+export function listResourceFiles(
+  state: WorktreeSessionState,
+  relativePath: string,
+): ResourceFileListEntry[] {
+  assertResourceLibraryListPath(relativePath);
+
+  const folderId =
+    relativePath === "" ? RESOURCE_ROOT_ID : state.resourceIdByPath.get(relativePath);
+  if (folderId === undefined) {
+    throw new Error(`Resource directory does not exist: ${relativePath}`);
+  }
+
+  const folder = requireResourceFolder(state, folderId);
+  const files: ResourceFileListEntry[] = [];
+
+  const visit = (nodeId: string): void => {
+    const node = requireResourceNode(state, nodeId);
+    if (node.type === "file") {
+      const path = state.resourcePathById.get(nodeId);
+      if (path === undefined) {
+        throw new Error(`Resource path missing for node: ${nodeId}`);
+      }
+      files.push({
+        id: nodeId,
+        path,
+        name: node.name,
+      });
+      return;
+    }
+
+    for (const childId of node.childIds) {
+      visit(childId);
+    }
+  };
+
+  for (const childId of folder.childIds) {
+    visit(childId);
+  }
+
+  files.sort((left, right) => left.path.localeCompare(right.path));
+  return files;
+}
 
 export function createResourceFile(
   state: WorktreeSessionState,

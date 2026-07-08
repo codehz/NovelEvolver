@@ -1,10 +1,23 @@
 import { MockAdapter, createAIClient } from "@codehz/ai";
-import type { AIClient, InputItem, MessageItem, NormalizedRequest, Usage } from "@codehz/ai";
+import type {
+  AIClient,
+  InputItem,
+  MessageItem,
+  MockHandlerContext,
+  NormalizedRequest,
+  Usage,
+} from "@codehz/ai";
+
+import { LIST_RESOURCE_FILES_TOOL_NAME } from "./tools/definitions";
+import type { ListResourceFilesResult } from "./tools/resource-library";
 
 export const AI_ADAPTER_KIND = "mock" as const;
 export const AI_MODEL = "mock-assistant";
 export const AI_INSTRUCTIONS =
   "你是 NovelEvolver 原型里的内置写作助手。当前运行在 mock adapter 上，请简洁回应，并明确这是演示数据。";
+
+const LIST_RESOURCE_KEYWORDS =
+  /资源库|文件列表|列出.*文件|list\s+files?|list\s+resources?|resources/i;
 
 /**
  * 从请求 input 中提取最后一条 user 消息的纯文本。
@@ -25,6 +38,66 @@ function extractLastUserText(input: readonly InputItem[]): string {
   return "";
 }
 
+function shouldListResources(prompt: string): boolean {
+  return LIST_RESOURCE_KEYWORDS.test(prompt);
+}
+
+function extractPathFromPrompt(prompt: string): string {
+  const pathMatch = prompt.match(/path\s*[:：]\s*["']?([^"'\n]+)["']?/i);
+  if (pathMatch?.[1]) {
+    return pathMatch[1]!.trim();
+  }
+
+  const quotedMatch = prompt.match(/["']([^"']+)["']/);
+  if (quotedMatch?.[1] && !LIST_RESOURCE_KEYWORDS.test(quotedMatch[1]!)) {
+    return quotedMatch[1]!.trim();
+  }
+
+  return "";
+}
+
+function findLastUserMessageIndex(input: readonly InputItem[]): number {
+  for (let i = input.length - 1; i >= 0; i--) {
+    const item = input[i]!;
+    if (item.type === "message" && item.role === "user") {
+      return i;
+    }
+  }
+  return -1;
+}
+
+function hasListResourceToolResultAfterLastUser(input: readonly InputItem[]): boolean {
+  const lastUserIndex = findLastUserMessageIndex(input);
+  for (let i = input.length - 1; i > lastUserIndex; i--) {
+    const item = input[i]!;
+    if (item.type === "tool_result" && item.toolName === LIST_RESOURCE_FILES_TOOL_NAME) {
+      return true;
+    }
+  }
+  return false;
+}
+
+function findListResourceToolResultAfterLastUser(
+  input: readonly InputItem[],
+): ListResourceFilesResult | null {
+  const lastUserIndex = findLastUserMessageIndex(input);
+  for (let i = input.length - 1; i > lastUserIndex; i--) {
+    const item = input[i]!;
+    if (
+      item.type === "tool_result" &&
+      item.toolName === LIST_RESOURCE_FILES_TOOL_NAME &&
+      item.outcome === "success"
+    ) {
+      for (const block of item.content) {
+        if (block.type === "json" && block.json !== undefined && typeof block.json === "object") {
+          return block.json as ListResourceFilesResult;
+        }
+      }
+    }
+  }
+  return null;
+}
+
 function buildMockReply(branchName: string, prompt: string): string {
   const excerpt = prompt.length > 180 ? `${prompt.slice(0, 180)}...` : prompt;
   return [
@@ -36,7 +109,7 @@ function buildMockReply(branchName: string, prompt: string): string {
     "下一步可以继续接入：",
     "- 真实模型 adapter",
     "- 章节正文、设定卡、检索结果等上下文注入",
-    "- 工具调用与结果回填",
+    "- 更多工具调用与结果回填",
   ].join("\n\n");
 }
 
@@ -52,6 +125,30 @@ function buildMockReasoning(branchName: string, prompt: string): string {
     `2. 锁定分支上下文为「${branchName}」，确保后续多分支会话能展示隔离效果。`,
     `3. 从用户输入中截取关键请求：${preview}`,
     "4. 输出策略：先流式给出思维链摘要，再给出 markdown 正文，最后补 usage 数据。",
+  ].join("\n");
+}
+
+function buildListResourceReasoning(branchName: string, path: string): string {
+  const scope = path === "" ? "整个资源库" : `目录「${path}」`;
+  return [
+    "1. 识别用户想查看资源库文件列表。",
+    `2. 当前分支为「${branchName}」，将在该分支的 ${scope} 下递归收集文件。`,
+    `3. 调用工具 \`${LIST_RESOURCE_FILES_TOOL_NAME}\` 获取结构化结果。`,
+    "4. 收到 tool_result 后，再整理为 markdown 列表回复用户。",
+  ].join("\n");
+}
+
+function buildResourceListReply(result: ListResourceFilesResult): string {
+  if (result.files.length === 0) {
+    return "资源库中没有找到文件。";
+  }
+
+  return [
+    `共找到 **${result.files.length}** 个文件：`,
+    "",
+    "| 路径 | 名称 |",
+    "| --- | --- |",
+    ...result.files.map((file) => `| ${file.path} | ${file.name} |`),
   ].join("\n");
 }
 
@@ -91,8 +188,54 @@ function buildMockUsage(prompt: string, reasoning: string, reply: string): Usage
 export function createMockClient(branchName: string): AIClient {
   return createAIClient({
     adapter: new MockAdapter({
-      handler: async function* (request: NormalizedRequest) {
+      handler: async function* (request: NormalizedRequest, _context: MockHandlerContext) {
         const prompt = extractLastUserText(request.input);
+
+        if (shouldListResources(prompt) && !hasListResourceToolResultAfterLastUser(request.input)) {
+          const path = extractPathFromPrompt(prompt);
+          const reasoning = buildListResourceReasoning(branchName, path);
+          const usage = buildMockUsage(prompt, reasoning, "");
+          yield {
+            type: "reasoning",
+            id: "mock-reasoning",
+            visibility: "summary",
+            content: reasoning,
+            stream: {
+              charsPerSecond: 36,
+              chunkSize: 3,
+              initialDelayMs: 80,
+            },
+          };
+          yield {
+            type: "tool_call",
+            id: "mock-list-resources",
+            name: LIST_RESOURCE_FILES_TOOL_NAME,
+            argumentsText: JSON.stringify({ path }),
+          };
+          yield { type: "complete", usage };
+          return;
+        }
+
+        if (hasListResourceToolResultAfterLastUser(request.input)) {
+          const toolResult = findListResourceToolResultAfterLastUser(request.input);
+          if (toolResult !== null) {
+            const reply = buildResourceListReply(toolResult);
+            const usage = buildMockUsage(prompt, "", reply);
+            yield {
+              type: "message",
+              id: "mock-message",
+              content: reply,
+              stream: {
+                charsPerSecond: 48,
+                chunkSize: 2,
+                initialDelayMs: 120,
+              },
+            };
+            yield { type: "complete", usage };
+            return;
+          }
+        }
+
         const reasoning = buildMockReasoning(branchName, prompt);
         const reply = buildMockReply(branchName, prompt);
         const usage = buildMockUsage(prompt, reasoning, reply);

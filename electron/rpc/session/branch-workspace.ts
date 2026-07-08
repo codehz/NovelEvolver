@@ -33,7 +33,7 @@ export class BranchWorkspaceImpl extends RpcTarget implements BranchWorkspace {
   constructor(session: WorktreeSession, branchName: string) {
     super();
     this.#session = session;
-    this.#aiSession = new BranchAiSession(branchName);
+    this.#aiSession = new BranchAiSession(branchName, session);
     this.#ai = new AiChatHandleImpl(this.#aiSession);
     this.#resources = new ResourceLibraryHandleImpl(this.#session);
     this.#manuscript = new ManuscriptHandleImpl(this.#session);

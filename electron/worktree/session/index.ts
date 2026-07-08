@@ -100,6 +100,10 @@ export class WorktreeSession {
     return resourceOps.readResourceFile(this.#state, id);
   }
 
+  listResourceFiles(path: string): resourceOps.ResourceFileListEntry[] {
+    return resourceOps.listResourceFiles(this.#state, path);
+  }
+
   writeResourceFile(id: string, content: string): void {
     resourceOps.writeResourceFile(this.#state, id, content);
   }

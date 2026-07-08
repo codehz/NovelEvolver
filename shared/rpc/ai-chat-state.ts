@@ -1,4 +1,11 @@
-import type { AiChatEvent, AiChatMessage, AiChatMessagePatch, AiChatSnapshot } from "./ai-rpc";
+import type {
+  AiChatEvent,
+  AiChatMessage,
+  AiChatMessagePatch,
+  AiChatSnapshot,
+  AiChatToolCall,
+  AiChatToolCallPatch,
+} from "./ai-rpc";
 
 export function createInitialAiChatSnapshot(model = "mock-assistant"): AiChatSnapshot {
   return {
@@ -10,11 +17,20 @@ export function createInitialAiChatSnapshot(model = "mock-assistant"): AiChatSna
   };
 }
 
+export function cloneAiChatToolCall(toolCall: AiChatToolCall): AiChatToolCall {
+  return { ...toolCall };
+}
+
+export function cloneAiChatToolCallPatch(patch: AiChatToolCallPatch): AiChatToolCallPatch {
+  return { ...patch };
+}
+
 export function cloneAiChatMessage(message: AiChatMessage): AiChatMessage {
   return {
     ...message,
     usage: message.usage ? { ...message.usage } : null,
     reasoning: message.reasoning ? { ...message.reasoning } : null,
+    toolCalls: message.toolCalls.map(cloneAiChatToolCall),
   };
 }
 
@@ -117,6 +133,39 @@ export function applyAiChatEvent(snapshot: AiChatSnapshot, event: AiChatEvent): 
         next = {
           ...next,
           messages: next.messages.filter((message) => message.id !== op.messageId),
+        };
+        break;
+      case "tool_call.added":
+        next = {
+          ...next,
+          messages: next.messages.map((message) =>
+            message.id === op.messageId
+              ? {
+                  ...message,
+                  toolCalls: [...message.toolCalls, cloneAiChatToolCall(op.toolCall)],
+                }
+              : message,
+          ),
+        };
+        break;
+      case "tool_call.updated":
+        next = {
+          ...next,
+          messages: next.messages.map((message) =>
+            message.id === op.messageId
+              ? {
+                  ...message,
+                  toolCalls: message.toolCalls.map((toolCall) =>
+                    toolCall.id === op.toolCallId
+                      ? {
+                          ...toolCall,
+                          ...op.patch,
+                        }
+                      : toolCall,
+                  ),
+                }
+              : message,
+          ),
         };
         break;
       case "state.updated":

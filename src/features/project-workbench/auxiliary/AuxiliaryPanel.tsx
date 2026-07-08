@@ -11,7 +11,7 @@ import { cn } from "#app/shared/lib/ui/cn";
 import { DisclosureChevron } from "#app/shared/ui/DisclosureChevron";
 import { MarkdownStream } from "#app/shared/ui/MarkdownStream";
 import { ScrollArea } from "#app/shared/ui/ScrollArea";
-import type { AiChatMessage, AiChatReasoning } from "#shared/rpc/ai-rpc";
+import type { AiChatMessage, AiChatReasoning, AiChatToolCall } from "#shared/rpc/ai-rpc";
 import { SidebarHeaderActions, sidebarHeaderActionClass } from "#workbench/chrome";
 
 import { useAiChatState } from "./use-ai-chat-state";
@@ -62,12 +62,58 @@ const composerTextareaClass = cn(
 const sendButtonClass = cn(
   "inline-flex size-8 shrink-0 items-center justify-center rounded-lg bg-badge-background text-badge-foreground hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40",
 );
+const toolCallPanelClass = cn("flex flex-col gap-1");
+const toolCallToggleClass = cn(
+  "flex w-full items-center gap-1.5 text-left text-2xs text-ctp-subtext1 focus-visible:ring-1 focus-visible:ring-badge-background/60 focus-visible:outline-none",
+);
+const toolCallLabelClass = cn("font-medium tracking-[0.02em] text-ctp-blue");
+const toolCallStatusClass = cn("text-2xs text-ctp-overlay0");
+const toolCallBodyClass = cn(
+  "flex flex-col gap-2 text-[0.75rem] leading-5 text-app-muted",
+  "[&_pre]:overflow-x-auto [&_pre]:rounded-md [&_pre]:bg-app-background [&_pre]:p-2 [&_pre]:font-mono [&_pre]:text-2xs",
+);
+
+function describeToolCallStatus(status: AiChatToolCall["status"]): string {
+  switch (status) {
+    case "pending":
+      return "等待参数";
+    case "running":
+      return "执行中";
+    case "complete":
+      return "已完成";
+    case "error":
+      return "失败";
+  }
+}
+
+function formatToolArguments(argumentsText: string): string {
+  if (argumentsText.trim() === "") {
+    return "{}";
+  }
+
+  try {
+    return JSON.stringify(JSON.parse(argumentsText), null, 2);
+  } catch {
+    return argumentsText;
+  }
+}
 
 function describeAssistantMessageMeta(message: AiChatMessage): string {
   const parts: string[] = [];
 
   if (message.status === "streaming") {
-    parts.push(message.reasoning?.status === "streaming" ? "思考中" : "流式输出中");
+    const hasRunningTool = message.toolCalls.some((toolCall) => toolCall.status === "running");
+    parts.push(
+      message.reasoning?.status === "streaming"
+        ? "思考中"
+        : hasRunningTool
+          ? "执行工具中"
+          : "流式输出中",
+    );
+  }
+
+  if (message.toolCalls.length > 0) {
+    parts.push(`工具 ${message.toolCalls.length}`);
   }
 
   if (typeof message.usage?.inputTokens === "number") {
@@ -84,6 +130,61 @@ function describeAssistantMessageMeta(message: AiChatMessage): string {
   }
 
   return parts.length > 0 ? parts.join(" · ") : "已完成";
+}
+
+function AiToolCallBlock({ toolCall }: { toolCall: AiChatToolCall }) {
+  const [expanded, setExpanded] = useState(
+    toolCall.status === "pending" || toolCall.status === "running",
+  );
+
+  useEffect(() => {
+    if (toolCall.status === "pending" || toolCall.status === "running") {
+      setExpanded(true);
+    }
+  }, [toolCall.status]);
+
+  const statusText = describeToolCallStatus(toolCall.status);
+
+  return (
+    <section className={toolCallPanelClass}>
+      <button
+        aria-expanded={expanded}
+        className={toolCallToggleClass}
+        title={expanded ? "收起工具调用" : "展开工具调用"}
+        type="button"
+        onClick={() => {
+          setExpanded((current) => !current);
+        }}
+      >
+        <DisclosureChevron expanded={expanded} />
+        <span className={toolCallLabelClass}>工具</span>
+        <span className="truncate font-mono text-ctp-green">{toolCall.name}</span>
+        <span className={toolCallStatusClass}>{statusText}</span>
+      </button>
+
+      {expanded ? (
+        <div className={toolCallBodyClass}>
+          <div>
+            <p className="mb-1 text-2xs font-medium text-ctp-subtext0">参数</p>
+            <pre>{formatToolArguments(toolCall.argumentsText)}</pre>
+          </div>
+
+          {toolCall.status === "running" ? (
+            <p className="text-ctp-subtext0">执行工具中...</p>
+          ) : null}
+
+          {toolCall.resultText ? (
+            <div>
+              <p className="mb-1 text-2xs font-medium text-ctp-subtext0">结果</p>
+              <pre>{toolCall.resultText}</pre>
+            </div>
+          ) : null}
+
+          {toolCall.errorMessage ? <p className="text-ctp-red">{toolCall.errorMessage}</p> : null}
+        </div>
+      ) : null}
+    </section>
+  );
 }
 
 function AiReasoningBlock({ reasoning }: { reasoning: AiChatReasoning }) {
@@ -137,17 +238,28 @@ function AiMessageBlock({ message }: { message: AiChatMessage }) {
   }
 
   const isStreaming = message.status === "streaming";
+  const hasRunningTool = message.toolCalls.some((toolCall) => toolCall.status === "running");
   const metaText = describeAssistantMessageMeta(message);
 
   return (
     <article className={assistantMessageBlockClass}>
       {message.reasoning ? <AiReasoningBlock reasoning={message.reasoning} /> : null}
 
+      {message.toolCalls.map((toolCall) => (
+        <AiToolCallBlock key={toolCall.id} toolCall={toolCall} />
+      ))}
+
       <div className={assistantMessageBodyClass}>
         {message.text !== "" ? (
           <MarkdownStream isAnimating={isStreaming}>{message.text}</MarkdownStream>
         ) : (
-          <p className="text-ctp-subtext0">{message.reasoning ? "..." : "思考中..."}</p>
+          <p className="text-ctp-subtext0">
+            {message.reasoning || message.toolCalls.length > 0
+              ? hasRunningTool
+                ? "执行工具中..."
+                : "..."
+              : "思考中..."}
+          </p>
         )}
       </div>
 

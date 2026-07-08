@@ -17,6 +17,24 @@ export type AiChatReasoning = {
   status: "streaming" | "complete";
 };
 
+export type AiChatToolCallStatus = "pending" | "running" | "complete" | "error";
+
+export type AiChatToolCall = {
+  id: string;
+  name: string;
+  argumentsText: string;
+  status: AiChatToolCallStatus;
+  resultText: string | null;
+  errorMessage: string | null;
+};
+
+export type AiChatToolCallPatch = {
+  argumentsText?: string;
+  status?: AiChatToolCallStatus;
+  resultText?: string | null;
+  errorMessage?: string | null;
+};
+
 export type AiChatMessage = {
   id: string;
   role: "user" | "assistant";
@@ -24,6 +42,7 @@ export type AiChatMessage = {
   status: "streaming" | "complete";
   usage: AiChatMessageUsage | null;
   reasoning: AiChatReasoning | null;
+  toolCalls: AiChatToolCall[];
 };
 
 export type AiChatSnapshot = {
@@ -78,6 +97,17 @@ export type AiChatDeltaOp =
   | {
       type: "message.removed";
       messageId: string;
+    }
+  | {
+      type: "tool_call.added";
+      messageId: string;
+      toolCall: AiChatToolCall;
+    }
+  | {
+      type: "tool_call.updated";
+      messageId: string;
+      toolCallId: string;
+      patch: AiChatToolCallPatch;
     }
   | {
       type: "state.updated";
