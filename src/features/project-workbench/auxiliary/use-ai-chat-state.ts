@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 
 import { consumeRpcSubscription } from "#app/shared/lib/rpc/app-rpc-react";
-import type { AiChatSnapshot } from "#shared/rpc/ai-rpc";
+import type { AiChatEvent, AiChatMessage, AiChatSnapshot } from "#shared/rpc/ai-rpc";
 
 import { useAiChat } from "../branch/branch-scopes";
 
@@ -13,6 +13,82 @@ function createInitialAiChatSnapshot(): AiChatSnapshot {
     pending: false,
     errorMessage: null,
   };
+}
+
+function applyMessagePatch(
+  message: AiChatMessage,
+  patch: {
+    text?: string;
+    status?: AiChatMessage["status"];
+    usage?: AiChatMessage["usage"];
+  },
+): AiChatMessage {
+  return {
+    ...message,
+    ...patch,
+    usage: patch.usage !== undefined ? patch.usage : message.usage,
+  };
+}
+
+function applyAiChatEvent(snapshot: AiChatSnapshot, event: AiChatEvent): AiChatSnapshot {
+  if (event.kind === "snapshot") {
+    return event.snapshot;
+  }
+
+  let next = snapshot;
+  for (const op of event.ops) {
+    switch (op.type) {
+      case "conversation.reset":
+        next = {
+          ...next,
+          messages: [],
+          pending: false,
+          errorMessage: null,
+        };
+        break;
+      case "message.added":
+        next = {
+          ...next,
+          messages: [...next.messages, op.message],
+        };
+        break;
+      case "message.text.delta":
+        next = {
+          ...next,
+          messages: next.messages.map((message) =>
+            message.id === op.messageId
+              ? {
+                  ...message,
+                  text: `${message.text}${op.text}`,
+                }
+              : message,
+          ),
+        };
+        break;
+      case "message.updated":
+        next = {
+          ...next,
+          messages: next.messages.map((message) =>
+            message.id === op.messageId ? applyMessagePatch(message, op.patch) : message,
+          ),
+        };
+        break;
+      case "message.removed":
+        next = {
+          ...next,
+          messages: next.messages.filter((message) => message.id !== op.messageId),
+        };
+        break;
+      case "state.updated":
+        next = {
+          ...next,
+          ...op.patch,
+        };
+        break;
+    }
+  }
+
+  return next;
 }
 
 export function useAiChatState() {
@@ -28,8 +104,8 @@ export function useAiChatState() {
 
     return consumeRpcSubscription({
       subscribe: () => aiChat.subscribeChat(),
-      onValue: (next) => {
-        setSnapshot(next);
+      onValue: (event) => {
+        setSnapshot((current) => applyAiChatEvent(current, event));
         setLoading(false);
         setSubscriptionError(null);
       },

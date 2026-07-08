@@ -25,8 +25,58 @@ export type AiChatSnapshot = {
   errorMessage: string | null;
 };
 
+export type AiChatMessagePatch = {
+  text?: string;
+  status?: AiChatMessage["status"];
+  usage?: AiChatMessage["usage"];
+};
+
+export type AiChatStatePatch = {
+  pending?: boolean;
+  errorMessage?: string | null;
+};
+
+export type AiChatDeltaOp =
+  | {
+      type: "conversation.reset";
+    }
+  | {
+      type: "message.added";
+      message: AiChatMessage;
+    }
+  | {
+      type: "message.text.delta";
+      messageId: string;
+      text: string;
+    }
+  | {
+      type: "message.updated";
+      messageId: string;
+      patch: AiChatMessagePatch;
+    }
+  | {
+      type: "message.removed";
+      messageId: string;
+    }
+  | {
+      type: "state.updated";
+      patch: AiChatStatePatch;
+    };
+
+export type AiChatSnapshotEvent = {
+  kind: "snapshot";
+  snapshot: AiChatSnapshot;
+};
+
+export type AiChatDeltaEvent = {
+  kind: "delta";
+  ops: AiChatDeltaOp[];
+};
+
+export type AiChatEvent = AiChatSnapshotEvent | AiChatDeltaEvent;
+
 export interface AiChatHandle extends RpcTarget {
-  subscribeChat(): RpcSubscriptionResult<AiChatSnapshot>;
+  subscribeChat(): RpcSubscriptionResult<AiChatEvent>;
   sendMessage(text: string): void;
   resetConversation(): void;
 }

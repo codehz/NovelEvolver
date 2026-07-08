@@ -1,6 +1,6 @@
 import { RpcTarget } from "capnweb";
 
-import type { AiChatHandle, AiChatSnapshot } from "#shared/rpc/ai-rpc";
+import type { AiChatEvent, AiChatHandle } from "#shared/rpc/ai-rpc";
 
 import type { BranchAiSession } from "../../ai/branch-ai-session";
 
@@ -12,7 +12,7 @@ export class AiChatHandleImpl extends RpcTarget implements AiChatHandle {
     this.#session = session;
   }
 
-  async subscribeChat(): Promise<ReadableStream<AiChatSnapshot>> {
+  async subscribeChat(): Promise<ReadableStream<AiChatEvent>> {
     return this.#session.subscribe();
   }
 

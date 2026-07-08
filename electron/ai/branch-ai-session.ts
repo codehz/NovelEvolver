@@ -1,6 +1,12 @@
 import type { AIClient, AIResponse, AIStreamEvent, InputItem } from "@codehz/ai";
 
-import type { AiChatMessage, AiChatSnapshot } from "#shared/rpc/ai-rpc";
+import type {
+  AiChatDeltaOp,
+  AiChatEvent,
+  AiChatMessage,
+  AiChatMessagePatch,
+  AiChatSnapshot,
+} from "#shared/rpc/ai-rpc";
 
 import { RpcStreamPublisher } from "../lib/stream-publisher";
 import { cloneMessage, readResponseText, toErrorMessage, toMessageUsage } from "./ai-utils";
@@ -14,9 +20,10 @@ import {
 
 export class BranchAiSession {
   readonly #client: AIClient;
-  readonly #publisher = new RpcStreamPublisher<AiChatSnapshot>();
+  readonly #publisher = new RpcStreamPublisher<AiChatEvent>();
   readonly #messages: AiChatMessage[] = [];
   readonly #history: InputItem[] = [];
+  readonly #providerMessageIds = new Map<string, string>();
   #pending = false;
   #errorMessage: string | null = null;
   #messageCounter = 0;
@@ -25,9 +32,12 @@ export class BranchAiSession {
     this.#client = createMockClient(branchName);
   }
 
-  subscribe(): ReadableStream<AiChatSnapshot> {
+  subscribe(): ReadableStream<AiChatEvent> {
     return this.#publisher.subscribe({
-      getInitialValue: () => this.#createSnapshot(),
+      getInitialValue: () => ({
+        kind: "snapshot",
+        snapshot: this.#createSnapshot(),
+      }),
     });
   }
 
@@ -44,9 +54,26 @@ export class BranchAiSession {
     const assistantMessage = this.#appendMessage("assistant", "", "streaming");
     const requestInput = [...this.#history, toInputItem(userMessage.text)];
 
+    this.#providerMessageIds.clear();
     this.#pending = true;
     this.#errorMessage = null;
-    this.#emitSnapshot();
+    this.#emitDelta([
+      {
+        type: "message.added",
+        message: cloneMessage(userMessage),
+      },
+      {
+        type: "message.added",
+        message: cloneMessage(assistantMessage),
+      },
+      {
+        type: "state.updated",
+        patch: {
+          pending: true,
+          errorMessage: null,
+        },
+      },
+    ]);
 
     void this.#runRequest(
       this.#client.stream({ instructions: AI_INSTRUCTIONS, input: requestInput }),
@@ -64,8 +91,9 @@ export class BranchAiSession {
 
     this.#messages.length = 0;
     this.#history.length = 0;
+    this.#providerMessageIds.clear();
     this.#errorMessage = null;
-    this.#emitSnapshot();
+    this.#emitDelta([{ type: "conversation.reset" }]);
   }
 
   [Symbol.dispose](): void {
@@ -82,8 +110,15 @@ export class BranchAiSession {
     };
   }
 
-  #emitSnapshot(): void {
-    this.#publisher.emit(this.#createSnapshot());
+  #emitDelta(ops: AiChatDeltaOp[]): void {
+    if (ops.length === 0) {
+      return;
+    }
+
+    this.#publisher.emit({
+      kind: "delta",
+      ops,
+    });
   }
 
   #appendMessage(
@@ -114,6 +149,33 @@ export class BranchAiSession {
     };
   }
 
+  #removeMessage(id: string): boolean {
+    const index = this.#messages.findIndex((message) => message.id === id);
+    if (index < 0) {
+      return false;
+    }
+
+    this.#messages.splice(index, 1);
+    return true;
+  }
+
+  #appendMessageText(id: string, text: string): boolean {
+    const message = this.#messages.find((candidate) => candidate.id === id);
+    if (!message) {
+      return false;
+    }
+
+    message.text += text;
+    return true;
+  }
+
+  #cloneMessagePatch(patch: AiChatMessagePatch): AiChatMessagePatch {
+    return {
+      ...patch,
+      usage: patch.usage ? { ...patch.usage } : patch.usage,
+    };
+  }
+
   async #runRequest(
     stream: AsyncIterable<AIStreamEvent>,
     context: {
@@ -136,50 +198,92 @@ export class BranchAiSession {
       }
 
       const finalText = readResponseText(completedResponse);
-      this.#patchMessage(context.assistantMessageId, {
-        text: finalText,
+      const completionPatch: AiChatMessagePatch = {
         status: "complete",
         usage: toMessageUsage(completedResponse.usage),
-      });
+      };
+      const assistantMessage = this.#messages.find(
+        (message) => message.id === context.assistantMessageId,
+      );
+      if (assistantMessage && assistantMessage.text !== finalText) {
+        completionPatch.text = finalText;
+      }
+      this.#patchMessage(context.assistantMessageId, completionPatch);
       this.#history.length = 0;
       this.#history.push(...context.requestInput, ...completedResponse.replay);
+      this.#providerMessageIds.clear();
       this.#pending = false;
-      this.#emitSnapshot();
+      this.#emitDelta([
+        {
+          type: "message.updated",
+          messageId: context.assistantMessageId,
+          patch: this.#cloneMessagePatch(completionPatch),
+        },
+        {
+          type: "state.updated",
+          patch: {
+            pending: false,
+          },
+        },
+      ]);
     } catch (error) {
       this.#pending = false;
       this.#errorMessage = toErrorMessage(error);
+      this.#providerMessageIds.clear();
+      const ops: AiChatDeltaOp[] = [];
 
       const assistantMessage = this.#messages.find(
         (message) => message.id === context.assistantMessageId,
       );
       if (assistantMessage?.text === "") {
-        const index = this.#messages.findIndex(
-          (message) => message.id === context.assistantMessageId,
-        );
-        if (index >= 0) {
-          this.#messages.splice(index, 1);
+        if (this.#removeMessage(context.assistantMessageId)) {
+          ops.push({
+            type: "message.removed",
+            messageId: context.assistantMessageId,
+          });
         }
       } else {
         this.#patchMessage(context.assistantMessageId, { status: "complete" });
+        ops.push({
+          type: "message.updated",
+          messageId: context.assistantMessageId,
+          patch: { status: "complete" },
+        });
       }
 
-      this.#emitSnapshot();
+      ops.push({
+        type: "state.updated",
+        patch: {
+          pending: false,
+          errorMessage: this.#errorMessage,
+        },
+      });
+      this.#emitDelta(ops);
     }
   }
 
   #handleStreamEvent(event: AIStreamEvent, assistantMessageId: string): void {
-    if (event.type !== "message.delta" || event.itemId !== assistantMessageId) {
+    if (event.type === "message.started") {
+      this.#providerMessageIds.set(event.item.id, assistantMessageId);
       return;
     }
 
-    const assistantMessage = this.#messages.find((message) => message.id === assistantMessageId);
-    if (!assistantMessage) {
+    if (event.type !== "message.delta") {
       return;
     }
 
-    this.#patchMessage(assistantMessageId, {
-      text: `${assistantMessage.text}${event.delta.text}`,
-    });
-    this.#emitSnapshot();
+    const messageId = this.#providerMessageIds.get(event.itemId) ?? assistantMessageId;
+    this.#providerMessageIds.set(event.itemId, messageId);
+    if (!this.#appendMessageText(messageId, event.delta.text)) {
+      return;
+    }
+
+    this.#emitDelta([
+      {
+        type: "message.text.delta",
+        messageId,
+        text: event.delta.text,
+      },
+    ]);
   }
 }
