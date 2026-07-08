@@ -30,6 +30,7 @@
     "@iconify/json": "^2.2.496",
     "@iconify/utils": "^3.1.4",
     "@mogeko/maple-mono-cn": "^7.9.0",
+    "@streamdown/cjk": "^1.0.3",
     "bunshi": "^2.2.0",
     "capnweb": "^0.9.1",
     "clsx": "^2.1.1",

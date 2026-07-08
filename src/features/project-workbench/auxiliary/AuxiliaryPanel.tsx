@@ -1,3 +1,4 @@
+import { cjk } from "@streamdown/cjk";
 import {
   useCallback,
   useEffect,
@@ -115,7 +116,12 @@ function AiReasoningBlock({ reasoning }: { reasoning: AiChatReasoning }) {
       {expanded ? (
         <div className={reasoningBodyClass}>
           {reasoning.text !== "" ? (
-            <Streamdown animated className="text-inherit" isAnimating={isAnimating}>
+            <Streamdown
+              animated
+              className="text-inherit"
+              isAnimating={isAnimating}
+              plugins={{ cjk }}
+            >
               {reasoning.text}
             </Streamdown>
           ) : (
@@ -147,7 +153,7 @@ function AiMessageBlock({ message }: { message: AiChatMessage }) {
 
       <div className={assistantMessageBodyClass}>
         {message.text !== "" ? (
-          <Streamdown animated className="text-inherit" isAnimating={isStreaming}>
+          <Streamdown animated className="text-inherit" isAnimating={isStreaming} plugins={{ cjk }}>
             {message.text}
           </Streamdown>
         ) : (
