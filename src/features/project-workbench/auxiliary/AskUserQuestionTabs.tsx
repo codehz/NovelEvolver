@@ -1,9 +1,10 @@
 import { cn } from "#app/shared/lib/ui/cn";
+import { scrollbarThinNativeClass } from "#app/shared/lib/ui/scrollbar";
 import type { AiChatToolCall } from "#shared/rpc/ai-rpc";
 
 import { summarizeAskUserQuestion } from "./ask-user-prompt";
 
-const tabsRailClass = cn("flex gap-1.5 overflow-x-auto px-1 pb-0.5");
+const tabsRailClass = cn("flex gap-1.5 overflow-x-auto px-1 pb-1", scrollbarThinNativeClass);
 const tabButtonClass = cn(
   "inline-flex max-w-40 shrink-0 items-center gap-1 rounded-md border px-2 py-1 text-left text-2xs transition-colors",
 );

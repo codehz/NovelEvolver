@@ -18,6 +18,7 @@ export { applyScrollbarThumbElement } from "./dom-presentation";
 export {
   scrollbarHiddenViewportClass,
   scrollbarNativeHiddenClass,
+  scrollbarThinNativeClass,
   scrollbarOverlayRootClass,
   scrollbarStickyRailClass,
   scrollbarThumbActiveClass,

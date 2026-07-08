@@ -10,6 +10,9 @@ export const scrollbarHiddenViewportClass = cn(
 /** Apply on an existing scrollport (e.g. CodeMirror `.cm-scroller`). */
 export const scrollbarNativeHiddenClass = cn("scrollbar-hidden");
 
+/** Thin native scrollbar styled to match overlay rails (horizontal or vertical). */
+export const scrollbarThinNativeClass = cn("scrollbar-thin");
+
 export const scrollbarOverlayRootClass = cn("pointer-events-none absolute inset-0 z-10");
 
 /** Pins rail inside scrollport so wheel still hits scrollable content (ScrollArea). */
