@@ -19,7 +19,7 @@
   },
   "dependencies": {
     "@catppuccin/tailwindcss": "^1.0.0",
-    "@codehz/ai": "^0.1.2",
+    "@codehz/ai": "^0.1.3",
     "@codehz/auto-transition": "^0.0.7-14",
     "@codemirror/commands": "^6.10.4",
     "@codemirror/lang-markdown": "^6.5.0",

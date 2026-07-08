@@ -6,7 +6,7 @@
       "name": "novelevolver",
       "dependencies": {
         "@catppuccin/tailwindcss": "^1.0.0",
-        "@codehz/ai": "^0.1.2",
+        "@codehz/ai": "^0.1.3",
         "@codehz/auto-transition": "^0.0.7-14",
         "@codemirror/commands": "^6.10.4",
         "@codemirror/lang-markdown": "^6.5.0",
@@ -79,7 +79,7 @@
 
     "@catppuccin/tailwindcss": ["@catppuccin/tailwindcss@1.0.0", "", {}, "sha512-l8pOlcYe2ncGd8a1gUmL5AHmKlxR2+CHuG5kt4Me6IZwzntW1DoLmj89BH+DcsPHBsdDGLrTSv35emlYyU3FeQ=="],
 
-    "@codehz/ai": ["@codehz/ai@0.1.2", "", {}, "sha512-LVeMBIFyqdNSjvofk1BpyRvnkxHsCOfqF23ZWRfzCNOWHXVYPQHqE4a1Pp13f0dFrIe9+JnM+fVbG4sY9+Edcg=="],
+    "@codehz/ai": ["@codehz/ai@0.1.3", "", {}, "sha512-mAnBvNWKO+/JZZ88hC3oWiiPiARDV6MThqYu+ijlk9WOeJYOmGomJ+pUZf39urcje73/8oGwgTSOnswevVjYVw=="],
 
     "@codehz/auto-transition": ["@codehz/auto-transition@0.0.7-14", "", { "dependencies": { "@radix-ui/react-slot": "^1.2.4" }, "peerDependencies": { "react": "^19.2.4" } }, "sha512-XZ357ZZYk8PZ+fy/22mfs6dPTo96llb77NdxWWgPRrcf03fIZ0Xo/V79GRTx7/6g4VhJK7hwAMHmpxRjcnzI9g=="],
 
