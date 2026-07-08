@@ -51,6 +51,9 @@
   --spacing-quick-pick: 36rem;
   --z-index-quick-pick: 50;
 
+  --spacing-settings-dialog: 52rem;
+  --z-index-settings: 50;
+
   --spacing-scrollbar: 0.75rem;
 
   --color-pte-line-highlight: color-mix(in srgb, var(--color-ctp-surface0) 42%, transparent);

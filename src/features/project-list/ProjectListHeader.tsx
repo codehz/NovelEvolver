@@ -1,16 +1,37 @@
 import { cn } from "#app/shared/lib/ui/cn";
 
+import { settingsHeaderActionButtonClass } from "./settings/settings-chrome";
+
 type ProjectListHeaderProps = {
   pending: boolean;
+  settingsOpen: boolean;
   onCreate: () => void;
   onOpenDialog: () => void;
+  onOpenSettings: () => void;
 };
 
-export function ProjectListHeader({ pending, onCreate, onOpenDialog }: ProjectListHeaderProps) {
+export function ProjectListHeader({
+  pending,
+  settingsOpen,
+  onCreate,
+  onOpenDialog,
+  onOpenSettings,
+}: ProjectListHeaderProps) {
   return (
     <div className="flex items-center justify-between gap-4">
       <h1 className="text-lg font-semibold text-app-foreground">项目</h1>
       <div className="flex items-center gap-2">
+        <button
+          aria-expanded={settingsOpen}
+          aria-haspopup="dialog"
+          aria-label="设置"
+          className={settingsHeaderActionButtonClass}
+          disabled={pending}
+          type="button"
+          onClick={onOpenSettings}
+        >
+          <span aria-hidden="true" className="icon-[codicon--settings-gear] text-base" />
+        </button>
         <button
           className={cn(
             "rounded-md border border-titlebar-border bg-app-surface px-3 py-1.5 text-sm font-medium text-app-foreground",
