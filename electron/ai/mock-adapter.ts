@@ -1,10 +1,29 @@
 import { MockAdapter, createAIClient } from "@codehz/ai";
-import type { AIClient, InputItem, Usage } from "@codehz/ai";
+import type { AIClient, InputItem, MessageItem, NormalizedRequest, Usage } from "@codehz/ai";
 
 export const AI_ADAPTER_KIND = "mock" as const;
 export const AI_MODEL = "mock-assistant";
 export const AI_INSTRUCTIONS =
   "你是 NovelEvolver 原型里的内置写作助手。当前运行在 mock adapter 上，请简洁回应，并明确这是演示数据。";
+
+/**
+ * 从请求 input 中提取最后一条 user 消息的纯文本。
+ *
+ * mock handler 在被调用时据此生成演示回复，使 client 与具体输入解耦——
+ * 同一个 client 实例可服务多次 stream 调用，与真实后端用法一致。
+ */
+function extractLastUserText(input: readonly InputItem[]): string {
+  for (let i = input.length - 1; i >= 0; i--) {
+    const item = input[i]!;
+    if (item.type === "message" && item.role === "user") {
+      return item.content
+        .filter((block): block is { type: "text"; text: string } => block.type === "text")
+        .map((block) => block.text)
+        .join("");
+    }
+  }
+  return "";
+}
 
 function buildMockReply(branchName: string, prompt: string): string {
   const excerpt = prompt.length > 180 ? `${prompt.slice(0, 180)}...` : prompt;
@@ -43,27 +62,32 @@ function buildMockUsage(prompt: string, reply: string): Usage {
 /**
  * 创建基于 MockAdapter 的演示用 AI 客户端。
  *
- * MockAdapter 会按 `buildMockReply` 生成的内容以流式方式回放，
- * 并附带估算的 token 用量。后续接入真实模型时替换此工厂即可。
+ * client 与具体输入解耦：handler 在每次 stream 调用时从 `request.input`
+ * 提取最后一条用户消息，再生成演示回复与估算用量。因此同一个 client
+ * 实例可服务多轮对话，与真实后端 `client.stream(request)` 的用法一致——
+ * 后续接入真实模型时只需替换此工厂，业务层无需改动。
+ *
+ * `branchName` 作为分支级配置传入（与真实后端按分支定制 instructions /
+ * 模型配置的形态对齐），不随单次请求变化。
  */
-export function createMockClient(branchName: string, prompt: string): AIClient {
-  const mockReply = buildMockReply(branchName, prompt);
-  const mockUsage = buildMockUsage(prompt, mockReply);
-
+export function createMockClient(branchName: string): AIClient {
   return createAIClient({
     adapter: new MockAdapter({
-      handler: async function* () {
+      handler: async function* (request: NormalizedRequest) {
+        const prompt = extractLastUserText(request.input);
+        const reply = buildMockReply(branchName, prompt);
+        const usage = buildMockUsage(prompt, reply);
         yield {
           type: "message",
           id: "mock-message",
-          content: mockReply,
+          content: reply,
           stream: {
             charsPerSecond: 48,
             chunkSize: 2,
             initialDelayMs: 120,
           },
         };
-        yield { type: "complete", usage: mockUsage };
+        yield { type: "complete", usage };
       },
     }),
     model: AI_MODEL,
@@ -73,7 +97,7 @@ export function createMockClient(branchName: string, prompt: string): AIClient {
 /**
  * 将用户文本包装为 AI 请求的输入项。
  */
-export function toInputItem(text: string): InputItem {
+export function toInputItem(text: string): MessageItem {
   return {
     type: "message",
     role: "user",

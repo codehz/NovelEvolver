@@ -1,4 +1,4 @@
-import type { AIResponse, AIStreamEvent, InputItem } from "@codehz/ai";
+import type { AIClient, AIResponse, AIStreamEvent, InputItem } from "@codehz/ai";
 
 import type { AiChatMessage, AiChatSnapshot } from "#shared/rpc/ai-rpc";
 
@@ -13,7 +13,7 @@ import {
 } from "./mock-adapter";
 
 export class BranchAiSession {
-  readonly #branchName: string;
+  readonly #client: AIClient;
   readonly #publisher = new RpcStreamPublisher<AiChatSnapshot>();
   readonly #messages: AiChatMessage[] = [];
   readonly #history: InputItem[] = [];
@@ -22,7 +22,7 @@ export class BranchAiSession {
   #messageCounter = 0;
 
   constructor(branchName: string) {
-    this.#branchName = branchName;
+    this.#client = createMockClient(branchName);
   }
 
   subscribe(): ReadableStream<AiChatSnapshot> {
@@ -48,12 +48,13 @@ export class BranchAiSession {
     this.#errorMessage = null;
     this.#emitSnapshot();
 
-    const client = createMockClient(this.#branchName, normalized);
-
-    void this.#runRequest(client.stream({ instructions: AI_INSTRUCTIONS, input: requestInput }), {
-      assistantMessageId: assistantMessage.id,
-      requestInput,
-    });
+    void this.#runRequest(
+      this.#client.stream({ instructions: AI_INSTRUCTIONS, input: requestInput }),
+      {
+        assistantMessageId: assistantMessage.id,
+        requestInput,
+      },
+    );
   }
 
   resetConversation(): void {
