@@ -55,14 +55,46 @@ export function normalizeAskUserChoices(choices: unknown): AskUserToolChoice[] {
   return normalized;
 }
 
-export function findAwaitingAskUserToolCall(snapshot: AiChatSnapshot): AiChatToolCall | null {
-  if (snapshot.awaitingToolCallId === null) {
-    return null;
+export function summarizeAskUserQuestion(toolCall: AiChatToolCall, fallbackIndex: number): string {
+  const args = parseAskUserToolArguments(toolCall.argumentsText);
+  const question = args?.question?.trim();
+  if (!question) {
+    return `问题 ${fallbackIndex + 1}`;
   }
 
+  return question.length > 24 ? `${question.slice(0, 24)}…` : question;
+}
+
+export function listAwaitingAskUserToolCalls(snapshot: AiChatSnapshot): AiChatToolCall[] {
+  if (snapshot.awaitingAskUserToolCallIds.length === 0) {
+    return [];
+  }
+
+  const awaitingIds = new Set(snapshot.awaitingAskUserToolCallIds);
+  const toolCalls: AiChatToolCall[] = [];
+
+  for (const message of snapshot.messages) {
+    for (const toolCall of message.toolCalls) {
+      if (toolCall.name === "ask_user" && awaitingIds.has(toolCall.id)) {
+        toolCalls.push(toolCall);
+      }
+    }
+  }
+
+  return toolCalls.sort(
+    (left, right) =>
+      snapshot.awaitingAskUserToolCallIds.indexOf(left.id) -
+      snapshot.awaitingAskUserToolCallIds.indexOf(right.id),
+  );
+}
+
+export function findAskUserToolCall(
+  snapshot: AiChatSnapshot,
+  toolCallId: string,
+): AiChatToolCall | null {
   for (const message of snapshot.messages) {
     const toolCall = message.toolCalls.find(
-      (candidate) => candidate.id === snapshot.awaitingToolCallId && candidate.name === "ask_user",
+      (candidate) => candidate.id === toolCallId && candidate.name === "ask_user",
     );
     if (toolCall) {
       return toolCall;
@@ -70,4 +102,25 @@ export function findAwaitingAskUserToolCall(snapshot: AiChatSnapshot): AiChatToo
   }
 
   return null;
+}
+
+export function listAskUserToolCallsInActiveBatch(snapshot: AiChatSnapshot): AiChatToolCall[] {
+  const awaitingIds = new Set(snapshot.awaitingAskUserToolCallIds);
+  if (awaitingIds.size === 0) {
+    return [];
+  }
+
+  for (const message of snapshot.messages) {
+    if (!message.toolCalls.some((toolCall) => awaitingIds.has(toolCall.id))) {
+      continue;
+    }
+
+    return message.toolCalls.filter(
+      (toolCall) =>
+        toolCall.name === "ask_user" &&
+        (toolCall.status === "awaiting_user" || toolCall.status === "complete"),
+    );
+  }
+
+  return listAwaitingAskUserToolCalls(snapshot);
 }

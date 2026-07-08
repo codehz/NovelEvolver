@@ -14,8 +14,8 @@ import { ScrollArea } from "#app/shared/ui/ScrollArea";
 import type { AiChatMessage, AiChatReasoning, AiChatToolCall } from "#shared/rpc/ai-rpc";
 import { SidebarHeaderActions, sidebarHeaderActionClass } from "#workbench/chrome";
 
-import { findAwaitingAskUserToolCall, parseAskUserToolArguments } from "./ask-user-prompt";
-import { AskUserComposer } from "./AskUserComposer";
+import { parseAskUserToolArguments } from "./ask-user-prompt";
+import { AskUserComposerPanel } from "./AskUserComposerPanel";
 import { useAiChatState } from "./use-ai-chat-state";
 
 const panelSectionClass = cn("mx-auto flex w-full max-w-3xl flex-col");
@@ -68,6 +68,7 @@ const toolCallPanelClass = cn("flex flex-col gap-1");
 const toolCallToggleClass = cn(
   "flex w-full items-center gap-1.5 text-left text-2xs text-ctp-subtext1 focus-visible:ring-1 focus-visible:ring-badge-background/60 focus-visible:outline-none",
 );
+const toolCallToggleActiveClass = cn("rounded-md ring-1 ring-ctp-blue/40");
 const toolCallLabelClass = cn("font-medium tracking-[0.02em] text-ctp-blue");
 const toolCallStatusClass = cn("text-2xs text-ctp-overlay0");
 const toolCallBodyClass = cn(
@@ -139,12 +140,17 @@ function describeAssistantMessageMeta(message: AiChatMessage): string {
 
 function AiToolCallBlock({
   toolCall,
-  awaitingToolCallId,
+  awaitingAskUserToolCallIds,
+  activeAskUserToolCallId,
+  onSelectAskUserToolCall,
 }: {
   toolCall: AiChatToolCall;
-  awaitingToolCallId: string | null;
+  awaitingAskUserToolCallIds: string[];
+  activeAskUserToolCallId: string | null;
+  onSelectAskUserToolCall: (toolCallId: string) => void;
 }) {
-  const isAwaitingThisTool = awaitingToolCallId === toolCall.id;
+  const isAwaitingThisTool = awaitingAskUserToolCallIds.includes(toolCall.id);
+  const isActiveAskUser = activeAskUserToolCallId === toolCall.id;
   const isAskUser = toolCall.name === "ask_user";
   const askUserArgs = isAskUser ? parseAskUserToolArguments(toolCall.argumentsText) : null;
   const [expanded, setExpanded] = useState(false);
@@ -155,10 +161,16 @@ function AiToolCallBlock({
     <section className={toolCallPanelClass}>
       <button
         aria-expanded={expanded}
-        className={toolCallToggleClass}
+        className={cn(
+          toolCallToggleClass,
+          isAskUser && isActiveAskUser ? toolCallToggleActiveClass : null,
+        )}
         title={expanded ? "收起工具调用" : "展开工具调用"}
         type="button"
         onClick={() => {
+          if (isAskUser && isAwaitingThisTool) {
+            onSelectAskUserToolCall(toolCall.id);
+          }
           setExpanded((current) => !current);
         }}
       >
@@ -247,10 +259,14 @@ function AiReasoningBlock({ reasoning }: { reasoning: AiChatReasoning }) {
 
 function AiMessageBlock({
   message,
-  awaitingToolCallId,
+  awaitingAskUserToolCallIds,
+  activeAskUserToolCallId,
+  onSelectAskUserToolCall,
 }: {
   message: AiChatMessage;
-  awaitingToolCallId: string | null;
+  awaitingAskUserToolCallIds: string[];
+  activeAskUserToolCallId: string | null;
+  onSelectAskUserToolCall: (toolCallId: string) => void;
 }) {
   if (message.role === "user") {
     return (
@@ -273,8 +289,10 @@ function AiMessageBlock({
       {message.toolCalls.map((toolCall) => (
         <AiToolCallBlock
           key={toolCall.id}
-          awaitingToolCallId={awaitingToolCallId}
+          activeAskUserToolCallId={activeAskUserToolCallId}
+          awaitingAskUserToolCallIds={awaitingAskUserToolCallIds}
           toolCall={toolCall}
+          onSelectAskUserToolCall={onSelectAskUserToolCall}
         />
       ))}
 
@@ -313,17 +331,24 @@ export function AuxiliaryPanel() {
   const composerRef = useRef<HTMLTextAreaElement | null>(null);
   const shouldRestoreComposerFocusRef = useRef(false);
 
-  const awaitingAskUser = findAwaitingAskUserToolCall(snapshot);
+  const hasAwaitingAskUser = snapshot.awaitingAskUserToolCallIds.length > 0;
+  const [activeAskUserToolCallId, setActiveAskUserToolCallId] = useState<string | null>(null);
 
   useEffect(() => {
     endRef.current?.scrollIntoView({ block: "end", behavior: "smooth" });
-  }, [snapshot.messages, snapshot.pending, snapshot.awaitingToolCallId]);
+  }, [snapshot.messages, snapshot.pending, snapshot.awaitingAskUserToolCallIds]);
+
+  useEffect(() => {
+    if (!hasAwaitingAskUser) {
+      setActiveAskUserToolCallId(null);
+    }
+  }, [hasAwaitingAskUser]);
 
   useEffect(() => {
     if (
       loading ||
       snapshot.pending ||
-      awaitingAskUser !== null ||
+      hasAwaitingAskUser ||
       !shouldRestoreComposerFocusRef.current
     ) {
       return;
@@ -331,7 +356,7 @@ export function AuxiliaryPanel() {
 
     composerRef.current?.focus();
     shouldRestoreComposerFocusRef.current = false;
-  }, [awaitingAskUser, loading, snapshot.pending]);
+  }, [hasAwaitingAskUser, loading, snapshot.pending]);
 
   const submitDraft = useCallback(async (): Promise<void> => {
     const submitted = await sendMessage(draft);
@@ -373,7 +398,7 @@ export function AuxiliaryPanel() {
         <button
           aria-label="清空对话"
           className={sidebarHeaderActionClass}
-          disabled={snapshot.pending}
+          disabled={snapshot.pending || hasAwaitingAskUser}
           title="清空对话"
           type="button"
           onClick={() => {
@@ -405,8 +430,10 @@ export function AuxiliaryPanel() {
           {snapshot.messages.map((message) => (
             <AiMessageBlock
               key={message.id}
-              awaitingToolCallId={snapshot.awaitingToolCallId}
+              activeAskUserToolCallId={activeAskUserToolCallId}
+              awaitingAskUserToolCallIds={snapshot.awaitingAskUserToolCallIds}
               message={message}
+              onSelectAskUserToolCall={setActiveAskUserToolCallId}
             />
           ))}
           <div
@@ -418,10 +445,12 @@ export function AuxiliaryPanel() {
       </ScrollArea>
 
       <footer className="shrink-0 p-3">
-        {awaitingAskUser ? (
-          <AskUserComposer
+        {hasAwaitingAskUser ? (
+          <AskUserComposerPanel
+            activeToolCallId={activeAskUserToolCallId}
             loading={loading}
-            toolCall={awaitingAskUser}
+            snapshot={snapshot}
+            onSelectToolCallId={setActiveAskUserToolCallId}
             onSubmit={submitToolResponse}
           />
         ) : (

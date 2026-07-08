@@ -13,7 +13,7 @@ export function createInitialAiChatSnapshot(model = "mock-assistant"): AiChatSna
     model,
     messages: [],
     pending: false,
-    awaitingToolCallId: null,
+    awaitingAskUserToolCallIds: [],
     errorMessage: null,
   };
 }
@@ -83,7 +83,7 @@ export function applyAiChatEvent(snapshot: AiChatSnapshot, event: AiChatEvent): 
           ...next,
           messages: [],
           pending: false,
-          awaitingToolCallId: null,
+          awaitingAskUserToolCallIds: [],
           errorMessage: null,
         };
         break;

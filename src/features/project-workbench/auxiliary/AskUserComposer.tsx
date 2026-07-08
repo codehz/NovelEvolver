@@ -17,6 +17,7 @@ const composerShellClass = cn(
 );
 const headerClass = cn("flex items-center gap-1.5 px-1");
 const headerLabelClass = cn("text-2xs font-medium tracking-[0.02em] text-ctp-blue");
+const headerMetaClass = cn("text-2xs text-ctp-subtext1");
 const headerToolNameClass = cn("truncate font-mono text-2xs text-ctp-green");
 const questionClass = cn("px-1 text-[0.8125rem] leading-5 text-app-foreground");
 const contextClass = cn("px-1 text-2xs leading-4 text-ctp-subtext1");
@@ -40,14 +41,19 @@ const loadingClass = cn(
 export function AskUserComposer({
   toolCall,
   loading,
+  draft,
+  onDraftChange,
+  progressLabel,
   onSubmit,
 }: {
   toolCall: AiChatToolCall;
   loading: boolean;
+  draft: string;
+  onDraftChange: (draft: string) => void;
+  progressLabel?: string | null;
   onSubmit: (toolCallId: string, text: string) => Promise<boolean>;
 }) {
   const args = parseAskUserToolArguments(toolCall.argumentsText);
-  const [draft, setDraft] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
   const choices = normalizeAskUserChoices(args?.choices);
@@ -67,9 +73,9 @@ export function AskUserComposer({
     const submitted = await onSubmit(toolCall.id, draft);
     setSubmitting(false);
     if (submitted) {
-      setDraft("");
+      onDraftChange("");
     }
-  }, [draft, inputDisabled, onSubmit, toolCall.id]);
+  }, [draft, inputDisabled, onDraftChange, onSubmit, toolCall.id]);
 
   const handleSubmit = useCallback(
     (event: FormEvent<HTMLFormElement>) => {
@@ -99,6 +105,7 @@ export function AskUserComposer({
     <form className={composerShellClass} onSubmit={handleSubmit}>
       <div className={headerClass}>
         <span className={headerLabelClass}>需要你回答</span>
+        {progressLabel ? <span className={headerMetaClass}>{progressLabel}</span> : null}
         <span className={headerToolNameClass}>{toolCall.name}</span>
       </div>
 
@@ -115,7 +122,7 @@ export function AskUserComposer({
               disabled={inputDisabled}
               type="button"
               onClick={() => {
-                setDraft(choice.title);
+                onDraftChange(choice.title);
                 textareaRef.current?.focus();
               }}
             >
@@ -137,7 +144,7 @@ export function AskUserComposer({
         rows={4}
         value={draft}
         onChange={(event) => {
-          setDraft(event.target.value);
+          onDraftChange(event.target.value);
         }}
         onKeyDown={handleKeyDown}
       />

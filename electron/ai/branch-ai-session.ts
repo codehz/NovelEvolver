@@ -1,4 +1,11 @@
-import type { AIClient, AIResponse, AIStreamEvent, InputItem } from "@codehz/ai";
+import type {
+  AIClient,
+  AIResponse,
+  AIStreamEvent,
+  InputItem,
+  ToolCallItem,
+  ToolResultItem,
+} from "@codehz/ai";
 import { toolResultItem } from "@codehz/ai";
 
 import {
@@ -39,11 +46,13 @@ import {
 import { AI_TOOLS } from "./tools/definitions";
 import { createToolRunner, type ToolRunner } from "./tools/runner";
 
-type PendingUserToolContinuation = {
+type PendingToolBatch = {
   assistantMessageId: string;
+  calls: ToolCallItem[];
   input: InputItem[];
   transcript: InputItem[];
-  toolCallId: string;
+  resultsByCallId: Map<string, ToolResultItem>;
+  awaitingAskUserIds: Set<string>;
 };
 
 export class BranchAiSession {
@@ -55,7 +64,7 @@ export class BranchAiSession {
   readonly #history: InputItem[] = [];
   readonly #providerMessageIds = new Map<string, string>();
   readonly #providerReasoningIds = new Map<string, string>();
-  #pendingUserTool: PendingUserToolContinuation | null = null;
+  #pendingToolBatch: PendingToolBatch | null = null;
   #pending = false;
   #errorMessage: string | null = null;
   #messageCounter = 0;
@@ -82,7 +91,7 @@ export class BranchAiSession {
     if (this.#pending) {
       throw new Error("AI 请求仍在处理中。");
     }
-    if (this.#pendingUserTool !== null) {
+    if (this.#pendingToolBatch !== null) {
       throw new Error("AI 正在等待当前工具步骤的用户回答。");
     }
 
@@ -119,9 +128,9 @@ export class BranchAiSession {
   }
 
   submitToolResponse(toolCallId: string, text: string): void {
-    const pendingTool = this.#pendingUserTool;
+    const pendingBatch = this.#pendingToolBatch;
     const normalized = text.trim();
-    if (pendingTool === null || pendingTool.toolCallId !== toolCallId) {
+    if (pendingBatch === null || !pendingBatch.awaitingAskUserIds.has(toolCallId)) {
       throw new Error("当前没有等待该工具调用的用户回答。");
     }
     if (normalized === "") {
@@ -131,7 +140,7 @@ export class BranchAiSession {
       throw new Error("AI 请求仍在处理中。");
     }
 
-    const toolCall = this.#getToolCall(pendingTool.assistantMessageId, toolCallId);
+    const toolCall = this.#getToolCall(pendingBatch.assistantMessageId, toolCallId);
     if (!toolCall || toolCall.name !== "ask_user") {
       throw new Error("当前工具调用不是 ask_user。");
     }
@@ -145,9 +154,9 @@ export class BranchAiSession {
       },
     ]);
 
-    this.#pending = true;
-    this.#pendingUserTool = null;
-    this.#emitToolCallUpdate(pendingTool.assistantMessageId, toolCallId, {
+    pendingBatch.resultsByCallId.set(toolCallId, toolResult);
+    pendingBatch.awaitingAskUserIds.delete(toolCallId);
+    this.#emitToolCallUpdate(pendingBatch.assistantMessageId, toolCallId, {
       status: "complete",
       resultText: JSON.stringify(
         {
@@ -158,26 +167,47 @@ export class BranchAiSession {
       ),
       errorMessage: null,
     });
+
+    if (pendingBatch.awaitingAskUserIds.size > 0) {
+      this.#emitDelta([
+        {
+          type: "state.updated",
+          patch: {
+            awaitingAskUserToolCallIds: [...pendingBatch.awaitingAskUserIds],
+            errorMessage: null,
+          },
+        },
+      ]);
+      return;
+    }
+
+    const input = [...pendingBatch.input];
+    const transcript = [...pendingBatch.transcript];
+    this.#appendBatchResultsToConversation(pendingBatch, input, transcript);
+    const assistantMessageId = pendingBatch.assistantMessageId;
+
+    this.#pendingToolBatch = null;
+    this.#pending = true;
     this.#emitDelta([
       {
         type: "state.updated",
         patch: {
           pending: true,
-          awaitingToolCallId: null,
+          awaitingAskUserToolCallIds: [],
           errorMessage: null,
         },
       },
     ]);
 
     void this.#runRequest({
-      assistantMessageId: pendingTool.assistantMessageId,
-      requestInput: [...pendingTool.input, toolResult],
-      transcript: [...pendingTool.transcript, toolResult],
+      assistantMessageId,
+      requestInput: input,
+      transcript,
     });
   }
 
   resetConversation(): void {
-    if (this.#pending) {
+    if (this.#pending || this.#pendingToolBatch !== null) {
       throw new Error("AI 请求仍在处理中，暂时不能清空对话。");
     }
 
@@ -186,7 +216,7 @@ export class BranchAiSession {
     this.#history.length = 0;
     this.#providerMessageIds.clear();
     this.#providerReasoningIds.clear();
-    this.#pendingUserTool = null;
+    this.#pendingToolBatch = null;
     this.#errorMessage = null;
     this.#emitDelta([{ type: "conversation.reset" }]);
   }
@@ -201,7 +231,9 @@ export class BranchAiSession {
       model: AI_MODEL,
       messages: this.#messages.map(cloneAiChatMessage),
       pending: this.#pending,
-      awaitingToolCallId: this.#pendingUserTool?.toolCallId ?? null,
+      awaitingAskUserToolCallIds: this.#pendingToolBatch
+        ? [...this.#pendingToolBatch.awaitingAskUserIds]
+        : [],
       errorMessage: this.#errorMessage,
     };
   }
@@ -425,45 +457,14 @@ export class BranchAiSession {
         }
 
         input = [...input, ...completedResponse.replay];
-        for (const call of completedResponse.toolCalls) {
-          this.#emitToolCallUpdate(context.assistantMessageId, call.id, {
-            status: "running",
-          });
-
-          const execution = await this.#toolRunner.execute(call);
-          if (execution.awaitUserInput) {
-            this.#pending = false;
-            this.#pendingUserTool = {
-              assistantMessageId: context.assistantMessageId,
-              input: [...input],
-              transcript: [...transcript],
-              toolCallId: call.id,
-            };
-            this.#emitToolCallUpdate(context.assistantMessageId, call.id, {
-              status: "awaiting_user",
-              resultText: null,
-              errorMessage: null,
-            });
-            this.#emitDelta([
-              {
-                type: "state.updated",
-                patch: {
-                  pending: false,
-                  awaitingToolCallId: call.id,
-                  errorMessage: null,
-                },
-              },
-            ]);
-            return;
-          }
-
-          this.#emitToolCallUpdate(context.assistantMessageId, call.id, {
-            status: execution.errorMessage === null ? "complete" : "error",
-            resultText: execution.resultText,
-            errorMessage: execution.errorMessage,
-          });
-          input.push(execution.toolResult);
-          transcript.push(execution.toolResult);
+        const batchOutcome = await this.#processToolBatch(
+          context.assistantMessageId,
+          completedResponse.toolCalls,
+          input,
+          transcript,
+        );
+        if (batchOutcome === "paused") {
+          return;
         }
       }
 
@@ -500,7 +501,7 @@ export class BranchAiSession {
       this.#history.push(...transcript);
       this.#providerMessageIds.clear();
       this.#providerReasoningIds.clear();
-      this.#pendingUserTool = null;
+      this.#pendingToolBatch = null;
       this.#pending = false;
       this.#emitDelta([
         {
@@ -512,13 +513,13 @@ export class BranchAiSession {
           type: "state.updated",
           patch: {
             pending: false,
-            awaitingToolCallId: null,
+            awaitingAskUserToolCallIds: [],
           },
         },
       ]);
     } catch (error) {
       this.#pending = false;
-      this.#pendingUserTool = null;
+      this.#pendingToolBatch = null;
       this.#errorMessage = toErrorMessage(error);
       this.#providerMessageIds.clear();
       this.#providerReasoningIds.clear();
@@ -553,11 +554,94 @@ export class BranchAiSession {
         type: "state.updated",
         patch: {
           pending: false,
-          awaitingToolCallId: null,
+          awaitingAskUserToolCallIds: [],
           errorMessage: this.#errorMessage,
         },
       });
       this.#emitDelta(ops);
+    }
+  }
+
+  async #processToolBatch(
+    assistantMessageId: string,
+    calls: ToolCallItem[],
+    input: InputItem[],
+    transcript: InputItem[],
+  ): Promise<"continue" | "paused"> {
+    const resultsByCallId = new Map<string, ToolResultItem>();
+    const awaitingAskUserIds = new Set<string>();
+
+    for (const call of calls) {
+      this.#emitToolCallUpdate(assistantMessageId, call.id, {
+        status: "running",
+      });
+
+      const execution = await this.#toolRunner.execute(call);
+      if (execution.awaitUserInput) {
+        this.#emitToolCallUpdate(assistantMessageId, call.id, {
+          status: "awaiting_user",
+          resultText: null,
+          errorMessage: null,
+        });
+        awaitingAskUserIds.add(call.id);
+        continue;
+      }
+
+      this.#emitToolCallUpdate(assistantMessageId, call.id, {
+        status: execution.errorMessage === null ? "complete" : "error",
+        resultText: execution.resultText,
+        errorMessage: execution.errorMessage,
+      });
+      resultsByCallId.set(call.id, execution.toolResult);
+    }
+
+    if (awaitingAskUserIds.size > 0) {
+      this.#pending = false;
+      this.#pendingToolBatch = {
+        assistantMessageId,
+        calls,
+        input: [...input],
+        transcript: [...transcript],
+        resultsByCallId,
+        awaitingAskUserIds,
+      };
+      this.#emitDelta([
+        {
+          type: "state.updated",
+          patch: {
+            pending: false,
+            awaitingAskUserToolCallIds: [...awaitingAskUserIds],
+            errorMessage: null,
+          },
+        },
+      ]);
+      return "paused";
+    }
+
+    for (const call of calls) {
+      const result = resultsByCallId.get(call.id);
+      if (!result) {
+        continue;
+      }
+      input.push(result);
+      transcript.push(result);
+    }
+
+    return "continue";
+  }
+
+  #appendBatchResultsToConversation(
+    batch: PendingToolBatch,
+    input: InputItem[],
+    transcript: InputItem[],
+  ): void {
+    for (const call of batch.calls) {
+      const result = batch.resultsByCallId.get(call.id);
+      if (!result) {
+        throw new Error(`工具 ${call.id} 缺少执行结果。`);
+      }
+      input.push(result);
+      transcript.push(result);
     }
   }
 

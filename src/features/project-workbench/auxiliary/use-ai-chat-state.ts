@@ -35,14 +35,14 @@ export function useAiChatState() {
   const sendMessage = useCallback(
     async (text: string): Promise<boolean> => {
       const normalized = text.trim();
-      if (normalized === "" || snapshot.pending || snapshot.awaitingToolCallId !== null) {
+      if (normalized === "" || snapshot.pending || snapshot.awaitingAskUserToolCallIds.length > 0) {
         return false;
       }
 
       await Promise.resolve(aiChat.sendMessage(normalized));
       return true;
     },
-    [aiChat, snapshot.awaitingToolCallId, snapshot.pending],
+    [aiChat, snapshot.awaitingAskUserToolCallIds, snapshot.pending],
   );
 
   const submitToolResponse = useCallback(
@@ -51,8 +51,7 @@ export function useAiChatState() {
       if (
         normalized === "" ||
         snapshot.pending ||
-        snapshot.awaitingToolCallId === null ||
-        snapshot.awaitingToolCallId !== toolCallId
+        !snapshot.awaitingAskUserToolCallIds.includes(toolCallId)
       ) {
         return false;
       }
@@ -60,7 +59,7 @@ export function useAiChatState() {
       await Promise.resolve(aiChat.submitToolResponse(toolCallId, normalized));
       return true;
     },
-    [aiChat, snapshot.awaitingToolCallId, snapshot.pending],
+    [aiChat, snapshot.awaitingAskUserToolCallIds, snapshot.pending],
   );
 
   const resetConversation = useCallback(async (): Promise<void> => {

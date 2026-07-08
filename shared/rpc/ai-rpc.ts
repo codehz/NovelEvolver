@@ -50,7 +50,7 @@ export type AiChatSnapshot = {
   model: string;
   messages: AiChatMessage[];
   pending: boolean;
-  awaitingToolCallId: string | null;
+  awaitingAskUserToolCallIds: string[];
   errorMessage: string | null;
 };
 
@@ -69,7 +69,7 @@ export type AiChatReasoningPatch = {
 
 export type AiChatStatePatch = {
   pending?: boolean;
-  awaitingToolCallId?: string | null;
+  awaitingAskUserToolCallIds?: string[];
   errorMessage?: string | null;
 };
 

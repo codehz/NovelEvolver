@@ -18,6 +18,8 @@ export const AI_INSTRUCTIONS =
   "你是 NovelEvolver 原型里的内置写作助手。当前运行在 mock adapter 上，请简洁回应，并明确这是演示数据。";
 
 const ASK_USER_KEYWORDS = /ask_user|先问我|需要我回答|交互测试|互动测试|补充信息/i;
+const PARALLEL_ASK_USER_KEYWORDS = /并行ask_user|多个问题|并行问题/i;
+const PARALLEL_ASK_USER_IDS = ["mock-ask-user-1", "mock-ask-user-2", "mock-ask-user-3"] as const;
 const LIST_RESOURCE_KEYWORDS =
   /资源库|文件列表|列出.*文件|list\s+files?|list\s+resources?|resources/i;
 
@@ -46,6 +48,62 @@ function shouldListResources(prompt: string): boolean {
 
 function shouldAskUser(prompt: string): boolean {
   return ASK_USER_KEYWORDS.test(prompt);
+}
+
+function shouldParallelAskUser(prompt: string): boolean {
+  return PARALLEL_ASK_USER_KEYWORDS.test(prompt);
+}
+
+function hasAllParallelAskUserResults(input: readonly InputItem[]): boolean {
+  const lastUserIndex = findLastUserMessageIndex(input);
+  const fulfilled = new Set<string>();
+
+  for (let i = input.length - 1; i > lastUserIndex; i--) {
+    const item = input[i]!;
+    if (
+      item.type === "tool_result" &&
+      item.toolName === AI_TOOL_NAMES.ask_user &&
+      item.outcome === "success" &&
+      PARALLEL_ASK_USER_IDS.includes(item.callId as (typeof PARALLEL_ASK_USER_IDS)[number])
+    ) {
+      fulfilled.add(item.callId);
+    }
+  }
+
+  return PARALLEL_ASK_USER_IDS.every((id) => fulfilled.has(id));
+}
+
+function collectParallelAskUserResults(
+  input: readonly InputItem[],
+): { callId: string; answer: string }[] {
+  const lastUserIndex = findLastUserMessageIndex(input);
+  const results = new Map<string, string>();
+
+  for (let i = input.length - 1; i > lastUserIndex; i--) {
+    const item = input[i]!;
+    if (
+      item.type !== "tool_result" ||
+      item.toolName !== AI_TOOL_NAMES.ask_user ||
+      item.outcome !== "success" ||
+      !PARALLEL_ASK_USER_IDS.includes(item.callId as (typeof PARALLEL_ASK_USER_IDS)[number])
+    ) {
+      continue;
+    }
+
+    for (const block of item.content) {
+      if (block.type === "json" && block.json !== undefined && typeof block.json === "object") {
+        const record = block.json as Record<string, unknown>;
+        if (typeof record.answer === "string") {
+          results.set(item.callId, record.answer);
+        }
+      }
+    }
+  }
+
+  return PARALLEL_ASK_USER_IDS.flatMap((callId) => {
+    const answer = results.get(callId);
+    return answer === undefined ? [] : [{ callId, answer }];
+  });
 }
 
 function extractPathFromPrompt(prompt: string): string {
@@ -196,6 +254,21 @@ function buildAskUserReply(branchName: string, result: AskUserResult): string {
   ].join("\n");
 }
 
+function buildParallelAskUserReply(
+  branchName: string,
+  results: { callId: string; answer: string }[],
+): string {
+  const lines = results.map((result) => `- ${result.callId}：${result.answer}`);
+  return [
+    `已收到全部补充信息。当前分支：**${branchName}**。`,
+    "这是一次并行 `ask_user` 演示，下面内容来自用户在 UI 中依次回答的多个问题。",
+    "",
+    ...lines,
+    "",
+    "mock AI 已拿到本批全部答案，可以继续生成正文、方案或下一步建议。",
+  ].join("\n");
+}
+
 function buildResourceListReply(result: ListResourceFilesResult): string {
   if (result.files.length === 0) {
     return "资源库中没有找到文件。";
@@ -274,7 +347,67 @@ export function createMockClient(branchName: string): AIClient {
           return;
         }
 
-        if (shouldAskUser(prompt) && !hasAskUserToolResultAfterLastUser(request.input)) {
+        if (shouldParallelAskUser(prompt) && !hasAllParallelAskUserResults(request.input)) {
+          const reasoning = buildAskUserReasoning(branchName, prompt);
+          const usage = buildMockUsage(prompt, reasoning, "");
+          yield {
+            type: "reasoning",
+            id: "mock-reasoning",
+            visibility: "summary",
+            content: [
+              reasoning,
+              "",
+              "本演示会在同一轮并行发起 3 个 ask_user，可在底部切换问题并任意顺序作答。",
+            ].join("\n"),
+            stream: {
+              charsPerSecond: 36,
+              chunkSize: 3,
+              initialDelayMs: 80,
+            },
+          };
+          yield {
+            type: "tool_call",
+            id: "mock-ask-user-1",
+            name: AI_TOOL_NAMES.ask_user,
+            argumentsText: JSON.stringify({
+              question: "这一章最想强化哪条人物弧线？",
+              context: "并行 ask_user 演示 · 问题 1/3",
+              placeholder: "例如：主角从被动转为主动…",
+            }),
+          };
+          yield {
+            type: "tool_call",
+            id: "mock-ask-user-2",
+            name: AI_TOOL_NAMES.ask_user,
+            argumentsText: JSON.stringify({
+              question: "你希望本章的核心冲突是什么？",
+              context: "并行 ask_user 演示 · 问题 2/3",
+              placeholder: "例如：信任危机、资源争夺…",
+            }),
+          };
+          yield {
+            type: "tool_call",
+            id: "mock-ask-user-3",
+            name: AI_TOOL_NAMES.ask_user,
+            argumentsText: JSON.stringify({
+              question: "结尾需要留下什么悬念或情绪？",
+              context: "并行 ask_user 演示 · 问题 3/3",
+              placeholder: "例如：未解之谜、情感余韵…",
+              choices: [
+                { title: "悬念钩子", description: "留下明确未解问题" },
+                { title: "情绪落点", description: "以情感余韵收束" },
+              ],
+            }),
+          };
+          yield { type: "complete", usage };
+          return;
+        }
+
+        if (
+          shouldAskUser(prompt) &&
+          !shouldParallelAskUser(prompt) &&
+          !hasAskUserToolResultAfterLastUser(request.input)
+        ) {
           const reasoning = buildAskUserReasoning(branchName, prompt);
           const usage = buildMockUsage(prompt, reasoning, "");
           yield {
@@ -325,6 +458,26 @@ export function createMockClient(branchName: string): AIClient {
           const toolResult = findListResourceToolResultAfterLastUser(request.input);
           if (toolResult !== null) {
             const reply = buildResourceListReply(toolResult);
+            const usage = buildMockUsage(prompt, "", reply);
+            yield {
+              type: "message",
+              id: "mock-message",
+              content: reply,
+              stream: {
+                charsPerSecond: 48,
+                chunkSize: 2,
+                initialDelayMs: 120,
+              },
+            };
+            yield { type: "complete", usage };
+            return;
+          }
+        }
+
+        if (hasAllParallelAskUserResults(request.input)) {
+          const parallelResults = collectParallelAskUserResults(request.input);
+          if (parallelResults.length === PARALLEL_ASK_USER_IDS.length) {
+            const reply = buildParallelAskUserReply(branchName, parallelResults);
             const usage = buildMockUsage(prompt, "", reply);
             yield {
               type: "message",
