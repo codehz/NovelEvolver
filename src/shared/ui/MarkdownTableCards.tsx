@@ -3,14 +3,13 @@ import type { ExtraProps } from "streamdown";
 
 import { cn } from "#app/shared/lib/ui/cn";
 
-const tableCardsClass = cn("my-3 flex flex-col gap-2");
-const tableCardClass = cn(
-  "rounded-xl border border-titlebar-border bg-app-surface/60 px-3 py-2 shadow-[inset_0_1px_0_0_color-mix(in_srgb,var(--color-ctp-surface0)_18%,transparent)]",
-);
-const tableCardFieldClass = cn(
-  "flex flex-col gap-0.5 py-1.5",
+const tableCardsClass = cn("my-3");
+const tableCardClass = cn("rounded-lg border border-titlebar-border bg-app-surface px-2.5 py-1");
+const tableCardRowClass = cn(
+  "flex flex-wrap gap-x-4 gap-y-1.5 py-1.5",
   "not-first:border-t not-first:border-titlebar-border/40",
 );
+const tableCardFieldClass = cn("flex min-w-24 flex-col gap-0.5");
 const tableCardLabelClass = cn("text-2xs font-medium tracking-[0.02em] text-ctp-subtext0");
 const tableCardValueClass = cn("text-[0.8125rem] leading-5 text-app-foreground");
 
@@ -138,9 +137,12 @@ function MarkdownTableCardsComponent({
   const columnCount = rows.reduce((max, row) => Math.max(max, row.length), headers.length);
 
   return (
-    <div className={cn(tableCardsClass, className)} data-streamdown="table-cards">
+    <article
+      className={cn(tableCardsClass, tableCardClass, className)}
+      data-streamdown="table-cards"
+    >
       {rows.map((row, rowIndex) => (
-        <article className={tableCardClass} data-streamdown="table-card" key={rowIndex}>
+        <div className={tableCardRowClass} data-streamdown="table-card" key={rowIndex}>
           {Array.from({ length: columnCount }, (_, columnIndex) => {
             const value = row[columnIndex];
             if (value === undefined) {
@@ -156,9 +158,9 @@ function MarkdownTableCardsComponent({
               </div>
             );
           })}
-        </article>
+        </div>
       ))}
-    </div>
+    </article>
   );
 }
 
