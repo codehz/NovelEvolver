@@ -9,12 +9,21 @@ export type AiChatMessageUsage = {
   totalTokens?: number;
 };
 
+export type AiChatReasoningVisibility = "full" | "summary" | "redacted" | "opaque";
+
+export type AiChatReasoning = {
+  text: string;
+  visibility: AiChatReasoningVisibility;
+  status: "streaming" | "complete";
+};
+
 export type AiChatMessage = {
   id: string;
   role: "user" | "assistant";
   text: string;
   status: "streaming" | "complete";
   usage: AiChatMessageUsage | null;
+  reasoning: AiChatReasoning | null;
 };
 
 export type AiChatSnapshot = {
@@ -29,6 +38,13 @@ export type AiChatMessagePatch = {
   text?: string;
   status?: AiChatMessage["status"];
   usage?: AiChatMessage["usage"];
+  reasoning?: AiChatReasoningPatch | null;
+};
+
+export type AiChatReasoningPatch = {
+  text?: string;
+  visibility?: AiChatReasoning["visibility"];
+  status?: AiChatReasoning["status"];
 };
 
 export type AiChatStatePatch = {
@@ -46,6 +62,11 @@ export type AiChatDeltaOp =
     }
   | {
       type: "message.text.delta";
+      messageId: string;
+      text: string;
+    }
+  | {
+      type: "message.reasoning.delta";
       messageId: string;
       text: string;
     }

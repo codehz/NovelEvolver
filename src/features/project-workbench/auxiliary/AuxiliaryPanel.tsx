@@ -9,15 +9,17 @@ import {
 import { Streamdown } from "streamdown";
 
 import { cn } from "#app/shared/lib/ui/cn";
+import { DisclosureChevron } from "#app/shared/ui/DisclosureChevron";
 import { ScrollArea } from "#app/shared/ui/ScrollArea";
-import type { AiChatMessage } from "#shared/rpc/ai-rpc";
+import type { AiChatMessage, AiChatReasoning } from "#shared/rpc/ai-rpc";
 import { SidebarHeaderActions, sidebarHeaderActionClass } from "#workbench/chrome";
 
 import { useAiChatState } from "./use-ai-chat-state";
 
 const panelSectionClass = cn("mx-auto flex w-full max-w-3xl flex-col");
 const conversationRailClass = cn("gap-4 px-3 py-2.5");
-const assistantMessageBlockClass = cn("w-full px-1");
+// Only user-authored messages may use bubble chrome; assistant output stays flat and compact.
+const assistantMessageBlockClass = cn("flex w-full flex-col gap-1");
 const assistantMessageBodyClass = cn(
   "text-[0.8125rem] leading-5 text-app-foreground",
   "[&_a]:text-ctp-blue [&_a]:underline [&_a]:underline-offset-2",
@@ -29,6 +31,23 @@ const assistantMessageBodyClass = cn(
   "**:data-[streamdown='heading-1']:text-base",
   "**:data-[streamdown='heading-1']:text-ctp-mauve **:data-[streamdown='heading-2']:text-ctp-mauve **:data-[streamdown='heading-3']:text-ctp-mauve",
   "**:data-[streamdown='inline-code']:text-ctp-green",
+);
+const reasoningPanelClass = cn("flex flex-col gap-1");
+const reasoningToggleClass = cn(
+  "flex w-full items-center gap-1.5 text-left text-2xs text-ctp-subtext1 focus-visible:ring-1 focus-visible:ring-badge-background/60 focus-visible:outline-none",
+);
+const reasoningLabelClass = cn("font-medium tracking-[0.02em] text-ctp-mauve");
+const reasoningMetaClass = cn(
+  "overflow-hidden text-2xs text-ellipsis whitespace-nowrap text-ctp-subtext1 tabular-nums",
+);
+const reasoningBodyClass = cn(
+  "text-[0.75rem] leading-5 text-app-muted",
+  "[&_code]:rounded-md [&_code]:bg-app-background [&_code]:px-1.5 [&_code]:py-0.5 [&_code]:font-mono",
+  "**:data-[streamdown='blockquote']:border-ctp-blue/30 **:data-[streamdown='blockquote']:text-ctp-subtext0",
+  "**:data-[streamdown='code-block']:border-titlebar-border **:data-[streamdown='code-block']:bg-app-surface/80",
+  "**:data-[streamdown='code-block-actions']:border-titlebar-border **:data-[streamdown='code-block-actions']:bg-app-surface/70",
+  "**:data-[streamdown='code-block-body']:border-titlebar-border **:data-[streamdown='code-block-body']:bg-app-background",
+  "**:data-[streamdown='heading-1']:text-sm **:data-[streamdown='heading-2']:text-sm **:data-[streamdown='heading-3']:text-sm",
 );
 const userMessageRowClass = cn("flex justify-end");
 const userMessageBubbleClass = cn(
@@ -45,14 +64,17 @@ const sendButtonClass = cn(
 );
 
 function describeAssistantMessageMeta(message: AiChatMessage): string {
-  if (message.status === "streaming") {
-    return "流式输出中";
-  }
-
   const parts: string[] = [];
+
+  if (message.status === "streaming") {
+    parts.push(message.reasoning?.status === "streaming" ? "思维链生成中" : "流式输出中");
+  }
 
   if (typeof message.usage?.inputTokens === "number") {
     parts.push(`输入 ${message.usage.inputTokens} tok`);
+  }
+  if (typeof message.usage?.reasoningTokens === "number") {
+    parts.push(`思维链 ${message.usage.reasoningTokens} tok`);
   }
   if (typeof message.usage?.outputTokens === "number") {
     parts.push(`输出 ${message.usage.outputTokens} tok`);
@@ -62,6 +84,47 @@ function describeAssistantMessageMeta(message: AiChatMessage): string {
   }
 
   return parts.length > 0 ? parts.join(" · ") : "已完成";
+}
+
+function AiReasoningBlock({ reasoning }: { reasoning: AiChatReasoning }) {
+  const [expanded, setExpanded] = useState(reasoning.status === "streaming");
+
+  useEffect(() => {
+    if (reasoning.status === "streaming") {
+      setExpanded(true);
+    }
+  }, [reasoning.status]);
+
+  const isAnimating = reasoning.status === "streaming";
+
+  return (
+    <section className={reasoningPanelClass}>
+      <button
+        aria-expanded={expanded}
+        className={reasoningToggleClass}
+        title={expanded ? "收起思维链" : "展开思维链"}
+        type="button"
+        onClick={() => {
+          setExpanded((current) => !current);
+        }}
+      >
+        <DisclosureChevron expanded={expanded} />
+        <span className={reasoningLabelClass}>思考</span>
+      </button>
+
+      {expanded ? (
+        <div className={reasoningBodyClass}>
+          {reasoning.text !== "" ? (
+            <Streamdown animated className="text-inherit" isAnimating={isAnimating}>
+              {reasoning.text}
+            </Streamdown>
+          ) : (
+            <p className="text-ctp-subtext0">...</p>
+          )}
+        </div>
+      ) : null}
+    </section>
+  );
 }
 
 function AiMessageBlock({ message }: { message: AiChatMessage }) {
@@ -80,20 +143,19 @@ function AiMessageBlock({ message }: { message: AiChatMessage }) {
 
   return (
     <article className={assistantMessageBlockClass}>
+      {message.reasoning ? <AiReasoningBlock reasoning={message.reasoning} /> : null}
+
       <div className={assistantMessageBodyClass}>
         {message.text !== "" ? (
           <Streamdown animated className="text-inherit" isAnimating={isStreaming}>
             {message.text}
           </Streamdown>
         ) : (
-          <p className="text-ctp-subtext0">思考中…</p>
+          <p className="text-ctp-subtext0">{message.reasoning ? "..." : "思考中..."}</p>
         )}
       </div>
 
-      <p
-        className="mt-2 overflow-hidden text-2xs text-ellipsis whitespace-nowrap text-ctp-subtext1 tabular-nums"
-        title={metaText}
-      >
+      <p className={reasoningMetaClass} title={metaText}>
         {metaText}
       </p>
     </article>

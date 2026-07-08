@@ -1,7 +1,12 @@
 import { useCallback, useEffect, useState } from "react";
 
 import { consumeRpcSubscription } from "#app/shared/lib/rpc/app-rpc-react";
-import type { AiChatEvent, AiChatMessage, AiChatSnapshot } from "#shared/rpc/ai-rpc";
+import type {
+  AiChatEvent,
+  AiChatMessage,
+  AiChatReasoning,
+  AiChatSnapshot,
+} from "#shared/rpc/ai-rpc";
 
 import { useAiChat } from "../branch/branch-scopes";
 
@@ -21,12 +26,28 @@ function applyMessagePatch(
     text?: string;
     status?: AiChatMessage["status"];
     usage?: AiChatMessage["usage"];
+    reasoning?: {
+      text?: string;
+      visibility?: AiChatReasoning["visibility"];
+      status?: AiChatReasoning["status"];
+    } | null;
   },
 ): AiChatMessage {
   return {
     ...message,
     ...patch,
     usage: patch.usage !== undefined ? patch.usage : message.usage,
+    reasoning:
+      patch.reasoning === undefined
+        ? message.reasoning
+        : patch.reasoning === null
+          ? null
+          : {
+              text: message.reasoning?.text ?? "",
+              visibility: patch.reasoning.visibility ?? message.reasoning?.visibility ?? "summary",
+              status: patch.reasoning.status ?? message.reasoning?.status ?? "streaming",
+              ...patch.reasoning,
+            },
   };
 }
 
@@ -60,6 +81,23 @@ function applyAiChatEvent(snapshot: AiChatSnapshot, event: AiChatEvent): AiChatS
               ? {
                   ...message,
                   text: `${message.text}${op.text}`,
+                }
+              : message,
+          ),
+        };
+        break;
+      case "message.reasoning.delta":
+        next = {
+          ...next,
+          messages: next.messages.map((message) =>
+            message.id === op.messageId
+              ? {
+                  ...message,
+                  reasoning: {
+                    text: `${message.reasoning?.text ?? ""}${op.text}`,
+                    visibility: message.reasoning?.visibility ?? "summary",
+                    status: message.reasoning?.status ?? "streaming",
+                  },
                 }
               : message,
           ),
