@@ -13,6 +13,7 @@ import {
 } from "#shared/rpc/transport";
 
 import { ProjectLibraryServiceImpl } from "../services/project-library-service";
+import { SettingsServiceImpl } from "../services/settings-service";
 import { WindowServiceImpl } from "../services/window-service";
 import { WorkspaceServiceImpl } from "../services/workspace-service";
 import type { RpcMainDeps } from "./deps";
@@ -83,7 +84,13 @@ export class ElectronRpcServer {
     const windowService = new WindowServiceImpl(window, this.#deps);
     const projectLibraryService = new ProjectLibraryServiceImpl(window, this.#deps);
     const workspaceService = new WorkspaceServiceImpl(window, this.#deps);
-    const root = new AppRpcRootImpl(windowService, projectLibraryService, workspaceService);
+    const settingsService = new SettingsServiceImpl(this.#deps);
+    const root = new AppRpcRootImpl(
+      windowService,
+      projectLibraryService,
+      workspaceService,
+      settingsService,
+    );
     const transport = new MainRpcTransport(webContents, sessionId);
     const session = new RpcSession(transport, root);
 

@@ -4,10 +4,12 @@ import { app, BrowserWindow, ipcMain } from "electron";
 
 import { AppDatabase } from "./db/app-database";
 import { ElectronRpcServer } from "./rpc/server/connect";
+import { AiModelsStore } from "./settings/ai-models-store";
 
 const isDev = !app.isPackaged;
 
 let appDb: AppDatabase | null = null;
+let aiModelsStore: AiModelsStore | null = null;
 let rpcServer: ElectronRpcServer | null = null;
 
 function getAppDb(): AppDatabase {
@@ -16,6 +18,14 @@ function getAppDb(): AppDatabase {
   }
 
   return appDb;
+}
+
+function getAiModelsStore(): AiModelsStore {
+  if (!aiModelsStore) {
+    throw new Error("AI models store is not initialized.");
+  }
+
+  return aiModelsStore;
 }
 
 function createWindow() {
@@ -47,8 +57,10 @@ function createWindow() {
 void app.whenReady().then(() => {
   const userData = app.getPath("userData");
   appDb = new AppDatabase(join(userData, "app-state.db"));
+  aiModelsStore = new AiModelsStore(join(userData, "ai-models.json"));
   rpcServer = new ElectronRpcServer({
     getAppDb,
+    getAiModelsStore,
     getWindowState: (window) => ({
       isFocused: window.isFocused(),
       isMaximized: window.isMaximized(),
@@ -75,5 +87,6 @@ app.on("window-all-closed", () => {
 app.on("will-quit", () => {
   appDb?.close();
   appDb = null;
+  aiModelsStore = null;
   rpcServer = null;
 });

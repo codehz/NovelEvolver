@@ -3,6 +3,7 @@ import { useCallback, useId, useState } from "react";
 import { cn } from "#app/shared/lib/ui/cn";
 import { ScrollArea } from "#app/shared/ui/ScrollArea";
 
+import { AiModelsSettingsPanel } from "./ai-models/AiModelsSettingsPanel";
 import {
   settingsBackdropClass,
   settingsBodyClass,
@@ -27,6 +28,7 @@ import {
 
 const SETTINGS_CATEGORIES = [
   { id: "common", label: "常用" },
+  { id: "ai-models", label: "AI 模型" },
   { id: "editor", label: "编辑器" },
   { id: "appearance", label: "外观" },
   { id: "extensions", label: "扩展" },
@@ -110,7 +112,7 @@ function SettingsDialogShell({ onDismiss }: { onDismiss: () => void }) {
           </div>
 
           <div className={settingsBodyClass}>
-            <ScrollArea fill className={settingsSidebarClass}>
+            <ScrollArea className={settingsSidebarClass}>
               <nav aria-label="设置分类" className="flex flex-col">
                 {SETTINGS_CATEGORIES.map((category) => {
                   const active = category.id === activeCategoryId;
@@ -134,10 +136,14 @@ function SettingsDialogShell({ onDismiss }: { onDismiss: () => void }) {
               </nav>
             </ScrollArea>
 
-            <ScrollArea fill className={settingsContentClass}>
-              <div className={settingsPlaceholderClass}>
-                「{activeCategory.label}」分类暂无设置项
-              </div>
+            <ScrollArea className={settingsContentClass}>
+              {activeCategoryId === "ai-models" ? (
+                <AiModelsSettingsPanel />
+              ) : (
+                <div className={settingsPlaceholderClass}>
+                  「{activeCategory.label}」分类暂无设置项
+                </div>
+              )}
             </ScrollArea>
           </div>
         </SettingsPopoverContent>
