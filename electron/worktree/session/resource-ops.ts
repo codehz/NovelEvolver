@@ -1,7 +1,7 @@
 import type { WorktreeNodeIdResult } from "#shared/rpc/manuscript-rpc";
 
 import { RESOURCE_ROOT_ID } from "../resources/index";
-import { assertResourceLibraryListPath } from "../resources/paths";
+import { assertResourceLibraryFilePath, assertResourceLibraryListPath } from "../resources/paths";
 import {
   normalizeResourceNodeName,
   sortResourceChildrenByName,
@@ -263,6 +263,15 @@ export function readResourceFile(state: WorktreeSessionState, id: string): strin
     throw new Error(`Resource node is not a file: ${id}`);
   }
   return state.currentResources.entries.get(id)?.content ?? "";
+}
+
+export function readResourceFileByPath(state: WorktreeSessionState, relativePath: string): string {
+  assertResourceLibraryFilePath(relativePath);
+  const id = state.resourceIdByPath.get(relativePath);
+  if (id === undefined) {
+    throw new Error(`Resource file does not exist: ${relativePath}`);
+  }
+  return readResourceFile(state, id);
 }
 
 export function writeResourceFile(state: WorktreeSessionState, id: string, content: string): void {

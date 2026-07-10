@@ -100,6 +100,10 @@ export class WorktreeSession {
     return resourceOps.readResourceFile(this.#state, id);
   }
 
+  readResourceFileByPath(relativePath: string): string {
+    return resourceOps.readResourceFileByPath(this.#state, relativePath);
+  }
+
   listResourceFiles(path: string): resourceOps.ResourceFileListEntry[] {
     return resourceOps.listResourceFiles(this.#state, path);
   }

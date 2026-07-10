@@ -57,6 +57,20 @@ export const AI_TOOLS_MAP = {
       additionalProperties: false,
     },
   },
+  read_resource_file: {
+    description: "读取资源库中指定路径的文件内容。path 为相对资源库根目录的文件路径。",
+    inputSchema: {
+      type: "object",
+      properties: {
+        path: {
+          type: "string",
+          description: '相对资源库根目录的文件路径，例如 "设定/角色/主角.md"',
+        },
+      },
+      required: ["path"],
+      additionalProperties: false,
+    },
+  },
 } as const satisfies Record<string, Omit<ToolDefinition, "name">>;
 
 export type AI_TOOL_NAMES = keyof typeof AI_TOOLS_MAP;

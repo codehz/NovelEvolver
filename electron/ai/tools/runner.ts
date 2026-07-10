@@ -5,6 +5,7 @@ import type { WorktreeSession } from "../../worktree/session";
 import { toErrorMessage } from "../ai-utils";
 import { type AskUserChoice, parseAskUserArgs } from "./ask-user";
 import { type AI_TOOL_NAMES } from "./definitions";
+import { executeReadResourceFile } from "./read-resource-file";
 import { executeListResourceFiles } from "./resource-library";
 
 export type ToolExecutionResult = {
@@ -54,6 +55,16 @@ export function createToolRunner(resolveWorktree: ResolveWorktree): ToolRunner {
                 { type: "json", json: output },
               ]),
               resultText,
+              errorMessage: null,
+            };
+          }
+          case "read_resource_file": {
+            const content = executeReadResourceFile(resolveWorktree(), call);
+            return {
+              toolResult: toolResultItem(call.id, call.name, "success", [
+                { type: "text", text: content },
+              ]),
+              resultText: content,
               errorMessage: null,
             };
           }
