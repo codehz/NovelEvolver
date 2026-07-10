@@ -95,7 +95,7 @@ function NativeDialogShell({
   );
 
   return (
-    <NativeDialogRequestCloseContext.Provider value={{ requestClose }}>
+    <NativeDialogRequestCloseContext value={{ requestClose }}>
       <dialog
         ref={dialogRef}
         className={cn(nativeDialogBaseClass, className)}
@@ -104,7 +104,7 @@ function NativeDialogShell({
       >
         {children}
       </dialog>
-    </NativeDialogRequestCloseContext.Provider>
+    </NativeDialogRequestCloseContext>
   );
 }
 
