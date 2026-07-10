@@ -3,8 +3,8 @@ import {
   useEffect,
   useRef,
   useState,
-  type FormEvent,
   type KeyboardEvent,
+  type SubmitEvent,
 } from "react";
 
 import { cn } from "#app/shared/lib/ui/cn";
@@ -72,7 +72,7 @@ export function AuxiliaryPanel() {
   }, [draft, sendMessage]);
 
   const handleSubmit = useCallback(
-    (event: FormEvent<HTMLFormElement>) => {
+    (event: SubmitEvent<HTMLFormElement>) => {
       event.preventDefault();
       void submitDraft();
     },

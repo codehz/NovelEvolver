@@ -1,4 +1,4 @@
-import { useId, useState, type FormEvent } from "react";
+import { useId, useState, type SubmitEvent } from "react";
 
 import type {
   AiAdapterKind,
@@ -68,7 +68,7 @@ export function AiModelConfigForm({
     setForm((prev) => ({ ...prev, [key]: value }));
   };
 
-  const handleSubmit = (event: FormEvent) => {
+  const handleSubmit = (event: SubmitEvent<HTMLFormElement>) => {
     event.preventDefault();
 
     const payload: AiModelConfigWrite = {
