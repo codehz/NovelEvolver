@@ -5,10 +5,12 @@ import { useCallback, useMemo, useRef } from "react";
 import type { ResourceTreeNode } from "#shared/rpc/worktree-tree-rpc";
 import { SidebarHeaderActionButton, SidebarHeaderActions } from "#workbench/chrome";
 
+import { runTreeRowContextMenu } from "../../tree/run-tree-row-context-menu";
 import { TreeBody } from "../../tree/TreeBody";
 import type { TreeDropResolveInput } from "../../tree/use-tree-row-pointer-drag";
 import { useContentTreeReveal } from "../shared/content-tree-reveal";
 import { resourceParentChain } from "./resource-tree";
+import { buildResourceTreeContextMenuItems } from "./resource-tree-context-menu";
 import { resolveResourceDropTarget } from "./resource-tree-placement-policy";
 import { buildResourceRenderProjection, type ResourceRenderItem } from "./resource-tree-projector";
 import { ResourceLibraryTreeRow } from "./ResourceLibraryTreeRow";
@@ -28,6 +30,7 @@ export function ResourceLibrarySectionBody() {
   const projection = useMemo(() => buildResourceRenderProjection(state), [state]);
   const {
     startCreating,
+    selectNode,
     activateNode,
     startRenaming,
     cancelEditing,
@@ -35,6 +38,45 @@ export function ResourceLibrarySectionBody() {
     deleteNode,
     moveNode,
   } = useResourceLibraryTreeActions();
+
+  const handleRowContextMenu = useCallback(
+    (id: string, type: ResourceTreeNode["type"], position: { x: number; y: number }) => {
+      const snapshot = store.get(treeAtom).snapshot;
+      if (snapshot === null) {
+        return;
+      }
+      const isRoot = id === snapshot.rootId;
+      void runTreeRowContextMenu({
+        items: buildResourceTreeContextMenuItems({ type, isRoot }),
+        position,
+        onBeforeOpen: () => {
+          selectNode(id, type);
+        },
+        onSelect: async (actionId) => {
+          switch (actionId) {
+            case "open":
+              activateNode(id, type, "", "open");
+              return;
+            case "new-file":
+              startCreating("file");
+              return;
+            case "new-folder":
+              startCreating("folder");
+              return;
+            case "rename":
+              startRenaming();
+              return;
+            case "delete":
+              await deleteNode();
+              return;
+            default:
+              return;
+          }
+        },
+      });
+    },
+    [activateNode, deleteNode, selectNode, startCreating, startRenaming, store, treeAtom],
+  );
 
   useContentTreeReveal({
     snapshot: state.snapshot,
@@ -148,6 +190,7 @@ export function ResourceLibrarySectionBody() {
             selectedId={state.selected?.id ?? null}
             onActivate={activateNode}
             onCancelEditing={cancelEditing}
+            onContextMenu={handleRowContextMenu}
             onDragEnd={onDragEnd}
             onDragMove={onDragMove}
             onDragStart={onDragStart}

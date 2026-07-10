@@ -104,9 +104,16 @@ export function useManuscriptTreeActions() {
     [dispatch, manuscript, openTarget],
   );
 
+  const selectNode = useCallback(
+    (id: string) => {
+      dispatch({ type: "select", id });
+    },
+    [dispatch],
+  );
+
   const activateNode = useCallback(
     (id: string, type: ManuscriptTreeNode["type"], _title: string, intent: "focus" | "open") => {
-      dispatch({ type: "select", id });
+      selectNode(id);
       if (type === "folder") {
         dispatch({ type: "toggleFolder", id });
         return;
@@ -118,7 +125,7 @@ export function useManuscriptTreeActions() {
       }
       openTarget(target);
     },
-    [dispatch, focusTarget, openTarget],
+    [dispatch, focusTarget, openTarget, selectNode],
   );
 
   const deleteNode = useCallback(async () => {
@@ -161,6 +168,7 @@ export function useManuscriptTreeActions() {
     startRenaming,
     cancelEditing,
     submitEditing,
+    selectNode,
     activateNode,
     deleteNode,
     moveNode,

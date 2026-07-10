@@ -142,9 +142,16 @@ export function useResourceLibraryTreeActions() {
     [dispatch, resources],
   );
 
+  const selectNode = useCallback(
+    (id: string, type: "file" | "folder") => {
+      dispatch({ type: "select", id, nodeType: type });
+    },
+    [dispatch],
+  );
+
   const activateNode = useCallback(
     (id: string, type: "file" | "folder", _name: string, intent: "focus" | "open") => {
-      dispatch({ type: "select", id, nodeType: type });
+      selectNode(id, type);
       if (type === "folder") {
         dispatch({ type: "toggleFolder", id });
         return;
@@ -156,7 +163,7 @@ export function useResourceLibraryTreeActions() {
       }
       openTarget(target);
     },
-    [dispatch, focusTarget, openTarget],
+    [dispatch, focusTarget, openTarget, selectNode],
   );
 
   const deleteNode = useCallback(async () => {
@@ -201,6 +208,7 @@ export function useResourceLibraryTreeActions() {
     startRenaming,
     cancelEditing,
     submitEditing,
+    selectNode,
     activateNode,
     deleteNode,
     moveNode,

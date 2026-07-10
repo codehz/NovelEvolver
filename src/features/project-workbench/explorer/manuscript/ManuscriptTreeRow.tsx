@@ -37,6 +37,11 @@ type ManuscriptTreeRowProps = {
   onDragStart: (id: string, type: ManuscriptTreeNode["type"]) => void;
   onDragMove: (resolved: TreeResolvedDrop<ManuscriptMoveTarget> | null) => void;
   onDragEnd: () => void;
+  onContextMenu?: (
+    id: string,
+    type: ManuscriptTreeNode["type"],
+    position: { x: number; y: number },
+  ) => void;
 };
 
 export function ManuscriptTreeRow({
@@ -59,6 +64,7 @@ export function ManuscriptTreeRow({
   onDragStart,
   onDragMove,
   onDragEnd,
+  onContextMenu,
 }: ManuscriptTreeRowProps) {
   const inputAriaLabel =
     editing?.mode === "creating"
@@ -116,6 +122,12 @@ export function ManuscriptTreeRow({
               },
               onDragMove,
               onDragEnd,
+              onContextMenu:
+                onContextMenu === undefined
+                  ? undefined
+                  : (position) => {
+                      onContextMenu(id, type, position);
+                    },
             }
       }
     />

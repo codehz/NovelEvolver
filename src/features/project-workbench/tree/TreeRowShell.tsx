@@ -1,4 +1,5 @@
-import type { ReactNode, RefObject } from "react";
+import type { MouseEventHandler, ReactNode, RefObject } from "react";
+import { useCallback } from "react";
 
 import { cn } from "#app/shared/lib/ui/cn";
 import { DisclosureChevron } from "#app/shared/ui/DisclosureChevron";
@@ -30,6 +31,8 @@ type TreeRowShellInteraction<RowType extends string, DropTarget> = {
   onDragStart: () => void;
   onDragMove: (resolved: TreeResolvedDrop<DropTarget> | null) => void;
   onDragEnd: () => void;
+  /** Native context menu; omitted while editing. Coordinates are content-relative. */
+  onContextMenu?: (position: { x: number; y: number }) => void;
 };
 
 type TreeRowShellProps<RowType extends string, DropTarget> = {
@@ -80,6 +83,18 @@ export function TreeRowShell<RowType extends string, DropTarget>({
     resolveDropTarget: interaction?.resolveDropTarget ?? (() => null),
   });
 
+  const handleContextMenu = useCallback<MouseEventHandler<HTMLButtonElement>>(
+    (event) => {
+      if (!isInteractive || interaction?.onContextMenu === undefined) {
+        return;
+      }
+      event.preventDefault();
+      event.stopPropagation();
+      interaction.onContextMenu({ x: event.clientX, y: event.clientY });
+    },
+    [interaction, isInteractive],
+  );
+
   const rowContent = (
     <>
       {disclosureExpanded !== undefined ? (
@@ -125,6 +140,7 @@ export function TreeRowShell<RowType extends string, DropTarget>({
       data-tree-row-index={interaction.rowIndex}
       data-tree-row-type={interaction.rowType}
       onDoubleClick={interaction.onDoubleActivate}
+      onContextMenu={handleContextMenu}
       {...pointerHandlers}
     >
       {rowContent}

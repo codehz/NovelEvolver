@@ -34,6 +34,11 @@ type ResourceLibraryTreeRowProps = {
   onDragStart: (sourceId: string, sourceType: ResourceTreeNode["type"]) => void;
   onDragMove: (resolved: TreeResolvedDrop<string> | null) => void;
   onDragEnd: () => void;
+  onContextMenu?: (
+    id: string,
+    type: ResourceTreeNode["type"],
+    position: { x: number; y: number },
+  ) => void;
 };
 
 export function ResourceLibraryTreeRow({
@@ -50,6 +55,7 @@ export function ResourceLibraryTreeRow({
   onDragStart,
   onDragMove,
   onDragEnd,
+  onContextMenu,
 }: ResourceLibraryTreeRowProps) {
   const isSelected = item.id !== null && selectedId === item.id;
   const rowId = item.id;
@@ -122,6 +128,12 @@ export function ResourceLibraryTreeRow({
               },
               onDragMove,
               onDragEnd,
+              onContextMenu:
+                onContextMenu === undefined
+                  ? undefined
+                  : (position) => {
+                      onContextMenu(rowId, item.type, position);
+                    },
             }
       }
     />

@@ -5,10 +5,12 @@ import { useCallback, useMemo, useRef } from "react";
 import type { ManuscriptTreeNode } from "#shared/rpc/worktree-tree-rpc";
 import { SidebarHeaderActionButton, SidebarHeaderActions } from "#workbench/chrome";
 
+import { runTreeRowContextMenu } from "../../tree/run-tree-row-context-menu";
 import { TreeBody } from "../../tree/TreeBody";
 import type { TreeDropResolveInput } from "../../tree/use-tree-row-pointer-drag";
 import { useContentTreeReveal } from "../shared/content-tree-reveal";
 import { manuscriptParentChain } from "./manuscript-tree";
+import { buildManuscriptTreeContextMenuItems } from "./manuscript-tree-context-menu";
 import { resolveManuscriptDropTarget } from "./manuscript-tree-placement-policy";
 import {
   buildManuscriptRenderProjection,
@@ -33,10 +35,50 @@ export function ManuscriptSectionBody() {
     startRenaming,
     cancelEditing,
     submitEditing,
+    selectNode,
     activateNode,
     deleteNode,
     moveNode,
   } = useManuscriptTreeActions();
+
+  const handleRowContextMenu = useCallback(
+    (id: string, type: ManuscriptTreeNode["type"], position: { x: number; y: number }) => {
+      const snapshot = store.get(treeAtom).snapshot;
+      if (snapshot === null) {
+        return;
+      }
+      const isRoot = id === snapshot.rootId;
+      void runTreeRowContextMenu({
+        items: buildManuscriptTreeContextMenuItems({ type, isRoot }),
+        position,
+        onBeforeOpen: () => {
+          selectNode(id);
+        },
+        onSelect: async (actionId) => {
+          switch (actionId) {
+            case "open":
+              activateNode(id, type, "", "open");
+              return;
+            case "new-chapter":
+              startCreating("chapter");
+              return;
+            case "new-folder":
+              startCreating("folder");
+              return;
+            case "rename":
+              startRenaming();
+              return;
+            case "delete":
+              await deleteNode();
+              return;
+            default:
+              return;
+          }
+        },
+      });
+    },
+    [activateNode, deleteNode, selectNode, startCreating, startRenaming, store, treeAtom],
+  );
 
   useContentTreeReveal({
     snapshot: state.snapshot,
@@ -160,6 +202,7 @@ export function ManuscriptSectionBody() {
             resolveDropTarget={resolveDrop}
             onActivate={activateNode}
             onCancelEditing={cancelEditing}
+            onContextMenu={handleRowContextMenu}
             onSubmitEditing={submitEditing}
             onDragStart={onDragStart}
             onDragMove={onDragMove}
