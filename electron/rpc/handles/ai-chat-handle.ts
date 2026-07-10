@@ -1,6 +1,6 @@
 import { RpcTarget } from "capnweb";
 
-import type { AiChatEvent, AiChatHandle } from "#shared/rpc/ai-rpc";
+import type { AiChatEvent, AiChatHandle, AiConversationSummary } from "#shared/rpc/ai-rpc";
 
 import type { BranchAiSession } from "../../ai/branch-ai-session";
 
@@ -24,7 +24,15 @@ export class AiChatHandleImpl extends RpcTarget implements AiChatHandle {
     this.#session.submitToolResponse(toolCallId, text);
   }
 
-  resetConversation(): void {
-    this.#session.resetConversation();
+  createConversation(): void {
+    this.#session.createConversation();
+  }
+
+  listConversations(): AiConversationSummary[] {
+    return this.#session.listConversations();
+  }
+
+  switchConversation(conversationId: string): void {
+    this.#session.switchConversation(conversationId);
   }
 }

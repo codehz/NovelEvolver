@@ -9,8 +9,9 @@ import {
 
 import { cn } from "#app/shared/lib/ui/cn";
 import { ScrollArea } from "#app/shared/ui/ScrollArea";
-import { SidebarHeaderActions, sidebarHeaderActionClass } from "#workbench/chrome";
+import { SidebarHeaderActionButton, SidebarHeaderActions } from "#workbench/chrome";
 
+import { pickAiConversation } from "./ai-chat-history-quick-pick";
 import {
   composerShellClass,
   composerTextareaClass,
@@ -29,7 +30,9 @@ export function AuxiliaryPanel() {
     subscriptionError,
     sendMessage,
     submitToolResponse,
-    resetConversation,
+    createConversation,
+    listConversations,
+    switchConversation,
   } = useAiChatState();
   const [draft, setDraft] = useState("");
   const endRef = useRef<HTMLDivElement | null>(null);
@@ -37,6 +40,7 @@ export function AuxiliaryPanel() {
   const shouldRestoreComposerFocusRef = useRef(false);
 
   const hasAwaitingAskUser = snapshot.awaitingAskUserToolCallIds.length > 0;
+  const conversationActionsDisabled = loading || snapshot.pending || hasAwaitingAskUser;
   const [activeAskUserToolCallId, setActiveAskUserToolCallId] = useState<string | null>(null);
 
   useEffect(() => {
@@ -95,23 +99,54 @@ export function AuxiliaryPanel() {
     [submitDraft],
   );
 
+  const handleOpenHistory = useCallback(async () => {
+    if (conversationActionsDisabled) {
+      return;
+    }
+
+    const conversations = await listConversations();
+    const selectedId = await pickAiConversation({
+      conversations,
+      activeConversationId: snapshot.conversationId,
+    });
+    if (selectedId === null || selectedId === snapshot.conversationId) {
+      return;
+    }
+
+    setDraft("");
+    await switchConversation(selectedId);
+  }, [conversationActionsDisabled, listConversations, snapshot.conversationId, switchConversation]);
+
+  const handleCreateConversation = useCallback(async () => {
+    if (conversationActionsDisabled) {
+      return;
+    }
+
+    setDraft("");
+    await createConversation();
+  }, [conversationActionsDisabled, createConversation]);
+
   const errorMessage = subscriptionError ?? snapshot.errorMessage;
 
   return (
     <>
       <SidebarHeaderActions>
-        <button
-          aria-label="清空对话"
-          className={sidebarHeaderActionClass}
-          disabled={snapshot.pending || hasAwaitingAskUser}
-          title="清空对话"
-          type="button"
+        <SidebarHeaderActionButton
+          disabled={conversationActionsDisabled}
+          icon="icon-[codicon--history]"
+          label="历史会话"
           onClick={() => {
-            void resetConversation();
+            void handleOpenHistory();
           }}
-        >
-          <span aria-hidden="true" className="icon-[codicon--clear-all] text-sm" />
-        </button>
+        />
+        <SidebarHeaderActionButton
+          disabled={conversationActionsDisabled}
+          icon="icon-[codicon--add]"
+          label="新建会话"
+          onClick={() => {
+            void handleCreateConversation();
+          }}
+        />
       </SidebarHeaderActions>
 
       <ScrollArea className="min-h-0 flex-1" fill>

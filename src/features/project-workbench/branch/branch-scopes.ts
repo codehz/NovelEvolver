@@ -52,8 +52,8 @@ export const worktreeChangesMolecule = molecule(() => use(branchWorkspaceMolecul
 /** 当前分支文件历史句柄（`openBranchWorkspace(...).history` 级联，不在此 await）。 */
 export const historyMolecule = molecule(() => use(branchWorkspaceMolecule).history);
 
-/** 当前分支 AI 对话句柄（`openBranchWorkspace(...).ai` 级联，不在此 await）。 */
-export const aiChatMolecule = molecule(() => use(branchWorkspaceMolecule).ai);
+/** 项目级 AI 对话句柄（`openProject(...).ai`，跨分支共享）。 */
+export const aiChatMolecule = molecule(() => use(projectMolecule).ai);
 
 export function useActiveBranchName(): string {
   return useMolecule(activeBranchNameMolecule);

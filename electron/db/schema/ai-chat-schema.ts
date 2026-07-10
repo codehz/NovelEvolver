@@ -1,0 +1,32 @@
+import type { DatabaseSync } from "node:sqlite";
+
+/**
+ * AI 会话历史 schema。
+ *
+ * 依赖 projects 表已存在（由 initProjectsSchema 先建），ai_conversation.project_id
+ * 通过 FK + ON DELETE CASCADE 引用 projects(id)，删项目时会话记录原子级联清理。
+ */
+export function initAiChatSchema(db: DatabaseSync): void {
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS ai_conversation (
+      id TEXT NOT NULL,
+      project_id INTEGER NOT NULL,
+      title TEXT NOT NULL,
+      status TEXT NOT NULL DEFAULT 'active',
+      created_at INTEGER NOT NULL,
+      updated_at INTEGER NOT NULL,
+      last_active_at INTEGER NOT NULL,
+      adapter_kind TEXT NOT NULL,
+      model TEXT NOT NULL,
+      messages_json TEXT NOT NULL,
+      history_json TEXT NOT NULL,
+      pending_tool_batch_json TEXT,
+      error_message TEXT,
+      PRIMARY KEY (id),
+      FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE
+    );
+
+    CREATE INDEX IF NOT EXISTS idx_ai_conversation_project_active
+      ON ai_conversation(project_id, last_active_at DESC);
+  `);
+}

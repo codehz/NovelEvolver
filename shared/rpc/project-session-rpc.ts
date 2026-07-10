@@ -2,6 +2,7 @@ import type { RpcTarget } from "capnweb";
 
 import type { ProjectMetadata } from "#shared/project";
 
+import type { AiChatHandle } from "./ai-rpc";
 import type { BranchWorkspace } from "./branch-workspace-rpc";
 
 /** Summary for a repository branch tip. */
@@ -23,6 +24,8 @@ export interface ProjectSession extends RpcTarget {
   readonly metadata: ProjectMetadata;
   readonly currentBranch: BranchSummary;
   readonly branches: BranchSummary[];
+  /** Project-scoped AI chat handle (shared across branches). */
+  readonly ai: AiChatHandle;
   checkoutBranch(name: string): void;
   /**
    * Opens the draft workspace for `name` (branch name). Persisted under key

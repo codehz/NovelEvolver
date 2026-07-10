@@ -3,6 +3,7 @@ import type { BrowserWindow } from "electron";
 
 import type { WorkspaceService } from "#shared/rpc/workspace-rpc";
 
+import { AiChatRepository } from "../../db/repositories/ai-chat-repo";
 import { ProjectsRepository } from "../../db/repositories/projects-repo";
 import { WorktreeRepository } from "../../db/repositories/worktree-repo";
 import type { RpcMainDeps } from "../server/deps";
@@ -11,6 +12,7 @@ import { ProjectSessionImpl } from "../session/project-session";
 export class WorkspaceServiceImpl extends RpcTarget implements WorkspaceService {
   readonly #projects: ProjectsRepository;
   readonly #worktrees: WorktreeRepository;
+  readonly #aiChat: AiChatRepository;
   readonly #openSessions = new Set<ProjectSessionImpl>();
 
   constructor(window: BrowserWindow, deps: RpcMainDeps) {
@@ -19,6 +21,7 @@ export class WorkspaceServiceImpl extends RpcTarget implements WorkspaceService 
     const db = deps.getAppDb().db;
     this.#projects = new ProjectsRepository(db);
     this.#worktrees = new WorktreeRepository(db);
+    this.#aiChat = new AiChatRepository(db);
   }
 
   openProject(projectId: number): ProjectSessionImpl {
@@ -27,7 +30,13 @@ export class WorkspaceServiceImpl extends RpcTarget implements WorkspaceService 
       throw new Error(`Project with id ${projectId} not found`);
     }
 
-    const session = new ProjectSessionImpl(record.id, record.path, this.#worktrees, record);
+    const session = new ProjectSessionImpl(
+      record.id,
+      record.path,
+      this.#worktrees,
+      record,
+      this.#aiChat,
+    );
     this.#openSessions.add(session);
     return session;
   }

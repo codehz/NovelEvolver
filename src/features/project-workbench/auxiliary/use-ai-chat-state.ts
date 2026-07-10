@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 
 import { consumeRpcSubscription } from "#app/shared/lib/rpc/app-rpc-react";
 import { applyAiChatEvent, createInitialAiChatSnapshot } from "#shared/rpc/ai-chat-state";
-import type { AiChatSnapshot } from "#shared/rpc/ai-rpc";
+import type { AiChatSnapshot, AiConversationSummary } from "#shared/rpc/ai-rpc";
 
 import { useAiChat } from "../branch/branch-scopes";
 
@@ -62,9 +62,20 @@ export function useAiChatState() {
     [aiChat, snapshot.awaitingAskUserToolCallIds, snapshot.pending],
   );
 
-  const resetConversation = useCallback(async (): Promise<void> => {
-    await Promise.resolve(aiChat.resetConversation());
+  const createConversation = useCallback(async (): Promise<void> => {
+    await Promise.resolve(aiChat.createConversation());
   }, [aiChat]);
+
+  const listConversations = useCallback(async (): Promise<AiConversationSummary[]> => {
+    return await Promise.resolve(aiChat.listConversations());
+  }, [aiChat]);
+
+  const switchConversation = useCallback(
+    async (conversationId: string): Promise<void> => {
+      await Promise.resolve(aiChat.switchConversation(conversationId));
+    },
+    [aiChat],
+  );
 
   return {
     snapshot,
@@ -72,6 +83,8 @@ export function useAiChatState() {
     subscriptionError,
     sendMessage,
     submitToolResponse,
-    resetConversation,
+    createConversation,
+    listConversations,
+    switchConversation,
   };
 }

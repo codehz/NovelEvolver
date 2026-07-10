@@ -10,6 +10,7 @@ import type {
 
 export function createInitialAiChatSnapshot(model = "mock-assistant"): AiChatSnapshot {
   return {
+    conversationId: "",
     adapterKind: "mock",
     model,
     messages: [],
@@ -142,6 +143,7 @@ export function applyAiChatEvent(snapshot: AiChatSnapshot, event: AiChatEvent): 
       case "conversation.reset":
         next = {
           ...next,
+          conversationId: "",
           messages: [],
           pending: false,
           awaitingAskUserToolCallIds: [],

@@ -67,12 +67,21 @@ export type AiChatAssistantMessage = {
 export type AiChatMessage = AiChatUserMessage | AiChatAssistantMessage;
 
 export type AiChatSnapshot = {
+  conversationId: string;
   adapterKind: "mock";
   model: string;
   messages: AiChatMessage[];
   pending: boolean;
   awaitingAskUserToolCallIds: string[];
   errorMessage: string | null;
+};
+
+export type AiConversationSummary = {
+  id: string;
+  title: string;
+  createdAt: number;
+  updatedAt: number;
+  lastActiveAt: number;
 };
 
 export type AiChatMessagePatch = {
@@ -141,5 +150,7 @@ export interface AiChatHandle extends RpcTarget {
   subscribeChat(): RpcSubscriptionResult<AiChatEvent>;
   sendMessage(text: string): void;
   submitToolResponse(toolCallId: string, text: string): void;
-  resetConversation(): void;
+  createConversation(): void;
+  listConversations(): AiConversationSummary[];
+  switchConversation(conversationId: string): void;
 }

@@ -1,3 +1,5 @@
+import { randomUUID } from "node:crypto";
+
 import type {
   AIClient,
   AIResponse,
@@ -27,10 +29,11 @@ import type {
   AiChatSnapshot,
   AiChatToolCall,
   AiChatUserMessage,
+  AiConversationSummary,
 } from "#shared/rpc/ai-rpc";
 
+import type { AiChatRepository, AiConversationRecord } from "../db/repositories/ai-chat-repo";
 import { RpcStreamPublisher } from "../lib/stream-publisher";
-import type { WorktreeSession } from "../worktree/session";
 import { joinContentBlocksText, toErrorMessage, toMessageUsage } from "./ai-utils";
 import {
   AI_ADAPTER_KIND,
@@ -40,7 +43,10 @@ import {
   toInputItem,
 } from "./mock-adapter";
 import { AI_TOOLS } from "./tools/definitions";
-import { createToolRunner, type ToolRunner } from "./tools/runner";
+import { createToolRunner, type ResolveWorktree, type ToolRunner } from "./tools/runner";
+
+const EMPTY_TITLE = "新会话";
+const TITLE_MAX_LENGTH = 40;
 
 type PendingToolBatch = {
   assistantMessageId: string;
@@ -51,21 +57,55 @@ type PendingToolBatch = {
   awaitingAskUserIds: Set<string>;
 };
 
+type SerializedPendingToolBatch = {
+  assistantMessageId: string;
+  calls: ToolCallItem[];
+  input: InputItem[];
+  transcript: InputItem[];
+  resultsByCallId: [string, ToolResultItem][];
+  awaitingAskUserIds: string[];
+};
+
+export type ProjectAiSessionOptions = {
+  projectId: number;
+  repository: AiChatRepository;
+  resolveWorktree: ResolveWorktree;
+  /** Mock client label; falls back to project id. */
+  clientLabel?: string;
+};
+
+/**
+ * Project-scoped AI conversation runtime.
+ *
+ * Persists idle snapshots into app-state (`ai_conversation`) and restores the
+ * most recently active conversation on construction.
+ */
 export class BranchAiSession {
+  readonly #projectId: number;
+  readonly #repository: AiChatRepository;
   readonly #client: AIClient;
   readonly #toolRunner: ToolRunner;
   readonly #publisher = new RpcStreamPublisher<AiChatEvent>();
   readonly #messages: AiChatMessage[] = [];
   readonly #messageIndexById = new Map<string, number>();
   readonly #history: InputItem[] = [];
+  #conversationId = "";
+  #title = EMPTY_TITLE;
+  #createdAt = 0;
+  #status: "active" | "archived" = "active";
   #pendingToolBatch: PendingToolBatch | null = null;
   #pending = false;
   #errorMessage: string | null = null;
   #messageCounter = 0;
+  #dirty = false;
+  #disposed = false;
 
-  constructor(branchName: string, worktree: WorktreeSession) {
-    this.#client = createMockClient(branchName);
-    this.#toolRunner = createToolRunner(worktree);
+  constructor(options: ProjectAiSessionOptions) {
+    this.#projectId = options.projectId;
+    this.#repository = options.repository;
+    this.#client = createMockClient(options.clientLabel ?? `project-${options.projectId}`);
+    this.#toolRunner = createToolRunner(options.resolveWorktree);
+    this.#hydrateOnOpen();
   }
 
   subscribe(): ReadableStream<AiChatEvent> {
@@ -170,6 +210,8 @@ export class BranchAiSession {
           },
         },
       ]);
+      this.#markDirty();
+      this.#persistIfNeeded();
       return;
     }
 
@@ -198,25 +240,132 @@ export class BranchAiSession {
     });
   }
 
-  resetConversation(): void {
-    if (this.#pending || this.#pendingToolBatch !== null) {
-      throw new Error("AI 请求仍在处理中，暂时不能清空对话。");
+  createConversation(): void {
+    this.#assertIdleForConversationSwitch("新建");
+    this.#persistIfNeeded();
+
+    if (
+      this.#messages.length === 0 &&
+      this.#pendingToolBatch === null &&
+      this.#errorMessage === null
+    ) {
+      // Already an empty draft — no-op besides ensuring a stable id exists.
+      if (this.#conversationId === "") {
+        this.#beginEmptyConversation();
+        this.#emitSnapshot();
+      }
+      return;
     }
 
+    this.#beginEmptyConversation();
+    this.#emitSnapshot();
+  }
+
+  listConversations(): AiConversationSummary[] {
+    return this.#repository.listByProject(this.#projectId).map((record) => ({
+      id: record.id,
+      title: record.title,
+      createdAt: record.createdAt,
+      updatedAt: record.updatedAt,
+      lastActiveAt: record.lastActiveAt,
+    }));
+  }
+
+  switchConversation(conversationId: string): void {
+    const normalized = conversationId.trim();
+    if (normalized === "") {
+      throw new Error("会话 id 不能为空。");
+    }
+    this.#assertIdleForConversationSwitch("切换");
+    if (normalized === this.#conversationId) {
+      return;
+    }
+
+    this.#persistIfNeeded();
+
+    const record = this.#repository.getById(this.#projectId, normalized);
+    if (!record) {
+      throw new Error("找不到指定的 AI 会话。");
+    }
+
+    this.#loadRecord(record);
+    // Touch last_active_at so reopen restores the conversation just selected.
+    this.#markDirty();
+    this.#persistIfNeeded();
+    this.#emitSnapshot();
+  }
+
+  [Symbol.dispose](): void {
+    if (this.#disposed) {
+      return;
+    }
+    this.#disposed = true;
+    try {
+      this.#persistIfNeeded();
+    } finally {
+      this.#publisher[Symbol.dispose]();
+    }
+  }
+
+  #hydrateOnOpen(): void {
+    const latest = this.#repository.getLatestByProject(this.#projectId);
+    if (latest) {
+      this.#loadRecord(latest);
+      return;
+    }
+    this.#beginEmptyConversation();
+  }
+
+  #beginEmptyConversation(): void {
+    this.#conversationId = randomUUID();
+    this.#title = EMPTY_TITLE;
+    this.#createdAt = Date.now();
+    this.#status = "active";
     this.#messages.length = 0;
     this.#messageIndexById.clear();
     this.#history.length = 0;
     this.#pendingToolBatch = null;
+    this.#pending = false;
     this.#errorMessage = null;
-    this.#emitDelta([{ type: "conversation.reset" }]);
+    this.#messageCounter = 0;
+    this.#dirty = false;
   }
 
-  [Symbol.dispose](): void {
-    this.#publisher[Symbol.dispose]();
+  #loadRecord(record: AiConversationRecord): void {
+    this.#conversationId = record.id;
+    this.#title = record.title;
+    this.#createdAt = record.createdAt;
+    this.#status = record.status;
+    this.#pending = false;
+    this.#errorMessage = record.errorMessage;
+    this.#dirty = false;
+
+    this.#messages.length = 0;
+    this.#messageIndexById.clear();
+    const messages = this.#parseMessages(record.messagesJson);
+    for (const message of messages) {
+      this.#messages.push(message);
+      this.#messageIndexById.set(message.id, this.#messages.length - 1);
+    }
+    this.#messageCounter = this.#nextMessageCounter(messages);
+
+    this.#history.length = 0;
+    this.#history.push(...this.#parseHistory(record.historyJson));
+    this.#pendingToolBatch = this.#parsePendingToolBatch(record.pendingToolBatchJson);
+  }
+
+  #assertIdleForConversationSwitch(action: string): void {
+    if (this.#pending) {
+      throw new Error(`AI 请求仍在处理中，暂时不能${action}会话。`);
+    }
+    if (this.#pendingToolBatch !== null) {
+      throw new Error(`AI 正在等待当前工具步骤的用户回答，暂时不能${action}会话。`);
+    }
   }
 
   #createSnapshot(): AiChatSnapshot {
     return {
+      conversationId: this.#conversationId,
       adapterKind: AI_ADAPTER_KIND,
       model: AI_MODEL,
       messages: this.#messages.map(cloneAiChatMessage),
@@ -226,6 +375,139 @@ export class BranchAiSession {
         : [],
       errorMessage: this.#errorMessage,
     };
+  }
+
+  #emitSnapshot(): void {
+    this.#publisher.emit({
+      kind: "snapshot",
+      snapshot: this.#createSnapshot(),
+    });
+  }
+
+  #persistIfNeeded(): void {
+    if (!this.#dirty) {
+      return;
+    }
+    // Empty pure drafts are not written until they have content or error state.
+    if (
+      this.#messages.length === 0 &&
+      this.#pendingToolBatch === null &&
+      this.#errorMessage === null
+    ) {
+      this.#dirty = false;
+      return;
+    }
+    if (this.#conversationId === "") {
+      this.#conversationId = randomUUID();
+      this.#createdAt = Date.now();
+    }
+
+    const now = Date.now();
+    const title = this.#deriveTitle();
+    this.#title = title;
+    const record: AiConversationRecord = {
+      id: this.#conversationId,
+      projectId: this.#projectId,
+      title,
+      status: this.#status,
+      createdAt: this.#createdAt || now,
+      updatedAt: now,
+      lastActiveAt: now,
+      adapterKind: AI_ADAPTER_KIND,
+      model: AI_MODEL,
+      messagesJson: JSON.stringify(this.#messages.map(cloneAiChatMessage)),
+      historyJson: JSON.stringify(this.#history),
+      pendingToolBatchJson: this.#serializePendingToolBatch(this.#pendingToolBatch),
+      errorMessage: this.#errorMessage,
+    };
+    this.#repository.upsert(record);
+    this.#createdAt = record.createdAt;
+    this.#dirty = false;
+  }
+
+  #markDirty(): void {
+    this.#dirty = true;
+  }
+
+  #deriveTitle(): string {
+    const firstUser = this.#messages.find((message) => message.role === "user");
+    if (!firstUser || firstUser.role !== "user") {
+      return this.#title || EMPTY_TITLE;
+    }
+    const text = firstUser.text.trim().replace(/\s+/g, " ");
+    if (text === "") {
+      return EMPTY_TITLE;
+    }
+    return text.length > TITLE_MAX_LENGTH ? `${text.slice(0, TITLE_MAX_LENGTH)}…` : text;
+  }
+
+  #nextMessageCounter(messages: readonly AiChatMessage[]): number {
+    let max = -1;
+    for (const message of messages) {
+      const match = /^ai-chat-(\d+)$/.exec(message.id);
+      if (match) {
+        max = Math.max(max, Number(match[1]));
+      }
+    }
+    return max + 1;
+  }
+
+  #parseMessages(json: string): AiChatMessage[] {
+    try {
+      const parsed = JSON.parse(json) as unknown;
+      if (!Array.isArray(parsed)) {
+        return [];
+      }
+      return parsed as AiChatMessage[];
+    } catch {
+      return [];
+    }
+  }
+
+  #parseHistory(json: string): InputItem[] {
+    try {
+      const parsed = JSON.parse(json) as unknown;
+      if (!Array.isArray(parsed)) {
+        return [];
+      }
+      return parsed as InputItem[];
+    } catch {
+      return [];
+    }
+  }
+
+  #parsePendingToolBatch(json: string | null): PendingToolBatch | null {
+    if (json === null || json === "") {
+      return null;
+    }
+    try {
+      const parsed = JSON.parse(json) as SerializedPendingToolBatch;
+      return {
+        assistantMessageId: parsed.assistantMessageId,
+        calls: parsed.calls,
+        input: parsed.input,
+        transcript: parsed.transcript,
+        resultsByCallId: new Map(parsed.resultsByCallId),
+        awaitingAskUserIds: new Set(parsed.awaitingAskUserIds),
+      };
+    } catch {
+      return null;
+    }
+  }
+
+  #serializePendingToolBatch(batch: PendingToolBatch | null): string | null {
+    if (batch === null) {
+      return null;
+    }
+    const payload: SerializedPendingToolBatch = {
+      assistantMessageId: batch.assistantMessageId,
+      calls: batch.calls,
+      input: batch.input,
+      transcript: batch.transcript,
+      resultsByCallId: [...batch.resultsByCallId.entries()],
+      awaitingAskUserIds: [...batch.awaitingAskUserIds],
+    };
+    return JSON.stringify(payload);
   }
 
   #emitDelta(ops: AiChatDeltaOp[]): void {
@@ -503,6 +785,8 @@ export class BranchAiSession {
           transcript,
         );
         if (batchOutcome === "paused") {
+          this.#markDirty();
+          this.#persistIfNeeded();
           return;
         }
       }
@@ -534,6 +818,8 @@ export class BranchAiSession {
           },
         },
       ]);
+      this.#markDirty();
+      this.#persistIfNeeded();
     } catch (error) {
       this.#pending = false;
       this.#pendingToolBatch = null;
@@ -570,6 +856,8 @@ export class BranchAiSession {
         },
       });
       this.#emitDelta(ops);
+      this.#markDirty();
+      this.#persistIfNeeded();
     }
   }
 

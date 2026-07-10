@@ -19,11 +19,13 @@ export type ToolExecutionResult = {
   };
 };
 
+export type ResolveWorktree = () => WorktreeSession;
+
 export type ToolRunner = {
   execute(call: ToolCallItem): Promise<ToolExecutionResult>;
 };
 
-export function createToolRunner(worktree: WorktreeSession): ToolRunner {
+export function createToolRunner(resolveWorktree: ResolveWorktree): ToolRunner {
   return {
     async execute(call: ToolCallItem): Promise<ToolExecutionResult> {
       try {
@@ -45,7 +47,7 @@ export function createToolRunner(worktree: WorktreeSession): ToolRunner {
             };
           }
           case "list_resource_files": {
-            const output = executeListResourceFiles(worktree, call);
+            const output = executeListResourceFiles(resolveWorktree(), call);
             const resultText = JSON.stringify(output, null, 2);
             return {
               toolResult: toolResultItem(call.id, call.name, "success", [

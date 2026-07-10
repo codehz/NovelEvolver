@@ -2,14 +2,23 @@ import { RpcTarget } from "capnweb";
 import { createSqliteRepository } from "nano-git/repository/sqlite";
 
 import type { ProjectMetadata } from "#shared/project";
+import type { AiChatHandle } from "#shared/rpc/ai-rpc";
 import type { BranchWorkspace } from "#shared/rpc/branch-workspace-rpc";
 import type { BranchSummary, ProjectSession } from "#shared/rpc/project-session-rpc";
 
+import { BranchAiSession } from "../../ai/branch-ai-session";
+import type { AiChatRepository } from "../../db/repositories/ai-chat-repo";
 import type { ProjectDbRecord } from "../../db/repositories/projects-repo";
 import type { WorktreeRepository } from "../../db/repositories/worktree-repo";
 import { toProjectMetadata } from "../../projects/home-path";
 import { WorktreeSession } from "../../worktree/session";
+import { AiChatHandleImpl } from "../handles/ai-chat-handle";
 import { BranchWorkspaceImpl } from "./branch-workspace";
+
+type BranchWorkspaceEntry = {
+  session: WorktreeSession;
+  workspace: BranchWorkspaceImpl;
+};
 
 /**
  * Server-side RPC target wrapping a nano-git SQLite repository.
@@ -23,8 +32,10 @@ export class ProjectSessionImpl extends RpcTarget implements ProjectSession {
   readonly #projectId: number;
   readonly #repo: ReturnType<typeof createSqliteRepository>;
   readonly #worktrees: WorktreeRepository;
-  readonly #branchWorkspaces = new Map<string, BranchWorkspaceImpl>();
+  readonly #branchWorkspaces = new Map<string, BranchWorkspaceEntry>();
   readonly #metadata: ProjectMetadata;
+  readonly #aiSession: BranchAiSession;
+  readonly #ai: AiChatHandle;
   #disposed = false;
 
   constructor(
@@ -32,12 +43,20 @@ export class ProjectSessionImpl extends RpcTarget implements ProjectSession {
     repoPath: string,
     worktrees: WorktreeRepository,
     projectRecord: ProjectDbRecord,
+    aiChatRepository: AiChatRepository,
   ) {
     super();
     this.#projectId = projectId;
     this.#repo = createSqliteRepository(repoPath);
     this.#worktrees = worktrees;
     this.#metadata = toProjectMetadata(projectRecord);
+    this.#aiSession = new BranchAiSession({
+      projectId,
+      repository: aiChatRepository,
+      clientLabel: projectRecord.path,
+      resolveWorktree: () => this.#resolveCurrentWorktree(),
+    });
+    this.#ai = new AiChatHandleImpl(this.#aiSession);
   }
 
   get metadata() {
@@ -58,11 +77,19 @@ export class ProjectSessionImpl extends RpcTarget implements ProjectSession {
     }));
   }
 
+  get ai(): AiChatHandle {
+    return this.#ai;
+  }
+
   checkoutBranch(name: string): void {
     this.#repo.refs.write("HEAD", `ref: refs/heads/${name}`);
   }
 
   openBranchWorkspace(name: string): BranchWorkspace {
+    return this.#getOrCreateBranchWorkspace(name).workspace;
+  }
+
+  #getOrCreateBranchWorkspace(name: string): BranchWorkspaceEntry {
     if (this.#disposed) {
       throw new Error("Project session has been disposed.");
     }
@@ -79,9 +106,23 @@ export class ProjectSessionImpl extends RpcTarget implements ProjectSession {
       this.#projectId,
       name,
     );
-    const workspace = new BranchWorkspaceImpl(session, name);
-    this.#branchWorkspaces.set(name, workspace);
-    return workspace;
+    const workspace = new BranchWorkspaceImpl(session);
+    const entry = { session, workspace };
+    this.#branchWorkspaces.set(name, entry);
+    return entry;
+  }
+
+  #resolveCurrentWorktree(): WorktreeSession {
+    if (this.#disposed) {
+      throw new Error("Project session has been disposed.");
+    }
+
+    const branchName = this.#repo.getCurrentBranch();
+    if (branchName === null || branchName === "") {
+      throw new Error("当前处于 detached HEAD，无法解析 AI 工具所需的 worktree。");
+    }
+
+    return this.#getOrCreateBranchWorkspace(branchName).session;
   }
 
   [Symbol.dispose](): void {
@@ -90,9 +131,10 @@ export class ProjectSessionImpl extends RpcTarget implements ProjectSession {
     }
 
     this.#disposed = true;
+    this.#aiSession[Symbol.dispose]();
 
-    for (const workspace of this.#branchWorkspaces.values()) {
-      workspace[Symbol.dispose]();
+    for (const entry of this.#branchWorkspaces.values()) {
+      entry.workspace[Symbol.dispose]();
     }
     this.#branchWorkspaces.clear();
     this.#repo[Symbol.dispose]();

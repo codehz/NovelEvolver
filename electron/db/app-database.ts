@@ -1,5 +1,6 @@
 import { DatabaseSync } from "node:sqlite";
 
+import { initAiChatSchema } from "./schema/ai-chat-schema";
 import { initProjectsSchema } from "./schema/projects-schema";
 import { initWorktreeSchema } from "./schema/worktree-schema";
 
@@ -21,9 +22,10 @@ export class AppDatabase {
     this.#db.exec("PRAGMA journal_mode = WAL;");
     this.#db.exec("PRAGMA busy_timeout = 5000;");
 
-    // 顺序敏感：worktree 表通过 FK 引用 projects(id)，必须先建 projects。
+    // 顺序敏感：worktree / ai_conversation 通过 FK 引用 projects(id)，必须先建 projects。
     initProjectsSchema(this.#db);
     initWorktreeSchema(this.#db);
+    initAiChatSchema(this.#db);
   }
 
   get db(): DatabaseSync {
