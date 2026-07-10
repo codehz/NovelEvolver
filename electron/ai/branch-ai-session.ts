@@ -9,7 +9,6 @@ import type {
   ToolCallItem,
   ToolResultItem,
 } from "@codehz/ai";
-import { toolResultItem } from "@codehz/ai";
 
 import {
   applyAiChatMessagePatch,
@@ -54,7 +53,7 @@ type PendingToolBatch = {
   input: InputItem[];
   transcript: InputItem[];
   resultsByCallId: Map<string, ToolResultItem>;
-  awaitingAskUserIds: Set<string>;
+  awaitingUserInputIds: Set<string>;
 };
 
 type SerializedPendingToolBatch = {
@@ -63,7 +62,7 @@ type SerializedPendingToolBatch = {
   input: InputItem[];
   transcript: InputItem[];
   resultsByCallId: [string, ToolResultItem][];
-  awaitingAskUserIds: string[];
+  awaitingUserInputIds: string[];
 };
 
 export type ProjectAiSessionOptions = {
@@ -162,7 +161,7 @@ export class BranchAiSession {
   submitToolResponse(toolCallId: string, text: string): void {
     const pendingBatch = this.#pendingToolBatch;
     const normalized = text.trim();
-    if (pendingBatch === null || !pendingBatch.awaitingAskUserIds.has(toolCallId)) {
+    if (pendingBatch === null || !pendingBatch.awaitingUserInputIds.has(toolCallId)) {
       throw new Error("当前没有等待该工具调用的用户回答。");
     }
     if (normalized === "") {
@@ -173,39 +172,26 @@ export class BranchAiSession {
     }
 
     const toolCall = this.#getToolCall(pendingBatch.assistantMessageId, toolCallId);
-    if (!toolCall || toolCall.name !== "ask_user") {
-      throw new Error("当前工具调用不是 ask_user。");
+    if (!toolCall) {
+      throw new Error("找不到对应的工具调用。");
     }
 
-    const toolResult = toolResultItem(toolCall.id, toolCall.name, "success", [
-      {
-        type: "json",
-        json: {
-          answer: normalized,
-        },
-      },
-    ]);
+    const toolResult = this.#toolRunner.buildUserInputResult(toolCall, normalized);
 
     pendingBatch.resultsByCallId.set(toolCallId, toolResult);
-    pendingBatch.awaitingAskUserIds.delete(toolCallId);
+    pendingBatch.awaitingUserInputIds.delete(toolCallId);
     this.#emitAssistantPartUpdate(pendingBatch.assistantMessageId, toolCallId, {
       status: "complete",
-      resultText: JSON.stringify(
-        {
-          answer: normalized,
-        },
-        null,
-        2,
-      ),
+      resultText: JSON.stringify({ answer: normalized }, null, 2),
       errorMessage: null,
     });
 
-    if (pendingBatch.awaitingAskUserIds.size > 0) {
+    if (pendingBatch.awaitingUserInputIds.size > 0) {
       this.#emitDelta([
         {
           type: "state.updated",
           patch: {
-            awaitingAskUserToolCallIds: [...pendingBatch.awaitingAskUserIds],
+            awaitingUserInputToolCallIds: [...pendingBatch.awaitingUserInputIds],
             errorMessage: null,
           },
         },
@@ -227,7 +213,7 @@ export class BranchAiSession {
         type: "state.updated",
         patch: {
           pending: true,
-          awaitingAskUserToolCallIds: [],
+          awaitingUserInputToolCallIds: [],
           errorMessage: null,
         },
       },
@@ -370,8 +356,8 @@ export class BranchAiSession {
       model: AI_MODEL,
       messages: this.#messages.map(cloneAiChatMessage),
       pending: this.#pending,
-      awaitingAskUserToolCallIds: this.#pendingToolBatch
-        ? [...this.#pendingToolBatch.awaitingAskUserIds]
+      awaitingUserInputToolCallIds: this.#pendingToolBatch
+        ? [...this.#pendingToolBatch.awaitingUserInputIds]
         : [],
       errorMessage: this.#errorMessage,
     };
@@ -488,7 +474,7 @@ export class BranchAiSession {
         input: parsed.input,
         transcript: parsed.transcript,
         resultsByCallId: new Map(parsed.resultsByCallId),
-        awaitingAskUserIds: new Set(parsed.awaitingAskUserIds),
+        awaitingUserInputIds: new Set(parsed.awaitingUserInputIds),
       };
     } catch {
       return null;
@@ -505,7 +491,7 @@ export class BranchAiSession {
       input: batch.input,
       transcript: batch.transcript,
       resultsByCallId: [...batch.resultsByCallId.entries()],
-      awaitingAskUserIds: [...batch.awaitingAskUserIds],
+      awaitingUserInputIds: [...batch.awaitingUserInputIds],
     };
     return JSON.stringify(payload);
   }
@@ -814,7 +800,7 @@ export class BranchAiSession {
           type: "state.updated",
           patch: {
             pending: false,
-            awaitingAskUserToolCallIds: [],
+            awaitingUserInputToolCallIds: [],
           },
         },
       ]);
@@ -851,7 +837,7 @@ export class BranchAiSession {
         type: "state.updated",
         patch: {
           pending: false,
-          awaitingAskUserToolCallIds: [],
+          awaitingUserInputToolCallIds: [],
           errorMessage: this.#errorMessage,
         },
       });
@@ -868,7 +854,7 @@ export class BranchAiSession {
     transcript: InputItem[],
   ): Promise<"continue" | "paused"> {
     const resultsByCallId = new Map<string, ToolResultItem>();
-    const awaitingAskUserIds = new Set<string>();
+    const awaitingUserInputIds = new Set<string>();
 
     for (const call of calls) {
       this.#emitAssistantPartUpdate(assistantMessageId, call.id, {
@@ -876,13 +862,13 @@ export class BranchAiSession {
       });
 
       const execution = await this.#toolRunner.execute(call);
-      if (execution.awaitUserInput) {
+      if (execution.userInputRequest) {
         this.#emitAssistantPartUpdate(assistantMessageId, call.id, {
           status: "awaiting_user",
           resultText: null,
           errorMessage: null,
         });
-        awaitingAskUserIds.add(call.id);
+        awaitingUserInputIds.add(call.id);
         continue;
       }
 
@@ -894,7 +880,7 @@ export class BranchAiSession {
       resultsByCallId.set(call.id, execution.toolResult);
     }
 
-    if (awaitingAskUserIds.size > 0) {
+    if (awaitingUserInputIds.size > 0) {
       this.#pending = false;
       this.#pendingToolBatch = {
         assistantMessageId,
@@ -902,14 +888,14 @@ export class BranchAiSession {
         input: [...input],
         transcript: [...transcript],
         resultsByCallId,
-        awaitingAskUserIds,
+        awaitingUserInputIds,
       };
       this.#emitDelta([
         {
           type: "state.updated",
           patch: {
             pending: false,
-            awaitingAskUserToolCallIds: [...awaitingAskUserIds],
+            awaitingUserInputToolCallIds: [...awaitingUserInputIds],
             errorMessage: null,
           },
         },

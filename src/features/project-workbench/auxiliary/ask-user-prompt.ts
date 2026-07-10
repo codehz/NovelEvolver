@@ -65,12 +65,12 @@ export function summarizeAskUserQuestion(toolCall: AiChatToolCall, fallbackIndex
   return question.length > 24 ? `${question.slice(0, 24)}…` : question;
 }
 
-export function listAwaitingAskUserToolCalls(snapshot: AiChatSnapshot): AiChatToolCall[] {
-  if (snapshot.awaitingAskUserToolCallIds.length === 0) {
+export function listAwaitingUserInputToolCalls(snapshot: AiChatSnapshot): AiChatToolCall[] {
+  if (snapshot.awaitingUserInputToolCallIds.length === 0) {
     return [];
   }
 
-  const awaitingIds = new Set(snapshot.awaitingAskUserToolCallIds);
+  const awaitingIds = new Set(snapshot.awaitingUserInputToolCallIds);
   const toolCalls: AiChatToolCall[] = [];
 
   for (const message of snapshot.messages) {
@@ -83,7 +83,7 @@ export function listAwaitingAskUserToolCalls(snapshot: AiChatSnapshot): AiChatTo
         continue;
       }
 
-      if (toolCall.name === "ask_user" && awaitingIds.has(toolCall.id)) {
+      if (awaitingIds.has(toolCall.id)) {
         toolCalls.push(toolCall);
       }
     }
@@ -91,12 +91,12 @@ export function listAwaitingAskUserToolCalls(snapshot: AiChatSnapshot): AiChatTo
 
   return toolCalls.sort(
     (left, right) =>
-      snapshot.awaitingAskUserToolCallIds.indexOf(left.id) -
-      snapshot.awaitingAskUserToolCallIds.indexOf(right.id),
+      snapshot.awaitingUserInputToolCallIds.indexOf(left.id) -
+      snapshot.awaitingUserInputToolCallIds.indexOf(right.id),
   );
 }
 
-export function findAskUserToolCall(
+export function findUserInputToolCall(
   snapshot: AiChatSnapshot,
   toolCallId: string,
 ): AiChatToolCall | null {
@@ -106,13 +106,10 @@ export function findAskUserToolCall(
     }
 
     const toolCall =
-      message.parts.find((candidate): candidate is AiChatToolCall => {
-        return (
-          candidate.type === "tool_call" &&
-          candidate.id === toolCallId &&
-          candidate.name === "ask_user"
-        );
-      }) ?? null;
+      message.parts.find(
+        (candidate): candidate is AiChatToolCall =>
+          candidate.type === "tool_call" && candidate.id === toolCallId,
+      ) ?? null;
     if (toolCall) {
       return toolCall;
     }
@@ -121,8 +118,8 @@ export function findAskUserToolCall(
   return null;
 }
 
-export function listAskUserToolCallsInActiveBatch(snapshot: AiChatSnapshot): AiChatToolCall[] {
-  const awaitingIds = new Set(snapshot.awaitingAskUserToolCallIds);
+export function listUserInputToolCallsInActiveBatch(snapshot: AiChatSnapshot): AiChatToolCall[] {
+  const awaitingIds = new Set(snapshot.awaitingUserInputToolCallIds);
   if (awaitingIds.size === 0) {
     return [];
   }
@@ -140,11 +137,10 @@ export function listAskUserToolCallsInActiveBatch(snapshot: AiChatSnapshot): AiC
     return message.parts.filter((toolCall): toolCall is AiChatToolCall => {
       return (
         toolCall.type === "tool_call" &&
-        toolCall.name === "ask_user" &&
         (toolCall.status === "awaiting_user" || toolCall.status === "complete")
       );
     });
   }
 
-  return listAwaitingAskUserToolCalls(snapshot);
+  return listAwaitingUserInputToolCalls(snapshot);
 }

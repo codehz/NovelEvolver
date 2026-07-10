@@ -3,9 +3,9 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import type { AiChatSnapshot } from "#shared/rpc/ai-rpc";
 
 import {
-  findAskUserToolCall,
-  listAskUserToolCallsInActiveBatch,
-  listAwaitingAskUserToolCalls,
+  findUserInputToolCall,
+  listUserInputToolCallsInActiveBatch,
+  listAwaitingUserInputToolCalls,
 } from "./ask-user-prompt";
 import { AskUserComposer } from "./AskUserComposer";
 import { AskUserQuestionTabs } from "./AskUserQuestionTabs";
@@ -23,8 +23,8 @@ export function AskUserComposerPanel({
   onSelectToolCallId: (toolCallId: string) => void;
   onSubmit: (toolCallId: string, text: string) => Promise<boolean>;
 }) {
-  const batchToolCalls = useMemo(() => listAskUserToolCallsInActiveBatch(snapshot), [snapshot]);
-  const awaitingToolCalls = useMemo(() => listAwaitingAskUserToolCalls(snapshot), [snapshot]);
+  const batchToolCalls = useMemo(() => listUserInputToolCallsInActiveBatch(snapshot), [snapshot]);
+  const awaitingToolCalls = useMemo(() => listAwaitingUserInputToolCalls(snapshot), [snapshot]);
   const [draftsByToolCallId, setDraftsByToolCallId] = useState<Record<string, string>>({});
 
   useEffect(() => {
@@ -41,7 +41,7 @@ export function AskUserComposerPanel({
   }, [activeToolCallId, awaitingToolCalls, onSelectToolCallId]);
 
   const activeToolCall =
-    activeToolCallId === null ? null : findAskUserToolCall(snapshot, activeToolCallId);
+    activeToolCallId === null ? null : findUserInputToolCall(snapshot, activeToolCallId);
 
   const progressLabel = useMemo(() => {
     if (batchToolCalls.length <= 1) {

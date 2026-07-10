@@ -39,25 +39,25 @@ export function AuxiliaryPanel() {
   const composerRef = useRef<HTMLTextAreaElement | null>(null);
   const shouldRestoreComposerFocusRef = useRef(false);
 
-  const hasAwaitingAskUser = snapshot.awaitingAskUserToolCallIds.length > 0;
-  const conversationActionsDisabled = loading || snapshot.pending || hasAwaitingAskUser;
-  const [activeAskUserToolCallId, setActiveAskUserToolCallId] = useState<string | null>(null);
+  const hasAwaitingUserInput = snapshot.awaitingUserInputToolCallIds.length > 0;
+  const conversationActionsDisabled = loading || snapshot.pending || hasAwaitingUserInput;
+  const [activeUserInputToolCallId, setActiveUserInputToolCallId] = useState<string | null>(null);
 
   useEffect(() => {
     endRef.current?.scrollIntoView({ block: "end", behavior: "smooth" });
-  }, [snapshot.messages, snapshot.pending, snapshot.awaitingAskUserToolCallIds]);
+  }, [snapshot.messages, snapshot.pending, snapshot.awaitingUserInputToolCallIds]);
 
   useEffect(() => {
-    if (!hasAwaitingAskUser) {
-      setActiveAskUserToolCallId(null);
+    if (!hasAwaitingUserInput) {
+      setActiveUserInputToolCallId(null);
     }
-  }, [hasAwaitingAskUser]);
+  }, [hasAwaitingUserInput]);
 
   useEffect(() => {
     if (
       loading ||
       snapshot.pending ||
-      hasAwaitingAskUser ||
+      hasAwaitingUserInput ||
       !shouldRestoreComposerFocusRef.current
     ) {
       return;
@@ -65,7 +65,7 @@ export function AuxiliaryPanel() {
 
     composerRef.current?.focus();
     shouldRestoreComposerFocusRef.current = false;
-  }, [hasAwaitingAskUser, loading, snapshot.pending]);
+  }, [hasAwaitingUserInput, loading, snapshot.pending]);
 
   const submitDraft = useCallback(async (): Promise<void> => {
     const submitted = await sendMessage(draft);
@@ -170,10 +170,10 @@ export function AuxiliaryPanel() {
           {snapshot.messages.map((message) => (
             <AiMessageBlock
               key={message.id}
-              activeAskUserToolCallId={activeAskUserToolCallId}
-              awaitingAskUserToolCallIds={snapshot.awaitingAskUserToolCallIds}
+              activeUserInputToolCallId={activeUserInputToolCallId}
+              awaitingUserInputToolCallIds={snapshot.awaitingUserInputToolCallIds}
               message={message}
-              onSelectAskUserToolCall={setActiveAskUserToolCallId}
+              onSelectUserInputToolCall={setActiveUserInputToolCallId}
             />
           ))}
           <div
@@ -185,12 +185,12 @@ export function AuxiliaryPanel() {
       </ScrollArea>
 
       <footer className="shrink-0 p-3">
-        {hasAwaitingAskUser ? (
+        {hasAwaitingUserInput ? (
           <AskUserComposerPanel
-            activeToolCallId={activeAskUserToolCallId}
+            activeToolCallId={activeUserInputToolCallId}
             loading={loading}
             snapshot={snapshot}
-            onSelectToolCallId={setActiveAskUserToolCallId}
+            onSelectToolCallId={setActiveUserInputToolCallId}
             onSubmit={submitToolResponse}
           />
         ) : (

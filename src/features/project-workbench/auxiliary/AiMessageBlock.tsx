@@ -14,14 +14,14 @@ import { AiToolCallBlock } from "./AiToolCallBlock";
 
 function AiAssistantPartBlock({
   part,
-  awaitingAskUserToolCallIds,
-  activeAskUserToolCallId,
-  onSelectAskUserToolCall,
+  awaitingUserInputToolCallIds,
+  activeUserInputToolCallId,
+  onSelectUserInputToolCall,
 }: {
   part: AiChatAssistantPart;
-  awaitingAskUserToolCallIds: string[];
-  activeAskUserToolCallId: string | null;
-  onSelectAskUserToolCall: (toolCallId: string) => void;
+  awaitingUserInputToolCallIds: string[];
+  activeUserInputToolCallId: string | null;
+  onSelectUserInputToolCall: (toolCallId: string) => void;
 }) {
   switch (part.type) {
     case "message":
@@ -39,10 +39,10 @@ function AiAssistantPartBlock({
     case "tool_call":
       return (
         <AiToolCallBlock
-          activeAskUserToolCallId={activeAskUserToolCallId}
-          awaitingAskUserToolCallIds={awaitingAskUserToolCallIds}
+          activeUserInputToolCallId={activeUserInputToolCallId}
+          awaitingUserInputToolCallIds={awaitingUserInputToolCallIds}
           toolCall={part}
-          onSelectAskUserToolCall={onSelectAskUserToolCall}
+          onSelectUserInputToolCall={onSelectUserInputToolCall}
         />
       );
   }
@@ -50,14 +50,14 @@ function AiAssistantPartBlock({
 
 export function AiMessageBlock({
   message,
-  awaitingAskUserToolCallIds,
-  activeAskUserToolCallId,
-  onSelectAskUserToolCall,
+  awaitingUserInputToolCallIds,
+  activeUserInputToolCallId,
+  onSelectUserInputToolCall,
 }: {
   message: AiChatMessage;
-  awaitingAskUserToolCallIds: string[];
-  activeAskUserToolCallId: string | null;
-  onSelectAskUserToolCall: (toolCallId: string) => void;
+  awaitingUserInputToolCallIds: string[];
+  activeUserInputToolCallId: string | null;
+  onSelectUserInputToolCall: (toolCallId: string) => void;
 }) {
   if (message.role === "user") {
     return (
@@ -77,10 +77,10 @@ export function AiMessageBlock({
         message.parts.map((part) => (
           <AiAssistantPartBlock
             key={part.id}
-            activeAskUserToolCallId={activeAskUserToolCallId}
-            awaitingAskUserToolCallIds={awaitingAskUserToolCallIds}
+            activeUserInputToolCallId={activeUserInputToolCallId}
+            awaitingUserInputToolCallIds={awaitingUserInputToolCallIds}
             part={part}
-            onSelectAskUserToolCall={onSelectAskUserToolCall}
+            onSelectUserInputToolCall={onSelectUserInputToolCall}
           />
         ))
       ) : (
