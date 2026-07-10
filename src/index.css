@@ -51,6 +51,9 @@
   --spacing-quick-pick: 36rem;
   --z-index-quick-pick: 50;
 
+  --shadow-context-menu: 0 6px 18px color-mix(in srgb, var(--color-ctp-crust) 50%, transparent);
+  --z-index-context-menu: 60;
+
   --spacing-settings-dialog: 52rem;
   --z-index-settings: 50;
 

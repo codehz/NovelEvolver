@@ -13,6 +13,7 @@ import { TitleBarActionsPortalTarget } from "#app/shared/lib/shell/titlebar-port
 import { titleBarTitleAtom } from "#app/shared/lib/shell/titlebar-title";
 import { cn } from "#app/shared/lib/ui/cn";
 import { SlotText } from "#app/shared/ui/SlotText";
+import { ContextMenuHost } from "#app/shell/context-menu";
 import { NotificationBellButton, NotificationToastStack } from "#app/shell/notifications";
 import { QuickPickHost } from "#app/shell/quick-pick";
 import type { WindowState } from "#shared/window";
@@ -162,6 +163,7 @@ export function WindowFrame({ children }: { children: ReactNode }) {
       <StatusBar />
       <NotificationToastStack />
       <QuickPickHost />
+      <ContextMenuHost />
     </main>
   );
 }

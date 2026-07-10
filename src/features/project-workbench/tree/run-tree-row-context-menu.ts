@@ -1,8 +1,8 @@
+import type { ContextMenuItem } from "#app/shared/lib/context-menu";
 import { popupContextMenu } from "#app/shared/lib/shell/popup-context-menu";
-import type { ContextMenuItem } from "#shared/rpc/context-menu";
 
 /**
- * Select the row, show a native context menu, then dispatch the chosen item id.
+ * Select the row, show a context menu, then dispatch the chosen item id.
  * Returns the chosen id (or null if dismissed).
  */
 export async function runTreeRowContextMenu(options: {

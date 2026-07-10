@@ -1,4 +1,4 @@
-import type { ContextMenuItem } from "#shared/rpc/context-menu";
+import type { ContextMenuItem } from "#app/shared/lib/context-menu";
 import type { ManuscriptTreeNode } from "#shared/rpc/worktree-tree-rpc";
 
 export type ManuscriptTreeContextAction =
