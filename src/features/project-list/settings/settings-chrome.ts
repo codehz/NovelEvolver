@@ -1,14 +1,7 @@
 import { cn } from "#app/shared/lib/ui/cn";
 
-export const settingsBackdropClass = cn(
-  "fixed inset-0 z-settings m-0 cursor-default border-0 bg-ctp-crust/55 p-0 app-region-no-drag",
-);
-
 export const settingsPanelClass = cn(
-  "fixed top-1/2 left-1/2 z-settings m-0 flex h-[min(70vh,36rem)] max-h-[calc(100vh-5rem)] w-settings-dialog max-w-[calc(100vw-3rem)] -translate-x-1/2 -translate-y-1/2 flex-col overflow-hidden rounded-md border border-titlebar-border bg-app-surface text-sm text-app-foreground shadow-quick-pick app-region-no-drag",
-  "opacity-0 transition transition-discrete duration-220 ease-[cubic-bezier(0.33,1,0.68,1)]",
-  "open:opacity-100",
-  "open:starting:opacity-0",
+  "flex h-[min(70vh,36rem)] w-settings-dialog flex-col overflow-hidden rounded-md border border-titlebar-border bg-app-surface text-sm text-app-foreground shadow-quick-pick app-region-no-drag",
 );
 
 export const settingsHeaderClass = cn(
