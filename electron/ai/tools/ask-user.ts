@@ -1,5 +1,7 @@
 import type { ToolCallItem } from "@codehz/ai";
 
+import { parseToolArgs } from "./utils";
+
 export type AskUserChoice = {
   title: string;
   description?: string;
@@ -17,7 +19,7 @@ export type AskUserResult = {
 };
 
 export function parseAskUserArgs(call: ToolCallItem): AskUserArgs {
-  const args = parseToolArguments(call);
+  const args = parseToolArgs(call);
   if (typeof args.question !== "string" || args.question.trim() === "") {
     throw new Error("ask_user 需要非空 question。");
   }
@@ -71,21 +73,4 @@ function parseChoices(value: unknown): AskUserChoice[] | undefined {
   }
 
   return choices;
-}
-
-function parseToolArguments(call: ToolCallItem): Record<string, unknown> {
-  if (
-    call.argumentsJson !== undefined &&
-    typeof call.argumentsJson === "object" &&
-    call.argumentsJson !== null
-  ) {
-    return call.argumentsJson as Record<string, unknown>;
-  }
-
-  const argumentsText = call.argumentsText.trim();
-  if (argumentsText === "") {
-    return {};
-  }
-
-  return JSON.parse(argumentsText) as Record<string, unknown>;
 }

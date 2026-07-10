@@ -26,62 +26,85 @@ export type ToolRunner = {
   execute(call: ToolCallItem): Promise<ToolExecutionResult>;
 };
 
-export function createToolRunner(resolveWorktree: ResolveWorktree): ToolRunner {
+// ---- result helpers ----
+
+function ok(call: ToolCallItem, resultText: string): ToolExecutionResult {
   return {
-    async execute(call: ToolCallItem): Promise<ToolExecutionResult> {
-      try {
-        switch (call.name as AI_TOOL_NAMES) {
-          case "ask_user": {
-            const args = parseAskUserArgs(call);
-            return {
-              toolResult: toolResultItem(call.id, call.name, "rejected", [
-                { type: "text", text: "等待用户回答。" },
-              ]),
-              resultText: null,
-              errorMessage: null,
-              awaitUserInput: {
-                question: args.question,
-                context: args.context ?? null,
-                placeholder: args.placeholder ?? null,
-                choices: args.choices ?? null,
-              },
-            };
-          }
-          case "list_resource_files": {
-            const output = executeListResourceFiles(resolveWorktree(), call);
-            const resultText = JSON.stringify(output, null, 2);
-            return {
-              toolResult: toolResultItem(call.id, call.name, "success", [
-                { type: "json", json: output },
-              ]),
-              resultText,
-              errorMessage: null,
-            };
-          }
-          case "read_resource_file": {
-            const content = executeReadResourceFile(resolveWorktree(), call);
-            return {
-              toolResult: toolResultItem(call.id, call.name, "success", [
-                { type: "text", text: content },
-              ]),
-              resultText: content,
-              errorMessage: null,
-            };
-          }
-          default:
-            return createErrorResult(call, `Unknown tool: ${call.name}`);
-        }
-      } catch (error) {
-        return createErrorResult(call, toErrorMessage(error));
-      }
-    },
+    toolResult: toolResultItem(call.id, call.name, "success", [{ type: "text", text: resultText }]),
+    resultText,
+    errorMessage: null,
   };
 }
 
-function createErrorResult(call: ToolCallItem, message: string): ToolExecutionResult {
+function okJson(call: ToolCallItem, json: unknown): ToolExecutionResult {
+  const resultText = JSON.stringify(json, null, 2);
+  return {
+    toolResult: toolResultItem(call.id, call.name, "success", [{ type: "json", json }]),
+    resultText,
+    errorMessage: null,
+  };
+}
+
+function err(call: ToolCallItem, message: string): ToolExecutionResult {
   return {
     toolResult: toolResultItem(call.id, call.name, "error", [{ type: "text", text: message }]),
     resultText: null,
     errorMessage: message,
+  };
+}
+
+function askUserResult(
+  call: ToolCallItem,
+  args: ReturnType<typeof parseAskUserArgs>,
+): ToolExecutionResult {
+  return {
+    toolResult: toolResultItem(call.id, call.name, "rejected", [
+      { type: "text", text: "等待用户回答。" },
+    ]),
+    resultText: null,
+    errorMessage: null,
+    awaitUserInput: {
+      question: args.question,
+      context: args.context ?? null,
+      placeholder: args.placeholder ?? null,
+      choices: args.choices ?? null,
+    },
+  };
+}
+
+// ---- handler registry ----
+
+type ToolHandler = (worktree: WorktreeSession, call: ToolCallItem) => ToolExecutionResult;
+
+const toolHandlers: Partial<Record<AI_TOOL_NAMES, ToolHandler>> = {
+  ask_user(worktree, call) {
+    const args = parseAskUserArgs(call);
+    return askUserResult(call, args);
+  },
+  list_resource_files(worktree, call) {
+    const output = executeListResourceFiles(worktree, call);
+    return okJson(call, output);
+  },
+  read_resource_file(worktree, call) {
+    const content = executeReadResourceFile(worktree, call);
+    return ok(call, content);
+  },
+};
+
+// ---- runner ----
+
+export function createToolRunner(resolveWorktree: ResolveWorktree): ToolRunner {
+  return {
+    async execute(call: ToolCallItem): Promise<ToolExecutionResult> {
+      const handler = toolHandlers[call.name as AI_TOOL_NAMES];
+      if (!handler) {
+        return err(call, `Unknown tool: ${call.name}`);
+      }
+      try {
+        return handler(resolveWorktree(), call);
+      } catch (error) {
+        return err(call, toErrorMessage(error));
+      }
+    },
   };
 }
