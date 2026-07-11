@@ -1,5 +1,33 @@
 import { cn } from "#app/shared/lib/ui/cn";
-import type { AiChatAssistantMessage, AiChatToolCall } from "#shared/rpc/ai/index";
+import type {
+  AiChatAssistantMessage,
+  AiChatToolCall,
+  AiChatWarning,
+  AiChatSnapshot,
+} from "#shared/rpc/ai/index";
+
+/** Provider auxiliary warnings from `@codehz/ai` that are not actionable in the chat UI. */
+const HIDDEN_AI_PROVIDER_WARNING_CODES = new Set<string>([
+  "BILLING_MISSING",
+  "USAGE_MISSING",
+  "BILLING_ESTIMATED",
+]);
+
+export function isVisibleAiChatWarning(warning: AiChatWarning): boolean {
+  return warning.code === null || !HIDDEN_AI_PROVIDER_WARNING_CODES.has(warning.code);
+}
+
+export function filterVisibleAiChatWarnings(warnings: readonly AiChatWarning[]): AiChatWarning[] {
+  return warnings.filter(isVisibleAiChatWarning);
+}
+
+export function stripHiddenAiChatWarningsFromSnapshot(snapshot: AiChatSnapshot): AiChatSnapshot {
+  const visible = filterVisibleAiChatWarnings(snapshot.warnings);
+  if (visible.length === snapshot.warnings.length) {
+    return snapshot;
+  }
+  return { ...snapshot, warnings: visible };
+}
 
 export const panelSectionClass = cn("mx-auto flex w-full max-w-3xl flex-col");
 export const conversationRailClass = cn("gap-4 px-3 py-2.5 select-text");

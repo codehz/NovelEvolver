@@ -9,6 +9,7 @@ import type {
 } from "#shared/rpc/ai/index";
 
 import { useAiChat } from "../branch/branch-scopes";
+import { stripHiddenAiChatWarningsFromSnapshot } from "./ai-chat-ui";
 
 export function useAiChatState() {
   const aiChat = useAiChat();
@@ -24,7 +25,9 @@ export function useAiChatState() {
     return consumeRpcSubscription({
       subscribe: () => aiChat.subscribeChat(),
       onValue: (event) => {
-        setSnapshot((current) => applyAiChatEvent(current, event));
+        setSnapshot((current) =>
+          stripHiddenAiChatWarningsFromSnapshot(applyAiChatEvent(current, event)),
+        );
         setLoading(false);
         setSubscriptionError(null);
       },
