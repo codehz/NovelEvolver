@@ -18,7 +18,7 @@ import {
   executeCreateDocument,
   executeEditTextDocument,
   executeGetProjectStructure,
-  executeReadChapter,
+  executeReadTextDocument,
   executeSearchProject,
 } from "./project-tools";
 import type { UserInputRequest } from "./user-input-types";
@@ -97,8 +97,8 @@ const toolHandlers: Partial<Record<AI_TOOL_NAMES, ToolHandler>> = {
     const output = executeGetProjectStructure(worktree, call);
     return okJson(call, output);
   },
-  read_chapter(worktree, call) {
-    const content = executeReadChapter(worktree, call);
+  read_text_document(worktree, call) {
+    const content = executeReadTextDocument(worktree, call);
     return ok(call, content);
   },
   search_project(worktree, call) {

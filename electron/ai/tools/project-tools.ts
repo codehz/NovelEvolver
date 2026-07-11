@@ -84,8 +84,8 @@ export type CreateDocumentResult = {
   display_path: string;
 };
 
-type ReadChapterArgs = {
-  chapter_id?: unknown;
+type ReadTextDocumentArgs = {
+  target?: unknown;
 };
 
 type SearchProjectArgs = {
@@ -219,9 +219,15 @@ export function executeGetProjectStructure(
   return toProjectStructureResult(worktree.getProjectStructure(domain));
 }
 
-export function executeReadChapter(worktree: WorktreeSession, call: ToolCallItem): string {
-  const args = parseToolArgs(call) as ReadChapterArgs;
-  return worktree.readChapter(parseNonEmptyString(args.chapter_id, "chapter_id"));
+export function executeReadTextDocument(worktree: WorktreeSession, call: ToolCallItem): string {
+  const args = parseToolArgs(call) as ReadTextDocumentArgs;
+  if (typeof args.target !== "object" || args.target === null) {
+    throw new Error("target 需要对象参数。");
+  }
+  const target = args.target as Record<string, unknown>;
+  const domain = parseDocumentDomain(target.domain, "target.domain");
+  const id = parseNonEmptyString(target.id, "target.id");
+  return domain === "manuscript" ? worktree.readChapter(id) : worktree.readResourceFile(id);
 }
 
 export function executeSearchProject(

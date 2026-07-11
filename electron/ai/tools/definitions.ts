@@ -58,17 +58,28 @@ export const AI_TOOLS_MAP = {
       additionalProperties: false,
     },
   },
-  read_chapter: {
-    description: "读取指定章节的正文内容。",
+  read_text_document: {
+    description: "读取指定章节或资源文件的全文内容。",
     inputSchema: {
       type: "object",
       properties: {
-        chapter_id: {
-          type: "string",
-          description: "要读取的章节 ID。",
+        target: {
+          type: "object",
+          properties: {
+            domain: {
+              type: "string",
+              enum: ["manuscript", "resource"],
+            },
+            id: {
+              type: "string",
+              description: "章节或资源文件的节点 ID。",
+            },
+          },
+          required: ["domain", "id"],
+          additionalProperties: false,
         },
       },
-      required: ["chapter_id"],
+      required: ["target"],
       additionalProperties: false,
     },
   },
