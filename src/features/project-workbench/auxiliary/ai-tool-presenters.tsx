@@ -1,3 +1,4 @@
+import { parse as parsePartialJson } from "partial-json";
 import type { ReactNode } from "react";
 
 import type { AiChatToolCall } from "#shared/rpc/ai/index";
@@ -19,7 +20,7 @@ function parseObject(text: string | null): JsonObject | null {
     return null;
   }
   try {
-    const value: unknown = JSON.parse(text);
+    const value: unknown = parsePartialJson(text);
     return typeof value === "object" && value !== null && !Array.isArray(value)
       ? (value as JsonObject)
       : null;
@@ -42,6 +43,11 @@ function getString(object: JsonObject | null, key: string): string | null {
 function getNumber(object: JsonObject | null, key: string): number | null {
   const value = object?.[key];
   return typeof value === "number" ? value : null;
+}
+
+function generationStats(text: string | null, status: AiChatToolCall["status"]): string {
+  if (text === null) return "等待正文";
+  return status === "pending" ? `正在生成 · ${text.length} 字符` : textStats(text);
 }
 
 function domainLabel(domain: string | null): string {
@@ -220,7 +226,7 @@ const editPresenter: ToolPresenter = (toolCall) => {
       <DetailList>
         <DetailField label="节点 ID">{target.id ?? "未知"}</DetailField>
         <DetailField label="原正文">{textStats(before)}</DetailField>
-        <DetailField label="新正文">{textStats(after)}</DetailField>
+        <DetailField label="新正文">{generationStats(after, toolCall.status)}</DetailField>
         <DetailField label="结果">
           {toolCall.status === "complete" ? "已更新" : "整篇替换"}
         </DetailField>
@@ -244,7 +250,7 @@ const replacePresenter: ToolPresenter = (toolCall) => {
         <DetailField label="原片段">{textStats(expected)}</DetailField>
         {preview(expected) ? <DetailField label="原文预览">{preview(expected)}</DetailField> : null}
         <DetailField label={removing ? "操作" : "替换片段"}>
-          {removing ? "删除匹配片段" : textStats(replacement)}
+          {removing ? "删除匹配片段" : generationStats(replacement, toolCall.status)}
         </DetailField>
         {!removing && preview(replacement) ? (
           <DetailField label="替换预览">{preview(replacement)}</DetailField>
@@ -273,7 +279,9 @@ const createPresenter: ToolPresenter = (toolCall) => {
         {getNumber(args, "index") !== null ? (
           <DetailField label="插入位置">第 {getNumber(args, "index")! + 1} 位</DetailField>
         ) : null}
-        {content !== null ? <DetailField label="初始正文">{textStats(content)}</DetailField> : null}
+        {toolCall.name === "create_text_document" ? (
+          <DetailField label="初始正文">{generationStats(content, toolCall.status)}</DetailField>
+        ) : null}
         {getString(result, "display_path") ? (
           <DetailField label="创建位置">{getString(result, "display_path")}</DetailField>
         ) : null}
