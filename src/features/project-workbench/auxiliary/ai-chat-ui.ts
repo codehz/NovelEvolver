@@ -2,7 +2,7 @@ import { cn } from "#app/shared/lib/ui/cn";
 import type { AiChatAssistantMessage, AiChatToolCall } from "#shared/rpc/ai/index";
 
 export const panelSectionClass = cn("mx-auto flex w-full max-w-3xl flex-col");
-export const conversationRailClass = cn("gap-4 px-3 py-2.5");
+export const conversationRailClass = cn("gap-4 px-3 py-2.5 select-text");
 export const assistantMessageBlockClass = cn("flex w-full flex-col gap-1");
 export const assistantMessageBodyClass = cn(
   "text-[0.8125rem] leading-5 text-app-foreground",
@@ -66,7 +66,7 @@ export const toolCallBodyClass = cn(
 );
 export const toolCallQuestionClass = cn("text-[0.75rem] leading-5 text-app-foreground");
 export const warningBannerClass = cn(
-  "rounded-md border border-ctp-yellow/40 bg-ctp-yellow/10 px-3 py-2 text-xs text-ctp-yellow",
+  "rounded-md border border-ctp-yellow/40 bg-ctp-yellow/10 px-3 py-2 text-xs break-all whitespace-pre-wrap text-ctp-yellow select-text",
 );
 
 export function describeToolCallStatus(status: AiChatToolCall["status"]): string {
