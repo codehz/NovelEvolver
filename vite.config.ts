@@ -15,6 +15,7 @@ export default defineConfig({
     reportCompressedSize: false,
     cssMinify: "esbuild",
   },
+  logLevel: "warn",
   server: {
     port: 5173,
     strictPort: true,
