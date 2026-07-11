@@ -115,12 +115,14 @@ type ReplaceTextDocumentArgs = {
   replacement_text?: unknown;
 };
 
-type CreateDocumentArgs = {
+type CreateNodeArgs = {
   domain?: unknown;
-  kind?: unknown;
   parent_id?: unknown;
   name?: unknown;
   index?: unknown;
+};
+
+type CreateTextDocumentArgs = CreateNodeArgs & {
   content?: unknown;
 };
 
@@ -156,13 +158,6 @@ function parseOptionalIndex(value: unknown): number | undefined {
     throw new Error("index 必须是非负整数。");
   }
   return value;
-}
-
-function parseDocumentKind(value: unknown): "chapter" | "file" | "folder" {
-  if (value === "chapter" || value === "file" || value === "folder") {
-    return value;
-  }
-  throw new Error('kind 必须是 "chapter"、"file" 或 "folder"。');
 }
 
 function toManuscriptNodeDto(
@@ -376,37 +371,21 @@ export function executeReplaceTextDocument(
   };
 }
 
-export function executeCreateDocument(
+export function executeCreateFolder(
   worktree: WorktreeSession,
   call: ToolCallItem,
 ): CreateDocumentResult {
-  const args = parseToolArgs(call) as CreateDocumentArgs;
+  const args = parseToolArgs(call) as CreateNodeArgs;
   const domain = parseDocumentDomain(args.domain, "domain");
-  const kind = parseDocumentKind(args.kind);
   const parentId = parseNonEmptyString(args.parent_id, "parent_id");
   const name = parseNonEmptyString(args.name, "name");
   const index = parseOptionalIndex(args.index);
-  const content = args.content;
 
   if (domain === "manuscript") {
-    if (kind === "file") {
-      throw new Error('manuscript 域不支持 kind="file"。');
-    }
-    if (typeof content !== "undefined") {
-      throw new Error("manuscript 节点创建不支持 content。");
-    }
-    const created =
-      kind === "chapter"
-        ? worktree.createManuscriptChapter(parentId, name, index)
-        : kind === "folder"
-          ? worktree.createManuscriptFolder(parentId, name, index)
-          : null;
-    if (created === null) {
-      throw new Error('manuscript 域的 kind 必须是 "chapter" 或 "folder"。');
-    }
+    const created = worktree.createManuscriptFolder(parentId, name, index);
     return {
       domain,
-      kind,
+      kind: "folder",
       id: created.nodeId,
       parent_id: parentId,
       name,
@@ -414,43 +393,55 @@ export function executeCreateDocument(
     };
   }
 
-  if (kind === "chapter") {
-    throw new Error('resource 域不支持 kind="chapter"。');
-  }
   if (index !== undefined) {
-    throw new Error("resource 节点创建不支持 index。");
+    throw new Error("resource 文件夹创建不支持 index。");
   }
 
-  if (kind === "folder") {
-    if (typeof content !== "undefined") {
-      throw new Error("resource 文件夹创建不支持 content。");
-    }
-    const created = worktree.createResourceFolder(parentId, name);
-    return {
-      domain,
-      kind,
-      id: created.nodeId,
-      parent_id: parentId,
-      name,
-      display_path: findCreatedNodePath(worktree, domain, created.nodeId),
-    };
-  }
+  const created = worktree.createResourceFolder(parentId, name);
+  return {
+    domain,
+    kind: "folder",
+    id: created.nodeId,
+    parent_id: parentId,
+    name,
+    display_path: findCreatedNodePath(worktree, domain, created.nodeId),
+  };
+}
 
-  if (kind !== "file") {
-    throw new Error('resource 域的 kind 必须是 "file" 或 "folder"。');
-  }
-  if (typeof content !== "undefined" && typeof content !== "string") {
+export function executeCreateTextDocument(
+  worktree: WorktreeSession,
+  call: ToolCallItem,
+): CreateDocumentResult {
+  const args = parseToolArgs(call) as CreateTextDocumentArgs;
+  const domain = parseDocumentDomain(args.domain, "domain");
+  const parentId = parseNonEmptyString(args.parent_id, "parent_id");
+  const name = parseNonEmptyString(args.name, "name");
+  const index = parseOptionalIndex(args.index);
+  if (typeof args.content !== "string") {
     throw new Error("content 需要字符串。");
   }
 
-  const created = worktree.createResourceFile(parentId, name);
-  const nextContent = typeof content === "string" ? content : "";
-  if (nextContent !== "") {
-    worktree.writeResourceFile(created.nodeId, nextContent);
+  if (domain === "manuscript") {
+    const created = worktree.createManuscriptChapter(parentId, name, index);
+    worktree.writeChapter(created.nodeId, args.content);
+    return {
+      domain,
+      kind: "chapter",
+      id: created.nodeId,
+      parent_id: parentId,
+      name,
+      display_path: findCreatedNodePath(worktree, domain, created.nodeId),
+    };
   }
+
+  if (index !== undefined) {
+    throw new Error("resource 文件创建不支持 index。");
+  }
+  const created = worktree.createResourceFile(parentId, name);
+  worktree.writeResourceFile(created.nodeId, args.content);
   return {
     domain,
-    kind,
+    kind: "file",
     id: created.nodeId,
     parent_id: parentId,
     name,

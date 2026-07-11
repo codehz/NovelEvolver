@@ -258,7 +258,8 @@ const createPresenter: ToolPresenter = (toolCall) => {
   const args = parseObject(toolCall.argumentsText);
   const result = parseObject(toolCall.resultText);
   const domain = getString(args, "domain");
-  const kind = getString(args, "kind");
+  const kind =
+    toolCall.name === "create_folder" ? "folder" : domain === "manuscript" ? "chapter" : "file";
   const name = getString(args, "name") ?? "未命名节点";
   const content = getString(args, "content");
   return {
@@ -288,7 +289,8 @@ const presenters: Partial<Record<string, ToolPresenter>> = {
   search_project: searchPresenter,
   edit_text_document: editPresenter,
   replace_text_document: replacePresenter,
-  create_document: createPresenter,
+  create_folder: createPresenter,
+  create_text_document: createPresenter,
 };
 
 export function presentToolCall(toolCall: AiChatToolCall): ToolPresentation {

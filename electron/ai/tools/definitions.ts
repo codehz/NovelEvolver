@@ -177,9 +177,9 @@ export const AI_TOOLS_MAP = {
       additionalProperties: false,
     },
   },
-  create_document: {
+  create_folder: {
     description:
-      "在现有文件夹下创建节点。先用 get_project_structure 获取 parent_id。manuscript 可创建 chapter/folder 并可指定 index；resource 可创建 file/folder，只有 file 可带初始 content。",
+      "在现有文件夹下创建文件夹。先用 get_project_structure 获取 parent_id；manuscript 可指定 index，resource 不得传 index。",
     inputSchema: {
       type: "object",
       properties: {
@@ -188,11 +188,36 @@ export const AI_TOOLS_MAP = {
           enum: ["manuscript", "resource"],
           description: "节点所属树。",
         },
-        kind: {
+        parent_id: {
           type: "string",
-          enum: ["chapter", "file", "folder"],
           description:
-            'manuscript 仅可用 "chapter" 或 "folder"；resource 仅可用 "file" 或 "folder"。',
+            "对应树中现有 folder 的 ID；根级创建使用 get_project_structure 返回的对应 root_id。",
+        },
+        name: {
+          type: "string",
+          description: "新文件夹的标题或名称。",
+        },
+        index: {
+          type: "integer",
+          minimum: 0,
+          description:
+            "仅 manuscript 可用；在父节点 children 中的 0-based 插入位置，省略时追加。resource 不得传入。",
+        },
+      },
+      required: ["domain", "parent_id", "name"],
+      additionalProperties: false,
+    },
+  },
+  create_text_document: {
+    description:
+      "在现有文件夹下创建带完整初始正文的文本节点。先用 get_project_structure 获取 parent_id；manuscript 创建 chapter 且可指定 index，resource 创建 file 且不得传 index。content 必须提供，本次调用应直接写入最终正文，不要先创建空节点再读取或编辑。",
+    inputSchema: {
+      type: "object",
+      properties: {
+        domain: {
+          type: "string",
+          enum: ["manuscript", "resource"],
+          description: "节点所属树；决定创建 chapter 或 file。",
         },
         parent_id: {
           type: "string",
@@ -201,21 +226,20 @@ export const AI_TOOLS_MAP = {
         },
         name: {
           type: "string",
-          description: "新节点的标题或名称。",
+          description: "新章节的标题或资源文件的名称。",
+        },
+        content: {
+          type: "string",
+          description: "创建时一次写入的完整初始正文；必须显式提供，允许确实需要的空字符串。",
         },
         index: {
           type: "integer",
           minimum: 0,
           description:
-            "仅 manuscript 节点可用；在父节点 children 中的 0-based 插入位置，省略时追加。resource 节点不得传入。",
-        },
-        content: {
-          type: "string",
-          description:
-            '仅 domain="resource" 且 kind="file" 时可用，表示初始全文；省略时创建空文件。其他组合不得传入。',
+            "仅 manuscript 可用；在父节点 children 中的 0-based 插入位置，省略时追加。resource 不得传入。",
         },
       },
-      required: ["domain", "kind", "parent_id", "name"],
+      required: ["domain", "parent_id", "name", "content"],
       additionalProperties: false,
     },
   },

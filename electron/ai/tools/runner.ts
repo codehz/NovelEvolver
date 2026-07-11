@@ -15,7 +15,8 @@ import {
   executeRenameDocument,
 } from "./project-edit-tools";
 import {
-  executeCreateDocument,
+  executeCreateFolder,
+  executeCreateTextDocument,
   executeEditTextDocument,
   executeGetProjectStructure,
   executeReadTextDocument,
@@ -113,8 +114,12 @@ const toolHandlers: Partial<Record<AI_TOOL_NAMES, ToolHandler>> = {
   replace_text_document(worktree, call) {
     return okJson(call, executeReplaceTextDocument(worktree, call));
   },
-  create_document(worktree, call) {
-    const output = executeCreateDocument(worktree, call);
+  create_folder(worktree, call) {
+    const output = executeCreateFolder(worktree, call);
+    return okJson(call, output);
+  },
+  create_text_document(worktree, call) {
+    const output = executeCreateTextDocument(worktree, call);
     return okJson(call, output);
   },
   move_document(worktree, call) {
