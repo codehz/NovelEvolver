@@ -22,6 +22,7 @@ import {
   modelSelectorLabelClass,
   panelSectionClass,
   sendButtonClass,
+  warningBannerClass,
 } from "./ai-chat-ui";
 import { AiMessageBlock } from "./AiMessageBlock";
 import { AskUserComposerPanel } from "./AskUserComposerPanel";
@@ -193,6 +194,22 @@ export function AuxiliaryPanel() {
       ? "未知模型"
       : "选择模型";
 
+  const messageIdSet = new Set(snapshot.messages.map((message) => message.id));
+  const warningsByMessageId = new Map<string, typeof snapshot.warnings>();
+  const orphanWarnings: typeof snapshot.warnings = [];
+  for (const warning of snapshot.warnings) {
+    if (warning.messageId !== "" && messageIdSet.has(warning.messageId)) {
+      const list = warningsByMessageId.get(warning.messageId);
+      if (list) {
+        list.push(warning);
+      } else {
+        warningsByMessageId.set(warning.messageId, [warning]);
+      }
+    } else {
+      orphanWarnings.push(warning);
+    }
+  }
+
   return (
     <>
       <SidebarHeaderActions>
@@ -237,11 +254,8 @@ export function AuxiliaryPanel() {
             </div>
           ) : null}
 
-          {snapshot.warnings.map((warning) => (
-            <div
-              className="rounded-md border border-ctp-yellow/40 bg-ctp-yellow/10 px-3 py-2 text-xs text-ctp-yellow"
-              key={warning.id}
-            >
+          {orphanWarnings.map((warning) => (
+            <div className={warningBannerClass} key={warning.id}>
               {warning.code ? <span className="font-mono">{warning.code}: </span> : null}
               {warning.message}
             </div>
@@ -257,9 +271,20 @@ export function AuxiliaryPanel() {
             <div className="px-1 py-4 text-xs text-ctp-subtext0">开始一段对话。</div>
           ) : null}
 
-          {snapshot.messages.map((message) => (
-            <AiMessageBlock key={message.id} message={message} />
-          ))}
+          {snapshot.messages.map((message) => {
+            const messageWarnings = warningsByMessageId.get(message.id) ?? [];
+            return (
+              <div className="flex flex-col gap-2" key={message.id}>
+                <AiMessageBlock message={message} />
+                {messageWarnings.map((warning) => (
+                  <div className={warningBannerClass} key={warning.id}>
+                    {warning.code ? <span className="font-mono">{warning.code}: </span> : null}
+                    {warning.message}
+                  </div>
+                ))}
+              </div>
+            );
+          })}
           <div
             aria-hidden="true"
             className="pointer-events-none absolute inset-x-0 bottom-0 h-0"

@@ -11,6 +11,8 @@ export type AiChatMessageUsage = {
 
 export type AiChatWarning = {
   id: string;
+  /** Assistant message that triggered this provider warning. Empty when unknown. */
+  messageId: string;
   message: string;
   code: string | null;
 };

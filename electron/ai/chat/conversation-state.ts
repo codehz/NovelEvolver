@@ -76,6 +76,23 @@ function applyToolCallStatusPatch(
   return current;
 }
 
+const WARNING_ID_PREFIX_PATTERN = /^(.*)-warning-\d+$/;
+
+function normalizeStoredWarning(entry: unknown): AiChatWarning {
+  const raw = entry && typeof entry === "object" ? (entry as Record<string, unknown>) : {};
+  const id = typeof raw.id === "string" ? raw.id : randomUUID();
+  const message = typeof raw.message === "string" ? raw.message : "";
+  const code = typeof raw.code === "string" ? raw.code : null;
+  let messageId = typeof raw.messageId === "string" ? raw.messageId : "";
+  if (messageId === "") {
+    const match = WARNING_ID_PREFIX_PATTERN.exec(id);
+    if (match?.[1]) {
+      messageId = match[1];
+    }
+  }
+  return { id, messageId, message, code };
+}
+
 export function recordToConversationActivity(record: AiConversationRecord): AiConversationActivity {
   return record.pendingToolBatchJson ? "awaiting_user" : "idle";
 }
@@ -451,6 +468,7 @@ export class AiConversationState {
     if (event.type === "response.warning") {
       const warning: AiChatWarning = {
         id: `${assistantMessageId}-warning-${event.sequence}`,
+        messageId: assistantMessageId,
         message: event.message,
         code: event.code ?? null,
       };
@@ -632,7 +650,10 @@ export class AiConversationState {
   #parseWarnings(json: string): AiChatWarning[] {
     try {
       const parsed = JSON.parse(json) as unknown;
-      return Array.isArray(parsed) ? (parsed as AiChatWarning[]) : [];
+      if (!Array.isArray(parsed)) {
+        return [];
+      }
+      return parsed.map((entry) => normalizeStoredWarning(entry));
     } catch {
       return [];
     }

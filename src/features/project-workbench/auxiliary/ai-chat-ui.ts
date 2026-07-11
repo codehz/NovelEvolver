@@ -65,6 +65,9 @@ export const toolCallBodyClass = cn(
   "[&_pre]:overflow-x-auto [&_pre]:rounded-md [&_pre]:bg-app-background [&_pre]:p-2 [&_pre]:font-mono [&_pre]:text-2xs",
 );
 export const toolCallQuestionClass = cn("text-[0.75rem] leading-5 text-app-foreground");
+export const warningBannerClass = cn(
+  "rounded-md border border-ctp-yellow/40 bg-ctp-yellow/10 px-3 py-2 text-xs text-ctp-yellow",
+);
 
 export function describeToolCallStatus(status: AiChatToolCall["status"]): string {
   switch (status) {
