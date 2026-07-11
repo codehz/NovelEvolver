@@ -21,8 +21,8 @@ import { presentToolCall } from "./ai-tool-presenters";
  */
 export function AiToolCallBlock({ toolCall }: { toolCall: AiChatToolCall }) {
   const [expanded, setExpanded] = useState(false);
-  const statusText = describeToolCallStatus(toolCall.status);
   const presentation = presentToolCall(toolCall);
+  const indicator = presentation.indicator ?? describeToolCallStatus(toolCall.status);
 
   return (
     <section className={toolCallPanelClass}>
@@ -38,7 +38,7 @@ export function AiToolCallBlock({ toolCall }: { toolCall: AiChatToolCall }) {
         <DisclosureChevron expanded={expanded} />
         <span className={toolCallLabelClass}>{presentation.label}</span>
         <span className="min-w-0 truncate text-ctp-subtext1">{presentation.summary}</span>
-        <span className={toolCallStatusClass}>{statusText}</span>
+        <span className={toolCallStatusClass}>{indicator}</span>
       </button>
 
       {expanded ? (

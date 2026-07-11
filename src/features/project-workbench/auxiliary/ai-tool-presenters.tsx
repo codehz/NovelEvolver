@@ -10,6 +10,7 @@ type JsonObject = Record<string, unknown>;
 type ToolPresentation = {
   label: string;
   summary: string;
+  indicator?: string;
   detail: ReactNode;
 };
 
@@ -48,6 +49,13 @@ function getNumber(object: JsonObject | null, key: string): number | null {
 function generationStats(text: string | null, status: AiChatToolCall["status"]): string {
   if (text === null) return "等待正文";
   return status === "pending" ? `正在生成 · ${text.length} 字符` : textStats(text);
+}
+
+function writeIndicator(text: string | null, status: AiChatToolCall["status"]): string {
+  if (text === null) {
+    return status === "pending" ? "等待正文" : "0 字符";
+  }
+  return `${text.length} 字符`;
 }
 
 function domainLabel(domain: string | null): string {
@@ -222,6 +230,7 @@ const editPresenter: ToolPresenter = (toolCall) => {
   return {
     label: "重写文档",
     summary: `${domainLabel(target.domain)} · ${target.id ?? "未知节点"}`,
+    indicator: writeIndicator(after, toolCall.status),
     detail: (
       <DetailList>
         <DetailField label="节点 ID">{target.id ?? "未知"}</DetailField>
@@ -244,6 +253,11 @@ const replacePresenter: ToolPresenter = (toolCall) => {
   return {
     label: removing ? "删除文档片段" : "替换文档片段",
     summary: `${domainLabel(target.domain)} · ${target.id ?? "未知节点"}`,
+    indicator: removing
+      ? toolCall.status === "complete"
+        ? "已删除"
+        : "删除片段"
+      : writeIndicator(replacement, toolCall.status),
     detail: (
       <DetailList>
         <DetailField label="节点 ID">{target.id ?? "未知"}</DetailField>
@@ -271,6 +285,10 @@ const createPresenter: ToolPresenter = (toolCall) => {
   return {
     label: `创建${kindLabel(kind)}`,
     summary: `${name} · ${domainLabel(domain)}`,
+    indicator:
+      toolCall.name === "create_text_document"
+        ? writeIndicator(content, toolCall.status)
+        : undefined,
     detail: (
       <DetailList>
         <DetailField label="名称">{name}</DetailField>
