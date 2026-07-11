@@ -2,7 +2,7 @@ import type {
   FileChangeStatus,
   ManuscriptTreeNode,
   ManuscriptTreeSnapshot,
-} from "#shared/rpc/worktree-tree-rpc";
+} from "#shared/rpc/worktree/index";
 
 import { buildSubtreeEndIndexArray, buildTreeRowIndexMap } from "../../tree/tree-row-helpers";
 import { flattenManuscriptTree } from "./manuscript-tree";

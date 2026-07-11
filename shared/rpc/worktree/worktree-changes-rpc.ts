@@ -1,6 +1,6 @@
 import type { RpcTarget } from "capnweb";
 
-import type { RpcSubscriptionResult } from "./stream";
+import type { RpcSubscriptionResult } from "../transport/stream";
 import type {
   ManuscriptTreeDelta,
   ManuscriptTreeSnapshot,

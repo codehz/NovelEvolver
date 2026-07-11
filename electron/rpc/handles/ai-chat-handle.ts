@@ -1,6 +1,6 @@
 import { RpcTarget } from "capnweb";
 
-import type { AiChatEvent, AiChatHandle, AiConversationSummary } from "#shared/rpc/ai-rpc";
+import type { AiChatEvent, AiChatHandle, AiConversationSummary } from "#shared/rpc/ai/index";
 
 import type { ProjectAiChatController } from "../../ai/chat/project-ai-chat";
 

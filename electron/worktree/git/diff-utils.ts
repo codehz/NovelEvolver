@@ -2,7 +2,7 @@ import type { SHA1 } from "nano-git";
 import { readObject } from "nano-git/objects";
 import { readTreeSnapshot } from "nano-git/repository/tree/tree-diff";
 
-import type { ChangeStats } from "#shared/rpc/worktree-changes-rpc";
+import type { ChangeStats } from "#shared/rpc/worktree/index";
 
 /** ObjectDatabase 类型（nano-git 未公开导出，从 readTreeSnapshot 参数推导） */
 export type ObjectDatabase = Parameters<typeof readTreeSnapshot>[0];

@@ -1,6 +1,6 @@
 import type { SHA1 } from "nano-git";
 
-import type { ResourceTreeSnapshot } from "#shared/rpc/worktree-tree-rpc";
+import type { ResourceTreeSnapshot } from "#shared/rpc/worktree/index";
 
 import type {
   ManuscriptNodeCommittedRow,

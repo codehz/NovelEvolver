@@ -1,6 +1,6 @@
 import type { SHA1 } from "nano-git";
 
-import type { ManuscriptNode, ManuscriptOutline } from "#shared/rpc/manuscript-rpc";
+import type { ManuscriptNode, ManuscriptOutline } from "#shared/rpc/worktree/index";
 
 import { readTextFromTree, type ObjectDatabase } from "../git/diff-utils";
 import { createEmptyOutline, parseOutline } from "../manuscript/outline";

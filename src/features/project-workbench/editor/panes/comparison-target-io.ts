@@ -1,4 +1,4 @@
-import type { HistoryTarget } from "#shared/rpc/history-rpc";
+import type { HistoryTarget } from "#shared/rpc/worktree/index";
 import { isMissingComparisonTargetError } from "#workbench/lib/comparison-errors";
 
 import { useManuscript, useResourceLibrary } from "../../branch/branch-scopes";

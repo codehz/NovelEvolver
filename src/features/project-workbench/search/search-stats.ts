@@ -1,4 +1,4 @@
-import type { WorktreeSearchHit } from "#shared/rpc/worktree-search-rpc";
+import type { WorktreeSearchHit } from "#shared/rpc/worktree/index";
 
 export type SearchDomainStats = {
   /** 至少出现一条命中的条目数（章节/文件）。 */

@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 
 import { DisclosureChevron } from "#app/shared/ui/DisclosureChevron";
 import { MarkdownStream } from "#app/shared/ui/MarkdownStream";
-import type { AiChatReasoningPart } from "#shared/rpc/ai-rpc";
+import type { AiChatReasoningPart } from "#shared/rpc/ai/index";
 
 import {
   reasoningBodyClass,

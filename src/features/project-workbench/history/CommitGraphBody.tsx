@@ -1,4 +1,4 @@
-import type { CommitSummary } from "#shared/rpc/history-rpc";
+import type { CommitSummary } from "#shared/rpc/worktree/index";
 
 import { HistoryCommitRow } from "./HistoryCommitRow";
 

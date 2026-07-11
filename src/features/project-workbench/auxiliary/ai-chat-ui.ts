@@ -1,5 +1,5 @@
 import { cn } from "#app/shared/lib/ui/cn";
-import type { AiChatAssistantMessage, AiChatToolCall } from "#shared/rpc/ai-rpc";
+import type { AiChatAssistantMessage, AiChatToolCall } from "#shared/rpc/ai/index";
 
 export const panelSectionClass = cn("mx-auto flex w-full max-w-3xl flex-col");
 export const conversationRailClass = cn("gap-4 px-3 py-2.5");

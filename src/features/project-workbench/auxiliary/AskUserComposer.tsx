@@ -8,7 +8,7 @@ import {
 } from "react";
 
 import { cn } from "#app/shared/lib/ui/cn";
-import type { AskUserPendingInput } from "#shared/rpc/ai-rpc";
+import type { AskUserPendingInput } from "#shared/rpc/ai/index";
 
 const composerShellClass = cn(
   "mx-auto flex w-full max-w-3xl flex-col gap-2 rounded-xl bg-app-background p-2 ring-1 ring-ctp-blue/30",

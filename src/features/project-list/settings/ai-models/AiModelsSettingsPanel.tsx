@@ -6,7 +6,7 @@ import type {
   AiModelConfigPublic,
   AiModelConfigWrite,
   AiModelsSettingsSnapshot,
-} from "#shared/rpc/settings-rpc";
+} from "#shared/rpc/services/index";
 
 import {
   settingsEmptyStateClass,

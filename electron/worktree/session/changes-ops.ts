@@ -6,7 +6,7 @@ import type {
   ChangeTextComparisonTarget,
   ChangesEvent,
   ChangesSnapshot,
-} from "#shared/rpc/worktree-changes-rpc";
+} from "#shared/rpc/worktree/index";
 
 import type { JournalEntitySnapshot } from "../journal/journal-types";
 import { cloneResourceSnapshotState } from "../snapshots/resource";

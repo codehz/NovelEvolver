@@ -7,7 +7,7 @@ import {
   isAppRpcDisconnectFrame,
   isAppRpcMessageFrame,
   type AppRpcFrame,
-} from "#shared/rpc/transport";
+} from "#shared/rpc/transport/index";
 
 type Deferred<T> = {
   resolve: (value: T | PromiseLike<T>) => void;

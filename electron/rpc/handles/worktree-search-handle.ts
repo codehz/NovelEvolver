@@ -4,7 +4,7 @@ import type {
   WorktreeSearchHandle,
   WorktreeSearchQuery,
   WorktreeSearchResult,
-} from "#shared/rpc/worktree-search-rpc";
+} from "#shared/rpc/worktree/index";
 
 import type { WorktreeSession } from "../../worktree/session";
 

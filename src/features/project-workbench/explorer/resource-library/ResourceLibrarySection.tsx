@@ -2,7 +2,7 @@ import { useMolecule } from "bunshi/react";
 import { useAtomValue, useSetAtom, useStore } from "jotai";
 import { useCallback, useMemo, useRef } from "react";
 
-import type { ResourceTreeNode } from "#shared/rpc/worktree-tree-rpc";
+import type { ResourceTreeNode } from "#shared/rpc/worktree/index";
 import { SidebarHeaderActionButton, SidebarHeaderActions } from "#workbench/chrome";
 
 import { runTreeRowContextMenu } from "../../tree/run-tree-row-context-menu";

@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 
-import type { CommitSummary } from "#shared/rpc/history-rpc";
+import type { CommitSummary } from "#shared/rpc/worktree/index";
 
 import { useHistory } from "../branch/branch-scopes";
 import { HISTORY_GRAPH_MAX_COMMITS } from "../changes/constants";

@@ -3,7 +3,7 @@ import type { ReactNode } from "react";
 
 import { cn } from "#app/shared/lib/ui/cn";
 import { DisclosureChevron } from "#app/shared/ui/DisclosureChevron";
-import type { WorktreeSearchHit } from "#shared/rpc/worktree-search-rpc";
+import type { WorktreeSearchHit } from "#shared/rpc/worktree/index";
 import { activateOnEnterSpace } from "#workbench/lib/activate-on-enter-space";
 import { contentEntityIconClass, contentFolderIconClass } from "#workbench/tree/content-tree-icons";
 import type { TreeRowLayout } from "#workbench/tree/tree-row-layout";

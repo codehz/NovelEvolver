@@ -1,4 +1,4 @@
-import type { ChangesEvent } from "#shared/rpc/worktree-changes-rpc";
+import type { ChangesEvent } from "#shared/rpc/worktree/index";
 import type {
   ManuscriptTreeDelta,
   ManuscriptTreeSnapshot,
@@ -6,7 +6,7 @@ import type {
   ResourceTreeSnapshot,
   WorktreeTreeDeltaEvent,
   WorktreeTreeSnapshot,
-} from "#shared/rpc/worktree-tree-rpc";
+} from "#shared/rpc/worktree/index";
 
 import { applyTreeDelta } from "./apply-tree-delta";
 

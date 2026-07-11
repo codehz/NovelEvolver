@@ -1,5 +1,5 @@
-import type { AiAdapterKind } from "#shared/rpc/settings-rpc";
-import { AI_ADAPTER_KINDS } from "#shared/rpc/settings-rpc";
+import type { AiAdapterKind } from "#shared/rpc/services/index";
+import { AI_ADAPTER_KINDS } from "#shared/rpc/services/index";
 
 export const AI_ADAPTER_OPTIONS: readonly {
   value: AiAdapterKind;

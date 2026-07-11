@@ -3,7 +3,7 @@ import type {
   ManuscriptFolderNode,
   ManuscriptNode,
   ManuscriptOutline,
-} from "#shared/rpc/manuscript-rpc";
+} from "#shared/rpc/worktree/index";
 
 import { assertValidManuscriptId } from "./paths";
 

@@ -1,5 +1,5 @@
-import type { HistoryEntryKind, HistoryTarget } from "#shared/rpc/history-rpc";
-import type { ChangeDomain, ChangeKind } from "#shared/rpc/worktree-changes-rpc";
+import type { HistoryEntryKind, HistoryTarget } from "#shared/rpc/worktree/index";
+import type { ChangeDomain, ChangeKind } from "#shared/rpc/worktree/index";
 
 import type { EditorSelectionSnapshot } from "./editor-caret";
 

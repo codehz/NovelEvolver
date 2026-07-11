@@ -9,8 +9,8 @@ import type {
   AiModelConfigPublic,
   AiModelConfigWrite,
   AiModelsSettingsSnapshot,
-} from "#shared/rpc/settings-rpc";
-import { AI_ADAPTER_KINDS } from "#shared/rpc/settings-rpc";
+} from "#shared/rpc/services/index";
+import { AI_ADAPTER_KINDS } from "#shared/rpc/services/index";
 
 const FILE_VERSION = 1 as const;
 

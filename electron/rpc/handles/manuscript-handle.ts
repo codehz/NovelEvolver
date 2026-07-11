@@ -1,6 +1,6 @@
 import { RpcTarget } from "capnweb";
 
-import type { ManuscriptHandle, WorktreeNodeIdResult } from "#shared/rpc/manuscript-rpc";
+import type { ManuscriptHandle, WorktreeNodeIdResult } from "#shared/rpc/worktree/index";
 
 import type { WorktreeSession } from "../../worktree/session";
 

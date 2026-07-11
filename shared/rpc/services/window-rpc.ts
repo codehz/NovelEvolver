@@ -1,7 +1,8 @@
 import type { RpcTarget } from "capnweb";
 
-import type { RpcSubscriptionResult } from "#shared/rpc/stream";
 import type { WindowState } from "#shared/window";
+
+import type { RpcSubscriptionResult } from "../transport/stream";
 
 export interface WindowService extends RpcTarget {
   minimize(): void;

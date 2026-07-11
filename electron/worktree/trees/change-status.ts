@@ -1,4 +1,4 @@
-import type { FileChangeStatus } from "#shared/rpc/worktree-tree-rpc";
+import type { FileChangeStatus } from "#shared/rpc/worktree/index";
 
 type ChangeTrackedNode = {
   id: string;

@@ -4,7 +4,7 @@ import type {
   AiModelConfigWrite,
   AiModelsSettingsSnapshot,
   SettingsService,
-} from "#shared/rpc/settings-rpc";
+} from "#shared/rpc/services/index";
 
 import type { RpcMainDeps } from "../server/deps";
 

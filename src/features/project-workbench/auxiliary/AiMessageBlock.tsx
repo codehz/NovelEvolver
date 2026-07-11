@@ -1,5 +1,5 @@
 import { MarkdownStream } from "#app/shared/ui/MarkdownStream";
-import type { AiChatAssistantPart, AiChatMessage } from "#shared/rpc/ai-rpc";
+import type { AiChatAssistantPart, AiChatMessage } from "#shared/rpc/ai/index";
 
 import {
   assistantMessageBlockClass,

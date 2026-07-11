@@ -3,7 +3,7 @@ import type {
   ManuscriptTreeSnapshot,
   ResourceTreeNode,
   ResourceTreeSnapshot,
-} from "#shared/rpc/worktree-tree-rpc";
+} from "#shared/rpc/worktree/index";
 
 import type {
   ManuscriptNodeCommittedRow,

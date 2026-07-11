@@ -1,4 +1,4 @@
-import type { CommitSummary } from "#shared/rpc/history-rpc";
+import type { CommitSummary } from "#shared/rpc/worktree/index";
 import { formatCommitTime } from "#workbench/lib/format-history-time";
 
 import { HistoryGraphGlyph } from "./HistoryGraphGlyph";

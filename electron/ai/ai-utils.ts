@@ -1,6 +1,6 @@
 import type { AIResponse, ContentBlock } from "@codehz/ai";
 
-import type { AiChatMessageUsage, AiChatReasoningPart } from "#shared/rpc/ai-rpc";
+import type { AiChatMessageUsage, AiChatReasoningPart } from "#shared/rpc/ai/index";
 
 /**
  * 从 AIResponse 的 output 中提取纯文本内容。

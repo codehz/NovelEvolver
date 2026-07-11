@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 
-import type { AiChatPendingUserInput } from "#shared/rpc/ai-rpc";
+import type { AiChatPendingUserInput } from "#shared/rpc/ai/index";
 
 import { AskUserComposer } from "./AskUserComposer";
 import { AskUserQuestionTabs } from "./AskUserQuestionTabs";

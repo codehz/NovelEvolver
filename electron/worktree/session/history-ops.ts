@@ -5,7 +5,7 @@ import type {
   HistoryEntry,
   HistoryEntryContent,
   HistoryTarget,
-} from "#shared/rpc/history-rpc";
+} from "#shared/rpc/worktree/index";
 
 import type { WorktreeJournalEntryRecord } from "../../db/repositories/worktree-repo";
 import { journalHistoryEntryId, parseJournalHistoryEntryId } from "../journal/journal-types";

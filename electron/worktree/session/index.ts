@@ -5,15 +5,15 @@ import type {
   HistoryEntry,
   HistoryEntryContent,
   HistoryTarget,
-} from "#shared/rpc/history-rpc";
-import type { WorktreeNodeIdResult } from "#shared/rpc/manuscript-rpc";
+} from "#shared/rpc/worktree/index";
+import type { WorktreeNodeIdResult } from "#shared/rpc/worktree/index";
 import type {
   ChangeTextComparison,
   ChangeTextComparisonTarget,
   ChangesEvent,
   ChangesSnapshot,
-} from "#shared/rpc/worktree-changes-rpc";
-import type { WorktreeSearchQuery, WorktreeSearchResult } from "#shared/rpc/worktree-search-rpc";
+} from "#shared/rpc/worktree/index";
+import type { WorktreeSearchQuery, WorktreeSearchResult } from "#shared/rpc/worktree/index";
 
 import type { WorktreeRepository } from "../../db/repositories/worktree-repo";
 import type { ObjectDatabase } from "../git/diff-utils";

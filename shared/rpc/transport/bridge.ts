@@ -1,4 +1,4 @@
-import type { AppRpcConnectResult, AppRpcFrame } from "./transport";
+import type { AppRpcConnectResult, AppRpcFrame } from "./protocol";
 
 export interface AppRpcTransportBridge {
   connect(): Promise<AppRpcConnectResult>;

@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useState } from "react";
 
 import { consumeRpcSubscription } from "#app/shared/lib/rpc/app-rpc-react";
-import { applyAiChatEvent, createInitialAiChatSnapshot } from "#shared/rpc/ai-chat-state";
-import type { AiChatSnapshot, AiConversationSummary } from "#shared/rpc/ai-rpc";
+import { applyAiChatEvent, createInitialAiChatSnapshot } from "#shared/rpc/ai/index";
+import type { AiChatSnapshot, AiConversationSummary } from "#shared/rpc/ai/index";
 
 import { useAiChat } from "../branch/branch-scopes";
 

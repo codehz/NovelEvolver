@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
 
-import type { ChangesSnapshot } from "#shared/rpc/worktree-changes-rpc";
-import type { Change } from "#shared/rpc/worktree-changes-rpc";
+import type { ChangesSnapshot } from "#shared/rpc/worktree/index";
+import type { Change } from "#shared/rpc/worktree/index";
 import { ErrorRetryView } from "#workbench/chrome";
 
 import { ChangesCommitForm } from "./ChangesCommitForm";

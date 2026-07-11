@@ -4,7 +4,7 @@ import type {
   ManuscriptTreeNode,
   ManuscriptTreeSnapshot,
   ResourceTreeSnapshot,
-} from "#shared/rpc/worktree-tree-rpc";
+} from "#shared/rpc/worktree/index";
 
 import { createEmptyOutline, validateOutline } from "../manuscript/outline";
 import { assertValidResourceRelativePath } from "../resources/paths";

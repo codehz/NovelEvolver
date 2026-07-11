@@ -3,13 +3,13 @@ import type { RpcPromise } from "capnweb";
 import { atom, useSetAtom } from "jotai";
 
 import { wrapDisposable } from "#app/shared/lib/rpc/rpc-utils";
-import type { AiChatHandle } from "#shared/rpc/ai-rpc";
-import type { BranchWorkspace } from "#shared/rpc/branch-workspace-rpc";
-import type { HistoryHandle } from "#shared/rpc/history-rpc";
-import type { ManuscriptHandle } from "#shared/rpc/manuscript-rpc";
-import type { ResourceLibraryHandle } from "#shared/rpc/resource-library-rpc";
-import type { WorktreeChangesHandle } from "#shared/rpc/worktree-changes-rpc";
-import type { WorktreeSearchHandle } from "#shared/rpc/worktree-search-rpc";
+import type { AiChatHandle } from "#shared/rpc/ai/index";
+import type { BranchWorkspace } from "#shared/rpc/session/index";
+import type { HistoryHandle } from "#shared/rpc/worktree/index";
+import type { ManuscriptHandle } from "#shared/rpc/worktree/index";
+import type { ResourceLibraryHandle } from "#shared/rpc/worktree/index";
+import type { WorktreeChangesHandle } from "#shared/rpc/worktree/index";
+import type { WorktreeSearchHandle } from "#shared/rpc/worktree/index";
 
 import { projectMolecule } from "../state/molecules";
 

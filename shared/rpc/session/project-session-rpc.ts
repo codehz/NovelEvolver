@@ -2,7 +2,7 @@ import type { RpcTarget } from "capnweb";
 
 import type { ProjectMetadata } from "#shared/project";
 
-import type { AiChatHandle } from "./ai-rpc";
+import type { AiChatHandle } from "../ai/ai-rpc";
 import type { BranchWorkspace } from "./branch-workspace-rpc";
 
 /** Summary for a repository branch tip. */

@@ -1,7 +1,7 @@
 import type {
   ManuscriptTreeNode as SharedManuscriptTreeNode,
   ManuscriptTreeSnapshot,
-} from "#shared/rpc/worktree-tree-rpc";
+} from "#shared/rpc/worktree/index";
 
 type ManuscriptTreeMetadata = {
   parentById: Map<string, string>;

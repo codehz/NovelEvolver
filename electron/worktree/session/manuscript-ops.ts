@@ -1,4 +1,4 @@
-import type { WorktreeNodeIdResult } from "#shared/rpc/manuscript-rpc";
+import type { WorktreeNodeIdResult } from "#shared/rpc/worktree/index";
 
 import {
   clampChildIndex,

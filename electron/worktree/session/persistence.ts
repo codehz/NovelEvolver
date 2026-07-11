@@ -1,6 +1,6 @@
 import { nanoid } from "nanoid";
 
-import type { Change, ChangesSnapshot } from "#shared/rpc/worktree-changes-rpc";
+import type { Change, ChangesSnapshot } from "#shared/rpc/worktree/index";
 
 import type {
   ManuscriptNodeCommittedRow,

@@ -1,4 +1,4 @@
-import type { AiChatPendingUserInput } from "#shared/rpc/ai-rpc";
+import type { AiChatPendingUserInput } from "#shared/rpc/ai/index";
 
 /**
  * 为 pending user input 条目分配稳定的字符串 key。

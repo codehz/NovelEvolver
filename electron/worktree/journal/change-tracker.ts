@@ -1,4 +1,4 @@
-import type { Change, ChangesSnapshot } from "#shared/rpc/worktree-changes-rpc";
+import type { Change, ChangesSnapshot } from "#shared/rpc/worktree/index";
 
 /**
  * Tracks the last emitted pending-change snapshot for the streaming protocol.

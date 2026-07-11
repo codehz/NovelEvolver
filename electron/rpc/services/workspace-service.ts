@@ -1,7 +1,7 @@
 import { RpcTarget } from "capnweb";
 import type { BrowserWindow } from "electron";
 
-import type { WorkspaceService } from "#shared/rpc/workspace-rpc";
+import type { WorkspaceService } from "#shared/rpc/services/index";
 
 import { AiChatRepository } from "../../db/repositories/ai-chat-repo";
 import { ProjectsRepository } from "../../db/repositories/projects-repo";

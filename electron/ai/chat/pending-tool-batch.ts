@@ -1,6 +1,6 @@
 import type { InputItem, ToolCallItem, ToolResultItem } from "@codehz/ai";
 
-import type { AiChatPendingUserInput, AskUserRequestHandle } from "#shared/rpc/ai-rpc";
+import type { AiChatPendingUserInput, AskUserRequestHandle } from "#shared/rpc/ai/index";
 
 import {
   AskUserRequestHandleImpl,

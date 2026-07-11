@@ -1,4 +1,4 @@
-import type { Change, ChangesSnapshot } from "#shared/rpc/worktree-changes-rpc";
+import type { Change, ChangesSnapshot } from "#shared/rpc/worktree/index";
 
 import { computeStats } from "../git/diff-utils";
 import type { ManuscriptEntry, ManuscriptSnapshotState } from "../snapshots/manuscript";

@@ -5,7 +5,7 @@ import {
   quickPickApi,
   type QuickPickListItem,
 } from "#app/shared/lib/quick-pick";
-import type { BranchSummary } from "#shared/rpc/project-session-rpc";
+import type { BranchSummary } from "#shared/rpc/session/index";
 
 import { useWorkbenchEditorActions } from "../editor/use-workbench-editor-actions";
 import { useProjectContext } from "../state/molecules";

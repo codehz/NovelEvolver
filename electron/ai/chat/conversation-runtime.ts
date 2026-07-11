@@ -7,13 +7,13 @@ import type {
   ToolResultItem,
 } from "@codehz/ai";
 
-import { cloneAiChatMessage } from "#shared/rpc/ai-chat-state";
+import { cloneAiChatMessage } from "#shared/rpc/ai/index";
 import type {
   AiChatDeltaOp,
   AiChatEvent,
   AiChatSnapshot,
   AiConversationSummary,
-} from "#shared/rpc/ai-rpc";
+} from "#shared/rpc/ai/index";
 
 import type { AiChatRepository, AiConversationRecord } from "../../db/repositories/ai-chat-repo";
 import { RpcStreamPublisher } from "../../lib/stream-publisher";

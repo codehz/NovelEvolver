@@ -1,12 +1,12 @@
 import { contextBridge, ipcRenderer } from "electron";
 
-import type { AppRpcTransportBridge } from "#shared/rpc/bridge";
+import type { AppRpcTransportBridge } from "#shared/rpc/transport/index";
 import {
   APP_RPC_CONNECT_CHANNEL,
   APP_RPC_DISCONNECT_CHANNEL,
   APP_RPC_MESSAGE_CHANNEL,
   type AppRpcFrame,
-} from "#shared/rpc/transport";
+} from "#shared/rpc/transport/index";
 
 const appRpcBridge: AppRpcTransportBridge = {
   connect: () => ipcRenderer.invoke(APP_RPC_CONNECT_CHANNEL),

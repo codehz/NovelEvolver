@@ -1,4 +1,4 @@
-import type { WorktreeSearchQuery, WorktreeSearchResult } from "#shared/rpc/worktree-search-rpc";
+import type { WorktreeSearchQuery, WorktreeSearchResult } from "#shared/rpc/worktree/index";
 
 import { executeWorktreeSearch } from "../search";
 import type { WorktreeSessionState } from "./state";

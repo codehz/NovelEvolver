@@ -8,7 +8,7 @@ import {
   cloneAiChatAssistantPartPatch,
   cloneAiChatMessage,
   cloneAiChatMessagePatch,
-} from "#shared/rpc/ai-chat-state";
+} from "#shared/rpc/ai/index";
 import type {
   AiChatAssistantMessage,
   AiChatAssistantPart,
@@ -21,7 +21,7 @@ import type {
   AiChatUserMessage,
   AiConversationActivity,
   AiConversationSummary,
-} from "#shared/rpc/ai-rpc";
+} from "#shared/rpc/ai/index";
 
 import type { AiChatRepository, AiConversationRecord } from "../../db/repositories/ai-chat-repo";
 import { joinContentBlocksText, toMessageUsage } from "../ai-utils";

@@ -1,5 +1,5 @@
-import type { HistoryTarget } from "#shared/rpc/history-rpc";
-import type { WorktreeTreeSnapshot } from "#shared/rpc/worktree-tree-rpc";
+import type { HistoryTarget } from "#shared/rpc/worktree/index";
+import type { WorktreeTreeSnapshot } from "#shared/rpc/worktree/index";
 
 import type { WorkbenchEditorTab, WorkbenchEditorTarget } from "../state/types";
 import { comparisonEditorContribution } from "./comparison-target";

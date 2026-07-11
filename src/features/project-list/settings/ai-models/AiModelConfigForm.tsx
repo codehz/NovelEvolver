@@ -4,7 +4,7 @@ import type {
   AiAdapterKind,
   AiModelConfigPublic,
   AiModelConfigWrite,
-} from "#shared/rpc/settings-rpc";
+} from "#shared/rpc/services/index";
 
 import {
   settingsFieldLabelClass,

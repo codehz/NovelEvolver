@@ -5,7 +5,7 @@ import type {
   ManuscriptTreeNode,
   ResourceTreeNode,
   ResourceTreeSnapshot,
-} from "#shared/rpc/worktree-tree-rpc";
+} from "#shared/rpc/worktree/index";
 
 import { readTextFromTree } from "../git/diff-utils";
 import { parseResourceIndex, resourceTreeFromIndex } from "../resources/index";

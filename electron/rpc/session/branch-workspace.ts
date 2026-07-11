@@ -1,11 +1,11 @@
 import { RpcTarget } from "capnweb";
 
-import type { BranchWorkspace } from "#shared/rpc/branch-workspace-rpc";
-import type { HistoryHandle } from "#shared/rpc/history-rpc";
-import type { ManuscriptHandle } from "#shared/rpc/manuscript-rpc";
-import type { ResourceLibraryHandle } from "#shared/rpc/resource-library-rpc";
-import type { WorktreeChangesHandle } from "#shared/rpc/worktree-changes-rpc";
-import type { WorktreeSearchHandle } from "#shared/rpc/worktree-search-rpc";
+import type { BranchWorkspace } from "#shared/rpc/session/index";
+import type { HistoryHandle } from "#shared/rpc/worktree/index";
+import type { ManuscriptHandle } from "#shared/rpc/worktree/index";
+import type { ResourceLibraryHandle } from "#shared/rpc/worktree/index";
+import type { WorktreeChangesHandle } from "#shared/rpc/worktree/index";
+import type { WorktreeSearchHandle } from "#shared/rpc/worktree/index";
 
 import type { WorktreeSession } from "../../worktree/session";
 import { HistoryHandleImpl } from "../handles/history-handle";

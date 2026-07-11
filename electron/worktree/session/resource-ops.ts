@@ -1,4 +1,4 @@
-import type { WorktreeNodeIdResult } from "#shared/rpc/manuscript-rpc";
+import type { WorktreeNodeIdResult } from "#shared/rpc/worktree/index";
 
 import { RESOURCE_ROOT_ID } from "../resources/index";
 import { assertResourceLibraryFilePath, assertResourceLibraryListPath } from "../resources/paths";

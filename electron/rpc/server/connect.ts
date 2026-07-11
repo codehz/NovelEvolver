@@ -10,7 +10,7 @@ import {
   isAppRpcDisconnectFrame,
   type AppRpcConnectResult,
   type AppRpcFrame,
-} from "#shared/rpc/transport";
+} from "#shared/rpc/transport/index";
 
 import { ProjectLibraryServiceImpl } from "../services/project-library-service";
 import { SettingsServiceImpl } from "../services/settings-service";

@@ -1,4 +1,4 @@
-import type { Change } from "#shared/rpc/worktree-changes-rpc";
+import type { Change } from "#shared/rpc/worktree/index";
 
 export type ChangeTreeFolderNode = {
   type: "folder";

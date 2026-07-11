@@ -1,11 +1,11 @@
 import type { RpcTransport } from "capnweb";
 
-import type { AppRpcTransportBridge } from "#shared/rpc/bridge";
+import type { AppRpcTransportBridge } from "#shared/rpc/transport/index";
 import {
   isAppRpcDisconnectFrame,
   isAppRpcMessageFrame,
   type AppRpcFrame,
-} from "#shared/rpc/transport";
+} from "#shared/rpc/transport/index";
 
 type Deferred<T> = {
   resolve: (value: T | PromiseLike<T>) => void;

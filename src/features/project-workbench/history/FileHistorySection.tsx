@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 
 import { notificationApi } from "#app/shared/lib/notifications";
 import { cn } from "#app/shared/lib/ui/cn";
-import type { HistoryEntry, HistoryTarget } from "#shared/rpc/history-rpc";
+import type { HistoryEntry, HistoryTarget } from "#shared/rpc/worktree/index";
 import { useHistory } from "#workbench/branch/branch-scopes";
 import { getWorkbenchEditorTabHistoryTarget } from "#workbench/editor/contributions/registry";
 import { workbenchEditorMolecule } from "#workbench/editor/state/molecules";

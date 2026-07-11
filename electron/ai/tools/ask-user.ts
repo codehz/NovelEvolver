@@ -2,7 +2,11 @@ import type { ToolCallItem, ToolResultItem } from "@codehz/ai";
 import { toolResultItem } from "@codehz/ai";
 import { RpcTarget } from "capnweb";
 
-import type { AskUserChoice, AskUserPendingInput, AskUserRequestHandle } from "#shared/rpc/ai-rpc";
+import type {
+  AskUserChoice,
+  AskUserPendingInput,
+  AskUserRequestHandle,
+} from "#shared/rpc/ai/index";
 
 import type { UserInputResolver } from "./user-input-types";
 import { parseToolArgs } from "./utils";

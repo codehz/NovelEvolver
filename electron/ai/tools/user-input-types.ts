@@ -1,6 +1,6 @@
 import type { ToolResultItem } from "@codehz/ai";
 
-import type { UserInputRequestHandle } from "#shared/rpc/ai-rpc";
+import type { UserInputRequestHandle } from "#shared/rpc/ai/index";
 
 /**
  * 工具提交用户回答时调用的 resolver。handle 内部构造好 ToolResultItem 后

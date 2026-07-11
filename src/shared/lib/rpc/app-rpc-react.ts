@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 
-import type { RpcSubscribeFn } from "#shared/rpc/stream";
+import type { RpcSubscribeFn } from "#shared/rpc/transport/index";
 import type { WindowState } from "#shared/window";
 
 import { windowService } from "./app-rpc";

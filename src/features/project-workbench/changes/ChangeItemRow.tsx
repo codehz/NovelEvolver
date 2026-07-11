@@ -1,7 +1,7 @@
 import type { KeyboardEvent, ReactNode } from "react";
 
 import { cn } from "#app/shared/lib/ui/cn";
-import type { Change } from "#shared/rpc/worktree-changes-rpc";
+import type { Change } from "#shared/rpc/worktree/index";
 import type { TreeRowLayout } from "#workbench/tree/tree-row-layout";
 import { treeRowDisclosureSpacerClass } from "#workbench/tree/tree-row-motion";
 import { TreeMotionRow } from "#workbench/tree/TreeMotionRow";

@@ -2,9 +2,9 @@ import { RpcTarget } from "capnweb";
 import { createSqliteRepository } from "nano-git/repository/sqlite";
 
 import type { ProjectMetadata } from "#shared/project";
-import type { AiChatHandle } from "#shared/rpc/ai-rpc";
-import type { BranchWorkspace } from "#shared/rpc/branch-workspace-rpc";
-import type { BranchSummary, ProjectSession } from "#shared/rpc/project-session-rpc";
+import type { AiChatHandle } from "#shared/rpc/ai/index";
+import type { BranchWorkspace } from "#shared/rpc/session/index";
+import type { BranchSummary, ProjectSession } from "#shared/rpc/session/index";
 
 import { ProjectAiChatController } from "../../ai/chat/project-ai-chat";
 import type { AiChatRepository } from "../../db/repositories/ai-chat-repo";

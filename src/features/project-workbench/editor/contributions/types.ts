@@ -1,10 +1,10 @@
 import type { RpcPromise } from "capnweb";
 
-import type { HistoryHandle, HistoryTarget } from "#shared/rpc/history-rpc";
-import type { ManuscriptHandle } from "#shared/rpc/manuscript-rpc";
-import type { ResourceLibraryHandle } from "#shared/rpc/resource-library-rpc";
-import type { WorktreeChangesHandle } from "#shared/rpc/worktree-changes-rpc";
-import type { WorktreeTreeSnapshot } from "#shared/rpc/worktree-tree-rpc";
+import type { HistoryHandle, HistoryTarget } from "#shared/rpc/worktree/index";
+import type { ManuscriptHandle } from "#shared/rpc/worktree/index";
+import type { ResourceLibraryHandle } from "#shared/rpc/worktree/index";
+import type { WorktreeChangesHandle } from "#shared/rpc/worktree/index";
+import type { WorktreeTreeSnapshot } from "#shared/rpc/worktree/index";
 
 import type {
   WorkbenchEditorDocument,

@@ -2,7 +2,7 @@ import { useState } from "react";
 
 import { cn } from "#app/shared/lib/ui/cn";
 import { DisclosureChevron } from "#app/shared/ui/DisclosureChevron";
-import type { AiChatToolCall } from "#shared/rpc/ai-rpc";
+import type { AiChatToolCall } from "#shared/rpc/ai/index";
 
 import {
   describeToolCallStatus,

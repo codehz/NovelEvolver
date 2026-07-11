@@ -1,4 +1,4 @@
-import type { AiChatEvent, AiConversationSummary } from "#shared/rpc/ai-rpc";
+import type { AiChatEvent, AiConversationSummary } from "#shared/rpc/ai/index";
 
 import type { AiChatRepository, AiConversationRecord } from "../../db/repositories/ai-chat-repo";
 import { RpcStreamPublisher } from "../../lib/stream-publisher";

@@ -6,7 +6,7 @@ import type {
   ChangesEvent,
   ChangesSnapshot,
   WorktreeChangesHandle,
-} from "#shared/rpc/worktree-changes-rpc";
+} from "#shared/rpc/worktree/index";
 
 import type { WorktreeSession } from "../../worktree/session";
 

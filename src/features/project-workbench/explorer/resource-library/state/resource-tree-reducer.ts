@@ -2,7 +2,7 @@ import type {
   ResourceTreeDelta,
   ResourceTreeNode,
   ResourceTreeSnapshot,
-} from "#shared/rpc/worktree-tree-rpc";
+} from "#shared/rpc/worktree/index";
 
 import type { TreeResolvedDrop } from "../../../tree/tree-drag";
 import { applyResourceTreeDelta } from "../../../worktree/worktree-tree-state";

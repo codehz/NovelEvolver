@@ -1,7 +1,7 @@
 import { RpcTarget } from "capnweb";
 import type { BrowserWindow } from "electron";
 
-import type { WindowService } from "#shared/rpc/window-rpc";
+import type { WindowService } from "#shared/rpc/services/index";
 import type { WindowState } from "#shared/window";
 
 import { RpcStreamPublisher } from "../../lib/stream-publisher";

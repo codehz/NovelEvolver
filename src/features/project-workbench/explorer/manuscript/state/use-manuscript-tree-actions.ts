@@ -3,7 +3,7 @@ import { useSetAtom, useStore } from "jotai";
 import { useCallback } from "react";
 
 import { notificationApi } from "#app/shared/lib/notifications";
-import type { ManuscriptTreeNode } from "#shared/rpc/worktree-tree-rpc";
+import type { ManuscriptTreeNode } from "#shared/rpc/worktree/index";
 
 import { useManuscript } from "../../../branch/branch-scopes";
 import { useWorkbenchEditorActions } from "../../../editor/use-workbench-editor-actions";

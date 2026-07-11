@@ -1,8 +1,4 @@
-import type {
-  ChangesEvent,
-  ChangesSnapshot,
-  ChangesTreeDelta,
-} from "#shared/rpc/worktree-changes-rpc";
+import type { ChangesEvent, ChangesSnapshot, ChangesTreeDelta } from "#shared/rpc/worktree/index";
 
 import { buildJournalChangesSnapshot } from "../journal/journal-pending-projector";
 import { cloneManuscriptTreeSnapshot, cloneResourceTreeSnapshot } from "../trees/tree-clone";

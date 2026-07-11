@@ -1,7 +1,7 @@
 import type { RpcPromise } from "capnweb";
 
-import type { ManuscriptHandle } from "#shared/rpc/manuscript-rpc";
-import type { ResourceLibraryHandle } from "#shared/rpc/resource-library-rpc";
+import type { ManuscriptHandle } from "#shared/rpc/worktree/index";
+import type { ResourceLibraryHandle } from "#shared/rpc/worktree/index";
 import type { PlainTextEditorHandle } from "#workbench/editor/PlainTextEditor";
 
 import type {

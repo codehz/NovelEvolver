@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 
-import type { WorktreeSearchHit, WorktreeSearchResult } from "#shared/rpc/worktree-search-rpc";
+import type { WorktreeSearchHit, WorktreeSearchResult } from "#shared/rpc/worktree/index";
 import type { TreeBodyStatus } from "#workbench/tree/TreeBody";
 
 import { useWorktreeSearch } from "../branch/branch-scopes";

@@ -6,7 +6,7 @@ import type {
   HistoryEntryContent,
   HistoryHandle,
   HistoryTarget,
-} from "#shared/rpc/history-rpc";
+} from "#shared/rpc/worktree/index";
 
 import type { WorktreeSession } from "../../worktree/session";
 

@@ -1,10 +1,10 @@
 import { RpcTarget } from "capnweb";
 
-import type { AppRpcRoot } from "#shared/rpc/app-rpc";
-import type { ProjectLibraryService } from "#shared/rpc/project-library-rpc";
-import type { SettingsService } from "#shared/rpc/settings-rpc";
-import type { WindowService } from "#shared/rpc/window-rpc";
-import type { WorkspaceService } from "#shared/rpc/workspace-rpc";
+import type { AppRpcRoot } from "#shared/rpc/root/index";
+import type { ProjectLibraryService } from "#shared/rpc/services/index";
+import type { SettingsService } from "#shared/rpc/services/index";
+import type { WindowService } from "#shared/rpc/services/index";
+import type { WorkspaceService } from "#shared/rpc/services/index";
 
 import type { ProjectLibraryServiceImpl } from "../services/project-library-service";
 import type { SettingsServiceImpl } from "../services/settings-service";

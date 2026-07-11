@@ -5,7 +5,7 @@ import { dialog, type BrowserWindow } from "electron";
 import { createSqliteRepository } from "nano-git/repository/sqlite";
 
 import type { ProjectMetadata } from "#shared/project";
-import type { ProjectLibraryService } from "#shared/rpc/project-library-rpc";
+import type { ProjectLibraryService } from "#shared/rpc/services/index";
 
 import { ProjectsRepository } from "../../db/repositories/projects-repo";
 import { toProjectMetadata } from "../../projects/home-path";

@@ -3,7 +3,7 @@ import {
   quickPickApi,
   type QuickPickListItem,
 } from "#app/shared/lib/quick-pick";
-import type { AiConversationSummary } from "#shared/rpc/ai-rpc";
+import type { AiConversationSummary } from "#shared/rpc/ai/index";
 
 function formatConversationActivity(conversation: AiConversationSummary): string | null {
   switch (conversation.activity) {
