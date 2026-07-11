@@ -5,8 +5,13 @@ import type { WorktreeSession } from "../../worktree/session";
 import { toErrorMessage } from "../ai-utils";
 import { AskUserRequestHandleImpl, parseAskUserArgs } from "./ask-user";
 import { type AI_TOOL_NAMES } from "./definitions";
-import { executeReadResourceFile } from "./read-resource-file";
-import { executeListResourceFiles } from "./resource-library";
+import {
+  executeCreateDocument,
+  executeEditTextDocument,
+  executeGetProjectStructure,
+  executeReadChapter,
+  executeSearchProject,
+} from "./project-tools";
 import type { UserInputRequest } from "./user-input-types";
 
 export type { UserInputRequest, UserInputResolver } from "./user-input-types";
@@ -79,13 +84,25 @@ const toolHandlers: Partial<Record<AI_TOOL_NAMES, ToolHandler>> = {
     const args = parseAskUserArgs(call);
     return askUserResult(call, args);
   },
-  list_resource_files(worktree, call) {
-    const output = executeListResourceFiles(worktree, call);
+  get_project_structure(worktree, call) {
+    const output = executeGetProjectStructure(worktree, call);
     return okJson(call, output);
   },
-  read_resource_file(worktree, call) {
-    const content = executeReadResourceFile(worktree, call);
+  read_chapter(worktree, call) {
+    const content = executeReadChapter(worktree, call);
     return ok(call, content);
+  },
+  search_project(worktree, call) {
+    const output = executeSearchProject(worktree, call);
+    return okJson(call, output);
+  },
+  edit_text_document(worktree, call) {
+    const output = executeEditTextDocument(worktree, call);
+    return okJson(call, output);
+  },
+  create_document(worktree, call) {
+    const output = executeCreateDocument(worktree, call);
+    return okJson(call, output);
   },
 };
 

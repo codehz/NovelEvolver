@@ -42,14 +42,17 @@ describe("mock AI scenario runner", () => {
   });
 
   it("selects the follow-up turn from transcript tool results", async () => {
-    const scenario = getMockScenario("tools.simulated-resource-list");
+    const scenario = getMockScenario("tools.simulated-project-structure");
     const client = createScenarioClient({ scenario, pacing: "instant", clientLabel: "test" });
     const first = await collectStream(client.stream({ input: initialInput }));
-    expect(first.toolCalls.map((call) => call.id)).toEqual(["scenario-simulated-list"]);
+    expect(first.toolCalls.map((call) => call.id)).toEqual(["scenario-simulated-structure"]);
 
-    const result = toolResultItem("scenario-simulated-list", "list_resource_files", "success", [
-      { type: "json", json: { files: [] } },
-    ]);
+    const result = toolResultItem(
+      "scenario-simulated-structure",
+      "get_project_structure",
+      "success",
+      [{ type: "json", json: { domain: "resource", resource: { root_id: "root", nodes: [] } } }],
+    );
     const second = await collectStream(
       client.stream({ input: [...initialInput, ...first.replay, result] }),
     );
@@ -80,7 +83,7 @@ describe("mock AI scenario runner", () => {
 
 describe("scenario tool runner", () => {
   it("uses the fixed simulated result without invoking the real runner", async () => {
-    const scenario = getMockScenario("tools.simulated-resource-list");
+    const scenario = getMockScenario("tools.simulated-project-structure");
     const realRunner: ToolRunner = {
       async execute() {
         throw new Error("real runner must not execute");
@@ -89,14 +92,14 @@ describe("scenario tool runner", () => {
     const runner = createScenarioToolRunner(realRunner, scenario);
     const execution = await runner.execute({
       type: "tool_call",
-      id: "scenario-simulated-list",
-      name: "list_resource_files",
+      id: "scenario-simulated-structure",
+      name: "get_project_structure",
       argumentsText: "{}",
       argumentsJson: {},
     });
 
     expect(execution.errorMessage).toBeNull();
-    expect(execution.resultText).toContain("世界观.md");
+    expect(execution.resultText).toContain("主角.md");
     expect(execution.toolResult.outcome).toBe("success");
   });
 });

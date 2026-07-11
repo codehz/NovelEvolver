@@ -45,23 +45,52 @@ const basicStream: MockScenarioDefinition = {
 };
 
 const simulatedTool: MockScenarioDefinition = {
-  id: "tools.simulated-resource-list",
-  title: "模拟资源列表工具",
+  id: "tools.simulated-project-structure",
+  title: "模拟项目结构工具",
   description: "使用固定工具结果测试 running、完成状态与续跑。",
-  initialPrompt: "调用资源列表工具并整理结果。",
+  initialPrompt: "调用项目结构工具并整理结果。",
   toolMode: "simulated",
   mutatesWorkspace: false,
   simulatedResults: {
-    "scenario-simulated-list": {
+    "scenario-simulated-structure": {
       outcome: "success",
       content: [
         {
           type: "json",
           json: {
-            files: [
-              { path: "设定/世界观.md", name: "世界观.md" },
-              { path: "角色/主角.md", name: "主角.md" },
-            ],
+            domain: "resource",
+            resource: {
+              root_id: "root",
+              nodes: [
+                {
+                  id: "root",
+                  domain: "resource",
+                  kind: "folder",
+                  name: "",
+                  parent_id: null,
+                  child_ids: ["folder-1", "file-1"],
+                  display_path: "",
+                },
+                {
+                  id: "folder-1",
+                  domain: "resource",
+                  kind: "folder",
+                  name: "设定",
+                  parent_id: "root",
+                  child_ids: [],
+                  display_path: "设定",
+                },
+                {
+                  id: "file-1",
+                  domain: "resource",
+                  kind: "file",
+                  name: "主角.md",
+                  parent_id: "root",
+                  child_ids: [],
+                  display_path: "主角.md",
+                },
+              ],
+            },
           },
         },
       ],
@@ -70,30 +99,24 @@ const simulatedTool: MockScenarioDefinition = {
   turns: [
     {
       id: "call-tool",
-      matches: (request) => !hasToolResult(request, "scenario-simulated-list"),
+      matches: (request) => !hasToolResult(request, "scenario-simulated-structure"),
       run: function* () {
         yield {
-          type: "reasoning",
-          id: "scenario-simulated-list-reasoning",
-          visibility: "summary",
-          content: "准备调用资源列表工具。",
-        };
-        yield {
           type: "tool_call",
-          id: "scenario-simulated-list",
-          name: "list_resource_files",
-          argumentsText: JSON.stringify({ path: "" }),
+          id: "scenario-simulated-structure",
+          name: "get_project_structure",
+          argumentsText: JSON.stringify({ domain: "resource" }),
         };
       },
     },
     {
       id: "render-result",
-      matches: (request) => hasToolResult(request, "scenario-simulated-list"),
+      matches: (request) => hasToolResult(request, "scenario-simulated-structure"),
       run: function* ({ request }) {
-        const result = readToolResultText(getToolResult(request, "scenario-simulated-list"));
+        const result = readToolResultText(getToolResult(request, "scenario-simulated-structure"));
         yield {
           type: "message",
-          id: "scenario-simulated-list-message",
+          id: "scenario-simulated-structure-message",
           content: `模拟工具已返回固定数据：\n\n\`\`\`json\n${result}\n\`\`\``,
         };
       },
@@ -102,33 +125,33 @@ const simulatedTool: MockScenarioDefinition = {
 };
 
 const integratedTool: MockScenarioDefinition = {
-  id: "tools.integrated-resource-list",
-  title: "真实资源列表工具",
-  description: "对当前项目执行真实资源列表工具并展示结果。",
-  initialPrompt: "读取当前项目的资源文件列表。",
+  id: "tools.integrated-project-structure",
+  title: "真实项目结构工具",
+  description: "对当前项目执行真实项目结构工具并展示结果。",
+  initialPrompt: "读取当前项目的资源结构。",
   toolMode: "integrated",
   mutatesWorkspace: false,
   turns: [
     {
       id: "call-tool",
-      matches: (request) => !hasToolResult(request, "scenario-integrated-list"),
+      matches: (request) => !hasToolResult(request, "scenario-integrated-structure"),
       run: function* () {
         yield {
           type: "tool_call",
-          id: "scenario-integrated-list",
-          name: "list_resource_files",
-          argumentsText: JSON.stringify({ path: "" }),
+          id: "scenario-integrated-structure",
+          name: "get_project_structure",
+          argumentsText: JSON.stringify({ domain: "resource" }),
         };
       },
     },
     {
       id: "render-result",
-      matches: (request) => hasToolResult(request, "scenario-integrated-list"),
+      matches: (request) => hasToolResult(request, "scenario-integrated-structure"),
       run: function* ({ request }) {
-        const result = readToolResultText(getToolResult(request, "scenario-integrated-list"));
+        const result = readToolResultText(getToolResult(request, "scenario-integrated-structure"));
         yield {
           type: "message",
-          id: "scenario-integrated-list-message",
+          id: "scenario-integrated-structure-message",
           content: `真实工具执行完成。\n\n\`\`\`json\n${result}\n\`\`\``,
         };
       },

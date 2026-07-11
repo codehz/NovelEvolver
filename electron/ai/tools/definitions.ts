@@ -43,31 +43,120 @@ export const AI_TOOLS_MAP = {
       additionalProperties: false,
     },
   },
-  list_resource_files: {
+  get_project_structure: {
     description:
-      "递归列出资源库指定目录下的所有文件（不含文件夹）。path 为空字符串时表示整个资源库。",
+      "读取当前项目的手稿树和资源树结构，返回节点 ID、类型、标题或名称、父子关系与展示路径。",
     inputSchema: {
       type: "object",
       properties: {
-        path: {
+        domain: {
           type: "string",
-          description: '相对资源库根目录的路径，例如 "" 或 "设定/角色"',
+          enum: ["manuscript", "resource", "all"],
+          description: '可选，限制返回的结构范围；默认 "all"。',
         },
       },
       additionalProperties: false,
     },
   },
-  read_resource_file: {
-    description: "读取资源库中指定路径的文件内容。path 为相对资源库根目录的文件路径。",
+  read_chapter: {
+    description: "读取指定章节的正文内容。",
     inputSchema: {
       type: "object",
       properties: {
-        path: {
+        chapter_id: {
           type: "string",
-          description: '相对资源库根目录的文件路径，例如 "设定/角色/主角.md"',
+          description: "要读取的章节 ID。",
         },
       },
-      required: ["path"],
+      required: ["chapter_id"],
+      additionalProperties: false,
+    },
+  },
+  search_project: {
+    description: "全文搜索手稿和资源库，返回命中的节点 ID、路径、行号和片段。",
+    inputSchema: {
+      type: "object",
+      properties: {
+        query: {
+          type: "string",
+          description: "搜索关键词。",
+        },
+        scope: {
+          type: "string",
+          enum: ["manuscript", "resource", "all"],
+          description: '可选，限制搜索范围；默认 "all"。',
+        },
+        max_results: {
+          type: "integer",
+          description: "可选，每个域最多返回多少条命中。",
+          minimum: 1,
+        },
+      },
+      required: ["query"],
+      additionalProperties: false,
+    },
+  },
+  edit_text_document: {
+    description: "编辑章节或资源文件，要求 expected_content 与当前内容完全一致，避免覆盖并发修改。",
+    inputSchema: {
+      type: "object",
+      properties: {
+        target: {
+          type: "object",
+          properties: {
+            domain: {
+              type: "string",
+              enum: ["manuscript", "resource"],
+            },
+            id: {
+              type: "string",
+            },
+          },
+          required: ["domain", "id"],
+          additionalProperties: false,
+        },
+        expected_content: {
+          type: "string",
+          description: "调用方预期的当前全文内容。",
+        },
+        new_content: {
+          type: "string",
+          description: "要写入的新全文内容。",
+        },
+      },
+      required: ["target", "expected_content", "new_content"],
+      additionalProperties: false,
+    },
+  },
+  create_document: {
+    description: "创建章节、手稿文件夹、资源文件或资源文件夹。",
+    inputSchema: {
+      type: "object",
+      properties: {
+        domain: {
+          type: "string",
+          enum: ["manuscript", "resource"],
+        },
+        kind: {
+          type: "string",
+          enum: ["chapter", "file", "folder"],
+        },
+        parent_id: {
+          type: "string",
+        },
+        name: {
+          type: "string",
+        },
+        index: {
+          type: "integer",
+          description: "可选，仅手稿节点支持。",
+        },
+        content: {
+          type: "string",
+          description: "可选，仅资源文件支持。",
+        },
+      },
+      required: ["domain", "kind", "parent_id", "name"],
       additionalProperties: false,
     },
   },

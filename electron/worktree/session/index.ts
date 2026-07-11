@@ -26,6 +26,98 @@ import * as resourceOps from "./resource-ops";
 import { searchWorktree } from "./search-ops";
 import { createWorktreeSessionState, type WorktreeSessionState } from "./state";
 
+export type AiProjectStructureDomain = "manuscript" | "resource" | "all";
+
+export type AiProjectStructureManuscriptNode = {
+  id: string;
+  domain: "manuscript";
+  kind: "folder" | "chapter";
+  title: string;
+  parentId: string | null;
+  childIds: string[];
+  displayPath: string;
+};
+
+export type AiProjectStructureResourceNode = {
+  id: string;
+  domain: "resource";
+  kind: "folder" | "file";
+  name: string;
+  parentId: string | null;
+  childIds: string[];
+  displayPath: string;
+};
+
+export type AiProjectStructure = {
+  domain: AiProjectStructureDomain;
+  manuscript?: {
+    rootId: string;
+    nodes: AiProjectStructureManuscriptNode[];
+  };
+  resource?: {
+    rootId: string;
+    nodes: AiProjectStructureResourceNode[];
+  };
+};
+
+function buildManuscriptStructureNodes(
+  state: WorktreeSessionState,
+): AiProjectStructureManuscriptNode[] {
+  const nodes: AiProjectStructureManuscriptNode[] = [];
+
+  const visit = (nodeId: string): void => {
+    const node = state.manuscriptTree.nodes[nodeId];
+    if (node === undefined) {
+      throw new Error(`Manuscript node does not exist: ${nodeId}`);
+    }
+    const entry = state.currentManuscript.entries.get(nodeId);
+    nodes.push({
+      id: node.id,
+      domain: "manuscript",
+      kind: node.type,
+      title: entry?.title ?? node.title,
+      parentId: node.parentId,
+      childIds: [...node.childIds],
+      displayPath: entry?.displayPath ?? "",
+    });
+    for (const childId of node.childIds) {
+      visit(childId);
+    }
+  };
+
+  visit(state.manuscriptTree.rootId);
+  return nodes;
+}
+
+function buildResourceStructureNodes(
+  state: WorktreeSessionState,
+): AiProjectStructureResourceNode[] {
+  const nodes: AiProjectStructureResourceNode[] = [];
+
+  const visit = (nodeId: string): void => {
+    const node = state.resourceTree.nodes[nodeId];
+    if (node === undefined) {
+      throw new Error(`Resource node does not exist: ${nodeId}`);
+    }
+    const entry = state.currentResources.entries.get(nodeId);
+    nodes.push({
+      id: node.id,
+      domain: "resource",
+      kind: node.type,
+      name: entry?.name ?? node.name,
+      parentId: node.parentId,
+      childIds: [...node.childIds],
+      displayPath: entry?.displayPath ?? "",
+    });
+    for (const childId of node.childIds) {
+      visit(childId);
+    }
+  };
+
+  visit(state.resourceTree.rootId);
+  return nodes;
+}
+
 export class WorktreeSession {
   readonly #state: WorktreeSessionState;
 
@@ -158,6 +250,23 @@ export class WorktreeSession {
 
   searchWorktree(options: WorktreeSearchQuery): WorktreeSearchResult {
     return searchWorktree(this.#state, options);
+  }
+
+  getProjectStructure(domain: AiProjectStructureDomain = "all"): AiProjectStructure {
+    const result: AiProjectStructure = { domain };
+    if (domain === "all" || domain === "manuscript") {
+      result.manuscript = {
+        rootId: this.#state.manuscriptTree.rootId,
+        nodes: buildManuscriptStructureNodes(this.#state),
+      };
+    }
+    if (domain === "all" || domain === "resource") {
+      result.resource = {
+        rootId: this.#state.resourceTree.rootId,
+        nodes: buildResourceStructureNodes(this.#state),
+      };
+    }
+    return result;
   }
 
   [Symbol.dispose](): void {
