@@ -3,10 +3,12 @@ import { describe, expect, it } from "bun:test";
 import { collectStream, toolResultItem } from "@codehz/ai";
 import type { InputItem } from "@codehz/ai";
 
+import { shouldProcessToolCalls } from "../chat/conversation-runtime";
 import type { ToolRunner } from "../tools/runner";
 import { getMockScenario, listMockScenarios } from "./scenario-registry";
 import { createScenarioClient } from "./scenario-runner";
 import { createScenarioToolRunner } from "./scenario-tool-runner";
+import type { MockScenarioDefinition } from "./scenario-types";
 
 const initialInput: InputItem[] = [
   {
@@ -78,6 +80,38 @@ describe("mock AI scenario runner", () => {
     const response = await collectStream(client.stream({ input: initialInput }));
     expect(response.warnings).toContain("这是可恢复的测试警告，响应仍会继续。");
     expect(response.text).toContain("正文已正常完成");
+  });
+
+  it("processes tool calls even when the response stops at the token limit", async () => {
+    const scenario: MockScenarioDefinition = {
+      id: "test.max-tokens-tool-call",
+      title: "Token 上限工具调用",
+      description: "模拟工具参数生成期间达到 token 上限。",
+      initialPrompt: "生成一个被截断的工具调用。",
+      toolMode: "simulated",
+      mutatesWorkspace: false,
+      turns: [
+        {
+          id: "truncated-tool-call",
+          matches: () => true,
+          run: function* () {
+            yield {
+              type: "tool_call",
+              id: "scenario-truncated-tool-call",
+              name: "edit_text_document",
+              argumentsText: '{"target":',
+            };
+            yield { type: "complete", stopReason: "max_output_tokens" };
+          },
+        },
+      ],
+    };
+    const client = createScenarioClient({ scenario, pacing: "instant", clientLabel: "test" });
+    const response = await collectStream(client.stream({ input: initialInput }));
+
+    expect(response.stopReason).toBe("max_output_tokens");
+    expect(response.toolCalls).toHaveLength(1);
+    expect(shouldProcessToolCalls(response)).toBe(true);
   });
 });
 

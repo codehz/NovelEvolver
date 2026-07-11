@@ -50,6 +50,10 @@ export type AiConversationRuntimeOptions = {
 
 const MAX_TOOL_ROUNDS = 16;
 
+export function shouldProcessToolCalls(response: Pick<AIResponse, "toolCalls">): boolean {
+  return response.toolCalls.length > 0;
+}
+
 export class AiConversationRuntime {
   readonly #toolRunner: ToolRunner;
   readonly #publisher = new RpcStreamPublisher<AiChatEvent>();
@@ -291,10 +295,7 @@ export class AiConversationRuntime {
         );
         transcript.push(...completedResponse.replay);
 
-        if (
-          completedResponse.stopReason !== "tool_call" ||
-          completedResponse.toolCalls.length === 0
-        ) {
+        if (!shouldProcessToolCalls(completedResponse)) {
           break;
         }
 
