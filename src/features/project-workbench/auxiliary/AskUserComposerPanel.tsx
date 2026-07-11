@@ -1,87 +1,107 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 
-import type { AiChatSnapshot } from "#shared/rpc/ai-rpc";
+import type { AiChatUserInputHandle } from "#shared/rpc/ai-rpc";
 
-import {
-  findUserInputToolCall,
-  listUserInputToolCallsInActiveBatch,
-  listAwaitingUserInputToolCalls,
-} from "./ask-user-prompt";
 import { AskUserComposer } from "./AskUserComposer";
 import { AskUserQuestionTabs } from "./AskUserQuestionTabs";
+import { handleKey, summarizeHandlePrompt } from "./handle-keys";
 
+/**
+ * 当 AI 请求需要用户回答时，底部 composer 区域按 handle.kind 分派渲染对应的输入 UI。
+ *
+ * handle 是服务端推过来的活对象：客户端直接调用 `submitAnswer`/`cancel` 等方法把
+ * 类型化的回答交还服务端，无须知道内部 toolCallId，也无须固定的 response 形状。
+ * 当前仅支持 `ask_user`；新增工具只需在此 switch 增加一个 case 与对应 composer。
+ */
 export function AskUserComposerPanel({
-  snapshot,
   loading,
-  activeToolCallId,
-  onSelectToolCallId,
-  onSubmit,
+  pendingInputs,
 }: {
-  snapshot: AiChatSnapshot;
   loading: boolean;
-  activeToolCallId: string | null;
-  onSelectToolCallId: (toolCallId: string) => void;
-  onSubmit: (toolCallId: string, text: string) => Promise<boolean>;
+  pendingInputs: AiChatUserInputHandle[];
 }) {
-  const batchToolCalls = useMemo(() => listUserInputToolCallsInActiveBatch(snapshot), [snapshot]);
-  const awaitingToolCalls = useMemo(() => listAwaitingUserInputToolCalls(snapshot), [snapshot]);
-  const [draftsByToolCallId, setDraftsByToolCallId] = useState<Record<string, string>>({});
+  const [activeKey, setActiveKey] = useState<string | null>(null);
+  const [draftsByKey, setDraftsByKey] = useState<Record<string, string>>({});
+
+  const pendingKeys = useMemo(() => pendingInputs.map(handleKey), [pendingInputs]);
 
   useEffect(() => {
-    if (awaitingToolCalls.length === 0) {
+    if (pendingInputs.length === 0) {
       return;
     }
-
-    if (
-      activeToolCallId === null ||
-      !awaitingToolCalls.some((toolCall) => toolCall.id === activeToolCallId)
-    ) {
-      onSelectToolCallId(awaitingToolCalls[0]!.id);
+    if (activeKey === null || !pendingKeys.includes(activeKey)) {
+      setActiveKey(pendingKeys[0] ?? null);
     }
-  }, [activeToolCallId, awaitingToolCalls, onSelectToolCallId]);
+  }, [activeKey, pendingInputs, pendingKeys]);
 
-  const activeToolCall =
-    activeToolCallId === null ? null : findUserInputToolCall(snapshot, activeToolCallId);
+  const activeHandle =
+    activeKey === null
+      ? null
+      : (pendingInputs.find((handle) => handleKey(handle) === activeKey) ?? null);
 
-  const progressLabel = useMemo(() => {
-    if (batchToolCalls.length <= 1) {
-      return null;
-    }
-
-    const answeredCount = batchToolCalls.filter(
-      (toolCall) => toolCall.status === "complete",
-    ).length;
-    return `${answeredCount}/${batchToolCalls.length} 已答`;
-  }, [batchToolCalls]);
-
-  const handleDraftChange = useCallback((toolCallId: string, draft: string) => {
-    setDraftsByToolCallId((current) => ({
-      ...current,
-      [toolCallId]: draft,
-    }));
+  const handleDraftChange = useCallback((key: string, draft: string) => {
+    setDraftsByKey((current) => ({ ...current, [key]: draft }));
   }, []);
 
-  if (!activeToolCall || activeToolCall.status !== "awaiting_user") {
+  if (pendingInputs.length === 0 || activeHandle === null || activeKey === null) {
     return null;
   }
+
+  const activeKeyStr = activeKey;
+  const activeDraft = draftsByKey[activeKeyStr] ?? "";
 
   return (
     <div className="mx-auto flex w-full max-w-3xl flex-col gap-2">
       <AskUserQuestionTabs
-        activeToolCallId={activeToolCallId}
-        toolCalls={batchToolCalls.length > 0 ? batchToolCalls : awaitingToolCalls}
-        onSelectToolCallId={onSelectToolCallId}
+        activeKey={activeKeyStr}
+        keys={pendingKeys}
+        summaries={pendingInputs.map((handle, index) => summarizeHandlePrompt(handle, index))}
+        onSelectKey={setActiveKey}
       />
-      <AskUserComposer
-        draft={draftsByToolCallId[activeToolCall.id] ?? ""}
+      <AskUserDispatcher
+        draft={activeDraft}
+        handle={activeHandle}
         loading={loading}
-        progressLabel={progressLabel}
-        toolCall={activeToolCall}
         onDraftChange={(draft) => {
-          handleDraftChange(activeToolCall.id, draft);
+          handleDraftChange(activeKeyStr, draft);
         }}
-        onSubmit={onSubmit}
+        onSubmitted={() => {
+          setDraftsByKey((current) => {
+            const next = { ...current };
+            delete next[activeKeyStr];
+            return next;
+          });
+        }}
       />
     </div>
   );
+}
+
+function AskUserDispatcher({
+  handle,
+  loading,
+  draft,
+  onDraftChange,
+  onSubmitted,
+}: {
+  handle: AiChatUserInputHandle;
+  loading: boolean;
+  draft: string;
+  onDraftChange: (draft: string) => void;
+  onSubmitted: () => void;
+}) {
+  switch (handle.kind) {
+    case "ask_user":
+      return (
+        <AskUserComposer
+          draft={draft}
+          handle={handle}
+          loading={loading}
+          onDraftChange={onDraftChange}
+          onSubmitted={onSubmitted}
+        />
+      );
+    default:
+      return null;
+  }
 }

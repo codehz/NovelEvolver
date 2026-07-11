@@ -27,6 +27,7 @@ import type {
   AiChatMessagePatch,
   AiChatSnapshot,
   AiChatToolCall,
+  AiChatUserInputHandle,
   AiChatUserMessage,
   AiConversationSummary,
 } from "#shared/rpc/ai-rpc";
@@ -41,19 +42,32 @@ import {
   createMockClient,
   toInputItem,
 } from "./mock-adapter";
+import { AskUserRequestHandleImpl, parseAskUserArgs } from "./tools/ask-user";
 import { AI_TOOLS } from "./tools/definitions";
 import { createToolRunner, type ResolveWorktree, type ToolRunner } from "./tools/runner";
+import type { UserInputRequest } from "./tools/user-input-types";
 
 const EMPTY_TITLE = "新会话";
 const TITLE_MAX_LENGTH = 40;
+
+type PendingUserInput = {
+  callId: string;
+  handle: AiChatUserInputHandle;
+  resolverPromise: Promise<ToolResultItem>;
+  resolve: (result: ToolResultItem) => void;
+  /** 纯数据形式，用于持久化与重开 app 后重建 handle。 */
+  serializable: { toolName: string; args: unknown };
+};
 
 type PendingToolBatch = {
   assistantMessageId: string;
   calls: ToolCallItem[];
   input: InputItem[];
   transcript: InputItem[];
-  resultsByCallId: Map<string, ToolResultItem>;
-  awaitingUserInputIds: Set<string>;
+  /** 已有结果的工具调用（自动完成的 + 用户已回答的）。 */
+  resolvedResultsByCallId: Map<string, ToolResultItem>;
+  /** 仍等待用户输入的工具调用。 */
+  pendingInputs: PendingUserInput[];
 };
 
 type SerializedPendingToolBatch = {
@@ -61,8 +75,9 @@ type SerializedPendingToolBatch = {
   calls: ToolCallItem[];
   input: InputItem[];
   transcript: InputItem[];
-  resultsByCallId: [string, ToolResultItem][];
-  awaitingUserInputIds: string[];
+  resolvedResultsByCallId: [string, ToolResultItem][];
+  /** 仍等待用户输入的工具调用的纯数据形式。 */
+  pendingInputs: { callId: string; serializable: { toolName: string; args: unknown } }[];
 };
 
 export type ProjectAiSessionOptions = {
@@ -155,74 +170,6 @@ export class BranchAiSession {
     void this.#runRequest({
       assistantMessageId: assistantMessage.id,
       requestInput,
-    });
-  }
-
-  submitToolResponse(toolCallId: string, text: string): void {
-    const pendingBatch = this.#pendingToolBatch;
-    const normalized = text.trim();
-    if (pendingBatch === null || !pendingBatch.awaitingUserInputIds.has(toolCallId)) {
-      throw new Error("当前没有等待该工具调用的用户回答。");
-    }
-    if (normalized === "") {
-      throw new Error("工具回答不能为空。");
-    }
-    if (this.#pending) {
-      throw new Error("AI 请求仍在处理中。");
-    }
-
-    const toolCall = this.#getToolCall(pendingBatch.assistantMessageId, toolCallId);
-    if (!toolCall) {
-      throw new Error("找不到对应的工具调用。");
-    }
-
-    const toolResult = this.#toolRunner.buildUserInputResult(toolCall, normalized);
-
-    pendingBatch.resultsByCallId.set(toolCallId, toolResult);
-    pendingBatch.awaitingUserInputIds.delete(toolCallId);
-    this.#emitAssistantPartUpdate(pendingBatch.assistantMessageId, toolCallId, {
-      status: "complete",
-      resultText: JSON.stringify({ answer: normalized }, null, 2),
-      errorMessage: null,
-    });
-
-    if (pendingBatch.awaitingUserInputIds.size > 0) {
-      this.#emitDelta([
-        {
-          type: "state.updated",
-          patch: {
-            awaitingUserInputToolCallIds: [...pendingBatch.awaitingUserInputIds],
-            errorMessage: null,
-          },
-        },
-      ]);
-      this.#markDirty();
-      this.#persistIfNeeded();
-      return;
-    }
-
-    const input = [...pendingBatch.input];
-    const transcript = [...pendingBatch.transcript];
-    this.#appendBatchResultsToConversation(pendingBatch, input, transcript);
-    const assistantMessageId = pendingBatch.assistantMessageId;
-
-    this.#pendingToolBatch = null;
-    this.#pending = true;
-    this.#emitDelta([
-      {
-        type: "state.updated",
-        patch: {
-          pending: true,
-          awaitingUserInputToolCallIds: [],
-          errorMessage: null,
-        },
-      },
-    ]);
-
-    void this.#runRequest({
-      assistantMessageId,
-      requestInput: input,
-      transcript,
     });
   }
 
@@ -338,6 +285,9 @@ export class BranchAiSession {
     this.#history.length = 0;
     this.#history.push(...this.#parseHistory(record.historyJson));
     this.#pendingToolBatch = this.#parsePendingToolBatch(record.pendingToolBatchJson);
+    if (this.#pendingToolBatch !== null && this.#pendingToolBatch.pendingInputs.length > 0) {
+      void this.#awaitPendingInputs(this.#pendingToolBatch);
+    }
   }
 
   #assertIdleForConversationSwitch(action: string): void {
@@ -356,8 +306,8 @@ export class BranchAiSession {
       model: AI_MODEL,
       messages: this.#messages.map(cloneAiChatMessage),
       pending: this.#pending,
-      awaitingUserInputToolCallIds: this.#pendingToolBatch
-        ? [...this.#pendingToolBatch.awaitingUserInputIds]
+      pendingUserInputs: this.#pendingToolBatch
+        ? this.#pendingToolBatch.pendingInputs.map((input) => input.handle)
         : [],
       errorMessage: this.#errorMessage,
     };
@@ -468,17 +418,66 @@ export class BranchAiSession {
     }
     try {
       const parsed = JSON.parse(json) as SerializedPendingToolBatch;
+      const resolvedResultsByCallId = new Map(parsed.resolvedResultsByCallId);
+      const pendingInputs = parsed.pendingInputs.map((entry) =>
+        this.#rebuildPendingUserInput(entry.callId, entry.serializable),
+      );
       return {
         assistantMessageId: parsed.assistantMessageId,
         calls: parsed.calls,
         input: parsed.input,
         transcript: parsed.transcript,
-        resultsByCallId: new Map(parsed.resultsByCallId),
-        awaitingUserInputIds: new Set(parsed.awaitingUserInputIds),
+        resolvedResultsByCallId,
+        pendingInputs,
       };
     } catch {
       return null;
     }
+  }
+
+  /**
+   * 从纯数据形式重建一个等待用户输入的 entry：新建 resolver 与 handle，
+   * 并挂上 `#awaitPendingInputs` 的续接，使重开 app 后用户仍可回答。
+   */
+  #rebuildPendingUserInput(
+    callId: string,
+    serializable: { toolName: string; args: unknown },
+  ): PendingUserInput {
+    let resolve!: (result: ToolResultItem) => void;
+    const resolverPromise = new Promise<ToolResultItem>((res) => {
+      resolve = res;
+    });
+    const handle = this.#createHandleFromSerializable(callId, serializable, { resolve });
+    return { callId, handle, resolverPromise, resolve, serializable };
+  }
+
+  /** 根据 serializable 的 toolName 分派到对应 handle 工厂。 */
+  #createHandleFromSerializable(
+    callId: string,
+    serializable: { toolName: string; args: unknown },
+    resolver: { resolve: (result: ToolResultItem) => void },
+  ): AiChatUserInputHandle {
+    if (serializable.toolName === "ask_user") {
+      const args = parseAskUserArgs({
+        type: "tool_call",
+        id: callId,
+        name: "ask_user",
+        argumentsText: JSON.stringify(serializable.args),
+        argumentsJson: serializable.args,
+      });
+      return new AskUserRequestHandleImpl(
+        {
+          type: "tool_call",
+          id: callId,
+          name: "ask_user",
+          argumentsText: JSON.stringify(serializable.args),
+          argumentsJson: serializable.args,
+        },
+        args,
+        resolver,
+      );
+    }
+    throw new Error(`无法重建未知工具的用户输入 handle: ${serializable.toolName}`);
   }
 
   #serializePendingToolBatch(batch: PendingToolBatch | null): string | null {
@@ -490,8 +489,11 @@ export class BranchAiSession {
       calls: batch.calls,
       input: batch.input,
       transcript: batch.transcript,
-      resultsByCallId: [...batch.resultsByCallId.entries()],
-      awaitingUserInputIds: [...batch.awaitingUserInputIds],
+      resolvedResultsByCallId: [...batch.resolvedResultsByCallId.entries()],
+      pendingInputs: batch.pendingInputs.map((input) => ({
+        callId: input.callId,
+        serializable: input.serializable,
+      })),
     };
     return JSON.stringify(payload);
   }
@@ -800,7 +802,7 @@ export class BranchAiSession {
           type: "state.updated",
           patch: {
             pending: false,
-            awaitingUserInputToolCallIds: [],
+            pendingUserInputs: [],
           },
         },
       ]);
@@ -837,7 +839,7 @@ export class BranchAiSession {
         type: "state.updated",
         patch: {
           pending: false,
-          awaitingUserInputToolCallIds: [],
+          pendingUserInputs: [],
           errorMessage: this.#errorMessage,
         },
       });
@@ -853,8 +855,8 @@ export class BranchAiSession {
     input: InputItem[],
     transcript: InputItem[],
   ): Promise<"continue" | "paused"> {
-    const resultsByCallId = new Map<string, ToolResultItem>();
-    const awaitingUserInputIds = new Set<string>();
+    const resolvedResultsByCallId = new Map<string, ToolResultItem>();
+    const pendingInputs: PendingUserInput[] = [];
 
     for (const call of calls) {
       this.#emitAssistantPartUpdate(assistantMessageId, call.id, {
@@ -863,12 +865,24 @@ export class BranchAiSession {
 
       const execution = await this.#toolRunner.execute(call);
       if (execution.userInputRequest) {
+        const req: UserInputRequest = execution.userInputRequest;
+        let resolve!: (result: ToolResultItem) => void;
+        const resolverPromise = new Promise<ToolResultItem>((res) => {
+          resolve = res;
+        });
+        const handle = req.createHandle({ resolve });
         this.#emitAssistantPartUpdate(assistantMessageId, call.id, {
           status: "awaiting_user",
           resultText: null,
           errorMessage: null,
         });
-        awaitingUserInputIds.add(call.id);
+        pendingInputs.push({
+          callId: call.id,
+          handle,
+          resolverPromise,
+          resolve,
+          serializable: req.serializable,
+        });
         continue;
       }
 
@@ -877,34 +891,36 @@ export class BranchAiSession {
         resultText: execution.resultText,
         errorMessage: execution.errorMessage,
       });
-      resultsByCallId.set(call.id, execution.toolResult);
+      resolvedResultsByCallId.set(call.id, execution.toolResult);
     }
 
-    if (awaitingUserInputIds.size > 0) {
+    if (pendingInputs.length > 0) {
       this.#pending = false;
-      this.#pendingToolBatch = {
+      const batch: PendingToolBatch = {
         assistantMessageId,
         calls,
         input: [...input],
         transcript: [...transcript],
-        resultsByCallId,
-        awaitingUserInputIds,
+        resolvedResultsByCallId,
+        pendingInputs,
       };
+      this.#pendingToolBatch = batch;
       this.#emitDelta([
         {
           type: "state.updated",
           patch: {
             pending: false,
-            awaitingUserInputToolCallIds: [...awaitingUserInputIds],
+            pendingUserInputs: pendingInputs.map((entry) => entry.handle),
             errorMessage: null,
           },
         },
       ]);
+      void this.#awaitPendingInputs(batch);
       return "paused";
     }
 
     for (const call of calls) {
-      const result = resultsByCallId.get(call.id);
+      const result = resolvedResultsByCallId.get(call.id);
       if (!result) {
         continue;
       }
@@ -915,19 +931,82 @@ export class BranchAiSession {
     return "continue";
   }
 
-  #appendBatchResultsToConversation(
-    batch: PendingToolBatch,
-    input: InputItem[],
-    transcript: InputItem[],
-  ): void {
+  /**
+   * 等待 batch 中所有 pending input 的 resolver 被客户端 handle 调用 resolve。
+   * 全部完成后将结果并入 input/transcript，继续下一轮 AI 请求。
+   */
+  async #awaitPendingInputs(batch: PendingToolBatch): Promise<void> {
+    const results = await Promise.all(batch.pendingInputs.map((entry) => entry.resolverPromise));
+
+    // 会话已切换/重置/dispose，丢弃此续接。
+    if (this.#pendingToolBatch !== batch || this.#disposed) {
+      return;
+    }
+
+    for (let i = 0; i < batch.pendingInputs.length; i++) {
+      const entry = batch.pendingInputs[i]!;
+      const result = results[i]!;
+      batch.resolvedResultsByCallId.set(entry.callId, result);
+      this.#emitAssistantPartUpdate(batch.assistantMessageId, entry.callId, {
+        status: "complete",
+        resultText: this.#toolResultToText(result),
+        errorMessage: null,
+      });
+    }
+
+    const input = [...batch.input];
+    const transcript = [...batch.transcript];
     for (const call of batch.calls) {
-      const result = batch.resultsByCallId.get(call.id);
+      const result = batch.resolvedResultsByCallId.get(call.id);
       if (!result) {
         throw new Error(`工具 ${call.id} 缺少执行结果。`);
       }
       input.push(result);
       transcript.push(result);
     }
+
+    const assistantMessageId = batch.assistantMessageId;
+    this.#pendingToolBatch = null;
+    this.#pending = true;
+    this.#emitDelta([
+      {
+        type: "state.updated",
+        patch: {
+          pending: true,
+          pendingUserInputs: [],
+          errorMessage: null,
+        },
+      },
+    ]);
+    this.#markDirty();
+    this.#persistIfNeeded();
+
+    void this.#runRequest({
+      assistantMessageId,
+      requestInput: input,
+      transcript,
+    });
+  }
+
+  /** 从 ToolResultItem 的 content 提取可展示文本。 */
+  #toolResultToText(result: ToolResultItem): string {
+    return result.content
+      .map((block) => {
+        switch (block.type) {
+          case "text":
+            return block.text;
+          case "json":
+            return JSON.stringify(block.json, null, 2);
+          case "image":
+            return `[图片] ${block.imageUrl}`;
+          case "binary_ref":
+            return `[二进制引用] ${block.ref}`;
+          case "opaque":
+            return "[私有内容]";
+        }
+      })
+      .filter((text) => text !== "")
+      .join("\n\n");
   }
 
   #completeStreamingAssistantParts(messageId: string): AiChatDeltaOp[] {

@@ -8,16 +8,13 @@ import {
 } from "react";
 
 import { cn } from "#app/shared/lib/ui/cn";
-import type { AiChatToolCall } from "#shared/rpc/ai-rpc";
-
-import { normalizeAskUserChoices, parseAskUserToolArguments } from "./ask-user-prompt";
+import type { AskUserRequestHandle } from "#shared/rpc/ai-rpc";
 
 const composerShellClass = cn(
   "mx-auto flex w-full max-w-3xl flex-col gap-2 rounded-xl bg-app-background p-2 ring-1 ring-ctp-blue/30",
 );
 const headerClass = cn("flex items-center gap-1.5 px-1");
 const headerLabelClass = cn("text-2xs font-medium tracking-[0.02em] text-ctp-blue");
-const headerMetaClass = cn("text-2xs text-ctp-subtext1");
 const headerToolNameClass = cn("truncate font-mono text-2xs text-ctp-green");
 const questionClass = cn("px-1 text-[0.8125rem] leading-5 text-app-foreground");
 const contextClass = cn("px-1 text-2xs leading-4 text-ctp-subtext1");
@@ -34,35 +31,39 @@ const composerTextareaClass = cn(
 const sendButtonClass = cn(
   "inline-flex size-8 shrink-0 items-center justify-center rounded-lg bg-badge-background text-badge-foreground hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40",
 );
+const cancelButtonClass = cn(
+  "inline-flex size-8 shrink-0 items-center justify-center rounded-lg bg-app-surface text-ctp-subtext1 hover:bg-window-chrome hover:text-app-foreground disabled:cursor-not-allowed disabled:opacity-40",
+);
 const loadingClass = cn(
   "mx-auto w-full max-w-3xl rounded-xl bg-app-background p-3 text-center text-xs text-ctp-subtext0",
 );
 
+/**
+ * `ask_user` 工具的输入 UI。直接读取 handle 上类型化的字段（question/choices/...），
+ * 提交时调用 `handle.submitAnswer(text)`；handle 自行构造 ToolResultItem 交还服务端。
+ */
 export function AskUserComposer({
-  toolCall,
+  handle,
   loading,
   draft,
   onDraftChange,
-  progressLabel,
-  onSubmit,
+  onSubmitted,
 }: {
-  toolCall: AiChatToolCall;
+  handle: AskUserRequestHandle;
   loading: boolean;
   draft: string;
   onDraftChange: (draft: string) => void;
-  progressLabel?: string | null;
-  onSubmit: (toolCallId: string, text: string) => Promise<boolean>;
+  onSubmitted: () => void;
 }) {
-  const args = parseAskUserToolArguments(toolCall.argumentsText);
   const [submitting, setSubmitting] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
-  const choices = normalizeAskUserChoices(args?.choices);
+  const choices = handle.choices ?? [];
   const hasChoices = choices.length > 0;
   const inputDisabled = loading || submitting;
 
   useEffect(() => {
     textareaRef.current?.focus();
-  }, [toolCall.id]);
+  }, [handle]);
 
   const submitDraft = useCallback(async (): Promise<void> => {
     if (inputDisabled || draft.trim() === "") {
@@ -70,12 +71,10 @@ export function AskUserComposer({
     }
 
     setSubmitting(true);
-    const submitted = await onSubmit(toolCall.id, draft);
+    handle.submitAnswer(draft.trim());
     setSubmitting(false);
-    if (submitted) {
-      onDraftChange("");
-    }
-  }, [draft, inputDisabled, onDraftChange, onSubmit, toolCall.id]);
+    onSubmitted();
+  }, [draft, handle, inputDisabled, onSubmitted]);
 
   const handleSubmit = useCallback(
     (event: SubmitEvent<HTMLFormElement>) => {
@@ -97,7 +96,15 @@ export function AskUserComposer({
     [submitDraft],
   );
 
-  if (!args?.question) {
+  const handleCancel = useCallback(() => {
+    if (inputDisabled) {
+      return;
+    }
+    handle.cancel();
+    onSubmitted();
+  }, [handle, inputDisabled, onSubmitted]);
+
+  if (!handle.question) {
     return <div className={loadingClass}>正在加载问题…</div>;
   }
 
@@ -105,12 +112,11 @@ export function AskUserComposer({
     <form className={composerShellClass} onSubmit={handleSubmit}>
       <div className={headerClass}>
         <span className={headerLabelClass}>需要你回答</span>
-        {progressLabel ? <span className={headerMetaClass}>{progressLabel}</span> : null}
-        <span className={headerToolNameClass}>{toolCall.name}</span>
+        <span className={headerToolNameClass}>{handle.toolName}</span>
       </div>
 
-      <p className={questionClass}>{args.question}</p>
-      {args.context ? <p className={contextClass}>{args.context}</p> : null}
+      <p className={questionClass}>{handle.question}</p>
+      {handle.context ? <p className={contextClass}>{handle.context}</p> : null}
 
       {hasChoices ? (
         <div className={choicesClass}>
@@ -136,10 +142,10 @@ export function AskUserComposer({
       ) : null}
 
       <textarea
-        aria-label={args.question}
+        aria-label={handle.question}
         className={composerTextareaClass}
         disabled={inputDisabled}
-        placeholder={args.placeholder ?? "输入你的回答…"}
+        placeholder={handle.placeholder ?? "输入你的回答…"}
         ref={textareaRef}
         rows={4}
         value={draft}
@@ -149,7 +155,17 @@ export function AskUserComposer({
         onKeyDown={handleKeyDown}
       />
 
-      <div className="flex justify-end">
+      <div className="flex justify-end gap-2">
+        <button
+          aria-label="取消回答"
+          className={cancelButtonClass}
+          disabled={inputDisabled}
+          title="取消回答"
+          type="button"
+          onClick={handleCancel}
+        >
+          <span aria-hidden="true" className="icon-[codicon--close] text-sm" />
+        </button>
         <button
           aria-label="提交回答"
           className={sendButtonClass}

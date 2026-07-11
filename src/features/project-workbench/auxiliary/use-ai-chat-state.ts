@@ -35,35 +35,14 @@ export function useAiChatState() {
   const sendMessage = useCallback(
     async (text: string): Promise<boolean> => {
       const normalized = text.trim();
-      if (
-        normalized === "" ||
-        snapshot.pending ||
-        snapshot.awaitingUserInputToolCallIds.length > 0
-      ) {
+      if (normalized === "" || snapshot.pending || snapshot.pendingUserInputs.length > 0) {
         return false;
       }
 
       await Promise.resolve(aiChat.sendMessage(normalized));
       return true;
     },
-    [aiChat, snapshot.awaitingUserInputToolCallIds, snapshot.pending],
-  );
-
-  const submitToolResponse = useCallback(
-    async (toolCallId: string, text: string): Promise<boolean> => {
-      const normalized = text.trim();
-      if (
-        normalized === "" ||
-        snapshot.pending ||
-        !snapshot.awaitingUserInputToolCallIds.includes(toolCallId)
-      ) {
-        return false;
-      }
-
-      await Promise.resolve(aiChat.submitToolResponse(toolCallId, normalized));
-      return true;
-    },
-    [aiChat, snapshot.awaitingUserInputToolCallIds, snapshot.pending],
+    [aiChat, snapshot.pendingUserInputs, snapshot.pending],
   );
 
   const createConversation = useCallback(async (): Promise<void> => {
@@ -86,7 +65,6 @@ export function useAiChatState() {
     loading,
     subscriptionError,
     sendMessage,
-    submitToolResponse,
     createConversation,
     listConversations,
     switchConversation,

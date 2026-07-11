@@ -3,19 +3,13 @@ import { toolResultItem } from "@codehz/ai";
 
 import type { WorktreeSession } from "../../worktree/session";
 import { toErrorMessage } from "../ai-utils";
-import { parseAskUserArgs } from "./ask-user";
+import { AskUserRequestHandleImpl, parseAskUserArgs } from "./ask-user";
 import { type AI_TOOL_NAMES } from "./definitions";
 import { executeReadResourceFile } from "./read-resource-file";
 import { executeListResourceFiles } from "./resource-library";
+import type { UserInputRequest } from "./user-input-types";
 
-export type UserInputRequest = {
-  /** 发起该请求的工具名，供前端按 toolName 分派 UI 组件。 */
-  toolName: string;
-  /** 展示给用户的简短提示（如问题标题）。 */
-  prompt: string;
-  /** 工具自定义的渲染数据，透传给前端对应组件。 */
-  payload: Record<string, unknown>;
-};
+export type { UserInputRequest, UserInputResolver } from "./user-input-types";
 
 export type ToolExecutionResult = {
   toolResult: ToolResultItem;
@@ -28,8 +22,6 @@ export type ResolveWorktree = () => WorktreeSession;
 
 export type ToolRunner = {
   execute(call: ToolCallItem): Promise<ToolExecutionResult>;
-  /** 将用户输入的纯文本构造为 tool_result item，返回给 AI 模型。 */
-  buildUserInputResult(call: ToolCallItem, userText: string): ToolResultItem;
 };
 
 // ---- result helpers ----
@@ -72,12 +64,8 @@ function askUserResult(
     userInputRequest: {
       toolName: call.name,
       prompt: args.question,
-      payload: {
-        question: args.question,
-        context: args.context ?? null,
-        placeholder: args.placeholder ?? null,
-        choices: args.choices ?? null,
-      },
+      createHandle: (resolver) => new AskUserRequestHandleImpl(call, args, resolver),
+      serializable: { toolName: call.name, args },
     },
   };
 }
@@ -115,13 +103,6 @@ export function createToolRunner(resolveWorktree: ResolveWorktree): ToolRunner {
       } catch (error) {
         return err(call, toErrorMessage(error));
       }
-    },
-    buildUserInputResult(call: ToolCallItem, userText: string): ToolResultItem {
-      // Default: wrap as { answer } JSON (compatible with ask_user tool contract).
-      // Specific tools can override by checking call.name in a custom ToolRunner.
-      return toolResultItem(call.id, call.name, "success", [
-        { type: "json", json: { answer: userText } },
-      ]);
     },
   };
 }

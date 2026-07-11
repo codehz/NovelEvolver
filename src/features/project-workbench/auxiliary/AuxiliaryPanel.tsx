@@ -29,7 +29,6 @@ export function AuxiliaryPanel() {
     loading,
     subscriptionError,
     sendMessage,
-    submitToolResponse,
     createConversation,
     listConversations,
     switchConversation,
@@ -39,25 +38,18 @@ export function AuxiliaryPanel() {
   const composerRef = useRef<HTMLTextAreaElement | null>(null);
   const shouldRestoreComposerFocusRef = useRef(false);
 
-  const hasAwaitingUserInput = snapshot.awaitingUserInputToolCallIds.length > 0;
-  const conversationActionsDisabled = loading || snapshot.pending || hasAwaitingUserInput;
-  const [activeUserInputToolCallId, setActiveUserInputToolCallId] = useState<string | null>(null);
+  const hasPendingUserInputs = snapshot.pendingUserInputs.length > 0;
+  const conversationActionsDisabled = loading || snapshot.pending || hasPendingUserInputs;
 
   useEffect(() => {
     endRef.current?.scrollIntoView({ block: "end", behavior: "smooth" });
-  }, [snapshot.messages, snapshot.pending, snapshot.awaitingUserInputToolCallIds]);
-
-  useEffect(() => {
-    if (!hasAwaitingUserInput) {
-      setActiveUserInputToolCallId(null);
-    }
-  }, [hasAwaitingUserInput]);
+  }, [snapshot.messages, snapshot.pending, snapshot.pendingUserInputs]);
 
   useEffect(() => {
     if (
       loading ||
       snapshot.pending ||
-      hasAwaitingUserInput ||
+      hasPendingUserInputs ||
       !shouldRestoreComposerFocusRef.current
     ) {
       return;
@@ -65,7 +57,7 @@ export function AuxiliaryPanel() {
 
     composerRef.current?.focus();
     shouldRestoreComposerFocusRef.current = false;
-  }, [hasAwaitingUserInput, loading, snapshot.pending]);
+  }, [hasPendingUserInputs, loading, snapshot.pending]);
 
   const submitDraft = useCallback(async (): Promise<void> => {
     const submitted = await sendMessage(draft);
@@ -168,13 +160,7 @@ export function AuxiliaryPanel() {
           ) : null}
 
           {snapshot.messages.map((message) => (
-            <AiMessageBlock
-              key={message.id}
-              activeUserInputToolCallId={activeUserInputToolCallId}
-              awaitingUserInputToolCallIds={snapshot.awaitingUserInputToolCallIds}
-              message={message}
-              onSelectUserInputToolCall={setActiveUserInputToolCallId}
-            />
+            <AiMessageBlock key={message.id} message={message} />
           ))}
           <div
             aria-hidden="true"
@@ -185,14 +171,8 @@ export function AuxiliaryPanel() {
       </ScrollArea>
 
       <footer className="shrink-0 p-3">
-        {hasAwaitingUserInput ? (
-          <AskUserComposerPanel
-            activeToolCallId={activeUserInputToolCallId}
-            loading={loading}
-            snapshot={snapshot}
-            onSelectToolCallId={setActiveUserInputToolCallId}
-            onSubmit={submitToolResponse}
-          />
+        {hasPendingUserInputs ? (
+          <AskUserComposerPanel loading={loading} pendingInputs={snapshot.pendingUserInputs} />
         ) : (
           <form className={composerShellClass} onSubmit={handleSubmit}>
             <textarea

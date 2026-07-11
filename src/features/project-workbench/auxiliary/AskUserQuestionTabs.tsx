@@ -1,8 +1,5 @@
 import { cn } from "#app/shared/lib/ui/cn";
 import { scrollbarThinNativeClass } from "#app/shared/lib/ui/scrollbar";
-import type { AiChatToolCall } from "#shared/rpc/ai-rpc";
-
-import { summarizeAskUserQuestion } from "./ask-user-prompt";
 
 const tabsRailClass = cn("flex gap-1.5 overflow-x-auto px-1 pb-1", scrollbarThinNativeClass);
 const tabButtonClass = cn(
@@ -12,52 +9,44 @@ const tabButtonActiveClass = cn("border-ctp-blue/50 bg-app-surface text-app-fore
 const tabButtonIdleClass = cn(
   "border-titlebar-border bg-app-background text-ctp-subtext0 hover:bg-app-surface",
 );
-const tabButtonAnsweredClass = cn("border-titlebar-border bg-app-background text-ctp-subtext1");
 
+/**
+ * 多个待回答问题时切换激活 handle 的标签栏。按 handle 的稳定 key 渲染，
+ * 标签文本来自各 handle 的 `prompt` 摘要。
+ */
 export function AskUserQuestionTabs({
-  toolCalls,
-  activeToolCallId,
-  onSelectToolCallId,
+  keys,
+  summaries,
+  activeKey,
+  onSelectKey,
 }: {
-  toolCalls: AiChatToolCall[];
-  activeToolCallId: string | null;
-  onSelectToolCallId: (toolCallId: string) => void;
+  keys: string[];
+  summaries: string[];
+  activeKey: string | null;
+  onSelectKey: (key: string) => void;
 }) {
-  if (toolCalls.length <= 1) {
+  if (keys.length <= 1) {
     return null;
   }
 
   return (
     <div className={tabsRailClass} role="tablist">
-      {toolCalls.map((toolCall, index) => {
-        const isActive = toolCall.id === activeToolCallId;
-        const isAnswered = toolCall.status === "complete";
-        const label = summarizeAskUserQuestion(toolCall, index);
+      {keys.map((key, index) => {
+        const isActive = key === activeKey;
+        const label = summaries[index] ?? `问题 ${index + 1}`;
 
         return (
           <button
-            key={toolCall.id}
+            key={key}
             aria-selected={isActive}
-            className={cn(
-              tabButtonClass,
-              isActive
-                ? tabButtonActiveClass
-                : isAnswered
-                  ? tabButtonAnsweredClass
-                  : tabButtonIdleClass,
-            )}
+            className={cn(tabButtonClass, isActive ? tabButtonActiveClass : tabButtonIdleClass)}
             role="tab"
             title={label}
             type="button"
             onClick={() => {
-              if (!isAnswered) {
-                onSelectToolCallId(toolCall.id);
-              }
+              onSelectKey(key);
             }}
           >
-            {isAnswered ? (
-              <span aria-hidden="true" className="icon-[codicon--check] text-ctp-green" />
-            ) : null}
             <span className="truncate">{label}</span>
           </button>
         );

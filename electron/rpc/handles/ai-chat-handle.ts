@@ -20,10 +20,6 @@ export class AiChatHandleImpl extends RpcTarget implements AiChatHandle {
     this.#session.sendMessage(text);
   }
 
-  submitToolResponse(toolCallId: string, text: string): void {
-    this.#session.submitToolResponse(toolCallId, text);
-  }
-
   createConversation(): void {
     this.#session.createConversation();
   }

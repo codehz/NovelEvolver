@@ -12,18 +12,11 @@ import {
   toolCallPanelClass,
   toolCallQuestionClass,
   toolCallStatusClass,
-  toolCallToggleActiveClass,
   toolCallToggleClass,
 } from "./ai-chat-ui";
 import { parseAskUserToolArguments } from "./ask-user-prompt";
 
-function AskUserDetail({
-  toolCall,
-  isAwaitingThisTool,
-}: {
-  toolCall: AiChatToolCall;
-  isAwaitingThisTool: boolean;
-}) {
+function AskUserDetail({ toolCall }: { toolCall: AiChatToolCall }) {
   const args = parseAskUserToolArguments(toolCall.argumentsText);
   if (!args?.question) {
     return null;
@@ -34,44 +27,29 @@ function AskUserDetail({
       <p className="mb-1 text-2xs font-medium text-ctp-subtext0">问题</p>
       <p className={toolCallQuestionClass}>{args.question}</p>
       {args.context ? <p className="mt-1 text-2xs text-ctp-subtext1">{args.context}</p> : null}
-      {isAwaitingThisTool ? (
+      {toolCall.status === "awaiting_user" ? (
         <p className="mt-1 text-2xs text-ctp-blue">请在底部输入框回答。</p>
       ) : null}
     </div>
   );
 }
 
-export function AiToolCallBlock({
-  toolCall,
-  awaitingUserInputToolCallIds,
-  activeUserInputToolCallId,
-  onSelectUserInputToolCall,
-}: {
-  toolCall: AiChatToolCall;
-  awaitingUserInputToolCallIds: string[];
-  activeUserInputToolCallId: string | null;
-  onSelectUserInputToolCall: (toolCallId: string) => void;
-}) {
-  const isAwaitingThisTool = awaitingUserInputToolCallIds.includes(toolCall.id);
-  const isActiveUserInput = activeUserInputToolCallId === toolCall.id;
+/**
+ * 工具调用历史展示块（纯展示）。需要用户回答时，交互入口由底部
+ * `AskUserComposerPanel` 中的 handle 提供，此块不再承担选中/激活职责。
+ */
+export function AiToolCallBlock({ toolCall }: { toolCall: AiChatToolCall }) {
   const [expanded, setExpanded] = useState(false);
-
   const statusText = describeToolCallStatus(toolCall.status);
 
   return (
     <section className={toolCallPanelClass}>
       <button
         aria-expanded={expanded}
-        className={cn(
-          toolCallToggleClass,
-          isAwaitingThisTool && isActiveUserInput ? toolCallToggleActiveClass : null,
-        )}
+        className={cn(toolCallToggleClass)}
         title={expanded ? "收起工具调用" : "展开工具调用"}
         type="button"
         onClick={() => {
-          if (isAwaitingThisTool) {
-            onSelectUserInputToolCall(toolCall.id);
-          }
           setExpanded((current) => !current);
         }}
       >
@@ -92,9 +70,7 @@ export function AiToolCallBlock({
             <p className="text-ctp-subtext0">执行工具中...</p>
           ) : null}
 
-          {toolCall.name === "ask_user" ? (
-            <AskUserDetail isAwaitingThisTool={isAwaitingThisTool} toolCall={toolCall} />
-          ) : null}
+          {toolCall.name === "ask_user" ? <AskUserDetail toolCall={toolCall} /> : null}
 
           {toolCall.resultText ? (
             <div>

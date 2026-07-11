@@ -12,17 +12,7 @@ import {
 import { AiReasoningBlock } from "./AiReasoningBlock";
 import { AiToolCallBlock } from "./AiToolCallBlock";
 
-function AiAssistantPartBlock({
-  part,
-  awaitingUserInputToolCallIds,
-  activeUserInputToolCallId,
-  onSelectUserInputToolCall,
-}: {
-  part: AiChatAssistantPart;
-  awaitingUserInputToolCallIds: string[];
-  activeUserInputToolCallId: string | null;
-  onSelectUserInputToolCall: (toolCallId: string) => void;
-}) {
+function AiAssistantPartBlock({ part }: { part: AiChatAssistantPart }) {
   switch (part.type) {
     case "message":
       return (
@@ -37,28 +27,11 @@ function AiAssistantPartBlock({
     case "reasoning":
       return <AiReasoningBlock reasoning={part} />;
     case "tool_call":
-      return (
-        <AiToolCallBlock
-          activeUserInputToolCallId={activeUserInputToolCallId}
-          awaitingUserInputToolCallIds={awaitingUserInputToolCallIds}
-          toolCall={part}
-          onSelectUserInputToolCall={onSelectUserInputToolCall}
-        />
-      );
+      return <AiToolCallBlock toolCall={part} />;
   }
 }
 
-export function AiMessageBlock({
-  message,
-  awaitingUserInputToolCallIds,
-  activeUserInputToolCallId,
-  onSelectUserInputToolCall,
-}: {
-  message: AiChatMessage;
-  awaitingUserInputToolCallIds: string[];
-  activeUserInputToolCallId: string | null;
-  onSelectUserInputToolCall: (toolCallId: string) => void;
-}) {
+export function AiMessageBlock({ message }: { message: AiChatMessage }) {
   if (message.role === "user") {
     return (
       <div className={userMessageRowClass}>
@@ -74,15 +47,7 @@ export function AiMessageBlock({
   return (
     <article className={assistantMessageBlockClass}>
       {message.parts.length > 0 ? (
-        message.parts.map((part) => (
-          <AiAssistantPartBlock
-            key={part.id}
-            activeUserInputToolCallId={activeUserInputToolCallId}
-            awaitingUserInputToolCallIds={awaitingUserInputToolCallIds}
-            part={part}
-            onSelectUserInputToolCall={onSelectUserInputToolCall}
-          />
-        ))
+        message.parts.map((part) => <AiAssistantPartBlock key={part.id} part={part} />)
       ) : (
         <div className={assistantMessageBodyClass}>
           <p className="text-ctp-subtext0">思考中...</p>
