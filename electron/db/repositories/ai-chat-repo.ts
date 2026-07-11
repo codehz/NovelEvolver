@@ -78,7 +78,7 @@ export class AiChatRepository {
     this.#db = db;
   }
 
-  listByProject(projectId: number): AiConversationSummaryRecord[] {
+  listByProject(projectId: number): AiConversationRecord[] {
     const rows = this.#db
       .prepare(
         `
@@ -92,7 +92,7 @@ export class AiChatRepository {
       )
       .all(projectId) as AiConversationRow[];
 
-    return rows.map(rowToSummary);
+    return rows.map(rowToRecord);
   }
 
   getLatestByProject(projectId: number): AiConversationRecord | null {

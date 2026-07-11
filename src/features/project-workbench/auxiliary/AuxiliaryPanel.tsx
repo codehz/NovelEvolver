@@ -39,7 +39,6 @@ export function AuxiliaryPanel() {
   const shouldRestoreComposerFocusRef = useRef(false);
 
   const hasPendingUserInputs = snapshot.pendingUserInputs.length > 0;
-  const conversationActionsDisabled = loading || snapshot.pending || hasPendingUserInputs;
 
   useEffect(() => {
     endRef.current?.scrollIntoView({ block: "end", behavior: "smooth" });
@@ -92,7 +91,7 @@ export function AuxiliaryPanel() {
   );
 
   const handleOpenHistory = useCallback(async () => {
-    if (conversationActionsDisabled) {
+    if (loading) {
       return;
     }
 
@@ -107,16 +106,16 @@ export function AuxiliaryPanel() {
 
     setDraft("");
     await switchConversation(selectedId);
-  }, [conversationActionsDisabled, listConversations, snapshot.conversationId, switchConversation]);
+  }, [listConversations, loading, snapshot.conversationId, switchConversation]);
 
   const handleCreateConversation = useCallback(async () => {
-    if (conversationActionsDisabled) {
+    if (loading) {
       return;
     }
 
     setDraft("");
     await createConversation();
-  }, [conversationActionsDisabled, createConversation]);
+  }, [createConversation, loading]);
 
   const errorMessage = subscriptionError ?? snapshot.errorMessage;
 
@@ -124,7 +123,7 @@ export function AuxiliaryPanel() {
     <>
       <SidebarHeaderActions>
         <SidebarHeaderActionButton
-          disabled={conversationActionsDisabled}
+          disabled={loading}
           icon="icon-[codicon--history]"
           label="历史会话"
           onClick={() => {
@@ -132,7 +131,7 @@ export function AuxiliaryPanel() {
           }}
         />
         <SidebarHeaderActionButton
-          disabled={conversationActionsDisabled}
+          disabled={loading}
           icon="icon-[codicon--add]"
           label="新建会话"
           onClick={() => {

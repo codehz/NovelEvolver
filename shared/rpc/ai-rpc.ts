@@ -119,12 +119,16 @@ export type AiChatSnapshot = {
   errorMessage: string | null;
 };
 
+export type AiConversationActivity = "idle" | "streaming" | "awaiting_user";
+
 export type AiConversationSummary = {
   id: string;
   title: string;
   createdAt: number;
   updatedAt: number;
   lastActiveAt: number;
+  activity: AiConversationActivity;
+  persisted: boolean;
 };
 
 export type AiChatMessagePatch = {

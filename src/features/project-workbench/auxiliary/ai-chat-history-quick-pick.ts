@@ -5,12 +5,31 @@ import {
 } from "#app/shared/lib/quick-pick";
 import type { AiConversationSummary } from "#shared/rpc/ai-rpc";
 
-function formatConversationDetail(conversation: AiConversationSummary): string {
-  try {
-    return new Date(conversation.lastActiveAt).toLocaleString();
-  } catch {
-    return "";
+function formatConversationActivity(conversation: AiConversationSummary): string | null {
+  switch (conversation.activity) {
+    case "streaming":
+      return "生成中";
+    case "awaiting_user":
+      return "等待回答";
+    case "idle":
+      return conversation.persisted ? null : "未保存草稿";
   }
+}
+
+function formatConversationDetail(conversation: AiConversationSummary): string {
+  const parts: string[] = [];
+  const activity = formatConversationActivity(conversation);
+  if (activity) {
+    parts.push(activity);
+  }
+
+  try {
+    parts.push(new Date(conversation.lastActiveAt).toLocaleString());
+  } catch {
+    // Ignore invalid dates; activity text alone is still useful.
+  }
+
+  return parts.join(" · ");
 }
 
 function toListItem(
