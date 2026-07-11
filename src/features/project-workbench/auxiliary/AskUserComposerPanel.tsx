@@ -1,16 +1,15 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 
-import type { AiChatUserInputHandle } from "#shared/rpc/ai-rpc";
+import type { AiChatPendingUserInput } from "#shared/rpc/ai-rpc";
 
 import { AskUserComposer } from "./AskUserComposer";
 import { AskUserQuestionTabs } from "./AskUserQuestionTabs";
-import { handleKey, summarizeHandlePrompt } from "./handle-keys";
+import { pendingInputKey, summarizePendingInput } from "./handle-keys";
 
 /**
- * 当 AI 请求需要用户回答时，底部 composer 区域按 handle.kind 分派渲染对应的输入 UI。
+ * 当 AI 请求需要用户回答时，底部 composer 区域按 pending.kind 分派渲染对应的输入 UI。
  *
- * handle 是服务端推过来的活对象：客户端直接调用 `submitAnswer`/`cancel` 等方法把
- * 类型化的回答交还服务端，无须知道内部 toolCallId，也无须固定的 response 形状。
+ * 展示数据来自按值推送的 DTO；回传通过条目上的瘦 handle（submitAnswer/cancel）。
  * 当前仅支持 `ask_user`；新增工具只需在此 switch 增加一个 case 与对应 composer。
  */
 export function AskUserComposerPanel({
@@ -18,12 +17,12 @@ export function AskUserComposerPanel({
   pendingInputs,
 }: {
   loading: boolean;
-  pendingInputs: AiChatUserInputHandle[];
+  pendingInputs: AiChatPendingUserInput[];
 }) {
   const [activeKey, setActiveKey] = useState<string | null>(null);
   const [draftsByKey, setDraftsByKey] = useState<Record<string, string>>({});
 
-  const pendingKeys = useMemo(() => pendingInputs.map(handleKey), [pendingInputs]);
+  const pendingKeys = useMemo(() => pendingInputs.map(pendingInputKey), [pendingInputs]);
 
   useEffect(() => {
     if (pendingInputs.length === 0) {
@@ -34,16 +33,16 @@ export function AskUserComposerPanel({
     }
   }, [activeKey, pendingInputs, pendingKeys]);
 
-  const activeHandle =
+  const activeInput =
     activeKey === null
       ? null
-      : (pendingInputs.find((handle) => handleKey(handle) === activeKey) ?? null);
+      : (pendingInputs.find((input) => pendingInputKey(input) === activeKey) ?? null);
 
   const handleDraftChange = useCallback((key: string, draft: string) => {
     setDraftsByKey((current) => ({ ...current, [key]: draft }));
   }, []);
 
-  if (pendingInputs.length === 0 || activeHandle === null || activeKey === null) {
+  if (pendingInputs.length === 0 || activeInput === null || activeKey === null) {
     return null;
   }
 
@@ -55,12 +54,12 @@ export function AskUserComposerPanel({
       <AskUserQuestionTabs
         activeKey={activeKeyStr}
         keys={pendingKeys}
-        summaries={pendingInputs.map((handle, index) => summarizeHandlePrompt(handle, index))}
+        summaries={pendingInputs.map((input, index) => summarizePendingInput(input, index))}
         onSelectKey={setActiveKey}
       />
       <AskUserDispatcher
         draft={activeDraft}
-        handle={activeHandle}
+        input={activeInput}
         loading={loading}
         onDraftChange={(draft) => {
           handleDraftChange(activeKeyStr, draft);
@@ -78,24 +77,24 @@ export function AskUserComposerPanel({
 }
 
 function AskUserDispatcher({
-  handle,
+  input,
   loading,
   draft,
   onDraftChange,
   onSubmitted,
 }: {
-  handle: AiChatUserInputHandle;
+  input: AiChatPendingUserInput;
   loading: boolean;
   draft: string;
   onDraftChange: (draft: string) => void;
   onSubmitted: () => void;
 }) {
-  switch (handle.kind) {
+  switch (input.kind) {
     case "ask_user":
       return (
         <AskUserComposer
           draft={draft}
-          handle={handle}
+          input={input}
           loading={loading}
           onDraftChange={onDraftChange}
           onSubmitted={onSubmitted}

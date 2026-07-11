@@ -25,11 +25,12 @@ import type {
   AiChatEvent,
   AiChatMessage,
   AiChatMessagePatch,
+  AiChatPendingUserInput,
   AiChatSnapshot,
   AiChatToolCall,
-  AiChatUserInputHandle,
   AiChatUserMessage,
   AiConversationSummary,
+  AskUserRequestHandle,
 } from "#shared/rpc/ai-rpc";
 
 import type { AiChatRepository, AiConversationRecord } from "../db/repositories/ai-chat-repo";
@@ -42,7 +43,12 @@ import {
   createMockClient,
   toInputItem,
 } from "./mock-adapter";
-import { AskUserRequestHandleImpl, parseAskUserArgs } from "./tools/ask-user";
+import {
+  AskUserRequestHandleImpl,
+  parseAskUserArgs,
+  toAskUserPendingInput,
+  type AskUserArgs,
+} from "./tools/ask-user";
 import { AI_TOOLS } from "./tools/definitions";
 import { createToolRunner, type ResolveWorktree, type ToolRunner } from "./tools/runner";
 import type { UserInputRequest } from "./tools/user-input-types";
@@ -52,7 +58,8 @@ const TITLE_MAX_LENGTH = 40;
 
 type PendingUserInput = {
   callId: string;
-  handle: AiChatUserInputHandle;
+  /** 推给客户端的 DTO + 瘦 handle。 */
+  pending: AiChatPendingUserInput;
   resolverPromise: Promise<ToolResultItem>;
   resolve: (result: ToolResultItem) => void;
   /** 纯数据形式，用于持久化与重开 app 后重建 handle。 */
@@ -307,7 +314,7 @@ export class BranchAiSession {
       messages: this.#messages.map(cloneAiChatMessage),
       pending: this.#pending,
       pendingUserInputs: this.#pendingToolBatch
-        ? this.#pendingToolBatch.pendingInputs.map((input) => input.handle)
+        ? this.#pendingToolBatch.pendingInputs.map((input) => input.pending)
         : [],
       errorMessage: this.#errorMessage,
     };
@@ -436,7 +443,7 @@ export class BranchAiSession {
   }
 
   /**
-   * 从纯数据形式重建一个等待用户输入的 entry：新建 resolver 与 handle，
+   * 从纯数据形式重建一个等待用户输入的 entry：新建 resolver、瘦 handle 与 DTO，
    * 并挂上 `#awaitPendingInputs` 的续接，使重开 app 后用户仍可回答。
    */
   #rebuildPendingUserInput(
@@ -447,37 +454,44 @@ export class BranchAiSession {
     const resolverPromise = new Promise<ToolResultItem>((res) => {
       resolve = res;
     });
-    const handle = this.#createHandleFromSerializable(callId, serializable, { resolve });
-    return { callId, handle, resolverPromise, resolve, serializable };
+    const pending = this.#createPendingFromSerializable(callId, serializable, { resolve });
+    return { callId, pending, resolverPromise, resolve, serializable };
   }
 
-  /** 根据 serializable 的 toolName 分派到对应 handle 工厂。 */
-  #createHandleFromSerializable(
+  /** 根据 serializable 组装客户端 DTO + 瘦 handle。 */
+  #createPendingFromSerializable(
     callId: string,
     serializable: { toolName: string; args: unknown },
     resolver: { resolve: (result: ToolResultItem) => void },
-  ): AiChatUserInputHandle {
+  ): AiChatPendingUserInput {
     if (serializable.toolName === "ask_user") {
-      const args = parseAskUserArgs({
-        type: "tool_call",
+      const call = {
+        type: "tool_call" as const,
         id: callId,
         name: "ask_user",
         argumentsText: JSON.stringify(serializable.args),
         argumentsJson: serializable.args,
-      });
-      return new AskUserRequestHandleImpl(
-        {
-          type: "tool_call",
-          id: callId,
-          name: "ask_user",
-          argumentsText: JSON.stringify(serializable.args),
-          argumentsJson: serializable.args,
-        },
-        args,
-        resolver,
-      );
+      };
+      const args = parseAskUserArgs(call);
+      const handle = new AskUserRequestHandleImpl(call, resolver);
+      return toAskUserPendingInput(args, handle);
     }
     throw new Error(`无法重建未知工具的用户输入 handle: ${serializable.toolName}`);
+  }
+
+  #pendingFromRequest(
+    _call: ToolCallItem,
+    req: UserInputRequest,
+    resolver: { resolve: (result: ToolResultItem) => void },
+  ): AiChatPendingUserInput {
+    const handle = req.createHandle(resolver);
+    if (req.serializable.toolName === "ask_user") {
+      return toAskUserPendingInput(
+        req.serializable.args as AskUserArgs,
+        handle as AskUserRequestHandle,
+      );
+    }
+    throw new Error(`未知工具的用户输入请求: ${req.serializable.toolName}`);
   }
 
   #serializePendingToolBatch(batch: PendingToolBatch | null): string | null {
@@ -870,7 +884,7 @@ export class BranchAiSession {
         const resolverPromise = new Promise<ToolResultItem>((res) => {
           resolve = res;
         });
-        const handle = req.createHandle({ resolve });
+        const pending = this.#pendingFromRequest(call, req, { resolve });
         this.#emitAssistantPartUpdate(assistantMessageId, call.id, {
           status: "awaiting_user",
           resultText: null,
@@ -878,7 +892,7 @@ export class BranchAiSession {
         });
         pendingInputs.push({
           callId: call.id,
-          handle,
+          pending,
           resolverPromise,
           resolve,
           serializable: req.serializable,
@@ -910,7 +924,7 @@ export class BranchAiSession {
           type: "state.updated",
           patch: {
             pending: false,
-            pendingUserInputs: pendingInputs.map((entry) => entry.handle),
+            pendingUserInputs: pendingInputs.map((entry) => entry.pending),
             errorMessage: null,
           },
         },

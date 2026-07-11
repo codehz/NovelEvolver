@@ -11,8 +11,8 @@ const tabButtonIdleClass = cn(
 );
 
 /**
- * 多个待回答问题时切换激活 handle 的标签栏。按 handle 的稳定 key 渲染，
- * 标签文本来自各 handle 的 `prompt` 摘要。
+ * 多个待回答问题时切换激活条目的标签栏。按 pending input 的稳定 key 渲染，
+ * 标签文本来自各条目 DTO 的 `prompt` 摘要。
  */
 export function AskUserQuestionTabs({
   keys,

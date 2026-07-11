@@ -44,37 +44,42 @@ export type AskUserChoice = {
 };
 
 /**
- * 用户输入请求 handle 基接口。
+ * 用户输入请求 handle：仅暴露回传方法。
  *
- * 每个需要用户回答的工具调用会生成一个类型化的 handle，随快照/增量流推给客户端。
- * 客户端持有活对象，按 `kind` 分派 UI，直接调用方法提交回答 —— 无须知道内部 toolCallId，
- * 也无须固定响应类型。新增工具只需新增一个子接口与 `kind`。
+ * Cap'n Web 的 `RpcTarget` 按引用传递，客户端拿到的是 stub；属性读取是异步
+ * `RpcPromise`，不能当作同步字段做 UI 分派。展示数据放在旁路纯 DTO
+ *（`AiChatPendingUserInput`）里随 snapshot/delta 按值推送。
  */
 export interface UserInputRequestHandle extends RpcTarget {
-  /** 判别字段，客户端据此分派 UI 组件。 */
-  readonly kind: string;
-  readonly toolName: string;
-  /** 展示给用户的简短提示（如问题标题）。 */
-  readonly prompt: string;
-}
-
-/**
- * `ask_user` 工具的 typed handle：期望一段文本回答。
- */
-export interface AskUserRequestHandle extends UserInputRequestHandle {
-  readonly kind: "ask_user";
-  readonly question: string;
-  readonly context: string | null;
-  readonly placeholder: string | null;
-  readonly choices: AskUserChoice[] | null;
   /** 提交回答；幂等：重复调用会被忽略。 */
   submitAnswer(text: string): void;
   /** 取消回答，工具将以 rejected 结果返回给 AI。 */
   cancel(): void;
 }
 
-/** 当前所有可能的用户输入请求 handle 联合类型。 */
-export type AiChatUserInputHandle = AskUserRequestHandle;
+/**
+ * `ask_user` 工具的 typed handle：期望一段文本回答。
+ */
+export interface AskUserRequestHandle extends UserInputRequestHandle {}
+
+/**
+ * 需要用户回答的请求视图（按值）+ 提交 handle（按引用）。
+ * 客户端按 `kind` 分派 UI，只读 DTO 字段；回传调用 `handle` 方法。
+ */
+export type AskUserPendingInput = {
+  kind: "ask_user";
+  toolName: "ask_user";
+  /** 展示用简短提示（如问题标题）。 */
+  prompt: string;
+  question: string;
+  context: string | null;
+  placeholder: string | null;
+  choices: AskUserChoice[] | null;
+  handle: AskUserRequestHandle;
+};
+
+/** 当前所有可能的用户输入请求联合类型。 */
+export type AiChatPendingUserInput = AskUserPendingInput;
 
 export type AiChatAssistantPart = AiChatMessagePart | AiChatReasoningPart | AiChatToolCall;
 
@@ -110,7 +115,7 @@ export type AiChatSnapshot = {
   model: string;
   messages: AiChatMessage[];
   pending: boolean;
-  pendingUserInputs: AiChatUserInputHandle[];
+  pendingUserInputs: AiChatPendingUserInput[];
   errorMessage: string | null;
 };
 
@@ -129,7 +134,7 @@ export type AiChatMessagePatch = {
 
 export type AiChatStatePatch = {
   pending?: boolean;
-  pendingUserInputs?: AiChatUserInputHandle[];
+  pendingUserInputs?: AiChatPendingUserInput[];
   errorMessage?: string | null;
 };
 

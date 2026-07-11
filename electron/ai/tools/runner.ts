@@ -64,7 +64,7 @@ function askUserResult(
     userInputRequest: {
       toolName: call.name,
       prompt: args.question,
-      createHandle: (resolver) => new AskUserRequestHandleImpl(call, args, resolver),
+      createHandle: (resolver) => new AskUserRequestHandleImpl(call, resolver),
       serializable: { toolName: call.name, args },
     },
   };

@@ -8,7 +8,7 @@ import {
 } from "react";
 
 import { cn } from "#app/shared/lib/ui/cn";
-import type { AskUserRequestHandle } from "#shared/rpc/ai-rpc";
+import type { AskUserPendingInput } from "#shared/rpc/ai-rpc";
 
 const composerShellClass = cn(
   "mx-auto flex w-full max-w-3xl flex-col gap-2 rounded-xl bg-app-background p-2 ring-1 ring-ctp-blue/30",
@@ -39,17 +39,16 @@ const loadingClass = cn(
 );
 
 /**
- * `ask_user` 工具的输入 UI。直接读取 handle 上类型化的字段（question/choices/...），
- * 提交时调用 `handle.submitAnswer(text)`；handle 自行构造 ToolResultItem 交还服务端。
+ * `ask_user` 工具的输入 UI。展示字段来自 DTO；提交时调用 `input.handle.submitAnswer(text)`。
  */
 export function AskUserComposer({
-  handle,
+  input,
   loading,
   draft,
   onDraftChange,
   onSubmitted,
 }: {
-  handle: AskUserRequestHandle;
+  input: AskUserPendingInput;
   loading: boolean;
   draft: string;
   onDraftChange: (draft: string) => void;
@@ -57,13 +56,13 @@ export function AskUserComposer({
 }) {
   const [submitting, setSubmitting] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
-  const choices = handle.choices ?? [];
+  const choices = input.choices ?? [];
   const hasChoices = choices.length > 0;
   const inputDisabled = loading || submitting;
 
   useEffect(() => {
     textareaRef.current?.focus();
-  }, [handle]);
+  }, [input.handle]);
 
   const submitDraft = useCallback(async (): Promise<void> => {
     if (inputDisabled || draft.trim() === "") {
@@ -71,10 +70,10 @@ export function AskUserComposer({
     }
 
     setSubmitting(true);
-    handle.submitAnswer(draft.trim());
+    input.handle.submitAnswer(draft.trim());
     setSubmitting(false);
     onSubmitted();
-  }, [draft, handle, inputDisabled, onSubmitted]);
+  }, [draft, input.handle, inputDisabled, onSubmitted]);
 
   const handleSubmit = useCallback(
     (event: SubmitEvent<HTMLFormElement>) => {
@@ -100,11 +99,11 @@ export function AskUserComposer({
     if (inputDisabled) {
       return;
     }
-    handle.cancel();
+    input.handle.cancel();
     onSubmitted();
-  }, [handle, inputDisabled, onSubmitted]);
+  }, [input.handle, inputDisabled, onSubmitted]);
 
-  if (!handle.question) {
+  if (!input.question) {
     return <div className={loadingClass}>正在加载问题…</div>;
   }
 
@@ -112,11 +111,11 @@ export function AskUserComposer({
     <form className={composerShellClass} onSubmit={handleSubmit}>
       <div className={headerClass}>
         <span className={headerLabelClass}>需要你回答</span>
-        <span className={headerToolNameClass}>{handle.toolName}</span>
+        <span className={headerToolNameClass}>{input.toolName}</span>
       </div>
 
-      <p className={questionClass}>{handle.question}</p>
-      {handle.context ? <p className={contextClass}>{handle.context}</p> : null}
+      <p className={questionClass}>{input.question}</p>
+      {input.context ? <p className={contextClass}>{input.context}</p> : null}
 
       {hasChoices ? (
         <div className={choicesClass}>
@@ -142,10 +141,10 @@ export function AskUserComposer({
       ) : null}
 
       <textarea
-        aria-label={handle.question}
+        aria-label={input.question}
         className={composerTextareaClass}
         disabled={inputDisabled}
-        placeholder={handle.placeholder ?? "输入你的回答…"}
+        placeholder={input.placeholder ?? "输入你的回答…"}
         ref={textareaRef}
         rows={4}
         value={draft}

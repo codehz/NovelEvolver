@@ -2,7 +2,7 @@ import type { ToolCallItem, ToolResultItem } from "@codehz/ai";
 import { toolResultItem } from "@codehz/ai";
 import { RpcTarget } from "capnweb";
 
-import type { AskUserChoice, AskUserRequestHandle } from "#shared/rpc/ai-rpc";
+import type { AskUserChoice, AskUserPendingInput, AskUserRequestHandle } from "#shared/rpc/ai-rpc";
 
 import type { UserInputResolver } from "./user-input-types";
 import { parseToolArgs } from "./utils";
@@ -21,29 +21,17 @@ export type AskUserResult = {
 /**
  * `ask_user` 工具的 typed handle 实现。
  *
- * 绑定一个 `UserInputResolver`，客户端调用 `submitAnswer`/`cancel` 时构造
- * 对应 `ToolResultItem` 交还 session。幂等：首次调用后 resolver 即置空，
- * 后续调用静默忽略，避免重复提交。
+ * 只暴露 `submitAnswer`/`cancel`（Cap'n Web 按引用）。展示字段由
+ * `toAskUserPendingInput` 打成纯 DTO 随事件按值推送。
+ * 幂等：首次调用后 resolver 即置空，后续调用静默忽略。
  */
 export class AskUserRequestHandleImpl extends RpcTarget implements AskUserRequestHandle {
-  readonly kind = "ask_user" as const;
-  readonly toolName = "ask_user" as const;
-  readonly question: string;
-  readonly context: string | null;
-  readonly placeholder: string | null;
-  readonly choices: AskUserChoice[] | null;
-  readonly prompt: string;
   #callId: string;
   #resolver: UserInputResolver | null;
 
-  constructor(call: ToolCallItem, args: AskUserArgs, resolver: UserInputResolver) {
+  constructor(call: ToolCallItem, resolver: UserInputResolver) {
     super();
     this.#callId = call.id;
-    this.question = args.question;
-    this.context = args.context ?? null;
-    this.placeholder = args.placeholder ?? null;
-    this.choices = args.choices ?? null;
-    this.prompt = args.question;
     this.#resolver = resolver;
   }
 
@@ -70,6 +58,23 @@ export class AskUserRequestHandleImpl extends RpcTarget implements AskUserReques
     ]);
     resolver.resolve(result);
   }
+}
+
+/** 由已解析参数与 handle 组装客户端可用的 pending input 视图。 */
+export function toAskUserPendingInput(
+  args: AskUserArgs,
+  handle: AskUserRequestHandle,
+): AskUserPendingInput {
+  return {
+    kind: "ask_user",
+    toolName: "ask_user",
+    prompt: args.question,
+    question: args.question,
+    context: args.context ?? null,
+    placeholder: args.placeholder ?? null,
+    choices: args.choices ?? null,
+    handle,
+  };
 }
 
 export function parseAskUserArgs(call: ToolCallItem): AskUserArgs {
