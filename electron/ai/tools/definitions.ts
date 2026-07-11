@@ -160,6 +160,147 @@ export const AI_TOOLS_MAP = {
       additionalProperties: false,
     },
   },
+  move_document: {
+    description: "移动章节、手稿文件夹或资源节点到新的父节点下。",
+    inputSchema: {
+      type: "object",
+      properties: {
+        domain: {
+          type: "string",
+          enum: ["manuscript", "resource"],
+        },
+        id: {
+          type: "string",
+        },
+        target_parent_id: {
+          type: "string",
+        },
+        index: {
+          type: "integer",
+          description: "可选，仅手稿域支持，表示在目标父节点子列表中的插入位置。",
+        },
+      },
+      required: ["domain", "id", "target_parent_id"],
+      additionalProperties: false,
+    },
+  },
+  rename_document: {
+    description: "重命名手稿节点（章节或文件夹）或资源节点（文件或文件夹）。",
+    inputSchema: {
+      type: "object",
+      properties: {
+        domain: {
+          type: "string",
+          enum: ["manuscript", "resource"],
+        },
+        id: {
+          type: "string",
+        },
+        name: {
+          type: "string",
+          description: "新标题（手稿）或新名称（资源）。",
+        },
+      },
+      required: ["domain", "id", "name"],
+      additionalProperties: false,
+    },
+  },
+  delete_document: {
+    description:
+      "删除手稿或资源节点。执行前须先通过 ask_user 获得用户明确同意，尤其是会递归删除子节点的文件夹。要求 expected_name 与当前节点标题或名称一致。",
+    inputSchema: {
+      type: "object",
+      properties: {
+        domain: {
+          type: "string",
+          enum: ["manuscript", "resource"],
+        },
+        id: {
+          type: "string",
+        },
+        expected_name: {
+          type: "string",
+          description: "调用方预期的当前节点标题或名称。",
+        },
+      },
+      required: ["domain", "id", "expected_name"],
+      additionalProperties: false,
+    },
+  },
+  get_worktree_changes: {
+    description: "返回当前工作区相对分支基线的未提交变更列表及统计。",
+    inputSchema: {
+      type: "object",
+      properties: {
+        domain: {
+          type: "string",
+          enum: ["manuscript", "resource", "all"],
+          description: '可选，限制返回的变更域；默认 "all"。',
+        },
+      },
+      additionalProperties: false,
+    },
+  },
+  read_document_diff: {
+    description:
+      "读取某章节或资源文件相对当前未提交变更的文本差异（基线正文 vs 当前正文）。仅当该节点存在可预览的未提交文本变更时可用。",
+    inputSchema: {
+      type: "object",
+      properties: {
+        target: {
+          type: "object",
+          properties: {
+            domain: {
+              type: "string",
+              enum: ["manuscript", "resource"],
+            },
+            id: {
+              type: "string",
+            },
+          },
+          required: ["domain", "id"],
+          additionalProperties: false,
+        },
+      },
+      required: ["target"],
+      additionalProperties: false,
+    },
+  },
+  list_document_history: {
+    description: "获取指定章节或资源文件的编辑历史记录。",
+    inputSchema: {
+      type: "object",
+      properties: {
+        domain: {
+          type: "string",
+          enum: ["manuscript", "resource"],
+        },
+        id: {
+          type: "string",
+        },
+        limit: {
+          type: "integer",
+          description: "可选，最多返回条数，默认 50，最大 200。",
+          minimum: 1,
+        },
+      },
+      required: ["domain", "id"],
+      additionalProperties: false,
+    },
+  },
+  read_history_version: {
+    description: "读取某条历史记录保存的正文及变更前正文（若有）。",
+    inputSchema: {
+      type: "object",
+      properties: {
+        entry_id: {
+          type: "string",
+        },
+      },
+      required: ["entry_id"],
+      additionalProperties: false,
+    },
+  },
 } as const satisfies Record<string, Omit<ToolDefinition, "name">>;
 
 export type AI_TOOL_NAMES = keyof typeof AI_TOOLS_MAP;

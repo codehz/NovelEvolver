@@ -6,6 +6,15 @@ import { toErrorMessage } from "../ai-utils";
 import { AskUserRequestHandleImpl, parseAskUserArgs } from "./ask-user";
 import { type AI_TOOL_NAMES } from "./definitions";
 import {
+  executeDeleteDocument,
+  executeGetWorktreeChanges,
+  executeListDocumentHistory,
+  executeMoveDocument,
+  executeReadDocumentDiff,
+  executeReadHistoryVersion,
+  executeRenameDocument,
+} from "./project-edit-tools";
+import {
   executeCreateDocument,
   executeEditTextDocument,
   executeGetProjectStructure,
@@ -103,6 +112,27 @@ const toolHandlers: Partial<Record<AI_TOOL_NAMES, ToolHandler>> = {
   create_document(worktree, call) {
     const output = executeCreateDocument(worktree, call);
     return okJson(call, output);
+  },
+  move_document(worktree, call) {
+    return okJson(call, executeMoveDocument(worktree, call));
+  },
+  rename_document(worktree, call) {
+    return okJson(call, executeRenameDocument(worktree, call));
+  },
+  delete_document(worktree, call) {
+    return okJson(call, executeDeleteDocument(worktree, call));
+  },
+  get_worktree_changes(worktree, call) {
+    return okJson(call, executeGetWorktreeChanges(worktree, call));
+  },
+  read_document_diff(worktree, call) {
+    return okJson(call, executeReadDocumentDiff(worktree, call));
+  },
+  list_document_history(worktree, call) {
+    return okJson(call, executeListDocumentHistory(worktree, call));
+  },
+  read_history_version(worktree, call) {
+    return okJson(call, executeReadHistoryVersion(worktree, call));
   },
 };
 

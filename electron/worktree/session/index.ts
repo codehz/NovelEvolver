@@ -18,6 +18,7 @@ import type { WorktreeSearchQuery, WorktreeSearchResult } from "#shared/rpc/work
 import type { WorktreeRepository } from "../../db/repositories/worktree-repo";
 import type { ObjectDatabase } from "../git/diff-utils";
 import * as changesOps from "./changes-ops";
+import { currentChangesOnlySnapshot } from "./changes-snapshot";
 import { resolveBaseTree } from "./helpers";
 import * as historyOps from "./history-ops";
 import { loadOrSeed } from "./load";
@@ -138,6 +139,10 @@ export class WorktreeSession {
 
   subscribeChanges(): ReadableStream<ChangesEvent> {
     return changesOps.subscribeChanges(this.#state);
+  }
+
+  getChangesSnapshot(): ChangesSnapshot {
+    return currentChangesOnlySnapshot(this.#state);
   }
 
   createManuscriptFolder(parentId: string, title: string, index?: number): WorktreeNodeIdResult {
