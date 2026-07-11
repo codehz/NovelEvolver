@@ -6,7 +6,7 @@ import type { AiChatHandle } from "#shared/rpc/ai-rpc";
 import type { BranchWorkspace } from "#shared/rpc/branch-workspace-rpc";
 import type { BranchSummary, ProjectSession } from "#shared/rpc/project-session-rpc";
 
-import { BranchAiSession } from "../../ai/branch-ai-session";
+import { ProjectAiChatController } from "../../ai/chat/project-ai-chat";
 import type { AiChatRepository } from "../../db/repositories/ai-chat-repo";
 import type { ProjectDbRecord } from "../../db/repositories/projects-repo";
 import type { WorktreeRepository } from "../../db/repositories/worktree-repo";
@@ -34,7 +34,7 @@ export class ProjectSessionImpl extends RpcTarget implements ProjectSession {
   readonly #worktrees: WorktreeRepository;
   readonly #branchWorkspaces = new Map<string, BranchWorkspaceEntry>();
   readonly #metadata: ProjectMetadata;
-  readonly #aiSession: BranchAiSession;
+  readonly #aiChat: ProjectAiChatController;
   readonly #ai: AiChatHandle;
   #disposed = false;
 
@@ -50,13 +50,13 @@ export class ProjectSessionImpl extends RpcTarget implements ProjectSession {
     this.#repo = createSqliteRepository(repoPath);
     this.#worktrees = worktrees;
     this.#metadata = toProjectMetadata(projectRecord);
-    this.#aiSession = new BranchAiSession({
+    this.#aiChat = new ProjectAiChatController({
       projectId,
       repository: aiChatRepository,
       clientLabel: projectRecord.path,
       resolveWorktree: () => this.#resolveCurrentWorktree(),
     });
-    this.#ai = new AiChatHandleImpl(this.#aiSession);
+    this.#ai = new AiChatHandleImpl(this.#aiChat);
   }
 
   get metadata() {
@@ -131,7 +131,7 @@ export class ProjectSessionImpl extends RpcTarget implements ProjectSession {
     }
 
     this.#disposed = true;
-    this.#aiSession[Symbol.dispose]();
+    this.#aiChat[Symbol.dispose]();
 
     for (const entry of this.#branchWorkspaces.values()) {
       entry.workspace[Symbol.dispose]();

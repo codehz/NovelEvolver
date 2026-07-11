@@ -101,9 +101,13 @@ export function applyAiChatAssistantPartPatch(
         ...part,
         argumentsText: patch.argumentsText ?? part.argumentsText,
         status:
-          patch.status === undefined || patch.status === "streaming" || patch.status === "complete"
-            ? part.status
-            : patch.status,
+          patch.status === "pending" ||
+          patch.status === "running" ||
+          patch.status === "awaiting_user" ||
+          patch.status === "complete" ||
+          patch.status === "error"
+            ? patch.status
+            : part.status,
         resultText: patch.resultText !== undefined ? patch.resultText : part.resultText,
         errorMessage: patch.errorMessage !== undefined ? patch.errorMessage : part.errorMessage,
       };

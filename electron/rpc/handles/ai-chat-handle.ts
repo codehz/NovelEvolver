@@ -2,33 +2,33 @@ import { RpcTarget } from "capnweb";
 
 import type { AiChatEvent, AiChatHandle, AiConversationSummary } from "#shared/rpc/ai-rpc";
 
-import type { BranchAiSession } from "../../ai/branch-ai-session";
+import type { ProjectAiChatController } from "../../ai/chat/project-ai-chat";
 
 export class AiChatHandleImpl extends RpcTarget implements AiChatHandle {
-  readonly #session: BranchAiSession;
+  readonly #chat: ProjectAiChatController;
 
-  constructor(session: BranchAiSession) {
+  constructor(chat: ProjectAiChatController) {
     super();
-    this.#session = session;
+    this.#chat = chat;
   }
 
   async subscribeChat(): Promise<ReadableStream<AiChatEvent>> {
-    return this.#session.subscribe();
+    return this.#chat.subscribe();
   }
 
   sendMessage(text: string): void {
-    this.#session.sendMessage(text);
+    this.#chat.sendMessage(text);
   }
 
   createConversation(): void {
-    this.#session.createConversation();
+    this.#chat.createConversation();
   }
 
   listConversations(): AiConversationSummary[] {
-    return this.#session.listConversations();
+    return this.#chat.listConversations();
   }
 
   switchConversation(conversationId: string): void {
-    this.#session.switchConversation(conversationId);
+    this.#chat.switchConversation(conversationId);
   }
 }
