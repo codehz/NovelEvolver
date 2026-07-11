@@ -88,10 +88,7 @@ export const toolCallToggleClass = cn(
 export const toolCallToggleActiveClass = cn("rounded-md ring-1 ring-ctp-blue/40");
 export const toolCallLabelClass = cn("font-medium tracking-[0.02em] text-ctp-blue");
 export const toolCallStatusClass = cn("text-2xs text-ctp-overlay0");
-export const toolCallBodyClass = cn(
-  "flex flex-col gap-2 text-[0.75rem] leading-5 text-app-muted",
-  "[&_pre]:overflow-x-auto [&_pre]:rounded-md [&_pre]:bg-app-background [&_pre]:p-2 [&_pre]:font-mono [&_pre]:text-2xs",
-);
+export const toolCallBodyClass = cn("flex flex-col gap-2 text-[0.75rem] leading-5 text-app-muted");
 export const toolCallQuestionClass = cn("text-[0.75rem] leading-5 text-app-foreground");
 export const warningBannerClass = cn(
   "rounded-md border border-ctp-yellow/40 bg-ctp-yellow/10 px-3 py-2 text-xs break-all whitespace-pre-wrap text-ctp-yellow select-text",
@@ -109,18 +106,6 @@ export function describeToolCallStatus(status: AiChatToolCall["status"]): string
       return "已完成";
     case "error":
       return "失败";
-  }
-}
-
-export function formatToolArguments(argumentsText: string): string {
-  if (argumentsText.trim() === "") {
-    return "{}";
-  }
-
-  try {
-    return JSON.stringify(JSON.parse(argumentsText), null, 2);
-  } catch {
-    return argumentsText;
   }
 }
 

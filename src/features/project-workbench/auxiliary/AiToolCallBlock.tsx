@@ -6,7 +6,6 @@ import type { AiChatToolCall } from "#shared/rpc/ai/index";
 
 import {
   describeToolCallStatus,
-  formatToolArguments,
   toolCallBodyClass,
   toolCallLabelClass,
   toolCallPanelClass,
@@ -14,25 +13,7 @@ import {
   toolCallStatusClass,
   toolCallToggleClass,
 } from "./ai-chat-ui";
-import { parseAskUserToolArguments } from "./ask-user-prompt";
-
-function AskUserDetail({ toolCall }: { toolCall: AiChatToolCall }) {
-  const args = parseAskUserToolArguments(toolCall.argumentsText);
-  if (!args?.question) {
-    return null;
-  }
-
-  return (
-    <div>
-      <p className="mb-1 text-2xs font-medium text-ctp-subtext0">问题</p>
-      <p className={toolCallQuestionClass}>{args.question}</p>
-      {args.context ? <p className="mt-1 text-2xs text-ctp-subtext1">{args.context}</p> : null}
-      {toolCall.status === "awaiting_user" ? (
-        <p className="mt-1 text-2xs text-ctp-blue">请在底部输入框回答。</p>
-      ) : null}
-    </div>
-  );
-}
+import { presentToolCall } from "./ai-tool-presenters";
 
 /**
  * 工具调用历史展示块（纯展示）。需要用户回答时，交互入口由底部
@@ -41,6 +22,7 @@ function AskUserDetail({ toolCall }: { toolCall: AiChatToolCall }) {
 export function AiToolCallBlock({ toolCall }: { toolCall: AiChatToolCall }) {
   const [expanded, setExpanded] = useState(false);
   const statusText = describeToolCallStatus(toolCall.status);
+  const presentation = presentToolCall(toolCall);
 
   return (
     <section className={toolCallPanelClass}>
@@ -54,29 +36,21 @@ export function AiToolCallBlock({ toolCall }: { toolCall: AiChatToolCall }) {
         }}
       >
         <DisclosureChevron expanded={expanded} />
-        <span className={toolCallLabelClass}>工具</span>
-        <span className="truncate font-mono text-ctp-green">{toolCall.name}</span>
+        <span className={toolCallLabelClass}>{presentation.label}</span>
+        <span className="min-w-0 truncate text-ctp-subtext1">{presentation.summary}</span>
         <span className={toolCallStatusClass}>{statusText}</span>
       </button>
 
       {expanded ? (
         <div className={toolCallBodyClass}>
-          <div>
-            <p className="mb-1 text-2xs font-medium text-ctp-subtext0">参数</p>
-            <pre>{formatToolArguments(toolCall.argumentsText)}</pre>
-          </div>
+          {presentation.detail}
 
           {toolCall.status === "running" ? (
             <p className="text-ctp-subtext0">执行工具中...</p>
           ) : null}
 
-          {toolCall.name === "ask_user" ? <AskUserDetail toolCall={toolCall} /> : null}
-
-          {toolCall.resultText ? (
-            <div>
-              <p className="mb-1 text-2xs font-medium text-ctp-subtext0">结果</p>
-              <pre>{toolCall.resultText}</pre>
-            </div>
+          {toolCall.status === "awaiting_user" ? (
+            <p className={toolCallQuestionClass}>请在底部输入框回答。</p>
           ) : null}
 
           {toolCall.errorMessage ? <p className="text-ctp-red">{toolCall.errorMessage}</p> : null}
