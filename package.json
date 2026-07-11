@@ -32,7 +32,7 @@
     "@mogeko/maple-mono-cn": "^7.9.0",
     "@streamdown/cjk": "^1.0.3",
     "bunshi": "^2.2.0",
-    "capnweb": "^0.9.1",
+    "capnweb": "npm:@codehz/capnweb@0.10.0",
     "clsx": "^2.1.1",
     "electron": "^43.0.0",
     "foxact": "^0.3.8",

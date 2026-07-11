@@ -19,7 +19,7 @@
         "@mogeko/maple-mono-cn": "^7.9.0",
         "@streamdown/cjk": "^1.0.3",
         "bunshi": "^2.2.0",
-        "capnweb": "^0.9.1",
+        "capnweb": "npm:@codehz/capnweb@0.10.0",
         "clsx": "^2.1.1",
         "electron": "^43.0.0",
         "foxact": "^0.3.8",
@@ -507,7 +507,7 @@
 
     "call-bind-apply-helpers": ["call-bind-apply-helpers@1.0.2", "", { "dependencies": { "es-errors": "^1.3.0", "function-bind": "^1.1.2" } }, "sha512-Sp1ablJ0ivDkSzjcaJdxEunN5/XvksFJ2sMBFfq6x0ryhQV/2b/KwFe21cMpmHtPOSij8K99/wSfoEuTObmuMQ=="],
 
-    "capnweb": ["capnweb@0.9.1", "", {}, "sha512-VED3cIUFW0HZejPRHsRXjbqDSZJ3bQHyZGmnw6I7AVkNziGvBrtmrY5arx5XkYbIZX9iVEgia4y469AAGIBzxg=="],
+    "capnweb": ["@codehz/capnweb@0.10.0", "", {}, "sha512-A7b6fFKUCxKSrAkjf3wm+OD30JocoUYJImbPzRjK0JBUgTZRE8uFulxJ4x2dOQwtssSSJJOMShhpa55wMaBXMw=="],
 
     "ccount": ["ccount@2.0.1", "", {}, "sha512-eyrF0jiFpY+3drT6383f1qhkbGsLSifNAjA61IUjZjmLCWjItY6LB9ft9YhoDgwfmclB2zhu51Lc7+95b8NRAg=="],
 
