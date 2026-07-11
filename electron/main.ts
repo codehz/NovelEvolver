@@ -61,6 +61,7 @@ void app.whenReady().then(() => {
   rpcServer = new ElectronRpcServer({
     getAppDb,
     getAiModelsStore,
+    mockAiEnabled: process.env.NOVEL_EVOLVER_MOCK_AI === "1",
     getWindowState: (window) => ({
       isFocused: window.isFocused(),
       isMaximized: window.isMaximized(),

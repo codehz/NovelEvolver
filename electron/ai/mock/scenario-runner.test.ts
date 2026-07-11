@@ -1,0 +1,102 @@
+import { describe, expect, it } from "bun:test";
+
+import { collectStream, toolResultItem } from "@codehz/ai";
+import type { InputItem } from "@codehz/ai";
+
+import type { ToolRunner } from "../tools/runner";
+import { getMockScenario, listMockScenarios } from "./scenario-registry";
+import { createScenarioClient } from "./scenario-runner";
+import { createScenarioToolRunner } from "./scenario-tool-runner";
+
+const initialInput: InputItem[] = [
+  {
+    type: "message",
+    role: "user",
+    content: [{ type: "text", text: "run scenario" }],
+  },
+];
+
+describe("mock AI scenario registry", () => {
+  it("has stable unique ids", () => {
+    const ids = listMockScenarios().map((scenario) => scenario.id);
+    expect(ids.length).toBeGreaterThan(0);
+    expect(new Set(ids).size).toBe(ids.length);
+    expect(ids).toContain("stream.basic");
+  });
+});
+
+describe("mock AI scenario runner", () => {
+  it("runs a deterministic instant stream", async () => {
+    const scenario = getMockScenario("stream.basic");
+    const client = createScenarioClient({ scenario, pacing: "instant", clientLabel: "test" });
+    const response = await collectStream(client.stream({ input: initialInput }));
+
+    expect(response.stopReason).toBe("end_turn");
+    expect(response.output.map((item) => item.id)).toEqual([
+      "scenario-basic-reasoning-1",
+      "scenario-basic-message-1",
+      "scenario-basic-reasoning-2",
+      "scenario-basic-message-2",
+    ]);
+    expect(response.usage?.totalTokens).toBe(78);
+  });
+
+  it("selects the follow-up turn from transcript tool results", async () => {
+    const scenario = getMockScenario("tools.simulated-resource-list");
+    const client = createScenarioClient({ scenario, pacing: "instant", clientLabel: "test" });
+    const first = await collectStream(client.stream({ input: initialInput }));
+    expect(first.toolCalls.map((call) => call.id)).toEqual(["scenario-simulated-list"]);
+
+    const result = toolResultItem("scenario-simulated-list", "list_resource_files", "success", [
+      { type: "json", json: { files: [] } },
+    ]);
+    const second = await collectStream(
+      client.stream({ input: [...initialInput, ...first.replay, result] }),
+    );
+    expect(second.text).toContain("模拟工具已返回固定数据");
+    expect(second.toolCalls).toHaveLength(0);
+  });
+
+  it("reports an interrupted stream", async () => {
+    const scenario = getMockScenario("errors.interrupted-stream");
+    const client = createScenarioClient({ scenario, pacing: "instant", clientLabel: "test" });
+    let streamError: unknown = null;
+    try {
+      await collectStream(client.stream({ input: initialInput }));
+    } catch (error) {
+      streamError = error;
+    }
+    expect(streamError).toBeInstanceOf(Error);
+  });
+
+  it("preserves provider warnings for the application state", async () => {
+    const scenario = getMockScenario("errors.provider-warning");
+    const client = createScenarioClient({ scenario, pacing: "instant", clientLabel: "test" });
+    const response = await collectStream(client.stream({ input: initialInput }));
+    expect(response.warnings).toContain("这是可恢复的测试警告，响应仍会继续。");
+    expect(response.text).toContain("正文已正常完成");
+  });
+});
+
+describe("scenario tool runner", () => {
+  it("uses the fixed simulated result without invoking the real runner", async () => {
+    const scenario = getMockScenario("tools.simulated-resource-list");
+    const realRunner: ToolRunner = {
+      async execute() {
+        throw new Error("real runner must not execute");
+      },
+    };
+    const runner = createScenarioToolRunner(realRunner, scenario);
+    const execution = await runner.execute({
+      type: "tool_call",
+      id: "scenario-simulated-list",
+      name: "list_resource_files",
+      argumentsText: "{}",
+      argumentsJson: {},
+    });
+
+    expect(execution.errorMessage).toBeNull();
+    expect(execution.resultText).toContain("世界观.md");
+    expect(execution.toolResult.outcome).toBe("success");
+  });
+});

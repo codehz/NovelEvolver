@@ -50,7 +50,9 @@ export function AiMessageBlock({ message }: { message: AiChatMessage }) {
         message.parts.map((part) => <AiAssistantPartBlock key={part.id} part={part} />)
       ) : (
         <div className={assistantMessageBodyClass}>
-          <p className="text-ctp-subtext0">思考中...</p>
+          <p className="text-ctp-subtext0">
+            {message.status === "streaming" ? "思考中..." : "未生成正文。"}
+          </p>
         </div>
       )}
 

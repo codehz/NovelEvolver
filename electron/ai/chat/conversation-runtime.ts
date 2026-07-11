@@ -18,7 +18,11 @@ import type {
 import type { AiChatRepository, AiConversationRecord } from "../../db/repositories/ai-chat-repo";
 import { RpcStreamPublisher } from "../../lib/stream-publisher";
 import { joinContentBlocksText, toErrorMessage } from "../ai-utils";
-import { AI_INSTRUCTIONS, createMockClient, toInputItem } from "../mock-adapter";
+import { createAiBackendSession } from "../backend/create-ai-backend";
+import { toInputItem } from "../mock-adapter";
+import { getMockScenario } from "../mock/scenario-registry";
+import { createScenarioToolRunner } from "../mock/scenario-tool-runner";
+import type { MockScenarioPacing, MockScenarioPersistence } from "../mock/scenario-types";
 import { AI_TOOLS } from "../tools/definitions";
 import { createToolRunner, type ResolveWorktree, type ToolRunner } from "../tools/runner";
 import { AiConversationState } from "./conversation-state";
@@ -32,7 +36,12 @@ export type AiConversationRuntimeOptions = {
   resolveWorktree: ResolveWorktree;
   clientLabel?: string;
   record?: AiConversationRecord | null;
+  scenarioId?: string | null;
+  pacing?: MockScenarioPacing;
+  persistence?: MockScenarioPersistence;
 };
+
+const MAX_TOOL_ROUNDS = 16;
 
 export class AiConversationRuntime {
   readonly #client: AIClient;
@@ -43,19 +52,36 @@ export class AiConversationRuntime {
   #disposed = false;
 
   constructor(options: AiConversationRuntimeOptions) {
-    this.#client = createMockClient(options.clientLabel ?? `project-${options.projectId}`);
-    this.#toolRunner = createToolRunner(options.resolveWorktree);
+    const scenarioId = options.record?.scenarioId ?? options.scenarioId ?? null;
+    const backend = createAiBackendSession({
+      clientLabel: options.clientLabel ?? `project-${options.projectId}`,
+      scenarioId,
+      pacing: options.pacing,
+    });
+    this.#client = backend.client;
+    const realToolRunner = createToolRunner(options.resolveWorktree);
+    this.#toolRunner = createScenarioToolRunner(
+      realToolRunner,
+      scenarioId ? getMockScenario(scenarioId) : null,
+    );
     this.#state = new AiConversationState({
       projectId: options.projectId,
       repository: options.repository,
       record: options.record,
+      adapterKind: backend.adapterKind,
+      model: backend.model,
+      scenarioId: backend.scenarioId,
+      persistence: options.persistence ?? "persistent",
     });
+    this.#instructions = backend.instructions;
 
     const pendingToolBatch = this.#state.pendingToolBatch;
     if (pendingToolBatch && pendingToolBatch.pendingInputs.length > 0) {
       void this.#awaitPendingInputs(pendingToolBatch);
     }
   }
+
+  readonly #instructions: string;
 
   get conversationId(): string {
     return this.#state.conversationId;
@@ -67,6 +93,10 @@ export class AiConversationRuntime {
 
   get isPureDraft(): boolean {
     return this.#state.isPureDraft;
+  }
+
+  get persistence(): MockScenarioPersistence {
+    return this.#state.persistence;
   }
 
   subscribe(): ReadableStream<AiChatEvent> {
@@ -185,13 +215,14 @@ export class AiConversationRuntime {
     let input = [...context.requestInput];
     const transcript = context.transcript ? [...context.transcript] : [...context.requestInput];
     let completedResponse: AIResponse | null = null;
+    let toolRoundCount = 0;
 
     try {
       while (true) {
         const streamStartPartCount = this.#state.countAssistantParts(context.assistantMessageId);
         completedResponse = await this.#consumeStream(
           this.#client.stream({
-            instructions: AI_INSTRUCTIONS,
+            instructions: this.#instructions,
             input,
             tools: AI_TOOLS,
           }),
@@ -212,6 +243,11 @@ export class AiConversationRuntime {
           completedResponse.toolCalls.length === 0
         ) {
           break;
+        }
+
+        toolRoundCount += 1;
+        if (toolRoundCount > MAX_TOOL_ROUNDS) {
+          throw new Error(`AI 工具循环超过 ${MAX_TOOL_ROUNDS} 轮。`);
         }
 
         input = [...input, ...completedResponse.replay];

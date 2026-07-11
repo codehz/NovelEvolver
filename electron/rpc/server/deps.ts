@@ -6,6 +6,7 @@ import type { AiModelsStore } from "../../settings/ai-models-store";
 export type RpcMainDeps = {
   getAppDb: () => AppDatabase;
   getAiModelsStore: () => AiModelsStore;
+  mockAiEnabled: boolean;
   getWindowState: (window: BrowserWindow) => {
     isFocused: boolean;
     isMaximized: boolean;

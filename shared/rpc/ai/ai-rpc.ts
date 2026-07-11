@@ -9,6 +9,12 @@ export type AiChatMessageUsage = {
   totalTokens?: number;
 };
 
+export type AiChatWarning = {
+  id: string;
+  message: string;
+  code: string | null;
+};
+
 export type AiChatMessageStatus = "streaming" | "complete";
 export type AiChatReasoningVisibility = "full" | "summary" | "redacted" | "opaque";
 export type AiChatToolCallStatus = "pending" | "running" | "awaiting_user" | "complete" | "error";
@@ -113,6 +119,8 @@ export type AiChatSnapshot = {
   conversationId: string;
   adapterKind: "mock";
   model: string;
+  scenarioId: string | null;
+  warnings: AiChatWarning[];
   messages: AiChatMessage[];
   pending: boolean;
   pendingUserInputs: AiChatPendingUserInput[];
@@ -129,6 +137,7 @@ export type AiConversationSummary = {
   lastActiveAt: number;
   activity: AiConversationActivity;
   persisted: boolean;
+  scenarioId: string | null;
 };
 
 export type AiChatMessagePatch = {
@@ -145,6 +154,10 @@ export type AiChatStatePatch = {
 export type AiChatDeltaOp =
   | {
       type: "conversation.reset";
+    }
+  | {
+      type: "warning.added";
+      warning: AiChatWarning;
     }
   | {
       type: "message.added";

@@ -1,19 +1,13 @@
 import type { InputItem, ToolCallItem, ToolResultItem } from "@codehz/ai";
 
-import type { AiChatPendingUserInput, AskUserRequestHandle } from "#shared/rpc/ai/index";
+import type { AiChatPendingUserInput } from "#shared/rpc/ai/index";
 
 import {
-  AskUserRequestHandleImpl,
-  parseAskUserArgs,
-  toAskUserPendingInput,
-  type AskUserArgs,
-} from "../tools/ask-user";
-import type { UserInputRequest, UserInputResolver } from "../tools/user-input-types";
-
-type PendingUserInputSerializable = {
-  toolName: string;
-  args: unknown;
-};
+  createPendingViewFromRequest,
+  createPendingViewFromSerializable,
+  type PendingUserInputSerializable,
+} from "../tools/user-input-contributions";
+import type { UserInputRequest } from "../tools/user-input-types";
 
 export type PendingUserInput = {
   callId: string;
@@ -52,27 +46,6 @@ function createResolver(): Pick<PendingUserInput, "resolverPromise" | "resolve">
   return { resolverPromise, resolve };
 }
 
-function createPendingViewFromSerializable(
-  callId: string,
-  serializable: PendingUserInputSerializable,
-  resolver: UserInputResolver,
-): AiChatPendingUserInput {
-  if (serializable.toolName === "ask_user") {
-    const call = {
-      type: "tool_call" as const,
-      id: callId,
-      name: "ask_user",
-      argumentsText: JSON.stringify(serializable.args),
-      argumentsJson: serializable.args,
-    };
-    const args = parseAskUserArgs(call);
-    const handle = new AskUserRequestHandleImpl(call, resolver);
-    return toAskUserPendingInput(args, handle);
-  }
-
-  throw new Error(`无法重建未知工具的用户输入 handle: ${serializable.toolName}`);
-}
-
 export function createPendingUserInputFromSerializable(
   callId: string,
   serializable: PendingUserInputSerializable,
@@ -95,21 +68,13 @@ export function createPendingUserInputFromRequest(
 ): PendingUserInput {
   const resolver = createResolver();
   const handle = request.createHandle({ resolve: resolver.resolve });
-
-  if (request.serializable.toolName === "ask_user") {
-    return {
-      callId: call.id,
-      pending: toAskUserPendingInput(
-        request.serializable.args as AskUserArgs,
-        handle as AskUserRequestHandle,
-      ),
-      resolverPromise: resolver.resolverPromise,
-      resolve: resolver.resolve,
-      serializable: request.serializable,
-    };
-  }
-
-  throw new Error(`未知工具的用户输入请求: ${request.serializable.toolName}`);
+  return {
+    callId: call.id,
+    pending: createPendingViewFromRequest(request, handle),
+    resolverPromise: resolver.resolverPromise,
+    resolve: resolver.resolve,
+    serializable: request.serializable,
+  };
 }
 
 export function parsePendingToolBatch(json: string | null): PendingToolBatch | null {

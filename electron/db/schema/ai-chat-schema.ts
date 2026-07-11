@@ -18,9 +18,11 @@ export function initAiChatSchema(db: DatabaseSync): void {
       last_active_at INTEGER NOT NULL,
       adapter_kind TEXT NOT NULL,
       model TEXT NOT NULL,
+      scenario_id TEXT,
       messages_json TEXT NOT NULL,
       history_json TEXT NOT NULL,
       pending_tool_batch_json TEXT,
+      warnings_json TEXT NOT NULL DEFAULT '[]',
       error_message TEXT,
       PRIMARY KEY (id),
       FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE
@@ -29,4 +31,12 @@ export function initAiChatSchema(db: DatabaseSync): void {
     CREATE INDEX IF NOT EXISTS idx_ai_conversation_project_active
       ON ai_conversation(project_id, last_active_at DESC);
   `);
+
+  const columns = db.prepare("PRAGMA table_info(ai_conversation)").all() as { name: string }[];
+  if (!columns.some((column) => column.name === "scenario_id")) {
+    db.exec("ALTER TABLE ai_conversation ADD COLUMN scenario_id TEXT");
+  }
+  if (!columns.some((column) => column.name === "warnings_json")) {
+    db.exec("ALTER TABLE ai_conversation ADD COLUMN warnings_json TEXT NOT NULL DEFAULT '[]'");
+  }
 }

@@ -2,7 +2,7 @@ import type { RpcTarget } from "capnweb";
 
 import type { ProjectMetadata } from "#shared/project";
 
-import type { AiChatHandle } from "../ai/ai-rpc";
+import type { AiChatHandle, MockAiControlHandle } from "../ai/index";
 import type { BranchWorkspace } from "./branch-workspace-rpc";
 
 /** Summary for a repository branch tip. */
@@ -26,6 +26,8 @@ export interface ProjectSession extends RpcTarget {
   readonly branches: BranchSummary[];
   /** Project-scoped AI chat handle (shared across branches). */
   readonly ai: AiChatHandle;
+  /** Returns null when mock AI test controls are disabled in the main process. */
+  getMockAiControl(): MockAiControlHandle | null;
   checkoutBranch(name: string): void;
   /**
    * Opens the draft workspace for `name` (branch name). Persisted under key

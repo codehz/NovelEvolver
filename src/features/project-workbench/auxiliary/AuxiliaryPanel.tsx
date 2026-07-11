@@ -11,6 +11,7 @@ import { cn } from "#app/shared/lib/ui/cn";
 import { ScrollArea } from "#app/shared/ui/ScrollArea";
 import { SidebarHeaderActionButton, SidebarHeaderActions } from "#workbench/chrome";
 
+import { useProjectContext } from "../state/molecules";
 import { pickAiConversation } from "./ai-chat-history-quick-pick";
 import {
   composerShellClass,
@@ -21,9 +22,11 @@ import {
 } from "./ai-chat-ui";
 import { AiMessageBlock } from "./AiMessageBlock";
 import { AskUserComposerPanel } from "./AskUserComposerPanel";
+import { pickMockAiScenario } from "./mock-scenario-quick-pick";
 import { useAiChatState } from "./use-ai-chat-state";
 
 export function AuxiliaryPanel() {
+  const project = useProjectContext();
   const {
     snapshot,
     loading,
@@ -34,11 +37,24 @@ export function AuxiliaryPanel() {
     switchConversation,
   } = useAiChatState();
   const [draft, setDraft] = useState("");
+  const [mockAiAvailable, setMockAiAvailable] = useState(false);
   const endRef = useRef<HTMLDivElement | null>(null);
   const composerRef = useRef<HTMLTextAreaElement | null>(null);
   const shouldRestoreComposerFocusRef = useRef(false);
 
   const hasPendingUserInputs = snapshot.pendingUserInputs.length > 0;
+
+  useEffect(() => {
+    let active = true;
+    void Promise.resolve(project.getMockAiControl()).then((control) => {
+      if (active) {
+        setMockAiAvailable(control !== null);
+      }
+    });
+    return () => {
+      active = false;
+    };
+  }, [project]);
 
   useEffect(() => {
     endRef.current?.scrollIntoView({ block: "end", behavior: "smooth" });
@@ -117,11 +133,40 @@ export function AuxiliaryPanel() {
     await createConversation();
   }, [createConversation, loading]);
 
+  const handleRunMockScenario = useCallback(async () => {
+    if (loading) {
+      return;
+    }
+    const control = await Promise.resolve(project.getMockAiControl());
+    if (!control) {
+      return;
+    }
+    const scenarios = await Promise.resolve(control.listScenarios());
+    const scenarioId = await pickMockAiScenario(scenarios);
+    if (!scenarioId) {
+      return;
+    }
+    setDraft("");
+    await Promise.resolve(
+      control.runScenario({ scenarioId, pacing: "preview", persistence: "persistent" }),
+    );
+  }, [loading, project]);
+
   const errorMessage = subscriptionError ?? snapshot.errorMessage;
 
   return (
     <>
       <SidebarHeaderActions>
+        {mockAiAvailable ? (
+          <SidebarHeaderActionButton
+            disabled={loading || snapshot.pending}
+            icon="icon-[codicon--beaker]"
+            label="运行 AI 测试场景"
+            onClick={() => {
+              void handleRunMockScenario();
+            }}
+          />
+        ) : null}
         <SidebarHeaderActionButton
           disabled={loading}
           icon="icon-[codicon--history]"
@@ -142,11 +187,26 @@ export function AuxiliaryPanel() {
 
       <ScrollArea className="min-h-0 flex-1" fill>
         <div className={cn(panelSectionClass, conversationRailClass, "text-sm")}>
+          {snapshot.scenarioId ? (
+            <div className="text-2xs text-ctp-subtext0">
+              测试场景 · <span className="font-mono text-ctp-mauve">{snapshot.scenarioId}</span>
+            </div>
+          ) : null}
           {errorMessage ? (
             <div className="rounded-xl border border-ctp-red/40 bg-ctp-red/10 px-3 py-2 text-xs text-ctp-red">
               {errorMessage}
             </div>
           ) : null}
+
+          {snapshot.warnings.map((warning) => (
+            <div
+              className="rounded-md border border-ctp-yellow/40 bg-ctp-yellow/10 px-3 py-2 text-xs text-ctp-yellow"
+              key={warning.id}
+            >
+              {warning.code ? <span className="font-mono">{warning.code}: </span> : null}
+              {warning.message}
+            </div>
+          ))}
 
           {loading ? (
             <div className="rounded-xl bg-app-background p-3 text-center text-xs text-ctp-subtext0">

@@ -2,7 +2,7 @@ import { RpcTarget } from "capnweb";
 import { createSqliteRepository } from "nano-git/repository/sqlite";
 
 import type { ProjectMetadata } from "#shared/project";
-import type { AiChatHandle } from "#shared/rpc/ai/index";
+import type { AiChatHandle, MockAiControlHandle } from "#shared/rpc/ai/index";
 import type { BranchWorkspace } from "#shared/rpc/session/index";
 import type { BranchSummary, ProjectSession } from "#shared/rpc/session/index";
 
@@ -13,6 +13,7 @@ import type { WorktreeRepository } from "../../db/repositories/worktree-repo";
 import { toProjectMetadata } from "../../projects/home-path";
 import { WorktreeSession } from "../../worktree/session";
 import { AiChatHandleImpl } from "../handles/ai-chat-handle";
+import { MockAiControlHandleImpl } from "../handles/mock-ai-control-handle";
 import { BranchWorkspaceImpl } from "./branch-workspace";
 
 type BranchWorkspaceEntry = {
@@ -36,6 +37,7 @@ export class ProjectSessionImpl extends RpcTarget implements ProjectSession {
   readonly #metadata: ProjectMetadata;
   readonly #aiChat: ProjectAiChatController;
   readonly #ai: AiChatHandle;
+  readonly #mockAi: MockAiControlHandle | null;
   #disposed = false;
 
   constructor(
@@ -44,6 +46,7 @@ export class ProjectSessionImpl extends RpcTarget implements ProjectSession {
     worktrees: WorktreeRepository,
     projectRecord: ProjectDbRecord,
     aiChatRepository: AiChatRepository,
+    mockAiEnabled: boolean,
   ) {
     super();
     this.#projectId = projectId;
@@ -57,6 +60,7 @@ export class ProjectSessionImpl extends RpcTarget implements ProjectSession {
       resolveWorktree: () => this.#resolveCurrentWorktree(),
     });
     this.#ai = new AiChatHandleImpl(this.#aiChat);
+    this.#mockAi = mockAiEnabled ? new MockAiControlHandleImpl(this.#aiChat) : null;
   }
 
   get metadata() {
@@ -79,6 +83,10 @@ export class ProjectSessionImpl extends RpcTarget implements ProjectSession {
 
   get ai(): AiChatHandle {
     return this.#ai;
+  }
+
+  getMockAiControl(): MockAiControlHandle | null {
+    return this.#mockAi;
   }
 
   checkoutBranch(name: string): void {

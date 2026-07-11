@@ -2,9 +2,9 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 
 import type { AiChatPendingUserInput } from "#shared/rpc/ai/index";
 
-import { AskUserComposer } from "./AskUserComposer";
 import { AskUserQuestionTabs } from "./AskUserQuestionTabs";
 import { pendingInputKey, summarizePendingInput } from "./handle-keys";
+import { PendingInputComposer } from "./pending-input-contributions";
 
 /**
  * 当 AI 请求需要用户回答时，底部 composer 区域按 pending.kind 分派渲染对应的输入 UI。
@@ -57,7 +57,7 @@ export function AskUserComposerPanel({
         summaries={pendingInputs.map((input, index) => summarizePendingInput(input, index))}
         onSelectKey={setActiveKey}
       />
-      <AskUserDispatcher
+      <PendingInputComposer
         draft={activeDraft}
         input={activeInput}
         loading={loading}
@@ -74,33 +74,4 @@ export function AskUserComposerPanel({
       />
     </div>
   );
-}
-
-function AskUserDispatcher({
-  input,
-  loading,
-  draft,
-  onDraftChange,
-  onSubmitted,
-}: {
-  input: AiChatPendingUserInput;
-  loading: boolean;
-  draft: string;
-  onDraftChange: (draft: string) => void;
-  onSubmitted: () => void;
-}) {
-  switch (input.kind) {
-    case "ask_user":
-      return (
-        <AskUserComposer
-          draft={draft}
-          input={input}
-          loading={loading}
-          onDraftChange={onDraftChange}
-          onSubmitted={onSubmitted}
-        />
-      );
-    default:
-      return null;
-  }
 }

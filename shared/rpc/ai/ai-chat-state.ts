@@ -13,6 +13,8 @@ export function createInitialAiChatSnapshot(model = "mock-assistant"): AiChatSna
     conversationId: "",
     adapterKind: "mock",
     model,
+    scenarioId: null,
+    warnings: [],
     messages: [],
     pending: false,
     pendingUserInputs: [],
@@ -152,6 +154,13 @@ export function applyAiChatEvent(snapshot: AiChatSnapshot, event: AiChatEvent): 
           pending: false,
           pendingUserInputs: [],
           errorMessage: null,
+          warnings: [],
+        };
+        break;
+      case "warning.added":
+        next = {
+          ...next,
+          warnings: [...next.warnings, { ...op.warning }],
         };
         break;
       case "message.added":

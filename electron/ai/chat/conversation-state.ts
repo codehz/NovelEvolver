@@ -19,13 +19,13 @@ import type {
   AiChatSnapshot,
   AiChatToolCall,
   AiChatUserMessage,
+  AiChatWarning,
   AiConversationActivity,
   AiConversationSummary,
 } from "#shared/rpc/ai/index";
 
 import type { AiChatRepository, AiConversationRecord } from "../../db/repositories/ai-chat-repo";
 import { joinContentBlocksText, toMessageUsage } from "../ai-utils";
-import { AI_ADAPTER_KIND, AI_MODEL } from "../mock-adapter";
 import {
   parsePendingToolBatch,
   serializePendingToolBatch,
@@ -39,6 +39,10 @@ type AiConversationStateOptions = {
   projectId: number;
   repository: AiChatRepository;
   record?: AiConversationRecord | null;
+  adapterKind: "mock";
+  model: string;
+  scenarioId: string | null;
+  persistence: "persistent" | "ephemeral";
 };
 
 function applyToolCallStatusPatch(
@@ -70,15 +74,21 @@ export function recordToConversationSummary(record: AiConversationRecord): AiCon
     lastActiveAt: record.lastActiveAt,
     activity: recordToConversationActivity(record),
     persisted: true,
+    scenarioId: record.scenarioId,
   };
 }
 
 export class AiConversationState {
   readonly #projectId: number;
   readonly #repository: AiChatRepository;
+  readonly #adapterKind: "mock";
+  readonly #model: string;
+  readonly #scenarioId: string | null;
+  readonly #persistence: "persistent" | "ephemeral";
   readonly #messages: AiChatMessage[] = [];
   readonly #messageIndexById = new Map<string, number>();
   readonly #history: InputItem[] = [];
+  readonly #warnings: AiChatWarning[] = [];
   #conversationId = "";
   #title = EMPTY_TITLE;
   #createdAt = 0;
@@ -95,6 +105,10 @@ export class AiConversationState {
   constructor(options: AiConversationStateOptions) {
     this.#projectId = options.projectId;
     this.#repository = options.repository;
+    this.#adapterKind = options.adapterKind;
+    this.#model = options.model;
+    this.#scenarioId = options.scenarioId;
+    this.#persistence = options.persistence;
     if (options.record) {
       this.#loadRecord(options.record);
       return;
@@ -108,6 +122,10 @@ export class AiConversationState {
 
   get persisted(): boolean {
     return this.#persisted;
+  }
+
+  get persistence(): "persistent" | "ephemeral" {
+    return this.#persistence;
   }
 
   get pending(): boolean {
@@ -131,8 +149,10 @@ export class AiConversationState {
   getSnapshot(): AiChatSnapshot {
     return {
       conversationId: this.#conversationId,
-      adapterKind: AI_ADAPTER_KIND,
-      model: AI_MODEL,
+      adapterKind: this.#adapterKind,
+      model: this.#model,
+      scenarioId: this.#scenarioId,
+      warnings: this.#warnings.map((warning) => ({ ...warning })),
       messages: this.#messages.map(cloneAiChatMessage),
       pending: this.#pending,
       pendingUserInputs: this.#pendingToolBatch
@@ -151,6 +171,7 @@ export class AiConversationState {
       lastActiveAt: this.#lastActiveAt,
       activity: this.#activity,
       persisted: this.#persisted,
+      scenarioId: this.#scenarioId,
     };
   }
 
@@ -160,6 +181,12 @@ export class AiConversationState {
 
   persistIfNeeded(): void {
     if (!this.#dirty) {
+      return;
+    }
+
+    if (this.#persistence === "ephemeral") {
+      this.#dirty = false;
+      this.#persisted = false;
       return;
     }
 
@@ -193,11 +220,13 @@ export class AiConversationState {
       createdAt: this.#createdAt,
       updatedAt: this.#updatedAt,
       lastActiveAt: this.#lastActiveAt,
-      adapterKind: AI_ADAPTER_KIND,
-      model: AI_MODEL,
+      adapterKind: this.#adapterKind,
+      model: this.#model,
+      scenarioId: this.#scenarioId,
       messagesJson: JSON.stringify(this.#messages.map(cloneAiChatMessage)),
       historyJson: JSON.stringify(this.#history),
       pendingToolBatchJson: serializePendingToolBatch(this.#pendingToolBatch),
+      warningsJson: JSON.stringify(this.#warnings),
       errorMessage: this.#errorMessage,
     };
     this.#repository.upsert(record);
@@ -379,6 +408,17 @@ export class AiConversationState {
   }
 
   handleStreamEvent(event: AIStreamEvent, assistantMessageId: string): AiChatDeltaOp[] {
+    if (event.type === "response.warning") {
+      const warning: AiChatWarning = {
+        id: `${assistantMessageId}-warning-${event.sequence}`,
+        message: event.message,
+        code: event.code ?? null,
+      };
+      this.#warnings.push(warning);
+      this.#markDirty();
+      return [{ type: "warning.added", warning: { ...warning } }];
+    }
+
     if (event.type === "message.started") {
       return this.#addAssistantPart(assistantMessageId, {
         id: event.item.id,
@@ -475,6 +515,7 @@ export class AiConversationState {
     this.#messages.length = 0;
     this.#messageIndexById.clear();
     this.#history.length = 0;
+    this.#warnings.length = 0;
     this.#pendingToolBatch = null;
     this.#pending = false;
     this.#errorMessage = null;
@@ -506,6 +547,8 @@ export class AiConversationState {
 
     this.#history.length = 0;
     this.#history.push(...this.#parseHistory(record.historyJson));
+    this.#warnings.length = 0;
+    this.#warnings.push(...this.#parseWarnings(record.warningsJson));
     this.#pendingToolBatch = parsePendingToolBatch(record.pendingToolBatchJson);
   }
 
@@ -538,6 +581,15 @@ export class AiConversationState {
         return [];
       }
       return parsed as InputItem[];
+    } catch {
+      return [];
+    }
+  }
+
+  #parseWarnings(json: string): AiChatWarning[] {
+    try {
+      const parsed = JSON.parse(json) as unknown;
+      return Array.isArray(parsed) ? (parsed as AiChatWarning[]) : [];
     } catch {
       return [];
     }

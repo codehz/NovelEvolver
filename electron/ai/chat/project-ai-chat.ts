@@ -2,6 +2,8 @@ import type { AiChatEvent, AiConversationSummary } from "#shared/rpc/ai/index";
 
 import type { AiChatRepository, AiConversationRecord } from "../../db/repositories/ai-chat-repo";
 import { RpcStreamPublisher } from "../../lib/stream-publisher";
+import { getMockScenario } from "../mock/scenario-registry";
+import type { MockScenarioPacing, MockScenarioPersistence } from "../mock/scenario-types";
 import { type ResolveWorktree } from "../tools/runner";
 import { AiConversationRuntime, type AiConversationRuntimeOptions } from "./conversation-runtime";
 import { recordToConversationSummary } from "./conversation-state";
@@ -61,6 +63,30 @@ export class ProjectAiChatController {
     this.#setActiveRuntime(this.#createRuntime(), true);
   }
 
+  runScenario(options: {
+    scenarioId: string;
+    pacing: MockScenarioPacing;
+    persistence: MockScenarioPersistence;
+  }): void {
+    const scenario = getMockScenario(options.scenarioId);
+    this.#getActiveRuntime().persistIfNeeded();
+    const runtime = this.#createRuntime(null, options);
+    this.#setActiveRuntime(runtime, true);
+    runtime.sendMessage(scenario.initialPrompt);
+  }
+
+  rerunActiveScenario(): void {
+    const snapshot = this.#getActiveRuntime().getSnapshot();
+    if (!snapshot.scenarioId) {
+      throw new Error("当前会话不是 mock AI 测试场景。");
+    }
+    this.runScenario({
+      scenarioId: snapshot.scenarioId,
+      pacing: "preview",
+      persistence: this.#getActiveRuntime().persistence,
+    });
+  }
+
   listConversations(): AiConversationSummary[] {
     const summaries = new Map<string, AiConversationSummary>();
 
@@ -69,6 +95,9 @@ export class ProjectAiChatController {
     }
 
     for (const runtime of this.#runtimes.values()) {
+      if (runtime.persistence === "ephemeral") {
+        continue;
+      }
       summaries.set(runtime.conversationId, runtime.getSummary());
     }
 
@@ -118,10 +147,20 @@ export class ProjectAiChatController {
     }
   }
 
-  #createRuntime(record?: AiConversationRecord | null): AiConversationRuntime {
+  #createRuntime(
+    record?: AiConversationRecord | null,
+    scenario?: {
+      scenarioId: string;
+      pacing: MockScenarioPacing;
+      persistence: MockScenarioPersistence;
+    },
+  ): AiConversationRuntime {
     const runtime = new AiConversationRuntime({
       ...this.#runtimeOptions,
       record,
+      scenarioId: scenario?.scenarioId,
+      pacing: scenario?.pacing,
+      persistence: scenario?.persistence,
     });
     this.#runtimes.set(runtime.conversationId, runtime);
     return runtime;
