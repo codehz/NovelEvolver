@@ -112,9 +112,12 @@ function targetFields(args: JsonObject | null): { domain: string | null; id: str
 const askUserPresenter: ToolPresenter = (toolCall) => {
   const args = parseAskUserToolArguments(toolCall.argumentsText);
   const question = args?.question ?? "等待补充信息";
+  const answer = getString(parseObject(toolCall.resultText), "answer");
+  const selectedChoice = args?.choices?.find((choice) => choice.title === answer);
   return {
     label: "询问用户",
     summary: question,
+    indicator: toolCall.status === "complete" ? "已选择" : undefined,
     detail: args ? (
       <DetailList>
         <DetailField label="问题">{question}</DetailField>
@@ -132,6 +135,20 @@ const askUserPresenter: ToolPresenter = (toolCall) => {
                 </li>
               ))}
             </ul>
+          </DetailField>
+        ) : null}
+        {answer ? (
+          <DetailField label={selectedChoice ? "已选选项" : "用户输入"}>
+            {selectedChoice ? (
+              <>
+                {selectedChoice.title}
+                {selectedChoice.description ? (
+                  <span className="text-ctp-subtext0"> — {selectedChoice.description}</span>
+                ) : null}
+              </>
+            ) : (
+              answer
+            )}
           </DetailField>
         ) : null}
       </DetailList>
