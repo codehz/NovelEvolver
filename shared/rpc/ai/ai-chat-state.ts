@@ -13,6 +13,7 @@ export function createInitialAiChatSnapshot(model = "mock-assistant"): AiChatSna
     conversationId: "",
     adapterKind: "mock",
     model,
+    selectedModelId: "",
     scenarioId: null,
     warnings: [],
     messages: [],

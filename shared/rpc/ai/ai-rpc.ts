@@ -115,10 +115,32 @@ export type AiChatAssistantMessage = {
 
 export type AiChatMessage = AiChatUserMessage | AiChatAssistantMessage;
 
+/** Sentinel id for the built-in mock provider (only listed when mock AI is enabled). */
+export const MOCK_AI_MODEL_ID = "mock" as const;
+
+export type AiChatSelectableModelKind =
+  | "mock"
+  | "responses"
+  | "chat-completions"
+  | "messages"
+  | "ollama";
+
+/** Model option shown in the chat composer selector. */
+export type AiChatSelectableModel = {
+  id: string;
+  name: string;
+  kind: AiChatSelectableModelKind;
+  /** Provider model id / display model string. */
+  model: string;
+  isDefault: boolean;
+};
+
 export type AiChatSnapshot = {
   conversationId: string;
   adapterKind: "mock";
   model: string;
+  /** User-selected model config id (`MOCK_AI_MODEL_ID` for mock). Empty when none. */
+  selectedModelId: string;
   scenarioId: string | null;
   warnings: AiChatWarning[];
   messages: AiChatMessage[];
@@ -149,6 +171,7 @@ export type AiChatStatePatch = {
   pending?: boolean;
   pendingUserInputs?: AiChatPendingUserInput[];
   errorMessage?: string | null;
+  selectedModelId?: string;
 };
 
 export type AiChatDeltaOp =
@@ -212,4 +235,6 @@ export interface AiChatHandle extends RpcTarget {
   createConversation(): void;
   listConversations(): AiConversationSummary[];
   switchConversation(conversationId: string): void;
+  listSelectableModels(): AiChatSelectableModel[];
+  setSelectedModel(modelId: string): void;
 }

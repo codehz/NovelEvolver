@@ -18,6 +18,7 @@ export function initAiChatSchema(db: DatabaseSync): void {
       last_active_at INTEGER NOT NULL,
       adapter_kind TEXT NOT NULL,
       model TEXT NOT NULL,
+      selected_model_id TEXT NOT NULL DEFAULT '',
       scenario_id TEXT,
       messages_json TEXT NOT NULL,
       history_json TEXT NOT NULL,
@@ -38,5 +39,8 @@ export function initAiChatSchema(db: DatabaseSync): void {
   }
   if (!columns.some((column) => column.name === "warnings_json")) {
     db.exec("ALTER TABLE ai_conversation ADD COLUMN warnings_json TEXT NOT NULL DEFAULT '[]'");
+  }
+  if (!columns.some((column) => column.name === "selected_model_id")) {
+    db.exec("ALTER TABLE ai_conversation ADD COLUMN selected_model_id TEXT NOT NULL DEFAULT ''");
   }
 }

@@ -2,7 +2,11 @@ import { useCallback, useEffect, useState } from "react";
 
 import { consumeRpcSubscription } from "#app/shared/lib/rpc/app-rpc-react";
 import { applyAiChatEvent, createInitialAiChatSnapshot } from "#shared/rpc/ai/index";
-import type { AiChatSnapshot, AiConversationSummary } from "#shared/rpc/ai/index";
+import type {
+  AiChatSelectableModel,
+  AiChatSnapshot,
+  AiConversationSummary,
+} from "#shared/rpc/ai/index";
 
 import { useAiChat } from "../branch/branch-scopes";
 
@@ -60,6 +64,17 @@ export function useAiChatState() {
     [aiChat],
   );
 
+  const listSelectableModels = useCallback(async (): Promise<AiChatSelectableModel[]> => {
+    return await Promise.resolve(aiChat.listSelectableModels());
+  }, [aiChat]);
+
+  const setSelectedModel = useCallback(
+    async (modelId: string): Promise<void> => {
+      await Promise.resolve(aiChat.setSelectedModel(modelId));
+    },
+    [aiChat],
+  );
+
   return {
     snapshot,
     loading,
@@ -68,5 +83,7 @@ export function useAiChatState() {
     createConversation,
     listConversations,
     switchConversation,
+    listSelectableModels,
+    setSelectedModel,
   };
 }

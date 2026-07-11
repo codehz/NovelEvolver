@@ -39,6 +39,8 @@ export type AiConversationRuntimeOptions = {
   scenarioId?: string | null;
   pacing?: MockScenarioPacing;
   persistence?: MockScenarioPersistence;
+  /** Initial selected model id for new conversations (ignored when loading a record with a stored id). */
+  selectedModelId?: string;
 };
 
 const MAX_TOOL_ROUNDS = 16;
@@ -70,6 +72,7 @@ export class AiConversationRuntime {
       record: options.record,
       adapterKind: backend.adapterKind,
       model: backend.model,
+      selectedModelId: options.selectedModelId ?? "",
       scenarioId: backend.scenarioId,
       persistence: options.persistence ?? "persistent",
     });
@@ -97,6 +100,32 @@ export class AiConversationRuntime {
 
   get persistence(): MockScenarioPersistence {
     return this.#state.persistence;
+  }
+
+  get selectedModelId(): string {
+    return this.#state.selectedModelId;
+  }
+
+  setSelectedModelId(modelId: string): void {
+    if (this.#state.selectedModelId === modelId) {
+      return;
+    }
+    if (this.#state.pending || this.#state.pendingToolBatch !== null) {
+      throw new Error("AI 请求处理中，无法切换模型。");
+    }
+    this.#state.setSelectedModelId(modelId);
+    this.#state.persistIfNeeded();
+    this.#emit({
+      kind: "delta",
+      ops: [
+        {
+          type: "state.updated",
+          patch: {
+            selectedModelId: modelId,
+          },
+        },
+      ],
+    });
   }
 
   subscribe(): ReadableStream<AiChatEvent> {

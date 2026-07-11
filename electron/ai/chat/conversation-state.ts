@@ -41,6 +41,7 @@ type AiConversationStateOptions = {
   record?: AiConversationRecord | null;
   adapterKind: "mock";
   model: string;
+  selectedModelId: string;
   scenarioId: string | null;
   persistence: "persistent" | "ephemeral";
 };
@@ -95,6 +96,7 @@ export class AiConversationState {
   #updatedAt = 0;
   #lastActiveAt = 0;
   #status: "active" | "archived" = "active";
+  #selectedModelId = "";
   #pendingToolBatch: PendingToolBatch | null = null;
   #pending = false;
   #errorMessage: string | null = null;
@@ -109,6 +111,7 @@ export class AiConversationState {
     this.#model = options.model;
     this.#scenarioId = options.scenarioId;
     this.#persistence = options.persistence;
+    this.#selectedModelId = options.selectedModelId;
     if (options.record) {
       this.#loadRecord(options.record);
       return;
@@ -146,11 +149,16 @@ export class AiConversationState {
     );
   }
 
+  get selectedModelId(): string {
+    return this.#selectedModelId;
+  }
+
   getSnapshot(): AiChatSnapshot {
     return {
       conversationId: this.#conversationId,
       adapterKind: this.#adapterKind,
       model: this.#model,
+      selectedModelId: this.#selectedModelId,
       scenarioId: this.#scenarioId,
       warnings: this.#warnings.map((warning) => ({ ...warning })),
       messages: this.#messages.map(cloneAiChatMessage),
@@ -222,6 +230,7 @@ export class AiConversationState {
       lastActiveAt: this.#lastActiveAt,
       adapterKind: this.#adapterKind,
       model: this.#model,
+      selectedModelId: this.#selectedModelId,
       scenarioId: this.#scenarioId,
       messagesJson: JSON.stringify(this.#messages.map(cloneAiChatMessage)),
       historyJson: JSON.stringify(this.#history),
@@ -246,6 +255,14 @@ export class AiConversationState {
 
   setErrorMessage(errorMessage: string | null): void {
     this.#errorMessage = errorMessage;
+    this.#markDirty();
+  }
+
+  setSelectedModelId(selectedModelId: string): void {
+    if (this.#selectedModelId === selectedModelId) {
+      return;
+    }
+    this.#selectedModelId = selectedModelId;
     this.#markDirty();
   }
 
@@ -531,6 +548,7 @@ export class AiConversationState {
     this.#updatedAt = record.updatedAt;
     this.#lastActiveAt = record.lastActiveAt;
     this.#status = record.status;
+    this.#selectedModelId = record.selectedModelId || this.#selectedModelId;
     this.#pending = false;
     this.#errorMessage = record.errorMessage;
     this.#dirty = false;

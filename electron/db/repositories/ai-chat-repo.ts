@@ -12,6 +12,7 @@ export type AiConversationSummaryRecord = {
   lastActiveAt: number;
   adapterKind: string;
   model: string;
+  selectedModelId: string;
   scenarioId: string | null;
 };
 
@@ -33,6 +34,7 @@ type AiConversationRow = {
   last_active_at: number;
   adapter_kind: string;
   model: string;
+  selected_model_id: string | null;
   scenario_id: string | null;
   messages_json: string;
   history_json: string;
@@ -56,6 +58,7 @@ function rowToSummary(row: AiConversationRow): AiConversationSummaryRecord {
     lastActiveAt: row.last_active_at,
     adapterKind: row.adapter_kind,
     model: row.model,
+    selectedModelId: row.selected_model_id ?? "",
     scenarioId: row.scenario_id,
   };
 }
@@ -90,7 +93,7 @@ export class AiChatRepository {
         `
         SELECT
           id, project_id, title, status, created_at, updated_at, last_active_at,
-          adapter_kind, model, scenario_id, messages_json, history_json, pending_tool_batch_json, warnings_json, error_message
+          adapter_kind, model, selected_model_id, scenario_id, messages_json, history_json, pending_tool_batch_json, warnings_json, error_message
         FROM ai_conversation
         WHERE project_id = ? AND status = 'active'
         ORDER BY last_active_at DESC
@@ -107,7 +110,7 @@ export class AiChatRepository {
         `
         SELECT
           id, project_id, title, status, created_at, updated_at, last_active_at,
-          adapter_kind, model, scenario_id, messages_json, history_json, pending_tool_batch_json, warnings_json, error_message
+          adapter_kind, model, selected_model_id, scenario_id, messages_json, history_json, pending_tool_batch_json, warnings_json, error_message
         FROM ai_conversation
         WHERE project_id = ? AND status = 'active'
         ORDER BY last_active_at DESC
@@ -125,7 +128,7 @@ export class AiChatRepository {
         `
         SELECT
           id, project_id, title, status, created_at, updated_at, last_active_at,
-          adapter_kind, model, scenario_id, messages_json, history_json, pending_tool_batch_json, warnings_json, error_message
+          adapter_kind, model, selected_model_id, scenario_id, messages_json, history_json, pending_tool_batch_json, warnings_json, error_message
         FROM ai_conversation
         WHERE project_id = ? AND id = ?
         `,
@@ -141,8 +144,8 @@ export class AiChatRepository {
         `
         INSERT INTO ai_conversation (
           id, project_id, title, status, created_at, updated_at, last_active_at,
-          adapter_kind, model, scenario_id, messages_json, history_json, pending_tool_batch_json, warnings_json, error_message
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+          adapter_kind, model, selected_model_id, scenario_id, messages_json, history_json, pending_tool_batch_json, warnings_json, error_message
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         ON CONFLICT(id) DO UPDATE SET
           project_id = excluded.project_id,
           title = excluded.title,
@@ -151,6 +154,7 @@ export class AiChatRepository {
           last_active_at = excluded.last_active_at,
           adapter_kind = excluded.adapter_kind,
           model = excluded.model,
+          selected_model_id = excluded.selected_model_id,
           scenario_id = excluded.scenario_id,
           messages_json = excluded.messages_json,
           history_json = excluded.history_json,
@@ -169,6 +173,7 @@ export class AiChatRepository {
         record.lastActiveAt,
         record.adapterKind,
         record.model,
+        record.selectedModelId,
         record.scenarioId,
         record.messagesJson,
         record.historyJson,

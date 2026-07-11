@@ -1,6 +1,11 @@
 import { RpcTarget } from "capnweb";
 
-import type { AiChatEvent, AiChatHandle, AiConversationSummary } from "#shared/rpc/ai/index";
+import type {
+  AiChatEvent,
+  AiChatHandle,
+  AiChatSelectableModel,
+  AiConversationSummary,
+} from "#shared/rpc/ai/index";
 
 import type { ProjectAiChatController } from "../../ai/chat/project-ai-chat";
 
@@ -30,5 +35,13 @@ export class AiChatHandleImpl extends RpcTarget implements AiChatHandle {
 
   switchConversation(conversationId: string): void {
     this.#chat.switchConversation(conversationId);
+  }
+
+  listSelectableModels(): AiChatSelectableModel[] {
+    return this.#chat.listSelectableModels();
+  }
+
+  setSelectedModel(modelId: string): void {
+    this.#chat.setSelectedModel(modelId);
   }
 }

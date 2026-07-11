@@ -9,6 +9,7 @@ import {
 
 import { cn } from "#app/shared/lib/ui/cn";
 import { ScrollArea } from "#app/shared/ui/ScrollArea";
+import type { AiChatSelectableModel } from "#shared/rpc/ai/index";
 import { SidebarHeaderActionButton, SidebarHeaderActions } from "#workbench/chrome";
 
 import { useProjectContext } from "../state/molecules";
@@ -17,12 +18,15 @@ import {
   composerShellClass,
   composerTextareaClass,
   conversationRailClass,
+  modelSelectorButtonClass,
+  modelSelectorLabelClass,
   panelSectionClass,
   sendButtonClass,
 } from "./ai-chat-ui";
 import { AiMessageBlock } from "./AiMessageBlock";
 import { AskUserComposerPanel } from "./AskUserComposerPanel";
 import { pickMockAiScenario } from "./mock-scenario-quick-pick";
+import { pickAiChatModel } from "./model-selector-quick-pick";
 import { useAiChatState } from "./use-ai-chat-state";
 
 export function AuxiliaryPanel() {
@@ -35,9 +39,12 @@ export function AuxiliaryPanel() {
     createConversation,
     listConversations,
     switchConversation,
+    listSelectableModels,
+    setSelectedModel,
   } = useAiChatState();
   const [draft, setDraft] = useState("");
   const [mockAiAvailable, setMockAiAvailable] = useState(false);
+  const [selectableModels, setSelectableModels] = useState<AiChatSelectableModel[]>([]);
   const endRef = useRef<HTMLDivElement | null>(null);
   const composerRef = useRef<HTMLTextAreaElement | null>(null);
   const shouldRestoreComposerFocusRef = useRef(false);
@@ -55,6 +62,18 @@ export function AuxiliaryPanel() {
       active = false;
     };
   }, [project]);
+
+  useEffect(() => {
+    let active = true;
+    void listSelectableModels().then((models) => {
+      if (active) {
+        setSelectableModels(models);
+      }
+    });
+    return () => {
+      active = false;
+    };
+  }, [listSelectableModels, snapshot.selectedModelId]);
 
   useEffect(() => {
     endRef.current?.scrollIntoView({ block: "end", behavior: "smooth" });
@@ -152,7 +171,27 @@ export function AuxiliaryPanel() {
     );
   }, [loading, project]);
 
+  const handlePickModel = useCallback(async () => {
+    if (loading || snapshot.pending) {
+      return;
+    }
+    const models = await listSelectableModels();
+    setSelectableModels(models);
+    const selectedId = await pickAiChatModel(models, snapshot.selectedModelId);
+    if (!selectedId || selectedId === snapshot.selectedModelId) {
+      return;
+    }
+    await setSelectedModel(selectedId);
+  }, [listSelectableModels, loading, setSelectedModel, snapshot.pending, snapshot.selectedModelId]);
+
   const errorMessage = subscriptionError ?? snapshot.errorMessage;
+  const selectedModel =
+    selectableModels.find((model) => model.id === snapshot.selectedModelId) ?? null;
+  const selectedModelLabel = selectedModel?.name
+    ? selectedModel.name
+    : snapshot.selectedModelId
+      ? "未知模型"
+      : "选择模型";
 
   return (
     <>
@@ -248,7 +287,24 @@ export function AuxiliaryPanel() {
               disabled={loading || snapshot.pending}
             />
 
-            <div className="flex justify-end">
+            <div className="flex items-center justify-end gap-2">
+              <button
+                aria-label="选择模型"
+                className={modelSelectorButtonClass}
+                disabled={loading || snapshot.pending}
+                title={selectedModelLabel}
+                type="button"
+                onClick={() => {
+                  void handlePickModel();
+                }}
+              >
+                <span aria-hidden="true" className="icon-[codicon--hubot] shrink-0 text-sm" />
+                <span className={modelSelectorLabelClass}>{selectedModelLabel}</span>
+                <span
+                  aria-hidden="true"
+                  className="icon-[codicon--chevron-down] shrink-0 text-xs opacity-70"
+                />
+              </button>
               <button
                 aria-label="发送"
                 className={sendButtonClass}
