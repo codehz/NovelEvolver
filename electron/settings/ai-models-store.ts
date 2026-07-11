@@ -10,7 +10,7 @@ import type {
   AiModelConfigWrite,
   AiModelsSettingsSnapshot,
 } from "#shared/rpc/services/index";
-import { AI_ADAPTER_KINDS } from "#shared/rpc/services/index";
+import { AI_ADAPTER_KINDS, DEFAULT_AI_MODEL_MAX_OUTPUT_TOKENS } from "#shared/rpc/services/index";
 
 const FILE_VERSION = 1 as const;
 
@@ -20,6 +20,7 @@ type StoredModelRecord = {
   kind: AiAdapterKind;
   model: string;
   baseUrl: string;
+  maxOutputTokens: number;
   /** Base64 of `safeStorage.encryptString`; empty/missing = no key. */
   apiKeyCipher?: string;
 };
@@ -31,6 +32,7 @@ export type AiModelRuntimeConfig = {
   model: string;
   baseUrl: string;
   apiKey: string | null;
+  maxOutputTokens: number;
 };
 
 type StoredFile = {
@@ -57,6 +59,7 @@ function toPublic(record: StoredModelRecord): AiModelConfigPublic {
     model: record.model,
     baseUrl: record.baseUrl,
     hasApiKey: Boolean(record.apiKeyCipher),
+    maxOutputTokens: record.maxOutputTokens,
   };
 }
 
@@ -117,6 +120,8 @@ export class AiModelsStore {
       throw new Error("不支持的 API 形式。");
     }
 
+    const maxOutputTokens = parseMaxOutputTokensFromWrite(input);
+
     if (input.id) {
       const index = this.#data.models.findIndex((entry) => entry.id === input.id);
       if (index < 0) {
@@ -140,6 +145,7 @@ export class AiModelsStore {
         kind,
         model,
         baseUrl,
+        maxOutputTokens,
         apiKeyCipher,
       };
     } else {
@@ -154,6 +160,7 @@ export class AiModelsStore {
         kind,
         model,
         baseUrl,
+        maxOutputTokens,
         apiKeyCipher,
       });
     }
@@ -206,6 +213,7 @@ export class AiModelsStore {
       model: record.model,
       baseUrl: record.baseUrl,
       apiKey,
+      maxOutputTokens: record.maxOutputTokens,
     };
   }
 
@@ -238,6 +246,7 @@ export class AiModelsStore {
         kind: entry.kind,
         model: entry.model,
         baseUrl: entry.baseUrl,
+        maxOutputTokens: entry.maxOutputTokens,
         ...(entry.apiKeyCipher ? { apiKeyCipher: entry.apiKeyCipher } : {}),
       })),
     };
@@ -275,6 +284,7 @@ function normalizeStoredFile(value: unknown): StoredFile {
       kind: entry.kind,
       model: entry.model,
       baseUrl: typeof entry.baseUrl === "string" ? entry.baseUrl : "",
+      maxOutputTokens: normalizeMaxOutputTokens(entry.maxOutputTokens),
       apiKeyCipher: typeof entry.apiKeyCipher === "string" ? entry.apiKeyCipher : undefined,
     });
   }
@@ -291,4 +301,23 @@ function normalizeStoredFile(value: unknown): StoredFile {
     defaultModelId,
     models,
   };
+}
+
+function normalizeMaxOutputTokens(value: unknown): number {
+  if (typeof value !== "number" || !Number.isFinite(value)) {
+    return DEFAULT_AI_MODEL_MAX_OUTPUT_TOKENS;
+  }
+  const rounded = Math.trunc(value);
+  if (rounded < 1) {
+    return DEFAULT_AI_MODEL_MAX_OUTPUT_TOKENS;
+  }
+  return rounded;
+}
+
+function parseMaxOutputTokensFromWrite(input: AiModelConfigWrite): number {
+  const normalized = normalizeMaxOutputTokens(input.maxOutputTokens);
+  if (normalized > 2_000_000) {
+    throw new Error("最大输出 token 不能超过 2000000。");
+  }
+  return normalized;
 }

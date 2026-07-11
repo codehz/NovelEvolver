@@ -1,9 +1,14 @@
 import { useId, useState, type SubmitEvent } from "react";
 
+import { cn } from "#app/shared/lib/ui/cn";
 import type {
   AiAdapterKind,
   AiModelConfigPublic,
   AiModelConfigWrite,
+} from "#shared/rpc/services/index";
+import {
+  DEFAULT_AI_MODEL_MAX_OUTPUT_TOKENS,
+  isLowMaxOutputTokensForNovelAgent,
 } from "#shared/rpc/services/index";
 
 import {
@@ -26,6 +31,7 @@ type FormState = {
   baseUrl: string;
   apiKey: string;
   clearApiKey: boolean;
+  maxOutputTokens: string;
 };
 
 type AiModelConfigFormProps = {
@@ -44,8 +50,25 @@ function toFormState(initial?: AiModelConfigPublic | null): FormState {
     baseUrl: initial?.baseUrl ?? "",
     apiKey: "",
     clearApiKey: false,
+    maxOutputTokens: String(initial?.maxOutputTokens ?? DEFAULT_AI_MODEL_MAX_OUTPUT_TOKENS),
   };
 }
+
+function parseMaxOutputTokensField(raw: string): number | null {
+  const trimmed = raw.trim();
+  if (trimmed === "") {
+    return null;
+  }
+  const value = Number(trimmed);
+  if (!Number.isFinite(value) || !Number.isInteger(value) || value < 1) {
+    return null;
+  }
+  return value;
+}
+
+const maxOutputTokensWarningClass = cn(
+  "rounded-md border border-ctp-yellow/40 bg-ctp-yellow/10 px-2 py-1.5 text-2xs text-ctp-yellow",
+);
 
 export function AiModelConfigForm({
   initial = null,
@@ -57,12 +80,18 @@ export function AiModelConfigForm({
   const formId = useId();
   const isEdit = initial != null;
   const [form, setForm] = useState<FormState>(() => toFormState(initial));
+  const [maxOutputTokensError, setMaxOutputTokensError] = useState<string | null>(null);
+
+  const parsedMaxOutputTokens = parseMaxOutputTokensField(form.maxOutputTokens);
+  const showLowMaxOutputTokensWarning =
+    parsedMaxOutputTokens !== null && isLowMaxOutputTokensForNovelAgent(parsedMaxOutputTokens);
 
   const nameId = `${formId}-name`;
   const kindId = `${formId}-kind`;
   const modelId = `${formId}-model`;
   const baseUrlId = `${formId}-base-url`;
   const apiKeyId = `${formId}-api-key`;
+  const maxOutputTokensId = `${formId}-max-output-tokens`;
 
   const update = <K extends keyof FormState>(key: K, value: FormState[K]) => {
     setForm((prev) => ({ ...prev, [key]: value }));
@@ -71,12 +100,20 @@ export function AiModelConfigForm({
   const handleSubmit = (event: SubmitEvent<HTMLFormElement>) => {
     event.preventDefault();
 
+    const maxOutputTokens = parseMaxOutputTokensField(form.maxOutputTokens);
+    if (maxOutputTokens === null) {
+      setMaxOutputTokensError("请输入大于 0 的整数作为最大输出 token。");
+      return;
+    }
+    setMaxOutputTokensError(null);
+
     const payload: AiModelConfigWrite = {
       ...(isEdit ? { id: initial.id } : {}),
       name: form.name,
       kind: form.kind,
       model: form.model,
       baseUrl: form.baseUrl,
+      maxOutputTokens,
     };
 
     if (isEdit) {
@@ -206,6 +243,41 @@ export function AiModelConfigForm({
               />
               清除已保存的 API Key
             </label>
+          ) : null}
+        </div>
+
+        <label className={settingsFieldLabelClass} htmlFor={maxOutputTokensId}>
+          最大输出 token
+        </label>
+        <div className="flex min-w-0 flex-col gap-1.5">
+          <input
+            className={settingsInputClass}
+            disabled={busy}
+            id={maxOutputTokensId}
+            inputMode="numeric"
+            min={1}
+            placeholder={String(DEFAULT_AI_MODEL_MAX_OUTPUT_TOKENS)}
+            required
+            type="number"
+            value={form.maxOutputTokens}
+            onChange={(event) => {
+              update("maxOutputTokens", event.target.value);
+              if (maxOutputTokensError !== null) {
+                setMaxOutputTokensError(null);
+              }
+            }}
+          />
+          <p className="text-2xs text-app-muted">
+            单次模型回复允许生成的最大 token 数。默认 {DEFAULT_AI_MODEL_MAX_OUTPUT_TOKENS}。
+          </p>
+          {showLowMaxOutputTokensWarning ? (
+            <p className={maxOutputTokensWarningClass} role="status">
+              当前上限 {parsedMaxOutputTokens} token，对小说写作 Agent
+              偏少，长段正文或大纲容易被截断。建议提高到 8192 或更高（需符合模型与服务商上限）。
+            </p>
+          ) : null}
+          {maxOutputTokensError ? (
+            <p className="text-2xs text-ctp-red">{maxOutputTokensError}</p>
           ) : null}
         </div>
       </div>

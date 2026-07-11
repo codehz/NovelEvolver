@@ -8,4 +8,6 @@ export type AiBackendSession = {
   instructions: string;
   client: AIClient;
   scenarioId: string | null;
+  /** Omitted for mock backends (no provider limit). */
+  maxOutputTokens?: number;
 };

@@ -7,6 +7,7 @@ import type {
   AiModelConfigWrite,
   AiModelsSettingsSnapshot,
 } from "#shared/rpc/services/index";
+import { isLowMaxOutputTokensForNovelAgent } from "#shared/rpc/services/index";
 
 import {
   settingsEmptyStateClass,
@@ -231,6 +232,20 @@ export function AiModelsSettingsPanel() {
                         </span>
                       </>
                     ) : null}
+                    <span aria-hidden="true">·</span>
+                    <span
+                      className={cn(
+                        isLowMaxOutputTokensForNovelAgent(model.maxOutputTokens) &&
+                          "text-ctp-yellow",
+                      )}
+                      title={
+                        isLowMaxOutputTokensForNovelAgent(model.maxOutputTokens)
+                          ? "最大输出 token 偏少，长文可能被截断"
+                          : undefined
+                      }
+                    >
+                      最大输出 {model.maxOutputTokens}
+                    </span>
                   </div>
                 </div>
 

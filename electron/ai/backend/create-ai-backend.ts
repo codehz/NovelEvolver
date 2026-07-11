@@ -81,5 +81,6 @@ function createProviderBackendSession(config: AiModelRuntimeConfig): AiBackendSe
     instructions: PROVIDER_INSTRUCTIONS,
     client: createAIClient({ adapter, model: config.model }),
     scenarioId: null,
+    maxOutputTokens: config.maxOutputTokens,
   };
 }

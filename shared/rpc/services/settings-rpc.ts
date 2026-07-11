@@ -10,6 +10,16 @@ export const AI_ADAPTER_KINDS: readonly AiAdapterKind[] = [
   "ollama",
 ] as const;
 
+/** Default max output tokens for new models and legacy configs without the field. */
+export const DEFAULT_AI_MODEL_MAX_OUTPUT_TOKENS = 4096;
+
+/** Novel agent: at or below this limit is considered too small for long-form writing. */
+export const AI_MODEL_MAX_OUTPUT_TOKENS_LOW_THRESHOLD = 4096;
+
+export function isLowMaxOutputTokensForNovelAgent(maxOutputTokens: number): boolean {
+  return maxOutputTokens <= AI_MODEL_MAX_OUTPUT_TOKENS_LOW_THRESHOLD;
+}
+
 /** Public model config — never includes a plaintext API key. */
 export type AiModelConfigPublic = {
   id: string;
@@ -19,6 +29,7 @@ export type AiModelConfigPublic = {
   /** Empty string means adapter default endpoint. */
   baseUrl: string;
   hasApiKey: boolean;
+  maxOutputTokens: number;
 };
 
 export type AiModelsSettingsSnapshot = {
@@ -40,6 +51,7 @@ export type AiModelConfigWrite = {
   model: string;
   baseUrl?: string;
   apiKey?: string;
+  maxOutputTokens: number;
 };
 
 export interface SettingsService extends RpcTarget {

@@ -282,6 +282,9 @@ export class AiConversationRuntime {
             instructions: backend.instructions,
             input,
             tools: AI_TOOLS,
+            ...(backend.maxOutputTokens !== undefined
+              ? { maxOutputTokens: backend.maxOutputTokens }
+              : {}),
           }),
           context.assistantMessageId,
         );
