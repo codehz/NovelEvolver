@@ -83,11 +83,13 @@ export const modelSelectorButtonClass = cn(
 export const modelSelectorLabelClass = cn("min-w-0 truncate font-medium");
 export const toolCallPanelClass = cn("flex flex-col gap-1");
 export const toolCallToggleClass = cn(
-  "flex w-full items-center gap-1.5 text-left text-2xs text-ctp-subtext1 focus-visible:ring-1 focus-visible:ring-badge-background/60 focus-visible:outline-none",
+  "grid w-full grid-cols-[auto_auto_minmax(0,1fr)_auto] items-center gap-1.5 text-left text-2xs text-ctp-subtext1 focus-visible:ring-1 focus-visible:ring-badge-background/60 focus-visible:outline-none",
 );
 export const toolCallToggleActiveClass = cn("rounded-md ring-1 ring-ctp-blue/40");
-export const toolCallLabelClass = cn("font-medium tracking-[0.02em] text-ctp-blue");
-export const toolCallStatusClass = cn("text-2xs text-ctp-overlay0");
+export const toolCallLabelClass = cn(
+  "whitespace-nowrap font-medium tracking-[0.02em] text-ctp-blue",
+);
+export const toolCallStatusClass = cn("whitespace-nowrap text-2xs text-ctp-overlay0");
 export const toolCallBodyClass = cn("flex flex-col gap-2 text-[0.75rem] leading-5 text-app-muted");
 export const toolCallQuestionClass = cn("text-[0.75rem] leading-5 text-app-foreground");
 export const warningBannerClass = cn(
