@@ -29,7 +29,10 @@ export type ProjectAiChatControllerOptions = {
 };
 
 export class ProjectAiChatController {
-  readonly #runtimeOptions: Omit<AiConversationRuntimeOptions, "record" | "selectedModelId">;
+  readonly #runtimeOptions: Omit<
+    AiConversationRuntimeOptions,
+    "record" | "selectedModelId" | "initialAdapterKind" | "initialModel"
+  >;
   readonly #repository: AiChatRepository;
   readonly #mockAiEnabled: boolean;
   readonly #getAiModelsStore: () => AiModelsStore;
@@ -48,6 +51,7 @@ export class ProjectAiChatController {
       repository: options.repository,
       resolveWorktree: options.resolveWorktree,
       clientLabel: options.clientLabel,
+      resolveModelConfig: (modelId) => this.#getAiModelsStore().getRuntimeConfig(modelId),
     };
 
     const latest = this.#repository.getLatestByProject(options.projectId);
@@ -107,7 +111,11 @@ export class ProjectAiChatController {
     ) {
       throw new Error("所选模型不可用。");
     }
-    this.#getActiveRuntime().setSelectedModelId(normalized);
+    const model = this.listSelectableModels().find((entry) => entry.id === normalized);
+    if (!model) {
+      throw new Error("所选模型不可用。");
+    }
+    this.#getActiveRuntime().setSelectedModel(normalized, model.kind, model.model);
   }
 
   runScenario(options: {
@@ -214,6 +222,7 @@ export class ProjectAiChatController {
     const selectedModelId =
       options?.selectedModelId ??
       this.#resolveInitialSelectedModelId(record?.selectedModelId ?? null);
+    const selectedModel = this.listSelectableModels().find((model) => model.id === selectedModelId);
     const runtime = new AiConversationRuntime({
       ...this.#runtimeOptions,
       record,
@@ -221,6 +230,8 @@ export class ProjectAiChatController {
       pacing: scenario?.pacing,
       persistence: scenario?.persistence,
       selectedModelId,
+      initialAdapterKind: selectedModel?.kind ?? "mock",
+      initialModel: selectedModel?.model ?? "",
     });
     this.#runtimes.set(runtime.conversationId, runtime);
     return runtime;

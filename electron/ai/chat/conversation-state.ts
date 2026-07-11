@@ -22,6 +22,7 @@ import type {
   AiChatWarning,
   AiConversationActivity,
   AiConversationSummary,
+  AiChatSelectableModelKind,
 } from "#shared/rpc/ai/index";
 
 import type { AiChatRepository, AiConversationRecord } from "../../db/repositories/ai-chat-repo";
@@ -35,11 +36,24 @@ import {
 const EMPTY_TITLE = "新会话";
 const TITLE_MAX_LENGTH = 40;
 
+function toAdapterKind(value: string): AiChatSelectableModelKind {
+  switch (value) {
+    case "responses":
+    case "chat-completions":
+    case "messages":
+    case "ollama":
+    case "mock":
+      return value;
+    default:
+      return "mock";
+  }
+}
+
 type AiConversationStateOptions = {
   projectId: number;
   repository: AiChatRepository;
   record?: AiConversationRecord | null;
-  adapterKind: "mock";
+  adapterKind: AiChatSelectableModelKind;
   model: string;
   selectedModelId: string;
   scenarioId: string | null;
@@ -82,8 +96,8 @@ export function recordToConversationSummary(record: AiConversationRecord): AiCon
 export class AiConversationState {
   readonly #projectId: number;
   readonly #repository: AiChatRepository;
-  readonly #adapterKind: "mock";
-  readonly #model: string;
+  #adapterKind: AiChatSelectableModelKind;
+  #model: string;
   readonly #scenarioId: string | null;
   readonly #persistence: "persistent" | "ephemeral";
   readonly #messages: AiChatMessage[] = [];
@@ -263,6 +277,15 @@ export class AiConversationState {
       return;
     }
     this.#selectedModelId = selectedModelId;
+    this.#markDirty();
+  }
+
+  setBackend(adapterKind: AiChatSelectableModelKind, model: string): void {
+    if (this.#adapterKind === adapterKind && this.#model === model) {
+      return;
+    }
+    this.#adapterKind = adapterKind;
+    this.#model = model;
     this.#markDirty();
   }
 
@@ -548,7 +571,9 @@ export class AiConversationState {
     this.#updatedAt = record.updatedAt;
     this.#lastActiveAt = record.lastActiveAt;
     this.#status = record.status;
-    this.#selectedModelId = record.selectedModelId || this.#selectedModelId;
+    this.#adapterKind = toAdapterKind(record.adapterKind);
+    this.#model = record.model;
+    this.#selectedModelId = this.#selectedModelId || record.selectedModelId;
     this.#pending = false;
     this.#errorMessage = record.errorMessage;
     this.#dirty = false;

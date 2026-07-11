@@ -24,6 +24,15 @@ type StoredModelRecord = {
   apiKeyCipher?: string;
 };
 
+export type AiModelRuntimeConfig = {
+  id: string;
+  name: string;
+  kind: AiAdapterKind;
+  model: string;
+  baseUrl: string;
+  apiKey: string | null;
+};
+
 type StoredFile = {
   version: typeof FILE_VERSION;
   defaultModelId: string | null;
@@ -179,12 +188,25 @@ export class AiModelsStore {
     return this.getSnapshot();
   }
 
-  /**
-   * Internal helper for a future real-adapter wiring step.
-   * Not exposed over RPC.
-   */
-  getStoredRecord(id: string): StoredModelRecord | null {
-    return this.#data.models.find((entry) => entry.id === id) ?? null;
+  getRuntimeConfig(id: string): AiModelRuntimeConfig | null {
+    const record = this.#data.models.find((entry) => entry.id === id);
+    if (!record) {
+      return null;
+    }
+
+    const apiKey = decryptApiKeyCipher(record.apiKeyCipher);
+    if (record.apiKeyCipher && apiKey === null) {
+      throw new Error(`模型“${record.name}”的 API Key 无法解密，请在设置中重新保存。`);
+    }
+
+    return {
+      id: record.id,
+      name: record.name,
+      kind: record.kind,
+      model: record.model,
+      baseUrl: record.baseUrl,
+      apiKey,
+    };
   }
 
   #load(): StoredFile {

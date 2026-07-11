@@ -137,7 +137,7 @@ export type AiChatSelectableModel = {
 
 export type AiChatSnapshot = {
   conversationId: string;
-  adapterKind: "mock";
+  adapterKind: AiChatSelectableModelKind;
   model: string;
   /** User-selected model config id (`MOCK_AI_MODEL_ID` for mock). Empty when none. */
   selectedModelId: string;
@@ -168,6 +168,8 @@ export type AiChatMessagePatch = {
 };
 
 export type AiChatStatePatch = {
+  adapterKind?: AiChatSelectableModelKind;
+  model?: string;
   pending?: boolean;
   pendingUserInputs?: AiChatPendingUserInput[];
   errorMessage?: string | null;

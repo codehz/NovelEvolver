@@ -1,5 +1,4 @@
 import type {
-  AIClient,
   AIResponse,
   AIStreamEvent,
   InputItem,
@@ -9,6 +8,7 @@ import type {
 
 import { cloneAiChatMessage } from "#shared/rpc/ai/index";
 import type {
+  AiChatSelectableModelKind,
   AiChatDeltaOp,
   AiChatEvent,
   AiChatSnapshot,
@@ -17,7 +17,9 @@ import type {
 
 import type { AiChatRepository, AiConversationRecord } from "../../db/repositories/ai-chat-repo";
 import { RpcStreamPublisher } from "../../lib/stream-publisher";
+import type { AiModelRuntimeConfig } from "../../settings/ai-models-store";
 import { joinContentBlocksText, toErrorMessage } from "../ai-utils";
+import type { AiBackendSession } from "../backend/ai-backend-session";
 import { createAiBackendSession } from "../backend/create-ai-backend";
 import { toInputItem } from "../mock-adapter";
 import { getMockScenario } from "../mock/scenario-registry";
@@ -41,26 +43,35 @@ export type AiConversationRuntimeOptions = {
   persistence?: MockScenarioPersistence;
   /** Initial selected model id for new conversations (ignored when loading a record with a stored id). */
   selectedModelId?: string;
+  initialAdapterKind: AiChatSelectableModelKind;
+  initialModel: string;
+  resolveModelConfig: (modelId: string) => AiModelRuntimeConfig | null;
 };
 
 const MAX_TOOL_ROUNDS = 16;
 
 export class AiConversationRuntime {
-  readonly #client: AIClient;
   readonly #toolRunner: ToolRunner;
   readonly #publisher = new RpcStreamPublisher<AiChatEvent>();
   readonly #eventListeners = new Set<RuntimeEventListener>();
   readonly #state: AiConversationState;
+  readonly #clientLabel: string;
+  readonly #resolveModelConfig: AiConversationRuntimeOptions["resolveModelConfig"];
+  readonly #scenarioBackend: AiBackendSession | null;
+  #activeBackend: AiBackendSession | null = null;
   #disposed = false;
 
   constructor(options: AiConversationRuntimeOptions) {
     const scenarioId = options.record?.scenarioId ?? options.scenarioId ?? null;
-    const backend = createAiBackendSession({
-      clientLabel: options.clientLabel ?? `project-${options.projectId}`,
-      scenarioId,
-      pacing: options.pacing,
-    });
-    this.#client = backend.client;
+    this.#clientLabel = options.clientLabel ?? `project-${options.projectId}`;
+    this.#resolveModelConfig = options.resolveModelConfig;
+    this.#scenarioBackend = scenarioId
+      ? createAiBackendSession({
+          clientLabel: this.#clientLabel,
+          scenarioId,
+          pacing: options.pacing,
+        })
+      : null;
     const realToolRunner = createToolRunner(options.resolveWorktree);
     this.#toolRunner = createScenarioToolRunner(
       realToolRunner,
@@ -70,21 +81,17 @@ export class AiConversationRuntime {
       projectId: options.projectId,
       repository: options.repository,
       record: options.record,
-      adapterKind: backend.adapterKind,
-      model: backend.model,
+      adapterKind: this.#scenarioBackend?.adapterKind ?? options.initialAdapterKind,
+      model: this.#scenarioBackend?.model ?? options.initialModel,
       selectedModelId: options.selectedModelId ?? "",
-      scenarioId: backend.scenarioId,
+      scenarioId: this.#scenarioBackend?.scenarioId ?? null,
       persistence: options.persistence ?? "persistent",
     });
-    this.#instructions = backend.instructions;
-
     const pendingToolBatch = this.#state.pendingToolBatch;
     if (pendingToolBatch && pendingToolBatch.pendingInputs.length > 0) {
       void this.#awaitPendingInputs(pendingToolBatch);
     }
   }
-
-  readonly #instructions: string;
 
   get conversationId(): string {
     return this.#state.conversationId;
@@ -106,7 +113,7 @@ export class AiConversationRuntime {
     return this.#state.selectedModelId;
   }
 
-  setSelectedModelId(modelId: string): void {
+  setSelectedModel(modelId: string, adapterKind: AiChatSelectableModelKind, model: string): void {
     if (this.#state.selectedModelId === modelId) {
       return;
     }
@@ -114,6 +121,7 @@ export class AiConversationRuntime {
       throw new Error("AI 请求处理中，无法切换模型。");
     }
     this.#state.setSelectedModelId(modelId);
+    this.#state.setBackend(adapterKind, model);
     this.#state.persistIfNeeded();
     this.#emit({
       kind: "delta",
@@ -122,6 +130,8 @@ export class AiConversationRuntime {
           type: "state.updated",
           patch: {
             selectedModelId: modelId,
+            adapterKind,
+            model,
           },
         },
       ],
@@ -240,6 +250,7 @@ export class AiConversationRuntime {
     assistantMessageId: string;
     requestInput: InputItem[];
     transcript?: InputItem[];
+    backend?: AiBackendSession;
   }): Promise<void> {
     let input = [...context.requestInput];
     const transcript = context.transcript ? [...context.transcript] : [...context.requestInput];
@@ -247,11 +258,24 @@ export class AiConversationRuntime {
     let toolRoundCount = 0;
 
     try {
+      const backend = context.backend ?? this.#resolveBackend();
+      this.#activeBackend = backend;
+      this.#state.setBackend(backend.adapterKind, backend.model);
+      this.#emitDelta([
+        {
+          type: "state.updated",
+          patch: {
+            adapterKind: backend.adapterKind,
+            model: backend.model,
+          },
+        },
+      ]);
+
       while (true) {
         const streamStartPartCount = this.#state.countAssistantParts(context.assistantMessageId);
         completedResponse = await this.#consumeStream(
-          this.#client.stream({
-            instructions: this.#instructions,
+          backend.client.stream({
+            instructions: backend.instructions,
             input,
             tools: AI_TOOLS,
           }),
@@ -285,6 +309,7 @@ export class AiConversationRuntime {
           completedResponse.toolCalls,
           input,
           transcript,
+          backend,
         );
         if (batchOutcome === "paused") {
           this.#state.persistIfNeeded();
@@ -315,6 +340,7 @@ export class AiConversationRuntime {
         },
       ]);
       this.#state.persistIfNeeded();
+      this.#activeBackend = null;
     } catch (error) {
       this.#state.setPending(false);
       this.#state.setPendingToolBatch(null);
@@ -338,6 +364,7 @@ export class AiConversationRuntime {
       });
       this.#emitDelta(ops);
       this.#state.persistIfNeeded();
+      this.#activeBackend = null;
     }
   }
 
@@ -346,6 +373,7 @@ export class AiConversationRuntime {
     calls: ToolCallItem[],
     input: InputItem[],
     transcript: InputItem[],
+    backend: AiBackendSession,
   ): Promise<"continue" | "paused"> {
     const resolvedResultsByCallId = new Map<string, ToolResultItem>();
     const pendingInputs: PendingToolBatch["pendingInputs"] = [];
@@ -402,7 +430,7 @@ export class AiConversationRuntime {
           },
         },
       ]);
-      void this.#awaitPendingInputs(batch);
+      void this.#awaitPendingInputs(batch, backend);
       return "paused";
     }
 
@@ -418,7 +446,10 @@ export class AiConversationRuntime {
     return "continue";
   }
 
-  async #awaitPendingInputs(batch: PendingToolBatch): Promise<void> {
+  async #awaitPendingInputs(
+    batch: PendingToolBatch,
+    backend = this.#activeBackend ?? this.#resolveBackend(),
+  ): Promise<void> {
     const results = await Promise.all(batch.pendingInputs.map((entry) => entry.resolverPromise));
 
     if (this.#state.pendingToolBatch !== batch || this.#disposed) {
@@ -468,6 +499,27 @@ export class AiConversationRuntime {
       assistantMessageId: batch.assistantMessageId,
       requestInput: input,
       transcript,
+      backend,
+    });
+  }
+
+  #resolveBackend(): AiBackendSession {
+    if (this.#scenarioBackend) {
+      return this.#scenarioBackend;
+    }
+
+    const selectedModelId = this.#state.selectedModelId;
+    if (selectedModelId === "mock") {
+      return createAiBackendSession({ clientLabel: this.#clientLabel });
+    }
+
+    const modelConfig = this.#resolveModelConfig(selectedModelId);
+    if (!modelConfig) {
+      throw new Error("所选 AI 模型不存在或已被删除，请重新选择模型。");
+    }
+    return createAiBackendSession({
+      clientLabel: this.#clientLabel,
+      modelConfig,
     });
   }
 
