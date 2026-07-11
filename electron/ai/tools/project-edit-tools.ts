@@ -122,8 +122,8 @@ function parseOptionalIndex(value: unknown): number | undefined {
   if (value === undefined) {
     return undefined;
   }
-  if (typeof value !== "number" || !Number.isInteger(value)) {
-    throw new Error("index 必须是整数。");
+  if (typeof value !== "number" || !Number.isInteger(value) || value < 0) {
+    throw new Error("index 必须是非负整数。");
   }
   return value;
 }

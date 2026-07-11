@@ -1,9 +1,5 @@
 import type { ToolCallItem } from "@codehz/ai";
 
-/**
- * 从 ToolCallItem 中解析参数对象，优先使用已解析的 argumentsJson。
- * 所有工具执行函数共享此实现，避免重复。
- */
 export function parseToolArgs(call: ToolCallItem): Record<string, unknown> {
   if (
     call.argumentsJson !== undefined &&
@@ -18,5 +14,9 @@ export function parseToolArgs(call: ToolCallItem): Record<string, unknown> {
     return {};
   }
 
-  return JSON.parse(argumentsText) as Record<string, unknown>;
+  const parsed: unknown = JSON.parse(argumentsText);
+  if (typeof parsed !== "object" || parsed === null || Array.isArray(parsed)) {
+    throw new Error("工具参数必须是 JSON 对象。");
+  }
+  return parsed as Record<string, unknown>;
 }

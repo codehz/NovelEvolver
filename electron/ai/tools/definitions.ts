@@ -111,7 +111,7 @@ export const AI_TOOLS_MAP = {
   },
   edit_text_document: {
     description:
-      "将一个章节或资源文件的全文替换为 new_content。必须先调用 read_text_document，并将其完整、原样返回值作为 expected_content；若内容已变化则调用失败，应重新读取后再编辑。",
+      "将一个章节或资源文件的全文替换为 new_content。仅在大范围重写时使用；局部修改优先用 replace_text_document。必须先调用 read_text_document，并将其完整、原样返回值作为 expected_content；若内容已变化则调用失败，应重新读取后再编辑。",
     inputSchema: {
       type: "object",
       properties: {
@@ -140,6 +140,40 @@ export const AI_TOOLS_MAP = {
         },
       },
       required: ["target", "expected_content", "new_content"],
+      additionalProperties: false,
+    },
+  },
+  replace_text_document: {
+    description:
+      "精确替换章节或资源文件中的一段文字，适合局部修订且无需回传完整全文。必须先读取当前正文；expected_text 必须在正文中恰好出现一次，否则失败且不修改。可用空 replacement_text 删除该段。多个互不依赖的替换应逐次调用。",
+    inputSchema: {
+      type: "object",
+      properties: {
+        target: {
+          type: "object",
+          properties: {
+            domain: {
+              type: "string",
+              enum: ["manuscript", "resource"],
+            },
+            id: {
+              type: "string",
+              description: "此前读取的 chapter 或 file 节点 ID。",
+            },
+          },
+          required: ["domain", "id"],
+          additionalProperties: false,
+        },
+        expected_text: {
+          type: "string",
+          description: "当前正文中恰好出现一次的非空原文片段；应包含足够上下文以保证唯一。",
+        },
+        replacement_text: {
+          type: "string",
+          description: "替换片段，允许空字符串。",
+        },
+      },
+      required: ["target", "expected_text", "replacement_text"],
       additionalProperties: false,
     },
   },

@@ -75,6 +75,15 @@ export type EditTextDocumentResult = {
   updated: true;
 };
 
+export type ReplaceTextDocumentResult = {
+  target: {
+    domain: "manuscript" | "resource";
+    id: string;
+  };
+  replacements: 1;
+  updated: true;
+};
+
 export type CreateDocumentResult = {
   domain: "manuscript" | "resource";
   kind: "chapter" | "file" | "folder";
@@ -98,6 +107,12 @@ type EditTextDocumentArgs = {
   target?: unknown;
   expected_content?: unknown;
   new_content?: unknown;
+};
+
+type ReplaceTextDocumentArgs = {
+  target?: unknown;
+  expected_text?: unknown;
+  replacement_text?: unknown;
 };
 
 type CreateDocumentArgs = {
@@ -137,8 +152,8 @@ function parseOptionalIndex(value: unknown): number | undefined {
   if (value === undefined) {
     return undefined;
   }
-  if (typeof value !== "number" || !Number.isInteger(value)) {
-    throw new Error("index 必须是整数。");
+  if (typeof value !== "number" || !Number.isInteger(value) || value < 0) {
+    throw new Error("index 必须是非负整数。");
   }
   return value;
 }
@@ -314,6 +329,49 @@ export function executeEditTextDocument(
       domain,
       id,
     },
+    updated: true,
+  };
+}
+
+export function executeReplaceTextDocument(
+  worktree: WorktreeSession,
+  call: ToolCallItem,
+): ReplaceTextDocumentResult {
+  const args = parseToolArgs(call) as ReplaceTextDocumentArgs;
+  if (typeof args.target !== "object" || args.target === null) {
+    throw new Error("target 需要对象参数。");
+  }
+  const target = args.target as Record<string, unknown>;
+  const domain = parseDocumentDomain(target.domain, "target.domain");
+  const id = parseNonEmptyString(target.id, "target.id");
+  const expectedText = parseNonEmptyString(args.expected_text, "expected_text");
+  if (typeof args.replacement_text !== "string") {
+    throw new Error("replacement_text 需要字符串。");
+  }
+
+  const currentContent =
+    domain === "manuscript" ? worktree.readChapter(id) : worktree.readResourceFile(id);
+  const firstIndex = currentContent.indexOf(expectedText);
+  if (firstIndex < 0) {
+    throw new Error("expected_text 不存在于当前内容中；请重新读取正文并提供精确原文。");
+  }
+  if (currentContent.indexOf(expectedText, firstIndex + expectedText.length) >= 0) {
+    throw new Error("expected_text 在当前内容中出现多次；请增加上下文使其唯一。");
+  }
+
+  const nextContent =
+    currentContent.slice(0, firstIndex) +
+    args.replacement_text +
+    currentContent.slice(firstIndex + expectedText.length);
+  if (domain === "manuscript") {
+    worktree.writeChapter(id, nextContent);
+  } else {
+    worktree.writeResourceFile(id, nextContent);
+  }
+
+  return {
+    target: { domain, id },
+    replacements: 1,
     updated: true,
   };
 }

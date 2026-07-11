@@ -19,6 +19,7 @@ import {
   executeEditTextDocument,
   executeGetProjectStructure,
   executeReadTextDocument,
+  executeReplaceTextDocument,
   executeSearchProject,
 } from "./project-tools";
 import type { UserInputRequest } from "./user-input-types";
@@ -108,6 +109,9 @@ const toolHandlers: Partial<Record<AI_TOOL_NAMES, ToolHandler>> = {
   edit_text_document(worktree, call) {
     const output = executeEditTextDocument(worktree, call);
     return okJson(call, output);
+  },
+  replace_text_document(worktree, call) {
+    return okJson(call, executeReplaceTextDocument(worktree, call));
   },
   create_document(worktree, call) {
     const output = executeCreateDocument(worktree, call);
