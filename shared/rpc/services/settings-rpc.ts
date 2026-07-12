@@ -75,6 +75,35 @@ export type AiModelsSettingsSnapshot = {
   models: AiModelConfigPublic[];
 };
 
+export const BUILTIN_AI_AGENT_ID = "builtin-writing-assistant" as const;
+
+export type AiAgentTool = {
+  name: string;
+  description: string;
+};
+
+export type AiAgentConfigPublic = {
+  id: string;
+  name: string;
+  systemPrompt: string;
+  defaultModelId: string | null;
+  availableToolNames: string[];
+  builtin: boolean;
+};
+
+export type AiAgentConfigWrite = {
+  id?: string;
+  name: string;
+  systemPrompt: string;
+  defaultModelId: string | null;
+  availableToolNames: string[];
+};
+
+export type AiAgentsSettingsSnapshot = {
+  agents: AiAgentConfigPublic[];
+  tools: AiAgentTool[];
+};
+
 export interface SettingsService extends RpcTarget {
   getAiModels(): AiModelsSettingsSnapshot;
   upsertAiProvider(input: AiProviderConfigWrite): AiModelsSettingsSnapshot;
@@ -82,4 +111,7 @@ export interface SettingsService extends RpcTarget {
   upsertAiModel(input: AiModelConfigWrite): AiModelsSettingsSnapshot;
   removeAiModel(id: string): AiModelsSettingsSnapshot;
   setDefaultAiModel(id: string | null): AiModelsSettingsSnapshot;
+  getAiAgents(): AiAgentsSettingsSnapshot;
+  upsertAiAgent(input: AiAgentConfigWrite): AiAgentsSettingsSnapshot;
+  removeAiAgent(id: string): AiAgentsSettingsSnapshot;
 }

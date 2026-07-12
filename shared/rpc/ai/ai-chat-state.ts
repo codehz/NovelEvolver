@@ -1,3 +1,4 @@
+import { BUILTIN_AI_AGENT_ID } from "../services/index";
 import type {
   AiChatAssistantMessage,
   AiChatAssistantPart,
@@ -14,6 +15,7 @@ export function createInitialAiChatSnapshot(model = "mock-assistant"): AiChatSna
     adapterKind: "mock",
     model,
     selectedModelId: "",
+    selectedAgentId: BUILTIN_AI_AGENT_ID,
     scenarioId: null,
     warnings: [],
     messages: [],

@@ -4,6 +4,7 @@ import { cn } from "#app/shared/lib/ui/cn";
 import { NativeDialog, useNativeDialogRequestClose } from "#app/shared/ui/dialog";
 import { ScrollArea } from "#app/shared/ui/ScrollArea";
 
+import { AiAgentsSettingsPanel } from "./ai-agents/AiAgentsSettingsPanel";
 import { AiModelsSettingsPanel } from "./ai-models/AiModelsSettingsPanel";
 import {
   settingsBodyClass,
@@ -23,6 +24,7 @@ import {
 const SETTINGS_CATEGORIES = [
   { id: "common", label: "常用" },
   { id: "ai-models", label: "AI 模型" },
+  { id: "ai-agents", label: "AI Agent" },
   { id: "editor", label: "编辑器" },
   { id: "appearance", label: "外观" },
   { id: "extensions", label: "扩展" },
@@ -142,6 +144,8 @@ function SettingsDialogChrome({
         <ScrollArea className={settingsContentClass}>
           {activeCategoryId === "ai-models" ? (
             <AiModelsSettingsPanel />
+          ) : activeCategoryId === "ai-agents" ? (
+            <AiAgentsSettingsPanel />
           ) : (
             <div className={settingsPlaceholderClass}>「{activeCategory.label}」分类暂无设置项</div>
           )}

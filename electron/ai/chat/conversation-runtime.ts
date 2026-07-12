@@ -19,6 +19,7 @@ import type {
 
 import type { AiChatRepository, AiConversationRecord } from "../../db/repositories/ai-chat-repo";
 import { RpcStreamPublisher } from "../../lib/stream-publisher";
+import type { AiAgentRuntimeConfig } from "../../settings/ai-agents-store";
 import type { AiModelRuntimeConfig } from "../../settings/ai-models-store";
 import { addMessageUsage, joinContentBlocksText, toErrorMessage } from "../ai-utils";
 import type { AiBackendSession } from "../backend/ai-backend-session";
@@ -27,7 +28,7 @@ import { toInputItem } from "../mock-adapter";
 import { getMockScenario } from "../mock/scenario-registry";
 import { createScenarioToolRunner } from "../mock/scenario-tool-runner";
 import type { MockScenarioPacing, MockScenarioPersistence } from "../mock/scenario-types";
-import { AI_TOOLS } from "../tools/definitions";
+import { AI_TOOLS, AI_TOOLS_MAP } from "../tools/definitions";
 import { createToolRunner, type ResolveWorktree, type ToolRunner } from "../tools/runner";
 import { AiConversationState } from "./conversation-state";
 import { createPendingUserInputFromRequest, type PendingToolBatch } from "./pending-tool-batch";
@@ -45,9 +46,12 @@ export type AiConversationRuntimeOptions = {
   persistence?: MockScenarioPersistence;
   /** Initial selected model id for new conversations (ignored when loading a record with a stored id). */
   selectedModelId?: string;
+  /** Initial selected agent id for new conversations. */
+  selectedAgentId?: string;
   initialAdapterKind: AiChatSelectableModelKind;
   initialModel: string;
   resolveModelConfig: (modelId: string) => AiModelRuntimeConfig | null;
+  resolveAgentConfig: (agentId: string) => AiAgentRuntimeConfig;
 };
 
 const MAX_TOOL_ROUNDS = 16;
@@ -63,6 +67,7 @@ export class AiConversationRuntime {
   readonly #state: AiConversationState;
   readonly #clientLabel: string;
   readonly #resolveModelConfig: AiConversationRuntimeOptions["resolveModelConfig"];
+  readonly #resolveAgentConfig: AiConversationRuntimeOptions["resolveAgentConfig"];
   readonly #scenarioBackend: AiBackendSession | null;
   #activeBackend: AiBackendSession | null = null;
   #disposed = false;
@@ -71,6 +76,7 @@ export class AiConversationRuntime {
     const scenarioId = options.record?.scenarioId ?? options.scenarioId ?? null;
     this.#clientLabel = options.clientLabel ?? `project-${options.projectId}`;
     this.#resolveModelConfig = options.resolveModelConfig;
+    this.#resolveAgentConfig = options.resolveAgentConfig;
     this.#scenarioBackend = scenarioId
       ? createAiBackendSession({
           clientLabel: this.#clientLabel,
@@ -90,6 +96,7 @@ export class AiConversationRuntime {
       adapterKind: this.#scenarioBackend?.adapterKind ?? options.initialAdapterKind,
       model: this.#scenarioBackend?.model ?? options.initialModel,
       selectedModelId: options.selectedModelId ?? "",
+      selectedAgentId: options.selectedAgentId ?? "builtin-writing-assistant",
       scenarioId: this.#scenarioBackend?.scenarioId ?? null,
       persistence: options.persistence ?? "persistent",
     });
@@ -115,6 +122,10 @@ export class AiConversationRuntime {
     return this.#state.persistence;
   }
 
+  get selectedAgentId(): string {
+    return this.#state.selectedAgentId;
+  }
+
   get selectedModelId(): string {
     return this.#state.selectedModelId;
   }
@@ -135,6 +146,38 @@ export class AiConversationRuntime {
         {
           type: "state.updated",
           patch: {
+            selectedModelId: modelId,
+            adapterKind,
+            model,
+          },
+        },
+      ],
+    });
+  }
+
+  setSelectedAgent(
+    agentId: string,
+    modelId: string,
+    adapterKind: AiChatSelectableModelKind,
+    model: string,
+  ): void {
+    if (this.#state.selectedAgentId === agentId) {
+      return;
+    }
+    if (this.#state.pending || this.#state.pendingToolBatch !== null) {
+      throw new Error("AI 请求处理中，无法切换 Agent。");
+    }
+    this.#state.setSelectedAgentId(agentId);
+    this.#state.setSelectedModelId(modelId);
+    this.#state.setBackend(adapterKind, model);
+    this.#state.persistIfNeeded();
+    this.#emit({
+      kind: "delta",
+      ops: [
+        {
+          type: "state.updated",
+          patch: {
+            selectedAgentId: agentId,
             selectedModelId: modelId,
             adapterKind,
             model,
@@ -271,13 +314,21 @@ export class AiConversationRuntime {
         },
       ]);
 
+      const agentConfig = this.#scenarioBackend
+        ? null
+        : this.#resolveAgentConfig(this.#state.selectedAgentId);
+      const resolvedTools =
+        agentConfig && agentConfig.availableToolNames.length < Object.keys(AI_TOOLS_MAP).length
+          ? AI_TOOLS.filter((tool) => agentConfig.availableToolNames.includes(tool.name))
+          : AI_TOOLS;
+
       while (true) {
         const streamStartPartCount = this.#state.countAssistantParts(context.assistantMessageId);
         completedResponse = await this.#consumeStream(
           backend.client.stream({
             instructions: backend.instructions,
             input,
-            tools: AI_TOOLS,
+            tools: resolvedTools,
             ...(backend.maxOutputTokens !== undefined
               ? { maxOutputTokens: backend.maxOutputTokens }
               : {}),
@@ -524,9 +575,11 @@ export class AiConversationRuntime {
     if (!modelConfig) {
       throw new Error("所选 AI 模型不存在或已被删除，请重新选择模型。");
     }
+    const agentConfig = this.#resolveAgentConfig(this.#state.selectedAgentId);
     return createAiBackendSession({
       clientLabel: this.#clientLabel,
       modelConfig,
+      instructionsOverride: agentConfig.systemPrompt,
     });
   }
 

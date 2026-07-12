@@ -24,6 +24,7 @@ import type {
   AiConversationSummary,
   AiChatSelectableModelKind,
 } from "#shared/rpc/ai/index";
+import { BUILTIN_AI_AGENT_ID } from "#shared/rpc/services/index";
 
 import type { AiChatRepository, AiConversationRecord } from "../../db/repositories/ai-chat-repo";
 import { contentBlockToDisplayText, joinContentBlocksText } from "../ai-utils";
@@ -56,6 +57,7 @@ type AiConversationStateOptions = {
   adapterKind: AiChatSelectableModelKind;
   model: string;
   selectedModelId: string;
+  selectedAgentId: string;
   scenarioId: string | null;
   persistence: "persistent" | "ephemeral";
 };
@@ -128,6 +130,7 @@ export class AiConversationState {
   #lastActiveAt = 0;
   #status: "active" | "archived" = "active";
   #selectedModelId = "";
+  #selectedAgentId: string = BUILTIN_AI_AGENT_ID;
   #pendingToolBatch: PendingToolBatch | null = null;
   #pending = false;
   #errorMessage: string | null = null;
@@ -143,6 +146,7 @@ export class AiConversationState {
     this.#scenarioId = options.scenarioId;
     this.#persistence = options.persistence;
     this.#selectedModelId = options.selectedModelId;
+    this.#selectedAgentId = options.selectedAgentId;
     if (options.record) {
       this.#loadRecord(options.record);
       return;
@@ -184,12 +188,17 @@ export class AiConversationState {
     return this.#selectedModelId;
   }
 
+  get selectedAgentId(): string {
+    return this.#selectedAgentId;
+  }
+
   getSnapshot(): AiChatSnapshot {
     return {
       conversationId: this.#conversationId,
       adapterKind: this.#adapterKind,
       model: this.#model,
       selectedModelId: this.#selectedModelId,
+      selectedAgentId: this.#selectedAgentId,
       scenarioId: this.#scenarioId,
       warnings: this.#warnings.map((warning) => ({ ...warning })),
       messages: this.#messages.map(cloneAiChatMessage),
@@ -262,6 +271,7 @@ export class AiConversationState {
       adapterKind: this.#adapterKind,
       model: this.#model,
       selectedModelId: this.#selectedModelId,
+      selectedAgentId: this.#selectedAgentId,
       scenarioId: this.#scenarioId,
       messagesJson: JSON.stringify(this.#messages.map(cloneAiChatMessage)),
       historyJson: JSON.stringify(this.#history),
@@ -294,6 +304,14 @@ export class AiConversationState {
       return;
     }
     this.#selectedModelId = selectedModelId;
+    this.#markDirty();
+  }
+
+  setSelectedAgentId(agentId: string): void {
+    if (this.#selectedAgentId === agentId) {
+      return;
+    }
+    this.#selectedAgentId = agentId;
     this.#markDirty();
   }
 
@@ -580,6 +598,7 @@ export class AiConversationState {
     this.#adapterKind = toAdapterKind(record.adapterKind);
     this.#model = record.model;
     this.#selectedModelId = this.#selectedModelId || record.selectedModelId;
+    this.#selectedAgentId = record.selectedAgentId;
     this.#pending = false;
     this.#errorMessage = record.errorMessage;
     this.#dirty = false;

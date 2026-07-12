@@ -414,3 +414,13 @@ export const AI_TOOLS: ToolDefinition[] = Object.entries(AI_TOOLS_MAP).map(([nam
   name,
   ...def,
 }));
+
+export const AI_TOOL_CATALOG = Object.entries(AI_TOOLS_MAP).map(([name, definition]) => ({
+  name,
+  description: definition.description,
+}));
+
+export function selectAiTools(names: readonly string[]): ToolDefinition[] {
+  const allowed = new Set(names);
+  return AI_TOOLS.filter((tool) => allowed.has(tool.name));
+}

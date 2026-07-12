@@ -18,6 +18,7 @@ export function createAiBackendSession(options: {
   scenarioId?: string | null;
   pacing?: MockScenarioPacing;
   modelConfig?: AiModelRuntimeConfig | null;
+  instructionsOverride?: string | null;
 }): AiBackendSession {
   if (options.scenarioId) {
     const scenario = getMockScenario(options.scenarioId);
@@ -35,7 +36,7 @@ export function createAiBackendSession(options: {
   }
 
   if (options.modelConfig) {
-    return createProviderBackendSession(options.modelConfig);
+    return createProviderBackendSession(options.modelConfig, options.instructionsOverride ?? null);
   }
 
   return {
@@ -57,7 +58,10 @@ function requireApiKey(config: AiModelRuntimeConfig): string {
   throw new Error(`模型“${config.name}”缺少 API Key，请先在设置中配置。`);
 }
 
-function createProviderBackendSession(config: AiModelRuntimeConfig): AiBackendSession {
+function createProviderBackendSession(
+  config: AiModelRuntimeConfig,
+  instructionsOverride: string | null,
+): AiBackendSession {
   const baseUrl = config.baseUrl || undefined;
   const adapter = (() => {
     switch (config.kind) {
@@ -78,7 +82,7 @@ function createProviderBackendSession(config: AiModelRuntimeConfig): AiBackendSe
   return {
     adapterKind: config.kind,
     model: config.model,
-    instructions: PROVIDER_INSTRUCTIONS,
+    instructions: instructionsOverride ?? PROVIDER_INSTRUCTIONS,
     client: createAIClient({ adapter, model: config.model }),
     scenarioId: null,
     maxOutputTokens: config.maxOutputTokens,

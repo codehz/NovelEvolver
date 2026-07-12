@@ -4,12 +4,14 @@ import { app, BrowserWindow, ipcMain } from "electron";
 
 import { AppDatabase } from "./db/app-database";
 import { ElectronRpcServer } from "./rpc/server/connect";
+import { AiAgentsStore } from "./settings/ai-agents-store";
 import { AiModelsStore } from "./settings/ai-models-store";
 
 const isDev = !app.isPackaged;
 
 let appDb: AppDatabase | null = null;
 let aiModelsStore: AiModelsStore | null = null;
+let aiAgentsStore: AiAgentsStore | null = null;
 let rpcServer: ElectronRpcServer | null = null;
 
 function getAppDb(): AppDatabase {
@@ -26,6 +28,13 @@ function getAiModelsStore(): AiModelsStore {
   }
 
   return aiModelsStore;
+}
+
+function getAiAgentsStore(): AiAgentsStore {
+  if (!aiAgentsStore) {
+    throw new Error("AI agents store is not initialized.");
+  }
+  return aiAgentsStore;
 }
 
 function createWindow() {
@@ -58,9 +67,11 @@ void app.whenReady().then(() => {
   const userData = app.getPath("userData");
   appDb = new AppDatabase(join(userData, "app-state.db"));
   aiModelsStore = new AiModelsStore(join(userData, "ai-settings.json"));
+  aiAgentsStore = new AiAgentsStore(join(userData, "ai-agents.json"), getAiModelsStore);
   rpcServer = new ElectronRpcServer({
     getAppDb,
     getAiModelsStore,
+    getAiAgentsStore,
     mockAiEnabled: process.env.NOVEL_EVOLVER_MOCK_AI === "1",
     getWindowState: (window) => ({
       isFocused: window.isFocused(),
@@ -89,5 +100,6 @@ app.on("will-quit", () => {
   appDb?.close();
   appDb = null;
   aiModelsStore = null;
+  aiAgentsStore = null;
   rpcServer = null;
 });

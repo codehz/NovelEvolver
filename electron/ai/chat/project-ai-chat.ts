@@ -1,12 +1,15 @@
 import type {
   AiChatEvent,
+  AiChatSelectableAgent,
   AiChatSelectableModel,
   AiConversationSummary,
 } from "#shared/rpc/ai/index";
 import { MOCK_AI_MODEL_ID } from "#shared/rpc/ai/index";
+import { BUILTIN_AI_AGENT_ID } from "#shared/rpc/services/index";
 
 import type { AiChatRepository, AiConversationRecord } from "../../db/repositories/ai-chat-repo";
 import { RpcStreamPublisher } from "../../lib/stream-publisher";
+import type { AiAgentsStore } from "../../settings/ai-agents-store";
 import type { AiModelsStore } from "../../settings/ai-models-store";
 import { getMockScenario } from "../mock/scenario-registry";
 import type { MockScenarioPacing, MockScenarioPersistence } from "../mock/scenario-types";
@@ -26,16 +29,18 @@ export type ProjectAiChatControllerOptions = {
   clientLabel?: string;
   mockAiEnabled: boolean;
   getAiModelsStore: () => AiModelsStore;
+  getAiAgentsStore: () => AiAgentsStore;
 };
 
 export class ProjectAiChatController {
   readonly #runtimeOptions: Omit<
     AiConversationRuntimeOptions,
-    "record" | "selectedModelId" | "initialAdapterKind" | "initialModel"
+    "record" | "selectedModelId" | "selectedAgentId" | "initialAdapterKind" | "initialModel"
   >;
   readonly #repository: AiChatRepository;
   readonly #mockAiEnabled: boolean;
   readonly #getAiModelsStore: () => AiModelsStore;
+  readonly #getAiAgentsStore: () => AiAgentsStore;
   readonly #publisher = new RpcStreamPublisher<AiChatEvent>();
   readonly #runtimes = new Map<string, AiConversationRuntime>();
   #activeConversationId = "";
@@ -46,12 +51,14 @@ export class ProjectAiChatController {
     this.#repository = options.repository;
     this.#mockAiEnabled = options.mockAiEnabled;
     this.#getAiModelsStore = options.getAiModelsStore;
+    this.#getAiAgentsStore = options.getAiAgentsStore;
     this.#runtimeOptions = {
       projectId: options.projectId,
       repository: options.repository,
       resolveWorktree: options.resolveWorktree,
       clientLabel: options.clientLabel,
       resolveModelConfig: (modelId) => this.#getAiModelsStore().getRuntimeConfig(modelId),
+      resolveAgentConfig: (agentId) => this.#getAiAgentsStore().getRuntimeConfig(agentId),
     };
 
     const latest = this.#repository.getLatestByProject(options.projectId);
@@ -86,6 +93,7 @@ export class ProjectAiChatController {
     this.#setActiveRuntime(
       this.#createRuntime({
         selectedModelId: this.#resolveInitialSelectedModelId(activeRuntime.selectedModelId),
+        selectedAgentId: activeRuntime.selectedAgentId,
       }),
       true,
     );
@@ -116,6 +124,49 @@ export class ProjectAiChatController {
       throw new Error("所选模型不可用。");
     }
     this.#getActiveRuntime().setSelectedModel(normalized, model.kind, model.model);
+  }
+
+  listSelectableAgents(): AiChatSelectableAgent[] {
+    return this.#getAiAgentsStore()
+      .getSnapshot()
+      .agents.map((agent) => ({
+        id: agent.id,
+        name: agent.name,
+        defaultModelId: agent.defaultModelId,
+        toolCount: agent.availableToolNames.length,
+        builtin: agent.builtin,
+      }));
+  }
+
+  setSelectedAgent(agentId: string): void {
+    const normalized = agentId.trim();
+    if (normalized === "") {
+      throw new Error("Agent id 不能为空。");
+    }
+
+    const agent = this.#getAiAgentsStore().getRuntimeConfig(normalized);
+
+    const modelsSnapshot = this.#getAiModelsStore().getSnapshot();
+    const targetModelId =
+      agent.defaultModelId &&
+      isSelectableModelId(agent.defaultModelId, {
+        mockAiEnabled: this.#mockAiEnabled,
+        models: modelsSnapshot,
+      })
+        ? agent.defaultModelId
+        : resolveDefaultSelectedModelId({
+            mockAiEnabled: this.#mockAiEnabled,
+            models: modelsSnapshot,
+            preferredId: null,
+          });
+
+    const modelEntry = this.listSelectableModels().find((m) => m.id === targetModelId);
+    this.#getActiveRuntime().setSelectedAgent(
+      agent.id,
+      modelEntry?.id ?? "",
+      modelEntry?.kind ?? "mock",
+      modelEntry?.model ?? "",
+    );
   }
 
   runScenario(options: {
@@ -216,6 +267,7 @@ export class ProjectAiChatController {
       persistence: MockScenarioPersistence;
     };
     selectedModelId?: string;
+    selectedAgentId?: string;
   }): AiConversationRuntime {
     const record = options?.record ?? null;
     const scenario = options?.scenario;
@@ -230,6 +282,7 @@ export class ProjectAiChatController {
       pacing: scenario?.pacing,
       persistence: scenario?.persistence,
       selectedModelId,
+      selectedAgentId: options?.selectedAgentId ?? record?.selectedAgentId ?? BUILTIN_AI_AGENT_ID,
       initialAdapterKind: selectedModel?.kind ?? "mock",
       initialModel: selectedModel?.model ?? "",
     });

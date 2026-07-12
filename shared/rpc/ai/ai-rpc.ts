@@ -152,12 +152,21 @@ export type AiChatSelectableModel = {
   contextLength: number | null;
 };
 
+export type AiChatSelectableAgent = {
+  id: string;
+  name: string;
+  defaultModelId: string | null;
+  toolCount: number;
+  builtin: boolean;
+};
+
 export type AiChatSnapshot = {
   conversationId: string;
   adapterKind: AiChatSelectableModelKind;
   model: string;
   /** User-selected model config id (`MOCK_AI_MODEL_ID` for mock). Empty when none. */
   selectedModelId: string;
+  selectedAgentId: string;
   scenarioId: string | null;
   warnings: AiChatWarning[];
   messages: AiChatMessage[];
@@ -191,6 +200,7 @@ export type AiChatStatePatch = {
   pendingUserInputs?: AiChatPendingUserInput[];
   errorMessage?: string | null;
   selectedModelId?: string;
+  selectedAgentId?: string;
 };
 
 export type AiChatDeltaOp =
@@ -256,4 +266,6 @@ export interface AiChatHandle extends RpcTarget {
   switchConversation(conversationId: string): void;
   listSelectableModels(): AiChatSelectableModel[];
   setSelectedModel(modelId: string): void;
+  listSelectableAgents(): AiChatSelectableAgent[];
+  setSelectedAgent(agentId: string): void;
 }

@@ -15,6 +15,7 @@ export class WorkspaceServiceImpl extends RpcTarget implements WorkspaceService 
   readonly #aiChat: AiChatRepository;
   readonly #mockAiEnabled: boolean;
   readonly #getAiModelsStore: RpcMainDeps["getAiModelsStore"];
+  readonly #getAiAgentsStore: RpcMainDeps["getAiAgentsStore"];
   readonly #openSessions = new Set<ProjectSessionImpl>();
 
   constructor(window: BrowserWindow, deps: RpcMainDeps) {
@@ -26,6 +27,7 @@ export class WorkspaceServiceImpl extends RpcTarget implements WorkspaceService 
     this.#aiChat = new AiChatRepository(db);
     this.#mockAiEnabled = deps.mockAiEnabled;
     this.#getAiModelsStore = deps.getAiModelsStore;
+    this.#getAiAgentsStore = deps.getAiAgentsStore;
   }
 
   openProject(projectId: number): ProjectSessionImpl {
@@ -42,6 +44,7 @@ export class WorkspaceServiceImpl extends RpcTarget implements WorkspaceService 
       this.#aiChat,
       this.#mockAiEnabled,
       this.#getAiModelsStore,
+      this.#getAiAgentsStore,
     );
     this.#openSessions.add(session);
     return session;

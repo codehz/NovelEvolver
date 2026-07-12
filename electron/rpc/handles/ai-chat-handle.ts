@@ -3,6 +3,7 @@ import { RpcTarget } from "capnweb";
 import type {
   AiChatEvent,
   AiChatHandle,
+  AiChatSelectableAgent,
   AiChatSelectableModel,
   AiConversationSummary,
 } from "#shared/rpc/ai/index";
@@ -43,5 +44,13 @@ export class AiChatHandleImpl extends RpcTarget implements AiChatHandle {
 
   setSelectedModel(modelId: string): void {
     this.#chat.setSelectedModel(modelId);
+  }
+
+  listSelectableAgents(): AiChatSelectableAgent[] {
+    return this.#chat.listSelectableAgents();
+  }
+
+  setSelectedAgent(agentId: string): void {
+    this.#chat.setSelectedAgent(agentId);
   }
 }

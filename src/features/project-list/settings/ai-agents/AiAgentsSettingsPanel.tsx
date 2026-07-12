@@ -1,0 +1,324 @@
+import { useCallback, useEffect, useMemo, useState } from "react";
+
+import { settingsService } from "#app/shared/lib/rpc/app-rpc";
+import { cn } from "#app/shared/lib/ui/cn";
+import type {
+  AiAgentConfigPublic,
+  AiAgentConfigWrite,
+  AiAgentsSettingsSnapshot,
+  AiModelsSettingsSnapshot,
+} from "#shared/rpc/services/index";
+
+import {
+  settingsEmptyStateClass,
+  settingsIconButtonClass,
+  settingsListClass,
+  settingsListItemClass,
+  settingsListItemMetaClass,
+  settingsListItemTitleClass,
+  settingsPanelHeaderClass,
+  settingsPanelSectionClass,
+  settingsPrimaryButtonClass,
+  settingsSecondaryButtonClass,
+  settingsStatusBadgeClass,
+} from "../settings-chrome";
+import { AiAgentConfigForm } from "./AiAgentConfigForm";
+
+type AgentEditorMode =
+  | { type: "closed" }
+  | { type: "create" }
+  | { type: "edit"; agent: AiAgentConfigPublic }
+  | { type: "detail"; agent: AiAgentConfigPublic };
+
+function errorMessage(error: unknown, fallback: string): string {
+  if (error instanceof Error && error.message.trim() !== "") {
+    return error.message;
+  }
+  if (typeof error === "string" && error.trim() !== "") {
+    return error;
+  }
+  return fallback;
+}
+
+export function AiAgentsSettingsPanel() {
+  const [agentSnapshot, setAgentSnapshot] = useState<AiAgentsSettingsSnapshot | null>(null);
+  const [modelsSnapshot, setModelsSnapshot] = useState<AiModelsSettingsSnapshot | null>(null);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [actionError, setActionError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [busy, setBusy] = useState(false);
+  const [editor, setEditor] = useState<AgentEditorMode>({ type: "closed" });
+
+  const refresh = useCallback(async () => {
+    setLoading(true);
+    setLoadError(null);
+    try {
+      const [agents, models] = await Promise.all([
+        settingsService.getAiAgents(),
+        settingsService.getAiModels(),
+      ]);
+      setAgentSnapshot(agents);
+      setModelsSnapshot(models);
+    } catch (error) {
+      setLoadError(errorMessage(error, "加载 AI Agent 设置失败"));
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    void refresh();
+  }, [refresh]);
+
+  const agents = agentSnapshot?.agents ?? [];
+  const tools = agentSnapshot?.tools ?? [];
+  const models = modelsSnapshot?.models ?? [];
+  const providers = modelsSnapshot?.providers ?? [];
+
+  const modelNameById = useMemo(() => {
+    const map = new Map<string, string>();
+    for (const model of models) {
+      map.set(model.id, model.name);
+    }
+    return map;
+  }, [models]);
+
+  const applySnapshot = (next: AiAgentsSettingsSnapshot) => {
+    setAgentSnapshot(next);
+    setActionError(null);
+  };
+
+  const runMutation = async (
+    action: () => Promise<AiAgentsSettingsSnapshot> | AiAgentsSettingsSnapshot,
+    fallback: string,
+  ) => {
+    setBusy(true);
+    setActionError(null);
+    try {
+      const next = await action();
+      applySnapshot(next);
+      return true;
+    } catch (error) {
+      setActionError(errorMessage(error, fallback));
+      return false;
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const handleSubmit = async (input: AiAgentConfigWrite) => {
+    const ok = await runMutation(
+      () => settingsService.upsertAiAgent(input),
+      input.id ? "保存 Agent 失败" : "添加 Agent 失败",
+    );
+    if (ok) {
+      setEditor({ type: "closed" });
+    }
+  };
+
+  const handleRemove = async (id: string) => {
+    if (!window.confirm("确定删除该 Agent？")) {
+      return;
+    }
+    const ok = await runMutation(() => settingsService.removeAiAgent(id), "删除 Agent 失败");
+    if (ok && editor.type !== "closed" && "agent" in editor && editor.agent.id === id) {
+      setEditor({ type: "closed" });
+    }
+  };
+
+  const handleOpenEditor = (next: AgentEditorMode) => {
+    setActionError(null);
+    setEditor(next);
+  };
+
+  if (loading && agentSnapshot === null) {
+    return <div className={settingsEmptyStateClass}>加载中…</div>;
+  }
+
+  if (loadError && agentSnapshot === null) {
+    return (
+      <div className={settingsPanelSectionClass}>
+        <p className="text-xs text-ctp-red">{loadError}</p>
+        <button
+          className={settingsSecondaryButtonClass}
+          type="button"
+          onClick={() => {
+            void refresh();
+          }}
+        >
+          重试
+        </button>
+      </div>
+    );
+  }
+
+  const showListChrome = editor.type === "closed";
+
+  return (
+    <div className={settingsPanelSectionClass}>
+      <div className={settingsPanelHeaderClass}>
+        <div className="min-w-0 flex-1">
+          <h3 className="text-sm font-medium text-app-foreground">AI Agent</h3>
+          <p className="mt-0.5 text-2xs text-app-muted">
+            定义拥有独立系统提示词和工具权限的 AI 角色，可在对话中切换。
+          </p>
+        </div>
+        {showListChrome ? (
+          <button
+            className={settingsPrimaryButtonClass}
+            disabled={busy}
+            type="button"
+            onClick={() => {
+              handleOpenEditor({ type: "create" });
+            }}
+          >
+            <span aria-hidden="true" className="icon-[codicon--add] text-sm" />
+            添加 Agent
+          </button>
+        ) : null}
+      </div>
+
+      {actionError && showListChrome ? <p className="text-xs text-ctp-red">{actionError}</p> : null}
+
+      {editor.type === "create" ? (
+        <AiAgentConfigForm
+          busy={busy}
+          error={actionError}
+          models={models}
+          providers={providers}
+          tools={tools}
+          onCancel={() => {
+            setActionError(null);
+            setEditor({ type: "closed" });
+          }}
+          onSubmit={handleSubmit}
+        />
+      ) : null}
+
+      {editor.type === "edit" ? (
+        <AiAgentConfigForm
+          key={editor.agent.id}
+          busy={busy}
+          error={actionError}
+          initial={editor.agent}
+          models={models}
+          providers={providers}
+          tools={tools}
+          onCancel={() => {
+            setActionError(null);
+            setEditor({ type: "closed" });
+          }}
+          onSubmit={handleSubmit}
+        />
+      ) : null}
+
+      {editor.type === "detail" ? (
+        <AiAgentConfigForm
+          key={editor.agent.id}
+          busy={busy}
+          error={actionError}
+          initial={editor.agent}
+          models={models}
+          providers={providers}
+          readOnly
+          tools={tools}
+          onCancel={() => {
+            setActionError(null);
+            setEditor({ type: "closed" });
+          }}
+        />
+      ) : null}
+
+      {agents.length === 0 && showListChrome ? (
+        <div className={settingsEmptyStateClass}>还没有自定义 Agent，点击「添加 Agent」开始。</div>
+      ) : null}
+
+      {showListChrome && agents.length > 0 ? (
+        <ul className={settingsListClass}>
+          {agents.map((agent) => {
+            const defaultModelName = agent.defaultModelId
+              ? (modelNameById.get(agent.defaultModelId) ?? agent.defaultModelId)
+              : null;
+
+            return (
+              <li key={agent.id} className={settingsListItemClass}>
+                <div className="min-w-0 flex-1">
+                  <div className="flex min-w-0 flex-wrap items-center gap-1.5">
+                    <span className={settingsListItemTitleClass}>{agent.name}</span>
+                    {agent.builtin ? (
+                      <span
+                        className={cn(
+                          settingsStatusBadgeClass,
+                          "bg-badge-background/20 text-badge-background",
+                        )}
+                      >
+                        内置
+                      </span>
+                    ) : (
+                      <span className={settingsStatusBadgeClass}>自定义</span>
+                    )}
+                  </div>
+                  <div className={settingsListItemMetaClass}>
+                    <span>{agent.availableToolNames.length} 个工具</span>
+                    {defaultModelName ? (
+                      <>
+                        <span aria-hidden="true">·</span>
+                        <span>默认模型：{defaultModelName}</span>
+                      </>
+                    ) : (
+                      <>
+                        <span aria-hidden="true">·</span>
+                        <span>继承对话默认模型</span>
+                      </>
+                    )}
+                  </div>
+                </div>
+
+                <div className="flex shrink-0 items-center gap-0.5">
+                  {agent.builtin ? (
+                    <button
+                      aria-label={`查看 ${agent.name} 详情`}
+                      className={settingsSecondaryButtonClass}
+                      disabled={busy}
+                      type="button"
+                      onClick={() => {
+                        handleOpenEditor({ type: "detail", agent });
+                      }}
+                    >
+                      详情
+                    </button>
+                  ) : (
+                    <>
+                      <button
+                        aria-label={`编辑 Agent ${agent.name}`}
+                        className={settingsIconButtonClass}
+                        disabled={busy}
+                        type="button"
+                        onClick={() => {
+                          handleOpenEditor({ type: "edit", agent });
+                        }}
+                      >
+                        <span aria-hidden="true" className="icon-[codicon--edit] text-base" />
+                      </button>
+                      <button
+                        aria-label={`删除 Agent ${agent.name}`}
+                        className={settingsIconButtonClass}
+                        disabled={busy}
+                        type="button"
+                        onClick={() => {
+                          void handleRemove(agent.id);
+                        }}
+                      >
+                        <span aria-hidden="true" className="icon-[codicon--trash] text-base" />
+                      </button>
+                    </>
+                  )}
+                </div>
+              </li>
+            );
+          })}
+        </ul>
+      ) : null}
+    </div>
+  );
+}

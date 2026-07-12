@@ -3,6 +3,7 @@ import { useCallback, useEffect, useState } from "react";
 import { consumeRpcSubscription } from "#app/shared/lib/rpc/app-rpc-react";
 import { applyAiChatEvent, createInitialAiChatSnapshot } from "#shared/rpc/ai/index";
 import type {
+  AiChatSelectableAgent,
   AiChatSelectableModel,
   AiChatSnapshot,
   AiConversationSummary,
@@ -78,6 +79,17 @@ export function useAiChatState() {
     [aiChat],
   );
 
+  const listSelectableAgents = useCallback(async (): Promise<AiChatSelectableAgent[]> => {
+    return await Promise.resolve(aiChat.listSelectableAgents());
+  }, [aiChat]);
+
+  const setSelectedAgent = useCallback(
+    async (agentId: string): Promise<void> => {
+      await Promise.resolve(aiChat.setSelectedAgent(agentId));
+    },
+    [aiChat],
+  );
+
   return {
     snapshot,
     loading,
@@ -88,5 +100,7 @@ export function useAiChatState() {
     switchConversation,
     listSelectableModels,
     setSelectedModel,
+    listSelectableAgents,
+    setSelectedAgent,
   };
 }

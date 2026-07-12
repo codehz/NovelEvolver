@@ -19,6 +19,7 @@ export function initAiChatSchema(db: DatabaseSync): void {
       adapter_kind TEXT NOT NULL,
       model TEXT NOT NULL,
       selected_model_id TEXT NOT NULL DEFAULT '',
+      selected_agent_id TEXT NOT NULL DEFAULT 'builtin-writing-assistant',
       scenario_id TEXT,
       messages_json TEXT NOT NULL,
       history_json TEXT NOT NULL,
@@ -42,5 +43,10 @@ export function initAiChatSchema(db: DatabaseSync): void {
   }
   if (!columns.some((column) => column.name === "selected_model_id")) {
     db.exec("ALTER TABLE ai_conversation ADD COLUMN selected_model_id TEXT NOT NULL DEFAULT ''");
+  }
+  if (!columns.some((column) => column.name === "selected_agent_id")) {
+    db.exec(
+      "ALTER TABLE ai_conversation ADD COLUMN selected_agent_id TEXT NOT NULL DEFAULT 'builtin-writing-assistant'",
+    );
   }
 }

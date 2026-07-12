@@ -11,6 +11,7 @@ import type { AiChatRepository } from "../../db/repositories/ai-chat-repo";
 import type { ProjectDbRecord } from "../../db/repositories/projects-repo";
 import type { WorktreeRepository } from "../../db/repositories/worktree-repo";
 import { toProjectMetadata } from "../../projects/home-path";
+import type { AiAgentsStore } from "../../settings/ai-agents-store";
 import type { AiModelsStore } from "../../settings/ai-models-store";
 import { WorktreeSession } from "../../worktree/session";
 import { AiChatHandleImpl } from "../handles/ai-chat-handle";
@@ -49,6 +50,7 @@ export class ProjectSessionImpl extends RpcTarget implements ProjectSession {
     aiChatRepository: AiChatRepository,
     mockAiEnabled: boolean,
     getAiModelsStore: () => AiModelsStore,
+    getAiAgentsStore: () => AiAgentsStore,
   ) {
     super();
     this.#projectId = projectId;
@@ -62,6 +64,7 @@ export class ProjectSessionImpl extends RpcTarget implements ProjectSession {
       resolveWorktree: () => this.#resolveCurrentWorktree(),
       mockAiEnabled,
       getAiModelsStore,
+      getAiAgentsStore,
     });
     this.#ai = new AiChatHandleImpl(this.#aiChat);
     this.#mockAi = mockAiEnabled ? new MockAiControlHandleImpl(this.#aiChat) : null;
