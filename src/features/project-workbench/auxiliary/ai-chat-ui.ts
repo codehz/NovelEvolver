@@ -67,7 +67,7 @@ export const userMessageBubbleClass = cn(
   "max-w-[88%] rounded-xl bg-window-chrome px-3 py-2 text-[0.8125rem] leading-5 text-app-foreground shadow-[inset_0_1px_0_0_color-mix(in_srgb,var(--color-ctp-surface0)_24%,transparent)]",
 );
 export const composerShellClass = cn(
-  "mx-auto flex w-full max-w-3xl flex-col gap-1 rounded-lg border border-titlebar-border bg-app-background p-1.5 transition-colors",
+  "mx-auto flex w-full max-w-3xl flex-col gap-1 rounded-lg border border-transparent bg-app-background p-1.5 transition-colors",
   "focus-within:border-ctp-mauve",
 );
 export const composerTextareaClass = cn(
