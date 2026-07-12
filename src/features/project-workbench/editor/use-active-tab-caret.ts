@@ -10,7 +10,7 @@ const fallbackCaret: EditorCaretPosition = { line: 1, column: 1, selectionLength
 /** 与 `editorTabScope` 默认 value 一致；无活动标签时仅用于稳定 `useMolecule` 依赖项数量。 */
 const noActiveTabScopeValue = "";
 
-export function useActiveTabCaretPosition(): EditorCaretPosition {
+export function useActiveTabCaretPosition(): EditorCaretPosition | null {
   const { activeTabIdAtom } = useMolecule(workbenchEditorMolecule);
   const activeTabId = useAtomValue(activeTabIdAtom);
   const fallbackAtom = useMemo(() => atom(fallbackCaret), []);
@@ -18,6 +18,11 @@ export function useActiveTabCaretPosition(): EditorCaretPosition {
     withScope: [editorTabScope, activeTabId ?? noActiveTabScopeValue],
   });
   const caretAtom = activeTabId ? tabState.caretPositionAtom : fallbackAtom;
+  const caret = useAtomValue(caretAtom);
 
-  return useAtomValue(caretAtom);
+  if (!activeTabId) {
+    return null;
+  }
+
+  return caret;
 }
