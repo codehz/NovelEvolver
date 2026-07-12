@@ -2,9 +2,9 @@ import type { ToolCallItem } from "@codehz/ai";
 
 import type {
   AiProjectStructure,
-  AiProjectStructureDomain,
   AiProjectStructureManuscriptNode,
   AiProjectStructureResourceNode,
+  AiProjectStructureTarget,
   WorktreeSession,
 } from "../../worktree/session";
 import { parseToolArgs } from "./utils";
@@ -20,8 +20,10 @@ type ProjectStructureManuscriptNodeDto = {
   kind: "folder" | "chapter";
   title: string;
   parent_id: string | null;
-  child_ids: string[];
   display_path: string;
+  child_count?: number;
+  descendant_count?: number;
+  expanded?: boolean;
 };
 
 type ProjectStructureResourceNodeDto = {
@@ -30,12 +32,16 @@ type ProjectStructureResourceNodeDto = {
   kind: "folder" | "file";
   name: string;
   parent_id: string | null;
-  child_ids: string[];
   display_path: string;
+  child_count?: number;
+  descendant_count?: number;
+  expanded?: boolean;
 };
 
 export type GetProjectStructureResult = {
-  domain: AiProjectStructureDomain;
+  budget: number;
+  node_count: number;
+  target?: AiProjectStructureTarget;
   manuscript?: ProjectStructureTree<ProjectStructureManuscriptNodeDto>;
   resource?: ProjectStructureTree<ProjectStructureResourceNodeDto>;
 };
@@ -107,6 +113,10 @@ type ReadTextDocumentArgs = {
   target?: unknown;
 };
 
+type GetProjectStructureArgs = {
+  target?: unknown;
+};
+
 type SearchProjectArgs = {
   query?: unknown;
   scope?: unknown;
@@ -143,7 +153,7 @@ function parseNonEmptyString(value: unknown, fieldName: string): string {
   return value;
 }
 
-function parseScopeDomain(value: unknown, fieldName: string): AiProjectStructureDomain {
+function parseScopeDomain(value: unknown, fieldName: string): "manuscript" | "resource" | "all" {
   if (value === undefined) {
     return "all";
   }
@@ -179,8 +189,10 @@ function toManuscriptNodeDto(
     kind: node.kind,
     title: node.title,
     parent_id: node.parentId,
-    child_ids: [...node.childIds],
     display_path: node.displayPath,
+    child_count: node.childCount,
+    descendant_count: node.descendantCount,
+    expanded: node.expanded,
   };
 }
 
@@ -191,14 +203,18 @@ function toResourceNodeDto(node: AiProjectStructureResourceNode): ProjectStructu
     kind: node.kind,
     name: node.name,
     parent_id: node.parentId,
-    child_ids: [...node.childIds],
     display_path: node.displayPath,
+    child_count: node.childCount,
+    descendant_count: node.descendantCount,
+    expanded: node.expanded,
   };
 }
 
 function toProjectStructureResult(structure: AiProjectStructure): GetProjectStructureResult {
   return {
-    domain: structure.domain,
+    budget: structure.budget,
+    node_count: structure.nodeCount,
+    target: structure.target,
     manuscript:
       structure.manuscript === undefined
         ? undefined
@@ -219,9 +235,10 @@ function toProjectStructureResult(structure: AiProjectStructure): GetProjectStru
 function findCreatedNodePath(
   worktree: WorktreeSession,
   domain: "manuscript" | "resource",
+  parentId: string,
   nodeId: string,
 ): string {
-  const structure = worktree.getProjectStructure(domain);
+  const structure = worktree.getProjectStructure({ domain, id: parentId });
   const nodes = domain === "manuscript" ? structure.manuscript?.nodes : structure.resource?.nodes;
   const node = nodes?.find((entry) => entry.id === nodeId);
   if (!node) {
@@ -234,9 +251,17 @@ export function executeGetProjectStructure(
   worktree: WorktreeSession,
   call: ToolCallItem,
 ): GetProjectStructureResult {
-  const args = parseToolArgs(call);
-  const domain = parseScopeDomain(args.domain, "domain");
-  return toProjectStructureResult(worktree.getProjectStructure(domain));
+  const args = parseToolArgs(call) as GetProjectStructureArgs;
+  if (args.target === undefined) {
+    return toProjectStructureResult(worktree.getProjectStructure());
+  }
+  if (typeof args.target !== "object" || args.target === null) {
+    throw new Error("target 需要对象参数。");
+  }
+  const target = args.target as Record<string, unknown>;
+  const domain = parseDocumentDomain(target.domain, "target.domain");
+  const id = parseNonEmptyString(target.id, "target.id");
+  return toProjectStructureResult(worktree.getProjectStructure({ domain, id }));
 }
 
 export function executeReadTextDocument(
@@ -415,7 +440,7 @@ export function executeCreateFolder(
       id: created.nodeId,
       parent_id: parentId,
       name,
-      display_path: findCreatedNodePath(worktree, domain, created.nodeId),
+      display_path: findCreatedNodePath(worktree, domain, parentId, created.nodeId),
     };
   }
 
@@ -430,7 +455,7 @@ export function executeCreateFolder(
     id: created.nodeId,
     parent_id: parentId,
     name,
-    display_path: findCreatedNodePath(worktree, domain, created.nodeId),
+    display_path: findCreatedNodePath(worktree, domain, parentId, created.nodeId),
   };
 }
 
@@ -456,7 +481,7 @@ export function executeCreateTextDocument(
       id: created.nodeId,
       parent_id: parentId,
       name,
-      display_path: findCreatedNodePath(worktree, domain, created.nodeId),
+      display_path: findCreatedNodePath(worktree, domain, parentId, created.nodeId),
     };
   }
 
@@ -471,6 +496,6 @@ export function executeCreateTextDocument(
     id: created.nodeId,
     parent_id: parentId,
     name,
-    display_path: findCreatedNodePath(worktree, domain, created.nodeId),
+    display_path: findCreatedNodePath(worktree, domain, parentId, created.nodeId),
   };
 }

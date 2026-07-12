@@ -2,7 +2,7 @@ import type { ToolCallItem } from "@codehz/ai";
 
 import type { Change, HistoryEntry } from "#shared/rpc/worktree/index";
 
-import type { AiProjectStructureDomain, WorktreeSession } from "../../worktree/session";
+import type { WorktreeSession } from "../../worktree/session";
 import { parseToolArgs } from "./utils";
 
 export type MoveDocumentResult = {
@@ -41,7 +41,7 @@ type ChangeDto = {
 };
 
 export type GetWorktreeChangesResult = {
-  domain: AiProjectStructureDomain;
+  domain: "manuscript" | "resource" | "all";
   revision: number;
   base_tree: string;
   has_changes: boolean;
@@ -101,7 +101,7 @@ function parseNonEmptyString(value: unknown, fieldName: string): string {
   return value;
 }
 
-function parseScopeDomain(value: unknown, fieldName: string): AiProjectStructureDomain {
+function parseScopeDomain(value: unknown, fieldName: string): "manuscript" | "resource" | "all" {
   if (value === undefined) {
     return "all";
   }

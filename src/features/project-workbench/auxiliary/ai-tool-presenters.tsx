@@ -159,19 +159,28 @@ const askUserPresenter: ToolPresenter = (toolCall) => {
 const structurePresenter: ToolPresenter = (toolCall) => {
   const args = parseObject(toolCall.argumentsText);
   const result = parseObject(toolCall.resultText);
-  const domain = getString(args, "domain") ?? getString(result, "domain");
+  const target = getObject(args?.target);
+  const domain = getString(target, "domain") ?? "all";
+  const targetId = getString(target, "id");
   const manuscript = getObject(result?.manuscript);
   const resource = getObject(result?.resource);
   const manuscriptNodes = Array.isArray(manuscript?.nodes) ? manuscript.nodes : [];
   const resourceNodes = Array.isArray(resource?.nodes) ? resource.nodes : [];
-  const total = manuscriptNodes.length + resourceNodes.length;
+  const allNodes = [...manuscriptNodes, ...resourceNodes];
+  const total = getNumber(result, "node_count") ?? allNodes.length;
+  const collapsed = allNodes.filter((node) => getObject(node)?.expanded === false).length;
   return {
     label: "读取项目结构",
     summary: `${domainLabel(domain)}${result ? ` · ${total} 个节点` : ""}`,
     detail: (
       <DetailList>
         <DetailField label="范围">{domainLabel(domain)}</DetailField>
+        {targetId ? <DetailField label="目标节点">{targetId}</DetailField> : null}
         {result ? <DetailField label="节点数">{total}</DetailField> : null}
+        {result ? (
+          <DetailField label="节点预算">{getNumber(result, "budget") ?? "未知"}</DetailField>
+        ) : null}
+        {result ? <DetailField label="待展开目录">{collapsed}</DetailField> : null}
         {manuscript ? (
           <DetailField label="手稿根节点">{getString(manuscript, "root_id") ?? "未知"}</DetailField>
         ) : null}

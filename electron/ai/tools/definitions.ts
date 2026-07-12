@@ -45,14 +45,25 @@ export const AI_TOOLS_MAP = {
   },
   read_structure: {
     description:
-      "获取节点 ID 和层级关系。需要按名称或路径定位节点，或为读取、创建、移动、重命名、删除操作获取 ID 时先调用；返回 root_id、节点类型、父子关系和 display_path，不返回文件正文。",
+      "按固定预算获取项目结构摘要，不返回正文。首次无参数调用可同时浏览手稿和资源；结果会优先完整返回根的直接子级，并在预算内自动展开较小目录。目录 expanded=false 表示其子级未包含，可将该目录作为 target 继续读取。",
     inputSchema: {
       type: "object",
       properties: {
-        domain: {
-          type: "string",
-          enum: ["manuscript", "resource", "all"],
-          description: '要读取的树；省略时为 "all"。',
+        target: {
+          type: "object",
+          properties: {
+            domain: {
+              type: "string",
+              enum: ["manuscript", "resource"],
+            },
+            id: {
+              type: "string",
+              description: "此前结构结果中 expanded=false 的 folder ID。",
+            },
+          },
+          required: ["domain", "id"],
+          additionalProperties: false,
+          description: "可选；从指定文件夹继续读取。省略时返回手稿和资源的统一摘要。",
         },
       },
       additionalProperties: false,
@@ -60,7 +71,7 @@ export const AI_TOOLS_MAP = {
   },
   read_document: {
     description:
-      "读取一个可编辑文本节点的当前全文与 worktree revision。manuscript 仅支持 chapter，resource 仅支持 file；id 必须使用 read_structure 返回的节点 ID。写回前应使用返回的 revision 作为 expected_revision。",
+      "读取一个可编辑文本节点的当前全文与 worktree revision。manuscript 仅支持 chapter，resource 仅支持 file；id 必须使用 read_structure 摘要或逐层展开返回的节点 ID。写回前应使用返回的 revision 作为 expected_revision。",
     inputSchema: {
       type: "object",
       properties: {
@@ -180,7 +191,7 @@ export const AI_TOOLS_MAP = {
   },
   create_folder: {
     description:
-      "在现有文件夹下创建文件夹。先用 read_structure 获取 parent_id；manuscript 可指定 index，resource 不得传 index。",
+      "在现有文件夹下创建文件夹。先用 read_structure 摘要或按 target 展开获取 parent_id；manuscript 可指定 index，resource 不得传 index。",
     inputSchema: {
       type: "object",
       properties: {
@@ -211,7 +222,7 @@ export const AI_TOOLS_MAP = {
   },
   create_document: {
     description:
-      "在现有文件夹下创建带完整初始正文的文本节点。先用 read_structure 获取 parent_id；manuscript 创建 chapter 且可指定 index，resource 创建 file 且不得传 index。content 必须提供，本次调用应直接写入最终正文，不要先创建空节点再读取或编辑。",
+      "在现有文件夹下创建带完整初始正文的文本节点。先用 read_structure 摘要或按 target 展开获取 parent_id；manuscript 创建 chapter 且可指定 index，resource 创建 file 且不得传 index。content 必须提供，本次调用应直接写入最终正文，不要先创建空节点再读取或编辑。",
     inputSchema: {
       type: "object",
       properties: {
@@ -246,7 +257,7 @@ export const AI_TOOLS_MAP = {
   },
   move_node: {
     description:
-      "将现有节点移动到现有文件夹下。先用 read_structure 获取 id 和 target_parent_id；不能移动根节点或移入自身后代。仅 manuscript 支持 index，resource 不得传 index。",
+      "将现有节点移动到现有文件夹下。先用 read_structure 摘要或按 target 展开获取 id 和 target_parent_id；不能移动根节点或移入自身后代。仅 manuscript 支持 index，resource 不得传 index。",
     inputSchema: {
       type: "object",
       properties: {

@@ -27,7 +27,12 @@ import * as resourceOps from "./resource-ops";
 import { searchWorktree } from "./search-ops";
 import { createWorktreeSessionState, type WorktreeSessionState } from "./state";
 
-export type AiProjectStructureDomain = "manuscript" | "resource" | "all";
+export type AiProjectStructureDomain = "manuscript" | "resource";
+
+export type AiProjectStructureTarget = {
+  domain: AiProjectStructureDomain;
+  id: string;
+};
 
 export type AiProjectStructureManuscriptNode = {
   id: string;
@@ -35,8 +40,10 @@ export type AiProjectStructureManuscriptNode = {
   kind: "folder" | "chapter";
   title: string;
   parentId: string | null;
-  childIds: string[];
   displayPath: string;
+  childCount?: number;
+  descendantCount?: number;
+  expanded?: boolean;
 };
 
 export type AiProjectStructureResourceNode = {
@@ -45,12 +52,16 @@ export type AiProjectStructureResourceNode = {
   kind: "folder" | "file";
   name: string;
   parentId: string | null;
-  childIds: string[];
   displayPath: string;
+  childCount?: number;
+  descendantCount?: number;
+  expanded?: boolean;
 };
 
 export type AiProjectStructure = {
-  domain: AiProjectStructureDomain;
+  budget: number;
+  nodeCount: number;
+  target?: AiProjectStructureTarget;
   manuscript?: {
     rootId: string;
     nodes: AiProjectStructureManuscriptNode[];
@@ -61,63 +72,20 @@ export type AiProjectStructure = {
   };
 };
 
-function buildManuscriptStructureNodes(
-  state: WorktreeSessionState,
-): AiProjectStructureManuscriptNode[] {
-  const nodes: AiProjectStructureManuscriptNode[] = [];
+const AI_STRUCTURE_NODE_BUDGET = 100;
 
-  const visit = (nodeId: string): void => {
-    const node = state.manuscriptTree.nodes[nodeId];
-    if (node === undefined) {
-      throw new Error(`Manuscript node does not exist: ${nodeId}`);
-    }
-    const entry = state.currentManuscript.entries.get(nodeId);
-    nodes.push({
-      id: node.id,
-      domain: "manuscript",
-      kind: node.type,
-      title: entry?.title ?? node.title,
-      parentId: node.parentId,
-      childIds: [...node.childIds],
-      displayPath: entry?.displayPath ?? "",
-    });
-    for (const childId of node.childIds) {
-      visit(childId);
-    }
-  };
+type StructureTreeNode = {
+  id: string;
+  type: "folder" | "chapter" | "file";
+  parentId: string | null;
+  childIds: string[];
+};
 
-  visit(state.manuscriptTree.rootId);
-  return nodes;
-}
-
-function buildResourceStructureNodes(
-  state: WorktreeSessionState,
-): AiProjectStructureResourceNode[] {
-  const nodes: AiProjectStructureResourceNode[] = [];
-
-  const visit = (nodeId: string): void => {
-    const node = state.resourceTree.nodes[nodeId];
-    if (node === undefined) {
-      throw new Error(`Resource node does not exist: ${nodeId}`);
-    }
-    const entry = state.currentResources.entries.get(nodeId);
-    nodes.push({
-      id: node.id,
-      domain: "resource",
-      kind: node.type,
-      name: entry?.name ?? node.name,
-      parentId: node.parentId,
-      childIds: [...node.childIds],
-      displayPath: entry?.displayPath ?? "",
-    });
-    for (const childId of node.childIds) {
-      visit(childId);
-    }
-  };
-
-  visit(state.resourceTree.rootId);
-  return nodes;
-}
+type StructureCandidate = {
+  domain: AiProjectStructureDomain;
+  id: string;
+  order: number;
+};
 
 export class WorktreeSession {
   readonly #state: WorktreeSessionState;
@@ -257,19 +225,129 @@ export class WorktreeSession {
     return searchWorktree(this.#state, options);
   }
 
-  getProjectStructure(domain: AiProjectStructureDomain = "all"): AiProjectStructure {
-    const result: AiProjectStructure = { domain };
-    if (domain === "all" || domain === "manuscript") {
-      result.manuscript = {
-        rootId: this.#state.manuscriptTree.rootId,
-        nodes: buildManuscriptStructureNodes(this.#state),
-      };
+  getProjectStructure(target?: AiProjectStructureTarget): AiProjectStructure {
+    const domains: AiProjectStructureDomain[] = target
+      ? [target.domain]
+      : ["manuscript", "resource"];
+    const included = new Map<string, Set<string>>();
+    const expanded = new Map<string, Set<string>>();
+    const descendantCounts = new Map<string, number>();
+    const candidates: StructureCandidate[] = [];
+    let candidateOrder = 0;
+
+    const treeFor = (domain: AiProjectStructureDomain) =>
+      domain === "manuscript" ? this.#state.manuscriptTree : this.#state.resourceTree;
+    const keyFor = (domain: AiProjectStructureDomain, id: string) => `${domain}:${id}`;
+    const countDescendants = (domain: AiProjectStructureDomain, id: string): number => {
+      const key = keyFor(domain, id);
+      const cached = descendantCounts.get(key);
+      if (cached !== undefined) return cached;
+      const node = treeFor(domain).nodes[id] as StructureTreeNode | undefined;
+      if (!node) throw new Error(`${domain} 节点不存在: ${id}`);
+      const count = node.childIds.reduce(
+        (total, childId) => total + 1 + countDescendants(domain, childId),
+        0,
+      );
+      descendantCounts.set(key, count);
+      return count;
+    };
+    const include = (domain: AiProjectStructureDomain, id: string): void => {
+      const ids = included.get(domain) ?? new Set<string>();
+      ids.add(id);
+      included.set(domain, ids);
+    };
+    const queueCandidate = (domain: AiProjectStructureDomain, id: string): void => {
+      const node = treeFor(domain).nodes[id] as StructureTreeNode;
+      if (node.type === "folder" && node.childIds.length > 0) {
+        candidates.push({ domain, id, order: candidateOrder++ });
+      }
+    };
+    const expand = (domain: AiProjectStructureDomain, id: string): void => {
+      const node = treeFor(domain).nodes[id] as StructureTreeNode;
+      const ids = expanded.get(domain) ?? new Set<string>();
+      ids.add(id);
+      expanded.set(domain, ids);
+      for (const childId of node.childIds) {
+        include(domain, childId);
+        queueCandidate(domain, childId);
+      }
+    };
+
+    for (const domain of domains) {
+      const tree = treeFor(domain);
+      const startId = target?.id ?? tree.rootId;
+      const start = tree.nodes[startId] as StructureTreeNode | undefined;
+      if (!start) throw new Error(`${domain} 节点不存在: ${startId}`);
+      if (start.type !== "folder") throw new Error("read_structure 的 target 必须是文件夹。");
+      countDescendants(domain, startId);
+      include(domain, startId);
+      expand(domain, startId);
     }
-    if (domain === "all" || domain === "resource") {
-      result.resource = {
-        rootId: this.#state.resourceTree.rootId,
-        nodes: buildResourceStructureNodes(this.#state),
-      };
+
+    let nodeCount = [...included.values()].reduce((total, ids) => total + ids.size, 0);
+    while (nodeCount < AI_STRUCTURE_NODE_BUDGET) {
+      candidates.sort((left, right) => {
+        const leftNode = treeFor(left.domain).nodes[left.id] as StructureTreeNode;
+        const rightNode = treeFor(right.domain).nodes[right.id] as StructureTreeNode;
+        return leftNode.childIds.length - rightNode.childIds.length || left.order - right.order;
+      });
+      const index = candidates.findIndex((candidate) => {
+        const node = treeFor(candidate.domain).nodes[candidate.id] as StructureTreeNode;
+        return nodeCount + node.childIds.length <= AI_STRUCTURE_NODE_BUDGET;
+      });
+      if (index < 0) break;
+      const [candidate] = candidates.splice(index, 1);
+      expand(candidate.domain, candidate.id);
+      nodeCount = [...included.values()].reduce((total, ids) => total + ids.size, 0);
+    }
+
+    const result: AiProjectStructure = { budget: AI_STRUCTURE_NODE_BUDGET, nodeCount, target };
+    for (const domain of domains) {
+      const tree = treeFor(domain);
+      const nodes = [...(included.get(domain) ?? [])].map((id) => {
+        const node = tree.nodes[id] as StructureTreeNode;
+        const directory =
+          node.type === "folder"
+            ? {
+                childCount: node.childIds.length,
+                descendantCount: countDescendants(domain, id),
+                expanded: node.childIds.length === 0 || expanded.get(domain)?.has(id) === true,
+              }
+            : {};
+        if (domain === "manuscript") {
+          const entry = this.#state.currentManuscript.entries.get(id);
+          return {
+            id,
+            domain,
+            kind: node.type as "folder" | "chapter",
+            title: entry?.title ?? (node as typeof node & { title?: string }).title ?? "",
+            parentId: node.parentId,
+            displayPath: entry?.displayPath ?? "",
+            ...directory,
+          } satisfies AiProjectStructureManuscriptNode;
+        }
+        const entry = this.#state.currentResources.entries.get(id);
+        return {
+          id,
+          domain,
+          kind: node.type as "folder" | "file",
+          name: entry?.name ?? (node as typeof node & { name?: string }).name ?? "",
+          parentId: node.parentId,
+          displayPath: entry?.displayPath ?? "",
+          ...directory,
+        } satisfies AiProjectStructureResourceNode;
+      });
+      if (domain === "manuscript") {
+        result.manuscript = {
+          rootId: this.#state.manuscriptTree.rootId,
+          nodes: nodes as AiProjectStructureManuscriptNode[],
+        };
+      } else {
+        result.resource = {
+          rootId: this.#state.resourceTree.rootId,
+          nodes: nodes as AiProjectStructureResourceNode[],
+        };
+      }
     }
     return result;
   }
