@@ -19,13 +19,10 @@ import {
   agentSelectorButtonClass,
   composerShellClass,
   composerTextareaClass,
-  contextUsageRatioClass,
   conversationRailClass,
-  describeContextUsageRatio,
   modelSelectorButtonClass,
   modelSelectorLabelClass,
   panelSectionClass,
-  resolveLatestLastInputTokens,
   sendButtonClass,
   warningBannerClass,
 } from "./ai-chat-ui";
@@ -240,11 +237,6 @@ export function AuxiliaryPanel() {
     selectableAgents.find((agent) => agent.builtin) ??
     null;
   const selectedAgentLabel = selectedAgent?.name ?? "选择 Agent";
-  const contextUsage = describeContextUsageRatio(
-    selectedModel?.contextLength,
-    resolveLatestLastInputTokens(snapshot.messages),
-  );
-
   const messageIdSet = new Set(snapshot.messages.map((message) => message.id));
   const warningsByMessageId = new Map<string, typeof snapshot.warnings>();
   const orphanWarnings: typeof snapshot.warnings = [];
@@ -363,7 +355,7 @@ export function AuxiliaryPanel() {
               disabled={loading || snapshot.pending}
             />
 
-            <div className="grid grid-cols-[minmax(0,max-content)_minmax(0,max-content)_minmax(0,1fr)_auto] items-center gap-1">
+            <div className="flex min-w-0 items-center gap-1">
               <button
                 aria-label="选择 Agent"
                 className={agentSelectorButtonClass}
@@ -398,16 +390,7 @@ export function AuxiliaryPanel() {
                   className="icon-[codicon--chevron-down] shrink-0 text-2xs opacity-70"
                 />
               </button>
-              <span className="flex min-w-0 justify-end">
-                {contextUsage ? (
-                  <span
-                    className={cn(contextUsageRatioClass, contextUsage.toneClass)}
-                    title={`最近一次请求占用上下文 ${contextUsage.used.toLocaleString()} / ${contextUsage.limit.toLocaleString()} token（${contextUsage.percent}%）`}
-                  >
-                    {contextUsage.label}
-                  </span>
-                ) : null}
-              </span>
+              <span className="min-w-0 flex-1" />
               <button
                 aria-label="发送"
                 className={sendButtonClass}

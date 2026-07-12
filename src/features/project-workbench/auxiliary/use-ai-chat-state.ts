@@ -1,4 +1,12 @@
-import { useCallback, useEffect, useState } from "react";
+import {
+  createContext,
+  createElement,
+  useCallback,
+  useContext,
+  useEffect,
+  useState,
+  type ReactNode,
+} from "react";
 
 import { consumeRpcSubscription } from "#app/shared/lib/rpc/app-rpc-react";
 import { applyAiChatEvent, createInitialAiChatSnapshot } from "#shared/rpc/ai/index";
@@ -12,7 +20,7 @@ import type {
 import { useAiChat } from "../branch/branch-scopes";
 import { stripHiddenAiChatWarningsFromSnapshot } from "./ai-chat-ui";
 
-export function useAiChatState() {
+function useAiChatStateValue() {
   const aiChat = useAiChat();
   const [snapshot, setSnapshot] = useState<AiChatSnapshot>(() => createInitialAiChatSnapshot());
   const [loading, setLoading] = useState(true);
@@ -103,4 +111,21 @@ export function useAiChatState() {
     listSelectableAgents,
     setSelectedAgent,
   };
+}
+
+type AiChatStateValue = ReturnType<typeof useAiChatStateValue>;
+
+const AiChatStateContext = createContext<AiChatStateValue | null>(null);
+
+export function AiChatStateProvider({ children }: { children: ReactNode }) {
+  const value = useAiChatStateValue();
+  return createElement(AiChatStateContext, { value }, children);
+}
+
+export function useAiChatState(): AiChatStateValue {
+  const value = useContext(AiChatStateContext);
+  if (!value) {
+    throw new Error("useAiChatState must be used within AiChatStateProvider.");
+  }
+  return value;
 }

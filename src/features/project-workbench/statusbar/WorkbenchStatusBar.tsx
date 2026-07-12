@@ -2,9 +2,10 @@ import {
   StatusBarLeftPortalContent,
   StatusBarRightPortalContent,
 } from "#app/shared/lib/shell/statusbar-portal";
-import { StatusBarItemButton, StatusBarMessage } from "#workbench/chrome";
+import { StatusBarItemButton } from "#workbench/chrome";
 
 import { BranchStatusItem } from "../branch/BranchStatusItem";
+import { AiContextStatusItem } from "./AiContextStatusItem";
 import { CaretPositionIndicator } from "./CaretPositionIndicator";
 
 const leftStaticItems = [{ id: "sync", label: "同步", icon: "icon-[codicon--sync]" }];
@@ -25,9 +26,9 @@ export function WorkbenchStatusBar() {
             {item.label}
           </StatusBarItemButton>
         ))}
-        <StatusBarMessage>布局演示 — 状态栏占位</StatusBarMessage>
       </StatusBarLeftPortalContent>
       <StatusBarRightPortalContent>
+        <AiContextStatusItem />
         <CaretPositionIndicator />
         {rightStaticItems.map((item) => (
           <StatusBarItemButton key={item.id}>{item.label}</StatusBarItemButton>

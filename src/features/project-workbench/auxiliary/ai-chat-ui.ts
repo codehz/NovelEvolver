@@ -228,7 +228,3 @@ export function describeContextUsageRatio(
     toneClass,
   };
 }
-
-export const contextUsageRatioClass = cn(
-  "min-w-0 shrink truncate text-2xs text-ctp-subtext1 tabular-nums",
-);
