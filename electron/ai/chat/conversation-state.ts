@@ -26,7 +26,7 @@ import type {
 } from "#shared/rpc/ai/index";
 
 import type { AiChatRepository, AiConversationRecord } from "../../db/repositories/ai-chat-repo";
-import { joinContentBlocksText, toMessageUsage } from "../ai-utils";
+import { joinContentBlocksText } from "../ai-utils";
 import {
   parsePendingToolBatch,
   serializePendingToolBatch,
@@ -553,13 +553,6 @@ export class AiConversationState {
     }
 
     return [];
-  }
-
-  buildCompletionPatch(response: AIResponse): AiChatMessagePatch {
-    return {
-      status: "complete",
-      usage: toMessageUsage(response.usage),
-    };
   }
 
   #beginEmptyConversation(): void {

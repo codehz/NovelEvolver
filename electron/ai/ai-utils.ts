@@ -53,6 +53,29 @@ export function toMessageUsage(usage: AIResponse["usage"]): AiChatMessageUsage |
   return Object.keys(messageUsage).length > 0 ? messageUsage : null;
 }
 
+export function addMessageUsage(
+  current: AiChatMessageUsage | null,
+  usage: AIResponse["usage"],
+): AiChatMessageUsage | null {
+  const next = toMessageUsage(usage);
+  if (!next) {
+    return current;
+  }
+  if (!current) {
+    return next;
+  }
+
+  const combined: AiChatMessageUsage = {};
+  for (const field of ["inputTokens", "outputTokens", "reasoningTokens", "totalTokens"] as const) {
+    const currentValue = current[field];
+    const nextValue = next[field];
+    if (typeof currentValue === "number" || typeof nextValue === "number") {
+      combined[field] = (currentValue ?? 0) + (nextValue ?? 0);
+    }
+  }
+  return combined;
+}
+
 export function contentBlockToDisplayText(block: ContentBlock): string {
   switch (block.type) {
     case "text":

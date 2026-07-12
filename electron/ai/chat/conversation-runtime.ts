@@ -8,6 +8,7 @@ import type {
 
 import { cloneAiChatMessage } from "#shared/rpc/ai/index";
 import type {
+  AiChatMessageUsage,
   AiChatSelectableModelKind,
   AiChatDeltaOp,
   AiChatEvent,
@@ -18,7 +19,7 @@ import type {
 import type { AiChatRepository, AiConversationRecord } from "../../db/repositories/ai-chat-repo";
 import { RpcStreamPublisher } from "../../lib/stream-publisher";
 import type { AiModelRuntimeConfig } from "../../settings/ai-models-store";
-import { joinContentBlocksText, toErrorMessage } from "../ai-utils";
+import { addMessageUsage, joinContentBlocksText, toErrorMessage } from "../ai-utils";
 import type { AiBackendSession } from "../backend/ai-backend-session";
 import { createAiBackendSession } from "../backend/create-ai-backend";
 import { toInputItem } from "../mock-adapter";
@@ -255,11 +256,13 @@ export class AiConversationRuntime {
     requestInput: InputItem[];
     transcript?: InputItem[];
     backend?: AiBackendSession;
+    usage?: AiChatMessageUsage | null;
   }): Promise<void> {
     let input = [...context.requestInput];
     const transcript = context.transcript ? [...context.transcript] : [...context.requestInput];
     let completedResponse: AIResponse | null = null;
     let toolRoundCount = 0;
+    let usage = context.usage ?? null;
 
     try {
       const backend = context.backend ?? this.#resolveBackend();
@@ -297,6 +300,12 @@ export class AiConversationRuntime {
           ),
         );
         transcript.push(...completedResponse.replay);
+        usage = addMessageUsage(usage, completedResponse.usage);
+        this.#emitDelta(
+          this.#state.updateMessage(context.assistantMessageId, {
+            usage,
+          }),
+        );
 
         if (!shouldProcessToolCalls(completedResponse)) {
           break;
@@ -314,6 +323,7 @@ export class AiConversationRuntime {
           input,
           transcript,
           backend,
+          usage,
         );
         if (batchOutcome === "paused") {
           this.#state.persistIfNeeded();
@@ -326,10 +336,7 @@ export class AiConversationRuntime {
       }
 
       this.#emitDelta(
-        this.#state.updateMessage(
-          context.assistantMessageId,
-          this.#state.buildCompletionPatch(completedResponse),
-        ),
+        this.#state.updateMessage(context.assistantMessageId, { status: "complete" }),
       );
       this.#state.replaceHistory(transcript);
       this.#state.setPendingToolBatch(null);
@@ -378,6 +385,7 @@ export class AiConversationRuntime {
     input: InputItem[],
     transcript: InputItem[],
     backend: AiBackendSession,
+    usage: AiChatMessageUsage | null,
   ): Promise<"continue" | "paused"> {
     const resolvedResultsByCallId = new Map<string, ToolResultItem>();
     const pendingInputs: PendingToolBatch["pendingInputs"] = [];
@@ -422,6 +430,7 @@ export class AiConversationRuntime {
         transcript: [...transcript],
         resolvedResultsByCallId,
         pendingInputs,
+        usage,
       };
       this.#state.setPendingToolBatch(batch);
       this.#emitDelta([
@@ -504,6 +513,7 @@ export class AiConversationRuntime {
       requestInput: input,
       transcript,
       backend,
+      usage: batch.usage,
     });
   }
 

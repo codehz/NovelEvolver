@@ -1,6 +1,6 @@
 import type { InputItem, ToolCallItem, ToolResultItem } from "@codehz/ai";
 
-import type { AiChatPendingUserInput } from "#shared/rpc/ai/index";
+import type { AiChatMessageUsage, AiChatPendingUserInput } from "#shared/rpc/ai/index";
 
 import {
   createPendingViewFromRequest,
@@ -24,6 +24,7 @@ export type PendingToolBatch = {
   transcript: InputItem[];
   resolvedResultsByCallId: Map<string, ToolResultItem>;
   pendingInputs: PendingUserInput[];
+  usage: AiChatMessageUsage | null;
 };
 
 type SerializedPendingToolBatch = {
@@ -36,6 +37,7 @@ type SerializedPendingToolBatch = {
     callId: string;
     serializable: PendingUserInputSerializable;
   }[];
+  usage?: AiChatMessageUsage | null;
 };
 
 function createResolver(): Pick<PendingUserInput, "resolverPromise" | "resolve"> {
@@ -93,6 +95,7 @@ export function parsePendingToolBatch(json: string | null): PendingToolBatch | n
       pendingInputs: parsed.pendingInputs.map((entry) =>
         createPendingUserInputFromSerializable(entry.callId, entry.serializable),
       ),
+      usage: parsed.usage ?? null,
     };
   } catch {
     return null;
@@ -114,6 +117,7 @@ export function serializePendingToolBatch(batch: PendingToolBatch | null): strin
       callId: input.callId,
       serializable: input.serializable,
     })),
+    usage: batch.usage,
   };
   return JSON.stringify(payload);
 }
