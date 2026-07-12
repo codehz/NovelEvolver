@@ -41,6 +41,18 @@ export function toMessageUsage(usage: AIResponse["usage"]): AiChatMessageUsage |
   if (typeof usage.reasoningTokens === "number") {
     messageUsage.reasoningTokens = usage.reasoningTokens;
   }
+  if (typeof usage.cachedInputTokens === "number") {
+    messageUsage.cachedInputTokens = usage.cachedInputTokens;
+  }
+  if (typeof usage.cacheWriteInputTokens === "number") {
+    messageUsage.cacheWriteInputTokens = usage.cacheWriteInputTokens;
+  }
+  if (typeof usage.billableInputTokens === "number") {
+    messageUsage.billableInputTokens = usage.billableInputTokens;
+  }
+  if (typeof usage.billableOutputTokens === "number") {
+    messageUsage.billableOutputTokens = usage.billableOutputTokens;
+  }
   if (typeof usage.totalTokens === "number") {
     messageUsage.totalTokens = usage.totalTokens;
   } else if (
@@ -66,7 +78,16 @@ export function addMessageUsage(
   }
 
   const combined: AiChatMessageUsage = {};
-  for (const field of ["inputTokens", "outputTokens", "reasoningTokens", "totalTokens"] as const) {
+  for (const field of [
+    "inputTokens",
+    "outputTokens",
+    "reasoningTokens",
+    "totalTokens",
+    "cachedInputTokens",
+    "cacheWriteInputTokens",
+    "billableInputTokens",
+    "billableOutputTokens",
+  ] as const) {
     const currentValue = current[field];
     const nextValue = next[field];
     if (typeof currentValue === "number" || typeof nextValue === "number") {

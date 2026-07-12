@@ -112,7 +112,27 @@ export function describeToolCallStatus(status: AiChatToolCall["status"]): string
 }
 
 export function describeAssistantMessageMeta(message: AiChatAssistantMessage): string {
-  const parts: string[] = [];
+  const usage = message.usage;
+  const inputTokens = usage?.inputTokens;
+  const outputTokens = usage?.outputTokens;
+  const hasInput = typeof inputTokens === "number";
+  const hasOutput = typeof outputTokens === "number";
+
+  if (hasInput || hasOutput) {
+    const parts: string[] = [];
+    if (hasInput) {
+      const cached = usage?.cachedInputTokens;
+      const inputText =
+        typeof cached === "number" && cached > 0
+          ? `输入 ${inputTokens}（缓存读 ${cached}）`
+          : `输入 ${inputTokens}`;
+      parts.push(inputText);
+    }
+    if (hasOutput) {
+      parts.push(`输出 ${outputTokens}`);
+    }
+    return parts.join(" · ");
+  }
 
   if (message.status === "streaming") {
     const hasRunningTool = message.parts.some(
@@ -121,26 +141,8 @@ export function describeAssistantMessageMeta(message: AiChatAssistantMessage): s
     const hasStreamingReasoning = message.parts.some(
       (part) => part.type === "reasoning" && part.status === "streaming",
     );
-    parts.push(hasStreamingReasoning ? "思考中" : hasRunningTool ? "执行工具中" : "流式输出中");
+    return hasStreamingReasoning ? "思考中" : hasRunningTool ? "执行工具中" : "流式输出中";
   }
 
-  const toolCount = message.parts.filter((part) => part.type === "tool_call").length;
-  if (toolCount > 0) {
-    parts.push(`工具 ${toolCount}`);
-  }
-
-  if (typeof message.usage?.inputTokens === "number") {
-    parts.push(`输入 ${message.usage.inputTokens} tok`);
-  }
-  if (typeof message.usage?.reasoningTokens === "number") {
-    parts.push(`思考 ${message.usage.reasoningTokens} tok`);
-  }
-  if (typeof message.usage?.outputTokens === "number") {
-    parts.push(`输出 ${message.usage.outputTokens} tok`);
-  }
-  if (typeof message.usage?.totalTokens === "number") {
-    parts.push(`总计 ${message.usage.totalTokens} tok`);
-  }
-
-  return parts.length > 0 ? parts.join(" · ") : "已完成";
+  return "";
 }

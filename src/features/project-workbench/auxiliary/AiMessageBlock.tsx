@@ -56,9 +56,11 @@ export function AiMessageBlock({ message }: { message: AiChatMessage }) {
         </div>
       )}
 
-      <p className={reasoningMetaClass} title={metaText}>
-        {metaText}
-      </p>
+      {metaText !== "" ? (
+        <p className={reasoningMetaClass} title={metaText}>
+          {metaText}
+        </p>
+      ) : null}
     </article>
   );
 }
