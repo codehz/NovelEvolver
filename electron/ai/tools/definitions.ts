@@ -43,7 +43,7 @@ export const AI_TOOLS_MAP = {
       additionalProperties: false,
     },
   },
-  get_project_structure: {
+  read_structure: {
     description:
       "获取节点 ID 和层级关系。需要按名称或路径定位节点，或为读取、创建、移动、重命名、删除操作获取 ID 时先调用；返回 root_id、节点类型、父子关系和 display_path，不返回文件正文。",
     inputSchema: {
@@ -58,9 +58,9 @@ export const AI_TOOLS_MAP = {
       additionalProperties: false,
     },
   },
-  read_text_document: {
+  read_document: {
     description:
-      "读取一个可编辑文本节点的当前全文。manuscript 仅支持 chapter，resource 仅支持 file；id 必须使用 get_project_structure 返回的节点 ID。编辑前必须先调用以取得 expected_content。",
+      "读取一个可编辑文本节点的当前全文。manuscript 仅支持 chapter，resource 仅支持 file；id 必须使用 read_structure 返回的节点 ID。编辑前必须先调用以取得 expected_content。",
     inputSchema: {
       type: "object",
       properties: {
@@ -73,7 +73,7 @@ export const AI_TOOLS_MAP = {
             },
             id: {
               type: "string",
-              description: "get_project_structure 返回的 chapter 或 file 节点 ID，不是名称或路径。",
+              description: "read_structure 返回的 chapter 或 file 节点 ID，不是名称或路径。",
             },
           },
           required: ["domain", "id"],
@@ -84,9 +84,9 @@ export const AI_TOOLS_MAP = {
       additionalProperties: false,
     },
   },
-  search_project: {
+  search_documents: {
     description:
-      "按字面关键词搜索章节和资源文件正文，用于定位内容所在节点；返回命中节点 ID、路径、1-based 行列号和片段。需要浏览目录结构时改用 get_project_structure。",
+      "按字面关键词搜索章节和资源文件正文，用于定位内容所在节点；返回命中节点 ID、路径、1-based 行列号和片段。需要浏览目录结构时改用 read_structure。",
     inputSchema: {
       type: "object",
       properties: {
@@ -109,9 +109,9 @@ export const AI_TOOLS_MAP = {
       additionalProperties: false,
     },
   },
-  edit_text_document: {
+  write_document: {
     description:
-      "将一个章节或资源文件的全文替换为 new_content。仅在大范围重写时使用；局部修改优先用 replace_text_document。必须先调用 read_text_document，并将其完整、原样返回值作为 expected_content；若内容已变化则调用失败，应重新读取后再编辑。",
+      "将一个章节或资源文件的全文替换为 new_content。仅在大范围重写时使用；局部修改优先用 replace_document_text。必须先调用 read_document，并将其完整、原样返回值作为 expected_content；若内容已变化则调用失败，应重新读取后再编辑。",
     inputSchema: {
       type: "object",
       properties: {
@@ -132,7 +132,7 @@ export const AI_TOOLS_MAP = {
         },
         expected_content: {
           type: "string",
-          description: "最近一次 read_text_document 返回的完整原文，不得摘要、省略或改写。",
+          description: "最近一次 read_document 返回的完整原文，不得摘要、省略或改写。",
         },
         new_content: {
           type: "string",
@@ -143,7 +143,7 @@ export const AI_TOOLS_MAP = {
       additionalProperties: false,
     },
   },
-  replace_text_document: {
+  replace_document_text: {
     description:
       "精确替换章节或资源文件中的一段文字，适合局部修订且无需回传完整全文。必须先读取当前正文；expected_text 必须在正文中恰好出现一次，否则失败且不修改。可用空 replacement_text 删除该段。多个互不依赖的替换应逐次调用。",
     inputSchema: {
@@ -179,7 +179,7 @@ export const AI_TOOLS_MAP = {
   },
   create_folder: {
     description:
-      "在现有文件夹下创建文件夹。先用 get_project_structure 获取 parent_id；manuscript 可指定 index，resource 不得传 index。",
+      "在现有文件夹下创建文件夹。先用 read_structure 获取 parent_id；manuscript 可指定 index，resource 不得传 index。",
     inputSchema: {
       type: "object",
       properties: {
@@ -191,7 +191,7 @@ export const AI_TOOLS_MAP = {
         parent_id: {
           type: "string",
           description:
-            "对应树中现有 folder 的 ID；根级创建使用 get_project_structure 返回的对应 root_id。",
+            "对应树中现有 folder 的 ID；根级创建使用 read_structure 返回的对应 root_id。",
         },
         name: {
           type: "string",
@@ -208,9 +208,9 @@ export const AI_TOOLS_MAP = {
       additionalProperties: false,
     },
   },
-  create_text_document: {
+  create_document: {
     description:
-      "在现有文件夹下创建带完整初始正文的文本节点。先用 get_project_structure 获取 parent_id；manuscript 创建 chapter 且可指定 index，resource 创建 file 且不得传 index。content 必须提供，本次调用应直接写入最终正文，不要先创建空节点再读取或编辑。",
+      "在现有文件夹下创建带完整初始正文的文本节点。先用 read_structure 获取 parent_id；manuscript 创建 chapter 且可指定 index，resource 创建 file 且不得传 index。content 必须提供，本次调用应直接写入最终正文，不要先创建空节点再读取或编辑。",
     inputSchema: {
       type: "object",
       properties: {
@@ -222,7 +222,7 @@ export const AI_TOOLS_MAP = {
         parent_id: {
           type: "string",
           description:
-            "对应树中现有 folder 的 ID；根级创建使用 get_project_structure 返回的对应 root_id。",
+            "对应树中现有 folder 的 ID；根级创建使用 read_structure 返回的对应 root_id。",
         },
         name: {
           type: "string",
@@ -243,9 +243,9 @@ export const AI_TOOLS_MAP = {
       additionalProperties: false,
     },
   },
-  move_document: {
+  move_node: {
     description:
-      "将现有节点移动到现有文件夹下。先用 get_project_structure 获取 id 和 target_parent_id；不能移动根节点或移入自身后代。仅 manuscript 支持 index，resource 不得传 index。",
+      "将现有节点移动到现有文件夹下。先用 read_structure 获取 id 和 target_parent_id；不能移动根节点或移入自身后代。仅 manuscript 支持 index，resource 不得传 index。",
     inputSchema: {
       type: "object",
       properties: {
@@ -271,9 +271,9 @@ export const AI_TOOLS_MAP = {
       additionalProperties: false,
     },
   },
-  rename_document: {
+  rename_node: {
     description:
-      "重命名一个现有节点，不修改正文。先用 get_project_structure 获取节点 id；name 传新标题或新名称，而不是路径。",
+      "重命名一个现有节点，不修改正文。先用 read_structure 获取节点 id；name 传新标题或新名称，而不是路径。",
     inputSchema: {
       type: "object",
       properties: {
@@ -293,9 +293,9 @@ export const AI_TOOLS_MAP = {
       additionalProperties: false,
     },
   },
-  delete_document: {
+  delete_node: {
     description:
-      "永久删除一个现有节点，文件夹会递归删除后代。必须先用 get_project_structure 核对节点及其后代，再通过 ask_user 获得本次删除的明确同意；之后将结构中当前完整标题/名称原样作为 expected_name。",
+      "永久删除一个现有节点，文件夹会递归删除后代。必须先用 read_structure 核对节点及其后代，再通过 ask_user 获得本次删除的明确同意；之后将结构中当前完整标题/名称原样作为 expected_name。",
     inputSchema: {
       type: "object",
       properties: {
@@ -308,15 +308,14 @@ export const AI_TOOLS_MAP = {
         },
         expected_name: {
           type: "string",
-          description:
-            "最近一次 get_project_structure 返回的当前完整 title（手稿）或 name（资源）。",
+          description: "最近一次 read_structure 返回的当前完整 title（手稿）或 name（资源）。",
         },
       },
       required: ["domain", "id", "expected_name"],
       additionalProperties: false,
     },
   },
-  get_worktree_changes: {
+  read_changes: {
     description:
       "列出当前工作区相对分支基线的未提交变更及统计。用于发现哪些节点有新增、编辑、重命名、移动或删除；不会返回完整文本差异。",
     inputSchema: {
@@ -331,9 +330,9 @@ export const AI_TOOLS_MAP = {
       additionalProperties: false,
     },
   },
-  read_document_diff: {
+  read_change: {
     description:
-      "读取一个未提交文本变更的基线全文 original_content 与当前全文 current_content。先调用 get_worktree_changes，并仅对其中可预览的 chapter/file 文本变更使用 entity_id；结构变更不可读取正文差异。",
+      "读取一个未提交文本变更的基线全文 original_content 与当前全文 current_content。先调用 read_changes，并仅对其中可预览的 chapter/file 文本变更使用 entity_id；结构变更不可读取正文差异。",
     inputSchema: {
       type: "object",
       properties: {
@@ -356,9 +355,9 @@ export const AI_TOOLS_MAP = {
       additionalProperties: false,
     },
   },
-  list_document_history: {
+  read_history: {
     description:
-      "列出一个章节或资源文件的历史元数据，不返回历史正文。id 使用 get_project_structure 返回的节点 ID；需要正文时再用返回条目的 id 调用 read_history_version。",
+      "列出一个章节或资源文件的历史元数据，不返回历史正文。id 使用 read_structure 返回的节点 ID；需要正文时再用返回条目的 id 调用 read_history_entry。",
     inputSchema: {
       type: "object",
       properties: {
@@ -380,15 +379,15 @@ export const AI_TOOLS_MAP = {
       additionalProperties: false,
     },
   },
-  read_history_version: {
+  read_history_entry: {
     description:
-      "读取一条历史记录保存的 content 和 before_content。entry_id 必须来自 list_document_history 返回的条目 id，不能传文档节点 id；无可用正文时字段为 null。",
+      "读取一条历史记录保存的 content 和 before_content。entry_id 必须来自 read_history 返回的条目 id，不能传文档节点 id；无可用正文时字段为 null。",
     inputSchema: {
       type: "object",
       properties: {
         entry_id: {
           type: "string",
-          description: "list_document_history 返回的历史条目 id。",
+          description: "read_history 返回的历史条目 id。",
         },
       },
       required: ["entry_id"],

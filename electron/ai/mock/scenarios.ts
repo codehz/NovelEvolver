@@ -104,7 +104,7 @@ const simulatedTool: MockScenarioDefinition = {
         yield {
           type: "tool_call",
           id: "scenario-simulated-structure",
-          name: "get_project_structure",
+          name: "read_structure",
           argumentsText: JSON.stringify({ domain: "resource" }),
         };
       },
@@ -139,7 +139,7 @@ const integratedTool: MockScenarioDefinition = {
         yield {
           type: "tool_call",
           id: "scenario-integrated-structure",
-          name: "get_project_structure",
+          name: "read_structure",
           argumentsText: JSON.stringify({ domain: "resource" }),
         };
       },

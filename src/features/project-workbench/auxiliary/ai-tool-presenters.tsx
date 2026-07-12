@@ -303,9 +303,7 @@ const createPresenter: ToolPresenter = (toolCall) => {
     label: `创建${kindLabel(kind)}`,
     summary: `${name} · ${domainLabel(domain)}`,
     indicator:
-      toolCall.name === "create_text_document"
-        ? writeIndicator(content, toolCall.status)
-        : undefined,
+      toolCall.name === "create_document" ? writeIndicator(content, toolCall.status) : undefined,
     detail: (
       <DetailList>
         <DetailField label="名称">{name}</DetailField>
@@ -314,7 +312,7 @@ const createPresenter: ToolPresenter = (toolCall) => {
         {getNumber(args, "index") !== null ? (
           <DetailField label="插入位置">第 {getNumber(args, "index")! + 1} 位</DetailField>
         ) : null}
-        {toolCall.name === "create_text_document" ? (
+        {toolCall.name === "create_document" ? (
           <DetailField label="初始正文">{generationStats(content, toolCall.status)}</DetailField>
         ) : null}
         {getString(result, "display_path") ? (
@@ -327,13 +325,13 @@ const createPresenter: ToolPresenter = (toolCall) => {
 
 const presenters: Partial<Record<string, ToolPresenter>> = {
   ask_user: askUserPresenter,
-  get_project_structure: structurePresenter,
-  read_text_document: readPresenter,
-  search_project: searchPresenter,
-  edit_text_document: editPresenter,
-  replace_text_document: replacePresenter,
+  read_structure: structurePresenter,
+  read_document: readPresenter,
+  search_documents: searchPresenter,
+  write_document: editPresenter,
+  replace_document_text: replacePresenter,
   create_folder: createPresenter,
-  create_text_document: createPresenter,
+  create_document: createPresenter,
 };
 
 export function presentToolCall(toolCall: AiChatToolCall): ToolPresentation {

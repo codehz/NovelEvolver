@@ -95,52 +95,52 @@ const toolHandlers: Partial<Record<AI_TOOL_NAMES, ToolHandler>> = {
     const args = parseAskUserArgs(call);
     return askUserResult(call, args);
   },
-  get_project_structure(worktree, call) {
+  read_structure(worktree, call) {
     const output = executeGetProjectStructure(worktree, call);
     return okJson(call, output);
   },
-  read_text_document(worktree, call) {
+  read_document(worktree, call) {
     const content = executeReadTextDocument(worktree, call);
     return ok(call, content);
   },
-  search_project(worktree, call) {
+  search_documents(worktree, call) {
     const output = executeSearchProject(worktree, call);
     return okJson(call, output);
   },
-  edit_text_document(worktree, call) {
+  write_document(worktree, call) {
     const output = executeEditTextDocument(worktree, call);
     return okJson(call, output);
   },
-  replace_text_document(worktree, call) {
+  replace_document_text(worktree, call) {
     return okJson(call, executeReplaceTextDocument(worktree, call));
   },
   create_folder(worktree, call) {
     const output = executeCreateFolder(worktree, call);
     return okJson(call, output);
   },
-  create_text_document(worktree, call) {
+  create_document(worktree, call) {
     const output = executeCreateTextDocument(worktree, call);
     return okJson(call, output);
   },
-  move_document(worktree, call) {
+  move_node(worktree, call) {
     return okJson(call, executeMoveDocument(worktree, call));
   },
-  rename_document(worktree, call) {
+  rename_node(worktree, call) {
     return okJson(call, executeRenameDocument(worktree, call));
   },
-  delete_document(worktree, call) {
+  delete_node(worktree, call) {
     return okJson(call, executeDeleteDocument(worktree, call));
   },
-  get_worktree_changes(worktree, call) {
+  read_changes(worktree, call) {
     return okJson(call, executeGetWorktreeChanges(worktree, call));
   },
-  read_document_diff(worktree, call) {
+  read_change(worktree, call) {
     return okJson(call, executeReadDocumentDiff(worktree, call));
   },
-  list_document_history(worktree, call) {
+  read_history(worktree, call) {
     return okJson(call, executeListDocumentHistory(worktree, call));
   },
-  read_history_version(worktree, call) {
+  read_history_entry(worktree, call) {
     return okJson(call, executeReadHistoryVersion(worktree, call));
   },
 };

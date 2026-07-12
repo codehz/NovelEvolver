@@ -49,12 +49,9 @@ describe("mock AI scenario runner", () => {
     const first = await collectStream(client.stream({ input: initialInput }));
     expect(first.toolCalls.map((call) => call.id)).toEqual(["scenario-simulated-structure"]);
 
-    const result = toolResultItem(
-      "scenario-simulated-structure",
-      "get_project_structure",
-      "success",
-      [{ type: "json", json: { domain: "resource", resource: { root_id: "root", nodes: [] } } }],
-    );
+    const result = toolResultItem("scenario-simulated-structure", "read_structure", "success", [
+      { type: "json", json: { domain: "resource", resource: { root_id: "root", nodes: [] } } },
+    ]);
     const second = await collectStream(
       client.stream({ input: [...initialInput, ...first.replay, result] }),
     );
@@ -98,7 +95,7 @@ describe("mock AI scenario runner", () => {
             yield {
               type: "tool_call",
               id: "scenario-truncated-tool-call",
-              name: "edit_text_document",
+              name: "write_document",
               argumentsText: '{"target":',
             };
             yield { type: "complete", stopReason: "max_output_tokens" };
@@ -127,7 +124,7 @@ describe("scenario tool runner", () => {
     const execution = await runner.execute({
       type: "tool_call",
       id: "scenario-simulated-structure",
-      name: "get_project_structure",
+      name: "read_structure",
       argumentsText: "{}",
       argumentsJson: {},
     });
