@@ -4,8 +4,11 @@ import { cn } from "#app/shared/lib/ui/cn";
 import type { AiChatSelectableModel } from "#shared/rpc/ai/index";
 import { StatusBarItemInfo } from "#workbench/chrome";
 
-import { describeContextUsageRatio, resolveLatestLastInputTokens } from "../auxiliary/ai-chat-ui";
-import { useAiChatState } from "../auxiliary/use-ai-chat-state";
+import { useAiChatState } from "../auxiliary/ai-chat/state/use-ai-chat-state";
+import {
+  describeContextUsageRatio,
+  resolveLatestLastInputTokens,
+} from "../auxiliary/ai-chat/ui/ai-chat-ui";
 
 export function AiContextStatusItem() {
   const { snapshot, loading, subscriptionError, listSelectableModels } = useAiChatState();

@@ -4,6 +4,7 @@ import { cn } from "#app/shared/lib/ui/cn";
 import { DisclosureChevron } from "#app/shared/ui/DisclosureChevron";
 import type { AiChatToolCall } from "#shared/rpc/ai/index";
 
+import { presentToolCall } from "../tools/ai-tool-presenters";
 import {
   describeToolCallStatus,
   toolCallBodyClass,
@@ -12,8 +13,7 @@ import {
   toolCallQuestionClass,
   toolCallStatusClass,
   toolCallToggleClass,
-} from "./ai-chat-ui";
-import { presentToolCall } from "./ai-tool-presenters";
+} from "../ui/ai-chat-ui";
 
 /**
  * 工具调用历史展示块（纯展示）。需要用户回答时，交互入口由底部

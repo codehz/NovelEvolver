@@ -8,7 +8,7 @@ import {
   reasoningMetaClass,
   userMessageBubbleClass,
   userMessageRowClass,
-} from "./ai-chat-ui";
+} from "../ui/ai-chat-ui";
 import { AiReasoningBlock } from "./AiReasoningBlock";
 import { AiToolCallBlock } from "./AiToolCallBlock";
 

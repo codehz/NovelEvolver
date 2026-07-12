@@ -9,7 +9,7 @@ import {
   reasoningLabelClass,
   reasoningPanelClass,
   reasoningToggleClass,
-} from "./ai-chat-ui";
+} from "../ui/ai-chat-ui";
 
 export function AiReasoningBlock({ reasoning }: { reasoning: AiChatReasoningPart }) {
   const [expanded, setExpanded] = useState(reasoning.status === "streaming");

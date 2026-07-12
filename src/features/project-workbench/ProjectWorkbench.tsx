@@ -8,8 +8,8 @@ import { projectDisplayName } from "#app/shared/lib/project-display-name";
 import { convertRpcPromise } from "#app/shared/lib/rpc/rpc-utils";
 import { useTitleBarTitle } from "#app/shared/lib/shell/titlebar-title";
 import { cn } from "#app/shared/lib/ui/cn";
-import { AuxiliaryPanel } from "#workbench/auxiliary/AuxiliaryPanel";
-import { AiChatStateProvider } from "#workbench/auxiliary/use-ai-chat-state";
+import { AiChatPanel } from "#workbench/auxiliary/ai-chat/AiChatPanel";
+import { AiChatStateProvider } from "#workbench/auxiliary/ai-chat/state/use-ai-chat-state";
 import { BranchScopeProvider } from "#workbench/branch/BranchScopeProvider";
 import { WorkbenchLayout, type WorkbenchPrimaryView } from "#workbench/chrome";
 import { EditorArea } from "#workbench/editor/EditorArea";
@@ -95,7 +95,7 @@ function ProjectWorkbenchInner() {
     [displayName],
   );
   const editorSlot = useMemo(() => <EditorArea />, []);
-  const auxiliarySlot = useMemo(() => <AuxiliaryPanel />, []);
+  const auxiliarySlot = useMemo(() => <AiChatPanel />, []);
 
   return (
     <BranchScopeProvider>
