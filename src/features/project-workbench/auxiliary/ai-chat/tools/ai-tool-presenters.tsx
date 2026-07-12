@@ -109,6 +109,21 @@ function targetFields(args: JsonObject | null): { domain: string | null; id: str
   return { domain: getString(target, "domain"), id: getString(target, "id") };
 }
 
+function resultTargetFields(result: JsonObject | null): {
+  domain: string | null;
+  id: string | null;
+  label: string | null;
+  displayPath: string | null;
+} {
+  const target = getObject(result?.target);
+  return {
+    domain: getString(target, "domain"),
+    id: getString(target, "id"),
+    label: getString(target, "label"),
+    displayPath: getString(target, "display_path"),
+  };
+}
+
 const askUserPresenter: ToolPresenter = (toolCall) => {
   const args = parseAskUserToolArguments(toolCall.argumentsText);
   const question = args?.question ?? "等待补充信息";
@@ -194,19 +209,28 @@ const structurePresenter: ToolPresenter = (toolCall) => {
 
 const readPresenter: ToolPresenter = (toolCall) => {
   const args = parseObject(toolCall.argumentsText);
-  const target = targetFields(args);
+  const requestedTarget = targetFields(args);
   const result = toolCall.status === "complete" ? parseObject(toolCall.resultText) : null;
+  const resultTarget = getObject(result?.target);
+  const domain = getString(resultTarget, "domain") ?? requestedTarget.domain;
+  const id = getString(resultTarget, "id") ?? requestedTarget.id;
+  const label = getString(resultTarget, "label");
+  const displayPath = getString(resultTarget, "display_path");
+  const documentName = displayPath || label || id || "未知文档";
   const content = getString(result, "content");
   const revision = getNumber(result, "revision");
   return {
     label: "读取文档",
-    summary: `${domainLabel(target.domain)} · ${target.id ?? "未知节点"}`,
+    summary: `${domainLabel(domain)} · ${documentName}`,
     detail: (
       <DetailList>
-        <DetailField label="内容域">{domainLabel(target.domain)}</DetailField>
-        <DetailField label="节点 ID">{target.id ?? "未知"}</DetailField>
-        {revision !== null ? <DetailField label="Revision">{revision}</DetailField> : null}
+        <DetailField label="内容域">{domainLabel(domain)}</DetailField>
+        {displayPath || label ? (
+          <DetailField label="文档路径">{displayPath || label}</DetailField>
+        ) : null}
         {content !== null ? <DetailField label="正文规模">{textStats(content)}</DetailField> : null}
+        {revision !== null ? <DetailField label="Revision">{revision}</DetailField> : null}
+        <DetailField label="节点 ID">{id ?? "未知"}</DetailField>
       </DetailList>
     ),
   };
@@ -254,17 +278,23 @@ const searchPresenter: ToolPresenter = (toolCall) => {
 const editPresenter: ToolPresenter = (toolCall) => {
   const args = parseObject(toolCall.argumentsText);
   const result = parseObject(toolCall.resultText);
-  const target = targetFields(args);
+  const requestedTarget = targetFields(args);
+  const target = resultTargetFields(result);
+  const domain = target.domain ?? requestedTarget.domain;
+  const id = target.id ?? requestedTarget.id;
+  const documentName = target.displayPath || target.label || id || "未知文档";
   const expectedRevision = getNumber(args, "expected_revision");
   const after = getString(args, "new_content");
   const nextRevision = getNumber(result, "revision");
   return {
     label: "重写文档",
-    summary: `${domainLabel(target.domain)} · ${target.id ?? "未知节点"}`,
+    summary: `${domainLabel(domain)} · ${documentName}`,
     indicator: writeIndicator(after, toolCall.status),
     detail: (
       <DetailList>
-        <DetailField label="节点 ID">{target.id ?? "未知"}</DetailField>
+        {target.displayPath || target.label ? (
+          <DetailField label="文档路径">{target.displayPath || target.label}</DetailField>
+        ) : null}
         {expectedRevision !== null ? (
           <DetailField label="期望 revision">{expectedRevision}</DetailField>
         ) : null}
@@ -275,6 +305,7 @@ const editPresenter: ToolPresenter = (toolCall) => {
         <DetailField label="结果">
           {toolCall.status === "complete" ? "已更新" : "整篇替换"}
         </DetailField>
+        <DetailField label="节点 ID">{id ?? "未知"}</DetailField>
       </DetailList>
     ),
   };
@@ -283,14 +314,18 @@ const editPresenter: ToolPresenter = (toolCall) => {
 const replacePresenter: ToolPresenter = (toolCall) => {
   const args = parseObject(toolCall.argumentsText);
   const result = parseObject(toolCall.resultText);
-  const target = targetFields(args);
+  const requestedTarget = targetFields(args);
+  const target = resultTargetFields(result);
+  const domain = target.domain ?? requestedTarget.domain;
+  const id = target.id ?? requestedTarget.id;
+  const documentName = target.displayPath || target.label || id || "未知文档";
   const expected = getString(args, "expected_text");
   const replacement = getString(args, "replacement_text");
   const removing = replacement === "";
   const nextRevision = getNumber(result, "revision");
   return {
     label: removing ? "删除文档片段" : "替换文档片段",
-    summary: `${domainLabel(target.domain)} · ${target.id ?? "未知节点"}`,
+    summary: `${domainLabel(domain)} · ${documentName}`,
     indicator: removing
       ? toolCall.status === "complete"
         ? "已删除"
@@ -298,7 +333,9 @@ const replacePresenter: ToolPresenter = (toolCall) => {
       : writeIndicator(replacement, toolCall.status),
     detail: (
       <DetailList>
-        <DetailField label="节点 ID">{target.id ?? "未知"}</DetailField>
+        {target.displayPath || target.label ? (
+          <DetailField label="文档路径">{target.displayPath || target.label}</DetailField>
+        ) : null}
         <DetailField label="原片段">{textStats(expected)}</DetailField>
         {preview(expected) ? <DetailField label="原文预览">{preview(expected)}</DetailField> : null}
         <DetailField label={removing ? "操作" : "替换片段"}>
@@ -310,6 +347,7 @@ const replacePresenter: ToolPresenter = (toolCall) => {
         {nextRevision !== null ? (
           <DetailField label="新 revision">{nextRevision}</DetailField>
         ) : null}
+        <DetailField label="节点 ID">{id ?? "未知"}</DetailField>
       </DetailList>
     ),
   };
@@ -323,28 +361,27 @@ const createPresenter: ToolPresenter = (toolCall) => {
     toolCall.name === "create_folder" ? "folder" : domain === "manuscript" ? "chapter" : "file";
   const name = getString(args, "name") ?? "未命名节点";
   const content = getString(args, "content");
+  const displayPath = getString(result, "display_path");
   return {
     label: `创建${kindLabel(kind)}`,
-    summary: `${name} · ${domainLabel(domain)}`,
+    summary: `${domainLabel(domain)} · ${displayPath || name}`,
     indicator:
       toolCall.name === "create_document" ? writeIndicator(content, toolCall.status) : undefined,
     detail: (
       <DetailList>
         <DetailField label="名称">{name}</DetailField>
         <DetailField label="类型">{kindLabel(kind)}</DetailField>
-        <DetailField label="父节点">{getString(args, "parent_id") ?? "未知"}</DetailField>
         {getNumber(args, "index") !== null ? (
           <DetailField label="插入位置">第 {getNumber(args, "index")! + 1} 位</DetailField>
         ) : null}
         {toolCall.name === "create_document" ? (
           <DetailField label="初始正文">{generationStats(content, toolCall.status)}</DetailField>
         ) : null}
-        {getString(result, "display_path") ? (
-          <DetailField label="创建位置">{getString(result, "display_path")}</DetailField>
-        ) : null}
+        {displayPath ? <DetailField label="创建位置">{displayPath}</DetailField> : null}
         {getNumber(result, "revision") !== null ? (
           <DetailField label="新 revision">{getNumber(result, "revision")}</DetailField>
         ) : null}
+        <DetailField label="父节点 ID">{getString(args, "parent_id") ?? "未知"}</DetailField>
       </DetailList>
     ),
   };
@@ -358,26 +395,156 @@ const nodeMutationPresenter =
     const domain = getString(args, "domain");
     const id = getString(args, "id");
     const revision = getNumber(result, "revision");
+    const path = getString(result, "display_path");
+    const previousPath = getString(result, "previous_display_path");
+    const displayName = path ?? previousPath ?? id ?? "未知节点";
+    const summary =
+      toolCall.name === "move_node" && previousPath && path && previousPath !== path
+        ? `${previousPath} → ${path}`
+        : toolCall.name === "rename_node" && previousPath && path && previousPath !== path
+          ? `${previousPath} → ${path}`
+          : displayName;
     return {
       label,
-      summary: `${domainLabel(domain)} · ${id ?? "未知节点"}`,
+      summary: `${domainLabel(domain)} · ${summary}`,
       detail: (
         <DetailList>
           <DetailField label="内容域">{domainLabel(domain)}</DetailField>
-          <DetailField label="节点 ID">{id ?? "未知"}</DetailField>
-          {toolCall.name === "move_node" ? (
-            <DetailField label="目标父节点">
-              {getString(args, "target_parent_id") ?? "未知"}
-            </DetailField>
-          ) : null}
+          {previousPath ? <DetailField label="原路径">{previousPath}</DetailField> : null}
+          {path ? <DetailField label="当前路径">{path}</DetailField> : null}
           {toolCall.name === "rename_node" ? (
             <DetailField label="新名称">{getString(args, "name") ?? "未知"}</DetailField>
           ) : null}
           {revision !== null ? <DetailField label="新 revision">{revision}</DetailField> : null}
+          <DetailField label="节点 ID">{id ?? "未知"}</DetailField>
+          {toolCall.name === "move_node" ? (
+            <DetailField label="目标父节点 ID">
+              {getString(args, "target_parent_id") ?? "未知"}
+            </DetailField>
+          ) : null}
         </DetailList>
       ),
     };
   };
+
+const changesPresenter: ToolPresenter = (toolCall) => {
+  const args = parseObject(toolCall.argumentsText);
+  const result = parseObject(toolCall.resultText);
+  const domain = getString(result, "domain") ?? getString(args, "domain");
+  const changes = [
+    ...(Array.isArray(result?.manuscript_changes) ? result.manuscript_changes : []),
+    ...(Array.isArray(result?.resource_changes) ? result.resource_changes : []),
+  ];
+  return {
+    label: "读取工作区变更",
+    summary: `${domainLabel(domain)}${result ? ` · ${changes.length} 项变更` : ""}`,
+    detail: (
+      <DetailList>
+        <DetailField label="范围">{domainLabel(domain)}</DetailField>
+        {result ? <DetailField label="变更数">{changes.length}</DetailField> : null}
+        {changes.length > 0 ? (
+          <DetailField label="变更位置">
+            <ul className="flex flex-col gap-1">
+              {changes.slice(0, 8).map((change, index) => {
+                const entry = getObject(change);
+                const path =
+                  getString(entry, "display_path") ?? getString(entry, "label") ?? "未知节点";
+                const previousPath = getString(entry, "previous_path");
+                return (
+                  <li key={`${path}:${index}`}>
+                    {previousPath ? `${previousPath} → ${path}` : path}
+                  </li>
+                );
+              })}
+              {changes.length > 8 ? (
+                <li className="text-ctp-subtext0">另有 {changes.length - 8} 项</li>
+              ) : null}
+            </ul>
+          </DetailField>
+        ) : null}
+      </DetailList>
+    ),
+  };
+};
+
+const changePresenter: ToolPresenter = (toolCall) => {
+  const args = parseObject(toolCall.argumentsText);
+  const result = parseObject(toolCall.resultText);
+  const target = targetFields(args);
+  const path =
+    getString(result, "display_path") ?? getString(result, "label") ?? target.id ?? "未知文档";
+  return {
+    label: "读取文档变更",
+    summary: `${domainLabel(target.domain)} · ${path}`,
+    detail: (
+      <DetailList>
+        <DetailField label="文档路径">{path}</DetailField>
+        {result ? (
+          <DetailField label="原正文">
+            {textStats(getString(result, "original_content"))}
+          </DetailField>
+        ) : null}
+        {result ? (
+          <DetailField label="当前正文">
+            {textStats(getString(result, "current_content"))}
+          </DetailField>
+        ) : null}
+        <DetailField label="节点 ID">{target.id ?? "未知"}</DetailField>
+      </DetailList>
+    ),
+  };
+};
+
+const historyPresenter: ToolPresenter = (toolCall) => {
+  const args = parseObject(toolCall.argumentsText);
+  const result = parseObject(toolCall.resultText);
+  const requestedDomain = getString(args, "domain");
+  const requestedId = getString(args, "id");
+  const target = resultTargetFields(result);
+  const entries = Array.isArray(result?.entries) ? result.entries : [];
+  const path = target.displayPath || target.label || requestedId || "未知文档";
+  return {
+    label: "读取文档历史",
+    summary: `${domainLabel(target.domain ?? requestedDomain)} · ${path}${result ? ` · ${entries.length} 条` : ""}`,
+    detail: (
+      <DetailList>
+        {target.displayPath || target.label ? (
+          <DetailField label="文档路径">{path}</DetailField>
+        ) : null}
+        {result ? <DetailField label="历史条目">{entries.length}</DetailField> : null}
+        <DetailField label="节点 ID">{target.id ?? requestedId ?? "未知"}</DetailField>
+      </DetailList>
+    ),
+  };
+};
+
+const historyEntryPresenter: ToolPresenter = (toolCall) => {
+  const args = parseObject(toolCall.argumentsText);
+  const result = parseObject(toolCall.resultText);
+  const path = getString(result, "display_path") ?? getString(result, "label");
+  return {
+    label: "读取历史版本",
+    summary: path
+      ? `${domainLabel(getString(result, "domain"))} · ${path}`
+      : (getString(args, "entry_id") ?? "未知历史记录"),
+    detail: (
+      <DetailList>
+        {path ? <DetailField label="文档路径">{path}</DetailField> : null}
+        {result ? (
+          <DetailField label="历史正文">{textStats(getString(result, "content"))}</DetailField>
+        ) : null}
+        {result ? (
+          <DetailField label="此前正文">
+            {textStats(getString(result, "before_content"))}
+          </DetailField>
+        ) : null}
+        <DetailField label="历史条目 ID">
+          {getString(result, "entry_id") ?? getString(args, "entry_id") ?? "未知"}
+        </DetailField>
+      </DetailList>
+    ),
+  };
+};
 
 const presenters: Partial<Record<string, ToolPresenter>> = {
   ask_user: askUserPresenter,
@@ -391,6 +558,10 @@ const presenters: Partial<Record<string, ToolPresenter>> = {
   move_node: nodeMutationPresenter("移动节点"),
   rename_node: nodeMutationPresenter("重命名节点"),
   delete_node: nodeMutationPresenter("删除节点"),
+  read_changes: changesPresenter,
+  read_change: changePresenter,
+  read_history: historyPresenter,
+  read_history_entry: historyEntryPresenter,
 };
 
 export function presentToolCall(toolCall: AiChatToolCall): ToolPresentation {

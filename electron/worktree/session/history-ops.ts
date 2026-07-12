@@ -100,6 +100,18 @@ export function readHistoryEntryContent(
   throw new Error(`Unknown history entry: ${entryId}`);
 }
 
+export function readHistoryEntry(state: WorktreeSessionState, entryId: string): HistoryEntry {
+  const journalEntryId = parseJournalHistoryEntryId(entryId);
+  if (journalEntryId === null) throw new Error(`Unknown history entry: ${entryId}`);
+  const entry = state.store.getJournalHistoryEntry(
+    state.projectId,
+    state.branchName,
+    journalEntryId,
+  );
+  if (entry === null) throw new Error(`Unknown journal history entry: ${entryId}`);
+  return journalEntryToHistoryEntry(state, entry);
+}
+
 export function restoreHistoryEntryContentHunk(
   state: WorktreeSessionState,
   entryId: string,

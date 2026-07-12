@@ -77,6 +77,9 @@ export type ReadTextDocumentResult = {
   target: {
     domain: "manuscript" | "resource";
     id: string;
+    kind: "chapter" | "file";
+    label: string;
+    display_path: string;
   };
   content: string;
   revision: number;
@@ -86,6 +89,9 @@ export type EditTextDocumentResult = {
   target: {
     domain: "manuscript" | "resource";
     id: string;
+    kind: "chapter" | "file";
+    label: string;
+    display_path: string;
   };
   updated: true;
   revision: number;
@@ -95,6 +101,9 @@ export type ReplaceTextDocumentResult = {
   target: {
     domain: "manuscript" | "resource";
     id: string;
+    kind: "chapter" | "file";
+    label: string;
+    display_path: string;
   };
   replacements: 1;
   updated: true;
@@ -277,10 +286,17 @@ export function executeReadTextDocument(
   const target = args.target as Record<string, unknown>;
   const domain = parseDocumentDomain(target.domain, "target.domain");
   const id = parseNonEmptyString(target.id, "target.id");
+  const info = worktree.getTextDocumentInfo(domain, id);
   const content =
     domain === "manuscript" ? worktree.readChapter(id) : worktree.readResourceFile(id);
   return {
-    target: { domain, id },
+    target: {
+      domain: info.domain,
+      id: info.id,
+      kind: info.kind,
+      label: info.label,
+      display_path: info.displayPath,
+    },
     content,
     revision: worktree.getChangesSnapshot().revision,
   };
@@ -371,10 +387,15 @@ export function executeEditTextDocument(
     worktree.writeResourceFile(id, args.new_content);
   }
 
+  const info = worktree.getTextDocumentInfo(domain, id);
+
   return {
     target: {
-      domain,
-      id,
+      domain: info.domain,
+      id: info.id,
+      kind: info.kind,
+      label: info.label,
+      display_path: info.displayPath,
     },
     updated: true,
     revision: worktree.getChangesSnapshot().revision,
@@ -417,8 +438,16 @@ export function executeReplaceTextDocument(
     worktree.writeResourceFile(id, nextContent);
   }
 
+  const info = worktree.getTextDocumentInfo(domain, id);
+
   return {
-    target: { domain, id },
+    target: {
+      domain: info.domain,
+      id: info.id,
+      kind: info.kind,
+      label: info.label,
+      display_path: info.displayPath,
+    },
     replacements: 1,
     updated: true,
     revision: worktree.getChangesSnapshot().revision,

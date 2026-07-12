@@ -34,6 +34,30 @@ export type AiProjectStructureTarget = {
   id: string;
 };
 
+export type AiTextDocumentInfo =
+  | {
+      domain: "manuscript";
+      id: string;
+      kind: "chapter";
+      label: string;
+      displayPath: string;
+    }
+  | {
+      domain: "resource";
+      id: string;
+      kind: "file";
+      label: string;
+      displayPath: string;
+    };
+
+export type AiProjectNodeInfo = {
+  domain: AiProjectStructureDomain;
+  id: string;
+  kind: "folder" | "chapter" | "file";
+  label: string;
+  displayPath: string;
+};
+
 export type AiProjectStructureManuscriptNode = {
   id: string;
   domain: "manuscript";
@@ -213,6 +237,10 @@ export class WorktreeSession {
     return historyOps.readHistoryEntryContent(this.#state, entryId);
   }
 
+  readHistoryEntry(entryId: string): HistoryEntry {
+    return historyOps.readHistoryEntry(this.#state, entryId);
+  }
+
   restoreHistoryEntryContentHunk(
     entryId: string,
     expectedContent: string,
@@ -223,6 +251,56 @@ export class WorktreeSession {
 
   searchWorktree(options: WorktreeSearchQuery): WorktreeSearchResult {
     return searchWorktree(this.#state, options);
+  }
+
+  getTextDocumentInfo(domain: AiProjectStructureDomain, id: string): AiTextDocumentInfo {
+    if (domain === "manuscript") {
+      const entry = this.#state.currentManuscript.entries.get(id);
+      if (!entry) throw new Error(`manuscript 节点不存在: ${id}`);
+      if (entry.type !== "chapter") throw new Error("manuscript 文本节点必须是章节。");
+      return {
+        domain,
+        id,
+        kind: "chapter",
+        label: entry.title,
+        displayPath: entry.displayPath,
+      };
+    }
+
+    const entry = this.#state.currentResources.entries.get(id);
+    if (!entry) throw new Error(`resource 节点不存在: ${id}`);
+    if (entry.type !== "file") throw new Error("resource 文本节点必须是文件。");
+    return {
+      domain,
+      id,
+      kind: "file",
+      label: entry.name,
+      displayPath: entry.displayPath,
+    };
+  }
+
+  getProjectNodeInfo(domain: AiProjectStructureDomain, id: string): AiProjectNodeInfo {
+    if (domain === "manuscript") {
+      const entry = this.#state.currentManuscript.entries.get(id);
+      if (!entry) throw new Error(`manuscript 节点不存在: ${id}`);
+      return {
+        domain,
+        id,
+        kind: entry.type,
+        label: entry.title,
+        displayPath: entry.displayPath,
+      };
+    }
+
+    const entry = this.#state.currentResources.entries.get(id);
+    if (!entry) throw new Error(`resource 节点不存在: ${id}`);
+    return {
+      domain,
+      id,
+      kind: entry.type,
+      label: entry.name,
+      displayPath: entry.displayPath,
+    };
   }
 
   getProjectStructure(target?: AiProjectStructureTarget): AiProjectStructure {

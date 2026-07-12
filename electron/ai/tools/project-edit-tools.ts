@@ -8,6 +8,10 @@ import { parseToolArgs } from "./utils";
 export type MoveDocumentResult = {
   domain: "manuscript" | "resource";
   id: string;
+  kind: "folder" | "chapter" | "file";
+  label: string;
+  previous_display_path: string;
+  display_path: string;
   target_parent_id: string;
   moved: true;
   revision: number;
@@ -16,6 +20,10 @@ export type MoveDocumentResult = {
 export type RenameDocumentResult = {
   domain: "manuscript" | "resource";
   id: string;
+  kind: "folder" | "chapter" | "file";
+  previous_label: string;
+  previous_display_path: string;
+  display_path: string;
   name: string;
   renamed: true;
   revision: number;
@@ -24,6 +32,9 @@ export type RenameDocumentResult = {
 export type DeleteDocumentResult = {
   domain: "manuscript" | "resource";
   id: string;
+  kind: "folder" | "chapter" | "file";
+  label: string;
+  display_path: string;
   deleted: true;
   revision: number;
 };
@@ -86,13 +97,23 @@ type HistoryEntryDto = {
 };
 
 export type ListDocumentHistoryResult = {
-  domain: "manuscript" | "resource";
-  id: string;
+  target: {
+    domain: "manuscript" | "resource";
+    id: string;
+    kind: "chapter" | "file";
+    label: string;
+    display_path: string;
+  };
   entries: HistoryEntryDto[];
 };
 
 export type ReadHistoryVersionResult = {
   entry_id: string;
+  domain: "manuscript" | "resource";
+  entity_id: string;
+  label: string;
+  display_path: string;
+  timestamp: number;
   content: string | null;
   before_content: string | null;
 };
@@ -212,6 +233,7 @@ export function executeMoveDocument(
   const id = parseNonEmptyString(args.id, "id");
   const targetParentId = parseNonEmptyString(args.target_parent_id, "target_parent_id");
   const index = parseOptionalIndex(args.index);
+  const previous = worktree.getProjectNodeInfo(domain, id);
 
   if (domain === "manuscript") {
     worktree.moveManuscriptNode(id, targetParentId, index);
@@ -222,9 +244,15 @@ export function executeMoveDocument(
     worktree.moveResourceNode(id, targetParentId);
   }
 
+  const current = worktree.getProjectNodeInfo(domain, id);
+
   return {
     domain,
     id,
+    kind: current.kind,
+    label: current.label,
+    previous_display_path: previous.displayPath,
+    display_path: current.displayPath,
     target_parent_id: targetParentId,
     moved: true,
     revision: worktree.getChangesSnapshot().revision,
@@ -239,6 +267,7 @@ export function executeRenameDocument(
   const domain = parseDocumentDomain(args.domain, "domain");
   const id = parseNonEmptyString(args.id, "id");
   const name = parseNonEmptyString(args.name, "name");
+  const previous = worktree.getProjectNodeInfo(domain, id);
 
   if (domain === "manuscript") {
     worktree.renameManuscriptNode(id, name);
@@ -246,9 +275,15 @@ export function executeRenameDocument(
     worktree.renameResourceNode(id, name);
   }
 
+  const current = worktree.getProjectNodeInfo(domain, id);
+
   return {
     domain,
     id,
+    kind: current.kind,
+    previous_label: previous.label,
+    previous_display_path: previous.displayPath,
+    display_path: current.displayPath,
     name,
     renamed: true,
     revision: worktree.getChangesSnapshot().revision,
@@ -262,6 +297,7 @@ export function executeDeleteDocument(
   const args = parseToolArgs(call);
   const domain = parseDocumentDomain(args.domain, "domain");
   const id = parseNonEmptyString(args.id, "id");
+  const deleted = worktree.getProjectNodeInfo(domain, id);
 
   if (domain === "manuscript") {
     worktree.deleteManuscriptNode(id);
@@ -272,6 +308,9 @@ export function executeDeleteDocument(
   return {
     domain,
     id,
+    kind: deleted.kind,
+    label: deleted.label,
+    display_path: deleted.displayPath,
     deleted: true,
     revision: worktree.getChangesSnapshot().revision,
   };
@@ -333,11 +372,17 @@ export function executeListDocumentHistory(
   const domain = parseDocumentDomain(args.domain, "domain");
   const id = parseNonEmptyString(args.id, "id");
   const limit = parseHistoryLimit(args.limit);
+  const target = worktree.getTextDocumentInfo(domain, id);
   const entries = worktree.listFileHistory({ domain, entityId: id }, limit);
 
   return {
-    domain,
-    id,
+    target: {
+      domain: target.domain,
+      id: target.id,
+      kind: target.kind,
+      label: target.label,
+      display_path: target.displayPath,
+    },
     entries: entries.map(toHistoryEntryDto),
   };
 }
@@ -348,10 +393,16 @@ export function executeReadHistoryVersion(
 ): ReadHistoryVersionResult {
   const args = parseToolArgs(call);
   const entryId = parseNonEmptyString(args.entry_id, "entry_id");
+  const entry = worktree.readHistoryEntry(entryId);
   const content = worktree.readHistoryEntryContent(entryId);
 
   return {
     entry_id: entryId,
+    domain: entry.domain,
+    entity_id: entry.entityId,
+    label: entry.label,
+    display_path: entry.displayPath,
+    timestamp: entry.timestamp,
     content: content.content,
     before_content: content.beforeContent ?? null,
   };
