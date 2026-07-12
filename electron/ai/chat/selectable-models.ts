@@ -9,6 +9,8 @@ export function listSelectableModels(options: {
 }): AiChatSelectableModel[] {
   const items: AiChatSelectableModel[] = [];
 
+  const providerById = new Map(options.models.providers.map((provider) => [provider.id, provider]));
+
   if (options.mockAiEnabled) {
     items.push({
       id: MOCK_AI_MODEL_ID,
@@ -20,10 +22,14 @@ export function listSelectableModels(options: {
   }
 
   for (const model of options.models.models) {
+    const provider = providerById.get(model.providerId);
+    if (!provider) {
+      continue;
+    }
     items.push({
       id: model.id,
       name: model.name,
-      kind: model.kind,
+      kind: provider.kind,
       model: model.model,
       isDefault: model.id === options.models.defaultModelId,
     });

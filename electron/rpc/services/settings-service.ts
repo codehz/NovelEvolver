@@ -3,6 +3,7 @@ import { RpcTarget } from "capnweb";
 import type {
   AiModelConfigWrite,
   AiModelsSettingsSnapshot,
+  AiProviderConfigWrite,
   SettingsService,
 } from "#shared/rpc/services/index";
 
@@ -20,12 +21,20 @@ export class SettingsServiceImpl extends RpcTarget implements SettingsService {
     return this.#deps.getAiModelsStore().getSnapshot();
   }
 
+  upsertAiProvider(input: AiProviderConfigWrite): AiModelsSettingsSnapshot {
+    return this.#deps.getAiModelsStore().upsertProvider(input);
+  }
+
+  removeAiProvider(id: string): AiModelsSettingsSnapshot {
+    return this.#deps.getAiModelsStore().removeProvider(id);
+  }
+
   upsertAiModel(input: AiModelConfigWrite): AiModelsSettingsSnapshot {
-    return this.#deps.getAiModelsStore().upsert(input);
+    return this.#deps.getAiModelsStore().upsertModel(input);
   }
 
   removeAiModel(id: string): AiModelsSettingsSnapshot {
-    return this.#deps.getAiModelsStore().remove(id);
+    return this.#deps.getAiModelsStore().removeModel(id);
   }
 
   setDefaultAiModel(id: string | null): AiModelsSettingsSnapshot {

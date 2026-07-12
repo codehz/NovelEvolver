@@ -100,7 +100,7 @@ export const settingsFormActionsClass = cn("flex items-center justify-end gap-2"
 export const settingsFormErrorClass = cn("text-xs text-ctp-red");
 
 export const settingsPrimaryButtonClass = cn(
-  "inline-flex items-center justify-center gap-1 rounded-sm bg-badge-background px-2.5 py-1.5 text-2xs font-medium text-badge-foreground",
+  "inline-flex shrink-0 items-center justify-center gap-1 rounded-sm bg-badge-background px-2.5 py-1.5 text-2xs font-medium whitespace-nowrap text-badge-foreground",
   "hover:opacity-90 disabled:opacity-50",
 );
 

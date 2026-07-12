@@ -57,7 +57,7 @@ function createWindow() {
 void app.whenReady().then(() => {
   const userData = app.getPath("userData");
   appDb = new AppDatabase(join(userData, "app-state.db"));
-  aiModelsStore = new AiModelsStore(join(userData, "ai-models.json"));
+  aiModelsStore = new AiModelsStore(join(userData, "ai-settings.json"));
   rpcServer = new ElectronRpcServer({
     getAppDb,
     getAiModelsStore,

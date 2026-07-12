@@ -20,42 +20,58 @@ export function isLowMaxOutputTokensForNovelAgent(maxOutputTokens: number): bool
   return maxOutputTokens <= AI_MODEL_MAX_OUTPUT_TOKENS_LOW_THRESHOLD;
 }
 
-/** Public model config — never includes a plaintext API key. */
-export type AiModelConfigPublic = {
+/** API 供应商（连接与密钥），不含具体模型。 */
+export type AiProviderConfigPublic = {
   id: string;
   name: string;
   kind: AiAdapterKind;
-  model: string;
   /** Empty string means adapter default endpoint. */
   baseUrl: string;
   hasApiKey: boolean;
+};
+
+/**
+ * 供应商写入。
+ * - `id` omitted → create
+ * - `apiKey` undefined → keep existing secret
+ * - `apiKey` `""` → clear secret
+ */
+export type AiProviderConfigWrite = {
+  id?: string;
+  name: string;
+  kind: AiAdapterKind;
+  baseUrl?: string;
+  apiKey?: string;
+};
+
+/** 模型条目，归属某一供应商。 */
+export type AiModelConfigPublic = {
+  id: string;
+  providerId: string;
+  name: string;
+  /** Provider API model id. */
+  model: string;
+  maxOutputTokens: number;
+};
+
+export type AiModelConfigWrite = {
+  id?: string;
+  providerId: string;
+  name: string;
+  model: string;
   maxOutputTokens: number;
 };
 
 export type AiModelsSettingsSnapshot = {
   defaultModelId: string | null;
+  providers: AiProviderConfigPublic[];
   models: AiModelConfigPublic[];
-};
-
-/**
- * Write payload for create/update.
- * - `id` omitted → create
- * - `apiKey` undefined → keep existing secret
- * - `apiKey` `""` → clear secret
- * - `apiKey` non-empty → encrypt and replace
- */
-export type AiModelConfigWrite = {
-  id?: string;
-  name: string;
-  kind: AiAdapterKind;
-  model: string;
-  baseUrl?: string;
-  apiKey?: string;
-  maxOutputTokens: number;
 };
 
 export interface SettingsService extends RpcTarget {
   getAiModels(): AiModelsSettingsSnapshot;
+  upsertAiProvider(input: AiProviderConfigWrite): AiModelsSettingsSnapshot;
+  removeAiProvider(id: string): AiModelsSettingsSnapshot;
   upsertAiModel(input: AiModelConfigWrite): AiModelsSettingsSnapshot;
   removeAiModel(id: string): AiModelsSettingsSnapshot;
   setDefaultAiModel(id: string | null): AiModelsSettingsSnapshot;

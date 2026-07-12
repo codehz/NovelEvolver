@@ -9,20 +9,27 @@ import type {
   AiModelConfigPublic,
   AiModelConfigWrite,
   AiModelsSettingsSnapshot,
+  AiProviderConfigPublic,
+  AiProviderConfigWrite,
 } from "#shared/rpc/services/index";
 import { AI_ADAPTER_KINDS, DEFAULT_AI_MODEL_MAX_OUTPUT_TOKENS } from "#shared/rpc/services/index";
 
-const FILE_VERSION = 1 as const;
+const FILE_VERSION = 2 as const;
 
-type StoredModelRecord = {
+type StoredProviderRecord = {
   id: string;
   name: string;
   kind: AiAdapterKind;
-  model: string;
   baseUrl: string;
-  maxOutputTokens: number;
-  /** Base64 of `safeStorage.encryptString`; empty/missing = no key. */
   apiKeyCipher?: string;
+};
+
+type StoredModelRecord = {
+  id: string;
+  providerId: string;
+  name: string;
+  model: string;
+  maxOutputTokens: number;
 };
 
 export type AiModelRuntimeConfig = {
@@ -38,12 +45,14 @@ export type AiModelRuntimeConfig = {
 type StoredFile = {
   version: typeof FILE_VERSION;
   defaultModelId: string | null;
+  providers: StoredProviderRecord[];
   models: StoredModelRecord[];
 };
 
 const EMPTY_FILE: StoredFile = {
   version: FILE_VERSION,
   defaultModelId: null,
+  providers: [],
   models: [],
 };
 
@@ -51,14 +60,22 @@ function isAiAdapterKind(value: unknown): value is AiAdapterKind {
   return typeof value === "string" && (AI_ADAPTER_KINDS as readonly string[]).includes(value);
 }
 
-function toPublic(record: StoredModelRecord): AiModelConfigPublic {
+function toProviderPublic(record: StoredProviderRecord): AiProviderConfigPublic {
   return {
     id: record.id,
     name: record.name,
     kind: record.kind,
-    model: record.model,
     baseUrl: record.baseUrl,
     hasApiKey: Boolean(record.apiKeyCipher),
+  };
+}
+
+function toModelPublic(record: StoredModelRecord): AiModelConfigPublic {
+  return {
+    id: record.id,
+    providerId: record.providerId,
+    name: record.name,
+    model: record.model,
     maxOutputTokens: record.maxOutputTokens,
   };
 }
@@ -100,24 +117,103 @@ export class AiModelsStore {
   getSnapshot(): AiModelsSettingsSnapshot {
     return {
       defaultModelId: this.#data.defaultModelId,
-      models: this.#data.models.map(toPublic),
+      providers: this.#data.providers.map(toProviderPublic),
+      models: this.#data.models.map(toModelPublic),
     };
   }
 
-  upsert(input: AiModelConfigWrite): AiModelsSettingsSnapshot {
+  upsertProvider(input: AiProviderConfigWrite): AiModelsSettingsSnapshot {
     const name = input.name.trim();
-    const model = input.model.trim();
     const baseUrl = (input.baseUrl ?? "").trim();
     const kind = input.kind;
 
     if (name === "") {
-      throw new Error("显示名称不能为空。");
+      throw new Error("供应商名称不能为空。");
+    }
+    if (!isAiAdapterKind(kind)) {
+      throw new Error("不支持的 API 形式。");
+    }
+
+    if (input.id) {
+      const index = this.#data.providers.findIndex((entry) => entry.id === input.id);
+      if (index < 0) {
+        throw new Error("供应商不存在。");
+      }
+
+      const existing = this.#data.providers[index]!;
+      let apiKeyCipher = existing.apiKeyCipher;
+
+      if (input.apiKey !== undefined) {
+        if (input.apiKey === "") {
+          apiKeyCipher = undefined;
+        } else {
+          apiKeyCipher = encryptApiKey(input.apiKey);
+        }
+      }
+
+      this.#data.providers[index] = {
+        id: existing.id,
+        name,
+        kind,
+        baseUrl,
+        apiKeyCipher,
+      };
+    } else {
+      let apiKeyCipher: string | undefined;
+      if (input.apiKey !== undefined && input.apiKey !== "") {
+        apiKeyCipher = encryptApiKey(input.apiKey);
+      }
+
+      this.#data.providers.push({
+        id: nanoid(12),
+        name,
+        kind,
+        baseUrl,
+        apiKeyCipher,
+      });
+    }
+
+    this.#persist();
+    return this.getSnapshot();
+  }
+
+  removeProvider(id: string): AiModelsSettingsSnapshot {
+    const hadProvider = this.#data.providers.some((entry) => entry.id === id);
+    if (!hadProvider) {
+      throw new Error("供应商不存在。");
+    }
+
+    const removedModelIds = new Set(
+      this.#data.models.filter((entry) => entry.providerId === id).map((entry) => entry.id),
+    );
+
+    this.#data.providers = this.#data.providers.filter((entry) => entry.id !== id);
+    this.#data.models = this.#data.models.filter((entry) => entry.providerId !== id);
+
+    if (this.#data.defaultModelId && removedModelIds.has(this.#data.defaultModelId)) {
+      this.#data.defaultModelId = null;
+    }
+
+    this.#persist();
+    return this.getSnapshot();
+  }
+
+  upsertModel(input: AiModelConfigWrite): AiModelsSettingsSnapshot {
+    const name = input.name.trim();
+    const model = input.model.trim();
+    const providerId = input.providerId.trim();
+
+    if (name === "") {
+      throw new Error("模型显示名称不能为空。");
     }
     if (model === "") {
       throw new Error("模型 ID 不能为空。");
     }
-    if (!isAiAdapterKind(kind)) {
-      throw new Error("不支持的 API 形式。");
+    if (providerId === "") {
+      throw new Error("请选择供应商。");
+    }
+    if (!this.#data.providers.some((entry) => entry.id === providerId)) {
+      throw new Error("供应商不存在。");
     }
 
     const maxOutputTokens = parseMaxOutputTokensFromWrite(input);
@@ -129,39 +225,20 @@ export class AiModelsStore {
       }
 
       const existing = this.#data.models[index]!;
-      let apiKeyCipher = existing.apiKeyCipher;
-
-      if (input.apiKey !== undefined) {
-        if (input.apiKey === "") {
-          apiKeyCipher = undefined;
-        } else {
-          apiKeyCipher = encryptApiKey(input.apiKey);
-        }
-      }
-
       this.#data.models[index] = {
         id: existing.id,
+        providerId,
         name,
-        kind,
         model,
-        baseUrl,
         maxOutputTokens,
-        apiKeyCipher,
       };
     } else {
-      let apiKeyCipher: string | undefined;
-      if (input.apiKey !== undefined && input.apiKey !== "") {
-        apiKeyCipher = encryptApiKey(input.apiKey);
-      }
-
       this.#data.models.push({
         id: nanoid(12),
+        providerId,
         name,
-        kind,
         model,
-        baseUrl,
         maxOutputTokens,
-        apiKeyCipher,
       });
     }
 
@@ -169,7 +246,7 @@ export class AiModelsStore {
     return this.getSnapshot();
   }
 
-  remove(id: string): AiModelsSettingsSnapshot {
+  removeModel(id: string): AiModelsSettingsSnapshot {
     const next = this.#data.models.filter((entry) => entry.id !== id);
     if (next.length === this.#data.models.length) {
       throw new Error("模型配置不存在。");
@@ -201,17 +278,22 @@ export class AiModelsStore {
       return null;
     }
 
-    const apiKey = decryptApiKeyCipher(record.apiKeyCipher);
-    if (record.apiKeyCipher && apiKey === null) {
-      throw new Error(`模型“${record.name}”的 API Key 无法解密，请在设置中重新保存。`);
+    const provider = this.#data.providers.find((entry) => entry.id === record.providerId);
+    if (!provider) {
+      return null;
+    }
+
+    const apiKey = decryptApiKeyCipher(provider.apiKeyCipher);
+    if (provider.apiKeyCipher && apiKey === null) {
+      throw new Error(`供应商“${provider.name}”的 API Key 无法解密，请在设置中重新保存。`);
     }
 
     return {
       id: record.id,
       name: record.name,
-      kind: record.kind,
+      kind: provider.kind,
       model: record.model,
-      baseUrl: record.baseUrl,
+      baseUrl: provider.baseUrl,
       apiKey,
       maxOutputTokens: record.maxOutputTokens,
     };
@@ -219,7 +301,7 @@ export class AiModelsStore {
 
   #load(): StoredFile {
     if (!existsSync(this.#filePath)) {
-      return { ...EMPTY_FILE, models: [] };
+      return { ...EMPTY_FILE };
     }
 
     try {
@@ -227,7 +309,7 @@ export class AiModelsStore {
       const parsed: unknown = JSON.parse(raw);
       return normalizeStoredFile(parsed);
     } catch {
-      return { ...EMPTY_FILE, models: [] };
+      return { ...EMPTY_FILE };
     }
   }
 
@@ -240,14 +322,19 @@ export class AiModelsStore {
     const payload: StoredFile = {
       version: FILE_VERSION,
       defaultModelId: this.#data.defaultModelId,
-      models: this.#data.models.map((entry) => ({
+      providers: this.#data.providers.map((entry) => ({
         id: entry.id,
         name: entry.name,
         kind: entry.kind,
-        model: entry.model,
         baseUrl: entry.baseUrl,
-        maxOutputTokens: entry.maxOutputTokens,
         ...(entry.apiKeyCipher ? { apiKeyCipher: entry.apiKeyCipher } : {}),
+      })),
+      models: this.#data.models.map((entry) => ({
+        id: entry.id,
+        providerId: entry.providerId,
+        name: entry.name,
+        model: entry.model,
+        maxOutputTokens: entry.maxOutputTokens,
       })),
     };
 
@@ -257,10 +344,40 @@ export class AiModelsStore {
 
 function normalizeStoredFile(value: unknown): StoredFile {
   if (value === null || typeof value !== "object") {
-    return { ...EMPTY_FILE, models: [] };
+    return { ...EMPTY_FILE };
   }
 
   const record = value as Record<string, unknown>;
+  if (record.version !== FILE_VERSION) {
+    return { ...EMPTY_FILE };
+  }
+
+  const providersRaw = Array.isArray(record.providers) ? record.providers : [];
+  const providers: StoredProviderRecord[] = [];
+
+  for (const item of providersRaw) {
+    if (item === null || typeof item !== "object") {
+      continue;
+    }
+    const entry = item as Record<string, unknown>;
+    if (
+      typeof entry.id !== "string" ||
+      typeof entry.name !== "string" ||
+      !isAiAdapterKind(entry.kind)
+    ) {
+      continue;
+    }
+
+    providers.push({
+      id: entry.id,
+      name: entry.name,
+      kind: entry.kind,
+      baseUrl: typeof entry.baseUrl === "string" ? entry.baseUrl : "",
+      apiKeyCipher: typeof entry.apiKeyCipher === "string" ? entry.apiKeyCipher : undefined,
+    });
+  }
+
+  const providerIds = new Set(providers.map((entry) => entry.id));
   const modelsRaw = Array.isArray(record.models) ? record.models : [];
   const models: StoredModelRecord[] = [];
 
@@ -271,21 +388,20 @@ function normalizeStoredFile(value: unknown): StoredFile {
     const entry = item as Record<string, unknown>;
     if (
       typeof entry.id !== "string" ||
+      typeof entry.providerId !== "string" ||
       typeof entry.name !== "string" ||
       typeof entry.model !== "string" ||
-      !isAiAdapterKind(entry.kind)
+      !providerIds.has(entry.providerId)
     ) {
       continue;
     }
 
     models.push({
       id: entry.id,
+      providerId: entry.providerId,
       name: entry.name,
-      kind: entry.kind,
       model: entry.model,
-      baseUrl: typeof entry.baseUrl === "string" ? entry.baseUrl : "",
       maxOutputTokens: normalizeMaxOutputTokens(entry.maxOutputTokens),
-      apiKeyCipher: typeof entry.apiKeyCipher === "string" ? entry.apiKeyCipher : undefined,
     });
   }
 
@@ -299,6 +415,7 @@ function normalizeStoredFile(value: unknown): StoredFile {
   return {
     version: FILE_VERSION,
     defaultModelId,
+    providers,
     models,
   };
 }

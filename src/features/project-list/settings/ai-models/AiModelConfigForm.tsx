@@ -2,9 +2,9 @@ import { useId, useState, type SubmitEvent } from "react";
 
 import { cn } from "#app/shared/lib/ui/cn";
 import type {
-  AiAdapterKind,
   AiModelConfigPublic,
   AiModelConfigWrite,
+  AiProviderConfigPublic,
 } from "#shared/rpc/services/index";
 import {
   DEFAULT_AI_MODEL_MAX_OUTPUT_TOKENS,
@@ -22,34 +22,31 @@ import {
   settingsSecondaryButtonClass,
   settingsSelectClass,
 } from "../settings-chrome";
-import { AI_ADAPTER_OPTIONS, aiAdapterEndpointPlaceholder } from "./ai-adapter-labels";
-
 type FormState = {
+  providerId: string;
   name: string;
-  kind: AiAdapterKind;
   model: string;
-  baseUrl: string;
-  apiKey: string;
-  clearApiKey: boolean;
   maxOutputTokens: string;
 };
 
 type AiModelConfigFormProps = {
+  providers: readonly AiProviderConfigPublic[];
   initial?: AiModelConfigPublic | null;
+  defaultProviderId?: string;
   busy?: boolean;
   error?: string | null;
   onCancel: () => void;
   onSubmit: (input: AiModelConfigWrite) => void | Promise<void>;
 };
 
-function toFormState(initial?: AiModelConfigPublic | null): FormState {
+function toFormState(
+  initial: AiModelConfigPublic | null | undefined,
+  defaultProviderId: string,
+): FormState {
   return {
+    providerId: initial?.providerId ?? defaultProviderId,
     name: initial?.name ?? "",
-    kind: initial?.kind ?? "responses",
     model: initial?.model ?? "",
-    baseUrl: initial?.baseUrl ?? "",
-    apiKey: "",
-    clearApiKey: false,
     maxOutputTokens: String(initial?.maxOutputTokens ?? DEFAULT_AI_MODEL_MAX_OUTPUT_TOKENS),
   };
 }
@@ -71,7 +68,9 @@ const maxOutputTokensWarningClass = cn(
 );
 
 export function AiModelConfigForm({
+  providers,
   initial = null,
+  defaultProviderId = "",
   busy = false,
   error = null,
   onCancel,
@@ -79,18 +78,18 @@ export function AiModelConfigForm({
 }: AiModelConfigFormProps) {
   const formId = useId();
   const isEdit = initial != null;
-  const [form, setForm] = useState<FormState>(() => toFormState(initial));
+  const [form, setForm] = useState<FormState>(() =>
+    toFormState(initial, defaultProviderId || providers[0]?.id || ""),
+  );
   const [maxOutputTokensError, setMaxOutputTokensError] = useState<string | null>(null);
 
   const parsedMaxOutputTokens = parseMaxOutputTokensField(form.maxOutputTokens);
   const showLowMaxOutputTokensWarning =
     parsedMaxOutputTokens !== null && isLowMaxOutputTokensForNovelAgent(parsedMaxOutputTokens);
 
+  const providerIdField = `${formId}-provider`;
   const nameId = `${formId}-name`;
-  const kindId = `${formId}-kind`;
   const modelId = `${formId}-model`;
-  const baseUrlId = `${formId}-base-url`;
-  const apiKeyId = `${formId}-api-key`;
   const maxOutputTokensId = `${formId}-max-output-tokens`;
 
   const update = <K extends keyof FormState>(key: K, value: FormState[K]) => {
@@ -109,37 +108,42 @@ export function AiModelConfigForm({
 
     const payload: AiModelConfigWrite = {
       ...(isEdit ? { id: initial.id } : {}),
+      providerId: form.providerId,
       name: form.name,
-      kind: form.kind,
       model: form.model,
-      baseUrl: form.baseUrl,
       maxOutputTokens,
     };
-
-    if (isEdit) {
-      if (form.clearApiKey) {
-        payload.apiKey = "";
-      } else if (form.apiKey !== "") {
-        payload.apiKey = form.apiKey;
-      }
-      // else leave apiKey undefined → keep existing
-    } else if (form.apiKey !== "") {
-      payload.apiKey = form.apiKey;
-    }
 
     void onSubmit(payload);
   };
 
-  const apiKeyPlaceholder =
-    isEdit && initial.hasApiKey && !form.clearApiKey
-      ? "已保存，留空则不修改"
-      : form.kind === "ollama"
-        ? "可选"
-        : "API Key";
+  if (providers.length === 0) {
+    return <p className="text-xs text-app-muted">请先添加至少一个 API 供应商，再配置模型。</p>;
+  }
 
   return (
     <form className={settingsFormClass} onSubmit={handleSubmit}>
       <div className={settingsFormGridClass}>
+        <label className={settingsFieldLabelClass} htmlFor={providerIdField}>
+          供应商
+        </label>
+        <select
+          className={settingsSelectClass}
+          disabled={busy}
+          id={providerIdField}
+          required
+          value={form.providerId}
+          onChange={(event) => {
+            update("providerId", event.target.value);
+          }}
+        >
+          {providers.map((provider) => (
+            <option key={provider.id} value={provider.id}>
+              {provider.name}
+            </option>
+          ))}
+        </select>
+
         <label className={settingsFieldLabelClass} htmlFor={nameId}>
           显示名称
         </label>
@@ -157,25 +161,6 @@ export function AiModelConfigForm({
           }}
         />
 
-        <label className={settingsFieldLabelClass} htmlFor={kindId}>
-          API 形式
-        </label>
-        <select
-          className={settingsSelectClass}
-          disabled={busy}
-          id={kindId}
-          value={form.kind}
-          onChange={(event) => {
-            update("kind", event.target.value as AiAdapterKind);
-          }}
-        >
-          {AI_ADAPTER_OPTIONS.map((option) => (
-            <option key={option.value} value={option.value}>
-              {option.label}
-            </option>
-          ))}
-        </select>
-
         <label className={settingsFieldLabelClass} htmlFor={modelId}>
           模型 ID
         </label>
@@ -191,60 +176,6 @@ export function AiModelConfigForm({
             update("model", event.target.value);
           }}
         />
-
-        <label className={settingsFieldLabelClass} htmlFor={baseUrlId}>
-          Endpoint
-        </label>
-        <input
-          className={settingsInputClass}
-          disabled={busy}
-          id={baseUrlId}
-          placeholder={aiAdapterEndpointPlaceholder(form.kind)}
-          spellCheck={false}
-          type="url"
-          value={form.baseUrl}
-          onChange={(event) => {
-            update("baseUrl", event.target.value);
-          }}
-        />
-
-        <label className={settingsFieldLabelClass} htmlFor={apiKeyId}>
-          API Key
-        </label>
-        <div className="flex min-w-0 flex-col gap-1.5">
-          <input
-            autoComplete="off"
-            className={settingsInputClass}
-            disabled={busy || form.clearApiKey}
-            id={apiKeyId}
-            placeholder={apiKeyPlaceholder}
-            spellCheck={false}
-            type="password"
-            value={form.apiKey}
-            onChange={(event) => {
-              update("apiKey", event.target.value);
-              if (event.target.value !== "") {
-                update("clearApiKey", false);
-              }
-            }}
-          />
-          {isEdit && initial.hasApiKey ? (
-            <label className="flex items-center gap-1.5 text-2xs text-app-muted">
-              <input
-                checked={form.clearApiKey}
-                disabled={busy}
-                type="checkbox"
-                onChange={(event) => {
-                  update("clearApiKey", event.target.checked);
-                  if (event.target.checked) {
-                    update("apiKey", "");
-                  }
-                }}
-              />
-              清除已保存的 API Key
-            </label>
-          ) : null}
-        </div>
 
         <label className={settingsFieldLabelClass} htmlFor={maxOutputTokensId}>
           最大输出 token
