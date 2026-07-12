@@ -42,14 +42,6 @@ export type ToolRunner = {
 
 // ---- result helpers ----
 
-function ok(call: ToolCallItem, resultText: string): ToolExecutionResult {
-  return {
-    toolResult: toolResultItem(call.id, call.name, "success", [{ type: "text", text: resultText }]),
-    resultText,
-    errorMessage: null,
-  };
-}
-
 function okJson(call: ToolCallItem, json: unknown): ToolExecutionResult {
   const resultText = JSON.stringify(json, null, 2);
   return {
@@ -100,8 +92,7 @@ const toolHandlers: Partial<Record<AI_TOOL_NAMES, ToolHandler>> = {
     return okJson(call, output);
   },
   read_document(worktree, call) {
-    const content = executeReadTextDocument(worktree, call);
-    return ok(call, content);
+    return okJson(call, executeReadTextDocument(worktree, call));
   },
   search_documents(worktree, call) {
     const output = executeSearchProject(worktree, call);

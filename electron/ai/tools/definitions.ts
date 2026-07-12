@@ -60,7 +60,7 @@ export const AI_TOOLS_MAP = {
   },
   read_document: {
     description:
-      "读取一个可编辑文本节点的当前全文。manuscript 仅支持 chapter，resource 仅支持 file；id 必须使用 read_structure 返回的节点 ID。编辑前必须先调用以取得 expected_content。",
+      "读取一个可编辑文本节点的当前全文与 worktree revision。manuscript 仅支持 chapter，resource 仅支持 file；id 必须使用 read_structure 返回的节点 ID。写回前应使用返回的 revision 作为 expected_revision。",
     inputSchema: {
       type: "object",
       properties: {
@@ -111,7 +111,7 @@ export const AI_TOOLS_MAP = {
   },
   write_document: {
     description:
-      "将一个章节或资源文件的全文替换为 new_content。仅在大范围重写时使用；局部修改优先用 replace_document_text。必须先调用 read_document，并将其完整、原样返回值作为 expected_content；若内容已变化则调用失败，应重新读取后再编辑。",
+      "将一个章节或资源文件的全文替换为 new_content。仅在大范围重写时使用；局部修改优先用 replace_document_text。必须先调用 read_document，并将返回的 revision 作为 expected_revision；若工作区已变更则调用失败，应重新读取后再写。",
     inputSchema: {
       type: "object",
       properties: {
@@ -130,16 +130,17 @@ export const AI_TOOLS_MAP = {
           required: ["domain", "id"],
           additionalProperties: false,
         },
-        expected_content: {
-          type: "string",
-          description: "最近一次 read_document 返回的完整原文，不得摘要、省略或改写。",
+        expected_revision: {
+          type: "integer",
+          description: "最近一次 read_document 返回的 worktree revision。",
+          minimum: 0,
         },
         new_content: {
           type: "string",
           description: "替换后的完整全文；不是补丁或局部片段。允许空字符串。",
         },
       },
-      required: ["target", "expected_content", "new_content"],
+      required: ["target", "expected_revision", "new_content"],
       additionalProperties: false,
     },
   },
@@ -295,7 +296,7 @@ export const AI_TOOLS_MAP = {
   },
   delete_node: {
     description:
-      "永久删除一个现有节点，文件夹会递归删除后代。必须先用 read_structure 核对节点及其后代，再通过 ask_user 获得本次删除的明确同意；之后将结构中当前完整标题/名称原样作为 expected_name。",
+      "永久删除一个现有节点，文件夹会递归删除后代。先用 read_structure 获取并核对节点 id 及其后代后再删除。",
     inputSchema: {
       type: "object",
       properties: {
@@ -305,13 +306,10 @@ export const AI_TOOLS_MAP = {
         },
         id: {
           type: "string",
-        },
-        expected_name: {
-          type: "string",
-          description: "最近一次 read_structure 返回的当前完整 title（手稿）或 name（资源）。",
+          description: "read_structure 返回的节点 ID。",
         },
       },
-      required: ["domain", "id", "expected_name"],
+      required: ["domain", "id"],
       additionalProperties: false,
     },
   },

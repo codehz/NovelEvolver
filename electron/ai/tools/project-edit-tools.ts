@@ -149,26 +149,6 @@ function parseHistoryLimit(value: unknown): number {
   return Math.min(value, 200);
 }
 
-function resolveNodeLabel(
-  worktree: WorktreeSession,
-  domain: "manuscript" | "resource",
-  id: string,
-): string {
-  const structure = worktree.getProjectStructure(domain);
-  if (domain === "manuscript") {
-    const node = structure.manuscript?.nodes.find((entry) => entry.id === id);
-    if (node === undefined) {
-      throw new Error(`节点不存在: ${id}`);
-    }
-    return node.title;
-  }
-  const node = structure.resource?.nodes.find((entry) => entry.id === id);
-  if (node === undefined) {
-    throw new Error(`节点不存在: ${id}`);
-  }
-  return node.name;
-}
-
 function toChangeDto(change: Change): ChangeDto {
   const dto: ChangeDto = {
     id: change.id,
@@ -277,11 +257,6 @@ export function executeDeleteDocument(
   const args = parseToolArgs(call);
   const domain = parseDocumentDomain(args.domain, "domain");
   const id = parseNonEmptyString(args.id, "id");
-  const expectedName = parseNonEmptyString(args.expected_name, "expected_name");
-  const currentLabel = resolveNodeLabel(worktree, domain, id);
-  if (currentLabel !== expectedName) {
-    throw new Error("expected_name 与当前节点标题或名称不匹配。");
-  }
 
   if (domain === "manuscript") {
     worktree.deleteManuscriptNode(id);

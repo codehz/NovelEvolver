@@ -67,12 +67,22 @@ export type SearchProjectResult = {
   }[];
 };
 
+export type ReadTextDocumentResult = {
+  target: {
+    domain: "manuscript" | "resource";
+    id: string;
+  };
+  content: string;
+  revision: number;
+};
+
 export type EditTextDocumentResult = {
   target: {
     domain: "manuscript" | "resource";
     id: string;
   };
   updated: true;
+  revision: number;
 };
 
 export type ReplaceTextDocumentResult = {
@@ -105,7 +115,7 @@ type SearchProjectArgs = {
 
 type EditTextDocumentArgs = {
   target?: unknown;
-  expected_content?: unknown;
+  expected_revision?: unknown;
   new_content?: unknown;
 };
 
@@ -229,7 +239,10 @@ export function executeGetProjectStructure(
   return toProjectStructureResult(worktree.getProjectStructure(domain));
 }
 
-export function executeReadTextDocument(worktree: WorktreeSession, call: ToolCallItem): string {
+export function executeReadTextDocument(
+  worktree: WorktreeSession,
+  call: ToolCallItem,
+): ReadTextDocumentResult {
   const args = parseToolArgs(call) as ReadTextDocumentArgs;
   if (typeof args.target !== "object" || args.target === null) {
     throw new Error("target 需要对象参数。");
@@ -237,7 +250,13 @@ export function executeReadTextDocument(worktree: WorktreeSession, call: ToolCal
   const target = args.target as Record<string, unknown>;
   const domain = parseDocumentDomain(target.domain, "target.domain");
   const id = parseNonEmptyString(target.id, "target.id");
-  return domain === "manuscript" ? worktree.readChapter(id) : worktree.readResourceFile(id);
+  const content =
+    domain === "manuscript" ? worktree.readChapter(id) : worktree.readResourceFile(id);
+  return {
+    target: { domain, id },
+    content,
+    revision: worktree.getChangesSnapshot().revision,
+  };
 }
 
 export function executeSearchProject(
@@ -289,6 +308,13 @@ export function executeSearchProject(
   };
 }
 
+function parseExpectedRevision(value: unknown): number {
+  if (typeof value !== "number" || !Number.isInteger(value) || value < 0) {
+    throw new Error("expected_revision 必须是非负整数。");
+  }
+  return value;
+}
+
 export function executeEditTextDocument(
   worktree: WorktreeSession,
   call: ToolCallItem,
@@ -300,17 +326,16 @@ export function executeEditTextDocument(
   const target = args.target as Record<string, unknown>;
   const domain = parseDocumentDomain(target.domain, "target.domain");
   const id = parseNonEmptyString(target.id, "target.id");
-  if (typeof args.expected_content !== "string") {
-    throw new Error("expected_content 需要字符串。");
-  }
+  const expectedRevision = parseExpectedRevision(args.expected_revision);
   if (typeof args.new_content !== "string") {
     throw new Error("new_content 需要字符串。");
   }
 
-  const currentContent =
-    domain === "manuscript" ? worktree.readChapter(id) : worktree.readResourceFile(id);
-  if (currentContent !== args.expected_content) {
-    throw new Error("expected_content 与当前内容不匹配。");
+  const currentRevision = worktree.getChangesSnapshot().revision;
+  if (currentRevision !== expectedRevision) {
+    throw new Error(
+      `expected_revision 与当前工作区 revision 不匹配（expected=${expectedRevision}, current=${currentRevision}）；请重新 read_document 后再写。`,
+    );
   }
 
   if (domain === "manuscript") {
@@ -325,6 +350,7 @@ export function executeEditTextDocument(
       id,
     },
     updated: true,
+    revision: worktree.getChangesSnapshot().revision,
   };
 }
 

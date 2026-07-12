@@ -186,7 +186,9 @@ const structurePresenter: ToolPresenter = (toolCall) => {
 const readPresenter: ToolPresenter = (toolCall) => {
   const args = parseObject(toolCall.argumentsText);
   const target = targetFields(args);
-  const content = toolCall.status === "complete" ? toolCall.resultText : null;
+  const result = toolCall.status === "complete" ? parseObject(toolCall.resultText) : null;
+  const content = getString(result, "content");
+  const revision = getNumber(result, "revision");
   return {
     label: "读取文档",
     summary: `${domainLabel(target.domain)} · ${target.id ?? "未知节点"}`,
@@ -194,6 +196,7 @@ const readPresenter: ToolPresenter = (toolCall) => {
       <DetailList>
         <DetailField label="内容域">{domainLabel(target.domain)}</DetailField>
         <DetailField label="节点 ID">{target.id ?? "未知"}</DetailField>
+        {revision !== null ? <DetailField label="Revision">{revision}</DetailField> : null}
         {content !== null ? <DetailField label="正文规模">{textStats(content)}</DetailField> : null}
       </DetailList>
     ),
@@ -241,9 +244,11 @@ const searchPresenter: ToolPresenter = (toolCall) => {
 
 const editPresenter: ToolPresenter = (toolCall) => {
   const args = parseObject(toolCall.argumentsText);
+  const result = parseObject(toolCall.resultText);
   const target = targetFields(args);
-  const before = getString(args, "expected_content");
+  const expectedRevision = getNumber(args, "expected_revision");
   const after = getString(args, "new_content");
+  const nextRevision = getNumber(result, "revision");
   return {
     label: "重写文档",
     summary: `${domainLabel(target.domain)} · ${target.id ?? "未知节点"}`,
@@ -251,8 +256,13 @@ const editPresenter: ToolPresenter = (toolCall) => {
     detail: (
       <DetailList>
         <DetailField label="节点 ID">{target.id ?? "未知"}</DetailField>
-        <DetailField label="原正文">{textStats(before)}</DetailField>
+        {expectedRevision !== null ? (
+          <DetailField label="期望 revision">{expectedRevision}</DetailField>
+        ) : null}
         <DetailField label="新正文">{generationStats(after, toolCall.status)}</DetailField>
+        {nextRevision !== null ? (
+          <DetailField label="新 revision">{nextRevision}</DetailField>
+        ) : null}
         <DetailField label="结果">
           {toolCall.status === "complete" ? "已更新" : "整篇替换"}
         </DetailField>
