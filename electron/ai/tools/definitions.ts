@@ -157,7 +157,7 @@ export const AI_TOOLS_MAP = {
   },
   replace_document_text: {
     description:
-      "精确替换章节或资源文件中的一段文字，适合局部修订且无需回传完整全文。必须先读取当前正文；expected_text 必须在正文中恰好出现一次，否则失败且不修改。可用空 replacement_text 删除该段。多个互不依赖的替换应逐次调用。",
+      "精确替换章节或资源文件中的一段文字，适合局部修订且无需回传完整全文。必须先读取当前正文；expected_text 必须在正文中恰好出现一次，否则失败且不修改。可用空 replacement_text 删除该段。多个互不依赖的替换应逐次调用。成功时返回更新后的 worktree revision。",
     inputSchema: {
       type: "object",
       properties: {
@@ -191,7 +191,7 @@ export const AI_TOOLS_MAP = {
   },
   create_folder: {
     description:
-      "在现有文件夹下创建文件夹。先用 read_structure 摘要或按 target 展开获取 parent_id；manuscript 可指定 index，resource 不得传 index。",
+      "在现有文件夹下创建文件夹。先用 read_structure 摘要或按 target 展开获取 parent_id；manuscript 可指定 index，resource 不得传 index。成功时返回新节点信息与更新后的 worktree revision。",
     inputSchema: {
       type: "object",
       properties: {
@@ -222,7 +222,7 @@ export const AI_TOOLS_MAP = {
   },
   create_document: {
     description:
-      "在现有文件夹下创建带完整初始正文的文本节点。先用 read_structure 摘要或按 target 展开获取 parent_id；manuscript 创建 chapter 且可指定 index，resource 创建 file 且不得传 index。content 必须提供，本次调用应直接写入最终正文，不要先创建空节点再读取或编辑。",
+      "在现有文件夹下创建带完整初始正文的文本节点。先用 read_structure 摘要或按 target 展开获取 parent_id；manuscript 创建 chapter 且可指定 index，resource 创建 file 且不得传 index。content 必须提供，本次调用应直接写入最终正文，不要先创建空节点再读取或编辑。成功时返回新节点信息与更新后的 worktree revision。",
     inputSchema: {
       type: "object",
       properties: {
@@ -257,7 +257,7 @@ export const AI_TOOLS_MAP = {
   },
   move_node: {
     description:
-      "将现有节点移动到现有文件夹下。先用 read_structure 摘要或按 target 展开获取 id 和 target_parent_id；不能移动根节点或移入自身后代。仅 manuscript 支持 index，resource 不得传 index。",
+      "将现有节点移动到现有文件夹下。先用 read_structure 摘要或按 target 展开获取 id 和 target_parent_id；不能移动根节点或移入自身后代。仅 manuscript 支持 index，resource 不得传 index。成功时返回更新后的 worktree revision。",
     inputSchema: {
       type: "object",
       properties: {
@@ -285,7 +285,7 @@ export const AI_TOOLS_MAP = {
   },
   rename_node: {
     description:
-      "重命名一个现有节点，不修改正文。先用 read_structure 获取节点 id；name 传新标题或新名称，而不是路径。",
+      "重命名一个现有节点，不修改正文。先用 read_structure 获取节点 id；name 传新标题或新名称，而不是路径。成功时返回更新后的 worktree revision。",
     inputSchema: {
       type: "object",
       properties: {
@@ -307,7 +307,7 @@ export const AI_TOOLS_MAP = {
   },
   delete_node: {
     description:
-      "永久删除一个现有节点，文件夹会递归删除后代。先用 read_structure 获取并核对节点 id 及其后代后再删除。",
+      "永久删除一个现有节点，文件夹会递归删除后代。先用 read_structure 获取并核对节点 id 及其后代后再删除。成功时返回更新后的 worktree revision。",
     inputSchema: {
       type: "object",
       properties: {

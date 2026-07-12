@@ -282,10 +282,12 @@ const editPresenter: ToolPresenter = (toolCall) => {
 
 const replacePresenter: ToolPresenter = (toolCall) => {
   const args = parseObject(toolCall.argumentsText);
+  const result = parseObject(toolCall.resultText);
   const target = targetFields(args);
   const expected = getString(args, "expected_text");
   const replacement = getString(args, "replacement_text");
   const removing = replacement === "";
+  const nextRevision = getNumber(result, "revision");
   return {
     label: removing ? "删除文档片段" : "替换文档片段",
     summary: `${domainLabel(target.domain)} · ${target.id ?? "未知节点"}`,
@@ -304,6 +306,9 @@ const replacePresenter: ToolPresenter = (toolCall) => {
         </DetailField>
         {!removing && preview(replacement) ? (
           <DetailField label="替换预览">{preview(replacement)}</DetailField>
+        ) : null}
+        {nextRevision !== null ? (
+          <DetailField label="新 revision">{nextRevision}</DetailField>
         ) : null}
       </DetailList>
     ),
@@ -337,10 +342,42 @@ const createPresenter: ToolPresenter = (toolCall) => {
         {getString(result, "display_path") ? (
           <DetailField label="创建位置">{getString(result, "display_path")}</DetailField>
         ) : null}
+        {getNumber(result, "revision") !== null ? (
+          <DetailField label="新 revision">{getNumber(result, "revision")}</DetailField>
+        ) : null}
       </DetailList>
     ),
   };
 };
+
+const nodeMutationPresenter =
+  (label: string): ToolPresenter =>
+  (toolCall) => {
+    const args = parseObject(toolCall.argumentsText);
+    const result = parseObject(toolCall.resultText);
+    const domain = getString(args, "domain");
+    const id = getString(args, "id");
+    const revision = getNumber(result, "revision");
+    return {
+      label,
+      summary: `${domainLabel(domain)} · ${id ?? "未知节点"}`,
+      detail: (
+        <DetailList>
+          <DetailField label="内容域">{domainLabel(domain)}</DetailField>
+          <DetailField label="节点 ID">{id ?? "未知"}</DetailField>
+          {toolCall.name === "move_node" ? (
+            <DetailField label="目标父节点">
+              {getString(args, "target_parent_id") ?? "未知"}
+            </DetailField>
+          ) : null}
+          {toolCall.name === "rename_node" ? (
+            <DetailField label="新名称">{getString(args, "name") ?? "未知"}</DetailField>
+          ) : null}
+          {revision !== null ? <DetailField label="新 revision">{revision}</DetailField> : null}
+        </DetailList>
+      ),
+    };
+  };
 
 const presenters: Partial<Record<string, ToolPresenter>> = {
   ask_user: askUserPresenter,
@@ -351,6 +388,9 @@ const presenters: Partial<Record<string, ToolPresenter>> = {
   replace_document_text: replacePresenter,
   create_folder: createPresenter,
   create_document: createPresenter,
+  move_node: nodeMutationPresenter("移动节点"),
+  rename_node: nodeMutationPresenter("重命名节点"),
+  delete_node: nodeMutationPresenter("删除节点"),
 };
 
 export function presentToolCall(toolCall: AiChatToolCall): ToolPresentation {

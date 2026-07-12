@@ -98,6 +98,7 @@ export type ReplaceTextDocumentResult = {
   };
   replacements: 1;
   updated: true;
+  revision: number;
 };
 
 export type CreateDocumentResult = {
@@ -107,6 +108,7 @@ export type CreateDocumentResult = {
   parent_id: string;
   name: string;
   display_path: string;
+  revision: number;
 };
 
 type ReadTextDocumentArgs = {
@@ -419,6 +421,7 @@ export function executeReplaceTextDocument(
     target: { domain, id },
     replacements: 1,
     updated: true,
+    revision: worktree.getChangesSnapshot().revision,
   };
 }
 
@@ -441,6 +444,7 @@ export function executeCreateFolder(
       parent_id: parentId,
       name,
       display_path: findCreatedNodePath(worktree, domain, parentId, created.nodeId),
+      revision: worktree.getChangesSnapshot().revision,
     };
   }
 
@@ -456,6 +460,7 @@ export function executeCreateFolder(
     parent_id: parentId,
     name,
     display_path: findCreatedNodePath(worktree, domain, parentId, created.nodeId),
+    revision: worktree.getChangesSnapshot().revision,
   };
 }
 
@@ -482,6 +487,7 @@ export function executeCreateTextDocument(
       parent_id: parentId,
       name,
       display_path: findCreatedNodePath(worktree, domain, parentId, created.nodeId),
+      revision: worktree.getChangesSnapshot().revision,
     };
   }
 
@@ -497,5 +503,6 @@ export function executeCreateTextDocument(
     parent_id: parentId,
     name,
     display_path: findCreatedNodePath(worktree, domain, parentId, created.nodeId),
+    revision: worktree.getChangesSnapshot().revision,
   };
 }

@@ -10,6 +10,7 @@ export type MoveDocumentResult = {
   id: string;
   target_parent_id: string;
   moved: true;
+  revision: number;
 };
 
 export type RenameDocumentResult = {
@@ -17,12 +18,14 @@ export type RenameDocumentResult = {
   id: string;
   name: string;
   renamed: true;
+  revision: number;
 };
 
 export type DeleteDocumentResult = {
   domain: "manuscript" | "resource";
   id: string;
   deleted: true;
+  revision: number;
 };
 
 type ChangeDto = {
@@ -224,6 +227,7 @@ export function executeMoveDocument(
     id,
     target_parent_id: targetParentId,
     moved: true,
+    revision: worktree.getChangesSnapshot().revision,
   };
 }
 
@@ -247,6 +251,7 @@ export function executeRenameDocument(
     id,
     name,
     renamed: true,
+    revision: worktree.getChangesSnapshot().revision,
   };
 }
 
@@ -268,6 +273,7 @@ export function executeDeleteDocument(
     domain,
     id,
     deleted: true,
+    revision: worktree.getChangesSnapshot().revision,
   };
 }
 
