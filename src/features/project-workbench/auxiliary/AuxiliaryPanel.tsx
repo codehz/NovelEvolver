@@ -17,10 +17,13 @@ import { pickAiConversation } from "./ai-chat-history-quick-pick";
 import {
   composerShellClass,
   composerTextareaClass,
+  contextUsageRatioClass,
   conversationRailClass,
+  describeContextUsageRatio,
   modelSelectorButtonClass,
   modelSelectorLabelClass,
   panelSectionClass,
+  resolveLatestLastInputTokens,
   sendButtonClass,
   warningBannerClass,
 } from "./ai-chat-ui";
@@ -193,6 +196,10 @@ export function AuxiliaryPanel() {
     : snapshot.selectedModelId
       ? "未知模型"
       : "选择模型";
+  const contextUsage = describeContextUsageRatio(
+    selectedModel?.contextLength,
+    resolveLatestLastInputTokens(snapshot.messages),
+  );
 
   const messageIdSet = new Set(snapshot.messages.map((message) => message.id));
   const warningsByMessageId = new Map<string, typeof snapshot.warnings>();
@@ -313,6 +320,14 @@ export function AuxiliaryPanel() {
             />
 
             <div className="flex items-center justify-end gap-2">
+              {contextUsage ? (
+                <span
+                  className={cn(contextUsageRatioClass, contextUsage.toneClass)}
+                  title={`最近一次请求占用上下文 ${contextUsage.used.toLocaleString()} / ${contextUsage.limit.toLocaleString()} token（${contextUsage.percent}%）`}
+                >
+                  {contextUsage.label}
+                </span>
+              ) : null}
               <button
                 aria-label="选择模型"
                 className={modelSelectorButtonClass}

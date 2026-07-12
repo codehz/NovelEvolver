@@ -18,6 +18,7 @@ export function listSelectableModels(options: {
       kind: "mock",
       model: "mock-assistant",
       isDefault: options.models.defaultModelId === null && options.models.models.length === 0,
+      contextLength: null,
     });
   }
 
@@ -32,6 +33,7 @@ export function listSelectableModels(options: {
       kind: provider.kind,
       model: model.model,
       isDefault: model.id === options.models.defaultModelId,
+      contextLength: model.contextLength,
     });
   }
 

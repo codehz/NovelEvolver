@@ -1,6 +1,7 @@
 import { cn } from "#app/shared/lib/ui/cn";
 import type {
   AiChatAssistantMessage,
+  AiChatMessage,
   AiChatToolCall,
   AiChatWarning,
   AiChatSnapshot,
@@ -147,3 +148,81 @@ export function describeAssistantMessageMeta(message: AiChatAssistantMessage): s
 
   return "";
 }
+
+/** Latest completed-round prompt tokens from the most recent assistant message with usage. */
+export function resolveLatestLastInputTokens(messages: readonly AiChatMessage[]): number | null {
+  for (let index = messages.length - 1; index >= 0; index -= 1) {
+    const message = messages[index];
+    if (message?.role !== "assistant") {
+      continue;
+    }
+    const lastInput = message.usage?.lastInputTokens;
+    if (typeof lastInput === "number") {
+      return lastInput;
+    }
+    // Legacy persisted messages: fall back to summed inputTokens (best effort).
+    const input = message.usage?.inputTokens;
+    if (typeof input === "number") {
+      return input;
+    }
+  }
+  return null;
+}
+
+function formatTokenCount(value: number): string {
+  if (value >= 1_000_000) {
+    const millions = value / 1_000_000;
+    return `${millions % 1 === 0 ? millions.toFixed(0) : millions.toFixed(1)}M`;
+  }
+  if (value >= 10_000) {
+    const thousands = value / 1_000;
+    return `${thousands % 1 === 0 ? thousands.toFixed(0) : thousands.toFixed(1)}k`;
+  }
+  return String(value);
+}
+
+export type ContextUsageRatio = {
+  used: number;
+  limit: number;
+  /** 0–100+ (may exceed 100 if provider reports over limit). */
+  percent: number;
+  label: string;
+  /** Tailwind emphasis when occupancy is high. */
+  toneClass: string | null;
+};
+
+/**
+ * Build context occupancy for composer when the model has a configured window.
+ * Returns null when limit is unset or usage is unknown.
+ */
+export function describeContextUsageRatio(
+  contextLength: number | null | undefined,
+  lastInputTokens: number | null | undefined,
+): ContextUsageRatio | null {
+  if (
+    typeof contextLength !== "number" ||
+    !Number.isFinite(contextLength) ||
+    contextLength < 1 ||
+    typeof lastInputTokens !== "number" ||
+    !Number.isFinite(lastInputTokens) ||
+    lastInputTokens < 0
+  ) {
+    return null;
+  }
+
+  const percent = Math.round((lastInputTokens / contextLength) * 100);
+  const label = `${formatTokenCount(lastInputTokens)}/${formatTokenCount(contextLength)} · ${percent}%`;
+  const toneClass = percent >= 95 ? "text-ctp-red" : percent >= 80 ? "text-ctp-yellow" : null;
+
+  return {
+    used: lastInputTokens,
+    limit: contextLength,
+    percent,
+    label,
+    toneClass,
+  };
+}
+
+export const contextUsageRatioClass = cn(
+  "min-w-0 shrink truncate text-2xs text-ctp-subtext1 tabular-nums",
+);

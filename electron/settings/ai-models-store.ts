@@ -30,6 +30,7 @@ type StoredModelRecord = {
   name: string;
   model: string;
   maxOutputTokens: number;
+  contextLength: number | null;
 };
 
 export type AiModelRuntimeConfig = {
@@ -40,6 +41,7 @@ export type AiModelRuntimeConfig = {
   baseUrl: string;
   apiKey: string | null;
   maxOutputTokens: number;
+  contextLength: number | null;
 };
 
 type StoredFile = {
@@ -77,6 +79,7 @@ function toModelPublic(record: StoredModelRecord): AiModelConfigPublic {
     name: record.name,
     model: record.model,
     maxOutputTokens: record.maxOutputTokens,
+    contextLength: record.contextLength,
   };
 }
 
@@ -217,6 +220,7 @@ export class AiModelsStore {
     }
 
     const maxOutputTokens = parseMaxOutputTokensFromWrite(input);
+    const contextLength = parseContextLengthFromWrite(input);
 
     if (input.id) {
       const index = this.#data.models.findIndex((entry) => entry.id === input.id);
@@ -231,6 +235,7 @@ export class AiModelsStore {
         name,
         model,
         maxOutputTokens,
+        contextLength,
       };
     } else {
       this.#data.models.push({
@@ -239,6 +244,7 @@ export class AiModelsStore {
         name,
         model,
         maxOutputTokens,
+        contextLength,
       });
     }
 
@@ -296,6 +302,7 @@ export class AiModelsStore {
       baseUrl: provider.baseUrl,
       apiKey,
       maxOutputTokens: record.maxOutputTokens,
+      contextLength: record.contextLength,
     };
   }
 
@@ -335,6 +342,7 @@ export class AiModelsStore {
         name: entry.name,
         model: entry.model,
         maxOutputTokens: entry.maxOutputTokens,
+        contextLength: entry.contextLength,
       })),
     };
 
@@ -402,6 +410,7 @@ function normalizeStoredFile(value: unknown): StoredFile {
       name: entry.name,
       model: entry.model,
       maxOutputTokens: normalizeMaxOutputTokens(entry.maxOutputTokens),
+      contextLength: normalizeContextLength(entry.contextLength),
     });
   }
 
@@ -435,6 +444,29 @@ function parseMaxOutputTokensFromWrite(input: AiModelConfigWrite): number {
   const normalized = normalizeMaxOutputTokens(input.maxOutputTokens);
   if (normalized > 2_000_000) {
     throw new Error("最大输出 token 不能超过 2000000。");
+  }
+  return normalized;
+}
+
+/** Empty / 0 / missing → not configured (`null`). */
+function normalizeContextLength(value: unknown): number | null {
+  if (value === null || value === undefined) {
+    return null;
+  }
+  if (typeof value !== "number" || !Number.isFinite(value)) {
+    return null;
+  }
+  const rounded = Math.trunc(value);
+  if (rounded < 1) {
+    return null;
+  }
+  return rounded;
+}
+
+function parseContextLengthFromWrite(input: AiModelConfigWrite): number | null {
+  const normalized = normalizeContextLength(input.contextLength);
+  if (normalized !== null && normalized > 2_000_000) {
+    throw new Error("上下文长度不能超过 2000000。");
   }
   return normalized;
 }

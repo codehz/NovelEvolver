@@ -27,6 +27,8 @@ type FormState = {
   name: string;
   model: string;
   maxOutputTokens: string;
+  /** Empty string means not configured. */
+  contextLength: string;
 };
 
 type AiModelConfigFormProps = {
@@ -48,6 +50,10 @@ function toFormState(
     name: initial?.name ?? "",
     model: initial?.model ?? "",
     maxOutputTokens: String(initial?.maxOutputTokens ?? DEFAULT_AI_MODEL_MAX_OUTPUT_TOKENS),
+    contextLength:
+      initial?.contextLength !== null && initial?.contextLength !== undefined
+        ? String(initial.contextLength)
+        : "",
   };
 }
 
@@ -61,6 +67,19 @@ function parseMaxOutputTokensField(raw: string): number | null {
     return null;
   }
   return value;
+}
+
+/** Empty → null (not configured). Non-empty invalid → throws via form error. */
+function parseContextLengthField(raw: string): { ok: true; value: number | null } | { ok: false } {
+  const trimmed = raw.trim();
+  if (trimmed === "") {
+    return { ok: true, value: null };
+  }
+  const value = Number(trimmed);
+  if (!Number.isFinite(value) || !Number.isInteger(value) || value < 1) {
+    return { ok: false };
+  }
+  return { ok: true, value };
 }
 
 const maxOutputTokensWarningClass = cn(
@@ -82,6 +101,7 @@ export function AiModelConfigForm({
     toFormState(initial, defaultProviderId || providers[0]?.id || ""),
   );
   const [maxOutputTokensError, setMaxOutputTokensError] = useState<string | null>(null);
+  const [contextLengthError, setContextLengthError] = useState<string | null>(null);
 
   const parsedMaxOutputTokens = parseMaxOutputTokensField(form.maxOutputTokens);
   const showLowMaxOutputTokensWarning =
@@ -91,6 +111,7 @@ export function AiModelConfigForm({
   const nameId = `${formId}-name`;
   const modelId = `${formId}-model`;
   const maxOutputTokensId = `${formId}-max-output-tokens`;
+  const contextLengthId = `${formId}-context-length`;
 
   const update = <K extends keyof FormState>(key: K, value: FormState[K]) => {
     setForm((prev) => ({ ...prev, [key]: value }));
@@ -106,12 +127,20 @@ export function AiModelConfigForm({
     }
     setMaxOutputTokensError(null);
 
+    const contextLengthParsed = parseContextLengthField(form.contextLength);
+    if (!contextLengthParsed.ok) {
+      setContextLengthError("上下文长度请留空，或输入大于 0 的整数。");
+      return;
+    }
+    setContextLengthError(null);
+
     const payload: AiModelConfigWrite = {
       ...(isEdit ? { id: initial.id } : {}),
       providerId: form.providerId,
       name: form.name,
       model: form.model,
       maxOutputTokens,
+      contextLength: contextLengthParsed.value,
     };
 
     void onSubmit(payload);
@@ -209,6 +238,34 @@ export function AiModelConfigForm({
           ) : null}
           {maxOutputTokensError ? (
             <p className="text-2xs text-ctp-red">{maxOutputTokensError}</p>
+          ) : null}
+        </div>
+
+        <label className={settingsFieldLabelClass} htmlFor={contextLengthId}>
+          上下文长度
+        </label>
+        <div className="flex min-w-0 flex-col gap-1.5">
+          <input
+            className={settingsInputClass}
+            disabled={busy}
+            id={contextLengthId}
+            inputMode="numeric"
+            min={1}
+            placeholder="可选，例如 128000"
+            type="number"
+            value={form.contextLength}
+            onChange={(event) => {
+              update("contextLength", event.target.value);
+              if (contextLengthError !== null) {
+                setContextLengthError(null);
+              }
+            }}
+          />
+          <p className="text-2xs text-app-muted">
+            模型上下文窗口（token）。用于侧边栏显示当前占用占比；留空表示不统计。不会传给 API。
+          </p>
+          {contextLengthError ? (
+            <p className="text-2xs text-ctp-red">{contextLengthError}</p>
           ) : null}
         </div>
       </div>

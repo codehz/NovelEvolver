@@ -384,6 +384,12 @@ export function AiModelsSettingsPanel() {
                               >
                                 最大输出 {model.maxOutputTokens}
                               </span>
+                              {model.contextLength !== null ? (
+                                <>
+                                  <span aria-hidden="true">·</span>
+                                  <span>上下文 {model.contextLength}</span>
+                                </>
+                              ) : null}
                             </div>
                           </div>
 

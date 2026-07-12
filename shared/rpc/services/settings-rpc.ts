@@ -52,6 +52,11 @@ export type AiModelConfigPublic = {
   /** Provider API model id. */
   model: string;
   maxOutputTokens: number;
+  /**
+   * Model context window size in tokens for UI usage ratio.
+   * `null` means not configured (do not show context occupancy).
+   */
+  contextLength: number | null;
 };
 
 export type AiModelConfigWrite = {
@@ -60,6 +65,8 @@ export type AiModelConfigWrite = {
   name: string;
   model: string;
   maxOutputTokens: number;
+  /** Omit, null, or 0 → not configured. */
+  contextLength?: number | null;
 };
 
 export type AiModelsSettingsSnapshot = {

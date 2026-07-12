@@ -34,6 +34,7 @@ export function toMessageUsage(usage: AIResponse["usage"]): AiChatMessageUsage |
 
   if (typeof usage.inputTokens === "number") {
     messageUsage.inputTokens = usage.inputTokens;
+    messageUsage.lastInputTokens = usage.inputTokens;
   }
   if (typeof usage.outputTokens === "number") {
     messageUsage.outputTokens = usage.outputTokens;
@@ -59,6 +60,15 @@ export function toMessageUsage(usage: AIResponse["usage"]): AiChatMessageUsage |
   return Object.keys(messageUsage).length > 0 ? messageUsage : null;
 }
 
+const SUMMED_USAGE_FIELDS = [
+  "inputTokens",
+  "outputTokens",
+  "reasoningTokens",
+  "totalTokens",
+  "cachedInputTokens",
+  "cacheWriteInputTokens",
+] as const;
+
 export function addMessageUsage(
   current: AiChatMessageUsage | null,
   usage: AIResponse["usage"],
@@ -72,19 +82,18 @@ export function addMessageUsage(
   }
 
   const combined: AiChatMessageUsage = {};
-  for (const field of [
-    "inputTokens",
-    "outputTokens",
-    "reasoningTokens",
-    "totalTokens",
-    "cachedInputTokens",
-    "cacheWriteInputTokens",
-  ] as const) {
+  for (const field of SUMMED_USAGE_FIELDS) {
     const currentValue = current[field];
     const nextValue = next[field];
     if (typeof currentValue === "number" || typeof nextValue === "number") {
       combined[field] = (currentValue ?? 0) + (nextValue ?? 0);
     }
+  }
+  // Latest-round prompt size: overwrite, do not sum (context occupancy).
+  if (typeof next.lastInputTokens === "number") {
+    combined.lastInputTokens = next.lastInputTokens;
+  } else if (typeof current.lastInputTokens === "number") {
+    combined.lastInputTokens = current.lastInputTokens;
   }
   return combined;
 }

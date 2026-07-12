@@ -3,6 +3,10 @@ import type { RpcTarget } from "capnweb";
 import type { RpcSubscriptionResult } from "../transport/stream";
 
 export type AiChatMessageUsage = {
+  /**
+   * Sum of input tokens across tool-loop rounds for this assistant message
+   * (billing-oriented; not current prompt occupancy).
+   */
   inputTokens?: number;
   outputTokens?: number;
   reasoningTokens?: number;
@@ -11,6 +15,11 @@ export type AiChatMessageUsage = {
   cachedInputTokens?: number;
   /** Tokens written to prompt cache (Anthropic cache_creation_input_tokens). */
   cacheWriteInputTokens?: number;
+  /**
+   * Input tokens from the **latest** completed model request in this assistant turn.
+   * Prefer this for context-window occupancy (not the summed `inputTokens`).
+   */
+  lastInputTokens?: number;
 };
 
 export type AiChatWarning = {
@@ -139,6 +148,8 @@ export type AiChatSelectableModel = {
   /** Provider model id / display model string. */
   model: string;
   isDefault: boolean;
+  /** Configured context window; `null` when unset (hide occupancy UI). */
+  contextLength: number | null;
 };
 
 export type AiChatSnapshot = {
