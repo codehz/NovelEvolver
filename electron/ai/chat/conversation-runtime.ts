@@ -5,6 +5,7 @@ import type {
   ToolCallItem,
   ToolResultItem,
 } from "@codehz/ai";
+import { aggregateEvents } from "@codehz/ai";
 
 import { cloneAiChatMessage } from "#shared/rpc/ai/index";
 import type {
@@ -235,20 +236,12 @@ export class AiConversationRuntime {
     stream: AsyncIterable<AIStreamEvent>,
     assistantMessageId: string,
   ): Promise<AIResponse> {
-    let completedResponse: AIResponse | null = null;
-
+    const events: AIStreamEvent[] = [];
     for await (const event of stream) {
       this.#emitDelta(this.#state.handleStreamEvent(event, assistantMessageId));
-      if (event.type === "response.completed") {
-        completedResponse = event.response;
-      }
+      events.push(event);
     }
-
-    if (completedResponse === null) {
-      throw new Error("AI 流在完成前结束。");
-    }
-
-    return completedResponse;
+    return aggregateEvents(events);
   }
 
   async #runRequest(context: {

@@ -26,7 +26,7 @@ import type {
 } from "#shared/rpc/ai/index";
 
 import type { AiChatRepository, AiConversationRecord } from "../../db/repositories/ai-chat-repo";
-import { joinContentBlocksText } from "../ai-utils";
+import { contentBlockToDisplayText, joinContentBlocksText } from "../ai-utils";
 import {
   parsePendingToolBatch,
   serializePendingToolBatch,
@@ -487,12 +487,15 @@ export class AiConversationState {
     }
 
     if (event.type === "message.delta") {
-      return this.#appendAssistantPartTextDelta(assistantMessageId, event.itemId, event.delta.text);
+      const deltaText = contentBlockToDisplayText(event.delta);
+      if (deltaText === "") {
+        return [];
+      }
+      return this.#appendAssistantPartTextDelta(assistantMessageId, event.itemId, deltaText);
     }
 
     if (event.type === "message.completed") {
-      return this.updateAssistantPart(assistantMessageId, event.item.id ?? "", {
-        text: joinContentBlocksText(event.item.content),
+      return this.updateAssistantPart(assistantMessageId, event.itemId, {
         status: "complete",
       });
     }
@@ -508,7 +511,7 @@ export class AiConversationState {
     }
 
     if (event.type === "reasoning.delta") {
-      const deltaText = joinContentBlocksText([event.delta]);
+      const deltaText = contentBlockToDisplayText(event.delta);
       if (deltaText === "") {
         return [];
       }
@@ -516,9 +519,7 @@ export class AiConversationState {
     }
 
     if (event.type === "reasoning.completed") {
-      return this.updateAssistantPart(assistantMessageId, event.item.id ?? "", {
-        text: joinContentBlocksText(event.item.content),
-        visibility: event.item.visibility,
+      return this.updateAssistantPart(assistantMessageId, event.itemId, {
         status: "complete",
       });
     }
@@ -543,12 +544,6 @@ export class AiConversationState {
 
       return this.updateAssistantPart(assistantMessageId, event.itemId, {
         argumentsText: `${toolCall.argumentsText}${event.delta.argumentsText ?? ""}`,
-      });
-    }
-
-    if (event.type === "tool_call.completed") {
-      return this.updateAssistantPart(assistantMessageId, event.item.id, {
-        argumentsText: event.item.argumentsText,
       });
     }
 
