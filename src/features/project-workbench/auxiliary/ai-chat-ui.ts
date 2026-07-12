@@ -70,6 +70,7 @@ export const composerShellClass = cn(
 );
 export const composerTextareaClass = cn(
   "field-sizing-content min-h-24 w-full resize-none border-0 bg-transparent p-1 text-[0.8125rem] leading-5 text-app-foreground outline-none placeholder:text-ctp-overlay0",
+  "max-h-[50vh]",
 );
 export const sendButtonClass = cn(
   "inline-flex size-8 shrink-0 items-center justify-center rounded-lg bg-badge-background text-badge-foreground hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40",
