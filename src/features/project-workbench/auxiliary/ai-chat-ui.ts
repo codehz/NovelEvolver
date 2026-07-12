@@ -126,12 +126,12 @@ export function describeAssistantMessageMeta(message: AiChatAssistantMessage): s
       const cached = usage?.cachedInputTokens;
       const inputText =
         typeof cached === "number" && cached > 0
-          ? `输入 ${inputTokens}（缓存读 ${cached}）`
-          : `输入 ${inputTokens}`;
+          ? `输入 ${formatTokenCount(inputTokens)}（缓存读 ${formatTokenCount(cached)}）`
+          : `输入 ${formatTokenCount(inputTokens)}`;
       parts.push(inputText);
     }
     if (hasOutput) {
-      parts.push(`输出 ${outputTokens}`);
+      parts.push(`输出 ${formatTokenCount(outputTokens)}`);
     }
     return parts.join(" · ");
   }
