@@ -74,16 +74,16 @@ export const composerTextareaClass = cn(
   "max-h-[50vh]",
 );
 export const sendButtonClass = cn(
-  "inline-flex size-8 shrink-0 items-center justify-center rounded-lg bg-badge-background text-badge-foreground hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40",
+  "inline-flex size-6 shrink-0 items-center justify-center rounded-md bg-badge-background text-badge-foreground hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40",
 );
 export const modelSelectorButtonClass = cn(
-  "inline-flex h-8 max-w-[min(100%,12rem)] shrink items-center gap-1 rounded-lg px-2 text-2xs text-ctp-subtext1",
+  "inline-flex h-6 min-w-0 items-center gap-1 rounded-md px-1.5 text-2xs text-ctp-subtext1",
   "hover:bg-window-chrome hover:text-app-foreground",
   "focus-visible:ring-1 focus-visible:ring-badge-background/60 focus-visible:outline-none",
   "disabled:cursor-not-allowed disabled:opacity-40",
 );
 export const agentSelectorButtonClass = cn(
-  "inline-flex h-8 max-w-[min(100%,12rem)] min-w-0 items-center gap-1 rounded-lg px-2 text-2xs text-ctp-subtext1",
+  "inline-flex h-6 min-w-0 items-center gap-1 rounded-md px-1.5 text-2xs text-ctp-subtext1",
   "hover:bg-window-chrome hover:text-app-foreground",
   "focus-visible:ring-1 focus-visible:ring-badge-background/60 focus-visible:outline-none",
   "disabled:cursor-not-allowed disabled:opacity-40",

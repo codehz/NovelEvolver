@@ -363,7 +363,7 @@ export function AuxiliaryPanel() {
               disabled={loading || snapshot.pending}
             />
 
-            <div className="flex flex-wrap items-center gap-1">
+            <div className="grid grid-cols-[minmax(0,max-content)_minmax(0,max-content)_minmax(0,1fr)_auto] items-center gap-1">
               <button
                 aria-label="选择 Agent"
                 className={agentSelectorButtonClass}
@@ -374,11 +374,11 @@ export function AuxiliaryPanel() {
                   void handlePickAgent();
                 }}
               >
-                <span aria-hidden="true" className="icon-[codicon--sparkle] shrink-0 text-sm" />
+                <span aria-hidden="true" className="icon-[codicon--sparkle] shrink-0 text-xs" />
                 <span className={modelSelectorLabelClass}>{selectedAgentLabel}</span>
                 <span
                   aria-hidden="true"
-                  className="icon-[codicon--chevron-down] shrink-0 text-xs opacity-70"
+                  className="icon-[codicon--chevron-down] shrink-0 text-2xs opacity-70"
                 />
               </button>
               <button
@@ -391,22 +391,23 @@ export function AuxiliaryPanel() {
                   void handlePickModel();
                 }}
               >
-                <span aria-hidden="true" className="icon-[codicon--server] shrink-0 text-sm" />
+                <span aria-hidden="true" className="icon-[codicon--server] shrink-0 text-xs" />
                 <span className={modelSelectorLabelClass}>{selectedModelLabel}</span>
                 <span
                   aria-hidden="true"
-                  className="icon-[codicon--chevron-down] shrink-0 text-xs opacity-70"
+                  className="icon-[codicon--chevron-down] shrink-0 text-2xs opacity-70"
                 />
               </button>
-              <span className="min-w-0 flex-1" />
-              {contextUsage ? (
-                <span
-                  className={cn(contextUsageRatioClass, contextUsage.toneClass)}
-                  title={`最近一次请求占用上下文 ${contextUsage.used.toLocaleString()} / ${contextUsage.limit.toLocaleString()} token（${contextUsage.percent}%）`}
-                >
-                  {contextUsage.label}
-                </span>
-              ) : null}
+              <span className="flex min-w-0 justify-end">
+                {contextUsage ? (
+                  <span
+                    className={cn(contextUsageRatioClass, contextUsage.toneClass)}
+                    title={`最近一次请求占用上下文 ${contextUsage.used.toLocaleString()} / ${contextUsage.limit.toLocaleString()} token（${contextUsage.percent}%）`}
+                  >
+                    {contextUsage.label}
+                  </span>
+                ) : null}
+              </span>
               <button
                 aria-label="发送"
                 className={sendButtonClass}
@@ -415,7 +416,7 @@ export function AuxiliaryPanel() {
                 type="button"
                 onClick={handleSendClick}
               >
-                <span aria-hidden="true" className="icon-[codicon--send] text-sm" />
+                <span aria-hidden="true" className="icon-[codicon--send] text-xs" />
               </button>
             </div>
           </form>
