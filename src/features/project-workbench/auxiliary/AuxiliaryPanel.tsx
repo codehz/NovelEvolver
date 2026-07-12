@@ -366,13 +366,10 @@ export function AuxiliaryPanel() {
                   void handlePickAgent();
                 }}
               >
-                <span aria-hidden="true" className="icon-[codicon--sparkle] shrink-0 text-xs" />
+                <span aria-hidden="true" className="icon-[codicon--hubot] shrink-0 text-xs" />
                 <span className={modelSelectorLabelClass}>{selectedAgentLabel}</span>
-                <span
-                  aria-hidden="true"
-                  className="icon-[codicon--chevron-down] shrink-0 text-2xs opacity-70"
-                />
               </button>
+              <span aria-hidden="true" className="mx-0.5 h-4 w-px shrink-0 bg-titlebar-border" />
               <button
                 aria-label="选择模型"
                 className={modelSelectorButtonClass}
@@ -383,12 +380,8 @@ export function AuxiliaryPanel() {
                   void handlePickModel();
                 }}
               >
-                <span aria-hidden="true" className="icon-[codicon--server] shrink-0 text-xs" />
+                <span aria-hidden="true" className="icon-[codicon--sparkle] shrink-0 text-xs" />
                 <span className={modelSelectorLabelClass}>{selectedModelLabel}</span>
-                <span
-                  aria-hidden="true"
-                  className="icon-[codicon--chevron-down] shrink-0 text-2xs opacity-70"
-                />
               </button>
               <span className="min-w-0 flex-1" />
               <button
@@ -399,7 +392,7 @@ export function AuxiliaryPanel() {
                 type="button"
                 onClick={handleSendClick}
               >
-                <span aria-hidden="true" className="icon-[codicon--send] text-xs" />
+                <span aria-hidden="true" className="icon-[codicon--newline] text-sm" />
               </button>
             </div>
           </form>

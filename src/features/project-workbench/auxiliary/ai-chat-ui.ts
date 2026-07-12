@@ -67,28 +67,31 @@ export const userMessageBubbleClass = cn(
   "max-w-[88%] rounded-xl bg-window-chrome px-3 py-2 text-[0.8125rem] leading-5 text-app-foreground shadow-[inset_0_1px_0_0_color-mix(in_srgb,var(--color-ctp-surface0)_24%,transparent)]",
 );
 export const composerShellClass = cn(
-  "mx-auto flex w-full max-w-3xl flex-col gap-2 rounded-xl bg-app-background p-2",
+  "mx-auto flex w-full max-w-3xl flex-col gap-1 rounded-lg border border-titlebar-border bg-app-background p-1.5 transition-colors",
+  "focus-within:border-ctp-mauve",
 );
 export const composerTextareaClass = cn(
-  "field-sizing-content min-h-24 w-full resize-none border-0 bg-transparent p-1 text-[0.8125rem] leading-5 text-app-foreground outline-none placeholder:text-ctp-overlay0",
+  "field-sizing-content min-h-20 w-full resize-none border-0 bg-transparent px-1 py-0.5 text-[0.8125rem] leading-5 text-app-foreground outline-none placeholder:text-ctp-overlay0",
   "max-h-[50vh]",
 );
 export const sendButtonClass = cn(
-  "inline-flex size-6 shrink-0 items-center justify-center rounded-md bg-badge-background text-badge-foreground hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40",
+  "inline-flex size-6 shrink-0 items-center justify-center rounded-md bg-transparent text-ctp-mauve transition-colors hover:bg-ctp-surface0",
+  "focus-visible:ring-1 focus-visible:ring-ctp-mauve focus-visible:outline-none",
+  "disabled:cursor-not-allowed disabled:text-ctp-overlay0 hover:disabled:bg-transparent",
 );
 export const modelSelectorButtonClass = cn(
-  "inline-flex h-6 min-w-0 items-center gap-1 rounded-md px-1.5 text-2xs text-ctp-subtext1",
-  "hover:bg-window-chrome hover:text-app-foreground",
-  "focus-visible:ring-1 focus-visible:ring-badge-background/60 focus-visible:outline-none",
+  "inline-flex h-6 min-w-0 items-center gap-1 rounded-md px-1 text-2xs text-ctp-mauve transition-colors",
+  "hover:bg-ctp-surface0",
+  "focus-visible:bg-window-chrome focus-visible:ring-1 focus-visible:ring-ctp-mauve focus-visible:outline-none",
   "disabled:cursor-not-allowed disabled:opacity-40",
 );
 export const agentSelectorButtonClass = cn(
-  "inline-flex h-6 min-w-0 items-center gap-1 rounded-md px-1.5 text-2xs text-ctp-subtext1",
-  "hover:bg-window-chrome hover:text-app-foreground",
-  "focus-visible:ring-1 focus-visible:ring-badge-background/60 focus-visible:outline-none",
+  "inline-flex h-6 min-w-0 items-center gap-1 rounded-md px-1 text-2xs text-ctp-mauve transition-colors",
+  "hover:bg-ctp-surface0",
+  "focus-visible:bg-window-chrome focus-visible:ring-1 focus-visible:ring-ctp-mauve focus-visible:outline-none",
   "disabled:cursor-not-allowed disabled:opacity-40",
 );
-export const modelSelectorLabelClass = cn("min-w-0 truncate font-medium");
+export const modelSelectorLabelClass = cn("min-w-0 truncate");
 export const toolCallPanelClass = cn("flex flex-col gap-1");
 export const toolCallToggleClass = cn(
   "grid w-full grid-cols-[auto_auto_minmax(0,1fr)_auto] items-center gap-1.5 text-left text-2xs text-ctp-subtext1 focus-visible:ring-1 focus-visible:ring-badge-background/60 focus-visible:outline-none",
