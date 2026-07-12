@@ -87,9 +87,9 @@ export const toolCallToggleClass = cn(
 );
 export const toolCallToggleActiveClass = cn("rounded-md ring-1 ring-ctp-blue/40");
 export const toolCallLabelClass = cn(
-  "whitespace-nowrap font-medium tracking-[0.02em] text-ctp-blue",
+  "font-medium tracking-[0.02em] whitespace-nowrap text-ctp-blue",
 );
-export const toolCallStatusClass = cn("whitespace-nowrap text-2xs text-ctp-overlay0");
+export const toolCallStatusClass = cn("text-2xs whitespace-nowrap text-ctp-overlay0");
 export const toolCallBodyClass = cn("flex flex-col gap-2 text-[0.75rem] leading-5 text-app-muted");
 export const toolCallQuestionClass = cn("text-[0.75rem] leading-5 text-app-foreground");
 export const warningBannerClass = cn(
