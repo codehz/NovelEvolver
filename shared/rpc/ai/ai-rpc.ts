@@ -11,10 +11,6 @@ export type AiChatMessageUsage = {
   cachedInputTokens?: number;
   /** Tokens written to prompt cache (Anthropic cache_creation_input_tokens). */
   cacheWriteInputTokens?: number;
-  /** Best-effort full-rate input (excludes discounted cache reads where known). */
-  billableInputTokens?: number;
-  /** Best-effort billable output (non-reasoning slice when provider gives breakdown). */
-  billableOutputTokens?: number;
 };
 
 export type AiChatWarning = {
