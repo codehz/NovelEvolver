@@ -100,13 +100,17 @@ Renderer overlays use **`@base-ui/react`** (unstyled, tree-shakable). Prefer Bas
 
 ## ScrollArea usage
 
-`ScrollArea` (`src/shared/ui/ScrollArea.tsx`) wraps a single controlled viewport driven by the shared `ScrollbarController` (`src/shared/lib/ui/scrollbar/`). It is designed to be the **outermost scroll container** of a panel/section, not a nested inner wrapper.
+`ScrollArea` (`src/shared/ui/ScrollArea.tsx`) is a controlled viewport + sticky rail over `ScrollbarController`. Height strategy is **required** — use a named entry; there is no default / `fill` boolean.
 
-- **Do not nest `ScrollArea` inside another `ScrollArea`.** The controller listens to scroll/resize on its viewport and renders a sticky rail; nesting produces overlapping sticky rails, double scrollbar metrics, and broken thumb sizing because the inner controller reads a viewport that is itself scrolled by the outer one.
-- Each scrollable surface in a layout should have **exactly one** `ScrollArea`. If a sub-region needs to scroll independently, model it as its own sibling `ScrollArea` (with its own `fill` / flex container) rather than placing it inside an outer `ScrollArea`'s children.
-- For non-scrolling inner content that just needs overflow clipping, use plain `overflow-auto` / `overflow-hidden` utilities instead of `ScrollArea` — `ScrollArea` is reserved for surfaces that warrant a custom sticky rail.
-- When a panel is a flex column with a fixed header + scrollable body, use the `fill` prop on a single body-level `ScrollArea` (`fill` applies `h-0 flex-1`) so it grows within the flex column without nesting.
-- The viewport ref is owned by `useScrollbarController()`; do not re-wrap the viewport in another scroll container or introduce a second controller instance inside the same subtree.
+| Entry                | When                                                              | Layout owned by component                                  |
+| -------------------- | ----------------------------------------------------------------- | ---------------------------------------------------------- |
+| `ScrollArea.Fill`    | Parent is a **definite-height** flex column; take remaining space | `h-0 min-h-0 flex-1 overflow-hidden`                       |
+| `ScrollArea.Stretch` | Parent already sized, or pass `style.height`                      | `h-full min-h-0 overflow-hidden` (inline height wins)      |
+| `ScrollArea.Max`     | Popover/picker self-clamp; pass required `height`                 | `max-height`; optional `header`/`footer` use internal grid |
+
+- **`className` is chrome only** (width, border, bg). Do not pass height/overflow layout utilities — the entry owns them. Cross-axis flex (`flex-1`, `w-*`) is fine.
+- **Do not nest** one ScrollArea inside another; use sibling surfaces. Non-scrolling clip → plain `overflow-*`, not ScrollArea.
+- Dev builds warn on nested usage and on layout classes in `className`.
 
 ## Configuration Notes
 

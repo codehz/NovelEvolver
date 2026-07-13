@@ -50,7 +50,7 @@ export function AiChatConversationRail({
   }, [snapshot.messages, snapshot.pending, snapshot.pendingUserInputs, turnError]);
 
   return (
-    <ScrollArea className="min-h-0 flex-1" fill>
+    <ScrollArea.Fill>
       <div className={cn(panelSectionClass, conversationRailClass, "text-sm")}>
         {snapshot.scenarioId ? (
           <div className="text-2xs text-ctp-subtext0">
@@ -102,6 +102,6 @@ export function AiChatConversationRail({
           ref={endRef}
         />
       </div>
-    </ScrollArea>
+    </ScrollArea.Fill>
   );
 }

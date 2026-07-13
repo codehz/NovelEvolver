@@ -47,13 +47,13 @@ export function NotificationCenterPanel({ titleId }: { titleId: string }) {
           </Popover.Close>
         </div>
       </header>
-      <ScrollArea fill className="min-h-0 overflow-hidden">
+      <ScrollArea.Fill>
         <AnimatePresence initial={false} mode="popLayout">
           {items.map((notification) => (
             <NotificationItem key={notification.id} notification={notification} variant="center" />
           ))}
         </AnimatePresence>
-      </ScrollArea>
+      </ScrollArea.Fill>
     </>
   );
 }

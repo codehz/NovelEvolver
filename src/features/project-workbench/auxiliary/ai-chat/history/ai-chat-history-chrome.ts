@@ -14,11 +14,6 @@ export const historyPopoverPanelClass = cn(
   historyPanelSurfaceClass,
 );
 
-/** max-h body: grid minmax(0,1fr) gives ScrollArea a definite height (flex+`fill` won't). */
-export const historyPanelContentClass = cn(
-  "grid max-h-80 w-full grid-rows-[auto_minmax(0,1fr)_auto] overflow-hidden",
-);
-
 export const historySearchWrapClass = cn("px-2 pt-2 pb-1.5");
 
 export const historySearchInputClass = cn(

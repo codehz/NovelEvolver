@@ -107,7 +107,7 @@ function SettingsDialogChrome({
       </div>
 
       <div className={settingsBodyClass}>
-        <ScrollArea className={settingsSidebarClass}>
+        <ScrollArea.Stretch className={settingsSidebarClass}>
           <nav aria-label="设置分类" className="flex flex-col">
             {SETTINGS_CATEGORIES.map((category) => {
               const active = category.id === activeCategoryId;
@@ -129,9 +129,9 @@ function SettingsDialogChrome({
               );
             })}
           </nav>
-        </ScrollArea>
+        </ScrollArea.Stretch>
 
-        <ScrollArea className={settingsContentClass}>
+        <ScrollArea.Stretch className={settingsContentClass}>
           {activeCategoryId === "ai-models" ? (
             <AiModelsSettingsPanel />
           ) : activeCategoryId === "ai-agents" ? (
@@ -139,7 +139,7 @@ function SettingsDialogChrome({
           ) : (
             <div className={settingsPlaceholderClass}>「{activeCategory.label}」分类暂无设置项</div>
           )}
-        </ScrollArea>
+        </ScrollArea.Stretch>
       </div>
     </>
   );

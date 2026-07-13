@@ -9,7 +9,6 @@ import {
   historyFooterToggleClass,
   historyGroupLabelClass,
   historyListClass,
-  historyPanelContentClass,
   historySearchInputClass,
   historySearchWrapClass,
 } from "./ai-chat-history-chrome";
@@ -22,34 +21,62 @@ export function AiChatHistoryPanel({ list }: { list: AiChatHistoryListController
   const searchInputId = useId();
 
   return (
-    <div className={historyPanelContentClass} aria-labelledby={titleId}>
+    <>
       <p className="sr-only" id={titleId}>
         历史会话
       </p>
-      <div className={historySearchWrapClass}>
-        <label className="sr-only" htmlFor={searchInputId}>
-          搜索会话
-        </label>
-        <input
-          ref={list.searchInputRef}
-          id={searchInputId}
-          className={historySearchInputClass}
-          type="text"
-          role="combobox"
-          aria-expanded
-          aria-controls={listboxId}
-          aria-autocomplete="list"
-          autoComplete="off"
-          spellCheck={false}
-          placeholder="搜索标题或消息内容…"
-          value={list.query}
-          onChange={(event) => {
-            list.setQuery(event.target.value);
-          }}
-          onKeyDown={list.handleSearchKeyDown}
-        />
-      </div>
-      <ScrollArea className="min-h-0 overflow-hidden">
+      <ScrollArea.Max
+        height="20rem"
+        className="w-full"
+        header={
+          <div className={historySearchWrapClass}>
+            <label className="sr-only" htmlFor={searchInputId}>
+              搜索会话
+            </label>
+            <input
+              ref={list.searchInputRef}
+              id={searchInputId}
+              className={historySearchInputClass}
+              type="text"
+              role="combobox"
+              aria-expanded
+              aria-controls={listboxId}
+              aria-autocomplete="list"
+              autoComplete="off"
+              spellCheck={false}
+              placeholder="搜索标题或消息内容…"
+              value={list.query}
+              onChange={(event) => {
+                list.setQuery(event.target.value);
+              }}
+              onKeyDown={list.handleSearchKeyDown}
+            />
+          </div>
+        }
+        footer={
+          <div className={historyFooterClass}>
+            <button
+              type="button"
+              className={historyFooterToggleClass}
+              onClick={list.toggleIncludeArchived}
+            >
+              <span
+                aria-hidden="true"
+                className={cn(
+                  "size-3.5 shrink-0 rounded-sm border border-badge-background",
+                  list.includeArchived
+                    ? "icon-[codicon--check] bg-ctp-mauve text-app-background"
+                    : "bg-app-background",
+                )}
+              />
+              显示已归档
+            </button>
+            <span className="text-2xs text-app-muted">
+              {list.loadingList ? "刷新中" : `${list.selectableCount} 条`}
+            </span>
+          </div>
+        }
+      >
         <ul
           ref={list.listRef}
           id={listboxId}
@@ -104,28 +131,7 @@ export function AiChatHistoryPanel({ list }: { list: AiChatHistoryListController
             })
           )}
         </ul>
-      </ScrollArea>
-      <div className={historyFooterClass}>
-        <button
-          type="button"
-          className={historyFooterToggleClass}
-          onClick={list.toggleIncludeArchived}
-        >
-          <span
-            aria-hidden="true"
-            className={cn(
-              "size-3.5 shrink-0 rounded-sm border border-badge-background",
-              list.includeArchived
-                ? "icon-[codicon--check] bg-ctp-mauve text-app-background"
-                : "bg-app-background",
-            )}
-          />
-          显示已归档
-        </button>
-        <span className="text-2xs text-app-muted">
-          {list.loadingList ? "刷新中" : `${list.selectableCount} 条`}
-        </span>
-      </div>
-    </div>
+      </ScrollArea.Max>
+    </>
   );
 }

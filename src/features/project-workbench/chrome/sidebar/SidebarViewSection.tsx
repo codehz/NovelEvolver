@@ -67,9 +67,15 @@ export function SidebarViewSection({
           <SidebarHeaderActionsPortalTarget as="div" className="flex shrink-0 items-center" />
         </div>
         {expanded ? (
-          <ScrollArea fill={bodyFillsSection} id={panelId} style={bodyStyle}>
-            {children}
-          </ScrollArea>
+          bodyFillsSection ? (
+            <ScrollArea.Fill id={panelId} style={bodyStyle}>
+              {children}
+            </ScrollArea.Fill>
+          ) : (
+            <ScrollArea.Stretch id={panelId} style={bodyStyle}>
+              {children}
+            </ScrollArea.Stretch>
+          )
         ) : null}
       </section>
     </SidebarHeaderActionsPortalProvider>
