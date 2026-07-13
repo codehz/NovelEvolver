@@ -7,6 +7,8 @@ import { ElectronRpcServer } from "./rpc/server/connect";
 import { AiAgentsStore } from "./settings/ai-agents-store";
 import { AiModelsStore } from "./settings/ai-models-store";
 
+app.commandLine.appendSwitch("enable-features", "OverlayScrollbar");
+
 const isDev = !app.isPackaged;
 
 let appDb: AppDatabase | null = null;
@@ -50,7 +52,6 @@ function createWindow() {
       preload: join(__dirname, "preload.js"),
       contextIsolation: true,
       nodeIntegration: false,
-      enableBlinkFeatures: "OverlayScrollbars",
     },
   });
   rpcServer?.attachWindow(window);
