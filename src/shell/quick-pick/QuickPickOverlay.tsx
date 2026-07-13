@@ -7,11 +7,7 @@ import {
   quickPickPanelContentClass,
   quickPickPanelHeightShellClass,
 } from "./quick-pick-chrome";
-import {
-  QuickPickPopoverContent,
-  QuickPickPopoverProvider,
-  QuickPickPopoverTarget,
-} from "./quick-pick-popover";
+import { QuickPickPopoverProvider, QuickPickPopoverTarget } from "./quick-pick-popover";
 
 export function QuickPickOverlay({
   titleId,
@@ -39,7 +35,7 @@ export function QuickPickOverlay({
           style={shellHeightPx != null ? { height: shellHeightPx } : undefined}
         >
           <div ref={contentRef} className={quickPickPanelContentClass}>
-            <QuickPickPopoverContent>{children}</QuickPickPopoverContent>
+            {children}
           </div>
         </div>
       </QuickPickPopoverTarget>

@@ -17,7 +17,6 @@ import {
   selectorSearchWrapClass,
 } from "./ai-chat-selector-chrome";
 import {
-  AiChatSelectorPopoverContent,
   AiChatSelectorPopoverTarget,
   useAiChatSelectorRequestClose,
 } from "./ai-chat-selector-popover";
@@ -234,17 +233,15 @@ export function AnchoredSelectorPicker({
         style={shellHeightPx != null ? { height: shellHeightPx } : undefined}
       >
         <div ref={contentRef} className={selectorPanelContentClass}>
-          <AiChatSelectorPopoverContent>
-            <AnchoredSelectorPickerBody
-              title={title}
-              searchLabel={searchLabel}
-              searchPlaceholder={searchPlaceholder}
-              emptyMessage={emptyMessage}
-              items={items}
-              titleId={titleId}
-              onSelect={onSelect}
-            />
-          </AiChatSelectorPopoverContent>
+          <AnchoredSelectorPickerBody
+            title={title}
+            searchLabel={searchLabel}
+            searchPlaceholder={searchPlaceholder}
+            emptyMessage={emptyMessage}
+            items={items}
+            titleId={titleId}
+            onSelect={onSelect}
+          />
         </div>
       </div>
     </AiChatSelectorPopoverTarget>

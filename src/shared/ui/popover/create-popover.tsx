@@ -35,7 +35,6 @@ export type CreatePopoverResult = [
     children: ReactNode;
   }) => ReactElement,
   PopoverTarget: <T extends ElementType = "div">(props: PopoverTargetProps<T>) => ReactElement,
-  PopoverContent: (props: { children: ReactNode }) => ReactElement,
   usePopoverRequestClose: () => PopoverRequestCloseContextValue["requestClose"],
 ];
 
@@ -100,15 +99,10 @@ export function createPopover(displayName: string): CreatePopoverResult {
     }) as ReactElement;
   }
 
-  function PopoverContent({ children }: { children: ReactNode }) {
-    return <>{children}</>;
-  }
-
   if (import.meta.env.DEV) {
     PopoverProvider.displayName = `${displayName}.PopoverProvider`;
     PopoverTarget.displayName = `${displayName}.PopoverTarget`;
-    PopoverContent.displayName = `${displayName}.PopoverContent`;
   }
 
-  return [PopoverProvider, PopoverTarget, PopoverContent, usePopoverRequestClose];
+  return [PopoverProvider, PopoverTarget, usePopoverRequestClose];
 }

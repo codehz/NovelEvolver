@@ -7,10 +7,7 @@ import {
   notificationPanelContentClass,
   notificationPanelHeightShellClass,
 } from "./notification-chrome";
-import {
-  NotificationCenterPopoverContent,
-  NotificationCenterPopoverTarget,
-} from "./notification-popover";
+import { NotificationCenterPopoverTarget } from "./notification-popover";
 
 export function NotificationCenterPopoverPanel({
   titleId,
@@ -37,7 +34,7 @@ export function NotificationCenterPopoverPanel({
         style={shellHeightPx != null ? { height: shellHeightPx } : undefined}
       >
         <div ref={contentRef} className={notificationPanelContentClass}>
-          <NotificationCenterPopoverContent>{children}</NotificationCenterPopoverContent>
+          {children}
         </div>
       </div>
     </NotificationCenterPopoverTarget>
