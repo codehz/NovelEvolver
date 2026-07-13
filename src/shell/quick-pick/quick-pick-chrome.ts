@@ -7,16 +7,18 @@ export const quickPickPanelClass = cn(
   "data-ending-style:-translate-y-2 data-ending-style:opacity-0",
 );
 
-export const quickPickPanelContentClass = cn("flex max-h-80 w-full flex-col");
+export const quickPickPanelContentClass = cn("flex w-full flex-col");
 
-export const quickPickSearchWrapClass = cn("shrink-0 px-2 pt-2 pb-1.5");
+export const quickPickSearchWrapClass = cn("px-2 pt-2 pb-1.5");
 
 export const quickPickSearchInputClass = cn(
   "w-full rounded-sm border border-badge-background bg-app-background px-2 py-1 text-xs leading-tight text-app-foreground outline-none app-region-no-drag placeholder:text-app-muted",
 );
 
+/** List chrome only — scrolling owned by `ScrollArea.Max`. Collapse when empty so Empty doesn't leave a flex gap. */
 export const quickPickListClass = cn(
-  "flex min-h-0 flex-1 flex-col gap-1 overflow-y-auto px-2 pt-0 pb-2 text-xs",
+  "flex flex-col gap-1 px-2 pt-0 pb-2 text-xs",
+  "data-empty:hidden",
 );
 
 export const quickPickRowButtonClass = cn(
@@ -26,7 +28,7 @@ export const quickPickRowButtonClass = cn(
 
 export const quickPickRowEmphasisClass = cn("text-ctp-mauve");
 
-export const quickPickEmptyClass = cn("rounded-sm px-2 py-1 text-app-muted");
+export const quickPickEmptyClass = cn("rounded-sm px-2 py-1 pb-2 text-app-muted");
 
 /** 列表主项与额外项之间的分隔线，颜色与输入框边框一致。 */
 export const quickPickListDividerClass = cn("border-t border-badge-background");
