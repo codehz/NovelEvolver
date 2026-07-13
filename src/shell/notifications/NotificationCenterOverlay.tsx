@@ -3,32 +3,18 @@ import { useRef, type ReactNode } from "react";
 import { useAnimatedContentHeight } from "#app/shared/lib/ui/animated-height";
 
 import {
-  notificationCenterPopoverPanelClass,
   notificationPanelContentClass,
   notificationPanelHeightShellClass,
 } from "./notification-chrome";
-import { NotificationCenterPopoverTarget } from "./notification-popover";
 
-export function NotificationCenterPopoverPanel({
-  titleId,
-  children,
-}: {
-  titleId: string;
-  children: ReactNode;
-}) {
+/** Animated height shell for the notification center body. */
+export function NotificationCenterHeightShell({ children }: { children: ReactNode }) {
   const panelRef = useRef<HTMLDivElement>(null);
   const contentRef = useRef<HTMLDivElement>(null);
   const { heightPx: shellHeightPx } = useAnimatedContentHeight(contentRef, panelRef);
 
   return (
-    <NotificationCenterPopoverTarget
-      ref={panelRef}
-      popover="manual"
-      id="app-notification-center"
-      aria-labelledby={titleId}
-      className={notificationCenterPopoverPanelClass}
-      role="dialog"
-    >
+    <div ref={panelRef}>
       <div
         className={notificationPanelHeightShellClass}
         style={shellHeightPx != null ? { height: shellHeightPx } : undefined}
@@ -37,6 +23,6 @@ export function NotificationCenterPopoverPanel({
           {children}
         </div>
       </div>
-    </NotificationCenterPopoverTarget>
+    </div>
   );
 }

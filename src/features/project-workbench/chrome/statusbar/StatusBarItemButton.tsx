@@ -1,4 +1,4 @@
-import type { ComponentPropsWithoutRef, ReactNode } from "react";
+import type { ComponentPropsWithRef, ReactNode } from "react";
 
 import { cn } from "#app/shared/lib/ui/cn";
 
@@ -8,7 +8,7 @@ import {
   statusBarItemButtonWithIconClass,
 } from "./statusbar-chrome";
 
-export type StatusBarItemButtonProps = ComponentPropsWithoutRef<"button"> & {
+export type StatusBarItemButtonProps = ComponentPropsWithRef<"button"> & {
   /** Iconify / codicon utility class, e.g. `icon-[codicon--sync]`. */
   icon?: string;
   children?: ReactNode;
@@ -19,6 +19,7 @@ export function StatusBarItemButton({
   children,
   className,
   type = "button",
+  ref,
   ...rest
 }: StatusBarItemButtonProps) {
   const iconOnly = icon != null && children == null;
@@ -26,6 +27,7 @@ export function StatusBarItemButton({
 
   return (
     <button
+      ref={ref}
       className={cn(
         iconOnly
           ? statusBarIconOnlyButtonClass

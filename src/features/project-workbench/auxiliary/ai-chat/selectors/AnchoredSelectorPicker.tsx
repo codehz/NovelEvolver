@@ -16,10 +16,6 @@ import {
   selectorSearchInputClass,
   selectorSearchWrapClass,
 } from "./ai-chat-selector-chrome";
-import {
-  AiChatSelectorPopoverTarget,
-  useAiChatSelectorRequestClose,
-} from "./ai-chat-selector-popover";
 import type { AiChatSelectorItem } from "./selector-items";
 import {
   SELECTOR_OPTION_INDEX_ATTR,
@@ -102,17 +98,14 @@ function AnchoredSelectorPickerBody({
   const searchInputId = useId();
   const inputRef = useRef<HTMLInputElement>(null);
   const [query, setQuery] = useState("");
-  const requestClose = useAiChatSelectorRequestClose();
 
   const filtered = useMemo(() => filterItems(items, query), [items, query]);
 
   const resolveItem = useCallback(
     (id: string) => {
-      requestClose(() => {
-        onSelect(id);
-      });
+      onSelect(id);
     },
-    [onSelect, requestClose],
+    [onSelect],
   );
 
   const { highlightIndex, setHighlightIndex, listRef, onSearchKeyDown, resetHighlight } =
@@ -196,9 +189,8 @@ function AnchoredSelectorPickerBody({
   );
 }
 
+/** Selector list content with animated height shell (renders inside Base UI Popover.Popup). */
 export function AnchoredSelectorPicker({
-  panelId,
-  panelClassName,
   title,
   searchLabel,
   searchPlaceholder,
@@ -206,8 +198,6 @@ export function AnchoredSelectorPicker({
   items,
   onSelect,
 }: {
-  panelId: string;
-  panelClassName: string;
   title: string;
   searchLabel: string;
   searchPlaceholder: string;
@@ -221,13 +211,7 @@ export function AnchoredSelectorPicker({
   const { heightPx: shellHeightPx } = useAnimatedContentHeight(contentRef, panelRef);
 
   return (
-    <AiChatSelectorPopoverTarget
-      ref={panelRef}
-      id={panelId}
-      aria-labelledby={titleId}
-      className={panelClassName}
-      role="dialog"
-    >
+    <div ref={panelRef} aria-labelledby={titleId}>
       <div
         className={selectorPanelHeightShellClass}
         style={shellHeightPx != null ? { height: shellHeightPx } : undefined}
@@ -244,6 +228,6 @@ export function AnchoredSelectorPicker({
           />
         </div>
       </div>
-    </AiChatSelectorPopoverTarget>
+    </div>
   );
 }

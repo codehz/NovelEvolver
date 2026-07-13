@@ -4,9 +4,7 @@ import { cn } from "#app/shared/lib/ui/cn";
 const notificationAccentTextClass = cn("text-ctp-mauve");
 const notificationSurfaceClass = cn("border-badge-background bg-app-surface");
 
-export const notificationBellAnchorClass = cn(
-  "relative flex shrink-0 items-stretch self-stretch anchor-name-notification-bell",
-);
+export const notificationBellAnchorClass = cn("relative flex shrink-0 items-stretch self-stretch");
 
 export const notificationPanelClass = cn(
   "flex min-h-0 w-notification-panel flex-col overflow-hidden rounded-sm border text-xs text-app-foreground shadow-lg app-region-no-drag",
@@ -17,13 +15,13 @@ export const notificationPanelHeightShellClass = cn("w-full overflow-hidden");
 
 export const notificationPanelContentClass = cn("flex max-h-88 min-h-0 w-full flex-col");
 
+export const notificationCenterPositionerClass = cn("z-notification outline-none");
+
 export const notificationCenterPopoverPanelClass = cn(
-  "fixed inset-[unset] m-0 min-w-notification-panel position-anchor-notification-bell",
-  "bottom-[calc(anchor(top)+0.75rem)]",
-  "right-[calc(anchor(right)+0.75rem)]",
-  "translate-y-1 opacity-0 transition transition-discrete duration-220 ease-[cubic-bezier(0.33,1,0.68,1)]",
-  "open:translate-y-0 open:opacity-100",
-  "open:starting:translate-y-1 open:starting:opacity-0",
+  "min-w-notification-panel origin-(--transform-origin) outline-none",
+  "transition-[opacity,translate] duration-220 ease-[cubic-bezier(0.33,1,0.68,1)]",
+  "data-starting-style:translate-y-1 data-starting-style:opacity-0",
+  "data-ending-style:translate-y-1 data-ending-style:opacity-0",
   notificationPanelClass,
 );
 

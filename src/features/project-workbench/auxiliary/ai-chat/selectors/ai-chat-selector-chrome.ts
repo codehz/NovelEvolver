@@ -4,31 +4,17 @@ const selectorPanelSurfaceClass = cn(
   "overflow-hidden rounded-lg border border-titlebar-border bg-app-surface text-xs text-app-foreground shadow-quick-pick app-region-no-drag",
 );
 
-const selectorPanelMotionClass = cn(
-  "translate-y-1 opacity-0 transition transition-discrete duration-220 ease-[cubic-bezier(0.33,1,0.68,1)]",
-  "open:translate-y-0 open:opacity-100",
-  "open:starting:translate-y-1 open:starting:opacity-0",
-);
+export const agentSelectorAnchorClass = cn("relative inline-flex max-w-full min-w-0");
 
-export const agentSelectorAnchorClass = cn(
-  "relative inline-flex max-w-full min-w-0 anchor-name-ai-chat-agent-selector",
-);
+export const modelSelectorAnchorClass = cn("relative inline-flex max-w-full min-w-0");
 
-export const modelSelectorAnchorClass = cn(
-  "relative inline-flex max-w-full min-w-0 anchor-name-ai-chat-model-selector",
-);
+export const selectorPositionerClass = cn("z-ai-chat-selector outline-none");
 
-export const agentSelectorPopoverPanelClass = cn(
-  "fixed inset-[unset] z-ai-chat-selector m-0 w-ai-chat-selector-picker max-w-[min(18rem,calc(100vw-1rem))] position-anchor-ai-chat-agent-selector",
-  "bottom-[calc(anchor(top)+0.35rem)] left-[anchor(left)] position-try-fallbacks-flip-inline",
-  selectorPanelMotionClass,
-  selectorPanelSurfaceClass,
-);
-
-export const modelSelectorPopoverPanelClass = cn(
-  "fixed inset-[unset] z-ai-chat-selector m-0 w-ai-chat-selector-picker max-w-[min(18rem,calc(100vw-1rem))] position-anchor-ai-chat-model-selector",
-  "bottom-[calc(anchor(top)+0.35rem)] left-[anchor(left)] position-try-fallbacks-flip-inline",
-  selectorPanelMotionClass,
+export const selectorPopoverPanelClass = cn(
+  "w-ai-chat-selector-picker max-w-[min(18rem,calc(100vw-1rem))] origin-(--transform-origin) outline-none",
+  "transition-[opacity,translate] duration-220 ease-[cubic-bezier(0.33,1,0.68,1)]",
+  "data-starting-style:translate-y-1 data-starting-style:opacity-0",
+  "data-ending-style:translate-y-1 data-ending-style:opacity-0",
   selectorPanelSurfaceClass,
 );
 

@@ -1,85 +1,57 @@
+import { Popover } from "@base-ui/react/popover";
 import { useAtom, useAtomValue } from "jotai";
-import { useCallback, useId, useRef } from "react";
+import { useId } from "react";
 
 import { activeNotificationsAtom, notificationCenterOpenAtom } from "#app/shared/lib/notifications";
 import { StatusBarItemButton } from "#workbench/chrome";
 
-import { notificationBellAnchorClass } from "./notification-chrome";
 import {
-  NotificationCenterPopoverProvider,
-  useNotificationCenterRequestClose,
-} from "./notification-popover";
-import { NotificationCenterPopoverPanel } from "./NotificationCenterOverlay";
+  notificationBellAnchorClass,
+  notificationCenterPopoverPanelClass,
+  notificationCenterPositionerClass,
+} from "./notification-chrome";
+import { NotificationCenterHeightShell } from "./NotificationCenterOverlay";
 import { NotificationCenterPanel } from "./NotificationCenterPanel";
 
-function NotificationBellStatusButton({
-  open,
-  hasNotifications,
-  onClick,
-}: {
-  open: boolean;
-  hasNotifications: boolean;
-  onClick: () => void;
-}) {
-  return (
-    <StatusBarItemButton
-      aria-controls="app-notification-center"
-      aria-expanded={open}
-      aria-haspopup="dialog"
-      aria-label={hasNotifications ? "通知，有待查看项" : "通知"}
-      icon={hasNotifications ? "icon-[codicon--bell-dot]" : "icon-[codicon--bell]"}
-      type="button"
-      onClick={onClick}
-    />
-  );
-}
-
-function NotificationCenterOpenShell({ onDismiss }: { onDismiss: () => void }) {
-  const requestClose = useNotificationCenterRequestClose();
+export function NotificationBellButton() {
+  const [open, setOpen] = useAtom(notificationCenterOpenAtom);
   const activeNotifications = useAtomValue(activeNotificationsAtom);
   const hasNotifications = activeNotifications.length > 0;
   const titleId = useId();
 
   return (
-    <>
-      <NotificationBellStatusButton
-        open
-        hasNotifications={hasNotifications}
-        onClick={() => {
-          requestClose(onDismiss);
-        }}
-      />
-      <NotificationCenterPopoverPanel titleId={titleId}>
-        <NotificationCenterPanel titleId={titleId} onDismiss={onDismiss} />
-      </NotificationCenterPopoverPanel>
-    </>
-  );
-}
-
-export function NotificationBellButton() {
-  const anchorRef = useRef<HTMLDivElement>(null);
-  const [open, setOpen] = useAtom(notificationCenterOpenAtom);
-  const activeNotifications = useAtomValue(activeNotificationsAtom);
-  const hasNotifications = activeNotifications.length > 0;
-  const dismiss = useCallback(() => {
-    setOpen(false);
-  }, [setOpen]);
-
-  return (
-    <div ref={anchorRef} className={notificationBellAnchorClass}>
-      {open ? (
-        <NotificationCenterPopoverProvider onDismiss={dismiss}>
-          <NotificationCenterOpenShell onDismiss={dismiss} />
-        </NotificationCenterPopoverProvider>
-      ) : (
-        <NotificationBellStatusButton
-          open={false}
-          hasNotifications={hasNotifications}
-          onClick={() => {
-            setOpen(true);
-          }}
+    <Popover.Root open={open} onOpenChange={setOpen}>
+      <div className={notificationBellAnchorClass}>
+        <Popover.Trigger
+          render={
+            <StatusBarItemButton
+              aria-controls="app-notification-center"
+              aria-haspopup="dialog"
+              aria-label={hasNotifications ? "通知，有待查看项" : "通知"}
+              icon={hasNotifications ? "icon-[codicon--bell-dot]" : "icon-[codicon--bell]"}
+            />
+          }
         />
-      )}
-    </div>
+      </div>
+      <Popover.Portal>
+        <Popover.Positioner
+          className={notificationCenterPositionerClass}
+          side="top"
+          align="end"
+          sideOffset={12}
+          positionMethod="fixed"
+        >
+          <Popover.Popup
+            id="app-notification-center"
+            className={notificationCenterPopoverPanelClass}
+            aria-labelledby={titleId}
+          >
+            <NotificationCenterHeightShell>
+              <NotificationCenterPanel titleId={titleId} />
+            </NotificationCenterHeightShell>
+          </Popover.Popup>
+        </Popover.Positioner>
+      </Popover.Portal>
+    </Popover.Root>
   );
 }

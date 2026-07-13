@@ -1,3 +1,4 @@
+import { Popover } from "@base-ui/react/popover";
 import { useAtomValue } from "jotai";
 import { AnimatePresence } from "motion/react";
 import { useEffect } from "react";
@@ -7,18 +8,10 @@ import { cn } from "#app/shared/lib/ui/cn";
 import { ScrollArea } from "#app/shared/ui/ScrollArea";
 
 import { notificationIconButtonClass } from "./notification-chrome";
-import { useNotificationCenterRequestClose } from "./notification-popover";
 import { NotificationItem } from "./NotificationItem";
 
-export function NotificationCenterPanel({
-  titleId,
-  onDismiss,
-}: {
-  titleId: string;
-  onDismiss: () => void;
-}) {
+export function NotificationCenterPanel({ titleId }: { titleId: string }) {
   const items = useAtomValue(activeNotificationsAtom);
-  const requestClose = useNotificationCenterRequestClose();
 
   useEffect(() => {
     notificationApi.dismissAllToasts();
@@ -31,7 +24,7 @@ export function NotificationCenterPanel({
           {items.length === 0 ? "无新通知" : "通知"}
         </h2>
         <div className="flex shrink-0 items-center gap-0.5">
-          <button
+          <Popover.Close
             className={cn(
               notificationIconButtonClass,
               items.length > 0 ? "text-ctp-mauve" : "cursor-not-allowed text-app-muted opacity-50",
@@ -40,22 +33,18 @@ export function NotificationCenterPanel({
             disabled={items.length === 0}
             onClick={() => {
               notificationApi.closeAll();
-              requestClose(onDismiss);
             }}
             aria-label="全部清除"
           >
             <span aria-hidden="true" className="icon-[codicon--clear-all] text-sm" />
-          </button>
-          <button
+          </Popover.Close>
+          <Popover.Close
             className={cn(notificationIconButtonClass, "text-ctp-mauve")}
             type="button"
-            onClick={() => {
-              requestClose(onDismiss);
-            }}
             aria-label="关闭"
           >
             <span aria-hidden="true" className="icon-[codicon--chevron-down] text-base" />
-          </button>
+          </Popover.Close>
         </div>
       </header>
       <ScrollArea fill className="min-h-0 overflow-hidden">

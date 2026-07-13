@@ -1,89 +1,14 @@
-import { useCallback, useId, useState } from "react";
+import { Popover } from "@base-ui/react/popover";
+import { useCallback, useState } from "react";
 
 import { modelSelectorButtonClass, modelSelectorLabelClass } from "../ui/ai-chat-ui";
 import {
   modelSelectorAnchorClass,
-  modelSelectorPopoverPanelClass,
+  selectorPopoverPanelClass,
+  selectorPositionerClass,
 } from "./ai-chat-selector-chrome";
-import { AiChatSelectorPopoverProvider } from "./ai-chat-selector-popover";
 import { AnchoredSelectorPicker } from "./AnchoredSelectorPicker";
 import type { AiChatSelectorItem } from "./selector-items";
-
-function ModelSelectorTrigger({
-  open,
-  disabled,
-  label,
-  panelId,
-  onClick,
-}: {
-  open: boolean;
-  disabled: boolean;
-  label: string;
-  panelId: string;
-  onClick: () => void;
-}) {
-  return (
-    <button
-      aria-controls={panelId}
-      aria-expanded={open}
-      aria-haspopup="dialog"
-      aria-label="选择模型"
-      className={modelSelectorButtonClass}
-      disabled={disabled}
-      popoverTarget={panelId}
-      title={label}
-      type="button"
-      onClick={onClick}
-    >
-      <span aria-hidden="true" className="icon-[codicon--sparkle] shrink-0 text-xs" />
-      <span className={modelSelectorLabelClass}>{label}</span>
-    </button>
-  );
-}
-
-function ModelSelectorShell({
-  open,
-  label,
-  disabled,
-  panelId,
-  items,
-  onDismiss,
-  onSelect,
-}: {
-  open: boolean;
-  label: string;
-  disabled: boolean;
-  panelId: string;
-  items: readonly AiChatSelectorItem[];
-  onDismiss: () => void;
-  onSelect: (id: string) => void;
-}) {
-  return (
-    <>
-      <ModelSelectorTrigger
-        open={open}
-        disabled={disabled}
-        label={label}
-        panelId={panelId}
-        onClick={() => {
-          if (!open) {
-            onDismiss();
-          }
-        }}
-      />
-      <AnchoredSelectorPicker
-        panelId={panelId}
-        panelClassName={modelSelectorPopoverPanelClass}
-        title="选择模型"
-        searchLabel="搜索模型"
-        searchPlaceholder="按名称或提供商筛选…"
-        emptyMessage="没有可用模型，请先在设置中添加"
-        items={items}
-        onSelect={onSelect}
-      />
-    </>
-  );
-}
 
 export function AiChatModelSelector({
   label,
@@ -98,11 +23,20 @@ export function AiChatModelSelector({
   onOpen?: () => void;
   onSelect: (id: string) => void;
 }) {
-  const panelId = useId();
   const [open, setOpen] = useState(false);
-  const dismiss = useCallback(() => {
-    setOpen(false);
-  }, []);
+
+  const handleOpenChange = useCallback(
+    (next: boolean) => {
+      if (next) {
+        if (disabled) {
+          return;
+        }
+        onOpen?.();
+      }
+      setOpen(next);
+    },
+    [disabled, onOpen],
+  );
 
   const handleSelect = useCallback(
     (id: string) => {
@@ -114,22 +48,37 @@ export function AiChatModelSelector({
 
   return (
     <div className={modelSelectorAnchorClass}>
-      <AiChatSelectorPopoverProvider onDismiss={dismiss} openOnMount={false}>
-        <ModelSelectorShell
-          open={open}
+      <Popover.Root open={open} onOpenChange={handleOpenChange}>
+        <Popover.Trigger
+          className={modelSelectorButtonClass}
           disabled={disabled}
-          label={label}
-          panelId={panelId}
-          items={items}
-          onDismiss={() => {
-            if (!disabled) {
-              onOpen?.();
-              setOpen(true);
-            }
-          }}
-          onSelect={handleSelect}
-        />
-      </AiChatSelectorPopoverProvider>
+          aria-label="选择模型"
+          title={label}
+        >
+          <span aria-hidden="true" className="icon-[codicon--sparkle] shrink-0 text-xs" />
+          <span className={modelSelectorLabelClass}>{label}</span>
+        </Popover.Trigger>
+        <Popover.Portal>
+          <Popover.Positioner
+            className={selectorPositionerClass}
+            side="top"
+            align="start"
+            sideOffset={6}
+            positionMethod="fixed"
+          >
+            <Popover.Popup className={selectorPopoverPanelClass}>
+              <AnchoredSelectorPicker
+                title="选择模型"
+                searchLabel="搜索模型"
+                searchPlaceholder="按名称或提供商筛选…"
+                emptyMessage="没有可用模型，请先在设置中添加"
+                items={items}
+                onSelect={handleSelect}
+              />
+            </Popover.Popup>
+          </Popover.Positioner>
+        </Popover.Portal>
+      </Popover.Root>
     </div>
   );
 }
