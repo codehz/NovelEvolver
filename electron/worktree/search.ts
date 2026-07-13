@@ -46,9 +46,8 @@ function compileNeedle(query: string, isRegex: boolean): CompiledNeedle | null {
   try {
     // 与字面搜索一致：大小写不敏感；`u` 便于 Unicode 属性类。
     return { kind: "regex", pattern: new RegExp(trimmed, "iu") };
-  } catch (error) {
-    const detail = error instanceof Error ? error.message : String(error);
-    throw new Error(`无效的正则表达式: ${detail}`);
+  } catch {
+    throw new Error("无效正则表达式");
   }
 }
 
