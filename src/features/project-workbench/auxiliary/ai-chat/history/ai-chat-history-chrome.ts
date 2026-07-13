@@ -14,11 +14,17 @@ export const historyPopoverPanelClass = cn(
   historyPanelSurfaceClass,
 );
 
-export const historySearchWrapClass = cn("px-2 pt-2 pb-1.5");
+export const historySearchWrapClass = cn("shrink-0 px-2 pt-2 pb-1.5");
 
 export const historySearchInputClass = cn(
   "w-full rounded-sm border border-badge-background bg-app-background px-2 py-1 text-xs leading-tight text-app-foreground outline-none app-region-no-drag placeholder:text-app-muted",
 );
+
+/** Self-clamped history shell: search + footer fixed, list scrolls. */
+export const historyPickerShellClass = cn("flex max-h-80 w-full flex-col overflow-hidden");
+
+/** Scrollport between fixed search and footer chrome. */
+export const historyPickerBodyClass = cn("min-h-0 flex-1 overflow-x-hidden overflow-y-auto");
 
 export const historyListClass = cn("flex flex-col gap-0.5 px-1.5 pt-0 pb-1.5");
 
@@ -51,7 +57,7 @@ export const historyBadgeClass = cn(
 export const historyEmptyClass = cn("rounded-sm p-2 text-app-muted");
 
 export const historyFooterClass = cn(
-  "flex items-center justify-between gap-2 border-t border-titlebar-border px-2 py-1.5",
+  "flex shrink-0 items-center justify-between gap-2 border-t border-titlebar-border px-2 py-1.5",
 );
 
 export const historyFooterToggleClass = cn(

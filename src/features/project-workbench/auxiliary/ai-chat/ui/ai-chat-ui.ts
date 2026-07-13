@@ -32,7 +32,7 @@ export function stripHiddenAiChatWarningsFromSnapshot(snapshot: AiChatSnapshot):
 
 export const panelSectionClass = cn("mx-auto flex w-full max-w-3xl flex-col");
 export const conversationRailClass = cn("gap-4 px-3 py-2.5 select-text");
-/** MessageScroller frame: definite-height flex child (replaces ScrollArea.Fill for chat). */
+/** MessageScroller frame: definite-height flex child that fills remaining rail height. */
 export const conversationScrollerRootClass = cn(
   "relative flex h-0 min-h-0 flex-1 flex-col overflow-hidden",
 );

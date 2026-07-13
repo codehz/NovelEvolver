@@ -2,7 +2,6 @@ import { Dialog } from "@base-ui/react/dialog";
 import { useId, useState } from "react";
 
 import { cn } from "#app/shared/lib/ui/cn";
-import { ScrollArea } from "#app/shared/ui/ScrollArea";
 
 import { AiAgentsSettingsPanel } from "./ai-agents/AiAgentsSettingsPanel";
 import { AiModelsSettingsPanel } from "./ai-models/AiModelsSettingsPanel";
@@ -107,7 +106,7 @@ function SettingsDialogChrome({
       </div>
 
       <div className={settingsBodyClass}>
-        <ScrollArea.Stretch className={settingsSidebarClass}>
+        <div className={settingsSidebarClass}>
           <nav aria-label="设置分类" className="flex flex-col">
             {SETTINGS_CATEGORIES.map((category) => {
               const active = category.id === activeCategoryId;
@@ -129,9 +128,9 @@ function SettingsDialogChrome({
               );
             })}
           </nav>
-        </ScrollArea.Stretch>
+        </div>
 
-        <ScrollArea.Stretch className={settingsContentClass}>
+        <div className={settingsContentClass}>
           {activeCategoryId === "ai-models" ? (
             <AiModelsSettingsPanel />
           ) : activeCategoryId === "ai-agents" ? (
@@ -139,7 +138,7 @@ function SettingsDialogChrome({
           ) : (
             <div className={settingsPlaceholderClass}>「{activeCategory.label}」分类暂无设置项</div>
           )}
-        </ScrollArea.Stretch>
+        </div>
       </div>
     </>
   );

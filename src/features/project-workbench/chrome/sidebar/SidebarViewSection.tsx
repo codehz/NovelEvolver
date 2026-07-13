@@ -1,7 +1,6 @@
 import type { CSSProperties, PointerEvent as ReactPointerEvent, ReactNode } from "react";
 
 import { cn } from "#app/shared/lib/ui/cn";
-import { ScrollArea } from "#app/shared/ui/ScrollArea";
 
 import {
   sidebarSectionHeaderButtonClass,
@@ -18,6 +17,11 @@ import {
 /** Layout flow height at the section seam (handle is overlaid, not counted in flex). */
 export const SIDEBAR_SECTION_RESIZE_STRIP_HEIGHT = 0;
 export const SIDEBAR_SECTION_HEADER_HEIGHT_PX = 24;
+
+/** Flex child that consumes remaining section height and scrolls. */
+const sidebarSectionBodyFillClass = cn("h-0 min-h-0 flex-1 overflow-x-hidden overflow-y-auto");
+/** Sized body (inline `style.height`) that scrolls within its fixed height. */
+const sidebarSectionBodyStretchClass = cn("h-full min-h-0 overflow-x-hidden overflow-y-auto");
 
 export function SidebarViewSection({
   title,
@@ -67,15 +71,15 @@ export function SidebarViewSection({
           <SidebarHeaderActionsPortalTarget as="div" className="flex shrink-0 items-center" />
         </div>
         {expanded ? (
-          bodyFillsSection ? (
-            <ScrollArea.Fill id={panelId} style={bodyStyle}>
-              {children}
-            </ScrollArea.Fill>
-          ) : (
-            <ScrollArea.Stretch id={panelId} style={bodyStyle}>
-              {children}
-            </ScrollArea.Stretch>
-          )
+          <div
+            id={panelId}
+            className={
+              bodyFillsSection ? sidebarSectionBodyFillClass : sidebarSectionBodyStretchClass
+            }
+            style={bodyStyle}
+          >
+            {children}
+          </div>
         ) : null}
       </section>
     </SidebarHeaderActionsPortalProvider>

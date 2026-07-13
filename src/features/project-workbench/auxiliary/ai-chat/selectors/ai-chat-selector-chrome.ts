@@ -24,7 +24,13 @@ export const selectorSearchInputClass = cn(
   "w-full rounded-sm border border-badge-background bg-app-background px-2 py-1 text-xs leading-tight text-app-foreground outline-none app-region-no-drag placeholder:text-app-muted",
 );
 
-/** List chrome only — scrolling owned by `ScrollArea.Max`. */
+/** Self-clamped picker shell: header fixed, body scrolls within max-height. */
+export const selectorPickerShellClass = cn("flex max-h-72 w-full flex-col overflow-hidden");
+
+/** Scrollport under fixed search chrome. */
+export const selectorPickerBodyClass = cn("min-h-0 flex-1 overflow-x-hidden overflow-y-auto");
+
+/** List chrome only. */
 export const selectorListClass = cn("flex flex-col gap-0.5 px-1.5 pt-0 pb-1.5");
 
 export const selectorRowButtonClass = cn(

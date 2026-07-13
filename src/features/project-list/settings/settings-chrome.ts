@@ -33,12 +33,12 @@ export const settingsSearchInputClass = cn(
   "w-full rounded-sm border border-titlebar-border bg-app-background px-2.5 py-1.5 text-xs leading-tight text-app-foreground outline-none placeholder:text-app-muted",
 );
 
-/** Row body under a column flex panel — pair with `ScrollArea.Stretch` children. */
+/** Row body under a column flex panel — children scroll with `h-full overflow-y-auto`. */
 export const settingsBodyClass = cn("flex min-h-0 flex-1 overflow-hidden");
 
-/** Chrome for settings nav — height/overflow owned by `ScrollArea.Stretch`. */
+/** Settings nav: fixed width + stretch-to-body scrollport. */
 export const settingsSidebarClass = cn(
-  "w-44 shrink-0 border-r border-titlebar-border bg-ctp-mantle/40",
+  "h-full min-h-0 w-44 shrink-0 overflow-x-hidden overflow-y-auto border-r border-titlebar-border bg-ctp-mantle/40",
 );
 
 export const settingsCategoryButtonClass = cn(
@@ -50,8 +50,10 @@ export const settingsCategoryButtonActiveClass = cn(
   "border-l-2 border-badge-background bg-ctp-surface0/35 pl-2.5 text-app-foreground",
 );
 
-/** Chrome for settings main pane — height/overflow owned by `ScrollArea.Stretch`. */
-export const settingsContentClass = cn("min-w-0 flex-1");
+/** Settings main pane: remaining width + stretch-to-body scrollport. */
+export const settingsContentClass = cn(
+  "h-full min-h-0 min-w-0 flex-1 overflow-x-hidden overflow-y-auto",
+);
 
 export const settingsPlaceholderClass = cn(
   "flex min-h-40 items-center justify-center px-6 py-10 text-xs text-app-muted",

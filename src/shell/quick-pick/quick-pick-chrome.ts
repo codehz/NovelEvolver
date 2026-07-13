@@ -15,7 +15,10 @@ export const quickPickSearchInputClass = cn(
   "w-full rounded-sm border border-badge-background bg-app-background px-2 py-1 text-xs leading-tight text-app-foreground outline-none app-region-no-drag placeholder:text-app-muted",
 );
 
-/** List chrome only — scrolling owned by `ScrollArea.Max`. Collapse when empty so Empty doesn't leave a flex gap. */
+/** Self-clamped list scrollport (search stays outside). */
+export const quickPickListScrollClass = cn("max-h-80 w-full overflow-x-hidden overflow-y-auto");
+
+/** List chrome only. Collapse when empty so Empty doesn't leave a flex gap. */
 export const quickPickListClass = cn(
   "flex flex-col gap-1 px-2 pt-0 pb-2 text-xs",
   "data-empty:hidden",

@@ -11,13 +11,13 @@ import {
 } from "#app/shared/lib/quick-pick";
 import { quickPickHostApi } from "#app/shared/lib/quick-pick/api";
 import { cn } from "#app/shared/lib/ui/cn";
-import { ScrollArea } from "#app/shared/ui/ScrollArea";
 
 import {
   quickPickEmptyClass,
   quickPickFooterHintClass,
   quickPickListClass,
   quickPickListDividerClass,
+  quickPickListScrollClass,
   quickPickRowButtonClass,
   quickPickRowEmphasisClass,
   quickPickSearchInputClass,
@@ -237,7 +237,7 @@ function QuickPickListPanelBody({
       <p className="sr-only" id={titleId}>
         {options.title}
       </p>
-      {/* Search stays outside ScrollArea.Max — Max+header uses 1fr body and keeps empty height. */}
+      {/* Search stays outside the scrollport so empty lists don't reserve a tall body. */}
       <div className={quickPickSearchWrapClass}>
         <Combobox.Label className="sr-only">{options.searchLabel ?? options.title}</Combobox.Label>
         <Combobox.Input
@@ -247,7 +247,7 @@ function QuickPickListPanelBody({
           spellCheck={false}
         />
       </div>
-      <ScrollArea.Max height="20rem" className="w-full">
+      <div className={quickPickListScrollClass}>
         <Combobox.List aria-label={options.title} className={quickPickListClass}>
           {(item: QuickPickSelectable) => (
             <QuickPickListOption key={selectableKey(item)} item={item}>
@@ -278,7 +278,7 @@ function QuickPickListPanelBody({
         <Combobox.Empty>
           <div className={quickPickEmptyClass}>{options.emptyMessage ?? "无匹配项"}</div>
         </Combobox.Empty>
-      </ScrollArea.Max>
+      </div>
     </Combobox.Root>
   );
 }

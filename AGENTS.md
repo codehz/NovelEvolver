@@ -98,22 +98,15 @@ Renderer overlays use **`@base-ui/react`** (unstyled, tree-shakable). Prefer Bas
 - Prefer CSS transitions via Base UI `data-starting-style` / `data-ending-style` over hand-rolled close timers.
 - Keep the app root with `isolation: isolate` (Tailwind `isolate` on the root in `App.tsx`) so portaled popups stack above page content.
 
-## ScrollArea usage
+## Native scrolling
 
-`ScrollArea` (`src/shared/ui/ScrollArea.tsx`) is a **layout-only** height strategy shell; scrolling is **native** (`overflow-y-auto`). Electron enables Blink `OverlayScrollbars` (`enableBlinkFeatures` in `electron/main.ts`) so the bar overlays content when supported. Do **not** reintroduce custom thumb/rail controllers. App-wide scrollbar **colors** live in `src/index.css`; keep default width (no `scrollbar-width: thin` / fixed webkit width).
+Use native overflow utilities directly — **do not** reintroduce a shared `ScrollArea` (or similar) abstraction, custom thumb/rail controllers, or thin/fixed scrollbar widths.
 
-Height strategy is **required** — use a named entry; there is no default / `fill` boolean.
-
-| Entry                | When                                                              | Layout owned by component                                  |
-| -------------------- | ----------------------------------------------------------------- | ---------------------------------------------------------- |
-| `ScrollArea.Fill`    | Parent is a **definite-height** flex column; take remaining space | `h-0 min-h-0 flex-1 overflow-hidden`                       |
-| `ScrollArea.Stretch` | Parent already sized, or pass `style.height`                      | `h-full min-h-0 overflow-hidden` (inline height wins)      |
-| `ScrollArea.Max`     | Popover/picker self-clamp; pass required `height`                 | `max-height`; optional `header`/`footer` use internal grid |
-
-- **`className` is chrome only** (width, border, bg). Do not pass height/overflow layout utilities — the entry owns them. Cross-axis flex (`flex-1`, `w-*`) is fine.
-- **Do not nest** one ScrollArea inside another; use sibling surfaces. Non-scrolling clip → plain `overflow-*`, not ScrollArea.
-- Ad-hoc scrollports (CodeMirror `.cm-scroller`, horizontal tab rails, bare lists) use native overflow only; do not add a second scrollbar abstraction or force thin width.
-- Dev builds warn on nested usage and on layout classes in `className`.
+- Flex remainder: `h-0 min-h-0 flex-1 overflow-y-auto` (parent is a definite-height flex column).
+- Parent already sized / inline height: `h-full min-h-0 overflow-y-auto`.
+- Self-clamped popover/picker: shell `max-h-* overflow-hidden` with fixed header/footer siblings and a `min-h-0 flex-1 overflow-y-auto` body; body-only clamp can use `max-h-* overflow-y-auto` alone.
+- Electron enables Blink `OverlayScrollbars` (`enableBlinkFeatures` in `electron/main.ts`) so the bar overlays content when supported. App-wide scrollbar **colors** live in `src/index.css`.
+- Ad-hoc scrollports (CodeMirror `.cm-scroller`, horizontal tab rails) stay native overflow only.
 
 ## Configuration Notes
 

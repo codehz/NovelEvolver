@@ -15,6 +15,11 @@ export const notificationPanelHeightShellClass = cn("w-full overflow-hidden");
 
 export const notificationPanelContentClass = cn("flex max-h-88 min-h-0 w-full flex-col");
 
+/** Notification list: fill remaining panel height and scroll. */
+export const notificationListScrollClass = cn(
+  "h-0 min-h-0 flex-1 overflow-x-hidden overflow-y-auto",
+);
+
 export const notificationCenterPositionerClass = cn("z-notification outline-none");
 
 export const notificationCenterPopoverPanelClass = cn(

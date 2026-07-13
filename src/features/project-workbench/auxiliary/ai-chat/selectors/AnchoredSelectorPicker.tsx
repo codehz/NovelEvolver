@@ -2,11 +2,12 @@ import { Combobox } from "@base-ui/react/combobox";
 import { useId, type ReactNode } from "react";
 
 import { cn } from "#app/shared/lib/ui/cn";
-import { ScrollArea } from "#app/shared/ui/ScrollArea";
 
 import {
   selectorEmptyClass,
   selectorListClass,
+  selectorPickerBodyClass,
+  selectorPickerShellClass,
   selectorRowButtonClass,
   selectorRowDetailClass,
   selectorRowEmphasisClass,
@@ -26,7 +27,7 @@ function filterSelectorItem(item: AiChatSelectorItem, query: string): boolean {
   return label.includes(normalized) || detail.includes(normalized);
 }
 
-/** Selector list content with ScrollArea.Max (renders inside Base UI Popover.Popup). */
+/** Selector list content with self-clamped native scroll (inside Base UI Popover.Popup). */
 export function AnchoredSelectorPicker({
   title,
   searchLabel,
@@ -74,49 +75,49 @@ export function AnchoredSelectorPicker({
           }
         }}
       >
-        <ScrollArea.Max
-          height="18rem"
-          className="w-full"
-          header={
-            <div className={selectorSearchWrapClass}>
-              <Combobox.Label className="sr-only">{searchLabel}</Combobox.Label>
-              <Combobox.Input
-                autoComplete="off"
-                className={selectorSearchInputClass}
-                placeholder={searchPlaceholder}
-                spellCheck={false}
-              />
-            </div>
-          }
-        >
-          <Combobox.List aria-label={title} className={selectorListClass}>
-            {(item: AiChatSelectorItem) => (
-              <Combobox.Item
-                key={item.id}
-                className={cn(selectorRowButtonClass, item.emphasized && selectorRowEmphasisClass)}
-                value={item}
-              >
-                <span className="flex min-w-0 items-center gap-1.5">
-                  <span
-                    aria-hidden="true"
-                    className={cn(
-                      "icon-[codicon--check] size-3.5 shrink-0",
-                      item.emphasized ? "opacity-100" : "opacity-0",
-                    )}
-                  />
-                  <span className={selectorRowLabelClass}>{item.label}</span>
-                </span>
-                {item.detail ? (
-                  <span className={cn(selectorRowDetailClass, "pl-5")}>{item.detail}</span>
-                ) : null}
-              </Combobox.Item>
-            )}
-          </Combobox.List>
-          {/* Empty root stays mounted for a11y; style only the message so non-empty lists don't keep padding. */}
-          <Combobox.Empty>
-            <div className={selectorEmptyClass}>{emptyMessage}</div>
-          </Combobox.Empty>
-        </ScrollArea.Max>
+        <div className={selectorPickerShellClass}>
+          <div className={selectorSearchWrapClass}>
+            <Combobox.Label className="sr-only">{searchLabel}</Combobox.Label>
+            <Combobox.Input
+              autoComplete="off"
+              className={selectorSearchInputClass}
+              placeholder={searchPlaceholder}
+              spellCheck={false}
+            />
+          </div>
+          <div className={selectorPickerBodyClass}>
+            <Combobox.List aria-label={title} className={selectorListClass}>
+              {(item: AiChatSelectorItem) => (
+                <Combobox.Item
+                  key={item.id}
+                  className={cn(
+                    selectorRowButtonClass,
+                    item.emphasized && selectorRowEmphasisClass,
+                  )}
+                  value={item}
+                >
+                  <span className="flex min-w-0 items-center gap-1.5">
+                    <span
+                      aria-hidden="true"
+                      className={cn(
+                        "icon-[codicon--check] size-3.5 shrink-0",
+                        item.emphasized ? "opacity-100" : "opacity-0",
+                      )}
+                    />
+                    <span className={selectorRowLabelClass}>{item.label}</span>
+                  </span>
+                  {item.detail ? (
+                    <span className={cn(selectorRowDetailClass, "pl-5")}>{item.detail}</span>
+                  ) : null}
+                </Combobox.Item>
+              )}
+            </Combobox.List>
+            {/* Empty root stays mounted for a11y; style only the message so non-empty lists don't keep padding. */}
+            <Combobox.Empty>
+              <div className={selectorEmptyClass}>{emptyMessage}</div>
+            </Combobox.Empty>
+          </div>
+        </div>
       </Combobox.Root>
     </div>
   );

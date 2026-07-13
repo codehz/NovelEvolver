@@ -5,9 +5,8 @@ import { useEffect } from "react";
 
 import { activeNotificationsAtom, notificationApi } from "#app/shared/lib/notifications";
 import { cn } from "#app/shared/lib/ui/cn";
-import { ScrollArea } from "#app/shared/ui/ScrollArea";
 
-import { notificationIconButtonClass } from "./notification-chrome";
+import { notificationIconButtonClass, notificationListScrollClass } from "./notification-chrome";
 import { NotificationItem } from "./NotificationItem";
 
 export function NotificationCenterPanel({ titleId }: { titleId: string }) {
@@ -47,13 +46,13 @@ export function NotificationCenterPanel({ titleId }: { titleId: string }) {
           </Popover.Close>
         </div>
       </header>
-      <ScrollArea.Fill>
+      <div className={notificationListScrollClass}>
         <AnimatePresence initial={false} mode="popLayout">
           {items.map((notification) => (
             <NotificationItem key={notification.id} notification={notification} variant="center" />
           ))}
         </AnimatePresence>
-      </ScrollArea.Fill>
+      </div>
     </>
   );
 }
