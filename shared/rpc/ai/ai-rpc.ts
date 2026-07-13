@@ -172,7 +172,16 @@ export type AiChatSnapshot = {
   messages: AiChatMessage[];
   pending: boolean;
   pendingUserInputs: AiChatPendingUserInput[];
+  /**
+   * Turn-scoped error from the last model request (shown under the last assistant turn).
+   * Transport/subscription errors are client-local and not stored here.
+   */
   errorMessage: string | null;
+  /**
+   * Whether `retryLastRequest()` can re-issue the last model request from history.
+   * False while pending, awaiting user input, or when history cannot rebuild a request.
+   */
+  canRetry: boolean;
 };
 
 export type AiConversationActivity = "idle" | "streaming" | "awaiting_user";
@@ -199,6 +208,7 @@ export type AiChatStatePatch = {
   pending?: boolean;
   pendingUserInputs?: AiChatPendingUserInput[];
   errorMessage?: string | null;
+  canRetry?: boolean;
   selectedModelId?: string;
   selectedAgentId?: string;
 };
@@ -223,6 +233,12 @@ export type AiChatDeltaOp =
   | {
       type: "message.removed";
       messageId: string;
+    }
+  | {
+      type: "assistant_parts.truncated";
+      messageId: string;
+      /** Keep `parts.slice(0, keepCount)`; drop the rest (uncommitted last request). */
+      keepCount: number;
     }
   | {
       type: "assistant_part.added";
@@ -263,7 +279,11 @@ export interface AiChatHandle extends RpcTarget {
   sendMessage(text: string): void;
   /** Abort the in-flight model stream / tool loop when `pending`. No-op otherwise. */
   stopGeneration(): void;
-  /** 重试上一次因后端错误失败的请求。仅当 `errorMessage` 非空时生效，无状态变化时静默忽略。 */
+  /**
+   * 从上一次 model request 边界重试（非整 turn）。
+   * 从 history 剥掉末尾模型输出后重发；成功 / 失败 / stop / 历史会话均可，
+   * 仅当 `canRetry` 时生效，否则静默忽略。不重放已完成工具。
+   */
   retryLastRequest(): void;
   createConversation(): void;
   listConversations(): AiConversationSummary[];

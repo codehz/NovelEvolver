@@ -33,6 +33,7 @@ import {
   serializePendingToolBatch,
   type PendingToolBatch,
 } from "./pending-tool-batch";
+import { rebuildLastRequestInput } from "./request-history";
 
 const EMPTY_TITLE = "新会话";
 const TITLE_MAX_LENGTH = 40;
@@ -178,10 +179,25 @@ export class AiConversationState {
     return this.#history;
   }
 
+  get errorMessage(): string | null {
+    return this.#errorMessage;
+  }
+
   get isPureDraft(): boolean {
     return (
       this.#messages.length === 0 && this.#pendingToolBatch === null && this.#errorMessage === null
     );
+  }
+
+  /** Last assistant message in the transcript, if any. */
+  get lastAssistantMessage(): AiChatAssistantMessage | null {
+    for (let index = this.#messages.length - 1; index >= 0; index--) {
+      const message = this.#messages[index]!;
+      if (message.role === "assistant") {
+        return message;
+      }
+    }
+    return null;
   }
 
   get selectedModelId(): string {
@@ -207,7 +223,19 @@ export class AiConversationState {
         ? this.#pendingToolBatch.pendingInputs.map((input) => input.pending)
         : [],
       errorMessage: this.#errorMessage,
+      canRetry: this.canRetry,
     };
+  }
+
+  /**
+   * Idle + not awaiting user + history can rebuild a non-empty last request input.
+   * Computed from live state (no separate flag).
+   */
+  get canRetry(): boolean {
+    if (this.#pending || this.#pendingToolBatch !== null) {
+      return false;
+    }
+    return rebuildLastRequestInput(this.#history).length > 0;
   }
 
   getSummary(): AiConversationSummary {
@@ -380,6 +408,30 @@ export class AiConversationState {
       {
         type: "message.removed",
         messageId,
+      },
+    ];
+  }
+
+  /**
+   * Truncate an assistant message to `keepCount` leading parts (uncommitted tail dropped).
+   * No-op when keepCount already covers all parts.
+   */
+  truncateAssistantParts(messageId: string, keepCount: number): AiChatDeltaOp[] {
+    const message = this.#getAssistantMessage(messageId);
+    if (!message) {
+      return [];
+    }
+    const nextCount = Math.max(0, Math.min(keepCount, message.parts.length));
+    if (nextCount === message.parts.length) {
+      return [];
+    }
+    message.parts.length = nextCount;
+    this.#markDirty();
+    return [
+      {
+        type: "assistant_parts.truncated",
+        messageId,
+        keepCount: nextCount,
       },
     ];
   }

@@ -11,7 +11,7 @@
     "build": "bun run build:renderer && bun run build:electron",
     "build:renderer": "vite build",
     "build:electron": "node scripts/build-electron.mjs",
-    "lint": "oxlint src electron shared",
+    "lint": "oxlint src electron shared && echo LINT DONE",
     "lint:fix": "oxlint --fix src electron shared",
     "format": "oxfmt --write .",
     "format:check": "oxfmt --check .",

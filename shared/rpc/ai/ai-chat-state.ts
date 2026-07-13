@@ -22,6 +22,7 @@ export function createInitialAiChatSnapshot(model = "mock-assistant"): AiChatSna
     pending: false,
     pendingUserInputs: [],
     errorMessage: null,
+    canRetry: false,
   };
 }
 
@@ -157,6 +158,7 @@ export function applyAiChatEvent(snapshot: AiChatSnapshot, event: AiChatEvent): 
           pending: false,
           pendingUserInputs: [],
           errorMessage: null,
+          canRetry: false,
           warnings: [],
         };
         break;
@@ -184,6 +186,19 @@ export function applyAiChatEvent(snapshot: AiChatSnapshot, event: AiChatEvent): 
         next = {
           ...next,
           messages: next.messages.filter((message) => message.id !== op.messageId),
+        };
+        break;
+      case "assistant_parts.truncated":
+        next = {
+          ...next,
+          messages: next.messages.map((message) =>
+            message.id === op.messageId && message.role === "assistant"
+              ? {
+                  ...message,
+                  parts: message.parts.slice(0, Math.max(0, op.keepCount)),
+                }
+              : message,
+          ),
         };
         break;
       case "assistant_part.added":

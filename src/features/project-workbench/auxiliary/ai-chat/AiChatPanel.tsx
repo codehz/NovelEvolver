@@ -10,22 +10,21 @@ export function AiChatPanel() {
   const mockAiAvailable = useMockAiAvailable();
   const composer = useAiChatComposer();
 
-  const errorMessage = subscriptionError ?? snapshot.errorMessage;
-  const showRetry = !subscriptionError && !!snapshot.errorMessage;
-
-  const handleRetry = showRetry
-    ? () => {
-        void retryLastRequest();
-      }
-    : undefined;
+  const handleRetry =
+    snapshot.canRetry && !subscriptionError
+      ? () => {
+          void retryLastRequest();
+        }
+      : undefined;
 
   return (
     <>
       <AiChatHeaderActions mockAiAvailable={mockAiAvailable} onClearDraft={composer.clearDraft} />
       <AiChatConversationRail
-        errorMessage={errorMessage}
         loading={loading}
         snapshot={snapshot}
+        subscriptionError={subscriptionError}
+        turnError={snapshot.errorMessage}
         onRetry={handleRetry}
       />
       <AiChatComposerFooter composer={composer} />

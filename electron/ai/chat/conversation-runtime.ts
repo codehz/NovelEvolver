@@ -37,6 +37,7 @@ import {
 } from "../tools";
 import { AiConversationState } from "./conversation-state";
 import { createPendingUserInputFromRequest, type PendingToolBatch } from "./pending-tool-batch";
+import { countCommittedAssistantParts, rebuildLastRequestInput } from "./request-history";
 
 type RuntimeEventListener = (event: AiChatEvent) => void;
 
@@ -264,6 +265,7 @@ export class AiConversationRuntime {
         patch: {
           pending: true,
           errorMessage: null,
+          canRetry: false,
         },
       },
     ]);
@@ -281,39 +283,55 @@ export class AiConversationRuntime {
     this.#generationAbort?.abort();
   }
 
-  /** 重试上一次失败的请求（仅当 errorMessage 非空且无进行中的请求时可用）。 */
+  /**
+   * 从上一次 model request 边界重试（非整 turn）。
+   * 从 history 重建 request input；成功 / 失败 / stop 均可；不重放已完成工具。
+   */
   retryLastRequest(): void {
-    if (this.#disposed) {
-      return;
-    }
-    if (this.#state.pending || this.#state.pendingToolBatch !== null) {
-      return;
-    }
-    if (this.#state.getSnapshot().errorMessage === null) {
+    if (this.#disposed || !this.#state.canRetry) {
       return;
     }
 
-    const assistantMessage = this.#state.appendAssistantMessage();
-    this.#state.setPending(true);
-    this.#state.setErrorMessage(null);
+    const requestInput = rebuildLastRequestInput(this.#state.history);
+    if (requestInput.length === 0) {
+      return;
+    }
 
-    this.#emitDelta([
-      {
+    this.#state.replaceHistory(requestInput);
+
+    const ops: AiChatDeltaOp[] = [];
+    let assistantMessage = this.#state.lastAssistantMessage;
+    if (assistantMessage === null) {
+      assistantMessage = this.#state.appendAssistantMessage();
+      ops.push({
         type: "message.added",
         message: cloneAiChatMessage(assistantMessage),
+      });
+    } else {
+      const keepCount = countCommittedAssistantParts(assistantMessage.parts, requestInput);
+      ops.push(...this.#state.truncateAssistantParts(assistantMessage.id, keepCount));
+      ops.push(
+        ...this.#state.updateMessage(assistantMessage.id, {
+          status: "streaming",
+        }),
+      );
+    }
+
+    this.#state.setPending(true);
+    this.#state.setErrorMessage(null);
+    ops.push({
+      type: "state.updated",
+      patch: {
+        pending: true,
+        errorMessage: null,
+        canRetry: false,
       },
-      {
-        type: "state.updated",
-        patch: {
-          pending: true,
-          errorMessage: null,
-        },
-      },
-    ]);
+    });
+    this.#emitDelta(ops);
 
     void this.#runRequest({
       assistantMessageId: assistantMessage.id,
-      requestInput: [...this.#state.history],
+      requestInput,
     });
   }
 
@@ -461,6 +479,7 @@ export class AiConversationRuntime {
           patch: {
             pending: false,
             pendingUserInputs: [],
+            canRetry: this.#state.canRetry,
           },
         },
       ]);
@@ -470,25 +489,34 @@ export class AiConversationRuntime {
       const stopped = isAbortError(error) || signal.aborted;
       this.#state.setPending(false);
       this.#state.setPendingToolBatch(null);
-      if (!stopped) {
-        this.#state.setErrorMessage(toErrorMessage(error));
-      } else {
-        this.#state.setErrorMessage(null);
-      }
+      const errorMessage = stopped ? null : toErrorMessage(error);
+      this.#state.setErrorMessage(errorMessage);
+
+      // Drop dangling model output (e.g. tool_calls without results) so history stays a valid
+      // request prefix for send/retry — same boundary rebuildLastRequestInput uses.
+      const committedHistory = rebuildLastRequestInput(transcript);
+      this.#state.replaceHistory(committedHistory);
 
       const ops: AiChatDeltaOp[] = [];
-
-      // Remove the failed assistant from display so retry starts clean.
-      ops.push(...this.#state.removeMessage(context.assistantMessageId));
-      // Keep the user turn in history so the next send / retry does not drop it.
-      this.#state.replaceHistory(transcript);
+      // Drop uncommitted last-request parts; keep completed tool rounds visible.
+      const assistant = this.#state.lastAssistantMessage;
+      if (assistant && assistant.id === context.assistantMessageId) {
+        const keepCount = countCommittedAssistantParts(assistant.parts, committedHistory);
+        ops.push(...this.#state.truncateAssistantParts(assistant.id, keepCount));
+        ops.push(
+          ...this.#state.updateMessage(assistant.id, {
+            status: "complete",
+          }),
+        );
+      }
 
       ops.push({
         type: "state.updated",
         patch: {
           pending: false,
           pendingUserInputs: [],
-          errorMessage: stopped ? null : toErrorMessage(error),
+          errorMessage,
+          canRetry: this.#state.canRetry,
         },
       });
       this.#emitDelta(ops);
@@ -562,6 +590,7 @@ export class AiConversationRuntime {
             pending: false,
             pendingUserInputs: pendingInputs.map((entry) => entry.pending),
             errorMessage: null,
+            canRetry: false,
           },
         },
       ]);
@@ -625,6 +654,7 @@ export class AiConversationRuntime {
           pending: true,
           pendingUserInputs: [],
           errorMessage: null,
+          canRetry: false,
         },
       },
     ]);

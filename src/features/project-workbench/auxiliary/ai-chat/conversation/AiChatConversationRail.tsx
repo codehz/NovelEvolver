@@ -9,15 +9,28 @@ import { conversationRailClass, panelSectionClass } from "../ui/ai-chat-ui";
 import { groupChatWarnings } from "../ui/group-chat-warnings";
 import { AiChatWarningBanner } from "./AiChatWarningBanner";
 
+const turnErrorBannerClass = cn(
+  "rounded-xl border border-ctp-red/40 bg-ctp-red/10 px-3 py-2 text-xs text-ctp-red",
+);
+const turnRetryButtonClass = cn(
+  "inline-flex items-center gap-1 self-start rounded-md px-1.5 py-0.5 text-2xs text-ctp-subtext1",
+  "underline-offset-2 transition-colors hover:bg-ctp-surface0 hover:text-app-foreground hover:underline",
+  "focus-visible:ring-1 focus-visible:ring-ctp-mauve focus-visible:outline-none",
+);
+
 export function AiChatConversationRail({
   snapshot,
   loading,
-  errorMessage,
+  subscriptionError,
+  turnError,
   onRetry,
 }: {
   snapshot: AiChatSnapshot;
   loading: boolean;
-  errorMessage: string | null;
+  /** Transport-level subscribe failure; stays at the top of the rail. */
+  subscriptionError: string | null;
+  /** Last model-request error; rendered under the last assistant turn. */
+  turnError: string | null;
   onRetry?: () => void;
 }) {
   const endRef = useRef<HTMLDivElement | null>(null);
@@ -26,9 +39,15 @@ export function AiChatConversationRail({
     [snapshot.messages, snapshot.warnings],
   );
 
+  const showTurnRetry =
+    onRetry !== undefined &&
+    !snapshot.pending &&
+    snapshot.pendingUserInputs.length === 0 &&
+    snapshot.canRetry;
+
   useEffect(() => {
     endRef.current?.scrollIntoView({ block: "end", behavior: "smooth" });
-  }, [snapshot.messages, snapshot.pending, snapshot.pendingUserInputs]);
+  }, [snapshot.messages, snapshot.pending, snapshot.pendingUserInputs, turnError]);
 
   return (
     <ScrollArea className="min-h-0 flex-1" fill>
@@ -38,20 +57,7 @@ export function AiChatConversationRail({
             测试场景 · <span className="font-mono text-ctp-mauve">{snapshot.scenarioId}</span>
           </div>
         ) : null}
-        {errorMessage ? (
-          <div className="flex items-center justify-between gap-2 rounded-xl border border-ctp-red/40 bg-ctp-red/10 px-3 py-2 text-xs text-ctp-red">
-            <span className="flex-1">{errorMessage}</span>
-            {onRetry && !snapshot.pending ? (
-              <button
-                type="button"
-                className="shrink-0 underline-offset-2 hover:underline"
-                onClick={onRetry}
-              >
-                重试
-              </button>
-            ) : null}
-          </div>
-        ) : null}
+        {subscriptionError ? <div className={turnErrorBannerClass}>{subscriptionError}</div> : null}
 
         {orphanWarnings.map((warning) => (
           <AiChatWarningBanner key={warning.id} warning={warning} />
@@ -78,6 +84,18 @@ export function AiChatConversationRail({
             </div>
           );
         })}
+
+        {showTurnRetry || turnError ? (
+          <div className="flex flex-col gap-2">
+            {turnError ? <div className={turnErrorBannerClass}>{turnError}</div> : null}
+            {showTurnRetry ? (
+              <button type="button" className={turnRetryButtonClass} onClick={onRetry}>
+                {turnError ? "重试" : "重新生成"}
+              </button>
+            ) : null}
+          </div>
+        ) : null}
+
         <div
           aria-hidden="true"
           className="pointer-events-none absolute inset-x-0 bottom-0 h-0"
