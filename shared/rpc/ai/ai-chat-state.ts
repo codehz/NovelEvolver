@@ -168,6 +168,12 @@ export function applyAiChatEvent(snapshot: AiChatSnapshot, event: AiChatEvent): 
           warnings: [...next.warnings, { ...op.warning }],
         };
         break;
+      case "warnings.cleared_for_message":
+        next = {
+          ...next,
+          warnings: next.warnings.filter((warning) => warning.messageId !== op.messageId),
+        };
+        break;
       case "message.added":
         next = {
           ...next,

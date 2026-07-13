@@ -317,6 +317,9 @@ export class AiConversationRuntime {
       );
     }
 
+    // Drop stale provider warnings (e.g. INCOMPLETE_STREAM) from the previous attempt.
+    ops.push(...this.#state.clearWarningsForMessage(assistantMessage.id));
+
     this.#state.setPending(true);
     this.#state.setErrorMessage(null);
     ops.push({

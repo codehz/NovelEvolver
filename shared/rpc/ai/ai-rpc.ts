@@ -222,6 +222,10 @@ export type AiChatDeltaOp =
       warning: AiChatWarning;
     }
   | {
+      type: "warnings.cleared_for_message";
+      messageId: string;
+    }
+  | {
       type: "message.added";
       message: AiChatMessage;
     }

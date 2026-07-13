@@ -327,6 +327,23 @@ export class AiConversationState {
     this.#markDirty();
   }
 
+  /** Drop provider warnings attached to a specific assistant message (e.g. before regenerate). */
+  clearWarningsForMessage(messageId: string): AiChatDeltaOp[] {
+    const remaining = this.#warnings.filter((warning) => warning.messageId !== messageId);
+    if (remaining.length === this.#warnings.length) {
+      return [];
+    }
+    this.#warnings.length = 0;
+    this.#warnings.push(...remaining);
+    this.#markDirty();
+    return [
+      {
+        type: "warnings.cleared_for_message",
+        messageId,
+      },
+    ];
+  }
+
   setSelectedModelId(selectedModelId: string): void {
     if (this.#selectedModelId === selectedModelId) {
       return;
