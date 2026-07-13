@@ -263,6 +263,8 @@ export interface AiChatHandle extends RpcTarget {
   sendMessage(text: string): void;
   /** Abort the in-flight model stream / tool loop when `pending`. No-op otherwise. */
   stopGeneration(): void;
+  /** 重试上一次因后端错误失败的请求。仅当 `errorMessage` 非空时生效，无状态变化时静默忽略。 */
+  retryLastRequest(): void;
   createConversation(): void;
   listConversations(): AiConversationSummary[];
   switchConversation(conversationId: string): void;

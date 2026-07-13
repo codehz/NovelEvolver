@@ -69,13 +69,14 @@ CREATE TABLE IF NOT EXISTS projects (
 - `ai_conversation.project_id` → `projects(id)` ON DELETE CASCADE
 
 **Repository 操作**（`ProjectsRepository`）：
-| 方法 | 说明 |
-|------|------|
-| `list()` | 按 `last_opened_at DESC` 列出所有项目 |
-| `getById(id)` | 按主键获取单条记录 |
+
+| 方法                               | 说明                                               |
+| ---------------------------------- | -------------------------------------------------- |
+| `list()`                           | 按 `last_opened_at DESC` 列出所有项目              |
+| `getById(id)`                      | 按主键获取单条记录                                 |
 | `upsertByPath(path, lastOpenedAt)` | INSERT OR UPDATE（path 冲突时更新 last_opened_at） |
-| `touchById(id, lastOpenedAt)` | 更新最后打开时间 |
-| `removeById(id)` | 删除项目（级联删除关联 worktree/会话） |
+| `touchById(id, lastOpenedAt)`      | 更新最后打开时间                                   |
+| `removeById(id)`                   | 删除项目（级联删除关联 worktree/会话）             |
 
 ### 2. worktree — 工作树
 
@@ -395,25 +396,14 @@ type WorktreeJournalDomain = "manuscript" | "resource";
 
 // 变更来源
 type WorktreeJournalSource =
-  | "autosave"
-  | "manual-checkpoint"
-  | "structure-edit"
-  | "restore"
-  | "commit"
-  | "import";
+  "autosave" | "manual-checkpoint" | "structure-edit" | "restore" | "commit" | "import";
 
 // 操作角色
 type WorktreeJournalActor = "user" | "system";
 
 // 操作类型
 type WorktreeJournalOperationKind =
-  | "create"
-  | "delete"
-  | "rename"
-  | "move"
-  | "reorder"
-  | "content"
-  | "restore";
+  "create" | "delete" | "rename" | "move" | "reorder" | "content" | "restore";
 
 // 实体类型
 type WorktreeJournalEntityKind = "chapter" | "folder" | "file";

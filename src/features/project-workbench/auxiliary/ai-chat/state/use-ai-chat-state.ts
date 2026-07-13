@@ -105,12 +105,17 @@ function useAiChatStateValue() {
     [aiChat],
   );
 
+  const retryLastRequest = useCallback(async (): Promise<void> => {
+    await Promise.resolve(aiChat.retryLastRequest());
+  }, [aiChat]);
+
   return {
     snapshot,
     loading,
     subscriptionError,
     sendMessage,
     stopGeneration,
+    retryLastRequest,
     createConversation,
     listConversations,
     switchConversation,

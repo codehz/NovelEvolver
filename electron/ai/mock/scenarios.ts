@@ -320,6 +320,25 @@ const contentFilter: MockScenarioDefinition = {
   ],
 };
 
+const backendFailure: MockScenarioDefinition = {
+  id: "errors.backend-failure",
+  title: "后端错误（立即失败）",
+  description: "模拟首 token 前 backend 错误（无任何输出），验证重试功能和错误恢复 UI。",
+  initialPrompt: "运行后端错误场景。",
+  toolMode: "simulated",
+  mutatesWorkspace: false,
+  turns: [
+    {
+      id: "fail-immediately",
+      matches: () => true,
+      // oxlint-disable-next-line require-yield — 模拟首 token 前 backend 抛错
+      run: function* () {
+        throw new Error("模拟的后端服务错误：连接超时。");
+      },
+    },
+  ],
+};
+
 const simulatedToolError: MockScenarioDefinition = {
   id: "tools.simulated-error",
   title: "模拟工具失败",
@@ -372,4 +391,5 @@ export const MOCK_SCENARIOS = [
   providerWarning,
   contentFilter,
   interruptedStream,
+  backendFailure,
 ] as const satisfies readonly MockScenarioDefinition[];

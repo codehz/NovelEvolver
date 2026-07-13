@@ -30,6 +30,10 @@ export class AiChatHandleImpl extends RpcTarget implements AiChatHandle {
     this.#chat.stopGeneration();
   }
 
+  retryLastRequest(): void {
+    this.#chat.retryLastRequest();
+  }
+
   createConversation(): void {
     this.#chat.createConversation();
   }

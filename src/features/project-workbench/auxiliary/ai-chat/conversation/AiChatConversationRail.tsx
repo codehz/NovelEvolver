@@ -13,10 +13,12 @@ export function AiChatConversationRail({
   snapshot,
   loading,
   errorMessage,
+  onRetry,
 }: {
   snapshot: AiChatSnapshot;
   loading: boolean;
   errorMessage: string | null;
+  onRetry?: () => void;
 }) {
   const endRef = useRef<HTMLDivElement | null>(null);
   const { warningsByMessageId, orphanWarnings } = useMemo(
@@ -37,8 +39,17 @@ export function AiChatConversationRail({
           </div>
         ) : null}
         {errorMessage ? (
-          <div className="rounded-xl border border-ctp-red/40 bg-ctp-red/10 px-3 py-2 text-xs text-ctp-red">
-            {errorMessage}
+          <div className="flex items-center justify-between gap-2 rounded-xl border border-ctp-red/40 bg-ctp-red/10 px-3 py-2 text-xs text-ctp-red">
+            <span className="flex-1">{errorMessage}</span>
+            {onRetry && !snapshot.pending ? (
+              <button
+                type="button"
+                className="shrink-0 underline-offset-2 hover:underline"
+                onClick={onRetry}
+              >
+                重试
+              </button>
+            ) : null}
           </div>
         ) : null}
 

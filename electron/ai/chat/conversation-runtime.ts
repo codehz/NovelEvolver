@@ -72,42 +72,6 @@ function isAbortError(error: unknown): boolean {
   return error instanceof Error && error.name === "AbortError";
 }
 
-/**
- * Build history items only from still-streaming assistant parts.
- * Completed rounds are already in `transcript` via provider replay; do not re-add them.
- */
-function incompleteAssistantPartsToHistoryItems(
-  state: AiConversationState,
-  assistantMessageId: string,
-): InputItem[] {
-  const message = state
-    .getSnapshot()
-    .messages.find((entry) => entry.id === assistantMessageId && entry.role === "assistant");
-  if (!message || message.role !== "assistant") {
-    return [];
-  }
-
-  const items: InputItem[] = [];
-  for (const part of message.parts) {
-    if (part.type === "message" && part.status === "streaming" && part.text.trim() !== "") {
-      items.push({
-        type: "message",
-        role: "assistant",
-        content: [{ type: "text", text: part.text }],
-      });
-      continue;
-    }
-    if (part.type === "reasoning" && part.status === "streaming" && part.text.trim() !== "") {
-      items.push({
-        type: "reasoning",
-        visibility: part.visibility,
-        content: [{ type: "text", text: part.text }],
-      });
-    }
-  }
-  return items;
-}
-
 export class AiConversationRuntime {
   readonly #toolRunner: ToolRunner;
   readonly #publisher = new RpcStreamPublisher<AiChatEvent>();
@@ -317,6 +281,42 @@ export class AiConversationRuntime {
     this.#generationAbort?.abort();
   }
 
+  /** 重试上一次失败的请求（仅当 errorMessage 非空且无进行中的请求时可用）。 */
+  retryLastRequest(): void {
+    if (this.#disposed) {
+      return;
+    }
+    if (this.#state.pending || this.#state.pendingToolBatch !== null) {
+      return;
+    }
+    if (this.#state.getSnapshot().errorMessage === null) {
+      return;
+    }
+
+    const assistantMessage = this.#state.appendAssistantMessage();
+    this.#state.setPending(true);
+    this.#state.setErrorMessage(null);
+
+    this.#emitDelta([
+      {
+        type: "message.added",
+        message: cloneAiChatMessage(assistantMessage),
+      },
+      {
+        type: "state.updated",
+        patch: {
+          pending: true,
+          errorMessage: null,
+        },
+      },
+    ]);
+
+    void this.#runRequest({
+      assistantMessageId: assistantMessage.id,
+      requestInput: [...this.#state.history],
+    });
+  }
+
   [Symbol.dispose](): void {
     if (this.#disposed) {
       return;
@@ -475,21 +475,13 @@ export class AiConversationRuntime {
       } else {
         this.#state.setErrorMessage(null);
       }
+
       const ops: AiChatDeltaOp[] = [];
 
-      if (this.#state.countAssistantParts(context.assistantMessageId) === 0) {
-        ops.push(...this.#state.removeMessage(context.assistantMessageId));
-        // Keep the user turn in history so the next send does not drop it.
-        this.#state.replaceHistory(transcript);
-      } else {
-        const partialHistory = incompleteAssistantPartsToHistoryItems(
-          this.#state,
-          context.assistantMessageId,
-        );
-        ops.push(...this.#state.updateMessage(context.assistantMessageId, { status: "complete" }));
-        ops.push(...this.#state.completeStreamingAssistantParts(context.assistantMessageId));
-        this.#state.replaceHistory([...transcript, ...partialHistory]);
-      }
+      // Remove the failed assistant from display so retry starts clean.
+      ops.push(...this.#state.removeMessage(context.assistantMessageId));
+      // Keep the user turn in history so the next send / retry does not drop it.
+      this.#state.replaceHistory(transcript);
 
       ops.push({
         type: "state.updated",
