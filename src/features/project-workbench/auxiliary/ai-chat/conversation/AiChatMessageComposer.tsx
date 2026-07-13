@@ -1,11 +1,9 @@
 import type { KeyboardEvent, RefObject, SubmitEvent } from "react";
 
+import { AiChatAgentSelector, AiChatModelSelector, type AiChatSelectorItem } from "../selectors";
 import {
-  agentSelectorButtonClass,
   composerShellClass,
   composerTextareaClass,
-  modelSelectorButtonClass,
-  modelSelectorLabelClass,
   sendButtonClass,
   stopButtonClass,
 } from "../ui/ai-chat-ui";
@@ -14,34 +12,44 @@ export function AiChatMessageComposer({
   draft,
   composerDisabled,
   selectorDisabled,
+  modelSelectorDisabled,
   canSend,
   canStop,
   selectedAgentLabel,
   selectedModelLabel,
+  agentItems,
+  modelItems,
   composerRef,
   onDraftChange,
   onSubmit,
   onSendClick,
   onStopClick,
   onComposerKeyDown,
-  onPickAgent,
-  onPickModel,
+  onOpenAgentPicker,
+  onOpenModelPicker,
+  onSelectAgent,
+  onSelectModel,
 }: {
   draft: string;
   composerDisabled: boolean;
   selectorDisabled: boolean;
+  modelSelectorDisabled: boolean;
   canSend: boolean;
   canStop: boolean;
   selectedAgentLabel: string;
   selectedModelLabel: string;
+  agentItems: readonly AiChatSelectorItem[];
+  modelItems: readonly AiChatSelectorItem[];
   composerRef: RefObject<HTMLTextAreaElement | null>;
   onDraftChange: (value: string) => void;
   onSubmit: (event: SubmitEvent<HTMLFormElement>) => void;
   onSendClick: () => void;
   onStopClick: () => void;
   onComposerKeyDown: (event: KeyboardEvent<HTMLTextAreaElement>) => void;
-  onPickAgent: () => void;
-  onPickModel: () => void;
+  onOpenAgentPicker?: () => void;
+  onOpenModelPicker?: () => void;
+  onSelectAgent: (id: string) => void;
+  onSelectModel: (id: string) => void;
 }) {
   return (
     <form className={composerShellClass} onSubmit={onSubmit}>
@@ -60,29 +68,21 @@ export function AiChatMessageComposer({
       />
 
       <div className="flex min-w-0 items-center gap-1">
-        <button
-          aria-label="选择 Agent"
-          className={agentSelectorButtonClass}
+        <AiChatAgentSelector
+          label={selectedAgentLabel}
           disabled={selectorDisabled}
-          title={selectedAgentLabel}
-          type="button"
-          onClick={onPickAgent}
-        >
-          <span aria-hidden="true" className="icon-[codicon--hubot] shrink-0 text-xs" />
-          <span className={modelSelectorLabelClass}>{selectedAgentLabel}</span>
-        </button>
+          items={agentItems}
+          onOpen={onOpenAgentPicker}
+          onSelect={onSelectAgent}
+        />
         <span aria-hidden="true" className="mx-0.5 h-4 w-px shrink-0 bg-titlebar-border" />
-        <button
-          aria-label="选择模型"
-          className={modelSelectorButtonClass}
-          disabled={selectorDisabled}
-          title={selectedModelLabel}
-          type="button"
-          onClick={onPickModel}
-        >
-          <span aria-hidden="true" className="icon-[codicon--sparkle] shrink-0 text-xs" />
-          <span className={modelSelectorLabelClass}>{selectedModelLabel}</span>
-        </button>
+        <AiChatModelSelector
+          label={selectedModelLabel}
+          disabled={modelSelectorDisabled}
+          items={modelItems}
+          onOpen={onOpenModelPicker}
+          onSelect={onSelectModel}
+        />
         <span className="min-w-0 flex-1" />
         {canStop ? (
           <button

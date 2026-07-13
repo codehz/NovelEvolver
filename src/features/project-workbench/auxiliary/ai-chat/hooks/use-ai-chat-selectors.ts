@@ -2,8 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 
 import type { AiChatSelectableAgent, AiChatSelectableModel } from "#shared/rpc/ai/index";
 
-import { pickAiChatAgent } from "../quick-pick/agent-selector-quick-pick";
-import { pickAiChatModel } from "../quick-pick/model-selector-quick-pick";
+import { toAgentSelectorItems, toModelSelectorItems, type AiChatSelectorItem } from "../selectors";
 import { useAiChatState } from "../state/use-ai-chat-state";
 
 export function useAiChatSelectors() {
@@ -20,6 +19,18 @@ export function useAiChatSelectors() {
   const [selectableAgents, setSelectableAgents] = useState<AiChatSelectableAgent[]>([]);
 
   const hasPendingUserInputs = snapshot.pendingUserInputs.length > 0;
+
+  const refreshModels = useCallback(async () => {
+    const models = await listSelectableModels();
+    setSelectableModels(models);
+    return models;
+  }, [listSelectableModels]);
+
+  const refreshAgents = useCallback(async () => {
+    const agents = await listSelectableAgents();
+    setSelectableAgents(agents);
+    return agents;
+  }, [listSelectableAgents]);
 
   useEffect(() => {
     let active = true;
@@ -59,52 +70,68 @@ export function useAiChatSelectors() {
     null;
   const selectedAgentLabel = selectedAgent?.name ?? "选择 Agent";
 
-  const handlePickModel = useCallback(async () => {
-    if (loading || snapshot.pending) {
-      return;
-    }
-    const models = await listSelectableModels();
-    setSelectableModels(models);
-    const selectedId = await pickAiChatModel(models, snapshot.selectedModelId);
-    if (!selectedId || selectedId === snapshot.selectedModelId) {
-      return;
-    }
-    await setSelectedModel(selectedId);
-  }, [listSelectableModels, loading, setSelectedModel, snapshot.pending, snapshot.selectedModelId]);
+  const modelItems: AiChatSelectorItem[] = useMemo(
+    () => toModelSelectorItems(selectableModels, snapshot.selectedModelId),
+    [selectableModels, snapshot.selectedModelId],
+  );
 
-  const handlePickAgent = useCallback(async () => {
-    if (loading || snapshot.pending || hasPendingUserInputs) {
-      return;
-    }
-    const [agents, models] = await Promise.all([listSelectableAgents(), listSelectableModels()]);
-    setSelectableAgents(agents);
-    setSelectableModels(models);
-    const selectedId = await pickAiChatAgent(agents, models, snapshot.selectedAgentId);
-    if (!selectedId || selectedId === snapshot.selectedAgentId) {
-      return;
-    }
-    await setSelectedAgent(selectedId);
-  }, [
-    hasPendingUserInputs,
-    listSelectableAgents,
-    listSelectableModels,
-    loading,
-    setSelectedAgent,
-    snapshot.pending,
-    snapshot.selectedAgentId,
-  ]);
+  const agentItems: AiChatSelectorItem[] = useMemo(
+    () => toAgentSelectorItems(selectableAgents, selectableModels, snapshot.selectedAgentId),
+    [selectableAgents, selectableModels, snapshot.selectedAgentId],
+  );
+
+  const handleOpenModelPicker = useCallback(() => {
+    void refreshModels();
+  }, [refreshModels]);
+
+  const handleOpenAgentPicker = useCallback(() => {
+    void Promise.all([refreshAgents(), refreshModels()]);
+  }, [refreshAgents, refreshModels]);
+
+  const handleSelectModel = useCallback(
+    (modelId: string) => {
+      if (loading || snapshot.pending || modelId === snapshot.selectedModelId) {
+        return;
+      }
+      void setSelectedModel(modelId);
+    },
+    [loading, setSelectedModel, snapshot.pending, snapshot.selectedModelId],
+  );
+
+  const handleSelectAgent = useCallback(
+    (agentId: string) => {
+      if (loading || snapshot.pending || hasPendingUserInputs) {
+        return;
+      }
+      if (agentId === snapshot.selectedAgentId) {
+        return;
+      }
+      void setSelectedAgent(agentId);
+    },
+    [hasPendingUserInputs, loading, setSelectedAgent, snapshot.pending, snapshot.selectedAgentId],
+  );
 
   const selectorDisabled = useMemo(
     () => loading || snapshot.pending || hasPendingUserInputs,
     [hasPendingUserInputs, loading, snapshot.pending],
   );
 
+  const modelSelectorDisabled = useMemo(
+    () => loading || snapshot.pending,
+    [loading, snapshot.pending],
+  );
+
   return {
     selectedModelLabel,
     selectedAgentLabel,
+    agentItems,
+    modelItems,
     selectorDisabled,
+    modelSelectorDisabled,
     composerDisabled: loading || snapshot.pending,
-    handlePickModel,
-    handlePickAgent,
+    handleOpenAgentPicker,
+    handleOpenModelPicker,
+    handleSelectModel,
+    handleSelectAgent,
   };
 }

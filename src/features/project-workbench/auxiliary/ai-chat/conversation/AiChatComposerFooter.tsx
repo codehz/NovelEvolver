@@ -23,9 +23,14 @@ export function AiChatComposerFooter({ composer }: { composer: AiChatComposerSta
   const {
     selectedModelLabel,
     selectedAgentLabel,
+    agentItems,
+    modelItems,
     selectorDisabled,
-    handlePickModel,
-    handlePickAgent,
+    modelSelectorDisabled,
+    handleOpenAgentPicker,
+    handleOpenModelPicker,
+    handleSelectModel,
+    handleSelectAgent,
   } = useAiChatSelectors();
 
   if (hasPendingUserInputs) {
@@ -44,20 +49,21 @@ export function AiChatComposerFooter({ composer }: { composer: AiChatComposerSta
         composerDisabled={composerDisabled}
         composerRef={composerRef}
         draft={draft}
+        agentItems={agentItems}
+        modelItems={modelItems}
         onComposerKeyDown={handleComposerKeyDown}
         onDraftChange={setDraft}
-        onPickAgent={() => {
-          void handlePickAgent();
-        }}
-        onPickModel={() => {
-          void handlePickModel();
-        }}
+        onOpenAgentPicker={handleOpenAgentPicker}
+        onOpenModelPicker={handleOpenModelPicker}
+        onSelectAgent={handleSelectAgent}
+        onSelectModel={handleSelectModel}
         onSendClick={handleSendClick}
         onStopClick={handleStopClick}
         onSubmit={handleSubmit}
         selectedAgentLabel={selectedAgentLabel}
         selectedModelLabel={selectedModelLabel}
         selectorDisabled={selectorDisabled}
+        modelSelectorDisabled={modelSelectorDisabled}
       />
     </footer>
   );
