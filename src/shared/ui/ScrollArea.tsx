@@ -1,18 +1,15 @@
 import { createContext, useContext, type CSSProperties, type ReactNode } from "react";
 
 import { cn } from "#app/shared/lib/ui/cn";
-import {
-  scrollbarHiddenViewportClass,
-  scrollbarStickyRailClass,
-  ScrollbarThumbTrack,
-  useScrollbarController,
-} from "#app/shared/lib/ui/scrollbar";
 
 /**
  * Height strategy is required — pick the named entry that matches where height comes from:
  * - `Fill` — definite-height flex column; take remaining space (`h-0 flex-1`)
  * - `Stretch` — parent already sized (or `style.height`); fill with `h-full`
  * - `Max` — self-clamped popover/picker (`max-height`); optional header/footer use internal grid
+ *
+ * Scrolling is native (`overflow-y-auto` + `scrollbar-thin`). Electron enables Blink
+ * `OverlayScrollbars` so the bar overlays content when the platform supports it.
  *
  * `className` is chrome only (width, border, bg). Do not pass layout height/overflow utilities.
  */
@@ -32,15 +29,19 @@ type ScrollAreaMaxProps = ScrollAreaChromeProps & {
   footer?: ReactNode;
 };
 
-const scrollAreaContentClass = cn("relative");
-
 const scrollAreaFillClass = cn("h-0 min-h-0 flex-1 overflow-hidden");
 const scrollAreaStretchClass = cn("h-full min-h-0 overflow-hidden");
 const scrollAreaMaxRootClass = cn("grid w-full overflow-hidden");
 const scrollAreaMaxTrackClass = cn("min-h-0 overflow-hidden");
+
+/** Fill/Stretch viewport: size-full of a sized parent. */
+const scrollAreaViewportClass = cn(
+  "scrollbar-thin size-full min-h-0 overflow-x-hidden overflow-y-auto",
+);
+
 /** Body-only Max: viewport is the clamp root (must shrink with content — no size-full). */
 const scrollAreaMaxBodyViewportClass = cn(
-  "scrollbar-hidden min-h-0 w-full overflow-x-hidden overflow-y-auto",
+  "scrollbar-thin min-h-0 w-full overflow-x-hidden overflow-y-auto",
 );
 
 const ScrollAreaNestContext = createContext(false);
@@ -74,48 +75,16 @@ function ScrollAreaViewport({
   /** When true (default), viewport is size-full of a sized parent. */
   fillParent?: boolean;
 }) {
-  const {
-    viewportRef,
-    snapshot,
-    onAreaPointerEnter,
-    onAreaPointerLeave,
-    onTrackPointerDown,
-    onThumbPointerEnter,
-    onThumbPointerLeave,
-    onThumbPointerDown,
-  } = useScrollbarController();
-
-  const thumb = snapshot?.thumb ?? null;
-  const metrics = snapshot?.metrics ?? null;
-
   return (
     <div
-      ref={viewportRef}
       id={id}
       className={cn(
-        fillParent ? scrollbarHiddenViewportClass : scrollAreaMaxBodyViewportClass,
+        fillParent ? scrollAreaViewportClass : scrollAreaMaxBodyViewportClass,
         className,
       )}
       style={style}
-      onMouseEnter={onAreaPointerEnter}
-      onMouseLeave={onAreaPointerLeave}
     >
-      <div className={scrollAreaContentClass}>
-        {thumb && metrics && snapshot ? (
-          <div aria-hidden="true" className={scrollbarStickyRailClass}>
-            <ScrollbarThumbTrack
-              snapshot={snapshot}
-              metrics={metrics}
-              thumb={thumb}
-              onTrackPointerDown={onTrackPointerDown}
-              onThumbPointerEnter={onThumbPointerEnter}
-              onThumbPointerLeave={onThumbPointerLeave}
-              onThumbPointerDown={onThumbPointerDown}
-            />
-          </div>
-        ) : null}
-        {children}
-      </div>
+      {children}
     </div>
   );
 }
