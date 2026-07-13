@@ -1,11 +1,12 @@
+import { Collapsible } from "@base-ui/react/collapsible";
 import { useState } from "react";
 
-import { cn } from "#app/shared/lib/ui/cn";
 import { DisclosureChevron } from "#app/shared/ui/DisclosureChevron";
 import type { AiChatToolCall } from "#shared/rpc/ai/index";
 
 import { presentToolCall } from "../tools/ai-tool-presenters";
 import {
+  collapsiblePanelClass,
   describeToolCallStatus,
   toolCallBodyClass,
   toolCallLabelClass,
@@ -20,28 +21,23 @@ import {
  * `AskUserComposerPanel` 中的 handle 提供，此块不再承担选中/激活职责。
  */
 export function AiToolCallBlock({ toolCall }: { toolCall: AiChatToolCall }) {
-  const [expanded, setExpanded] = useState(false);
+  const [open, setOpen] = useState(false);
   const presentation = presentToolCall(toolCall);
   const indicator = presentation.indicator ?? describeToolCallStatus(toolCall.status);
 
   return (
-    <section className={toolCallPanelClass}>
-      <button
-        aria-expanded={expanded}
-        className={cn(toolCallToggleClass)}
-        title={expanded ? "收起工具调用" : "展开工具调用"}
-        type="button"
-        onClick={() => {
-          setExpanded((current) => !current);
-        }}
+    <Collapsible.Root className={toolCallPanelClass} open={open} onOpenChange={setOpen}>
+      <Collapsible.Trigger
+        className={toolCallToggleClass}
+        title={open ? "收起工具调用" : "展开工具调用"}
       >
-        <DisclosureChevron expanded={expanded} />
+        <DisclosureChevron expanded={open} />
         <span className={toolCallLabelClass}>{presentation.label}</span>
         <span className="min-w-0 truncate text-ctp-subtext1">{presentation.summary}</span>
         <span className={toolCallStatusClass}>{indicator}</span>
-      </button>
+      </Collapsible.Trigger>
 
-      {expanded ? (
+      <Collapsible.Panel className={collapsiblePanelClass}>
         <div className={toolCallBodyClass}>
           {presentation.detail}
 
@@ -55,7 +51,7 @@ export function AiToolCallBlock({ toolCall }: { toolCall: AiChatToolCall }) {
 
           {toolCall.errorMessage ? <p className="text-ctp-red">{toolCall.errorMessage}</p> : null}
         </div>
-      ) : null}
-    </section>
+      </Collapsible.Panel>
+    </Collapsible.Root>
   );
 }

@@ -1,3 +1,4 @@
+import { Collapsible } from "@base-ui/react/collapsible";
 import { useEffect, useState } from "react";
 
 import { DisclosureChevron } from "#app/shared/ui/DisclosureChevron";
@@ -5,6 +6,7 @@ import { MarkdownStream } from "#app/shared/ui/MarkdownStream";
 import type { AiChatReasoningPart } from "#shared/rpc/ai/index";
 
 import {
+  collapsiblePanelClass,
   reasoningBodyClass,
   reasoningLabelClass,
   reasoningPanelClass,
@@ -12,32 +14,27 @@ import {
 } from "../ui/ai-chat-ui";
 
 export function AiReasoningBlock({ reasoning }: { reasoning: AiChatReasoningPart }) {
-  const [expanded, setExpanded] = useState(reasoning.status === "streaming");
+  const [open, setOpen] = useState(reasoning.status === "streaming");
 
   useEffect(() => {
     if (reasoning.status === "streaming") {
-      setExpanded(true);
+      setOpen(true);
     }
   }, [reasoning.status]);
 
   const isAnimating = reasoning.status === "streaming";
 
   return (
-    <section className={reasoningPanelClass}>
-      <button
-        aria-expanded={expanded}
+    <Collapsible.Root className={reasoningPanelClass} open={open} onOpenChange={setOpen}>
+      <Collapsible.Trigger
         className={reasoningToggleClass}
-        title={expanded ? "收起思维链" : "展开思维链"}
-        type="button"
-        onClick={() => {
-          setExpanded((current) => !current);
-        }}
+        title={open ? "收起思维链" : "展开思维链"}
       >
-        <DisclosureChevron expanded={expanded} />
+        <DisclosureChevron expanded={open} />
         <span className={reasoningLabelClass}>思考</span>
-      </button>
+      </Collapsible.Trigger>
 
-      {expanded ? (
+      <Collapsible.Panel className={collapsiblePanelClass}>
         <div className={reasoningBodyClass}>
           {reasoning.text !== "" ? (
             <MarkdownStream isAnimating={isAnimating}>{reasoning.text}</MarkdownStream>
@@ -45,7 +42,7 @@ export function AiReasoningBlock({ reasoning }: { reasoning: AiChatReasoningPart
             <p className="text-ctp-subtext0">...</p>
           )}
         </div>
-      ) : null}
-    </section>
+      </Collapsible.Panel>
+    </Collapsible.Root>
   );
 }

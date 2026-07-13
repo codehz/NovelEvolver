@@ -53,6 +53,13 @@ export const reasoningLabelClass = cn("font-medium tracking-[0.02em] text-ctp-ma
 export const reasoningMetaClass = cn(
   "overflow-hidden text-2xs text-ellipsis whitespace-nowrap text-ctp-subtext1 tabular-nums",
 );
+/** Base UI Collapsible.Panel shell — height driven by `--collapsible-panel-height`. */
+export const collapsiblePanelClass = cn(
+  "h-(--collapsible-panel-height) overflow-hidden outline-none",
+  "transition-[height] duration-220 ease-[cubic-bezier(0.22,1,0.36,1)]",
+  "data-ending-style:h-0 data-starting-style:h-0",
+  "[&[hidden]:not([hidden='until-found'])]:hidden",
+);
 export const reasoningBodyClass = cn(
   "text-[0.75rem] leading-5 text-app-muted",
   "[&_code]:rounded-md [&_code]:bg-app-background [&_code]:px-1.5 [&_code]:py-0.5 [&_code]:font-mono",
