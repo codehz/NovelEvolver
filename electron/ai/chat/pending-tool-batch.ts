@@ -6,8 +6,8 @@ import {
   createPendingViewFromRequest,
   createPendingViewFromSerializable,
   type PendingUserInputSerializable,
-} from "../tools/user-input-contributions";
-import type { UserInputRequest } from "../tools/user-input-types";
+  type UserInputRequest,
+} from "../tools";
 
 export type PendingUserInput = {
   callId: string;

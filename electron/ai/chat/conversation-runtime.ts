@@ -28,8 +28,13 @@ import { toInputItem } from "../mock-adapter";
 import { getMockScenario } from "../mock/scenario-registry";
 import { createScenarioToolRunner } from "../mock/scenario-tool-runner";
 import type { MockScenarioPacing, MockScenarioPersistence } from "../mock/scenario-types";
-import { AI_TOOLS, AI_TOOLS_MAP } from "../tools/definitions";
-import { createToolRunner, type ResolveWorktree, type ToolRunner } from "../tools/runner";
+import {
+  AI_TOOLS,
+  AI_TOOLS_MAP,
+  createToolRunner,
+  type ResolveWorktree,
+  type ToolRunner,
+} from "../tools";
 import { AiConversationState } from "./conversation-state";
 import { createPendingUserInputFromRequest, type PendingToolBatch } from "./pending-tool-batch";
 

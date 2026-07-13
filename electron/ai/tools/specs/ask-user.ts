@@ -1,5 +1,4 @@
-import type { ToolCallItem, ToolResultItem } from "@codehz/ai";
-import { toolResultItem } from "@codehz/ai";
+import type { ToolCallItem } from "@codehz/ai";
 import { RpcTarget } from "capnweb";
 
 import type {
@@ -8,18 +7,15 @@ import type {
   AskUserRequestHandle,
 } from "#shared/rpc/ai/index";
 
-import type { UserInputResolver } from "./user-input-types";
-import { parseToolArgs } from "./utils";
+import { parseNonEmptyString, parseToolArgs } from "../parse";
+import { rejectedToolResult, successToolResult } from "../result";
+import type { ToolSpec, UserInputRequest, UserInputResolver } from "../types";
 
 export type AskUserArgs = {
   question: string;
   context?: string;
   placeholder?: string;
   choices?: AskUserChoice[];
-};
-
-export type AskUserResult = {
-  answer: string;
 };
 
 /**
@@ -45,10 +41,7 @@ export class AskUserRequestHandleImpl extends RpcTarget implements AskUserReques
       return;
     }
     this.#resolver = null;
-    const result: ToolResultItem = toolResultItem(this.#callId, "ask_user", "success", [
-      { type: "json", json: { answer: text } },
-    ]);
-    resolver.resolve(result);
+    resolver.resolve(successToolResult(this.#callId, "ask_user", { answer: text }));
   }
 
   cancel(): void {
@@ -57,10 +50,7 @@ export class AskUserRequestHandleImpl extends RpcTarget implements AskUserReques
       return;
     }
     this.#resolver = null;
-    const result: ToolResultItem = toolResultItem(this.#callId, "ask_user", "rejected", [
-      { type: "text", text: "用户取消了回答。" },
-    ]);
-    resolver.resolve(result);
+    resolver.resolve(rejectedToolResult(this.#callId, "ask_user", "用户取消了回答。"));
   }
 }
 
@@ -83,9 +73,7 @@ export function toAskUserPendingInput(
 
 export function parseAskUserArgs(call: ToolCallItem): AskUserArgs {
   const args = parseToolArgs(call);
-  if (typeof args.question !== "string" || args.question.trim() === "") {
-    throw new Error("ask_user 需要非空 question。");
-  }
+  const question = parseNonEmptyString(args.question, "question").trim();
 
   const choices = parseChoices(args.choices);
   if (choices !== undefined && choices.length === 0) {
@@ -93,7 +81,7 @@ export function parseAskUserArgs(call: ToolCallItem): AskUserArgs {
   }
 
   return {
-    question: args.question.trim(),
+    question,
     context:
       typeof args.context === "string" && args.context.trim() !== ""
         ? args.context.trim()
@@ -137,3 +125,81 @@ function parseChoices(value: unknown): AskUserChoice[] | undefined {
 
   return choices;
 }
+
+function buildUserInputRequest(call: ToolCallItem, args: AskUserArgs): UserInputRequest {
+  return {
+    toolName: call.name,
+    prompt: args.question,
+    createHandle: (resolver) => new AskUserRequestHandleImpl(call, resolver),
+    serializable: { toolName: call.name, args },
+  };
+}
+
+export const askUserSpec: ToolSpec<"ask_user"> = {
+  name: "ask_user",
+  definition: {
+    description:
+      "仅当继续执行所必需的信息缺失或需要用户确认时调用。一次只问一个明确问题；choices 仅作快捷建议，用户仍可自由输入。调用后等待回答，不要假设答案。",
+    inputSchema: {
+      type: "object",
+      properties: {
+        question: {
+          type: "string",
+          description: "展示给用户的问题文本，应该简洁明确。",
+        },
+        context: {
+          type: "string",
+          description: "可选的补充说明，帮助用户理解为什么需要这个信息。",
+        },
+        placeholder: {
+          type: "string",
+          description: "可选的输入框占位提示。",
+        },
+        choices: {
+          type: "array",
+          items: {
+            type: "object",
+            properties: {
+              title: {
+                type: "string",
+                description: "选项标题，点击后可快速填入回答。",
+              },
+              description: {
+                type: "string",
+                description: "可选的补充解释，帮助用户理解该选项。",
+              },
+            },
+            required: ["title"],
+            additionalProperties: false,
+          },
+          description: "可选的参考选项列表，为用户提供快速填入；用户仍可自由输入其他答案。",
+        },
+      },
+      required: ["question"],
+      additionalProperties: false,
+    },
+  },
+  run({ call }) {
+    return buildUserInputRequest(call, parseAskUserArgs(call));
+  },
+  userInput: {
+    createFromSerializable(callId, serializable, resolver) {
+      const call: ToolCallItem = {
+        type: "tool_call",
+        id: callId,
+        name: "ask_user",
+        argumentsText: JSON.stringify(serializable.args),
+      };
+      return toAskUserPendingInput(
+        parseAskUserArgs(call),
+        new AskUserRequestHandleImpl(call, resolver),
+      );
+    },
+    createFromRequest(request, handle) {
+      return toAskUserPendingInput(
+        request.serializable.args as AskUserArgs,
+        handle as AskUserRequestHandle,
+      );
+    },
+  },
+};

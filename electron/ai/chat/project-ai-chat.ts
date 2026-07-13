@@ -13,7 +13,7 @@ import type { AiAgentsStore } from "../../settings/ai-agents-store";
 import type { AiModelsStore } from "../../settings/ai-models-store";
 import { getMockScenario } from "../mock/scenario-registry";
 import type { MockScenarioPacing, MockScenarioPersistence } from "../mock/scenario-types";
-import { type ResolveWorktree } from "../tools/runner";
+import { type ResolveWorktree } from "../tools";
 import { AiConversationRuntime, type AiConversationRuntimeOptions } from "./conversation-runtime";
 import { recordToConversationSummary } from "./conversation-state";
 import {

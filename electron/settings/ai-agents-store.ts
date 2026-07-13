@@ -10,7 +10,7 @@ import type {
 } from "#shared/rpc/services/index";
 import { BUILTIN_AI_AGENT_ID } from "#shared/rpc/services/index";
 
-import { AI_TOOL_CATALOG, AI_TOOL_NAMES } from "../ai/tools/definitions";
+import { AI_TOOL_CATALOG, AI_TOOL_NAMES } from "../ai/tools";
 import type { AiModelsStore } from "./ai-models-store";
 
 const FILE_VERSION = 1 as const;

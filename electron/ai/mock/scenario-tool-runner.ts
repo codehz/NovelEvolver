@@ -1,6 +1,6 @@
 import { toolResultItem } from "@codehz/ai";
 
-import type { ToolExecutionResult, ToolRunner } from "../tools/runner";
+import type { ToolExecutionResult, ToolRunner } from "../tools";
 import type { MockScenarioDefinition } from "./scenario-types";
 
 function contentText(content: readonly { type: string; text?: string; json?: unknown }[]): string {

@@ -4,7 +4,7 @@ import { collectStream, toolResultItem } from "@codehz/ai";
 import type { InputItem } from "@codehz/ai";
 
 import { shouldProcessToolCalls } from "../chat/conversation-runtime";
-import type { ToolRunner } from "../tools/runner";
+import type { ToolRunner } from "../tools";
 import { getMockScenario, listMockScenarios } from "./scenario-registry";
 import { createScenarioClient } from "./scenario-runner";
 import { createScenarioToolRunner } from "./scenario-tool-runner";
