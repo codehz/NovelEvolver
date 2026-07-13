@@ -32,6 +32,21 @@ export function stripHiddenAiChatWarningsFromSnapshot(snapshot: AiChatSnapshot):
 
 export const panelSectionClass = cn("mx-auto flex w-full max-w-3xl flex-col");
 export const conversationRailClass = cn("gap-4 px-3 py-2.5 select-text");
+/** MessageScroller frame: definite-height flex child (replaces ScrollArea.Fill for chat). */
+export const conversationScrollerRootClass = cn(
+  "relative flex h-0 min-h-0 flex-1 flex-col overflow-hidden",
+);
+export const conversationScrollerViewportClass = cn(
+  "min-h-0 flex-1 overflow-x-hidden overflow-y-auto",
+);
+export const conversationScrollerJumpButtonClass = cn(
+  "absolute bottom-2 left-1/2 z-10 inline-flex -translate-x-1/2 items-center gap-1",
+  "rounded-full border border-titlebar-border bg-app-surface/95 px-2.5 py-1",
+  "text-2xs font-medium text-app-foreground shadow-sm backdrop-blur-sm",
+  "transition-opacity hover:bg-ctp-surface0",
+  "focus-visible:ring-1 focus-visible:ring-ctp-mauve focus-visible:outline-none",
+  "inert:pointer-events-none inert:opacity-0",
+);
 export const assistantMessageBlockClass = cn("flex w-full flex-col gap-1");
 export const assistantMessageBodyClass = cn(
   "text-[0.8125rem] leading-5 text-app-foreground",

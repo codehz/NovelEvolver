@@ -1,11 +1,17 @@
-import { useEffect, useMemo, useRef } from "react";
+import { MessageScroller } from "@shadcn/react/message-scroller";
+import { useMemo, type ReactNode } from "react";
 
 import { cn } from "#app/shared/lib/ui/cn";
-import { ScrollArea } from "#app/shared/ui/ScrollArea";
 import type { AiChatSnapshot } from "#shared/rpc/ai/index";
 
 import { AiMessageBlock } from "../messages/AiMessageBlock";
-import { conversationRailClass, panelSectionClass } from "../ui/ai-chat-ui";
+import {
+  conversationRailClass,
+  conversationScrollerJumpButtonClass,
+  conversationScrollerRootClass,
+  conversationScrollerViewportClass,
+  panelSectionClass,
+} from "../ui/ai-chat-ui";
 import { groupChatWarnings } from "../ui/group-chat-warnings";
 import { AiChatWarningBanner } from "./AiChatWarningBanner";
 
@@ -17,6 +23,25 @@ const turnRetryButtonClass = cn(
   "underline-offset-2 transition-colors hover:bg-ctp-surface0 hover:text-app-foreground hover:underline",
   "focus-visible:ring-1 focus-visible:ring-ctp-mauve focus-visible:outline-none",
 );
+const railItemStackClass = cn("flex flex-col gap-2");
+
+function RailItem({
+  messageId,
+  scrollAnchor = false,
+  className,
+  children,
+}: {
+  messageId: string;
+  scrollAnchor?: boolean;
+  className?: string;
+  children: ReactNode;
+}) {
+  return (
+    <MessageScroller.Item messageId={messageId} scrollAnchor={scrollAnchor} className={className}>
+      {children}
+    </MessageScroller.Item>
+  );
+}
 
 export function AiChatConversationRail({
   snapshot,
@@ -33,7 +58,6 @@ export function AiChatConversationRail({
   turnError: string | null;
   onRetry?: () => void;
 }) {
-  const endRef = useRef<HTMLDivElement | null>(null);
   const { warningsByMessageId, orphanWarnings } = useMemo(
     () => groupChatWarnings(snapshot.messages, snapshot.warnings),
     [snapshot.messages, snapshot.warnings],
@@ -45,63 +69,92 @@ export function AiChatConversationRail({
     snapshot.pendingUserInputs.length === 0 &&
     snapshot.canRetry;
 
-  useEffect(() => {
-    endRef.current?.scrollIntoView({ block: "end", behavior: "smooth" });
-  }, [snapshot.messages, snapshot.pending, snapshot.pendingUserInputs, turnError]);
+  const showTurnFooter = showTurnRetry || turnError != null;
 
   return (
-    <ScrollArea.Fill>
-      <div className={cn(panelSectionClass, conversationRailClass, "text-sm")}>
-        {snapshot.scenarioId ? (
-          <div className="text-2xs text-ctp-subtext0">
-            测试场景 · <span className="font-mono text-ctp-mauve">{snapshot.scenarioId}</span>
-          </div>
-        ) : null}
-        {subscriptionError ? <div className={turnErrorBannerClass}>{subscriptionError}</div> : null}
-
-        {orphanWarnings.map((warning) => (
-          <AiChatWarningBanner key={warning.id} warning={warning} />
-        ))}
-
-        {loading ? (
-          <div className="rounded-xl bg-app-background p-3 text-center text-xs text-ctp-subtext0">
-            正在连接 AI 会话…
-          </div>
-        ) : null}
-
-        {!loading && snapshot.messages.length === 0 ? (
-          <div className="px-1 py-4 text-xs text-ctp-subtext0">开始一段对话。</div>
-        ) : null}
-
-        {snapshot.messages.map((message) => {
-          const messageWarnings = warningsByMessageId.get(message.id) ?? [];
-          return (
-            <div className="flex flex-col gap-2" key={message.id}>
-              <AiMessageBlock message={message} />
-              {messageWarnings.map((warning) => (
-                <AiChatWarningBanner key={warning.id} warning={warning} />
-              ))}
-            </div>
-          );
-        })}
-
-        {showTurnRetry || turnError ? (
-          <div className="flex flex-col gap-2">
-            {turnError ? <div className={turnErrorBannerClass}>{turnError}</div> : null}
-            {showTurnRetry ? (
-              <button type="button" className={turnRetryButtonClass} onClick={onRetry}>
-                {turnError ? "重试" : "重新生成"}
-              </button>
+    <MessageScroller.Provider
+      key={snapshot.conversationId}
+      autoScroll
+      defaultScrollPosition="last-anchor"
+    >
+      <MessageScroller.Root className={conversationScrollerRootClass}>
+        <MessageScroller.Viewport
+          aria-label="对话消息"
+          className={conversationScrollerViewportClass}
+        >
+          <MessageScroller.Content
+            aria-busy={snapshot.pending || undefined}
+            className={cn(panelSectionClass, conversationRailClass, "text-sm")}
+          >
+            {snapshot.scenarioId ? (
+              <RailItem messageId="meta:scenario">
+                <div className="text-2xs text-ctp-subtext0">
+                  测试场景 · <span className="font-mono text-ctp-mauve">{snapshot.scenarioId}</span>
+                </div>
+              </RailItem>
             ) : null}
-          </div>
-        ) : null}
 
-        <div
-          aria-hidden="true"
-          className="pointer-events-none absolute inset-x-0 bottom-0 h-0"
-          ref={endRef}
-        />
-      </div>
-    </ScrollArea.Fill>
+            {subscriptionError ? (
+              <RailItem messageId="meta:subscription-error">
+                <div className={turnErrorBannerClass}>{subscriptionError}</div>
+              </RailItem>
+            ) : null}
+
+            {orphanWarnings.map((warning) => (
+              <RailItem key={warning.id} messageId={`meta:warning:${warning.id}`}>
+                <AiChatWarningBanner warning={warning} />
+              </RailItem>
+            ))}
+
+            {loading ? (
+              <RailItem messageId="meta:loading">
+                <div className="rounded-xl bg-app-background p-3 text-center text-xs text-ctp-subtext0">
+                  正在连接 AI 会话…
+                </div>
+              </RailItem>
+            ) : null}
+
+            {!loading && snapshot.messages.length === 0 ? (
+              <RailItem messageId="meta:empty">
+                <div className="px-1 py-4 text-xs text-ctp-subtext0">开始一段对话。</div>
+              </RailItem>
+            ) : null}
+
+            {snapshot.messages.map((message) => {
+              const messageWarnings = warningsByMessageId.get(message.id) ?? [];
+              return (
+                <RailItem
+                  key={message.id}
+                  messageId={message.id}
+                  scrollAnchor={message.role === "user"}
+                  className={railItemStackClass}
+                >
+                  <AiMessageBlock message={message} />
+                  {messageWarnings.map((warning) => (
+                    <AiChatWarningBanner key={warning.id} warning={warning} />
+                  ))}
+                </RailItem>
+              );
+            })}
+
+            {showTurnFooter ? (
+              <RailItem messageId="meta:turn-footer" className={railItemStackClass}>
+                {turnError ? <div className={turnErrorBannerClass}>{turnError}</div> : null}
+                {showTurnRetry ? (
+                  <button type="button" className={turnRetryButtonClass} onClick={onRetry}>
+                    {turnError ? "重试" : "重新生成"}
+                  </button>
+                ) : null}
+              </RailItem>
+            ) : null}
+          </MessageScroller.Content>
+        </MessageScroller.Viewport>
+
+        <MessageScroller.Button className={conversationScrollerJumpButtonClass}>
+          <span aria-hidden="true" className="icon-[codicon--arrow-down] text-xs" />
+          跳到最新
+        </MessageScroller.Button>
+      </MessageScroller.Root>
+    </MessageScroller.Provider>
   );
 }
