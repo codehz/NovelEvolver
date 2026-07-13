@@ -1,14 +1,6 @@
 import type { ToolCallItem } from "@codehz/ai";
 
 export function parseToolArgs(call: ToolCallItem): Record<string, unknown> {
-  if (
-    call.argumentsJson !== undefined &&
-    typeof call.argumentsJson === "object" &&
-    call.argumentsJson !== null
-  ) {
-    return call.argumentsJson as Record<string, unknown>;
-  }
-
   const argumentsText = call.argumentsText.trim();
   if (argumentsText === "") {
     return {};

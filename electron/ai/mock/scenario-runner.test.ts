@@ -126,7 +126,6 @@ describe("scenario tool runner", () => {
       id: "scenario-simulated-structure",
       name: "read_structure",
       argumentsText: "{}",
-      argumentsJson: {},
     });
 
     expect(execution.errorMessage).toBeNull();

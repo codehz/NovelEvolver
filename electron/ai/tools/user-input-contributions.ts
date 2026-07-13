@@ -39,7 +39,6 @@ const contributions: Record<string, UserInputContribution> = {
         id: callId,
         name: "ask_user",
         argumentsText: JSON.stringify(serializable.args),
-        argumentsJson: serializable.args,
       };
       return toAskUserPendingInput(
         parseAskUserArgs(call),
