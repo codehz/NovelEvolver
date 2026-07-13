@@ -147,16 +147,10 @@
     color: inherit;
   }
 
-  /* Native thin scrollbars app-wide (CodeMirror, bare overflow-*, third-party).
-     Overlay auto-hide is Chromium-owned via Electron OverlayScrollbars. */
+  /* Native scrollbar colors app-wide (default width). Overlay auto-hide is
+     Chromium-owned via Electron OverlayScrollbars. */
   * {
-    scrollbar-width: thin;
     scrollbar-color: color-mix(in srgb, var(--color-ctp-overlay1) 72%, transparent) transparent;
-  }
-
-  *::-webkit-scrollbar {
-    height: 0.375rem;
-    width: 0.375rem;
   }
 
   *::-webkit-scrollbar-track {
@@ -175,30 +169,6 @@
 
 @utility app-region-* {
   -webkit-app-region: --value(--app-region-*);
-}
-
-/** Native thin scrollbar (pair with overflow auto/scroll). Overlay behavior is Chromium-owned. */
-@utility scrollbar-thin {
-  scrollbar-width: thin;
-  scrollbar-color: color-mix(in srgb, var(--color-ctp-overlay1) 72%, transparent) transparent;
-
-  &::-webkit-scrollbar {
-    height: 0.375rem;
-    width: 0.375rem;
-  }
-
-  &::-webkit-scrollbar-track {
-    background: transparent;
-  }
-
-  &::-webkit-scrollbar-thumb {
-    background-color: color-mix(in srgb, var(--color-ctp-overlay1) 72%, transparent);
-    border-radius: 9999px;
-  }
-
-  &::-webkit-scrollbar-thumb:hover {
-    background-color: color-mix(in srgb, var(--color-ctp-overlay2) 88%, transparent);
-  }
 }
 
 @utility counter-reset-* {

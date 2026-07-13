@@ -8,7 +8,7 @@ import { cn } from "#app/shared/lib/ui/cn";
  * - `Stretch` — parent already sized (or `style.height`); fill with `h-full`
  * - `Max` — self-clamped popover/picker (`max-height`); optional header/footer use internal grid
  *
- * Scrolling is native (`overflow-y-auto` + `scrollbar-thin`). Electron enables Blink
+ * Scrolling is native (`overflow-y-auto`). Electron enables Blink
  * `OverlayScrollbars` so the bar overlays content when the platform supports it.
  *
  * `className` is chrome only (width, border, bg). Do not pass layout height/overflow utilities.
@@ -35,14 +35,10 @@ const scrollAreaMaxRootClass = cn("grid w-full overflow-hidden");
 const scrollAreaMaxTrackClass = cn("min-h-0 overflow-hidden");
 
 /** Fill/Stretch viewport: size-full of a sized parent. */
-const scrollAreaViewportClass = cn(
-  "scrollbar-thin size-full min-h-0 overflow-x-hidden overflow-y-auto",
-);
+const scrollAreaViewportClass = cn("size-full min-h-0 overflow-x-hidden overflow-y-auto");
 
 /** Body-only Max: viewport is the clamp root (must shrink with content — no size-full). */
-const scrollAreaMaxBodyViewportClass = cn(
-  "scrollbar-thin min-h-0 w-full overflow-x-hidden overflow-y-auto",
-);
+const scrollAreaMaxBodyViewportClass = cn("min-h-0 w-full overflow-x-hidden overflow-y-auto");
 
 const ScrollAreaNestContext = createContext(false);
 

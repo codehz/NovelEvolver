@@ -2,7 +2,7 @@ import { Tabs } from "@base-ui/react/tabs";
 
 import { cn } from "#app/shared/lib/ui/cn";
 
-const tabsRailClass = cn("flex scrollbar-thin gap-1.5 overflow-x-auto px-1 pb-1");
+const tabsRailClass = cn("flex gap-1.5 overflow-x-auto px-1 pb-1");
 const tabButtonClass = cn(
   "inline-flex max-w-40 shrink-0 items-center gap-1 rounded-md border px-2 py-1 text-left text-2xs transition-colors outline-none select-none",
   "border-titlebar-border bg-app-background text-ctp-subtext0 hover:bg-app-surface",

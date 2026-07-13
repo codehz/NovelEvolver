@@ -100,7 +100,7 @@ Renderer overlays use **`@base-ui/react`** (unstyled, tree-shakable). Prefer Bas
 
 ## ScrollArea usage
 
-`ScrollArea` (`src/shared/ui/ScrollArea.tsx`) is a **layout-only** height strategy shell; scrolling is **native** (`overflow-y-auto` + `scrollbar-thin`). Electron enables Blink `OverlayScrollbars` (`enableBlinkFeatures` in `electron/main.ts`) so the bar overlays content when supported. Do **not** reintroduce custom thumb/rail controllers.
+`ScrollArea` (`src/shared/ui/ScrollArea.tsx`) is a **layout-only** height strategy shell; scrolling is **native** (`overflow-y-auto`). Electron enables Blink `OverlayScrollbars` (`enableBlinkFeatures` in `electron/main.ts`) so the bar overlays content when supported. Do **not** reintroduce custom thumb/rail controllers. App-wide scrollbar **colors** live in `src/index.css`; keep default width (no `scrollbar-width: thin` / fixed webkit width).
 
 Height strategy is **required** — use a named entry; there is no default / `fill` boolean.
 
@@ -112,7 +112,7 @@ Height strategy is **required** — use a named entry; there is no default / `fi
 
 - **`className` is chrome only** (width, border, bg). Do not pass height/overflow layout utilities — the entry owns them. Cross-axis flex (`flex-1`, `w-*`) is fine.
 - **Do not nest** one ScrollArea inside another; use sibling surfaces. Non-scrolling clip → plain `overflow-*`, not ScrollArea.
-- Ad-hoc scrollports (CodeMirror `.cm-scroller`, horizontal tab rails, bare lists) use native overflow + optional `scrollbar-thin`; do not add a second scrollbar abstraction.
+- Ad-hoc scrollports (CodeMirror `.cm-scroller`, horizontal tab rails, bare lists) use native overflow only; do not add a second scrollbar abstraction or force thin width.
 - Dev builds warn on nested usage and on layout classes in `className`.
 
 ## Configuration Notes
