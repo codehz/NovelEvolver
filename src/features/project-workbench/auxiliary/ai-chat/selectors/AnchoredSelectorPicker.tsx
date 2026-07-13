@@ -1,201 +1,40 @@
-import { useCallback, useEffect, useId, useMemo, useRef, useState, type ReactNode } from "react";
+import { Combobox } from "@base-ui/react/combobox";
+import { useId, type ReactNode } from "react";
 
-import { useAnimatedContentHeight } from "#app/shared/lib/ui/animated-height";
 import { cn } from "#app/shared/lib/ui/cn";
+import { ScrollArea } from "#app/shared/ui/ScrollArea";
 
 import {
   selectorEmptyClass,
   selectorListClass,
-  selectorPanelContentClass,
-  selectorPanelHeightShellClass,
   selectorRowButtonClass,
   selectorRowDetailClass,
   selectorRowEmphasisClass,
-  selectorRowHighlightedClass,
   selectorRowLabelClass,
   selectorSearchInputClass,
   selectorSearchWrapClass,
 } from "./ai-chat-selector-chrome";
 import type { AiChatSelectorItem } from "./selector-items";
-import {
-  SELECTOR_OPTION_INDEX_ATTR,
-  useSelectorListNavigation,
-} from "./use-selector-list-navigation";
 
-function filterItems(items: readonly AiChatSelectorItem[], query: string): AiChatSelectorItem[] {
+function filterSelectorItem(item: AiChatSelectorItem, query: string): boolean {
   const normalized = query.trim().toLowerCase();
   if (normalized === "") {
-    return [...items];
+    return true;
   }
-  return items.filter((item) => {
-    const label = item.label.toLowerCase();
-    const detail = item.detail?.toLowerCase() ?? "";
-    return label.includes(normalized) || detail.includes(normalized);
-  });
+  const label = item.label.toLowerCase();
+  const detail = item.detail?.toLowerCase() ?? "";
+  return label.includes(normalized) || detail.includes(normalized);
 }
 
-function SelectorOption({
-  index,
-  item,
-  highlighted,
-  onHighlight,
-  onSelect,
-}: {
-  index: number;
-  item: AiChatSelectorItem;
-  highlighted: boolean;
-  onHighlight: () => void;
-  onSelect: () => void;
-}) {
-  return (
-    <li role="option" aria-selected={highlighted} {...{ [SELECTOR_OPTION_INDEX_ATTR]: index }}>
-      <button
-        type="button"
-        className={cn(
-          selectorRowButtonClass,
-          highlighted && selectorRowHighlightedClass,
-          item.emphasized && selectorRowEmphasisClass,
-        )}
-        onMouseEnter={onHighlight}
-        onClick={onSelect}
-      >
-        <span className="flex min-w-0 items-center gap-1.5">
-          <span
-            aria-hidden="true"
-            className={cn(
-              "icon-[codicon--check] size-3.5 shrink-0",
-              item.emphasized ? "opacity-100" : "opacity-0",
-            )}
-          />
-          <span className={selectorRowLabelClass}>{item.label}</span>
-        </span>
-        {item.detail ? (
-          <span className={cn(selectorRowDetailClass, "pl-5")}>{item.detail}</span>
-        ) : null}
-      </button>
-    </li>
-  );
-}
-
-function AnchoredSelectorPickerBody({
-  title,
-  searchLabel,
-  searchPlaceholder,
-  emptyMessage,
-  items,
-  titleId,
-  onSelect,
-}: {
-  title: string;
-  searchLabel: string;
-  searchPlaceholder: string;
-  emptyMessage: string;
-  items: readonly AiChatSelectorItem[];
-  titleId: string;
-  onSelect: (id: string) => void;
-}) {
-  const listboxId = useId();
-  const searchInputId = useId();
-  const inputRef = useRef<HTMLInputElement>(null);
-  const [query, setQuery] = useState("");
-
-  const filtered = useMemo(() => filterItems(items, query), [items, query]);
-
-  const resolveItem = useCallback(
-    (id: string) => {
-      onSelect(id);
-    },
-    [onSelect],
-  );
-
-  const { highlightIndex, setHighlightIndex, listRef, onSearchKeyDown, resetHighlight } =
-    useSelectorListNavigation({
-      itemCount: filtered.length,
-      onActivate: (index) => {
-        const item = filtered[index];
-        if (item != null) {
-          resolveItem(item.id);
-          resetHighlight();
-        }
-      },
-    });
-
-  useEffect(() => {
-    setQuery("");
-    resetHighlight();
-    const frame = requestAnimationFrame(() => {
-      inputRef.current?.focus();
-    });
-    return () => {
-      cancelAnimationFrame(frame);
-    };
-  }, [resetHighlight]);
-
-  return (
-    <>
-      <p className="sr-only" id={titleId}>
-        {title}
-      </p>
-      <div className={selectorSearchWrapClass}>
-        <label className="sr-only" htmlFor={searchInputId}>
-          {searchLabel}
-        </label>
-        <input
-          ref={inputRef}
-          id={searchInputId}
-          className={selectorSearchInputClass}
-          type="text"
-          role="combobox"
-          aria-expanded
-          aria-controls={listboxId}
-          aria-autocomplete="list"
-          autoComplete="off"
-          spellCheck={false}
-          placeholder={searchPlaceholder}
-          value={query}
-          onChange={(event) => {
-            setQuery(event.target.value);
-          }}
-          onKeyDown={onSearchKeyDown}
-        />
-      </div>
-      <ul
-        ref={listRef}
-        id={listboxId}
-        className={selectorListClass}
-        role="listbox"
-        aria-label={title}
-      >
-        {filtered.length === 0 ? (
-          <li className={selectorEmptyClass}>{emptyMessage}</li>
-        ) : (
-          filtered.map((item, index) => (
-            <SelectorOption
-              key={item.id}
-              index={index}
-              item={item}
-              highlighted={highlightIndex === index}
-              onHighlight={() => {
-                setHighlightIndex(index);
-              }}
-              onSelect={() => {
-                resolveItem(item.id);
-              }}
-            />
-          ))
-        )}
-      </ul>
-    </>
-  );
-}
-
-/** Selector list content with animated height shell (renders inside Base UI Popover.Popup). */
+/** Selector list content with ScrollArea.Max (renders inside Base UI Popover.Popup). */
 export function AnchoredSelectorPicker({
   title,
   searchLabel,
   searchPlaceholder,
   emptyMessage,
   items,
+  open,
+  onOpenChange,
   onSelect,
 }: {
   title: string;
@@ -203,31 +42,82 @@ export function AnchoredSelectorPicker({
   searchPlaceholder: string;
   emptyMessage: string;
   items: readonly AiChatSelectorItem[];
+  /** Bound to the host Popover so Escape / selection reset Combobox state. */
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
   onSelect: (id: string) => void;
 }): ReactNode {
   const titleId = useId();
-  const panelRef = useRef<HTMLDivElement>(null);
-  const contentRef = useRef<HTMLDivElement>(null);
-  const { heightPx: shellHeightPx } = useAnimatedContentHeight(contentRef, panelRef);
+  const selectedItem = items.find((item) => item.emphasized) ?? null;
 
   return (
-    <div ref={panelRef} aria-labelledby={titleId}>
-      <div
-        className={selectorPanelHeightShellClass}
-        style={shellHeightPx != null ? { height: shellHeightPx } : undefined}
+    <div aria-labelledby={titleId}>
+      <p className="sr-only" id={titleId}>
+        {title}
+      </p>
+      <Combobox.Root
+        // Base UI Aria supports "always"; public ComboboxRoot typedef is boolean-only.
+        autoHighlight={"always" as never}
+        filter={filterSelectorItem}
+        inline
+        isItemEqualToValue={(a, b) => a.id === b.id}
+        itemToStringLabel={(item) => item.label}
+        items={items}
+        open={open}
+        value={selectedItem}
+        onOpenChange={(next) => {
+          onOpenChange(next);
+        }}
+        onValueChange={(item) => {
+          if (item != null) {
+            onSelect(item.id);
+          }
+        }}
       >
-        <div ref={contentRef} className={selectorPanelContentClass}>
-          <AnchoredSelectorPickerBody
-            title={title}
-            searchLabel={searchLabel}
-            searchPlaceholder={searchPlaceholder}
-            emptyMessage={emptyMessage}
-            items={items}
-            titleId={titleId}
-            onSelect={onSelect}
-          />
-        </div>
-      </div>
+        <ScrollArea.Max
+          height="18rem"
+          className="w-full"
+          header={
+            <div className={selectorSearchWrapClass}>
+              <Combobox.Label className="sr-only">{searchLabel}</Combobox.Label>
+              <Combobox.Input
+                autoComplete="off"
+                className={selectorSearchInputClass}
+                placeholder={searchPlaceholder}
+                spellCheck={false}
+              />
+            </div>
+          }
+        >
+          <Combobox.List aria-label={title} className={selectorListClass}>
+            {(item: AiChatSelectorItem) => (
+              <Combobox.Item
+                key={item.id}
+                className={cn(selectorRowButtonClass, item.emphasized && selectorRowEmphasisClass)}
+                value={item}
+              >
+                <span className="flex min-w-0 items-center gap-1.5">
+                  <span
+                    aria-hidden="true"
+                    className={cn(
+                      "icon-[codicon--check] size-3.5 shrink-0",
+                      item.emphasized ? "opacity-100" : "opacity-0",
+                    )}
+                  />
+                  <span className={selectorRowLabelClass}>{item.label}</span>
+                </span>
+                {item.detail ? (
+                  <span className={cn(selectorRowDetailClass, "pl-5")}>{item.detail}</span>
+                ) : null}
+              </Combobox.Item>
+            )}
+          </Combobox.List>
+          {/* Empty root stays mounted for a11y; style only the message so non-empty lists don't keep padding. */}
+          <Combobox.Empty>
+            <div className={selectorEmptyClass}>{emptyMessage}</div>
+          </Combobox.Empty>
+        </ScrollArea.Max>
+      </Combobox.Root>
     </div>
   );
 }

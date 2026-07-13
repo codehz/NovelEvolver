@@ -73,6 +73,8 @@ export function AiChatModelSelector({
                 searchPlaceholder="按名称或提供商筛选…"
                 emptyMessage="没有可用模型，请先在设置中添加"
                 items={items}
+                open={open}
+                onOpenChange={handleOpenChange}
                 onSelect={handleSelect}
               />
             </Popover.Popup>

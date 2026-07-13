@@ -18,27 +18,21 @@ export const selectorPopoverPanelClass = cn(
   selectorPanelSurfaceClass,
 );
 
-export const selectorPanelHeightShellClass = cn("w-full overflow-hidden");
-
-export const selectorPanelContentClass = cn("flex max-h-72 w-full flex-col");
-
-export const selectorSearchWrapClass = cn("shrink-0 px-2 pt-2 pb-1.5");
+export const selectorSearchWrapClass = cn("px-2 pt-2 pb-1.5");
 
 export const selectorSearchInputClass = cn(
   "w-full rounded-sm border border-badge-background bg-app-background px-2 py-1 text-xs leading-tight text-app-foreground outline-none app-region-no-drag placeholder:text-app-muted",
 );
 
-export const selectorListClass = cn(
-  "flex min-h-0 flex-1 flex-col gap-0.5 overflow-y-auto px-1.5 pt-0 pb-1.5",
-);
+/** List chrome only — scrolling owned by `ScrollArea.Max`. */
+export const selectorListClass = cn("flex flex-col gap-0.5 px-1.5 pt-0 pb-1.5");
 
 export const selectorRowButtonClass = cn(
   "relative flex w-full cursor-default flex-col gap-0.5 rounded-sm px-2 py-1.5 text-left outline-none",
   "hover:bg-ctp-surface0/55",
+  "data-highlighted:bg-ctp-surface0/55",
   "focus-visible:bg-ctp-surface0/55 focus-visible:ring-1 focus-visible:ring-ctp-mauve/50",
 );
-
-export const selectorRowHighlightedClass = cn("bg-ctp-surface0/55");
 
 export const selectorRowLabelClass = cn("min-w-0 truncate font-medium text-app-foreground");
 

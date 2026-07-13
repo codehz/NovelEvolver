@@ -73,6 +73,8 @@ export function AiChatAgentSelector({
                 searchPlaceholder="按名称筛选…"
                 emptyMessage="没有可用 Agent"
                 items={items}
+                open={open}
+                onOpenChange={handleOpenChange}
                 onSelect={handleSelect}
               />
             </Popover.Popup>
