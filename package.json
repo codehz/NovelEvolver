@@ -19,6 +19,7 @@
     "prepare": "husky"
   },
   "dependencies": {
+    "@base-ui/react": "^1.6.0",
     "@catppuccin/tailwindcss": "^1.0.0",
     "@codehz/ai": "^0.4.0",
     "@codehz/auto-transition": "^0.0.7-14",

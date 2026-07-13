@@ -1,7 +1,18 @@
 import { cn } from "#app/shared/lib/ui/cn";
 
+const settingsOverlayTransitionClass = cn(
+  "transition-opacity duration-220 ease-[cubic-bezier(0.33,1,0.68,1)]",
+  "data-ending-style:opacity-0 data-starting-style:opacity-0",
+);
+
+export const settingsBackdropClass = cn(
+  "fixed inset-0 z-settings min-h-dvh bg-ctp-crust/55",
+  settingsOverlayTransitionClass,
+);
+
 export const settingsPanelClass = cn(
-  "flex h-[min(70vh,36rem)] w-settings-dialog flex-col overflow-hidden rounded-md border border-titlebar-border bg-app-surface text-sm text-app-foreground shadow-quick-pick app-region-no-drag",
+  "fixed top-1/2 left-1/2 z-settings flex h-[min(70vh,36rem)] w-settings-dialog -translate-x-1/2 -translate-y-1/2 flex-col overflow-hidden rounded-md border border-titlebar-border bg-app-surface text-sm text-app-foreground shadow-quick-pick outline-none app-region-no-drag",
+  settingsOverlayTransitionClass,
 );
 
 export const settingsHeaderClass = cn(

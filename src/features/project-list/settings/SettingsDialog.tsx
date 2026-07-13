@@ -1,12 +1,13 @@
-import { useCallback, useId, useState } from "react";
+import { Dialog } from "@base-ui/react/dialog";
+import { useId, useState } from "react";
 
 import { cn } from "#app/shared/lib/ui/cn";
-import { NativeDialog, useNativeDialogRequestClose } from "#app/shared/ui/dialog";
 import { ScrollArea } from "#app/shared/ui/ScrollArea";
 
 import { AiAgentsSettingsPanel } from "./ai-agents/AiAgentsSettingsPanel";
 import { AiModelsSettingsPanel } from "./ai-models/AiModelsSettingsPanel";
 import {
+  settingsBackdropClass,
   settingsBodyClass,
   settingsCategoryButtonActiveClass,
   settingsCategoryButtonClass,
@@ -38,7 +39,6 @@ type SettingsDialogProps = {
 };
 
 export function SettingsDialog({ open, onDismiss }: SettingsDialogProps) {
-  const titleId = useId();
   const searchInputId = useId();
   const [activeCategoryId, setActiveCategoryId] = useState<SettingsCategoryId>("common");
 
@@ -47,60 +47,50 @@ export function SettingsDialog({ open, onDismiss }: SettingsDialogProps) {
     SETTINGS_CATEGORIES[0];
 
   return (
-    <NativeDialog
-      aria-labelledby={titleId}
-      className={settingsPanelClass}
+    <Dialog.Root
       open={open}
-      onDismiss={onDismiss}
+      onOpenChange={(nextOpen) => {
+        if (!nextOpen) {
+          onDismiss();
+        }
+      }}
     >
-      <SettingsDialogChrome
-        activeCategory={activeCategory}
-        activeCategoryId={activeCategoryId}
-        searchInputId={searchInputId}
-        titleId={titleId}
-        onDismiss={onDismiss}
-        onSelectCategory={setActiveCategoryId}
-      />
-    </NativeDialog>
+      <Dialog.Portal>
+        <Dialog.Backdrop className={settingsBackdropClass} />
+        <Dialog.Popup className={settingsPanelClass}>
+          <SettingsDialogChrome
+            activeCategory={activeCategory}
+            activeCategoryId={activeCategoryId}
+            searchInputId={searchInputId}
+            onSelectCategory={setActiveCategoryId}
+          />
+        </Dialog.Popup>
+      </Dialog.Portal>
+    </Dialog.Root>
   );
 }
 
 function SettingsDialogChrome({
-  titleId,
   searchInputId,
   activeCategoryId,
   activeCategory,
-  onDismiss,
   onSelectCategory,
 }: {
-  titleId: string;
   searchInputId: string;
   activeCategoryId: SettingsCategoryId;
   activeCategory: (typeof SETTINGS_CATEGORIES)[number];
-  onDismiss: () => void;
   onSelectCategory: (id: SettingsCategoryId) => void;
 }) {
-  const requestClose = useNativeDialogRequestClose();
-
-  const dismiss = useCallback(() => {
-    requestClose(onDismiss);
-  }, [onDismiss, requestClose]);
-
   return (
     <>
       <header className={settingsHeaderClass}>
-        <h2 className={settingsTitleClass} id={titleId}>
+        <Dialog.Title className={settingsTitleClass}>
           <span aria-hidden="true" className="icon-[codicon--settings-gear] text-base" />
           设置
-        </h2>
-        <button
-          aria-label="关闭"
-          className={settingsIconButtonClass}
-          type="button"
-          onClick={dismiss}
-        >
+        </Dialog.Title>
+        <Dialog.Close aria-label="关闭" className={settingsIconButtonClass}>
           <span aria-hidden="true" className="icon-[codicon--close] text-base" />
-        </button>
+        </Dialog.Close>
       </header>
 
       <div className={settingsSearchWrapClass}>

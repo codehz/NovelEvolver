@@ -11,7 +11,7 @@ import { WindowFrame } from "#app/shell/WindowFrame";
 
 export default function App() {
   return (
-    <div className="flex min-h-0 flex-1 flex-col">
+    <div className="isolate flex min-h-0 flex-1 flex-col">
       <TitleBarActionsPortalProvider>
         <StatusBarLeftPortalProvider>
           <StatusBarRightPortalProvider>

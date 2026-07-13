@@ -90,6 +90,14 @@ There is no automated test suite configured yet. Until one exists, every change 
 
 Follow the existing Conventional Commit style: `feat(electron): ...`, `fix: ...`, `build: ...`, `refactor: ...`. Keep commits scoped to one change. PRs should include a short summary, the commands you ran for verification, and screenshots or recordings for UI changes such as title bar or window controls.
 
+## Overlay components (Base UI)
+
+Renderer overlays use **`@base-ui/react`** (unstyled, tree-shakable). Prefer Base UI for new Dialog / Popover / Menu / Context Menu work.
+
+- **Do not** add new consumers of the legacy `createPopover` factory or reintroduce a native `<dialog showModal>` wrapper. Remaining `createPopover` call sites (QuickPick, Context Menu) are migration debt — leave them until their dedicated phase.
+- Prefer CSS transitions via Base UI `data-starting-style` / `data-ending-style` over hand-rolled close timers.
+- Keep the app root with `isolation: isolate` (Tailwind `isolate` on the root in `App.tsx`) so portaled popups stack above page content.
+
 ## ScrollArea usage
 
 `ScrollArea` (`src/shared/ui/ScrollArea.tsx`) wraps a single controlled viewport driven by the shared `ScrollbarController` (`src/shared/lib/ui/scrollbar/`). It is designed to be the **outermost scroll container** of a panel/section, not a nested inner wrapper.
