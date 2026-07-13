@@ -5,10 +5,7 @@ import {
   modelSelectorAnchorClass,
   modelSelectorPopoverPanelClass,
 } from "./ai-chat-selector-chrome";
-import {
-  AiChatSelectorPopoverProvider,
-  useAiChatSelectorRequestClose,
-} from "./ai-chat-selector-popover";
+import { AiChatSelectorPopoverProvider } from "./ai-chat-selector-popover";
 import { AnchoredSelectorPicker } from "./AnchoredSelectorPicker";
 import type { AiChatSelectorItem } from "./selector-items";
 
@@ -33,6 +30,7 @@ function ModelSelectorTrigger({
       aria-label="选择模型"
       className={modelSelectorButtonClass}
       disabled={disabled}
+      popoverTarget={panelId}
       title={label}
       type="button"
       onClick={onClick}
@@ -43,7 +41,8 @@ function ModelSelectorTrigger({
   );
 }
 
-function ModelSelectorOpenShell({
+function ModelSelectorShell({
+  open,
   label,
   disabled,
   panelId,
@@ -51,6 +50,7 @@ function ModelSelectorOpenShell({
   onDismiss,
   onSelect,
 }: {
+  open: boolean;
   label: string;
   disabled: boolean;
   panelId: string;
@@ -58,17 +58,17 @@ function ModelSelectorOpenShell({
   onDismiss: () => void;
   onSelect: (id: string) => void;
 }) {
-  const requestClose = useAiChatSelectorRequestClose();
-
   return (
     <>
       <ModelSelectorTrigger
-        open
+        open={open}
         disabled={disabled}
         label={label}
         panelId={panelId}
         onClick={() => {
-          requestClose(onDismiss);
+          if (!open) {
+            onDismiss();
+          }
         }}
       />
       <AnchoredSelectorPicker
@@ -114,31 +114,22 @@ export function AiChatModelSelector({
 
   return (
     <div className={modelSelectorAnchorClass}>
-      {open ? (
-        <AiChatSelectorPopoverProvider onDismiss={dismiss}>
-          <ModelSelectorOpenShell
-            label={label}
-            disabled={disabled}
-            panelId={panelId}
-            items={items}
-            onDismiss={dismiss}
-            onSelect={handleSelect}
-          />
-        </AiChatSelectorPopoverProvider>
-      ) : (
-        <ModelSelectorTrigger
-          open={false}
+      <AiChatSelectorPopoverProvider onDismiss={dismiss} openOnMount={false}>
+        <ModelSelectorShell
+          open={open}
           disabled={disabled}
           label={label}
           panelId={panelId}
-          onClick={() => {
+          items={items}
+          onDismiss={() => {
             if (!disabled) {
               onOpen?.();
               setOpen(true);
             }
           }}
+          onSelect={handleSelect}
         />
-      )}
+      </AiChatSelectorPopoverProvider>
     </div>
   );
 }

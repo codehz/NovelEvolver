@@ -29,7 +29,11 @@ type PopoverTargetProps<T extends ElementType = "div"> = PolymorphicComponentPro
 >;
 
 export type CreatePopoverResult = [
-  PopoverProvider: (props: { onDismiss: () => void; children: ReactNode }) => ReactElement,
+  PopoverProvider: (props: {
+    onDismiss: () => void;
+    openOnMount?: boolean;
+    children: ReactNode;
+  }) => ReactElement,
   PopoverTarget: <T extends ElementType = "div">(props: PopoverTargetProps<T>) => ReactElement,
   PopoverContent: (props: { children: ReactNode }) => ReactElement,
   usePopoverRequestClose: () => PopoverRequestCloseContextValue["requestClose"],
@@ -55,13 +59,15 @@ export function createPopover(displayName: string): CreatePopoverResult {
 
   function PopoverProvider({
     onDismiss,
+    openOnMount = true,
     children,
   }: {
     onDismiss: () => void;
+    openOnMount?: boolean;
     children: ReactNode;
   }) {
     const panelRef = useRef<HTMLElement | null>(null);
-    const { requestClose } = usePopoverPanelLifecycle(panelRef, onDismiss);
+    const { requestClose } = usePopoverPanelLifecycle(panelRef, onDismiss, openOnMount);
 
     return (
       <PopoverPanelRefContext.Provider value={panelRef}>

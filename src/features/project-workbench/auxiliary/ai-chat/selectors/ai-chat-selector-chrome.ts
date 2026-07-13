@@ -20,14 +20,14 @@ export const modelSelectorAnchorClass = cn(
 
 export const agentSelectorPopoverPanelClass = cn(
   "fixed inset-[unset] z-ai-chat-selector m-0 w-ai-chat-selector-picker max-w-[min(18rem,calc(100vw-1rem))] position-anchor-ai-chat-agent-selector",
-  "bottom-[calc(anchor(top)+0.35rem)] left-[anchor(left)]",
+  "bottom-[calc(anchor(top)+0.35rem)] left-[anchor(left)] position-try-fallbacks-flip-inline",
   selectorPanelMotionClass,
   selectorPanelSurfaceClass,
 );
 
 export const modelSelectorPopoverPanelClass = cn(
   "fixed inset-[unset] z-ai-chat-selector m-0 w-ai-chat-selector-picker max-w-[min(18rem,calc(100vw-1rem))] position-anchor-ai-chat-model-selector",
-  "bottom-[calc(anchor(top)+0.35rem)] left-[anchor(left)]",
+  "bottom-[calc(anchor(top)+0.35rem)] left-[anchor(left)] position-try-fallbacks-flip-inline",
   selectorPanelMotionClass,
   selectorPanelSurfaceClass,
 );

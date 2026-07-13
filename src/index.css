@@ -78,6 +78,8 @@
   --spacing-pte-gutter: 0.75rem;
   --spacing-pte-gutter-inset: 1rem;
   --spacing-pte-line: 1.5rem;
+
+  --position-try-fallbacks-flip-inline: flip-inline;
 }
 
 @layer base {
@@ -204,4 +206,8 @@
 
 @utility position-anchor-* {
   position-anchor: --value(--anchor-*);
+}
+
+@utility position-try-fallbacks-* {
+  position-try-fallbacks: --value(--position-try-fallbacks-*);
 }

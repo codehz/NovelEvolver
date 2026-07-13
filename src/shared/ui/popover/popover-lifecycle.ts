@@ -33,6 +33,7 @@ export function scheduleAfterPopoverCloseTransition(
 export function usePopoverPanelLifecycle(
   panelRef: RefObject<HTMLElement | null>,
   onDismiss: () => void,
+  openOnMount = true,
 ): {
   requestClose: (afterClose: () => void) => void;
 } {
@@ -62,7 +63,7 @@ export function usePopoverPanelLifecycle(
     if (panel == null) {
       return;
     }
-    if (!panel.matches(":popover-open")) {
+    if (openOnMount && !panel.matches(":popover-open")) {
       panel.showPopover();
     }
     return () => {
@@ -70,7 +71,7 @@ export function usePopoverPanelLifecycle(
         panel.hidePopover();
       }
     };
-  }, [panelRef]);
+  }, [openOnMount, panelRef]);
 
   useEffect(() => {
     const panel = panelRef.current;

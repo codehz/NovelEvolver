@@ -5,10 +5,7 @@ import {
   agentSelectorAnchorClass,
   agentSelectorPopoverPanelClass,
 } from "./ai-chat-selector-chrome";
-import {
-  AiChatSelectorPopoverProvider,
-  useAiChatSelectorRequestClose,
-} from "./ai-chat-selector-popover";
+import { AiChatSelectorPopoverProvider } from "./ai-chat-selector-popover";
 import { AnchoredSelectorPicker } from "./AnchoredSelectorPicker";
 import type { AiChatSelectorItem } from "./selector-items";
 
@@ -33,6 +30,7 @@ function AgentSelectorTrigger({
       aria-label="选择 Agent"
       className={agentSelectorButtonClass}
       disabled={disabled}
+      popoverTarget={panelId}
       title={label}
       type="button"
       onClick={onClick}
@@ -43,7 +41,8 @@ function AgentSelectorTrigger({
   );
 }
 
-function AgentSelectorOpenShell({
+function AgentSelectorShell({
+  open,
   label,
   disabled,
   panelId,
@@ -51,6 +50,7 @@ function AgentSelectorOpenShell({
   onDismiss,
   onSelect,
 }: {
+  open: boolean;
   label: string;
   disabled: boolean;
   panelId: string;
@@ -58,17 +58,17 @@ function AgentSelectorOpenShell({
   onDismiss: () => void;
   onSelect: (id: string) => void;
 }) {
-  const requestClose = useAiChatSelectorRequestClose();
-
   return (
     <>
       <AgentSelectorTrigger
-        open
+        open={open}
         disabled={disabled}
         label={label}
         panelId={panelId}
         onClick={() => {
-          requestClose(onDismiss);
+          if (!open) {
+            onDismiss();
+          }
         }}
       />
       <AnchoredSelectorPicker
@@ -114,31 +114,22 @@ export function AiChatAgentSelector({
 
   return (
     <div className={agentSelectorAnchorClass}>
-      {open ? (
-        <AiChatSelectorPopoverProvider onDismiss={dismiss}>
-          <AgentSelectorOpenShell
-            label={label}
-            disabled={disabled}
-            panelId={panelId}
-            items={items}
-            onDismiss={dismiss}
-            onSelect={handleSelect}
-          />
-        </AiChatSelectorPopoverProvider>
-      ) : (
-        <AgentSelectorTrigger
-          open={false}
+      <AiChatSelectorPopoverProvider onDismiss={dismiss} openOnMount={false}>
+        <AgentSelectorShell
+          open={open}
           disabled={disabled}
           label={label}
           panelId={panelId}
-          onClick={() => {
+          items={items}
+          onDismiss={() => {
             if (!disabled) {
               onOpen?.();
               setOpen(true);
             }
           }}
+          onSelect={handleSelect}
         />
-      )}
+      </AiChatSelectorPopoverProvider>
     </div>
   );
 }
