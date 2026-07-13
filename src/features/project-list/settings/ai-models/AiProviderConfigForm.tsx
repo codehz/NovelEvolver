@@ -1,4 +1,6 @@
-import { useId, useState, type SubmitEvent } from "react";
+import { Field } from "@base-ui/react/field";
+import { Form } from "@base-ui/react/form";
+import { useState } from "react";
 
 import { cn } from "#app/shared/lib/ui/cn";
 import type {
@@ -9,7 +11,10 @@ import type {
 
 import {
   settingsCheckboxLabelClass,
+  settingsFieldControlCellClass,
+  settingsFieldErrorClass,
   settingsFieldLabelClass,
+  settingsFieldRootClass,
   settingsFormActionsClass,
   settingsFormClass,
   settingsFormErrorClass,
@@ -55,40 +60,11 @@ export function AiProviderConfigForm({
   onCancel,
   onSubmit,
 }: AiProviderConfigFormProps) {
-  const formId = useId();
   const isEdit = initial != null;
   const [form, setForm] = useState<FormState>(() => toFormState(initial));
 
-  const nameId = `${formId}-name`;
-  const kindId = `${formId}-kind`;
-  const baseUrlId = `${formId}-base-url`;
-  const apiKeyId = `${formId}-api-key`;
-
   const update = <K extends keyof FormState>(key: K, value: FormState[K]) => {
     setForm((prev) => ({ ...prev, [key]: value }));
-  };
-
-  const handleSubmit = (event: SubmitEvent<HTMLFormElement>) => {
-    event.preventDefault();
-
-    const payload: AiProviderConfigWrite = {
-      ...(isEdit ? { id: initial.id } : {}),
-      name: form.name,
-      kind: form.kind,
-      baseUrl: form.baseUrl,
-    };
-
-    if (isEdit) {
-      if (form.clearApiKey) {
-        payload.apiKey = "";
-      } else if (form.apiKey !== "") {
-        payload.apiKey = form.apiKey;
-      }
-    } else if (form.apiKey !== "") {
-      payload.apiKey = form.apiKey;
-    }
-
-    void onSubmit(payload);
   };
 
   const apiKeyPlaceholder =
@@ -99,93 +75,122 @@ export function AiProviderConfigForm({
         : "API Key";
 
   return (
-    <form className={settingsFormClass} onSubmit={handleSubmit}>
+    <Form
+      className={settingsFormClass}
+      onFormSubmit={() => {
+        const payload: AiProviderConfigWrite = {
+          ...(isEdit ? { id: initial.id } : {}),
+          name: form.name,
+          kind: form.kind,
+          baseUrl: form.baseUrl,
+        };
+
+        if (isEdit) {
+          if (form.clearApiKey) {
+            payload.apiKey = "";
+          } else if (form.apiKey !== "") {
+            payload.apiKey = form.apiKey;
+          }
+        } else if (form.apiKey !== "") {
+          payload.apiKey = form.apiKey;
+        }
+
+        void onSubmit(payload);
+      }}
+    >
       <div className={settingsFormGridClass}>
-        <label className={settingsFieldLabelClass} htmlFor={nameId}>
-          供应商名称
-        </label>
-        <input
-          autoFocus
-          className={settingsInputClass}
-          disabled={busy}
-          id={nameId}
-          placeholder="例如：OpenAI 官方"
-          required
-          type="text"
-          value={form.name}
-          onChange={(event) => {
-            update("name", event.target.value);
-          }}
-        />
+        <Field.Root className={settingsFieldRootClass} disabled={busy} name="name">
+          <Field.Label className={settingsFieldLabelClass}>供应商名称</Field.Label>
+          <div className={settingsFieldControlCellClass}>
+            <Field.Control
+              autoFocus
+              className={settingsInputClass}
+              placeholder="例如：OpenAI 官方"
+              required
+              value={form.name}
+              onValueChange={(next) => {
+                update("name", next);
+              }}
+            />
+            <Field.Error className={settingsFieldErrorClass} match="valueMissing">
+              请填写供应商名称。
+            </Field.Error>
+          </div>
+        </Field.Root>
 
-        <label className={settingsFieldLabelClass} htmlFor={kindId}>
-          API 形式
-        </label>
-        <SettingsSelect
-          disabled={busy}
-          id={kindId}
-          value={form.kind}
-          options={AI_ADAPTER_OPTIONS.map((option) => ({
-            value: option.value,
-            label: option.label,
-          }))}
-          onValueChange={(next) => {
-            update("kind", next as AiAdapterKind);
-          }}
-        />
+        <Field.Root className={settingsFieldRootClass} disabled={busy} name="kind">
+          <Field.Label className={settingsFieldLabelClass}>API 形式</Field.Label>
+          <div className={settingsFieldControlCellClass}>
+            <SettingsSelect
+              value={form.kind}
+              options={AI_ADAPTER_OPTIONS.map((option) => ({
+                value: option.value,
+                label: option.label,
+              }))}
+              onValueChange={(next) => {
+                update("kind", next as AiAdapterKind);
+              }}
+            />
+          </div>
+        </Field.Root>
 
-        <label className={settingsFieldLabelClass} htmlFor={baseUrlId}>
-          Endpoint
-        </label>
-        <input
-          className={settingsInputClass}
-          disabled={busy}
-          id={baseUrlId}
-          placeholder={aiAdapterEndpointPlaceholder(form.kind)}
-          spellCheck={false}
-          type="url"
-          value={form.baseUrl}
-          onChange={(event) => {
-            update("baseUrl", event.target.value);
-          }}
-        />
+        <Field.Root className={settingsFieldRootClass} disabled={busy} name="baseUrl">
+          <Field.Label className={settingsFieldLabelClass}>Endpoint</Field.Label>
+          <div className={settingsFieldControlCellClass}>
+            <Field.Control
+              className={settingsInputClass}
+              placeholder={aiAdapterEndpointPlaceholder(form.kind)}
+              spellCheck={false}
+              type="url"
+              value={form.baseUrl}
+              onValueChange={(next) => {
+                update("baseUrl", next);
+              }}
+            />
+            <Field.Error className={settingsFieldErrorClass} match="typeMismatch">
+              请输入有效的 URL。
+            </Field.Error>
+          </div>
+        </Field.Root>
 
-        <label className={settingsFieldLabelClass} htmlFor={apiKeyId}>
-          API Key
-        </label>
-        <div className="flex min-w-0 flex-col gap-1.5">
-          <input
-            autoComplete="off"
-            className={settingsInputClass}
-            disabled={busy || form.clearApiKey}
-            id={apiKeyId}
-            placeholder={apiKeyPlaceholder}
-            spellCheck={false}
-            type="password"
-            value={form.apiKey}
-            onChange={(event) => {
-              update("apiKey", event.target.value);
-              if (event.target.value !== "") {
-                update("clearApiKey", false);
-              }
-            }}
-          />
-          {isEdit && initial.hasApiKey ? (
-            <label className={cn(settingsCheckboxLabelClass, "items-center text-app-muted")}>
-              <SettingsCheckbox
-                checked={form.clearApiKey}
-                disabled={busy}
-                onCheckedChange={(checked) => {
-                  update("clearApiKey", checked);
-                  if (checked) {
-                    update("apiKey", "");
-                  }
-                }}
-              />
-              清除已保存的 API Key
-            </label>
-          ) : null}
-        </div>
+        <Field.Root
+          className={settingsFieldRootClass}
+          disabled={busy || form.clearApiKey}
+          name="apiKey"
+        >
+          <Field.Label className={settingsFieldLabelClass}>API Key</Field.Label>
+          <div className={settingsFieldControlCellClass}>
+            <Field.Control
+              autoComplete="off"
+              className={settingsInputClass}
+              placeholder={apiKeyPlaceholder}
+              spellCheck={false}
+              type="password"
+              value={form.apiKey}
+              onValueChange={(next) => {
+                update("apiKey", next);
+                if (next !== "") {
+                  update("clearApiKey", false);
+                }
+              }}
+            />
+            {isEdit && initial.hasApiKey ? (
+              <label className={cn(settingsCheckboxLabelClass, "items-center text-app-muted")}>
+                <SettingsCheckbox
+                  checked={form.clearApiKey}
+                  disabled={busy}
+                  onCheckedChange={(checked) => {
+                    update("clearApiKey", checked);
+                    if (checked) {
+                      update("apiKey", "");
+                    }
+                  }}
+                />
+                清除已保存的 API Key
+              </label>
+            ) : null}
+          </div>
+        </Field.Root>
       </div>
 
       {error ? <p className={settingsFormErrorClass}>{error}</p> : null}
@@ -203,6 +208,6 @@ export function AiProviderConfigForm({
           {busy ? "保存中…" : isEdit ? "保存" : "添加"}
         </button>
       </div>
-    </form>
+    </Form>
   );
 }

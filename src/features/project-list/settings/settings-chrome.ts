@@ -96,7 +96,16 @@ export const settingsFormGridClass = cn(
   "grid grid-cols-[6.5rem_minmax(0,1fr)] items-start gap-x-3 gap-y-2",
 );
 
+/** Lets Field.Root children participate in the 2-col settings grid. */
+export const settingsFieldRootClass = cn("contents");
+
+export const settingsFieldControlCellClass = cn("flex min-w-0 flex-col gap-1.5");
+
 export const settingsFieldLabelClass = cn("py-1.5 text-2xs text-app-muted");
+
+export const settingsFieldDescriptionClass = cn("text-2xs text-app-muted");
+
+export const settingsFieldErrorClass = cn("text-2xs text-ctp-red");
 
 export const settingsInputClass = cn(
   "w-full rounded-sm border border-titlebar-border bg-app-surface px-2.5 py-1.5 text-xs leading-tight text-app-foreground outline-none",

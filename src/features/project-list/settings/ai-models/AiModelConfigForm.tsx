@@ -1,4 +1,7 @@
-import { useId, useState, type SubmitEvent } from "react";
+import { Field } from "@base-ui/react/field";
+import { Form } from "@base-ui/react/form";
+import { NumberField } from "@base-ui/react/number-field";
+import { useState } from "react";
 
 import { cn } from "#app/shared/lib/ui/cn";
 import type {
@@ -12,7 +15,11 @@ import {
 } from "#shared/rpc/services/index";
 
 import {
+  settingsFieldControlCellClass,
+  settingsFieldDescriptionClass,
+  settingsFieldErrorClass,
   settingsFieldLabelClass,
+  settingsFieldRootClass,
   settingsFormActionsClass,
   settingsFormClass,
   settingsFormErrorClass,
@@ -22,13 +29,14 @@ import {
   settingsSecondaryButtonClass,
 } from "../settings-chrome";
 import { SettingsSelect } from "../SettingsSelect";
+
 type FormState = {
   providerId: string;
   name: string;
   model: string;
-  maxOutputTokens: string;
-  /** Empty string means not configured. */
-  contextLength: string;
+  maxOutputTokens: number | null;
+  /** null means not configured. */
+  contextLength: number | null;
 };
 
 type AiModelConfigFormProps = {
@@ -49,37 +57,13 @@ function toFormState(
     providerId: initial?.providerId ?? defaultProviderId,
     name: initial?.name ?? "",
     model: initial?.model ?? "",
-    maxOutputTokens: String(initial?.maxOutputTokens ?? DEFAULT_AI_MODEL_MAX_OUTPUT_TOKENS),
-    contextLength:
-      initial?.contextLength !== null && initial?.contextLength !== undefined
-        ? String(initial.contextLength)
-        : "",
+    maxOutputTokens: initial?.maxOutputTokens ?? DEFAULT_AI_MODEL_MAX_OUTPUT_TOKENS,
+    contextLength: initial?.contextLength ?? null,
   };
 }
 
-function parseMaxOutputTokensField(raw: string): number | null {
-  const trimmed = raw.trim();
-  if (trimmed === "") {
-    return null;
-  }
-  const value = Number(trimmed);
-  if (!Number.isFinite(value) || !Number.isInteger(value) || value < 1) {
-    return null;
-  }
-  return value;
-}
-
-/** Empty → null (not configured). Non-empty invalid → throws via form error. */
-function parseContextLengthField(raw: string): { ok: true; value: number | null } | { ok: false } {
-  const trimmed = raw.trim();
-  if (trimmed === "") {
-    return { ok: true, value: null };
-  }
-  const value = Number(trimmed);
-  if (!Number.isFinite(value) || !Number.isInteger(value) || value < 1) {
-    return { ok: false };
-  }
-  return { ok: true, value };
+function isPositiveInteger(value: unknown): value is number {
+  return typeof value === "number" && Number.isInteger(value) && value >= 1;
 }
 
 const maxOutputTokensWarningClass = cn(
@@ -95,55 +79,16 @@ export function AiModelConfigForm({
   onCancel,
   onSubmit,
 }: AiModelConfigFormProps) {
-  const formId = useId();
   const isEdit = initial != null;
   const [form, setForm] = useState<FormState>(() =>
     toFormState(initial, defaultProviderId || providers[0]?.id || ""),
   );
-  const [maxOutputTokensError, setMaxOutputTokensError] = useState<string | null>(null);
-  const [contextLengthError, setContextLengthError] = useState<string | null>(null);
 
-  const parsedMaxOutputTokens = parseMaxOutputTokensField(form.maxOutputTokens);
   const showLowMaxOutputTokensWarning =
-    parsedMaxOutputTokens !== null && isLowMaxOutputTokensForNovelAgent(parsedMaxOutputTokens);
-
-  const providerIdField = `${formId}-provider`;
-  const nameId = `${formId}-name`;
-  const modelId = `${formId}-model`;
-  const maxOutputTokensId = `${formId}-max-output-tokens`;
-  const contextLengthId = `${formId}-context-length`;
+    form.maxOutputTokens !== null && isLowMaxOutputTokensForNovelAgent(form.maxOutputTokens);
 
   const update = <K extends keyof FormState>(key: K, value: FormState[K]) => {
     setForm((prev) => ({ ...prev, [key]: value }));
-  };
-
-  const handleSubmit = (event: SubmitEvent<HTMLFormElement>) => {
-    event.preventDefault();
-
-    const maxOutputTokens = parseMaxOutputTokensField(form.maxOutputTokens);
-    if (maxOutputTokens === null) {
-      setMaxOutputTokensError("请输入大于 0 的整数作为最大输出 token。");
-      return;
-    }
-    setMaxOutputTokensError(null);
-
-    const contextLengthParsed = parseContextLengthField(form.contextLength);
-    if (!contextLengthParsed.ok) {
-      setContextLengthError("上下文长度请留空，或输入大于 0 的整数。");
-      return;
-    }
-    setContextLengthError(null);
-
-    const payload: AiModelConfigWrite = {
-      ...(isEdit ? { id: initial.id } : {}),
-      providerId: form.providerId,
-      name: form.name,
-      model: form.model,
-      maxOutputTokens,
-      contextLength: contextLengthParsed.value,
-    };
-
-    void onSubmit(payload);
   };
 
   if (providers.length === 0) {
@@ -151,120 +96,151 @@ export function AiModelConfigForm({
   }
 
   return (
-    <form className={settingsFormClass} onSubmit={handleSubmit}>
+    <Form
+      className={settingsFormClass}
+      onFormSubmit={() => {
+        if (!isPositiveInteger(form.maxOutputTokens)) {
+          return;
+        }
+        if (form.contextLength !== null && !isPositiveInteger(form.contextLength)) {
+          return;
+        }
+
+        const payload: AiModelConfigWrite = {
+          ...(isEdit ? { id: initial.id } : {}),
+          providerId: form.providerId,
+          name: form.name,
+          model: form.model,
+          maxOutputTokens: form.maxOutputTokens,
+          contextLength: form.contextLength,
+        };
+
+        void onSubmit(payload);
+      }}
+    >
       <div className={settingsFormGridClass}>
-        <label className={settingsFieldLabelClass} htmlFor={providerIdField}>
-          供应商
-        </label>
-        <SettingsSelect
+        <Field.Root className={settingsFieldRootClass} disabled={busy} name="providerId">
+          <Field.Label className={settingsFieldLabelClass}>供应商</Field.Label>
+          <div className={settingsFieldControlCellClass}>
+            <SettingsSelect
+              required
+              value={form.providerId}
+              options={providers.map((provider) => ({
+                value: provider.id,
+                label: provider.name,
+              }))}
+              onValueChange={(next) => {
+                update("providerId", next);
+              }}
+            />
+          </div>
+        </Field.Root>
+
+        <Field.Root className={settingsFieldRootClass} disabled={busy} name="name">
+          <Field.Label className={settingsFieldLabelClass}>显示名称</Field.Label>
+          <div className={settingsFieldControlCellClass}>
+            <Field.Control
+              autoFocus
+              className={settingsInputClass}
+              placeholder="例如：写作助手 GPT-4o"
+              required
+              value={form.name}
+              onValueChange={(next) => {
+                update("name", next);
+              }}
+            />
+            <Field.Error className={settingsFieldErrorClass} match="valueMissing">
+              请填写显示名称。
+            </Field.Error>
+          </div>
+        </Field.Root>
+
+        <Field.Root className={settingsFieldRootClass} disabled={busy} name="model">
+          <Field.Label className={settingsFieldLabelClass}>模型 ID</Field.Label>
+          <div className={settingsFieldControlCellClass}>
+            <Field.Control
+              className={settingsInputClass}
+              placeholder="例如：gpt-4o"
+              required
+              value={form.model}
+              onValueChange={(next) => {
+                update("model", next);
+              }}
+            />
+            <Field.Error className={settingsFieldErrorClass} match="valueMissing">
+              请填写模型 ID。
+            </Field.Error>
+          </div>
+        </Field.Root>
+
+        <Field.Root
+          className={settingsFieldRootClass}
           disabled={busy}
-          id={providerIdField}
-          required
-          value={form.providerId}
-          options={providers.map((provider) => ({
-            value: provider.id,
-            label: provider.name,
-          }))}
-          onValueChange={(next) => {
-            update("providerId", next);
-          }}
-        />
+          name="maxOutputTokens"
+          validate={(value) =>
+            isPositiveInteger(value) ? null : "请输入大于 0 的整数作为最大输出 token。"
+          }
+        >
+          <Field.Label className={settingsFieldLabelClass}>最大输出 token</Field.Label>
+          <div className={settingsFieldControlCellClass}>
+            <NumberField.Root
+              allowOutOfRange
+              min={1}
+              required
+              step={1}
+              value={form.maxOutputTokens}
+              onValueChange={(next) => {
+                update("maxOutputTokens", next);
+              }}
+            >
+              <NumberField.Input
+                className={settingsInputClass}
+                placeholder={String(DEFAULT_AI_MODEL_MAX_OUTPUT_TOKENS)}
+              />
+            </NumberField.Root>
+            <Field.Description className={settingsFieldDescriptionClass}>
+              单次模型回复允许生成的最大 token 数。默认 {DEFAULT_AI_MODEL_MAX_OUTPUT_TOKENS}。
+            </Field.Description>
+            {showLowMaxOutputTokensWarning ? (
+              <p className={maxOutputTokensWarningClass} role="status">
+                当前上限 {form.maxOutputTokens} token，对小说写作 Agent
+                偏少，长段正文或大纲容易被截断。建议提高到 8192 或更高（需符合模型与服务商上限）。
+              </p>
+            ) : null}
+            <Field.Error className={settingsFieldErrorClass} />
+          </div>
+        </Field.Root>
 
-        <label className={settingsFieldLabelClass} htmlFor={nameId}>
-          显示名称
-        </label>
-        <input
-          autoFocus
-          className={settingsInputClass}
+        <Field.Root
+          className={settingsFieldRootClass}
           disabled={busy}
-          id={nameId}
-          placeholder="例如：写作助手 GPT-4o"
-          required
-          type="text"
-          value={form.name}
-          onChange={(event) => {
-            update("name", event.target.value);
+          name="contextLength"
+          validate={(value) => {
+            if (value == null || value === "") {
+              return null;
+            }
+            return isPositiveInteger(value) ? null : "上下文长度请留空，或输入大于 0 的整数。";
           }}
-        />
-
-        <label className={settingsFieldLabelClass} htmlFor={modelId}>
-          模型 ID
-        </label>
-        <input
-          className={settingsInputClass}
-          disabled={busy}
-          id={modelId}
-          placeholder="例如：gpt-4o"
-          required
-          type="text"
-          value={form.model}
-          onChange={(event) => {
-            update("model", event.target.value);
-          }}
-        />
-
-        <label className={settingsFieldLabelClass} htmlFor={maxOutputTokensId}>
-          最大输出 token
-        </label>
-        <div className="flex min-w-0 flex-col gap-1.5">
-          <input
-            className={settingsInputClass}
-            disabled={busy}
-            id={maxOutputTokensId}
-            inputMode="numeric"
-            min={1}
-            placeholder={String(DEFAULT_AI_MODEL_MAX_OUTPUT_TOKENS)}
-            required
-            type="number"
-            value={form.maxOutputTokens}
-            onChange={(event) => {
-              update("maxOutputTokens", event.target.value);
-              if (maxOutputTokensError !== null) {
-                setMaxOutputTokensError(null);
-              }
-            }}
-          />
-          <p className="text-2xs text-app-muted">
-            单次模型回复允许生成的最大 token 数。默认 {DEFAULT_AI_MODEL_MAX_OUTPUT_TOKENS}。
-          </p>
-          {showLowMaxOutputTokensWarning ? (
-            <p className={maxOutputTokensWarningClass} role="status">
-              当前上限 {parsedMaxOutputTokens} token，对小说写作 Agent
-              偏少，长段正文或大纲容易被截断。建议提高到 8192 或更高（需符合模型与服务商上限）。
-            </p>
-          ) : null}
-          {maxOutputTokensError ? (
-            <p className="text-2xs text-ctp-red">{maxOutputTokensError}</p>
-          ) : null}
-        </div>
-
-        <label className={settingsFieldLabelClass} htmlFor={contextLengthId}>
-          上下文长度
-        </label>
-        <div className="flex min-w-0 flex-col gap-1.5">
-          <input
-            className={settingsInputClass}
-            disabled={busy}
-            id={contextLengthId}
-            inputMode="numeric"
-            min={1}
-            placeholder="可选，例如 128000"
-            type="number"
-            value={form.contextLength}
-            onChange={(event) => {
-              update("contextLength", event.target.value);
-              if (contextLengthError !== null) {
-                setContextLengthError(null);
-              }
-            }}
-          />
-          <p className="text-2xs text-app-muted">
-            模型上下文窗口（token）。用于侧边栏显示当前占用占比；留空表示不统计。不会传给 API。
-          </p>
-          {contextLengthError ? (
-            <p className="text-2xs text-ctp-red">{contextLengthError}</p>
-          ) : null}
-        </div>
+        >
+          <Field.Label className={settingsFieldLabelClass}>上下文长度</Field.Label>
+          <div className={settingsFieldControlCellClass}>
+            <NumberField.Root
+              allowOutOfRange
+              min={1}
+              step={1}
+              value={form.contextLength}
+              onValueChange={(next) => {
+                update("contextLength", next);
+              }}
+            >
+              <NumberField.Input className={settingsInputClass} placeholder="可选，例如 128000" />
+            </NumberField.Root>
+            <Field.Description className={settingsFieldDescriptionClass}>
+              模型上下文窗口（token）。用于侧边栏显示当前占用占比；留空表示不统计。不会传给 API。
+            </Field.Description>
+            <Field.Error className={settingsFieldErrorClass} />
+          </div>
+        </Field.Root>
       </div>
 
       {error ? <p className={settingsFormErrorClass}>{error}</p> : null}
@@ -282,6 +258,6 @@ export function AiModelConfigForm({
           {busy ? "保存中…" : isEdit ? "保存" : "添加"}
         </button>
       </div>
-    </form>
+    </Form>
   );
 }

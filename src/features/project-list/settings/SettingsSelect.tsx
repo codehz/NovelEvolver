@@ -19,6 +19,8 @@ export type SettingsSelectOption<T extends string = string> = {
 
 type SettingsSelectProps<T extends string> = {
   id?: string;
+  /** Field/form name when used outside or alongside Field.Root. */
+  name?: string;
   value: T;
   options: readonly SettingsSelectOption<T>[];
   disabled?: boolean;
@@ -34,6 +36,7 @@ type SettingsSelectProps<T extends string> = {
  */
 export function SettingsSelect<T extends string>({
   id,
+  name,
   value,
   options,
   disabled = false,
@@ -45,6 +48,7 @@ export function SettingsSelect<T extends string>({
   return (
     <Select.Root
       id={id}
+      name={name}
       value={value}
       items={options}
       disabled={disabled}
