@@ -1,3 +1,4 @@
+import { Combobox } from "@base-ui/react/combobox";
 import { AutoTransition } from "@codehz/auto-transition";
 import { useAtomValue } from "jotai";
 import { LayoutGroup, motion } from "motion/react";
@@ -32,11 +33,27 @@ import {
   quickPickHighlightSurfaceTransition,
   quickPickListTransition,
 } from "./quick-pick-list-motion";
-import { QuickPickOverlay, useQuickPickRequestClose } from "./QuickPickOverlay";
 import {
-  QUICK_PICK_OPTION_INDEX_ATTR,
-  useQuickPickListNavigation,
-} from "./use-quick-pick-list-navigation";
+  QuickPickOverlay,
+  useQuickPickOverlayOpen,
+  useQuickPickRequestClose,
+} from "./QuickPickOverlay";
+
+type QuickPickSelectable =
+  | {
+      kind: "item";
+      id: string;
+      label: string;
+      detail?: string;
+      emphasized?: boolean;
+      showDividerBefore: boolean;
+    }
+  | {
+      kind: "extra";
+      id: string;
+      label: string;
+      showDividerBefore: boolean;
+    };
 
 function filterListItems(items: QuickPickListItem[], query: string): QuickPickListItem[] {
   const normalized = query.trim().toLowerCase();
@@ -81,49 +98,71 @@ function buildQuickPickListRows(
   return rows;
 }
 
-function quickPickListRowKey(row: QuickPickListRow): string {
-  if (row.kind === "divider") {
-    return "quick-pick-divider";
+function toSelectableItems(rows: readonly QuickPickListRow[]): QuickPickSelectable[] {
+  const items: QuickPickSelectable[] = [];
+  let pendingDivider = false;
+  for (const row of rows) {
+    if (row.kind === "divider") {
+      pendingDivider = true;
+      continue;
+    }
+    if (row.kind === "item") {
+      items.push({
+        kind: "item",
+        id: row.item.id,
+        label: row.item.label,
+        detail: row.item.detail,
+        emphasized: row.item.emphasized,
+        showDividerBefore: pendingDivider,
+      });
+    } else {
+      items.push({
+        kind: "extra",
+        id: row.extra.id,
+        label: row.extra.label,
+        showDividerBefore: pendingDivider,
+      });
+    }
+    pendingDivider = false;
   }
-  if (row.kind === "item") {
-    return row.item.id;
-  }
-  return row.extra.id;
+  return items;
+}
+
+function selectableKey(item: QuickPickSelectable): string {
+  return `${item.kind}:${item.id}`;
+}
+
+function isSameSelectable(a: QuickPickSelectable, b: QuickPickSelectable): boolean {
+  return a.kind === b.kind && a.id === b.id;
 }
 
 function QuickPickListOption({
-  index,
+  item,
   highlighted,
-  emphasized,
-  onHighlight,
-  onSelect,
   children,
 }: {
-  index: number;
+  item: QuickPickSelectable;
   highlighted: boolean;
-  emphasized?: boolean;
-  onHighlight: () => void;
-  onSelect: () => void;
   children: ReactNode;
 }) {
   return (
-    <li role="option" aria-selected={highlighted} {...{ [QUICK_PICK_OPTION_INDEX_ATTR]: index }}>
-      <button
-        type="button"
-        className={cn(quickPickRowButtonClass, emphasized && quickPickRowEmphasisClass)}
-        onMouseEnter={onHighlight}
-        onClick={onSelect}
-      >
-        {highlighted ? (
-          <motion.span
-            layoutId={QUICK_PICK_HIGHLIGHT_LAYOUT_ID}
-            className={quickPickRowHighlightSurfaceClass}
-            transition={quickPickHighlightSurfaceTransition}
-          />
-        ) : null}
-        <span className={quickPickRowButtonContentClass}>{children}</span>
-      </button>
-    </li>
+    <Combobox.Item
+      className={cn(
+        quickPickRowButtonClass,
+        item.showDividerBefore && quickPickListDividerClass,
+        item.kind === "item" && item.emphasized && quickPickRowEmphasisClass,
+      )}
+      value={item}
+    >
+      {highlighted ? (
+        <motion.span
+          layoutId={QUICK_PICK_HIGHLIGHT_LAYOUT_ID}
+          className={quickPickRowHighlightSurfaceClass}
+          transition={quickPickHighlightSurfaceTransition}
+        />
+      ) : null}
+      <span className={quickPickRowButtonContentClass}>{children}</span>
+    </Combobox.Item>
   );
 }
 
@@ -149,36 +188,31 @@ function QuickPickListPanelBody({
   titleId: string;
 }) {
   const { requestId, options } = session;
-  const listboxId = useId();
-  const searchInputId = useId();
-  const inputRef = useRef<HTMLInputElement>(null);
-  const [query, setQuery] = useState("");
+  const open = useQuickPickOverlayOpen();
   const requestClose = useQuickPickRequestClose();
+  const [query, setQuery] = useState("");
+  const [highlightedKey, setHighlightedKey] = useState<string | null>(null);
 
   const filtered = useMemo(() => filterListItems(options.items, query), [options.items, query]);
   const extras = options.extras ?? [];
   const hasSearchQuery = query.trim() !== "";
-  const listRows = useMemo(
-    () => buildQuickPickListRows(filtered, extras, hasSearchQuery),
+  const selectableItems = useMemo(
+    () => toSelectableItems(buildQuickPickListRows(filtered, extras, hasSearchQuery)),
     [extras, filtered, hasSearchQuery],
   );
-  const itemCount = filtered.length + extras.length;
 
-  const resolveItem = useCallback(
-    (id: string) => {
-      requestClose(() => {
-        quickPickHostApi.resolveList(requestId, { kind: "item", id });
-      });
-    },
-    [requestClose, requestId],
-  );
-
-  const resolveExtra = useCallback(
-    (extra: QuickPickExtraItem) => {
+  const resolveSelectable = useCallback(
+    (item: QuickPickSelectable) => {
+      if (item.kind === "item") {
+        requestClose(() => {
+          quickPickHostApi.resolveList(requestId, { kind: "item", id: item.id });
+        });
+        return;
+      }
       requestClose(() => {
         quickPickHostApi.resolveList(requestId, {
           kind: "extra",
-          id: extra.id,
+          id: item.id,
           searchQuery: query,
         });
       });
@@ -186,153 +220,96 @@ function QuickPickListPanelBody({
     [query, requestClose, requestId],
   );
 
-  const { highlightIndex, setHighlightIndex, listRef, onSearchKeyDown, resetHighlight } =
-    useQuickPickListNavigation({
-      itemCount,
-      onActivate: (index) => {
-        let optionIndex = 0;
-        for (const row of listRows) {
-          if (row.kind === "divider") {
-            continue;
-          }
-          if (optionIndex === index) {
-            if (row.kind === "item") {
-              resolveItem(row.item.id);
-            } else {
-              resolveExtra(row.extra);
-            }
-            resetHighlight();
-            return;
-          }
-          optionIndex += 1;
-        }
-      },
-    });
-
   useEffect(() => {
     setQuery("");
-    resetHighlight();
-    const frame = requestAnimationFrame(() => {
-      inputRef.current?.focus();
-    });
-    return () => {
-      cancelAnimationFrame(frame);
-    };
-  }, [requestId, resetHighlight]);
+    setHighlightedKey(null);
+  }, [requestId]);
 
   return (
-    <>
+    <Combobox.Root
+      // Base UI Aria supports "always"; public ComboboxRoot typedef is boolean-only.
+      autoHighlight={"always" as never}
+      filter={null}
+      inline
+      isItemEqualToValue={isSameSelectable}
+      itemToStringLabel={(item) => item.label}
+      items={selectableItems}
+      open={open}
+      value={null}
+      inputValue={query}
+      onInputValueChange={(next) => {
+        setQuery(next);
+      }}
+      onOpenChange={(next) => {
+        if (!next) {
+          requestClose(() => {
+            quickPickHostApi.dismiss(requestId);
+          });
+        }
+      }}
+      onItemHighlighted={(item) => {
+        setHighlightedKey(item == null ? null : selectableKey(item));
+      }}
+      onValueChange={(item) => {
+        if (item != null) {
+          resolveSelectable(item);
+        }
+      }}
+    >
       <p className="sr-only" id={titleId}>
         {options.title}
       </p>
       <div className={quickPickSearchWrapClass}>
-        <label className="sr-only" htmlFor={searchInputId}>
-          {options.searchLabel ?? options.title}
-        </label>
-        <input
-          ref={inputRef}
-          id={searchInputId}
-          className={quickPickSearchInputClass}
-          type="text"
-          role="combobox"
-          aria-expanded
-          aria-controls={listboxId}
-          aria-autocomplete="list"
+        <Combobox.Label className="sr-only">{options.searchLabel ?? options.title}</Combobox.Label>
+        <Combobox.Input
           autoComplete="off"
-          spellCheck={false}
+          className={quickPickSearchInputClass}
           placeholder={options.searchPlaceholder ?? ""}
-          value={query}
-          onChange={(event) => {
-            setQuery(event.target.value);
-          }}
-          onKeyDown={onSearchKeyDown}
+          spellCheck={false}
         />
       </div>
-      <LayoutGroup id={`${listboxId}-highlight`}>
-        <AutoTransition
-          as="ul"
-          ref={listRef}
-          id={listboxId}
-          className={quickPickListClass}
-          role="listbox"
+      <LayoutGroup id={`${requestId}-highlight`}>
+        <Combobox.List
           aria-label={options.title}
-          transition={quickPickListTransition}
-          exitLayout="flow"
+          className={quickPickListClass}
+          render={
+            <AutoTransition as="div" transition={quickPickListTransition} exitLayout="flow" />
+          }
         >
-          {itemCount === 0 ? (
-            <li key="quick-pick-empty" className={quickPickEmptyClass}>
-              {options.emptyMessage ?? "无匹配项"}
-            </li>
-          ) : (
-            (() => {
-              let optionIndex = 0;
-              return listRows.map((row) => {
-                if (row.kind === "divider") {
-                  return (
-                    <li
-                      key={quickPickListRowKey(row)}
-                      className={quickPickListDividerClass}
-                      role="separator"
-                      aria-hidden
-                    />
-                  );
-                }
-                const index = optionIndex;
-                optionIndex += 1;
-                if (row.kind === "item") {
-                  const { item } = row;
-                  return (
-                    <QuickPickListOption
-                      key={quickPickListRowKey(row)}
-                      index={index}
-                      highlighted={highlightIndex === index}
-                      emphasized={item.emphasized}
-                      onHighlight={() => {
-                        setHighlightIndex(index);
-                      }}
-                      onSelect={() => {
-                        resolveItem(item.id);
-                      }}
-                    >
-                      <span
-                        aria-hidden="true"
-                        className={cn(
-                          "icon-[codicon--check] size-4 shrink-0",
-                          item.emphasized ? "opacity-100" : "opacity-0",
-                        )}
-                      />
-                      <span className="min-w-0 flex-1 truncate font-medium">{item.label}</span>
-                      {item.detail ? (
-                        <span className="shrink-0 font-mono text-xs text-app-muted">
-                          {item.detail}
-                        </span>
-                      ) : null}
-                    </QuickPickListOption>
-                  );
-                }
-                const { extra } = row;
-                return (
-                  <QuickPickListOption
-                    key={quickPickListRowKey(row)}
-                    index={index}
-                    highlighted={highlightIndex === index}
-                    onHighlight={() => {
-                      setHighlightIndex(index);
-                    }}
-                    onSelect={() => {
-                      resolveExtra(extra);
-                    }}
-                  >
-                    <span aria-hidden="true" className="icon-[codicon--add] size-4 shrink-0" />
-                    <span className="min-w-0 flex-1 truncate font-medium">{extra.label}</span>
-                  </QuickPickListOption>
-                );
-              });
-            })()
+          {(item: QuickPickSelectable) => (
+            <QuickPickListOption
+              key={selectableKey(item)}
+              item={item}
+              highlighted={highlightedKey === selectableKey(item)}
+            >
+              {item.kind === "item" ? (
+                <>
+                  <span
+                    aria-hidden="true"
+                    className={cn(
+                      "icon-[codicon--check] size-4 shrink-0",
+                      item.emphasized ? "opacity-100" : "opacity-0",
+                    )}
+                  />
+                  <span className="min-w-0 flex-1 truncate font-medium">{item.label}</span>
+                  {item.detail ? (
+                    <span className="shrink-0 font-mono text-xs text-app-muted">{item.detail}</span>
+                  ) : null}
+                </>
+              ) : (
+                <>
+                  <span aria-hidden="true" className="icon-[codicon--add] size-4 shrink-0" />
+                  <span className="min-w-0 flex-1 truncate font-medium">{item.label}</span>
+                </>
+              )}
+            </QuickPickListOption>
           )}
-        </AutoTransition>
+        </Combobox.List>
       </LayoutGroup>
-    </>
+      <Combobox.Empty className={quickPickEmptyClass}>
+        {options.emptyMessage ?? "无匹配项"}
+      </Combobox.Empty>
+    </Combobox.Root>
   );
 }
 

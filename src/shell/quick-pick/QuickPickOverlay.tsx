@@ -1,5 +1,13 @@
 import { Dialog } from "@base-ui/react/dialog";
-import { createContext, useCallback, useContext, useRef, useState, type ReactNode } from "react";
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useMemo,
+  useRef,
+  useState,
+  type ReactNode,
+} from "react";
 
 import { useAnimatedContentHeight } from "#app/shared/lib/ui/animated-height";
 
@@ -11,14 +19,28 @@ import {
 
 type RequestClose = (afterClose: () => void) => void;
 
-const QuickPickRequestCloseContext = createContext<RequestClose | null>(null);
+type QuickPickOverlayContextValue = {
+  open: boolean;
+  requestClose: RequestClose;
+};
+
+const QuickPickOverlayContext = createContext<QuickPickOverlayContextValue | null>(null);
 
 export function useQuickPickRequestClose(): RequestClose {
-  const value = useContext(QuickPickRequestCloseContext);
+  const value = useContext(QuickPickOverlayContext);
   if (value == null) {
     throw new Error("useQuickPickRequestClose must be used within QuickPickOverlay");
   }
-  return value;
+  return value.requestClose;
+}
+
+/** Dialog open state for nested Base UI Combobox (`inline` + bound `open`). */
+export function useQuickPickOverlayOpen(): boolean {
+  const value = useContext(QuickPickOverlayContext);
+  if (value == null) {
+    throw new Error("useQuickPickOverlayOpen must be used within QuickPickOverlay");
+  }
+  return value.open;
 }
 
 export function QuickPickOverlay({
@@ -55,7 +77,11 @@ export function QuickPickOverlay({
     if (settledRef.current) {
       return;
     }
-    pendingAfterCloseRef.current = afterClose;
+    // First writer wins: selection may queue resolve, then Combobox onOpenChange
+    // queues dismiss — keep the resolve callback.
+    if (pendingAfterCloseRef.current == null) {
+      pendingAfterCloseRef.current = afterClose;
+    }
     setOpen(false);
   }, []);
 
@@ -74,6 +100,14 @@ export function QuickPickOverlay({
     [settle],
   );
 
+  const contextValue = useMemo(
+    () => ({
+      open,
+      requestClose,
+    }),
+    [open, requestClose],
+  );
+
   return (
     <Dialog.Root
       open={open}
@@ -81,7 +115,7 @@ export function QuickPickOverlay({
       onOpenChangeComplete={handleOpenChangeComplete}
     >
       <Dialog.Portal>
-        <QuickPickRequestCloseContext value={requestClose}>
+        <QuickPickOverlayContext value={contextValue}>
           <Dialog.Popup
             ref={panelRef}
             className={quickPickPanelClass}
@@ -97,7 +131,7 @@ export function QuickPickOverlay({
               </div>
             </div>
           </Dialog.Popup>
-        </QuickPickRequestCloseContext>
+        </QuickPickOverlayContext>
       </Dialog.Portal>
     </Dialog.Root>
   );
