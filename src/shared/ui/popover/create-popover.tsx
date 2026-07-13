@@ -70,11 +70,9 @@ export function createPopover(displayName: string): CreatePopoverResult {
     const { requestClose } = usePopoverPanelLifecycle(panelRef, onDismiss, openOnMount);
 
     return (
-      <PopoverPanelRefContext.Provider value={panelRef}>
-        <PopoverRequestCloseContext.Provider value={{ requestClose }}>
-          {children}
-        </PopoverRequestCloseContext.Provider>
-      </PopoverPanelRefContext.Provider>
+      <PopoverPanelRefContext value={panelRef}>
+        <PopoverRequestCloseContext value={{ requestClose }}>{children}</PopoverRequestCloseContext>
+      </PopoverPanelRefContext>
     );
   }
 
