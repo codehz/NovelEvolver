@@ -10,13 +10,13 @@ import type {
 } from "#shared/rpc/services/index";
 import { BUILTIN_AI_AGENT_ID } from "#shared/rpc/services/index";
 
+import { DEFAULT_AI_SYSTEM_PROMPT } from "../ai/default-system-prompt";
 import { AI_TOOL_CATALOG, AI_TOOL_NAMES } from "../ai/tools";
 import type { AiModelsStore } from "./ai-models-store";
 
 const FILE_VERSION = 1 as const;
 
-export const BUILTIN_AI_AGENT_SYSTEM_PROMPT =
-  "你是 NovelEvolver 的写作助手。请基于当前小说项目和对话上下文提供准确、简洁、可执行的帮助；需要读取或修改项目内容时使用提供的工具。";
+export const BUILTIN_AI_AGENT_SYSTEM_PROMPT = DEFAULT_AI_SYSTEM_PROMPT;
 
 export type AiAgentRuntimeConfig = AiAgentConfigPublic;
 
