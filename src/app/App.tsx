@@ -1,3 +1,4 @@
+import { Tooltip } from "@base-ui/react/tooltip";
 import { Router } from "wouter";
 import { useHashLocation } from "wouter/use-hash-location";
 
@@ -12,17 +13,19 @@ import { WindowFrame } from "#app/shell/WindowFrame";
 export default function App() {
   return (
     <div className="isolate flex min-h-0 flex-1 flex-col">
-      <TitleBarActionsPortalProvider>
-        <StatusBarLeftPortalProvider>
-          <StatusBarRightPortalProvider>
-            <Router hook={useHashLocation}>
-              <WindowFrame>
-                <AppRoutes />
-              </WindowFrame>
-            </Router>
-          </StatusBarRightPortalProvider>
-        </StatusBarLeftPortalProvider>
-      </TitleBarActionsPortalProvider>
+      <Tooltip.Provider delay={400} closeDelay={0} timeout={400}>
+        <TitleBarActionsPortalProvider>
+          <StatusBarLeftPortalProvider>
+            <StatusBarRightPortalProvider>
+              <Router hook={useHashLocation}>
+                <WindowFrame>
+                  <AppRoutes />
+                </WindowFrame>
+              </Router>
+            </StatusBarRightPortalProvider>
+          </StatusBarLeftPortalProvider>
+        </TitleBarActionsPortalProvider>
+      </Tooltip.Provider>
     </div>
   );
 }

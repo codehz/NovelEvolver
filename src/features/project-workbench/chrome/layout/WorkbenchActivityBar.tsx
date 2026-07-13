@@ -2,6 +2,7 @@ import { memo } from "react";
 import { Link } from "wouter";
 
 import { cn } from "#app/shared/lib/ui/cn";
+import { IconTooltip } from "#app/shared/ui/IconTooltip";
 
 type ActivityItem = {
   id: string;
@@ -40,31 +41,32 @@ export const WorkbenchActivityBar = memo(function WorkbenchActivityBar({
         {items.map((item) => {
           const isActive = primarySidebarVisible && activeView === item.id;
           return (
-            <button
-              key={item.id}
-              aria-current={isActive ? "page" : undefined}
-              aria-expanded={isActive ? true : undefined}
-              aria-label={item.label}
-              className={cn(activityButtonClass, isActive && "text-ctp-mauve")}
-              title={item.label}
-              type="button"
-              onClick={() => onSelectView(item.id)}
-            >
-              <span aria-hidden="true" className={cn(activityIconClass, item.iconClass)} />
-            </button>
+            <IconTooltip key={item.id} label={item.label} side="right">
+              <button
+                aria-current={isActive ? "page" : undefined}
+                aria-expanded={isActive ? true : undefined}
+                aria-label={item.label}
+                className={cn(activityButtonClass, isActive && "text-ctp-mauve")}
+                type="button"
+                onClick={() => onSelectView(item.id)}
+              >
+                <span aria-hidden="true" className={cn(activityIconClass, item.iconClass)} />
+              </button>
+            </IconTooltip>
           );
         })}
       </div>
 
       <div className="mt-auto flex flex-col">
-        <Link
-          aria-label="返回项目列表"
-          className={cn(activityButtonClass, "app-region-no-drag")}
-          href="/"
-          title="返回项目列表"
-        >
-          <span aria-hidden="true" className={cn(activityIconClass, "icon-[codicon--home]")} />
-        </Link>
+        <IconTooltip label="返回项目列表" side="right">
+          <Link
+            aria-label="返回项目列表"
+            className={cn(activityButtonClass, "app-region-no-drag")}
+            href="/"
+          >
+            <span aria-hidden="true" className={cn(activityIconClass, "icon-[codicon--home]")} />
+          </Link>
+        </IconTooltip>
       </div>
     </nav>
   );

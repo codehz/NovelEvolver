@@ -1,5 +1,6 @@
 import { TitleBarActionsPortalContent } from "#app/shared/lib/shell/titlebar-portal";
 import { cn } from "#app/shared/lib/ui/cn";
+import { IconTooltip } from "#app/shared/ui/IconTooltip";
 
 const toggleButtonClass = cn(
   "inline-flex size-7 shrink-0 items-center justify-center rounded-full border-0 bg-transparent p-0",
@@ -17,24 +18,25 @@ export function TitleBarPrimarySidebarToggle({
 }) {
   return (
     <TitleBarActionsPortalContent>
-      <button
-        aria-label={visible ? "隐藏主侧边栏" : "显示主侧边栏"}
-        aria-pressed={visible}
-        className={toggleButtonClass}
-        title="主侧边栏"
-        type="button"
-        onClick={onToggle}
-      >
-        <span
-          aria-hidden="true"
-          className={cn(
-            "text-sm",
-            visible
-              ? "icon-[codicon--layout-sidebar-left]"
-              : "icon-[codicon--layout-sidebar-left-off]",
-          )}
-        />
-      </button>
+      <IconTooltip label="主侧边栏" side="bottom">
+        <button
+          aria-label={visible ? "隐藏主侧边栏" : "显示主侧边栏"}
+          aria-pressed={visible}
+          className={toggleButtonClass}
+          type="button"
+          onClick={onToggle}
+        >
+          <span
+            aria-hidden="true"
+            className={cn(
+              "text-sm",
+              visible
+                ? "icon-[codicon--layout-sidebar-left]"
+                : "icon-[codicon--layout-sidebar-left-off]",
+            )}
+          />
+        </button>
+      </IconTooltip>
     </TitleBarActionsPortalContent>
   );
 }

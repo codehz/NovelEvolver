@@ -1,6 +1,7 @@
 import type { KeyboardEvent, ReactNode } from "react";
 
 import { cn } from "#app/shared/lib/ui/cn";
+import { IconTooltip } from "#app/shared/ui/IconTooltip";
 import type { Change } from "#shared/rpc/worktree/index";
 import type { TreeRowLayout } from "#workbench/tree/tree-row-layout";
 import { treeRowDisclosureSpacerClass } from "#workbench/tree/tree-row-motion";
@@ -83,23 +84,25 @@ export function ChangeItemRow({
           ) : null}
           <span className={cn(changeKindIconClass(item.kind), "shrink-0 text-sm")} />
         </span>
-        <button
-          type="button"
-          className={changeRevertButtonClass}
-          onClick={(e) => {
-            e.stopPropagation();
-            onRevert(item.id);
-          }}
-          onKeyDown={(e) => {
-            if (e.key === "Enter" || e.key === " ") {
+        <IconTooltip label="还原此变更" side="left">
+          <button
+            type="button"
+            aria-label="还原此变更"
+            className={changeRevertButtonClass}
+            onClick={(e) => {
               e.stopPropagation();
               onRevert(item.id);
-            }
-          }}
-          title="还原此变更"
-        >
-          <span className="icon-[codicon--discard] text-sm" />
-        </button>
+            }}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" || e.key === " ") {
+                e.stopPropagation();
+                onRevert(item.id);
+              }
+            }}
+          >
+            <span className="icon-[codicon--discard] text-sm" />
+          </button>
+        </IconTooltip>
       </span>
     </TreeMotionRow>
   );

@@ -8,6 +8,7 @@ import {
 } from "react";
 
 import { cn } from "#app/shared/lib/ui/cn";
+import { IconTooltip } from "#app/shared/ui/IconTooltip";
 import type { AskUserPendingInput } from "#shared/rpc/ai/index";
 
 const composerShellClass = cn(
@@ -156,25 +157,27 @@ export function AskUserComposer({
       />
 
       <div className="flex justify-end gap-2">
-        <button
-          aria-label="取消回答"
-          className={cancelButtonClass}
-          disabled={inputDisabled}
-          title="取消回答"
-          type="button"
-          onClick={handleCancel}
-        >
-          <span aria-hidden="true" className="icon-[codicon--close] text-sm" />
-        </button>
-        <button
-          aria-label="提交回答"
-          className={sendButtonClass}
-          disabled={inputDisabled || draft.trim() === ""}
-          title="提交回答"
-          type="submit"
-        >
-          <span aria-hidden="true" className="icon-[codicon--send] text-sm" />
-        </button>
+        <IconTooltip label="取消回答" side="top" disabled={inputDisabled}>
+          <button
+            aria-label="取消回答"
+            className={cancelButtonClass}
+            disabled={inputDisabled}
+            type="button"
+            onClick={handleCancel}
+          >
+            <span aria-hidden="true" className="icon-[codicon--close] text-sm" />
+          </button>
+        </IconTooltip>
+        <IconTooltip label="提交回答" side="top" disabled={inputDisabled || draft.trim() === ""}>
+          <button
+            aria-label="提交回答"
+            className={sendButtonClass}
+            disabled={inputDisabled || draft.trim() === ""}
+            type="submit"
+          >
+            <span aria-hidden="true" className="icon-[codicon--send] text-sm" />
+          </button>
+        </IconTooltip>
       </div>
     </form>
   );

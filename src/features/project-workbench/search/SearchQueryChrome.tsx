@@ -1,6 +1,8 @@
+import { Toggle } from "@base-ui/react/toggle";
 import { useRef } from "react";
 
 import { cn } from "#app/shared/lib/ui/cn";
+import { IconTooltip } from "#app/shared/ui/IconTooltip";
 import { SlotText } from "#app/shared/ui/SlotText";
 
 const searchFieldRowClass = cn("flex h-7 items-center gap-1.5 rounded-sm bg-ctp-surface0 px-2");
@@ -19,8 +21,10 @@ const searchOptionButtonClass = cn(
   "focus-visible:outline-2 focus-visible:-outline-offset-1 focus-visible:outline-badge-background",
 );
 
-const searchOptionButtonActiveClass = cn(
-  "bg-ctp-blue/20 text-ctp-blue hover:bg-ctp-blue/25 hover:text-ctp-blue",
+const searchRegexToggleClass = cn(
+  searchOptionButtonClass,
+  "data-pressed:bg-ctp-blue/20 data-pressed:text-ctp-blue",
+  "hover:data-pressed:bg-ctp-blue/25 hover:data-pressed:text-ctp-blue",
 );
 
 export function SearchQueryChrome({
@@ -62,25 +66,29 @@ export function SearchQueryChrome({
           placeholder={isRegex ? "正则表达式" : undefined}
           onChange={(event) => onQueryChange(event.target.value)}
         />
-        <button
-          type="button"
-          className={cn(searchOptionButtonClass, isRegex && searchOptionButtonActiveClass)}
-          title="使用正则表达式"
-          aria-label="使用正则表达式"
-          aria-pressed={isRegex}
-          onClick={onToggleRegex}
-        >
-          <span className="icon-[codicon--regex] text-sm" />
-        </button>
-        {query !== "" ? (
-          <button
-            type="button"
-            className={searchOptionButtonClass}
-            title="清除"
-            onClick={() => onQueryChange("")}
+        <IconTooltip label="使用正则表达式" side="bottom">
+          <Toggle
+            pressed={isRegex}
+            className={searchRegexToggleClass}
+            aria-label="使用正则表达式"
+            onPressedChange={() => {
+              onToggleRegex();
+            }}
           >
-            <span className="icon-[codicon--close] text-sm" />
-          </button>
+            <span className="icon-[codicon--regex] text-sm" />
+          </Toggle>
+        </IconTooltip>
+        {query !== "" ? (
+          <IconTooltip label="清除" side="bottom">
+            <button
+              type="button"
+              className={searchOptionButtonClass}
+              aria-label="清除"
+              onClick={() => onQueryChange("")}
+            >
+              <span className="icon-[codicon--close] text-sm" />
+            </button>
+          </IconTooltip>
         ) : null}
       </div>
       <p className="mt-1.5 px-0.5 text-[10px] leading-snug text-ctp-subtext0">

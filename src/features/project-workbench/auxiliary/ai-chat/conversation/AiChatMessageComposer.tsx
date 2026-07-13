@@ -1,5 +1,7 @@
 import type { KeyboardEvent, RefObject, SubmitEvent } from "react";
 
+import { IconTooltip } from "#app/shared/ui/IconTooltip";
+
 import { AiChatAgentSelector, AiChatModelSelector, type AiChatSelectorItem } from "../selectors";
 import {
   composerShellClass,
@@ -85,26 +87,28 @@ export function AiChatMessageComposer({
         />
         <span className="min-w-0 flex-1" />
         {canStop ? (
-          <button
-            aria-label="停止"
-            className={stopButtonClass}
-            title="停止"
-            type="button"
-            onClick={onStopClick}
-          >
-            <span aria-hidden="true" className="icon-[codicon--debug-stop] text-sm" />
-          </button>
+          <IconTooltip label="停止" side="top">
+            <button
+              aria-label="停止"
+              className={stopButtonClass}
+              type="button"
+              onClick={onStopClick}
+            >
+              <span aria-hidden="true" className="icon-[codicon--debug-stop] text-sm" />
+            </button>
+          </IconTooltip>
         ) : (
-          <button
-            aria-label="发送"
-            className={sendButtonClass}
-            disabled={!canSend}
-            title="发送"
-            type="button"
-            onClick={onSendClick}
-          >
-            <span aria-hidden="true" className="icon-[codicon--newline] text-sm" />
-          </button>
+          <IconTooltip label="发送" side="top" disabled={!canSend}>
+            <button
+              aria-label="发送"
+              className={sendButtonClass}
+              disabled={!canSend}
+              type="button"
+              onClick={onSendClick}
+            >
+              <span aria-hidden="true" className="icon-[codicon--newline] text-sm" />
+            </button>
+          </IconTooltip>
         )}
       </div>
     </form>
