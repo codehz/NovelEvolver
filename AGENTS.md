@@ -94,7 +94,7 @@ Follow the existing Conventional Commit style: `feat(electron): ...`, `fix: ...`
 
 Renderer overlays use **`@base-ui/react`** (unstyled, tree-shakable). Prefer Base UI for new Dialog / Popover / Menu / Context Menu work.
 
-- **Do not** add new consumers of the legacy `createPopover` factory or reintroduce a native `<dialog showModal>` wrapper. QuickPick uses Base UI `Dialog`; context menus use Base UI `Menu` with a virtual pointer anchor. The `createPopover` factory itself is leftover debt for removal once no importers remain.
+- Prefer Base UI overlays: QuickPick uses `Dialog`, context menus use `Menu` with a virtual pointer anchor, anchored selectors/notifications use `Popover`. Do not reintroduce a custom `createPopover` factory or native `<dialog showModal>` wrapper.
 - Prefer CSS transitions via Base UI `data-starting-style` / `data-ending-style` over hand-rolled close timers.
 - Keep the app root with `isolation: isolate` (Tailwind `isolate` on the root in `App.tsx`) so portaled popups stack above page content.
 
