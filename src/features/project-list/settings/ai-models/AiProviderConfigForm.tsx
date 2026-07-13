@@ -1,5 +1,6 @@
 import { useId, useState, type SubmitEvent } from "react";
 
+import { cn } from "#app/shared/lib/ui/cn";
 import type {
   AiAdapterKind,
   AiProviderConfigPublic,
@@ -7,6 +8,7 @@ import type {
 } from "#shared/rpc/services/index";
 
 import {
+  settingsCheckboxLabelClass,
   settingsFieldLabelClass,
   settingsFormActionsClass,
   settingsFormClass,
@@ -15,8 +17,9 @@ import {
   settingsInputClass,
   settingsPrimaryButtonClass,
   settingsSecondaryButtonClass,
-  settingsSelectClass,
 } from "../settings-chrome";
+import { SettingsCheckbox } from "../SettingsCheckbox";
+import { SettingsSelect } from "../SettingsSelect";
 import { AI_ADAPTER_OPTIONS, aiAdapterEndpointPlaceholder } from "./ai-adapter-labels";
 
 type FormState = {
@@ -118,21 +121,18 @@ export function AiProviderConfigForm({
         <label className={settingsFieldLabelClass} htmlFor={kindId}>
           API 形式
         </label>
-        <select
-          className={settingsSelectClass}
+        <SettingsSelect
           disabled={busy}
           id={kindId}
           value={form.kind}
-          onChange={(event) => {
-            update("kind", event.target.value as AiAdapterKind);
+          options={AI_ADAPTER_OPTIONS.map((option) => ({
+            value: option.value,
+            label: option.label,
+          }))}
+          onValueChange={(next) => {
+            update("kind", next as AiAdapterKind);
           }}
-        >
-          {AI_ADAPTER_OPTIONS.map((option) => (
-            <option key={option.value} value={option.value}>
-              {option.label}
-            </option>
-          ))}
-        </select>
+        />
 
         <label className={settingsFieldLabelClass} htmlFor={baseUrlId}>
           Endpoint
@@ -171,14 +171,13 @@ export function AiProviderConfigForm({
             }}
           />
           {isEdit && initial.hasApiKey ? (
-            <label className="flex items-center gap-1.5 text-2xs text-app-muted">
-              <input
+            <label className={cn(settingsCheckboxLabelClass, "items-center text-app-muted")}>
+              <SettingsCheckbox
                 checked={form.clearApiKey}
                 disabled={busy}
-                type="checkbox"
-                onChange={(event) => {
-                  update("clearApiKey", event.target.checked);
-                  if (event.target.checked) {
+                onCheckedChange={(checked) => {
+                  update("clearApiKey", checked);
+                  if (checked) {
                     update("apiKey", "");
                   }
                 }}

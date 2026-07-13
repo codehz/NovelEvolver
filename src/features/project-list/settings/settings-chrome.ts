@@ -101,9 +101,59 @@ export const settingsInputClass = cn(
   "placeholder:text-app-muted focus:border-badge-background/60 disabled:opacity-50",
 );
 
-export const settingsSelectClass = cn(
-  "w-full rounded-sm border border-titlebar-border bg-app-surface px-2 py-1.5 text-xs leading-tight text-app-foreground outline-none",
-  "focus:border-badge-background/60 disabled:opacity-50",
+/** Base UI Select trigger — replaces native `<select>`. */
+export const settingsSelectTriggerClass = cn(
+  "flex w-full min-w-0 items-center justify-between gap-2 rounded-sm border border-titlebar-border bg-app-surface px-2.5 py-1.5 text-left text-xs leading-tight text-app-foreground outline-none select-none",
+  "hover:not-data-disabled:bg-ctp-surface0/30",
+  "focus-visible:border-badge-background/60",
+  "data-popup-open:border-badge-background/60 data-popup-open:bg-ctp-surface0/30",
+  "data-disabled:cursor-default data-disabled:opacity-50",
+);
+
+export const settingsSelectValueClass = cn(
+  "min-w-0 flex-1 truncate data-placeholder:text-app-muted",
+);
+
+export const settingsSelectIconClass = cn("flex shrink-0 items-center text-sm text-app-muted");
+
+export const settingsSelectPositionerClass = cn("z-settings outline-none");
+
+export const settingsSelectPopupClass = cn(
+  "max-h-[min(16rem,var(--available-height))] min-w-(--anchor-width) origin-(--transform-origin) overflow-hidden rounded-md border border-titlebar-border bg-app-surface text-xs text-app-foreground shadow-quick-pick outline-none app-region-no-drag",
+  "transition-[opacity,scale] duration-120 ease-[cubic-bezier(0.33,1,0.68,1)]",
+  "data-starting-style:scale-[0.98] data-starting-style:opacity-0",
+  "data-ending-style:scale-[0.98] data-ending-style:opacity-0",
+);
+
+export const settingsSelectListClass = cn("max-h-[inherit] overflow-y-auto py-1 outline-none");
+
+export const settingsSelectItemClass = cn(
+  "grid cursor-default grid-cols-[1rem_minmax(0,1fr)] items-center gap-2 px-2.5 py-1.5 text-left text-xs leading-tight outline-none select-none",
+  "text-app-foreground data-highlighted:bg-ctp-surface0/70",
+  "data-disabled:cursor-default data-disabled:text-app-muted",
+);
+
+export const settingsSelectItemIndicatorClass = cn(
+  "col-start-1 flex size-4 items-center justify-center text-badge-background",
+);
+
+export const settingsSelectItemTextClass = cn("col-start-2 min-w-0 truncate");
+
+/** Base UI Checkbox root. */
+export const settingsCheckboxClass = cn(
+  "mt-0.5 flex size-3.5 shrink-0 items-center justify-center rounded-sm border border-titlebar-border bg-app-surface text-badge-foreground outline-none",
+  "data-checked:border-badge-background data-checked:bg-badge-background",
+  "focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-badge-background/70",
+  "data-disabled:opacity-50",
+);
+
+export const settingsCheckboxIndicatorClass = cn(
+  "flex items-center justify-center data-unchecked:hidden",
+);
+
+export const settingsCheckboxLabelClass = cn(
+  "flex cursor-pointer items-start gap-1.5 text-2xs text-app-foreground",
+  "has-data-disabled:cursor-default has-data-disabled:opacity-50",
 );
 
 export const settingsFormActionsClass = cn("flex items-center justify-end gap-2");

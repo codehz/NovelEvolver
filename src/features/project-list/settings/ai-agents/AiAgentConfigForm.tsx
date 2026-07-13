@@ -1,3 +1,4 @@
+import { CheckboxGroup } from "@base-ui/react/checkbox-group";
 import { useId, useState, type SubmitEvent } from "react";
 
 import type {
@@ -9,6 +10,7 @@ import type {
 } from "#shared/rpc/services/index";
 
 import {
+  settingsCheckboxLabelClass,
   settingsFieldLabelClass,
   settingsFormActionsClass,
   settingsFormClass,
@@ -17,8 +19,9 @@ import {
   settingsInputClass,
   settingsPrimaryButtonClass,
   settingsSecondaryButtonClass,
-  settingsSelectClass,
 } from "../settings-chrome";
+import { SettingsCheckbox } from "../SettingsCheckbox";
+import { SettingsSelect } from "../SettingsSelect";
 
 type FormState = {
   name: string;
@@ -77,16 +80,6 @@ export function AiAgentConfigForm({
     setForm((prev) => ({ ...prev, [key]: value }));
   };
 
-  const toggleTool = (toolName: string) => {
-    if (readOnly) return;
-    setForm((prev) => {
-      const next = prev.availableToolNames.includes(toolName)
-        ? prev.availableToolNames.filter((n) => n !== toolName)
-        : [...prev.availableToolNames, toolName];
-      return { ...prev, availableToolNames: next };
-    });
-  };
-
   const handleSubmit = (event: SubmitEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (readOnly || !onSubmit) return;
@@ -143,57 +136,47 @@ export function AiAgentConfigForm({
         <label className={settingsFieldLabelClass} htmlFor={defaultModelIdField}>
           默认模型
         </label>
-        <select
-          className={settingsSelectClass}
+        <SettingsSelect
           disabled={busy || readOnly}
           id={defaultModelIdField}
+          readOnly={readOnly}
           value={form.defaultModelId}
-          onChange={(event) => {
-            update("defaultModelId", event.target.value);
+          options={[
+            { value: "", label: "继承对话默认模型" },
+            ...models.map((model) => {
+              const providerName = providerNameById.get(model.providerId);
+              const label = providerName ? `${model.name}（${providerName}）` : model.name;
+              return { value: model.id, label };
+            }),
+          ]}
+          onValueChange={(next) => {
+            update("defaultModelId", next);
           }}
-        >
-          <option value="">继承对话默认模型</option>
-          {models.map((model) => {
-            const providerName = providerNameById.get(model.providerId);
-            const label = providerName ? `${model.name}（${providerName}）` : model.name;
-            return (
-              <option key={model.id} value={model.id}>
-                {label}
-              </option>
-            );
-          })}
-        </select>
+        />
 
         <label className={settingsFieldLabelClass}>可用工具</label>
-        <div className="flex flex-col gap-1.5">
-          {tools.map((tool) => {
-            const checked = form.availableToolNames.includes(tool.name);
-            return (
-              <label
-                key={tool.name}
-                className="flex cursor-pointer items-start gap-1.5 text-2xs text-app-foreground"
-              >
-                <input
-                  checked={checked}
-                  className="mt-0.5 shrink-0 accent-badge-background"
-                  disabled={busy || readOnly}
-                  type="checkbox"
-                  onChange={() => {
-                    toggleTool(tool.name);
-                  }}
-                />
-                <span className="min-w-0 flex-1 leading-tight">
-                  <span className="font-medium">{tool.name}</span>
-                  {tool.description ? (
-                    <>
-                      ：<span className="text-app-muted">{tool.description}</span>
-                    </>
-                  ) : null}
-                </span>
-              </label>
-            );
-          })}
-        </div>
+        <CheckboxGroup
+          className="flex flex-col gap-1.5"
+          disabled={busy || readOnly}
+          value={form.availableToolNames}
+          onValueChange={(next) => {
+            update("availableToolNames", next);
+          }}
+        >
+          {tools.map((tool) => (
+            <label key={tool.name} className={settingsCheckboxLabelClass}>
+              <SettingsCheckbox value={tool.name} />
+              <span className="min-w-0 flex-1 leading-tight">
+                <span className="font-medium">{tool.name}</span>
+                {tool.description ? (
+                  <>
+                    ：<span className="text-app-muted">{tool.description}</span>
+                  </>
+                ) : null}
+              </span>
+            </label>
+          ))}
+        </CheckboxGroup>
       </div>
 
       {error ? <p className={settingsFormErrorClass}>{error}</p> : null}

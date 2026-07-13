@@ -20,8 +20,8 @@ import {
   settingsInputClass,
   settingsPrimaryButtonClass,
   settingsSecondaryButtonClass,
-  settingsSelectClass,
 } from "../settings-chrome";
+import { SettingsSelect } from "../SettingsSelect";
 type FormState = {
   providerId: string;
   name: string;
@@ -156,22 +156,19 @@ export function AiModelConfigForm({
         <label className={settingsFieldLabelClass} htmlFor={providerIdField}>
           供应商
         </label>
-        <select
-          className={settingsSelectClass}
+        <SettingsSelect
           disabled={busy}
           id={providerIdField}
           required
           value={form.providerId}
-          onChange={(event) => {
-            update("providerId", event.target.value);
+          options={providers.map((provider) => ({
+            value: provider.id,
+            label: provider.name,
+          }))}
+          onValueChange={(next) => {
+            update("providerId", next);
           }}
-        >
-          {providers.map((provider) => (
-            <option key={provider.id} value={provider.id}>
-              {provider.name}
-            </option>
-          ))}
-        </select>
+        />
 
         <label className={settingsFieldLabelClass} htmlFor={nameId}>
           显示名称
