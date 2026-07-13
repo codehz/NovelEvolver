@@ -1,5 +1,6 @@
 import { SidebarHeaderActionButton, SidebarHeaderActions } from "#workbench/chrome";
 
+import { AiChatHistorySelector } from "../history/AiChatHistorySelector";
 import { useAiChatSessionActions } from "../hooks/use-ai-chat-session-actions";
 
 export function AiChatHeaderActions({
@@ -9,7 +10,7 @@ export function AiChatHeaderActions({
   mockAiAvailable: boolean;
   onClearDraft: () => void;
 }) {
-  const { loading, pending, handleOpenHistory, handleCreateConversation, handleRunMockScenario } =
+  const { loading, pending, handleCreateConversation, handleRunMockScenario } =
     useAiChatSessionActions(onClearDraft);
 
   return (
@@ -24,14 +25,7 @@ export function AiChatHeaderActions({
           }}
         />
       ) : null}
-      <SidebarHeaderActionButton
-        disabled={loading}
-        icon="icon-[codicon--history]"
-        label="历史会话"
-        onClick={() => {
-          void handleOpenHistory();
-        }}
-      />
+      <AiChatHistorySelector disabled={loading} onClearDraft={onClearDraft} />
       <SidebarHeaderActionButton
         disabled={loading}
         icon="icon-[codicon--add]"

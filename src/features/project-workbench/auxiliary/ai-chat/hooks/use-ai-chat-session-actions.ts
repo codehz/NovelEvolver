@@ -2,32 +2,12 @@ import { useCallback } from "react";
 
 import { useProjectContext } from "#workbench/state/molecules";
 
-import { pickAiConversation } from "../quick-pick/ai-chat-history-quick-pick";
 import { pickMockAiScenario } from "../quick-pick/mock-scenario-quick-pick";
 import { useAiChatState } from "../state/use-ai-chat-state";
 
 export function useAiChatSessionActions(onClearDraft: () => void) {
   const project = useProjectContext();
-  const { snapshot, loading, createConversation, listConversations, switchConversation } =
-    useAiChatState();
-
-  const handleOpenHistory = useCallback(async () => {
-    if (loading) {
-      return;
-    }
-
-    const conversations = await listConversations();
-    const selectedId = await pickAiConversation({
-      conversations,
-      activeConversationId: snapshot.conversationId,
-    });
-    if (selectedId === null || selectedId === snapshot.conversationId) {
-      return;
-    }
-
-    onClearDraft();
-    await switchConversation(selectedId);
-  }, [listConversations, loading, onClearDraft, snapshot.conversationId, switchConversation]);
+  const { snapshot, loading, createConversation } = useAiChatState();
 
   const handleCreateConversation = useCallback(async () => {
     if (loading) {
@@ -60,7 +40,6 @@ export function useAiChatSessionActions(onClearDraft: () => void) {
   return {
     loading,
     pending: snapshot.pending,
-    handleOpenHistory,
     handleCreateConversation,
     handleRunMockScenario,
   };

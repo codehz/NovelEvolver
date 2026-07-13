@@ -2,6 +2,10 @@ import type {
   AiChatEvent,
   AiChatSelectableAgent,
   AiChatSelectableModel,
+  AiConversationListOptions,
+  AiConversationSearchHit,
+  AiConversationSearchOptions,
+  AiConversationStatus,
   AiConversationSummary,
 } from "#shared/rpc/ai/index";
 import { MOCK_AI_MODEL_ID } from "#shared/rpc/ai/index";
@@ -21,6 +25,86 @@ import {
   listSelectableModels,
   resolveDefaultSelectedModelId,
 } from "./selectable-models";
+
+const SEARCH_SNIPPET_RADIUS = 36;
+const SEARCH_SNIPPET_MAX = 96;
+
+function compareConversationRecency(
+  left: Pick<AiConversationSummary, "lastActiveAt" | "id">,
+  right: Pick<AiConversationSummary, "lastActiveAt" | "id">,
+): number {
+  if (right.lastActiveAt !== left.lastActiveAt) {
+    return right.lastActiveAt - left.lastActiveAt;
+  }
+  return right.id.localeCompare(left.id);
+}
+
+function extractSearchSnippet(text: string, query: string): string | null {
+  const haystack = text.replace(/\s+/g, " ").trim();
+  if (haystack === "") {
+    return null;
+  }
+  const lowerHaystack = haystack.toLowerCase();
+  const lowerQuery = query.toLowerCase();
+  const index = lowerHaystack.indexOf(lowerQuery);
+  if (index < 0) {
+    return null;
+  }
+  const start = Math.max(0, index - SEARCH_SNIPPET_RADIUS);
+  const end = Math.min(haystack.length, index + lowerQuery.length + SEARCH_SNIPPET_RADIUS);
+  let snippet = haystack.slice(start, end).trim();
+  if (start > 0) {
+    snippet = `…${snippet}`;
+  }
+  if (end < haystack.length) {
+    snippet = `${snippet}…`;
+  }
+  if (snippet.length > SEARCH_SNIPPET_MAX) {
+    snippet = `${snippet.slice(0, SEARCH_SNIPPET_MAX - 1)}…`;
+  }
+  return snippet;
+}
+
+function extractSnippetFromMessagesJson(messagesJson: string, query: string): string | null {
+  try {
+    const parsed = JSON.parse(messagesJson) as unknown;
+    if (!Array.isArray(parsed)) {
+      return null;
+    }
+    for (const entry of parsed) {
+      if (!entry || typeof entry !== "object") {
+        continue;
+      }
+      const message = entry as Record<string, unknown>;
+      if (message.role === "user" && typeof message.text === "string") {
+        const snippet = extractSearchSnippet(message.text, query);
+        if (snippet) {
+          return snippet;
+        }
+      }
+      if (message.role === "assistant" && Array.isArray(message.parts)) {
+        for (const part of message.parts) {
+          if (!part || typeof part !== "object") {
+            continue;
+          }
+          const typed = part as Record<string, unknown>;
+          if (
+            (typed.type === "message" || typed.type === "reasoning") &&
+            typeof typed.text === "string"
+          ) {
+            const snippet = extractSearchSnippet(typed.text, query);
+            if (snippet) {
+              return snippet;
+            }
+          }
+        }
+      }
+    }
+  } catch {
+    return null;
+  }
+  return null;
+}
 
 export type ProjectAiChatControllerOptions = {
   projectId: number;
@@ -207,10 +291,13 @@ export class ProjectAiChatController {
     });
   }
 
-  listConversations(): AiConversationSummary[] {
+  listConversations(options?: AiConversationListOptions): AiConversationSummary[] {
+    const includeArchived = options?.includeArchived === true;
     const summaries = new Map<string, AiConversationSummary>();
 
-    for (const record of this.#repository.listByProject(this.#runtimeOptions.projectId)) {
+    for (const record of this.#repository.listSummariesByProject(this.#runtimeOptions.projectId, {
+      status: includeArchived ? "all" : "active",
+    })) {
       summaries.set(record.id, recordToConversationSummary(record));
     }
 
@@ -218,15 +305,71 @@ export class ProjectAiChatController {
       if (runtime.persistence === "ephemeral") {
         continue;
       }
-      summaries.set(runtime.conversationId, runtime.getSummary());
+      const summary = runtime.getSummary();
+      if (!includeArchived && summary.status === "archived") {
+        continue;
+      }
+      summaries.set(runtime.conversationId, summary);
     }
 
-    return [...summaries.values()].sort((left, right) => {
-      if (right.createdAt !== left.createdAt) {
-        return right.createdAt - left.createdAt;
+    return [...summaries.values()].sort(compareConversationRecency);
+  }
+
+  searchConversations(
+    query: string,
+    options?: AiConversationSearchOptions,
+  ): AiConversationSearchHit[] {
+    const normalized = query.trim();
+    if (normalized === "") {
+      return [];
+    }
+
+    const includeArchived = options?.includeArchived === true;
+    const hits = new Map<string, AiConversationSearchHit>();
+    const lowerQuery = normalized.toLowerCase();
+
+    for (const record of this.#repository.searchByProject(
+      this.#runtimeOptions.projectId,
+      normalized,
+      { includeArchived },
+    )) {
+      const summary = recordToConversationSummary(record);
+      const titleMatch = summary.title.toLowerCase().includes(lowerQuery);
+      const snippet =
+        extractSnippetFromMessagesJson(record.messagesJson, normalized) ??
+        (titleMatch ? null : null);
+      hits.set(summary.id, { ...summary, snippet });
+    }
+
+    for (const runtime of this.#runtimes.values()) {
+      if (runtime.persistence === "ephemeral") {
+        continue;
       }
-      return right.id.localeCompare(left.id);
-    });
+      const summary = runtime.getSummary();
+      if (!includeArchived && summary.status === "archived") {
+        continue;
+      }
+
+      const titleMatch = summary.title.toLowerCase().includes(lowerQuery);
+      let snippet: string | null = null;
+      if (!titleMatch || !hits.has(summary.id)) {
+        for (const text of runtime.collectSearchableTexts()) {
+          snippet = extractSearchSnippet(text, normalized);
+          if (snippet) {
+            break;
+          }
+        }
+      }
+      if (!titleMatch && snippet == null) {
+        continue;
+      }
+      hits.set(summary.id, {
+        ...summary,
+        snippet: snippet ?? hits.get(summary.id)?.snippet ?? null,
+      });
+    }
+
+    return [...hits.values()].sort(compareConversationRecency);
   }
 
   switchConversation(conversationId: string): void {
@@ -243,6 +386,38 @@ export class ProjectAiChatController {
     runtime.touchLastActive();
     runtime.persistIfNeeded();
     this.#setActiveRuntime(runtime, true);
+  }
+
+  renameConversation(conversationId: string, title: string): void {
+    const normalized = conversationId.trim();
+    if (normalized === "") {
+      throw new Error("会话 id 不能为空。");
+    }
+    const runtime = this.#getOrLoadRuntime(normalized);
+    runtime.rename(title);
+  }
+
+  archiveConversation(conversationId: string): void {
+    this.#setConversationStatus(conversationId, "archived");
+  }
+
+  unarchiveConversation(conversationId: string): void {
+    this.#setConversationStatus(conversationId, "active");
+  }
+
+  deleteConversation(conversationId: string): void {
+    const normalized = conversationId.trim();
+    if (normalized === "") {
+      throw new Error("会话 id 不能为空。");
+    }
+
+    const wasActive = normalized === this.#activeConversationId;
+    this.#disposeRuntime(normalized, { persist: false });
+    this.#repository.deleteById(this.#runtimeOptions.projectId, normalized);
+
+    if (wasActive) {
+      this.#activateNextOrCreate(normalized);
+    }
   }
 
   [Symbol.dispose](): void {
@@ -330,6 +505,70 @@ export class ProjectAiChatController {
       throw new Error("当前没有激活的 AI 会话。");
     }
     return runtime;
+  }
+
+  #setConversationStatus(conversationId: string, status: AiConversationStatus): void {
+    const normalized = conversationId.trim();
+    if (normalized === "") {
+      throw new Error("会话 id 不能为空。");
+    }
+
+    const wasActive = normalized === this.#activeConversationId;
+    const runtime = this.#runtimes.get(normalized);
+    if (runtime) {
+      runtime.stopGeneration();
+      runtime.setStatus(status);
+    } else {
+      const updated = this.#repository.setStatus(
+        this.#runtimeOptions.projectId,
+        normalized,
+        status,
+      );
+      if (!updated) {
+        throw new Error("找不到指定的 AI 会话。");
+      }
+    }
+
+    if (wasActive && status === "archived") {
+      this.#activateNextOrCreate(normalized);
+    }
+  }
+
+  #disposeRuntime(conversationId: string, options: { persist: boolean }): void {
+    const runtime = this.#runtimes.get(conversationId);
+    if (!runtime) {
+      return;
+    }
+
+    if (conversationId === this.#activeConversationId) {
+      this.#activeRuntimeListenerCleanup?.();
+      this.#activeRuntimeListenerCleanup = null;
+    }
+
+    runtime.stopGeneration();
+    if (!options.persist) {
+      runtime.discard();
+    }
+    this.#runtimes.delete(conversationId);
+    runtime[Symbol.dispose]();
+  }
+
+  #activateNextOrCreate(excludeId: string): void {
+    const next = this.listConversations({ includeArchived: false }).find(
+      (conversation) => conversation.id !== excludeId,
+    );
+    if (next) {
+      const runtime = this.#getOrLoadRuntime(next.id);
+      runtime.touchLastActive();
+      runtime.persistIfNeeded();
+      this.#setActiveRuntime(runtime, true);
+      return;
+    }
+
+    const runtime = this.#createRuntime({
+      selectedModelId: this.#resolveInitialSelectedModelId(null),
+    });
+    this.#setActiveRuntime(runtime, true);
   }
 
   #setActiveRuntime(runtime: AiConversationRuntime, emitSnapshot: boolean): void {

@@ -14,6 +14,9 @@ import type {
   AiChatSelectableAgent,
   AiChatSelectableModel,
   AiChatSnapshot,
+  AiConversationListOptions,
+  AiConversationSearchHit,
+  AiConversationSearchOptions,
   AiConversationSummary,
 } from "#shared/rpc/ai/index";
 import { useAiChat } from "#workbench/branch/branch-scopes";
@@ -72,13 +75,54 @@ function useAiChatStateValue() {
     await Promise.resolve(aiChat.createConversation());
   }, [aiChat]);
 
-  const listConversations = useCallback(async (): Promise<AiConversationSummary[]> => {
-    return await Promise.resolve(aiChat.listConversations());
-  }, [aiChat]);
+  const listConversations = useCallback(
+    async (options?: AiConversationListOptions): Promise<AiConversationSummary[]> => {
+      return await Promise.resolve(aiChat.listConversations(options));
+    },
+    [aiChat],
+  );
+
+  const searchConversations = useCallback(
+    async (
+      query: string,
+      options?: AiConversationSearchOptions,
+    ): Promise<AiConversationSearchHit[]> => {
+      return await Promise.resolve(aiChat.searchConversations(query, options));
+    },
+    [aiChat],
+  );
 
   const switchConversation = useCallback(
     async (conversationId: string): Promise<void> => {
       await Promise.resolve(aiChat.switchConversation(conversationId));
+    },
+    [aiChat],
+  );
+
+  const renameConversation = useCallback(
+    async (conversationId: string, title: string): Promise<void> => {
+      await Promise.resolve(aiChat.renameConversation(conversationId, title));
+    },
+    [aiChat],
+  );
+
+  const archiveConversation = useCallback(
+    async (conversationId: string): Promise<void> => {
+      await Promise.resolve(aiChat.archiveConversation(conversationId));
+    },
+    [aiChat],
+  );
+
+  const unarchiveConversation = useCallback(
+    async (conversationId: string): Promise<void> => {
+      await Promise.resolve(aiChat.unarchiveConversation(conversationId));
+    },
+    [aiChat],
+  );
+
+  const deleteConversation = useCallback(
+    async (conversationId: string): Promise<void> => {
+      await Promise.resolve(aiChat.deleteConversation(conversationId));
     },
     [aiChat],
   );
@@ -118,7 +162,12 @@ function useAiChatStateValue() {
     retryLastRequest,
     createConversation,
     listConversations,
+    searchConversations,
     switchConversation,
+    renameConversation,
+    archiveConversation,
+    unarchiveConversation,
+    deleteConversation,
     listSelectableModels,
     setSelectedModel,
     listSelectableAgents,

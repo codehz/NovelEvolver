@@ -12,6 +12,7 @@ export function initAiChatSchema(db: DatabaseSync): void {
       id TEXT NOT NULL,
       project_id INTEGER NOT NULL,
       title TEXT NOT NULL,
+      title_customized INTEGER NOT NULL DEFAULT 0,
       status TEXT NOT NULL DEFAULT 'active',
       created_at INTEGER NOT NULL,
       updated_at INTEGER NOT NULL,
@@ -48,5 +49,8 @@ export function initAiChatSchema(db: DatabaseSync): void {
     db.exec(
       "ALTER TABLE ai_conversation ADD COLUMN selected_agent_id TEXT NOT NULL DEFAULT 'builtin-writing-assistant'",
     );
+  }
+  if (!columns.some((column) => column.name === "title_customized")) {
+    db.exec("ALTER TABLE ai_conversation ADD COLUMN title_customized INTEGER NOT NULL DEFAULT 0");
   }
 }

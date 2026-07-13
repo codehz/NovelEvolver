@@ -26,7 +26,12 @@ import type {
 } from "#shared/rpc/ai/index";
 import { BUILTIN_AI_AGENT_ID } from "#shared/rpc/services/index";
 
-import type { AiChatRepository, AiConversationRecord } from "../../db/repositories/ai-chat-repo";
+import type {
+  AiChatRepository,
+  AiConversationRecord,
+  AiConversationStatus,
+  AiConversationSummaryRecord,
+} from "../../db/repositories/ai-chat-repo";
 import { contentBlockToDisplayText, joinContentBlocksText } from "../ai-utils";
 import {
   parsePendingToolBatch,
@@ -96,11 +101,18 @@ function normalizeStoredWarning(entry: unknown): AiChatWarning {
   return { id, messageId, message, code };
 }
 
-export function recordToConversationActivity(record: AiConversationRecord): AiConversationActivity {
-  return record.pendingToolBatchJson ? "awaiting_user" : "idle";
+export function recordToConversationActivity(
+  record: Pick<AiConversationRecord, "pendingToolBatchJson"> | AiConversationSummaryRecord,
+): AiConversationActivity {
+  if ("pendingToolBatchJson" in record) {
+    return record.pendingToolBatchJson ? "awaiting_user" : "idle";
+  }
+  return record.hasPendingToolBatch ? "awaiting_user" : "idle";
 }
 
-export function recordToConversationSummary(record: AiConversationRecord): AiConversationSummary {
+export function recordToConversationSummary(
+  record: AiConversationRecord | AiConversationSummaryRecord,
+): AiConversationSummary {
   return {
     id: record.id,
     title: record.title,
@@ -110,6 +122,7 @@ export function recordToConversationSummary(record: AiConversationRecord): AiCon
     activity: recordToConversationActivity(record),
     persisted: true,
     scenarioId: record.scenarioId,
+    status: record.status,
   };
 }
 
@@ -129,7 +142,7 @@ export class AiConversationState {
   #createdAt = 0;
   #updatedAt = 0;
   #lastActiveAt = 0;
-  #status: "active" | "archived" = "active";
+  #status: AiConversationStatus = "active";
   #selectedModelId = "";
   #selectedAgentId: string = BUILTIN_AI_AGENT_ID;
   #pendingToolBatch: PendingToolBatch | null = null;
@@ -138,6 +151,8 @@ export class AiConversationState {
   #messageCounter = 0;
   #dirty = false;
   #persisted = false;
+  #titleCustomized = false;
+  #discarded = false;
 
   constructor(options: AiConversationStateOptions) {
     this.#projectId = options.projectId;
@@ -238,6 +253,14 @@ export class AiConversationState {
     return rebuildLastRequestInput(this.#history).length > 0;
   }
 
+  get status(): AiConversationStatus {
+    return this.#status;
+  }
+
+  get titleCustomized(): boolean {
+    return this.#titleCustomized;
+  }
+
   getSummary(): AiConversationSummary {
     return {
       id: this.#conversationId,
@@ -248,15 +271,68 @@ export class AiConversationState {
       activity: this.#activity,
       persisted: this.#persisted,
       scenarioId: this.#scenarioId,
+      status: this.#status,
     };
+  }
+
+  /** Collect plain-text message bodies for in-memory search / snippet extraction. */
+  collectSearchableTexts(): string[] {
+    const texts: string[] = [];
+    for (const message of this.#messages) {
+      if (message.role === "user") {
+        const text = message.text.trim();
+        if (text !== "") {
+          texts.push(text);
+        }
+        continue;
+      }
+      for (const part of message.parts) {
+        if (part.type === "message" || part.type === "reasoning") {
+          const text = part.text.trim();
+          if (text !== "") {
+            texts.push(text);
+          }
+        }
+      }
+    }
+    return texts;
   }
 
   touchLastActive(): void {
     this.#markDirty();
   }
 
+  /** Skip future persists (used before hard-delete dispose). */
+  discard(): void {
+    this.#discarded = true;
+    this.#dirty = false;
+  }
+
+  rename(title: string): void {
+    const normalized = title.trim().replace(/\s+/g, " ");
+    if (normalized === "") {
+      throw new Error("会话标题不能为空。");
+    }
+    this.#title =
+      normalized.length > TITLE_MAX_LENGTH
+        ? `${normalized.slice(0, TITLE_MAX_LENGTH)}…`
+        : normalized;
+    this.#titleCustomized = true;
+    this.#markDirty();
+    this.persistIfNeeded();
+  }
+
+  setStatus(status: AiConversationStatus): void {
+    if (this.#status === status) {
+      return;
+    }
+    this.#status = status;
+    this.#markDirty();
+    this.persistIfNeeded();
+  }
+
   persistIfNeeded(): void {
-    if (!this.#dirty) {
+    if (this.#discarded || !this.#dirty) {
       return;
     }
 
@@ -266,7 +342,7 @@ export class AiConversationState {
       return;
     }
 
-    if (this.isPureDraft) {
+    if (this.isPureDraft && this.#status === "active") {
       this.#dirty = false;
       this.#persisted = false;
       return;
@@ -292,6 +368,7 @@ export class AiConversationState {
       id: this.#conversationId,
       projectId: this.#projectId,
       title,
+      titleCustomized: this.#titleCustomized,
       status: this.#status,
       createdAt: this.#createdAt,
       updatedAt: this.#updatedAt,
@@ -641,6 +718,7 @@ export class AiConversationState {
     const now = Date.now();
     this.#conversationId = randomUUID();
     this.#title = EMPTY_TITLE;
+    this.#titleCustomized = false;
     this.#createdAt = now;
     this.#updatedAt = now;
     this.#lastActiveAt = now;
@@ -655,11 +733,13 @@ export class AiConversationState {
     this.#messageCounter = 0;
     this.#dirty = false;
     this.#persisted = false;
+    this.#discarded = false;
   }
 
   #loadRecord(record: AiConversationRecord): void {
     this.#conversationId = record.id;
     this.#title = record.title;
+    this.#titleCustomized = record.titleCustomized;
     this.#createdAt = record.createdAt;
     this.#updatedAt = record.updatedAt;
     this.#lastActiveAt = record.lastActiveAt;
@@ -672,6 +752,7 @@ export class AiConversationState {
     this.#errorMessage = record.errorMessage;
     this.#dirty = false;
     this.#persisted = true;
+    this.#discarded = false;
 
     this.#messages.length = 0;
     this.#messageIndexById.clear();
@@ -746,6 +827,9 @@ export class AiConversationState {
   }
 
   #deriveTitle(): string {
+    if (this.#titleCustomized) {
+      return this.#title || EMPTY_TITLE;
+    }
     const firstUser = this.#messages.find((message) => message.role === "user");
     if (!firstUser || firstUser.role !== "user") {
       return this.#title || EMPTY_TITLE;

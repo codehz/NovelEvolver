@@ -5,6 +5,9 @@ import type {
   AiChatHandle,
   AiChatSelectableAgent,
   AiChatSelectableModel,
+  AiConversationListOptions,
+  AiConversationSearchHit,
+  AiConversationSearchOptions,
   AiConversationSummary,
 } from "#shared/rpc/ai/index";
 
@@ -38,12 +41,35 @@ export class AiChatHandleImpl extends RpcTarget implements AiChatHandle {
     this.#chat.createConversation();
   }
 
-  listConversations(): AiConversationSummary[] {
-    return this.#chat.listConversations();
+  listConversations(options?: AiConversationListOptions): AiConversationSummary[] {
+    return this.#chat.listConversations(options);
+  }
+
+  searchConversations(
+    query: string,
+    options?: AiConversationSearchOptions,
+  ): AiConversationSearchHit[] {
+    return this.#chat.searchConversations(query, options);
   }
 
   switchConversation(conversationId: string): void {
     this.#chat.switchConversation(conversationId);
+  }
+
+  renameConversation(conversationId: string, title: string): void {
+    this.#chat.renameConversation(conversationId, title);
+  }
+
+  archiveConversation(conversationId: string): void {
+    this.#chat.archiveConversation(conversationId);
+  }
+
+  unarchiveConversation(conversationId: string): void {
+    this.#chat.unarchiveConversation(conversationId);
+  }
+
+  deleteConversation(conversationId: string): void {
+    this.#chat.deleteConversation(conversationId);
   }
 
   listSelectableModels(): AiChatSelectableModel[] {

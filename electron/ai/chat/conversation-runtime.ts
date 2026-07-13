@@ -14,6 +14,7 @@ import type {
   AiChatDeltaOp,
   AiChatEvent,
   AiChatSnapshot,
+  AiConversationStatus,
   AiConversationSummary,
 } from "#shared/rpc/ai/index";
 
@@ -225,12 +226,32 @@ export class AiConversationRuntime {
     return this.#state.getSummary();
   }
 
+  get status(): AiConversationStatus {
+    return this.#state.status;
+  }
+
+  collectSearchableTexts(): string[] {
+    return this.#state.collectSearchableTexts();
+  }
+
   touchLastActive(): void {
     this.#state.touchLastActive();
   }
 
   persistIfNeeded(): void {
     this.#state.persistIfNeeded();
+  }
+
+  discard(): void {
+    this.#state.discard();
+  }
+
+  rename(title: string): void {
+    this.#state.rename(title);
+  }
+
+  setStatus(status: AiConversationStatus): void {
+    this.#state.setStatus(status);
   }
 
   sendMessage(text: string): void {

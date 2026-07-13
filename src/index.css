@@ -47,6 +47,7 @@
   --z-index-notification: 40;
 
   --spacing-ai-chat-selector-picker: 18rem;
+  --spacing-ai-chat-history-picker: 22rem;
   --z-index-ai-chat-selector: 45;
 
   --shadow-quick-pick: 0 8px 24px color-mix(in srgb, var(--color-ctp-crust) 55%, transparent);

@@ -186,6 +186,16 @@ export type AiChatSnapshot = {
 
 export type AiConversationActivity = "idle" | "streaming" | "awaiting_user";
 
+export type AiConversationStatus = "active" | "archived";
+
+export type AiConversationListOptions = {
+  includeArchived?: boolean;
+};
+
+export type AiConversationSearchOptions = {
+  includeArchived?: boolean;
+};
+
 export type AiConversationSummary = {
   id: string;
   title: string;
@@ -195,6 +205,12 @@ export type AiConversationSummary = {
   activity: AiConversationActivity;
   persisted: boolean;
   scenarioId: string | null;
+  status: AiConversationStatus;
+};
+
+export type AiConversationSearchHit = AiConversationSummary & {
+  /** Matching fragment from title or message body; null when only title matched without body context. */
+  snippet: string | null;
 };
 
 export type AiChatMessagePatch = {
@@ -290,8 +306,16 @@ export interface AiChatHandle extends RpcTarget {
    */
   retryLastRequest(): void;
   createConversation(): void;
-  listConversations(): AiConversationSummary[];
+  listConversations(options?: AiConversationListOptions): AiConversationSummary[];
+  searchConversations(
+    query: string,
+    options?: AiConversationSearchOptions,
+  ): AiConversationSearchHit[];
   switchConversation(conversationId: string): void;
+  renameConversation(conversationId: string, title: string): void;
+  archiveConversation(conversationId: string): void;
+  unarchiveConversation(conversationId: string): void;
+  deleteConversation(conversationId: string): void;
   listSelectableModels(): AiChatSelectableModel[];
   setSelectedModel(modelId: string): void;
   listSelectableAgents(): AiChatSelectableAgent[];
