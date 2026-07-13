@@ -6,7 +6,7 @@
       "name": "novelevolver",
       "dependencies": {
         "@catppuccin/tailwindcss": "^1.0.0",
-        "@codehz/ai": "^0.2.4",
+        "@codehz/ai": "^0.3.0",
         "@codehz/auto-transition": "^0.0.7-14",
         "@codemirror/commands": "^6.10.4",
         "@codemirror/lang-markdown": "^6.5.0",
@@ -14,7 +14,7 @@
         "@codemirror/merge": "^6.12.2",
         "@codemirror/state": "^6.7.1",
         "@codemirror/view": "^6.43.6",
-        "@iconify/json": "^2.2.498",
+        "@iconify/json": "^2.2.499",
         "@iconify/utils": "^3.1.4",
         "@mogeko/maple-mono-cn": "^7.9.0",
         "@streamdown/cjk": "^1.0.3",
@@ -76,7 +76,7 @@
 
     "@chevrotain/types": ["@chevrotain/types@11.1.2", "", {}, "sha512-U+HFai5+zmJCkK86QsaJtoITlboZHBqrVketcO2ROv865xfCMSFpELQoz1GkX5GzME8pTa+3kbKrZHQtI0gdbw=="],
 
-    "@codehz/ai": ["@codehz/ai@0.2.4", "", {}, "sha512-Ze3dGuJc7OigHGdJyjcfGAedyAhjbdiJJLJ2ratX1aOIybX4ofApLnHhmjfGecFFNPMF1z+Sn2zaW194bmhCNQ=="],
+    "@codehz/ai": ["@codehz/ai@0.3.0", "", {}, "sha512-zE4H1L7d3WdWr7E17t54jRVxeY85gj5ACPOkhT4H+4LDVENy7+2X3ZzicSTnRuM6yHBqdm2dJ4FXPQIMgDq3Ng=="],
 
     "@codehz/auto-transition": ["@codehz/auto-transition@0.0.7-14", "", { "dependencies": { "@radix-ui/react-slot": "^1.2.4" }, "peerDependencies": { "react": "^19.2.4" } }, "sha512-XZ357ZZYk8PZ+fy/22mfs6dPTo96llb77NdxWWgPRrcf03fIZ0Xo/V79GRTx7/6g4VhJK7hwAMHmpxRjcnzI9g=="],
 
@@ -176,7 +176,7 @@
 
     "@hapi/topo": ["@hapi/topo@6.0.2", "", { "dependencies": { "@hapi/hoek": "^11.0.2" } }, "sha512-KR3rD5inZbGMrHmgPxsJ9dbi6zEK+C3ZwUwTa+eMwWLz7oijWUTWD2pMSNNYJAU6Qq+65NkxXjqHr/7LM2Xkqg=="],
 
-    "@iconify/json": ["@iconify/json@2.2.498", "", { "dependencies": { "@iconify/types": "*", "pathe": "^2.0.3" } }, "sha512-aHeANR4JvpCcGZBOHXwsPDf8C5YtrZjZjb7NwC8kwoVRtA2vyQImp5U3wzqe8HIbKgQgjAtqYEPPVHtqIj62JA=="],
+    "@iconify/json": ["@iconify/json@2.2.499", "", { "dependencies": { "@iconify/types": "*", "pathe": "^2.0.3" } }, "sha512-O7iaQsaJlu2XN8R0kHUjEPFr8M+fk08o6gV3vwxq1sgkA2UU0OlwDU+n/CzYHPBe7Fh+Gmxvtd9mp//fz/9m/g=="],
 
     "@iconify/types": ["@iconify/types@2.0.0", "", {}, "sha512-+wluvCrRhXrhyOmRDJ3q8mux9JkKy5SJ/v8ol2tu4FVjyYvtEzkc/3pK15ET6RKg4b4w4BmTk1+gsCUhf21Ykg=="],
 
