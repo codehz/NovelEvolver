@@ -261,6 +261,8 @@ export type AiChatEvent = AiChatSnapshotEvent | AiChatDeltaEvent;
 export interface AiChatHandle extends RpcTarget {
   subscribeChat(): RpcSubscriptionResult<AiChatEvent>;
   sendMessage(text: string): void;
+  /** Abort the in-flight model stream / tool loop when `pending`. No-op otherwise. */
+  stopGeneration(): void;
   createConversation(): void;
   listConversations(): AiConversationSummary[];
   switchConversation(conversationId: string): void;

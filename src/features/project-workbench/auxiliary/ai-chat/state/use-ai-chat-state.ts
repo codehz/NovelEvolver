@@ -61,6 +61,13 @@ function useAiChatStateValue() {
     [aiChat, snapshot.pendingUserInputs, snapshot.pending],
   );
 
+  const stopGeneration = useCallback(async (): Promise<void> => {
+    if (!snapshot.pending) {
+      return;
+    }
+    await Promise.resolve(aiChat.stopGeneration());
+  }, [aiChat, snapshot.pending]);
+
   const createConversation = useCallback(async (): Promise<void> => {
     await Promise.resolve(aiChat.createConversation());
   }, [aiChat]);
@@ -103,6 +110,7 @@ function useAiChatStateValue() {
     loading,
     subscriptionError,
     sendMessage,
+    stopGeneration,
     createConversation,
     listConversations,
     switchConversation,

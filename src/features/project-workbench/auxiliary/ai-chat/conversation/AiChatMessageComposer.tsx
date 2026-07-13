@@ -7,6 +7,7 @@ import {
   modelSelectorButtonClass,
   modelSelectorLabelClass,
   sendButtonClass,
+  stopButtonClass,
 } from "../ui/ai-chat-ui";
 
 export function AiChatMessageComposer({
@@ -14,12 +15,14 @@ export function AiChatMessageComposer({
   composerDisabled,
   selectorDisabled,
   canSend,
+  canStop,
   selectedAgentLabel,
   selectedModelLabel,
   composerRef,
   onDraftChange,
   onSubmit,
   onSendClick,
+  onStopClick,
   onComposerKeyDown,
   onPickAgent,
   onPickModel,
@@ -28,12 +31,14 @@ export function AiChatMessageComposer({
   composerDisabled: boolean;
   selectorDisabled: boolean;
   canSend: boolean;
+  canStop: boolean;
   selectedAgentLabel: string;
   selectedModelLabel: string;
   composerRef: RefObject<HTMLTextAreaElement | null>;
   onDraftChange: (value: string) => void;
   onSubmit: (event: SubmitEvent<HTMLFormElement>) => void;
   onSendClick: () => void;
+  onStopClick: () => void;
   onComposerKeyDown: (event: KeyboardEvent<HTMLTextAreaElement>) => void;
   onPickAgent: () => void;
   onPickModel: () => void;
@@ -79,16 +84,28 @@ export function AiChatMessageComposer({
           <span className={modelSelectorLabelClass}>{selectedModelLabel}</span>
         </button>
         <span className="min-w-0 flex-1" />
-        <button
-          aria-label="发送"
-          className={sendButtonClass}
-          disabled={!canSend}
-          title="发送"
-          type="button"
-          onClick={onSendClick}
-        >
-          <span aria-hidden="true" className="icon-[codicon--newline] text-sm" />
-        </button>
+        {canStop ? (
+          <button
+            aria-label="停止"
+            className={stopButtonClass}
+            title="停止"
+            type="button"
+            onClick={onStopClick}
+          >
+            <span aria-hidden="true" className="icon-[codicon--debug-stop] text-sm" />
+          </button>
+        ) : (
+          <button
+            aria-label="发送"
+            className={sendButtonClass}
+            disabled={!canSend}
+            title="发送"
+            type="button"
+            onClick={onSendClick}
+          >
+            <span aria-hidden="true" className="icon-[codicon--newline] text-sm" />
+          </button>
+        )}
       </div>
     </form>
   );

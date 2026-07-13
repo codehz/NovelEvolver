@@ -13,8 +13,10 @@ export function AiChatComposerFooter({ composer }: { composer: AiChatComposerSta
     composerDisabled,
     hasPendingUserInputs,
     canSend,
+    canStop,
     handleSubmit,
     handleSendClick,
+    handleStopClick,
     handleComposerKeyDown,
   } = composer;
 
@@ -38,6 +40,7 @@ export function AiChatComposerFooter({ composer }: { composer: AiChatComposerSta
     <footer className="shrink-0 p-3">
       <AiChatMessageComposer
         canSend={canSend}
+        canStop={canStop}
         composerDisabled={composerDisabled}
         composerRef={composerRef}
         draft={draft}
@@ -50,6 +53,7 @@ export function AiChatComposerFooter({ composer }: { composer: AiChatComposerSta
           void handlePickModel();
         }}
         onSendClick={handleSendClick}
+        onStopClick={handleStopClick}
         onSubmit={handleSubmit}
         selectedAgentLabel={selectedAgentLabel}
         selectedModelLabel={selectedModelLabel}

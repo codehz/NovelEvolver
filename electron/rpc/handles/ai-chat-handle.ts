@@ -26,6 +26,10 @@ export class AiChatHandleImpl extends RpcTarget implements AiChatHandle {
     this.#chat.sendMessage(text);
   }
 
+  stopGeneration(): void {
+    this.#chat.stopGeneration();
+  }
+
   createConversation(): void {
     this.#chat.createConversation();
   }

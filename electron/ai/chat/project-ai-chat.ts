@@ -83,6 +83,10 @@ export class ProjectAiChatController {
     this.#getActiveRuntime().sendMessage(text);
   }
 
+  stopGeneration(): void {
+    this.#getActiveRuntime().stopGeneration();
+  }
+
   createConversation(): void {
     const activeRuntime = this.#getActiveRuntime();
     if (activeRuntime.isPureDraft) {

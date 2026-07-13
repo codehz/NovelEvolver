@@ -79,6 +79,10 @@ export const sendButtonClass = cn(
   "focus-visible:ring-1 focus-visible:ring-ctp-mauve focus-visible:outline-none",
   "disabled:cursor-not-allowed disabled:text-ctp-overlay0 hover:disabled:bg-transparent",
 );
+export const stopButtonClass = cn(
+  "inline-flex size-6 shrink-0 items-center justify-center rounded-md bg-transparent text-ctp-red transition-colors hover:bg-ctp-surface0",
+  "focus-visible:ring-1 focus-visible:ring-ctp-red focus-visible:outline-none",
+);
 export const modelSelectorButtonClass = cn(
   "inline-flex h-6 min-w-0 items-center gap-1 rounded-md px-1 text-2xs text-ctp-mauve transition-colors",
   "hover:bg-ctp-surface0",

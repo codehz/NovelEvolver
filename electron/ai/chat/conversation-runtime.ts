@@ -60,6 +60,49 @@ export function shouldProcessToolCalls(response: Pick<AIResponse, "toolCalls">):
   return response.toolCalls.length > 0;
 }
 
+function isAbortError(error: unknown): boolean {
+  if (error instanceof DOMException && error.name === "AbortError") {
+    return true;
+  }
+  return error instanceof Error && error.name === "AbortError";
+}
+
+/**
+ * Build history items only from still-streaming assistant parts.
+ * Completed rounds are already in `transcript` via provider replay; do not re-add them.
+ */
+function incompleteAssistantPartsToHistoryItems(
+  state: AiConversationState,
+  assistantMessageId: string,
+): InputItem[] {
+  const message = state
+    .getSnapshot()
+    .messages.find((entry) => entry.id === assistantMessageId && entry.role === "assistant");
+  if (!message || message.role !== "assistant") {
+    return [];
+  }
+
+  const items: InputItem[] = [];
+  for (const part of message.parts) {
+    if (part.type === "message" && part.status === "streaming" && part.text.trim() !== "") {
+      items.push({
+        type: "message",
+        role: "assistant",
+        content: [{ type: "text", text: part.text }],
+      });
+      continue;
+    }
+    if (part.type === "reasoning" && part.status === "streaming" && part.text.trim() !== "") {
+      items.push({
+        type: "reasoning",
+        visibility: part.visibility,
+        content: [{ type: "text", text: part.text }],
+      });
+    }
+  }
+  return items;
+}
+
 export class AiConversationRuntime {
   readonly #toolRunner: ToolRunner;
   readonly #publisher = new RpcStreamPublisher<AiChatEvent>();
@@ -70,6 +113,7 @@ export class AiConversationRuntime {
   readonly #resolveAgentConfig: AiConversationRuntimeOptions["resolveAgentConfig"];
   readonly #scenarioBackend: AiBackendSession | null;
   #activeBackend: AiBackendSession | null = null;
+  #generationAbort: AbortController | null = null;
   #disposed = false;
 
   constructor(options: AiConversationRuntimeOptions) {
@@ -261,12 +305,21 @@ export class AiConversationRuntime {
     });
   }
 
+  stopGeneration(): void {
+    if (this.#disposed || !this.#state.pending) {
+      return;
+    }
+    this.#generationAbort?.abort();
+  }
+
   [Symbol.dispose](): void {
     if (this.#disposed) {
       return;
     }
 
     this.#disposed = true;
+    this.#generationAbort?.abort();
+    this.#generationAbort = null;
     try {
       this.#state.persistIfNeeded();
     } finally {
@@ -299,6 +352,9 @@ export class AiConversationRuntime {
     let completedResponse: AIResponse | null = null;
     let toolRoundCount = 0;
     let usage = context.usage ?? null;
+    const abortController = new AbortController();
+    this.#generationAbort = abortController;
+    const { signal } = abortController;
 
     try {
       const backend = context.backend ?? this.#resolveBackend();
@@ -323,12 +379,17 @@ export class AiConversationRuntime {
           : AI_TOOLS;
 
       while (true) {
+        if (signal.aborted) {
+          throw new DOMException("AI generation stopped by user.", "AbortError");
+        }
+
         const streamStartPartCount = this.#state.countAssistantParts(context.assistantMessageId);
         completedResponse = await this.#consumeStream(
           backend.client.stream({
             instructions: backend.instructions,
             input,
             tools: resolvedTools,
+            signal,
             ...(backend.maxOutputTokens !== undefined
               ? { maxOutputTokens: backend.maxOutputTokens }
               : {}),
@@ -353,6 +414,10 @@ export class AiConversationRuntime {
 
         if (!shouldProcessToolCalls(completedResponse)) {
           break;
+        }
+
+        if (signal.aborted) {
+          throw new DOMException("AI generation stopped by user.", "AbortError");
         }
 
         toolRoundCount += 1;
@@ -397,16 +462,28 @@ export class AiConversationRuntime {
       this.#state.persistIfNeeded();
       this.#activeBackend = null;
     } catch (error) {
+      const stopped = isAbortError(error) || signal.aborted;
       this.#state.setPending(false);
       this.#state.setPendingToolBatch(null);
-      this.#state.setErrorMessage(toErrorMessage(error));
+      if (!stopped) {
+        this.#state.setErrorMessage(toErrorMessage(error));
+      } else {
+        this.#state.setErrorMessage(null);
+      }
       const ops: AiChatDeltaOp[] = [];
 
       if (this.#state.countAssistantParts(context.assistantMessageId) === 0) {
         ops.push(...this.#state.removeMessage(context.assistantMessageId));
+        // Keep the user turn in history so the next send does not drop it.
+        this.#state.replaceHistory(transcript);
       } else {
+        const partialHistory = incompleteAssistantPartsToHistoryItems(
+          this.#state,
+          context.assistantMessageId,
+        );
         ops.push(...this.#state.updateMessage(context.assistantMessageId, { status: "complete" }));
         ops.push(...this.#state.completeStreamingAssistantParts(context.assistantMessageId));
+        this.#state.replaceHistory([...transcript, ...partialHistory]);
       }
 
       ops.push({
@@ -414,12 +491,16 @@ export class AiConversationRuntime {
         patch: {
           pending: false,
           pendingUserInputs: [],
-          errorMessage: toErrorMessage(error),
+          errorMessage: stopped ? null : toErrorMessage(error),
         },
       });
       this.#emitDelta(ops);
       this.#state.persistIfNeeded();
       this.#activeBackend = null;
+    } finally {
+      if (this.#generationAbort === abortController) {
+        this.#generationAbort = null;
+      }
     }
   }
 
