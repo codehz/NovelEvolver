@@ -48,3 +48,12 @@ export const notificationActionButtonClass = cn(
 export const notificationIconButtonClass = cn(
   "inline-flex size-6 shrink-0 items-center justify-center rounded-sm hover:bg-ctp-text/8",
 );
+
+/** Base UI Progress track for progress notifications. */
+export const notificationProgressTrackClass = cn(
+  "mt-1.5 h-1 w-full overflow-hidden rounded-full bg-badge-background/25",
+);
+
+export const notificationProgressIndicatorClass = cn(
+  "rounded-full bg-badge-background transition-[width] duration-200",
+);

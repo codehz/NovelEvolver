@@ -1,3 +1,4 @@
+import { Progress } from "@base-ui/react/progress";
 import { motion, type MotionProps } from "motion/react";
 import type { Ref } from "react";
 
@@ -9,6 +10,8 @@ import {
   notificationActionButtonClass,
   notificationCenterItemDividerClass,
   notificationIconButtonClass,
+  notificationProgressIndicatorClass,
+  notificationProgressTrackClass,
   notificationSeverityIconClass,
   notificationToastClass,
 } from "./notification-chrome";
@@ -68,12 +71,19 @@ export function NotificationItem({ notification, variant, ref }: NotificationIte
             {message}
           </p>
           {severity === "progress" && progress != null ? (
-            <div className="mt-1.5 h-1 overflow-hidden rounded-full bg-badge-background">
-              <div
-                className="h-full bg-badge-background transition-[width] duration-200"
-                style={{ width: `${Math.min(100, Math.max(0, progress))}%` }}
-              />
-            </div>
+            <Progress.Root
+              className="outline-none"
+              max={100}
+              min={0}
+              value={Math.min(100, Math.max(0, progress))}
+              getAriaValueText={(formatted, value) =>
+                value == null ? "进行中" : `进度 ${formatted ?? `${value}%`}`
+              }
+            >
+              <Progress.Track className={notificationProgressTrackClass}>
+                <Progress.Indicator className={notificationProgressIndicatorClass} />
+              </Progress.Track>
+            </Progress.Root>
           ) : null}
         </div>
         {actions.length > 0 ? (
