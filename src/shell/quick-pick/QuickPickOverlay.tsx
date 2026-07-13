@@ -9,13 +9,7 @@ import {
   type ReactNode,
 } from "react";
 
-import { useAnimatedContentHeight } from "#app/shared/lib/ui/animated-height";
-
-import {
-  quickPickPanelClass,
-  quickPickPanelContentClass,
-  quickPickPanelHeightShellClass,
-} from "./quick-pick-chrome";
+import { quickPickPanelClass, quickPickPanelContentClass } from "./quick-pick-chrome";
 
 type RequestClose = (afterClose: () => void) => void;
 
@@ -53,11 +47,8 @@ export function QuickPickOverlay({
   children: ReactNode;
 }) {
   const [open, setOpen] = useState(true);
-  const panelRef = useRef<HTMLDivElement>(null);
-  const contentRef = useRef<HTMLDivElement>(null);
   const pendingAfterCloseRef = useRef<(() => void) | null>(null);
   const settledRef = useRef(false);
-  const { heightPx: shellHeightPx } = useAnimatedContentHeight(contentRef, panelRef);
 
   const settle = useCallback(() => {
     if (settledRef.current) {
@@ -117,19 +108,11 @@ export function QuickPickOverlay({
       <Dialog.Portal>
         <QuickPickOverlayContext value={contextValue}>
           <Dialog.Popup
-            ref={panelRef}
             className={quickPickPanelClass}
             aria-labelledby={titleId}
             finalFocus={false}
           >
-            <div
-              className={quickPickPanelHeightShellClass}
-              style={shellHeightPx != null ? { height: shellHeightPx } : undefined}
-            >
-              <div ref={contentRef} className={quickPickPanelContentClass}>
-                {children}
-              </div>
-            </div>
+            <div className={quickPickPanelContentClass}>{children}</div>
           </Dialog.Popup>
         </QuickPickOverlayContext>
       </Dialog.Portal>

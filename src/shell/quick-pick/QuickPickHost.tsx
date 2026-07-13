@@ -1,7 +1,5 @@
 import { Combobox } from "@base-ui/react/combobox";
-import { AutoTransition } from "@codehz/auto-transition";
 import { useAtomValue } from "jotai";
-import { LayoutGroup, motion } from "motion/react";
 import { useCallback, useEffect, useId, useMemo, useRef, useState, type ReactNode } from "react";
 
 import {
@@ -20,19 +18,12 @@ import {
   quickPickListClass,
   quickPickListDividerClass,
   quickPickRowButtonClass,
-  quickPickRowButtonContentClass,
   quickPickRowEmphasisClass,
-  quickPickRowHighlightSurfaceClass,
   quickPickSearchInputClass,
   quickPickSearchWrapClass,
   quickPickTextInputClass,
   quickPickTextInputWrapClass,
 } from "./quick-pick-chrome";
-import {
-  QUICK_PICK_HIGHLIGHT_LAYOUT_ID,
-  quickPickHighlightSurfaceTransition,
-  quickPickListTransition,
-} from "./quick-pick-list-motion";
 import {
   QuickPickOverlay,
   useQuickPickOverlayOpen,
@@ -138,11 +129,9 @@ function isSameSelectable(a: QuickPickSelectable, b: QuickPickSelectable): boole
 
 function QuickPickListOption({
   item,
-  highlighted,
   children,
 }: {
   item: QuickPickSelectable;
-  highlighted: boolean;
   children: ReactNode;
 }) {
   return (
@@ -154,14 +143,7 @@ function QuickPickListOption({
       )}
       value={item}
     >
-      {highlighted ? (
-        <motion.span
-          layoutId={QUICK_PICK_HIGHLIGHT_LAYOUT_ID}
-          className={quickPickRowHighlightSurfaceClass}
-          transition={quickPickHighlightSurfaceTransition}
-        />
-      ) : null}
-      <span className={quickPickRowButtonContentClass}>{children}</span>
+      {children}
     </Combobox.Item>
   );
 }
@@ -191,7 +173,6 @@ function QuickPickListPanelBody({
   const open = useQuickPickOverlayOpen();
   const requestClose = useQuickPickRequestClose();
   const [query, setQuery] = useState("");
-  const [highlightedKey, setHighlightedKey] = useState<string | null>(null);
 
   const filtered = useMemo(() => filterListItems(options.items, query), [options.items, query]);
   const extras = options.extras ?? [];
@@ -222,7 +203,6 @@ function QuickPickListPanelBody({
 
   useEffect(() => {
     setQuery("");
-    setHighlightedKey(null);
   }, [requestId]);
 
   return (
@@ -247,9 +227,6 @@ function QuickPickListPanelBody({
           });
         }
       }}
-      onItemHighlighted={(item) => {
-        setHighlightedKey(item == null ? null : selectableKey(item));
-      }}
       onValueChange={(item) => {
         if (item != null) {
           resolveSelectable(item);
@@ -268,44 +245,32 @@ function QuickPickListPanelBody({
           spellCheck={false}
         />
       </div>
-      <LayoutGroup id={`${requestId}-highlight`}>
-        <Combobox.List
-          aria-label={options.title}
-          className={quickPickListClass}
-          render={
-            <AutoTransition as="div" transition={quickPickListTransition} exitLayout="flow" />
-          }
-        >
-          {(item: QuickPickSelectable) => (
-            <QuickPickListOption
-              key={selectableKey(item)}
-              item={item}
-              highlighted={highlightedKey === selectableKey(item)}
-            >
-              {item.kind === "item" ? (
-                <>
-                  <span
-                    aria-hidden="true"
-                    className={cn(
-                      "icon-[codicon--check] size-4 shrink-0",
-                      item.emphasized ? "opacity-100" : "opacity-0",
-                    )}
-                  />
-                  <span className="min-w-0 flex-1 truncate font-medium">{item.label}</span>
-                  {item.detail ? (
-                    <span className="shrink-0 font-mono text-xs text-app-muted">{item.detail}</span>
-                  ) : null}
-                </>
-              ) : (
-                <>
-                  <span aria-hidden="true" className="icon-[codicon--add] size-4 shrink-0" />
-                  <span className="min-w-0 flex-1 truncate font-medium">{item.label}</span>
-                </>
-              )}
-            </QuickPickListOption>
-          )}
-        </Combobox.List>
-      </LayoutGroup>
+      <Combobox.List aria-label={options.title} className={quickPickListClass}>
+        {(item: QuickPickSelectable) => (
+          <QuickPickListOption key={selectableKey(item)} item={item}>
+            {item.kind === "item" ? (
+              <>
+                <span
+                  aria-hidden="true"
+                  className={cn(
+                    "icon-[codicon--check] size-4 shrink-0",
+                    item.emphasized ? "opacity-100" : "opacity-0",
+                  )}
+                />
+                <span className="min-w-0 flex-1 truncate font-medium">{item.label}</span>
+                {item.detail ? (
+                  <span className="shrink-0 font-mono text-xs text-app-muted">{item.detail}</span>
+                ) : null}
+              </>
+            ) : (
+              <>
+                <span aria-hidden="true" className="icon-[codicon--add] size-4 shrink-0" />
+                <span className="min-w-0 flex-1 truncate font-medium">{item.label}</span>
+              </>
+            )}
+          </QuickPickListOption>
+        )}
+      </Combobox.List>
       {/* Empty root stays mounted for a11y; style only the message so non-empty lists don't keep padding. */}
       <Combobox.Empty>
         <div className={quickPickEmptyClass}>{options.emptyMessage ?? "无匹配项"}</div>

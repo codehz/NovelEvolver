@@ -7,8 +7,6 @@ export const quickPickPanelClass = cn(
   "data-ending-style:-translate-y-2 data-ending-style:opacity-0",
 );
 
-export const quickPickPanelHeightShellClass = cn("w-full overflow-hidden");
-
 export const quickPickPanelContentClass = cn("flex max-h-80 w-full flex-col");
 
 export const quickPickSearchWrapClass = cn("shrink-0 px-2 pt-2 pb-1.5");
@@ -23,14 +21,7 @@ export const quickPickListClass = cn(
 
 export const quickPickRowButtonClass = cn(
   "relative flex w-full cursor-default items-center gap-2 rounded-sm px-2 py-1 text-left text-xs leading-tight outline-none",
-);
-
-export const quickPickRowHighlightSurfaceClass = cn(
-  "pointer-events-none absolute inset-0 rounded-sm bg-ctp-surface0/55",
-);
-
-export const quickPickRowButtonContentClass = cn(
-  "relative z-10 flex w-full min-w-0 items-center gap-2",
+  "data-highlighted:bg-ctp-surface0/55",
 );
 
 export const quickPickRowEmphasisClass = cn("text-ctp-mauve");
