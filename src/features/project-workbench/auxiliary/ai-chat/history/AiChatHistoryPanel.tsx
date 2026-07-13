@@ -1,6 +1,7 @@
 import { useId } from "react";
 
 import { cn } from "#app/shared/lib/ui/cn";
+import { ScrollArea } from "#app/shared/ui/ScrollArea";
 
 import {
   historyEmptyClass,
@@ -48,60 +49,62 @@ export function AiChatHistoryPanel({ list }: { list: AiChatHistoryListController
           onKeyDown={list.handleSearchKeyDown}
         />
       </div>
-      <ul
-        ref={list.listRef}
-        id={listboxId}
-        className={historyListClass}
-        role="listbox"
-        aria-label="历史会话"
-      >
-        {list.selectableCount === 0 ? (
-          <li className={historyEmptyClass}>{list.emptyMessage}</li>
-        ) : (
-          list.listEntries.map((entry) => {
-            if (entry.kind === "group") {
-              return (
-                <li
-                  key={`group-${entry.id}`}
-                  className={historyGroupLabelClass}
-                  role="presentation"
-                >
-                  {entry.label}
-                </li>
-              );
-            }
+      <ScrollArea className="min-h-0 overflow-hidden">
+        <ul
+          ref={list.listRef}
+          id={listboxId}
+          className={historyListClass}
+          role="listbox"
+          aria-label="历史会话"
+        >
+          {list.selectableCount === 0 ? (
+            <li className={historyEmptyClass}>{list.emptyMessage}</li>
+          ) : (
+            list.listEntries.map((entry) => {
+              if (entry.kind === "group") {
+                return (
+                  <li
+                    key={`group-${entry.id}`}
+                    className={historyGroupLabelClass}
+                    role="presentation"
+                  >
+                    {entry.label}
+                  </li>
+                );
+              }
 
-            const { conversation, snippet, optionIndex } = entry;
-            return (
-              <AiChatHistoryRow
-                key={conversation.id}
-                conversation={conversation}
-                snippet={snippet}
-                optionIndex={optionIndex}
-                active={conversation.id === list.activeConversationId}
-                highlighted={list.highlightIndex === optionIndex}
-                isRenaming={list.renamingId === conversation.id}
-                renameDraft={list.renameDraft}
-                renameInputRef={list.renameInputRef}
-                onHighlight={() => {
-                  list.setHighlightIndex(optionIndex);
-                }}
-                onSelect={() => {
-                  void list.handleSelect(conversation.id);
-                }}
-                onContextMenu={(event) => {
-                  void list.handleContextMenu(event, conversation);
-                }}
-                onRenameDraftChange={list.setRenameDraft}
-                onCommitRename={() => {
-                  void list.commitRename();
-                }}
-                onCancelRename={list.cancelRename}
-              />
-            );
-          })
-        )}
-      </ul>
+              const { conversation, snippet, optionIndex } = entry;
+              return (
+                <AiChatHistoryRow
+                  key={conversation.id}
+                  conversation={conversation}
+                  snippet={snippet}
+                  optionIndex={optionIndex}
+                  active={conversation.id === list.activeConversationId}
+                  highlighted={list.highlightIndex === optionIndex}
+                  isRenaming={list.renamingId === conversation.id}
+                  renameDraft={list.renameDraft}
+                  renameInputRef={list.renameInputRef}
+                  onHighlight={() => {
+                    list.setHighlightIndex(optionIndex);
+                  }}
+                  onSelect={() => {
+                    void list.handleSelect(conversation.id);
+                  }}
+                  onContextMenu={(event) => {
+                    void list.handleContextMenu(event, conversation);
+                  }}
+                  onRenameDraftChange={list.setRenameDraft}
+                  onCommitRename={() => {
+                    void list.commitRename();
+                  }}
+                  onCancelRename={list.cancelRename}
+                />
+              );
+            })
+          )}
+        </ul>
+      </ScrollArea>
       <div className={historyFooterClass}>
         <button
           type="button"

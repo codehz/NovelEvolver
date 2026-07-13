@@ -14,17 +14,18 @@ export const historyPopoverPanelClass = cn(
   historyPanelSurfaceClass,
 );
 
-export const historyPanelContentClass = cn("flex max-h-80 w-full flex-col");
+/** max-h body: grid minmax(0,1fr) gives ScrollArea a definite height (flex+`fill` won't). */
+export const historyPanelContentClass = cn(
+  "grid max-h-80 w-full grid-rows-[auto_minmax(0,1fr)_auto] overflow-hidden",
+);
 
-export const historySearchWrapClass = cn("shrink-0 px-2 pt-2 pb-1.5");
+export const historySearchWrapClass = cn("px-2 pt-2 pb-1.5");
 
 export const historySearchInputClass = cn(
   "w-full rounded-sm border border-badge-background bg-app-background px-2 py-1 text-xs leading-tight text-app-foreground outline-none app-region-no-drag placeholder:text-app-muted",
 );
 
-export const historyListClass = cn(
-  "flex min-h-0 flex-1 flex-col gap-0.5 overflow-y-auto px-1.5 pt-0 pb-1.5",
-);
+export const historyListClass = cn("flex flex-col gap-0.5 px-1.5 pt-0 pb-1.5");
 
 export const historyGroupLabelClass = cn(
   "px-2 pt-1.5 pb-0.5 text-2xs font-medium tracking-wide text-app-muted uppercase",
@@ -55,7 +56,7 @@ export const historyBadgeClass = cn(
 export const historyEmptyClass = cn("rounded-sm p-2 text-app-muted");
 
 export const historyFooterClass = cn(
-  "flex shrink-0 items-center justify-between gap-2 border-t border-titlebar-border px-2 py-1.5",
+  "flex items-center justify-between gap-2 border-t border-titlebar-border px-2 py-1.5",
 );
 
 export const historyFooterToggleClass = cn(
