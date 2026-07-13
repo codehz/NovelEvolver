@@ -1,10 +1,10 @@
 import { cn } from "#app/shared/lib/ui/cn";
 
 export const quickPickPanelClass = cn(
-  "fixed top-titlebar left-1/2 z-quick-pick m-0 w-quick-pick overflow-hidden rounded-lg bg-app-surface text-sm text-app-foreground shadow-quick-pick app-region-no-drag",
-  "-translate-x-1/2 -translate-y-2 opacity-0 transition transition-discrete duration-220 ease-[cubic-bezier(0.33,1,0.68,1)]",
-  "open:-translate-x-1/2 open:translate-y-0 open:opacity-100",
-  "open:starting:-translate-x-1/2 open:starting:-translate-y-2 open:starting:opacity-0",
+  "fixed top-titlebar left-1/2 z-quick-pick m-0 w-quick-pick -translate-x-1/2 overflow-hidden rounded-lg bg-app-surface text-sm text-app-foreground shadow-quick-pick outline-none app-region-no-drag",
+  "transition-[opacity,translate] duration-220 ease-[cubic-bezier(0.33,1,0.68,1)]",
+  "data-starting-style:-translate-y-2 data-starting-style:opacity-0",
+  "data-ending-style:-translate-y-2 data-ending-style:opacity-0",
 );
 
 export const quickPickPanelHeightShellClass = cn("w-full overflow-hidden");
