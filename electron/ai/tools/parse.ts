@@ -90,3 +90,13 @@ export function parseOptionalPositiveInt(value: unknown, fieldName: string): num
   }
   return value;
 }
+
+export function parseOptionalBoolean(value: unknown, fieldName: string): boolean | undefined {
+  if (value === undefined) {
+    return undefined;
+  }
+  if (typeof value !== "boolean") {
+    throw new Error(`${fieldName} 必须是布尔值。`);
+  }
+  return value;
+}

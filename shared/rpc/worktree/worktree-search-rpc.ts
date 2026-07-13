@@ -10,6 +10,12 @@ export type WorktreeSearchQuery = {
   /** 关键词；首尾空白会被忽略，空串时返回空结果。 */
   query: string;
   scope?: WorktreeSearchScope;
+  /**
+   * 是否将 `query` 作为正则表达式（ECMAScript）。
+   * 默认 `false`（字面匹配，大小写不敏感）。
+   * 正则模式下同样大小写不敏感；非法模式由实现抛错。
+   */
+  isRegex?: boolean;
   /** 每个域最多返回多少条命中，默认 100。 */
   maxResultsPerDomain?: number;
 };
@@ -46,6 +52,8 @@ export type WorktreeSearchHit = ManuscriptSearchHit | ResourceSearchHit;
 export type WorktreeSearchResult = {
   query: string;
   scope: WorktreeSearchScope;
+  /** 本次搜索是否按正则解释 `query`。 */
+  isRegex: boolean;
   /** 手稿正文命中。 */
   manuscript: ManuscriptSearchHit[];
   /** 资源库文件内容命中。 */

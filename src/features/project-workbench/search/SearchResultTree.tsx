@@ -169,12 +169,14 @@ export function SearchResultTree({
   errorContent,
   roots,
   highlightQuery,
+  highlightIsRegex = false,
   onOpenHit,
 }: {
   status: TreeBodyStatus;
   errorContent?: ReactNode;
   roots: SearchResultDomainRoot[];
   highlightQuery: string;
+  highlightIsRegex?: boolean;
   onOpenHit: (hit: WorktreeSearchHit, intent: "focus" | "open") => void;
 }) {
   const highlightContainerRef = useRef<HTMLDivElement>(null);
@@ -202,7 +204,12 @@ export function SearchResultTree({
     () => flatRows.map((row) => row.key).join("\u0000"),
     [flatRows],
   );
-  useSearchResultHighlights(highlightContainerRef, highlightQuery, highlightLayoutRevision);
+  useSearchResultHighlights(
+    highlightContainerRef,
+    highlightQuery,
+    highlightIsRegex,
+    highlightLayoutRevision,
+  );
 
   const onToggleDomain = useCallback((domainId: string) => {
     setExpandedDomains((current) => {

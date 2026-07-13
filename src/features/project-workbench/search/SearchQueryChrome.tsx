@@ -13,14 +13,28 @@ const searchInputClass = cn(
   "[&::-webkit-search-results-button]:hidden",
 );
 
+const searchOptionButtonClass = cn(
+  "flex size-5 shrink-0 items-center justify-center rounded text-ctp-overlay0",
+  "hover:bg-ctp-surface1 hover:text-ctp-subtext1",
+  "focus-visible:outline-2 focus-visible:-outline-offset-1 focus-visible:outline-badge-background",
+);
+
+const searchOptionButtonActiveClass = cn(
+  "bg-ctp-blue/20 text-ctp-blue hover:bg-ctp-blue/25 hover:text-ctp-blue",
+);
+
 export function SearchQueryChrome({
   query,
+  isRegex,
   statsLine,
   onQueryChange,
+  onToggleRegex,
 }: {
   query: string;
+  isRegex: boolean;
   statsLine: string | null;
   onQueryChange: (value: string) => void;
+  onToggleRegex: () => void;
 }) {
   const lastStatsLineRef = useRef<string>("请输入搜索内容");
   if (statsLine !== null) {
@@ -45,12 +59,23 @@ export function SearchQueryChrome({
           spellCheck={false}
           className={searchInputClass}
           value={query}
+          placeholder={isRegex ? "正则表达式" : undefined}
           onChange={(event) => onQueryChange(event.target.value)}
         />
+        <button
+          type="button"
+          className={cn(searchOptionButtonClass, isRegex && searchOptionButtonActiveClass)}
+          title="使用正则表达式"
+          aria-label="使用正则表达式"
+          aria-pressed={isRegex}
+          onClick={onToggleRegex}
+        >
+          <span className="icon-[codicon--regex] text-sm" />
+        </button>
         {query !== "" ? (
           <button
             type="button"
-            className="flex size-5 shrink-0 items-center justify-center rounded text-ctp-overlay0 hover:bg-ctp-surface1 hover:text-ctp-subtext1"
+            className={searchOptionButtonClass}
             title="清除"
             onClick={() => onQueryChange("")}
           >

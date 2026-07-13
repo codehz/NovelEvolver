@@ -241,15 +241,22 @@ const searchPresenter: ToolPresenter = (toolCall) => {
   const result = parseObject(toolCall.resultText);
   const query = getString(args, "query") ?? "未知关键词";
   const scope = getString(args, "scope");
+  const isRegex =
+    typeof args?.is_regex === "boolean"
+      ? args.is_regex
+      : typeof result?.is_regex === "boolean"
+        ? result.is_regex
+        : false;
   const manuscriptHits = Array.isArray(result?.manuscript_hits) ? result.manuscript_hits : [];
   const resourceHits = Array.isArray(result?.resource_hits) ? result.resource_hits : [];
   const hits = [...manuscriptHits, ...resourceHits];
   return {
     label: "搜索项目",
-    summary: `“${query}”${result ? ` · ${hits.length} 处命中` : ""}`,
+    summary: `“${query}”${isRegex ? " · 正则" : ""}${result ? ` · ${hits.length} 处命中` : ""}`,
     detail: (
       <DetailList>
         <DetailField label="关键词">{query}</DetailField>
+        <DetailField label="匹配方式">{isRegex ? "正则表达式" : "字面匹配"}</DetailField>
         <DetailField label="范围">{domainLabel(scope)}</DetailField>
         {getNumber(args, "max_results") !== null ? (
           <DetailField label="结果上限">每个内容域 {getNumber(args, "max_results")}</DetailField>

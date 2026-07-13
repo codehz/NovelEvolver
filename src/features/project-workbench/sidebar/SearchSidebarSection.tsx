@@ -5,8 +5,20 @@ import { SearchResultTree } from "../search/SearchResultTree";
 import { useWorktreeSearchState } from "../search/use-worktree-search-state";
 
 export function SearchSidebarSection() {
-  const { query, setQuery, highlightQuery, status, statsLine, roots, retry, canRefresh, openHit } =
-    useWorktreeSearchState();
+  const {
+    query,
+    setQuery,
+    isRegex,
+    toggleRegex,
+    highlightQuery,
+    highlightIsRegex,
+    status,
+    statsLine,
+    roots,
+    retry,
+    canRefresh,
+    openHit,
+  } = useWorktreeSearchState();
 
   return (
     <>
@@ -19,13 +31,20 @@ export function SearchSidebarSection() {
         />
       </SidebarHeaderActions>
       <div className="flex min-h-0 flex-1 flex-col">
-        <SearchQueryChrome query={query} statsLine={statsLine} onQueryChange={setQuery} />
+        <SearchQueryChrome
+          query={query}
+          isRegex={isRegex}
+          statsLine={statsLine}
+          onQueryChange={setQuery}
+          onToggleRegex={toggleRegex}
+        />
         <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
           <SearchResultTree
             status={status}
             errorContent={<ErrorRetryView message="无法加载搜索结果。" onRetry={retry} />}
             roots={roots}
             highlightQuery={highlightQuery}
+            highlightIsRegex={highlightIsRegex}
             onOpenHit={openHit}
           />
         </div>

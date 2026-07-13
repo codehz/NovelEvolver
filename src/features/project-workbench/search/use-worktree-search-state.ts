@@ -12,9 +12,10 @@ import { SEARCH_DEBOUNCE_MS, SEARCH_MAX_RESULTS_PER_DOMAIN } from "./constants";
 import { formatSearchStatsLine, summarizeSearchHits } from "./search-stats";
 import type { SearchResultDomainRoot } from "./SearchResultTree";
 
-const emptyResult = (query: string): WorktreeSearchResult => ({
+const emptyResult = (query: string, isRegex: boolean): WorktreeSearchResult => ({
   query,
   scope: "all",
+  isRegex,
   manuscript: [],
   resources: [],
 });
@@ -31,14 +32,23 @@ function createSearchHitNavigation(
   };
 }
 
+function formatSearchError(error: unknown): string {
+  if (error instanceof Error && error.message.trim() !== "") {
+    return error.message;
+  }
+  return "搜索失败";
+}
+
 export function useWorktreeSearchState() {
   const searchHandle = useWorktreeSearch();
   const { focusTarget, openTarget } = useWorkbenchEditorActions();
 
   const [query, setQuery] = useState("");
+  const [isRegex, setIsRegex] = useState(false);
   const [debouncedQuery, setDebouncedQuery] = useState("");
   const [result, setResult] = useState<WorktreeSearchResult | null>(null);
   const [status, setStatus] = useState<TreeBodyStatus>("idle");
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [retryKey, setRetryKey] = useState(0);
 
   useEffect(() => {
@@ -59,35 +69,40 @@ export function useWorktreeSearchState() {
     if (debouncedQuery === "") {
       setResult(null);
       setStatus("idle");
+      setErrorMessage(null);
       return;
     }
 
     let cancelled = false;
     setStatus("loading");
+    setErrorMessage(null);
 
     searchHandle
       .search({
         query: debouncedQuery,
         scope: "all",
+        isRegex,
         maxResultsPerDomain: SEARCH_MAX_RESULTS_PER_DOMAIN,
       })
       .then((next) => {
         if (!cancelled) {
           setResult(next);
           setStatus("ready");
+          setErrorMessage(null);
         }
       })
-      .catch(() => {
+      .catch((error: unknown) => {
         if (!cancelled) {
-          setResult(emptyResult(debouncedQuery));
+          setResult(emptyResult(debouncedQuery, isRegex));
           setStatus("error");
+          setErrorMessage(formatSearchError(error));
         }
       });
 
     return () => {
       cancelled = true;
     };
-  }, [debouncedQuery, retryKey, searchHandle]);
+  }, [debouncedQuery, isRegex, retryKey, searchHandle]);
 
   const retry = useCallback(() => {
     const trimmed = query.trim();
@@ -98,19 +113,23 @@ export function useWorktreeSearchState() {
     setRetryKey((current) => current + 1);
   }, [query]);
 
+  const toggleRegex = useCallback(() => {
+    setIsRegex((current) => !current);
+  }, []);
+
   const statsLine = useMemo(() => {
     if (debouncedQuery === "") {
-      return "请输入搜索内容";
+      return isRegex ? "请输入正则表达式" : "请输入搜索内容";
     }
     if (status === "loading") {
       return null;
     }
     if (status === "error") {
-      return "搜索失败";
+      return errorMessage ?? "搜索失败";
     }
     const allHits = [...(result?.manuscript ?? []), ...(result?.resources ?? [])];
     return formatSearchStatsLine(summarizeSearchHits(allHits));
-  }, [debouncedQuery, result, status]);
+  }, [debouncedQuery, errorMessage, isRegex, result, status]);
 
   const roots = useMemo((): SearchResultDomainRoot[] => {
     const manuscriptTree = buildSearchPathTree(result?.manuscript ?? []);
@@ -164,8 +183,11 @@ export function useWorktreeSearchState() {
   return {
     query,
     setQuery,
+    isRegex,
+    toggleRegex,
     status,
     highlightQuery: debouncedQuery,
+    highlightIsRegex: isRegex,
     statsLine,
     roots,
     retry,
