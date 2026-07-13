@@ -166,14 +166,20 @@ export function AiChatHistorySelector({
     void refreshList();
   }, [refreshList]);
 
+  // Keep list content mounted during the exit animation. Reset only after
+  // Base UI reports the close transition finished (onOpenChangeComplete).
+  const resetClosedState = useCallback(() => {
+    setQuery("");
+    setDebouncedQuery("");
+    setItems([]);
+    setIncludeArchived(false);
+    setRenamingId(null);
+    setRenameDraft("");
+    setLoadingList(false);
+  }, []);
+
   useEffect(() => {
     if (!open) {
-      setQuery("");
-      setDebouncedQuery("");
-      setItems([]);
-      setIncludeArchived(false);
-      setRenamingId(null);
-      setRenameDraft("");
       return;
     }
     const frame = requestAnimationFrame(() => {
@@ -304,6 +310,15 @@ export function AiChatHistorySelector({
     [commitRename, disabled, renamingId],
   );
 
+  const handleOpenChangeComplete = useCallback(
+    (next: boolean) => {
+      if (!next) {
+        resetClosedState();
+      }
+    },
+    [resetClosedState],
+  );
+
   const handleContextMenu = useCallback(
     async (event: ReactMouseEvent, conversation: AiConversationSummary) => {
       event.preventDefault();
@@ -377,7 +392,11 @@ export function AiChatHistorySelector({
   }, [includeArchived, isSearching, loadingList]);
 
   return (
-    <Popover.Root open={open} onOpenChange={handleOpenChange}>
+    <Popover.Root
+      open={open}
+      onOpenChange={handleOpenChange}
+      onOpenChangeComplete={handleOpenChangeComplete}
+    >
       <IconTooltip label="历史会话" side="bottom">
         <Popover.Trigger
           className={sidebarHeaderActionClass}
