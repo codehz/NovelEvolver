@@ -167,6 +167,16 @@
   }
 }
 
+/* Compact horizontal rails (tab chips, etc.): thin bar + explicit track height.
+   Pair with overflow-x-auto and matching bottom padding to reserve overlay space. */
+@utility scrollbar-thin-x {
+  scrollbar-width: thin;
+
+  &::-webkit-scrollbar {
+    height: 0.375rem;
+  }
+}
+
 @utility app-region-* {
   -webkit-app-region: --value(--app-region-*);
 }
