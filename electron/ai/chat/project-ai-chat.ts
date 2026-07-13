@@ -218,13 +218,10 @@ export class ProjectAiChatController {
     }
 
     return [...summaries.values()].sort((left, right) => {
-      if (right.lastActiveAt !== left.lastActiveAt) {
-        return right.lastActiveAt - left.lastActiveAt;
+      if (right.createdAt !== left.createdAt) {
+        return right.createdAt - left.createdAt;
       }
-      if (right.updatedAt !== left.updatedAt) {
-        return right.updatedAt - left.updatedAt;
-      }
-      return right.createdAt - left.createdAt;
+      return right.id.localeCompare(left.id);
     });
   }
 
