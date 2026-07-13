@@ -306,8 +306,9 @@ function QuickPickListPanelBody({
           )}
         </Combobox.List>
       </LayoutGroup>
-      <Combobox.Empty className={quickPickEmptyClass}>
-        {options.emptyMessage ?? "无匹配项"}
+      {/* Empty root stays mounted for a11y; style only the message so non-empty lists don't keep padding. */}
+      <Combobox.Empty>
+        <div className={quickPickEmptyClass}>{options.emptyMessage ?? "无匹配项"}</div>
       </Combobox.Empty>
     </Combobox.Root>
   );
