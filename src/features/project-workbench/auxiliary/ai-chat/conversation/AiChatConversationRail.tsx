@@ -2,7 +2,6 @@ import { MessageScroller } from "@shadcn/react/message-scroller";
 import { useMemo, type ReactNode } from "react";
 
 import { cn } from "#app/shared/lib/ui/cn";
-import { Button, IconTooltip } from "#app/shared/ui";
 import type { AiChatSnapshot } from "#shared/rpc/ai/index";
 
 import { AiMessageBlock } from "../messages/AiMessageBlock";
@@ -67,7 +66,17 @@ export function AiChatConversationRail({
     snapshot.pendingUserInputs.length === 0 &&
     snapshot.canRetry;
 
-  const showTurnFooter = showTurnRetry || turnError != null;
+  const lastAssistantMessageId = useMemo(() => {
+    for (let index = snapshot.messages.length - 1; index >= 0; index -= 1) {
+      const message = snapshot.messages[index];
+      if (message?.role === "assistant") {
+        return message.id;
+      }
+    }
+    return null;
+  }, [snapshot.messages]);
+
+  const retryLabel = turnError ? "重试" : "重新生成";
 
   return (
     <MessageScroller.Provider
@@ -120,6 +129,12 @@ export function AiChatConversationRail({
 
             {snapshot.messages.map((message) => {
               const messageWarnings = warningsByMessageId.get(message.id) ?? [];
+              const messageRetry =
+                showTurnRetry &&
+                message.role === "assistant" &&
+                message.id === lastAssistantMessageId
+                  ? onRetry
+                  : undefined;
               return (
                 <RailItem
                   key={message.id}
@@ -127,7 +142,11 @@ export function AiChatConversationRail({
                   scrollAnchor={message.role === "user"}
                   className={railItemStackClass}
                 >
-                  <AiMessageBlock message={message} />
+                  <AiMessageBlock
+                    message={message}
+                    onRetry={messageRetry}
+                    retryLabel={messageRetry ? retryLabel : undefined}
+                  />
                   {messageWarnings.map((warning) => (
                     <AiChatWarningBanner key={warning.id} warning={warning} />
                   ))}
@@ -135,22 +154,9 @@ export function AiChatConversationRail({
               );
             })}
 
-            {showTurnFooter ? (
+            {turnError != null ? (
               <RailItem messageId="meta:turn-footer" className={railItemStackClass}>
-                {turnError ? <div className={turnErrorBannerClass}>{turnError}</div> : null}
-                {showTurnRetry ? (
-                  <IconTooltip label={turnError ? "重试" : "重新生成"} side="top">
-                    <Button
-                      variant="ghost"
-                      size="icon-sm"
-                      aria-label={turnError ? "重试" : "重新生成"}
-                      className="text-ctp-mauve"
-                      onClick={onRetry}
-                    >
-                      <span aria-hidden="true" className="icon-[codicon--refresh] text-sm" />
-                    </Button>
-                  </IconTooltip>
-                ) : null}
+                <div className={turnErrorBannerClass}>{turnError}</div>
               </RailItem>
             ) : null}
           </MessageScroller.Content>

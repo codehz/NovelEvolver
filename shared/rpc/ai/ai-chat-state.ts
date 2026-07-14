@@ -51,6 +51,7 @@ export function cloneAiChatMessage(message: AiChatMessage): AiChatMessage {
 
   return {
     ...message,
+    modelName: message.modelName ?? "",
     usage: message.usage ? { ...message.usage } : null,
     parts: message.parts.map(cloneAiChatAssistantPart),
   };
@@ -74,6 +75,7 @@ export function applyAiChatMessagePatch(
   return {
     ...message,
     status: patch.status ?? message.status,
+    modelName: patch.modelName !== undefined ? patch.modelName : message.modelName,
     usage: patch.usage !== undefined ? patch.usage : message.usage,
   };
 }

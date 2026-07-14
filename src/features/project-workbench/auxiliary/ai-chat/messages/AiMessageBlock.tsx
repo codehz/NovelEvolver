@@ -1,18 +1,21 @@
 import type { ReactNode } from "react";
 
-import { MarkdownStream } from "#app/shared/ui";
+import { Button, IconTooltip, MarkdownStream } from "#app/shared/ui";
 import type { AiChatAssistantPart, AiChatMentionRef, AiChatMessage } from "#shared/rpc/ai/index";
 
 import {
   assistantMessageBlockClass,
   assistantMessageBodyClass,
+  assistantMessageFooterClass,
+  assistantMessageFooterLeadingClass,
+  assistantMessageFooterTrailingClass,
   reasoningMetaClass,
   userMentionChipClass,
   userMessageBubbleClass,
   userMessageRowClass,
   userSlashChipClass,
 } from "../ui/ai-chat-chrome";
-import { describeAssistantMessageMeta } from "../ui/ai-chat-helpers";
+import { describeAssistantStreamingMeta, describeAssistantUsageMeta } from "../ui/ai-chat-helpers";
 import { AiReasoningBlock } from "./AiReasoningBlock";
 import { AiToolCallBlock } from "./AiToolCallBlock";
 
@@ -106,9 +109,15 @@ function renderTextWithMentions(text: string, mentions: readonly AiChatMentionRe
   return nodes;
 }
 
-type AiMessageBlockProps = { message: AiChatMessage };
+type AiMessageBlockProps = {
+  message: AiChatMessage;
+  /** When set, show retry on the completed footer leading slot (last assistant turn only). */
+  onRetry?: () => void;
+  /** Retry button label/aria when `onRetry` is set. */
+  retryLabel?: string;
+};
 
-export function AiMessageBlock({ message }: AiMessageBlockProps) {
+export function AiMessageBlock({ message, onRetry, retryLabel = "重新生成" }: AiMessageBlockProps) {
   if (message.role === "user") {
     const slash = message.slash;
     const mentions = message.mentions ?? [];
@@ -134,16 +143,48 @@ export function AiMessageBlock({ message }: AiMessageBlockProps) {
     );
   }
 
-  const metaText = describeAssistantMessageMeta(message);
+  if (message.status === "streaming") {
+    const streamingMeta = describeAssistantStreamingMeta(message);
+    return (
+      <article className={assistantMessageBlockClass}>
+        {message.parts.map((part) => (
+          <AiAssistantPartBlock key={part.id} part={part} />
+        ))}
+        <p className={reasoningMetaClass} title={streamingMeta}>
+          {streamingMeta}
+        </p>
+      </article>
+    );
+  }
+
+  const modelLabel = message.modelName.trim() !== "" ? message.modelName : "未知模型";
+  const usageMeta = describeAssistantUsageMeta(message);
 
   return (
     <article className={assistantMessageBlockClass}>
       {message.parts.map((part) => (
         <AiAssistantPartBlock key={part.id} part={part} />
       ))}
-      <p className={reasoningMetaClass} title={metaText}>
-        {metaText}
-      </p>
+      <div className={assistantMessageFooterClass}>
+        {onRetry ? (
+          <div className={assistantMessageFooterLeadingClass}>
+            <IconTooltip label={retryLabel} side="top">
+              <Button
+                variant="ghost"
+                size="icon-sm"
+                aria-label={retryLabel}
+                className="text-ctp-mauve"
+                onClick={onRetry}
+              >
+                <span aria-hidden="true" className="icon-[codicon--refresh] text-sm" />
+              </Button>
+            </IconTooltip>
+          </div>
+        ) : null}
+        <p className={assistantMessageFooterTrailingClass} title={usageMeta}>
+          {modelLabel}
+        </p>
+      </div>
     </article>
   );
 }

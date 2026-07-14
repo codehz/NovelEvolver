@@ -7,7 +7,7 @@ import type {
 } from "@codehz/ai";
 import { aggregateEvents } from "@codehz/ai";
 
-import { cloneAiChatMessage } from "#shared/rpc/ai/index";
+import { cloneAiChatMessage, MOCK_AI_MODEL_ID } from "#shared/rpc/ai/index";
 import type {
   AiChatMessageUsage,
   AiChatSelectableModelKind,
@@ -331,7 +331,7 @@ export class AiConversationRuntime {
 
     // Persist display form (slash chip + remainder + mention tokens); expand only into model history.
     const userMessage = this.#state.appendUserMessage({ text, slash, mentions });
-    const assistantMessage = this.#state.appendAssistantMessage();
+    const assistantMessage = this.#state.appendAssistantMessage(this.#resolveSelectedModelName());
     const requestInput = [...this.#state.history, toInputItem(modelText)];
 
     this.#state.setPending(true);
@@ -384,10 +384,11 @@ export class AiConversationRuntime {
 
     this.#state.replaceHistory(requestInput);
 
+    const modelName = this.#resolveSelectedModelName();
     const ops: AiChatDeltaOp[] = [];
     let assistantMessage = this.#state.lastAssistantMessage;
     if (assistantMessage === null) {
-      assistantMessage = this.#state.appendAssistantMessage();
+      assistantMessage = this.#state.appendAssistantMessage(modelName);
       ops.push({
         type: "message.added",
         message: cloneAiChatMessage(assistantMessage),
@@ -398,6 +399,7 @@ export class AiConversationRuntime {
       ops.push(
         ...this.#state.updateMessage(assistantMessage.id, {
           status: "streaming",
+          modelName,
         }),
       );
     }
@@ -790,6 +792,19 @@ export class AiConversationRuntime {
       return null;
     }
     return resolveReasoningLevelForModel(this.#resolveModelConfig(modelId), preferred);
+  }
+
+  /** Config display name for the active session model (matches selector `name`). */
+  #resolveSelectedModelName(): string {
+    const modelId = this.#state.selectedModelId;
+    if (modelId === MOCK_AI_MODEL_ID) {
+      return "Mock AI";
+    }
+    const configName = this.#resolveModelConfig(modelId)?.name?.trim() ?? "";
+    if (configName !== "") {
+      return configName;
+    }
+    return this.getSnapshot().model || "";
   }
 
   #emit(event: AiChatEvent): void {

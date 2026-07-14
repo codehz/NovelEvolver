@@ -44,21 +44,19 @@ export function describeToolCallStatus(status: AiChatToolCall["status"]): string
   }
 }
 
-/**
- * Single status line for an assistant message.
- * Priority: streaming process state → usage summary → missing-usage fallback.
- */
-export function describeAssistantMessageMeta(message: AiChatAssistantMessage): string {
-  if (message.status === "streaming") {
-    const hasRunningTool = message.parts.some(
-      (part) => part.type === "tool_call" && part.status === "running",
-    );
-    const hasStreamingReasoning = message.parts.some(
-      (part) => part.type === "reasoning" && part.status === "streaming",
-    );
-    return hasStreamingReasoning ? "思考中" : hasRunningTool ? "执行工具中" : "正在工作";
-  }
+/** Streaming process label for the assistant message footer (left-aligned). */
+export function describeAssistantStreamingMeta(message: AiChatAssistantMessage): string {
+  const hasRunningTool = message.parts.some(
+    (part) => part.type === "tool_call" && part.status === "running",
+  );
+  const hasStreamingReasoning = message.parts.some(
+    (part) => part.type === "reasoning" && part.status === "streaming",
+  );
+  return hasStreamingReasoning ? "思考中" : hasRunningTool ? "执行工具中" : "正在工作";
+}
 
+/** Completed-turn usage summary for hover on the model label. */
+export function describeAssistantUsageMeta(message: AiChatAssistantMessage): string {
   const usage = message.usage;
   const inputTokens = usage?.inputTokens;
   const outputTokens = usage?.outputTokens;

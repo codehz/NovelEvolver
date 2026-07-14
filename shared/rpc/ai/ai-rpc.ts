@@ -173,6 +173,11 @@ export type AiChatAssistantMessage = {
   id: string;
   role: "assistant";
   status: AiChatMessageStatus;
+  /**
+   * Display name of the model used for this turn (config `name`, e.g. "GPT-4o").
+   * Empty for legacy rows that predate this field.
+   */
+  modelName: string;
   usage: AiChatMessageUsage | null;
   parts: AiChatAssistantPart[];
 };
@@ -279,6 +284,8 @@ export type AiConversationSearchHit = AiConversationSummary & {
 
 export type AiChatMessagePatch = {
   status?: AiChatMessageStatus;
+  /** Refresh display model name (e.g. retry after switching model). */
+  modelName?: string;
   usage?: AiChatMessageUsage | null;
 };
 

@@ -196,7 +196,11 @@ function normalizeStoredMessage(entry: unknown): AiChatMessage {
   }
   const raw = entry as Record<string, unknown>;
   if (raw.role === "assistant") {
-    return entry as AiChatMessage;
+    const message = entry as AiChatAssistantMessage;
+    return {
+      ...message,
+      modelName: typeof raw.modelName === "string" ? raw.modelName : "",
+    };
   }
   return {
     id: typeof raw.id === "string" ? raw.id : `ai-chat-legacy-${randomUUID()}`,
@@ -584,11 +588,12 @@ export class AiConversationState {
     return message;
   }
 
-  appendAssistantMessage(): AiChatAssistantMessage {
+  appendAssistantMessage(modelName: string): AiChatAssistantMessage {
     const message: AiChatAssistantMessage = {
       id: `ai-chat-${this.#messageCounter++}`,
       role: "assistant",
       status: "streaming",
+      modelName,
       usage: null,
       parts: [],
     };

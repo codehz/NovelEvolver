@@ -24,6 +24,11 @@ export const conversationScrollerJumpButtonClass = cn(
   "inert:pointer-events-none inert:opacity-0",
 );
 export const assistantMessageBlockClass = cn("flex w-full flex-col gap-1");
+export const assistantMessageFooterClass = cn("flex w-full min-w-0 items-center gap-2 pt-0.5");
+export const assistantMessageFooterLeadingClass = cn("flex shrink-0 items-center");
+export const assistantMessageFooterTrailingClass = cn(
+  "ml-auto min-w-0 truncate text-right text-2xs text-ctp-subtext1 tabular-nums",
+);
 export const assistantMessageBodyClass = cn(
   "text-chat leading-5 text-app-foreground",
   "[&_a]:text-ctp-blue [&_a]:underline [&_a]:underline-offset-2",
