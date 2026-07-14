@@ -39,6 +39,9 @@ export const settingsIconButtonClass = cn(
   iconButtonHoverClass,
 );
 
+/** Ghost icon actions in settings lists / subpage headers: keep muted rest, brighten on hover. */
+export const settingsGhostActionClass = cn("hover:text-app-foreground");
+
 /** Horizontal bubble tab strip under the dialog header. */
 export const settingsTabListClass = cn(
   "flex shrink-0 flex-wrap items-center gap-1.5 border-b border-titlebar-border px-4 py-2.5",

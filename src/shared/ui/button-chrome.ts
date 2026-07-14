@@ -29,7 +29,6 @@ export const buttonVariantClass: Record<ButtonVariant, string> = {
   ),
   ghost: cn(
     "rounded-sm border-0 bg-transparent text-app-muted",
-    "hover:text-app-foreground",
     iconButtonHoverClass,
     controlFocusVisibleClass,
   ),

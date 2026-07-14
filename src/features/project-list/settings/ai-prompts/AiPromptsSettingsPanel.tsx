@@ -11,6 +11,7 @@ import type {
 
 import {
   settingsEmptyStateClass,
+  settingsGhostActionClass,
   settingsLayerHiddenClass,
   settingsListClass,
   settingsListItemClass,
@@ -228,6 +229,7 @@ export function AiPromptsSettingsPanel() {
                   <div className="flex shrink-0 items-center gap-0.5">
                     <Button
                       aria-label={`查看提示词 ${item.title} 详情`}
+                      className={settingsGhostActionClass}
                       disabled={busy}
                       variant="ghost"
                       size="icon-md"
@@ -239,6 +241,7 @@ export function AiPromptsSettingsPanel() {
                     </Button>
                     <Button
                       aria-label={`编辑提示词 ${item.title}`}
+                      className={settingsGhostActionClass}
                       disabled={busy}
                       variant="ghost"
                       size="icon-md"
@@ -250,6 +253,7 @@ export function AiPromptsSettingsPanel() {
                     </Button>
                     <Button
                       aria-label={`删除提示词 ${item.title}`}
+                      className={settingsGhostActionClass}
                       disabled={busy}
                       variant="ghost"
                       size="icon-md"

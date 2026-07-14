@@ -12,6 +12,7 @@ import type {
 
 import {
   settingsEmptyStateClass,
+  settingsGhostActionClass,
   settingsLayerHiddenClass,
   settingsListClass,
   settingsListItemClass,
@@ -277,6 +278,7 @@ export function AiAgentsSettingsPanel() {
                         <>
                           <Button
                             aria-label={`编辑 Agent ${agent.name}`}
+                            className={settingsGhostActionClass}
                             disabled={busy}
                             variant="ghost"
                             size="icon-md"
@@ -288,6 +290,7 @@ export function AiAgentsSettingsPanel() {
                           </Button>
                           <Button
                             aria-label={`删除 Agent ${agent.name}`}
+                            className={settingsGhostActionClass}
                             disabled={busy}
                             variant="ghost"
                             size="icon-md"

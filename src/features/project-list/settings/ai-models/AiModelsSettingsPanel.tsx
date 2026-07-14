@@ -14,6 +14,7 @@ import { isLowMaxOutputTokensForNovelAgent } from "#shared/rpc/services/index";
 
 import {
   settingsEmptyStateClass,
+  settingsGhostActionClass,
   settingsLayerHiddenClass,
   settingsListClass,
   settingsListItemClass,
@@ -318,6 +319,7 @@ export function AiModelsSettingsPanel() {
                     </Button>
                     <Button
                       aria-label={`编辑供应商 ${provider.name}`}
+                      className={settingsGhostActionClass}
                       disabled={busy}
                       variant="ghost"
                       size="icon-md"
@@ -330,6 +332,7 @@ export function AiModelsSettingsPanel() {
                     </Button>
                     <Button
                       aria-label={`删除供应商 ${provider.name}`}
+                      className={settingsGhostActionClass}
                       disabled={busy}
                       variant="ghost"
                       size="icon-md"
@@ -424,6 +427,7 @@ export function AiModelsSettingsPanel() {
                             )}
                             <Button
                               aria-label={`编辑模型 ${model.name}`}
+                              className={settingsGhostActionClass}
                               disabled={busy}
                               variant="ghost"
                               size="icon-md"
@@ -436,6 +440,7 @@ export function AiModelsSettingsPanel() {
                             </Button>
                             <Button
                               aria-label={`删除模型 ${model.name}`}
+                              className={settingsGhostActionClass}
                               disabled={busy}
                               variant="ghost"
                               size="icon-md"

@@ -2,8 +2,7 @@ import { MessageScroller } from "@shadcn/react/message-scroller";
 import { useMemo, type ReactNode } from "react";
 
 import { cn } from "#app/shared/lib/ui/cn";
-import { controlFocusVisibleClass, panelHoverClass } from "#app/shared/lib/ui/interaction-chrome";
-import { Button } from "#app/shared/ui";
+import { Button, IconTooltip } from "#app/shared/ui";
 import type { AiChatSnapshot } from "#shared/rpc/ai/index";
 
 import { AiMessageBlock } from "../messages/AiMessageBlock";
@@ -19,12 +18,6 @@ import { AiChatWarningBanner } from "./AiChatWarningBanner";
 
 const turnErrorBannerClass = cn(
   "rounded-lg border border-ctp-red/40 bg-ctp-red/10 px-3 py-2 text-xs text-ctp-red",
-);
-const turnRetryButtonClass = cn(
-  "inline-flex items-center gap-1 self-start rounded-sm px-1.5 py-0.5 text-2xs text-ctp-subtext1 outline-none",
-  "underline-offset-2 transition-colors hover:text-app-foreground hover:underline",
-  panelHoverClass,
-  controlFocusVisibleClass,
 );
 const railItemStackClass = cn("flex flex-col gap-2");
 
@@ -146,9 +139,17 @@ export function AiChatConversationRail({
               <RailItem messageId="meta:turn-footer" className={railItemStackClass}>
                 {turnError ? <div className={turnErrorBannerClass}>{turnError}</div> : null}
                 {showTurnRetry ? (
-                  <Button variant="link" className={turnRetryButtonClass} onClick={onRetry}>
-                    {turnError ? "重试" : "重新生成"}
-                  </Button>
+                  <IconTooltip label={turnError ? "重试" : "重新生成"} side="top">
+                    <Button
+                      variant="ghost"
+                      size="icon-sm"
+                      aria-label={turnError ? "重试" : "重新生成"}
+                      className="text-ctp-mauve"
+                      onClick={onRetry}
+                    >
+                      <span aria-hidden="true" className="icon-[codicon--refresh] text-sm" />
+                    </Button>
+                  </IconTooltip>
                 ) : null}
               </RailItem>
             ) : null}
