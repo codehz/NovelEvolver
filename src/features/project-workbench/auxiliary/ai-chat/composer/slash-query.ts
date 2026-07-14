@@ -2,6 +2,8 @@ import type { EditorState } from "@codemirror/state";
 
 import type { AiPromptConfigPublic } from "#shared/rpc/services/index";
 
+import { promptChipsField } from "./prompt-chip-extension";
+
 /** Active `/query` token under the primary caret (collapsed selection only). */
 export type SlashQuery = {
   /** Index of the leading `/`. */
@@ -15,6 +17,9 @@ export type SlashQuery = {
 /**
  * Detect a slash-command token immediately before the primary caret.
  * Requires `/` at doc start or after whitespace; query is `[a-zA-Z0-9_-]*`.
+ *
+ * Tokens whose leading `/` sits inside an existing prompt chip are ignored so
+ * typing directly after a chip (e.g. `/expand` + `123`) does not reopen the menu.
  */
 export function detectSlashQuery(state: EditorState): SlashQuery | null {
   const main = state.selection.main;
@@ -36,6 +41,21 @@ export function detectSlashQuery(state: EditorState): SlashQuery | null {
 
   const query = match[1] ?? "";
   const from = caret - query.length - 1;
+
+  // Chip markers are still plain `/{slug}` text under the decoration; reject
+  // any token that starts inside (or is) an existing chip range.
+  const chips = state.field(promptChipsField, false);
+  if (chips) {
+    let insideChip = false;
+    chips.between(from, from + 1, () => {
+      insideChip = true;
+      return false;
+    });
+    if (insideChip) {
+      return null;
+    }
+  }
+
   return { from, to: caret, query };
 }
 

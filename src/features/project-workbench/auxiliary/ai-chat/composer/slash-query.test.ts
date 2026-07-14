@@ -44,6 +44,49 @@ describe("detectSlashQuery", () => {
     });
     expect(detectSlashQuery(state)).toBeNull();
   });
+
+  test("ignores token that starts inside an existing prompt chip", () => {
+    const data: PromptChipData = {
+      promptId: "p1",
+      slug: "expand",
+      title: "扩写",
+      body: "body",
+    };
+    const marker = "/expand";
+    const base = EditorState.create({
+      doc: `${marker}123`,
+      extensions: promptChipExtension(),
+      selection: { anchor: marker.length + 3 },
+    });
+    const withChip = base.update({
+      effects: addPromptChipEffect.of({ from: 0, to: marker.length, data }),
+    }).state;
+    // Without the chip guard this would look like query "expand123".
+    expect(detectSlashQuery(withChip)).toBeNull();
+  });
+
+  test("still detects a fresh slash after a chip when separated by whitespace", () => {
+    const data: PromptChipData = {
+      promptId: "p1",
+      slug: "expand",
+      title: "扩写",
+      body: "body",
+    };
+    const marker = "/expand";
+    const base = EditorState.create({
+      doc: `${marker} /pol`,
+      extensions: promptChipExtension(),
+      selection: { anchor: marker.length + 5 },
+    });
+    const withChip = base.update({
+      effects: addPromptChipEffect.of({ from: 0, to: marker.length, data }),
+    }).state;
+    expect(detectSlashQuery(withChip)).toEqual({
+      from: marker.length + 1,
+      to: marker.length + 5,
+      query: "pol",
+    });
+  });
 });
 
 describe("filterPromptSlashItems", () => {
