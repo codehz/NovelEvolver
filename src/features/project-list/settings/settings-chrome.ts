@@ -95,6 +95,42 @@ export const settingsListItemMetaClass = cn(
   "mt-1 flex min-w-0 flex-wrap items-center gap-x-1.5 gap-y-0.5 text-2xs text-app-muted",
 );
 
+/** Toolbar above multi-select tool cards (count + bulk actions). */
+export const settingsToolPickerToolbarClass = cn("flex min-w-0 items-center justify-between gap-2");
+
+export const settingsToolPickerCountClass = cn("text-2xs text-app-muted");
+
+export const settingsToolPickerActionsClass = cn("flex shrink-0 items-center gap-1");
+
+/** Compact text action used for select-all / clear-all style controls. */
+export const settingsTextActionButtonClass = cn(
+  "inline-flex shrink-0 items-center justify-center rounded-sm px-1.5 py-0.5 text-2xs text-badge-background outline-none",
+  "hover:not-disabled:bg-badge-background/10",
+  controlFocusVisibleInsetClass,
+  "disabled:cursor-default disabled:opacity-40",
+);
+
+/** Vertical stack of selectable tool cards. */
+export const settingsToolCardListClass = cn("flex flex-col gap-1.5");
+
+/** Selectable tool card shell (label wrapping checkbox + copy). */
+export const settingsToolCardClass = cn(
+  "flex cursor-pointer items-start gap-2.5 rounded-md border border-titlebar-border bg-app-surface px-2.5 py-2 text-app-foreground outline-none",
+  "has-data-disabled:cursor-default has-data-disabled:opacity-50",
+  panelHoverClass,
+);
+
+/** Selected tool card emphasis. */
+export const settingsToolCardSelectedClass = cn("border-badge-background/40 bg-ctp-surface0/40");
+
+export const settingsToolCardBodyClass = cn("min-w-0 flex-1");
+
+export const settingsToolCardTitleClass = cn(
+  "truncate text-xs leading-tight font-medium text-app-foreground",
+);
+
+export const settingsToolCardDescriptionClass = cn("mt-0.5 text-2xs leading-snug text-app-muted");
+
 export const settingsStatusBadgeClass = cn(
   "inline-flex shrink-0 items-center rounded-sm bg-ctp-surface0/70 px-1.5 py-0.5 text-2xs text-app-muted",
 );

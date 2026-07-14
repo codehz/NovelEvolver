@@ -1,4 +1,3 @@
-import { CheckboxGroup } from "@base-ui/react/checkbox-group";
 import { Field } from "@base-ui/react/field";
 import { Form } from "@base-ui/react/form";
 import { useState } from "react";
@@ -12,7 +11,6 @@ import type {
 } from "#shared/rpc/services/index";
 
 import {
-  settingsCheckboxLabelClass,
   settingsFieldControlCellClass,
   settingsFieldErrorClass,
   settingsFieldLabelClass,
@@ -26,8 +24,8 @@ import {
   settingsSecondaryButtonClass,
   settingsTextareaClass,
 } from "../settings-chrome";
-import { SettingsCheckbox } from "../SettingsCheckbox";
 import { SettingsSelect } from "../SettingsSelect";
+import { AiAgentToolPicker } from "./AiAgentToolPicker";
 
 type FormState = {
   name: string;
@@ -181,27 +179,15 @@ export function AiAgentConfigForm({
         >
           <Field.Label className={settingsFieldLabelClass}>可用工具</Field.Label>
           <div className={settingsFieldControlCellClass}>
-            <CheckboxGroup
-              className="flex flex-col gap-1.5"
+            <AiAgentToolPicker
+              disabled={busy}
+              readOnly={readOnly}
+              tools={tools}
               value={form.availableToolNames}
-              onValueChange={(next) => {
+              onChange={(next) => {
                 update("availableToolNames", next);
               }}
-            >
-              {tools.map((tool) => (
-                <label key={tool.name} className={settingsCheckboxLabelClass}>
-                  <SettingsCheckbox value={tool.name} />
-                  <span className="min-w-0 flex-1 leading-tight">
-                    <span className="font-medium">{tool.name}</span>
-                    {tool.description ? (
-                      <>
-                        ：<span className="text-app-muted">{tool.description}</span>
-                      </>
-                    ) : null}
-                  </span>
-                </label>
-              ))}
-            </CheckboxGroup>
+            />
           </div>
         </Field.Root>
       </div>
