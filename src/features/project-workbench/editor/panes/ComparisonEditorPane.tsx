@@ -25,12 +25,11 @@ import type { WorkbenchEditorPaneProps } from "./types";
 
 const COMPARISON_AUTOSAVE_DEBOUNCE_MS = 600;
 
-export function ComparisonEditorPane({
-  tab,
-  active,
-}: WorkbenchEditorPaneProps & {
+type ComparisonEditorPaneProps = WorkbenchEditorPaneProps & {
   tab: Extract<WorkbenchEditorTab, { kind: "comparison" }>;
-}) {
+};
+
+export function ComparisonEditorPane({ tab, active }: ComparisonEditorPaneProps) {
   const manuscript = useManuscript();
   const resources = useResourceLibrary();
   const changes = useWorktreeChanges();

@@ -16,15 +16,17 @@ const auxiliarySidebarFrameHeaderClass = cn(
 
 const auxiliarySidebarFrameBodyClass = cn("flex min-h-0 flex-1 flex-col");
 
+type AuxiliarySidebarFrameProps = {
+  className?: string;
+  "aria-hidden"?: boolean;
+  children?: ReactNode;
+};
+
 export const AuxiliarySidebarFrame = memo(function AuxiliarySidebarFrame({
   className,
   "aria-hidden": ariaHidden,
   children,
-}: {
-  className?: string;
-  "aria-hidden"?: boolean;
-  children?: ReactNode;
-}) {
+}: AuxiliarySidebarFrameProps) {
   return (
     <SidebarHeaderActionsPortalProvider>
       <aside

@@ -27,7 +27,7 @@ const searchRegexToggleClass = cn(
   "hover:data-pressed:bg-ctp-blue/25 hover:data-pressed:text-ctp-blue",
 );
 
-type SearchQueryChromeProps = {
+type SearchQueryBarProps = {
   query: string;
   isRegex: boolean;
   statsLine: string | null;
@@ -35,13 +35,13 @@ type SearchQueryChromeProps = {
   onToggleRegex: () => void;
 };
 
-export function SearchQueryChrome({
+export function SearchQueryBar({
   query,
   isRegex,
   statsLine,
   onQueryChange,
   onToggleRegex,
-}: SearchQueryChromeProps) {
+}: SearchQueryBarProps) {
   const lastStatsLineRef = useRef<string>("请输入搜索内容");
   if (statsLine !== null) {
     lastStatsLineRef.current = statsLine;

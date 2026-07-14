@@ -8,7 +8,30 @@ import {
   composerTextareaClass,
   sendButtonClass,
   stopButtonClass,
-} from "../ui/ai-chat-ui";
+} from "../ui/ai-chat-chrome";
+
+type AiChatMessageComposerProps = {
+  draft: string;
+  composerDisabled: boolean;
+  selectorDisabled: boolean;
+  modelSelectorDisabled: boolean;
+  canSend: boolean;
+  canStop: boolean;
+  selectedAgentLabel: string;
+  selectedModelLabel: string;
+  agentItems: readonly AiChatSelectorItem[];
+  modelItems: readonly AiChatSelectorItem[];
+  composerRef: RefObject<HTMLTextAreaElement | null>;
+  onDraftChange: (value: string) => void;
+  onSubmit: (event: SubmitEvent<HTMLFormElement>) => void;
+  onSendClick: () => void;
+  onStopClick: () => void;
+  onComposerKeyDown: (event: KeyboardEvent<HTMLTextAreaElement>) => void;
+  onOpenAgentPicker?: () => void;
+  onOpenModelPicker?: () => void;
+  onSelectAgent: (id: string) => void;
+  onSelectModel: (id: string) => void;
+};
 
 export function AiChatMessageComposer({
   draft,
@@ -31,28 +54,7 @@ export function AiChatMessageComposer({
   onOpenModelPicker,
   onSelectAgent,
   onSelectModel,
-}: {
-  draft: string;
-  composerDisabled: boolean;
-  selectorDisabled: boolean;
-  modelSelectorDisabled: boolean;
-  canSend: boolean;
-  canStop: boolean;
-  selectedAgentLabel: string;
-  selectedModelLabel: string;
-  agentItems: readonly AiChatSelectorItem[];
-  modelItems: readonly AiChatSelectorItem[];
-  composerRef: RefObject<HTMLTextAreaElement | null>;
-  onDraftChange: (value: string) => void;
-  onSubmit: (event: SubmitEvent<HTMLFormElement>) => void;
-  onSendClick: () => void;
-  onStopClick: () => void;
-  onComposerKeyDown: (event: KeyboardEvent<HTMLTextAreaElement>) => void;
-  onOpenAgentPicker?: () => void;
-  onOpenModelPicker?: () => void;
-  onSelectAgent: (id: string) => void;
-  onSelectModel: (id: string) => void;
-}) {
+}: AiChatMessageComposerProps) {
   return (
     <form className={composerShellClass} onSubmit={onSubmit}>
       <textarea

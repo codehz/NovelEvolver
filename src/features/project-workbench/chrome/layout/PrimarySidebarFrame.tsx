@@ -16,17 +16,19 @@ const primarySidebarFrameHeaderClass = cn(
 
 const primarySidebarFrameBodyClass = cn("flex min-h-0 min-w-0 flex-1 flex-col text-sm");
 
+type PrimarySidebarFrameProps = {
+  title: string;
+  className?: string;
+  "aria-hidden"?: boolean;
+  children?: ReactNode;
+};
+
 export const PrimarySidebarFrame = memo(function PrimarySidebarFrame({
   title,
   className,
   "aria-hidden": ariaHidden,
   children,
-}: {
-  title: string;
-  className?: string;
-  "aria-hidden"?: boolean;
-  children?: ReactNode;
-}) {
+}: PrimarySidebarFrameProps) {
   return (
     <SidebarHeaderActionsPortalProvider>
       <aside

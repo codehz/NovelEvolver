@@ -164,6 +164,15 @@ function SearchFlatRowView({
   );
 }
 
+type SearchResultTreeProps = {
+  status: TreeBodyStatus;
+  errorContent?: ReactNode;
+  roots: SearchResultDomainRoot[];
+  highlightQuery: string;
+  highlightIsRegex?: boolean;
+  onOpenHit: (hit: WorktreeSearchHit, intent: "focus" | "open") => void;
+};
+
 export function SearchResultTree({
   status,
   errorContent,
@@ -171,14 +180,7 @@ export function SearchResultTree({
   highlightQuery,
   highlightIsRegex = false,
   onOpenHit,
-}: {
-  status: TreeBodyStatus;
-  errorContent?: ReactNode;
-  roots: SearchResultDomainRoot[];
-  highlightQuery: string;
-  highlightIsRegex?: boolean;
-  onOpenHit: (hit: WorktreeSearchHit, intent: "focus" | "open") => void;
-}) {
+}: SearchResultTreeProps) {
   const highlightContainerRef = useRef<HTMLDivElement>(null);
 
   const folderKeys = useMemo(() => collectSearchTreeFolderKeys(roots), [roots]);

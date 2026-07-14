@@ -18,13 +18,12 @@ export function ChangesLoading() {
   );
 }
 
-export function ChangesWarningBanner({
-  message,
-  className,
-}: {
+type ChangesWarningBannerProps = {
   message: string;
   className?: string;
-}) {
+};
+
+export function ChangesWarningBanner({ message, className }: ChangesWarningBannerProps) {
   return (
     <div className={cn(className)}>
       <div className="rounded border border-ctp-yellow/40 bg-ctp-yellow/10 px-2 py-1 text-[10px] text-ctp-yellow">

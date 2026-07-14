@@ -13,7 +13,9 @@ const breadcrumbClickableButtonClass = cn(
 );
 const breadcrumbCurrentTextClass = cn("max-w-48 truncate text-xs text-app-foreground");
 
-export function EditorBreadcrumb({ tab }: { tab: WorkbenchEditorTab }) {
+type EditorBreadcrumbProps = { tab: WorkbenchEditorTab };
+
+export function EditorBreadcrumb({ tab }: EditorBreadcrumbProps) {
   const { ariaLabel, segments } = useEditorBreadcrumb(tab);
 
   if (segments.length === 0) {

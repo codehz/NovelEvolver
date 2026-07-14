@@ -31,7 +31,7 @@ const variantMotionMap: Record<"toast" | "center", MotionProps> = {
   },
 };
 
-export type NotificationItemProps = {
+type NotificationItemProps = {
   notification: AppNotification;
   variant: "toast" | "center";
   ref?: Ref<HTMLElement>;

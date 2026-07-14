@@ -58,6 +58,19 @@ function resolveChangesPanelContent({
   );
 }
 
+type ChangesBodyProps = {
+  commitMessage: string;
+  committing: boolean;
+  loading: boolean;
+  error: boolean;
+  result: ChangesSnapshot | null;
+  onCommitMessageChange: (value: string) => void;
+  onCommit: () => void;
+  onRetry: () => void;
+  onRevert: (changeId: string) => void;
+  onOpenChange: (change: Change) => void;
+};
+
 export function ChangesBody({
   commitMessage,
   committing,
@@ -69,18 +82,7 @@ export function ChangesBody({
   onRetry,
   onRevert,
   onOpenChange,
-}: {
-  commitMessage: string;
-  committing: boolean;
-  loading: boolean;
-  error: boolean;
-  result: ChangesSnapshot | null;
-  onCommitMessageChange: (value: string) => void;
-  onCommit: () => void;
-  onRetry: () => void;
-  onRevert: (changeId: string) => void;
-  onOpenChange: (change: Change) => void;
-}) {
+}: ChangesBodyProps) {
   return (
     <div className="flex min-h-0 flex-col">
       <ChangesCommitForm

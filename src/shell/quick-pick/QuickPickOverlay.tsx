@@ -37,15 +37,13 @@ export function useQuickPickOverlayOpen(): boolean {
   return value.open;
 }
 
-export function QuickPickOverlay({
-  titleId,
-  onDismiss,
-  children,
-}: {
+type QuickPickOverlayProps = {
   titleId: string;
   onDismiss: () => void;
   children: ReactNode;
-}) {
+};
+
+export function QuickPickOverlay({ titleId, onDismiss, children }: QuickPickOverlayProps) {
   const [open, setOpen] = useState(true);
   const pendingAfterCloseRef = useRef<(() => void) | null>(null);
   const settledRef = useRef(false);

@@ -4,7 +4,11 @@ import type { ReactNode } from "react";
 
 import { activeBranchAtomMolecule, branchNameScope } from "./branch-scopes";
 
-export function BranchScopeProvider({ children }: { children: ReactNode }) {
+type BranchScopeProviderProps = {
+  children: ReactNode;
+};
+
+export function BranchScopeProvider({ children }: BranchScopeProviderProps) {
   const [branchName] = useAtom(useMolecule(activeBranchAtomMolecule));
 
   return (

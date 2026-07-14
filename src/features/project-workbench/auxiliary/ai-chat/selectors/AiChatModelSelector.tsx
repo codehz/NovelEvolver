@@ -1,7 +1,7 @@
 import { Popover } from "@base-ui/react/popover";
 import { useCallback, useState } from "react";
 
-import { modelSelectorButtonClass, modelSelectorLabelClass } from "../ui/ai-chat-ui";
+import { modelSelectorButtonClass, modelSelectorLabelClass } from "../ui/ai-chat-chrome";
 import {
   modelSelectorAnchorClass,
   selectorPopoverPanelClass,
@@ -10,19 +10,21 @@ import {
 import { AnchoredSelectorPicker } from "./AnchoredSelectorPicker";
 import type { AiChatSelectorItem } from "./selector-items";
 
+type AiChatModelSelectorProps = {
+  label: string;
+  disabled: boolean;
+  items: readonly AiChatSelectorItem[];
+  onOpen?: () => void;
+  onSelect: (id: string) => void;
+};
+
 export function AiChatModelSelector({
   label,
   disabled,
   items,
   onOpen,
   onSelect,
-}: {
-  label: string;
-  disabled: boolean;
-  items: readonly AiChatSelectorItem[];
-  onOpen?: () => void;
-  onSelect: (id: string) => void;
-}) {
+}: AiChatModelSelectorProps) {
   const [open, setOpen] = useState(false);
 
   const handleOpenChange = useCallback(

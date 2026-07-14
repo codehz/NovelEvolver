@@ -1,16 +1,15 @@
 import { useMemo, useState } from "react";
 
-import { SidebarPaneStack } from "#workbench/chrome";
-
-import { ChangesBody } from "../changes/ChangesBody";
+import { ChangesBody } from "#workbench/changes/ChangesBody";
 import {
   CHANGES_PANEL_DEFAULT_BODY_HEIGHT,
   HISTORY_GRAPH_DEFAULT_BODY_HEIGHT,
-} from "../changes/constants";
-import { useChangesState } from "../changes/use-changes-state";
-import { useWorkbenchEditorActions } from "../editor/use-workbench-editor-actions";
-import { CommitGraphBody } from "../history/CommitGraphBody";
-import { useCommitGraphState } from "../history/use-commit-graph-state";
+} from "#workbench/changes/constants";
+import { useChangesState } from "#workbench/changes/use-changes-state";
+import { SidebarPaneStack } from "#workbench/chrome";
+import { useWorkbenchEditorActions } from "#workbench/editor/use-workbench-editor-actions";
+import { CommitGraphBody } from "#workbench/history/CommitGraphBody";
+import { useCommitGraphState } from "#workbench/history/use-commit-graph-state";
 
 export function ChangesSidebarSection() {
   const {

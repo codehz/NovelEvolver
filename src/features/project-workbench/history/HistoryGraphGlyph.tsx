@@ -14,15 +14,17 @@ const NODE_RADIUS = 3;
 const HEAD_NODE_RADIUS = 3.5;
 const HEAD_RING_RADIUS = 5.5;
 
+type HistoryGraphGlyphProps = {
+  isHead: boolean;
+  showTopConnector: boolean;
+  showBottomConnector: boolean;
+};
+
 export function HistoryGraphGlyph({
   isHead,
   showTopConnector,
   showBottomConnector,
-}: {
-  isHead: boolean;
-  showTopConnector: boolean;
-  showBottomConnector: boolean;
-}) {
+}: HistoryGraphGlyphProps) {
   const connectorGap = isHead ? HEAD_RING_RADIUS : NODE_RADIUS;
 
   return (

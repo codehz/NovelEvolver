@@ -20,19 +20,21 @@ const auxiliarySidebarDockPanelClass = cn(
   auxiliarySidebarDockMotionClass,
 );
 
+type AuxiliarySidebarDockProps = {
+  visible: boolean;
+  spacerWidth: number;
+  panelWidth: number;
+  resizeTransitionDisabled: boolean;
+  children?: ReactNode;
+};
+
 export const AuxiliarySidebarDock = memo(function AuxiliarySidebarDock({
   visible,
   spacerWidth,
   panelWidth,
   resizeTransitionDisabled,
   children,
-}: {
-  visible: boolean;
-  spacerWidth: number;
-  panelWidth: number;
-  resizeTransitionDisabled: boolean;
-  children?: ReactNode;
-}) {
+}: AuxiliarySidebarDockProps) {
   const spacerStyle: CSSProperties = { width: spacerWidth };
   const panelStyle: CSSProperties = {
     width: panelWidth,

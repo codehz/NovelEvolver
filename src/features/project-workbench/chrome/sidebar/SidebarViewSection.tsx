@@ -23,6 +23,18 @@ const sidebarSectionBodyFillClass = cn("h-0 min-h-0 flex-1 overflow-x-hidden ove
 /** Sized body (inline `style.height`) that scrolls within its fixed height. */
 const sidebarSectionBodyStretchClass = cn("h-full min-h-0 overflow-x-hidden overflow-y-auto");
 
+type SidebarViewSectionProps = {
+  title: string;
+  ariaLabel: string;
+  expanded: boolean;
+  onToggleExpanded: () => void;
+  panelId: string;
+  children: ReactNode;
+  sectionStyle?: CSSProperties;
+  bodyStyle?: CSSProperties;
+  bodyFillsSection?: boolean;
+};
+
 export function SidebarViewSection({
   title,
   ariaLabel,
@@ -33,17 +45,7 @@ export function SidebarViewSection({
   sectionStyle,
   bodyStyle,
   bodyFillsSection,
-}: {
-  title: string;
-  ariaLabel: string;
-  expanded: boolean;
-  onToggleExpanded: () => void;
-  panelId: string;
-  children: ReactNode;
-  sectionStyle?: CSSProperties;
-  bodyStyle?: CSSProperties;
-  bodyFillsSection?: boolean;
-}) {
+}: SidebarViewSectionProps) {
   return (
     <SidebarHeaderActionsPortalProvider>
       <section
@@ -86,15 +88,17 @@ export function SidebarViewSection({
   );
 }
 
+type SidebarSectionRowResizeHandleProps = {
+  active: boolean;
+  ariaLabel: string;
+  onPointerDown: (event: ReactPointerEvent<HTMLDivElement>) => void;
+};
+
 export function SidebarSectionRowResizeHandle({
   active,
   ariaLabel,
   onPointerDown,
-}: {
-  active: boolean;
-  ariaLabel: string;
-  onPointerDown: (event: ReactPointerEvent<HTMLDivElement>) => void;
-}) {
+}: SidebarSectionRowResizeHandleProps) {
   return (
     <div className={sidebarSectionResizeSeamClass}>
       <div

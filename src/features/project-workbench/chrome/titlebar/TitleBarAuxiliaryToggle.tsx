@@ -13,13 +13,12 @@ const toggleButtonClass = cn(
   controlFocusVisibleClass,
 );
 
-export function TitleBarAuxiliaryToggle({
-  visible,
-  onToggle,
-}: {
+type TitleBarAuxiliaryToggleProps = {
   visible: boolean;
   onToggle: () => void;
-}) {
+};
+
+export function TitleBarAuxiliaryToggle({ visible, onToggle }: TitleBarAuxiliaryToggleProps) {
   return (
     <TitleBarActionsPortalContent>
       <IconTooltip label="AI 助手面板" side="bottom">

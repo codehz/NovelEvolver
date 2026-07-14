@@ -43,19 +43,21 @@ const loadingClass = cn(
 /**
  * `ask_user` 工具的输入 UI。展示字段来自 DTO；提交时调用 `input.handle.submitAnswer(text)`。
  */
+type AskUserComposerProps = {
+  input: AskUserPendingInput;
+  loading: boolean;
+  draft: string;
+  onDraftChange: (draft: string) => void;
+  onSubmitted: () => void;
+};
+
 export function AskUserComposer({
   input,
   loading,
   draft,
   onDraftChange,
   onSubmitted,
-}: {
-  input: AskUserPendingInput;
-  loading: boolean;
-  draft: string;
-  onDraftChange: (draft: string) => void;
-  onSubmitted: () => void;
-}) {
+}: AskUserComposerProps) {
   const [submitting, setSubmitting] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
   const choices = input.choices ?? [];

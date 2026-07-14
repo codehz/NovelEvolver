@@ -7,11 +7,11 @@ import type {
   ResourceTreeNode,
   ResourceTreeSnapshot,
 } from "#shared/rpc/worktree/index";
+import { manuscriptParentChain } from "#workbench/explorer/manuscript/manuscript-tree";
+import { manuscriptTreeMolecule } from "#workbench/explorer/manuscript/state/manuscript-tree-molecule";
+import { resourceParentChain } from "#workbench/explorer/resource-library/resource-tree";
+import { resourceLibraryTreeMolecule } from "#workbench/explorer/resource-library/state/resource-tree-molecule";
 
-import { manuscriptParentChain } from "../explorer/manuscript/manuscript-tree";
-import { manuscriptTreeMolecule } from "../explorer/manuscript/state/manuscript-tree-molecule";
-import { resourceParentChain } from "../explorer/resource-library/resource-tree";
-import { resourceLibraryTreeMolecule } from "../explorer/resource-library/state/resource-tree-molecule";
 import type {
   ComparisonWorkbenchEditorTab,
   ManuscriptWorkbenchEditorTab,

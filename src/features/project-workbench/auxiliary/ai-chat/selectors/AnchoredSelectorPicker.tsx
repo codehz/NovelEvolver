@@ -28,16 +28,7 @@ function filterSelectorItem(item: AiChatSelectorItem, query: string): boolean {
 }
 
 /** Selector list content with self-clamped native scroll (inside Base UI Popover.Popup). */
-export function AnchoredSelectorPicker({
-  title,
-  searchLabel,
-  searchPlaceholder,
-  emptyMessage,
-  items,
-  open,
-  onOpenChange,
-  onSelect,
-}: {
+type AnchoredSelectorPickerProps = {
   title: string;
   searchLabel: string;
   searchPlaceholder: string;
@@ -47,7 +38,18 @@ export function AnchoredSelectorPicker({
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onSelect: (id: string) => void;
-}): ReactNode {
+};
+
+export function AnchoredSelectorPicker({
+  title,
+  searchLabel,
+  searchPlaceholder,
+  emptyMessage,
+  items,
+  open,
+  onOpenChange,
+  onSelect,
+}: AnchoredSelectorPickerProps): ReactNode {
   const titleId = useId();
   const selectedItem = items.find((item) => item.emphasized) ?? null;
 

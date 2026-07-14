@@ -73,20 +73,39 @@ Write TypeScript with 2-space indentation, semicolons, and double quotes, matchi
 ### Frontend module conventions (`src/`)
 
 - **Named exports only.** Exception: Vite app entry may use `export default` (`src/app/App.tsx`).
-- **File names:** `ComponentName.tsx`, `use-foo.ts` (hooks), `foo-bar.ts` (utils), `foo-chrome.ts` (shared Tailwind class constants only). Do not mix pure helpers and chrome class constants in the same file.
-- **Props:** declare `type XxxProps = { ... }` next to the component. Do not export the type unless another module needs it. Avoid anonymous inline props objects on exported components.
+- **File names:** `ComponentName.tsx`, `use-foo.ts` (hooks), `foo-bar.ts` (utils), `foo-chrome.ts` (**only** shared Tailwind class constants). Do not mix pure helpers and chrome class constants in the same file. Do **not** name React components `*Chrome.tsx` — that suffix is reserved for style-constant modules.
+- **Props:**
+  - Always `type XxxProps = { ... }` next to the component. **Never** `interface XxxProps`.
+  - Place the type above the component in the same file.
+  - **Do not export** Props unless another module actually imports the type (e.g. `#workbench/chrome` barrel, public editor handle types).
+  - **Do not** put an anonymous inline props object on an **exported** component (`export function Foo({ x }: { x: T })`). Local non-exported children may inline when props are ≤2 simple fields.
+  - Extending native elements: `type XxxProps = ComponentPropsWithRef<"button"> & { ... }` (still a `type`, still named `XxxProps`).
 - **Import paths:**
   - `#app/*` — cross-feature / shared renderer code
   - `#shared/*` — RPC contracts and DTOs
-  - `#workbench/*` — workbench **cross-domain** imports
-  - `./` — same domain folder only
-  - Do **not** use `../../` (or deeper) to reach another workbench domain; switch to `#workbench/...`.
+  - `#workbench/*` — workbench **cross-domain** imports (required when leaving the current top-level workbench domain)
+  - `./` or same-domain `../sibling-in-domain` — only within the same top-level domain folder (`editor/`, `changes/`, `auxiliary/ai-chat/`, `chrome/` including its layout/sidebar/statusbar/titlebar subfolders, `explorer/` including manuscript/resource-library/shared, etc.)
+  - Do **not** use relative `../other-domain/...` to reach a **different** top-level workbench domain; switch to `#workbench/other-domain/...`.
+  - Do **not** use `../../` (or deeper) across workbench domains.
+  - Do **not** add empty or re-export-only stub files under parent folders to shorten paths.
 - **shared/ui:** import public primitives from `#app/shared/ui` (barrel). Feature-local controls stay in their feature folder.
-- **Hooks / state:** keep hooks next to the domain they own (`state/` for providers/molecules, domain root or `hooks/` for action hooks). Do not add re-export-only stub files under parent folders.
+- **Hooks / state (ownership, not folder symmetry):**
+  - `state/` — molecules, reducers, providers, and hooks that **own** domain state / sync
+  - Domain root or `hooks/` — UI/action hooks; create a `hooks/` directory only when the domain has ≥3 non-state hooks
+  - Do **not** force every domain to mirror the same physical layout (editor may keep hooks at domain root; ai-chat may use `hooks/` + `state/`)
+  - Do not add re-export-only stub files under parent folders
 - **Style constants:**
   - Multi-component / overlay shell styles → `*-chrome.ts`, every string via `cn(...)`
   - Single-component local reuse → `const fooClass = cn(...)` in that component file, or inline `className`
-  - Shared interaction primitives (focus, hover, list highlight, overlay motion, popover surface) live in `#app/shared/lib/ui/interaction-chrome` — reuse them instead of re-copying the same utilities.
+  - Shared interaction primitives (focus, hover, list highlight, overlay motion, popover surface) live in `#app/shared/lib/ui/interaction-chrome` — reuse them instead of re-copying the same utilities
+  - Prefer importing chrome/helpers modules directly (`ai-chat-chrome`, `ai-chat-helpers`); do not add pure re-export barrels that only re-surface those modules
+
+### React performance habits (`src/`)
+
+- **Default: no `memo`.** Use only for (a) layout shells with stable props (existing dock/frame pattern: `export const X = memo(function X(...))`), or (b) list leaves under proven high-frequency parent re-renders.
+- **Default: no `useCallback` / `useMemo`.** Use only when (a) passing to a `memo` child, (b) a stable identity is required by an effect/dependency array, or (c) the computation is clearly expensive (large tree projection, filtering).
+- Do **not** wrap every handler in `useCallback` for stylistic consistency.
+- Do not mass-remove existing memos without a measured reason; fix obvious waste when touching a file (e.g. `memo` child receiving a fresh inline function each render when a trivial local fix exists).
 
 ## Styling & Design Tokens
 

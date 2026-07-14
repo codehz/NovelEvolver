@@ -9,7 +9,9 @@ import { cn } from "#app/shared/lib/ui/cn";
 import { notificationIconButtonClass, notificationListScrollClass } from "./notification-chrome";
 import { NotificationItem } from "./NotificationItem";
 
-export function NotificationCenterPanel({ titleId }: { titleId: string }) {
+type NotificationCenterPanelProps = { titleId: string };
+
+export function NotificationCenterPanel({ titleId }: NotificationCenterPanelProps) {
   const items = useAtomValue(activeNotificationsAtom);
 
   useEffect(() => {

@@ -22,17 +22,19 @@ const activityIconClass = cn(
   "inline-flex size-6 shrink-0 items-center justify-center text-[1.375rem] leading-none",
 );
 
+type WorkbenchActivityBarProps = {
+  items: readonly ActivityItem[];
+  activeView: string | null;
+  primarySidebarVisible: boolean;
+  onSelectView: (viewId: string) => void;
+};
+
 export const WorkbenchActivityBar = memo(function WorkbenchActivityBar({
   items,
   activeView,
   primarySidebarVisible,
   onSelectView,
-}: {
-  items: readonly ActivityItem[];
-  activeView: string | null;
-  primarySidebarVisible: boolean;
-  onSelectView: (viewId: string) => void;
-}) {
+}: WorkbenchActivityBarProps) {
   return (
     <nav
       aria-label="活动栏"

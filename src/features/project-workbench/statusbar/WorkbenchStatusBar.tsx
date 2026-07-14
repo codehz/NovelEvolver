@@ -2,9 +2,9 @@ import {
   StatusBarLeftPortalContent,
   StatusBarRightPortalContent,
 } from "#app/shared/lib/shell/statusbar-portal";
+import { BranchStatusItem } from "#workbench/branch/BranchStatusItem";
 import { StatusBarItemButton } from "#workbench/chrome";
 
-import { BranchStatusItem } from "../branch/BranchStatusItem";
 import { AiContextStatusItem } from "./AiContextStatusItem";
 import { CaretPositionIndicator } from "./CaretPositionIndicator";
 

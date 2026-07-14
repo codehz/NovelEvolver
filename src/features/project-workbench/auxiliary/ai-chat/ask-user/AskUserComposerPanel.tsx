@@ -12,13 +12,12 @@ import { PendingInputComposer } from "./pending-input-contributions";
  * 展示数据来自按值推送的 DTO；回传通过条目上的瘦 handle（submitAnswer/cancel）。
  * 当前仅支持 `ask_user`；新增工具只需在此 switch 增加一个 case 与对应 composer。
  */
-export function AskUserComposerPanel({
-  loading,
-  pendingInputs,
-}: {
+type AskUserComposerPanelProps = {
   loading: boolean;
   pendingInputs: AiChatPendingUserInput[];
-}) {
+};
+
+export function AskUserComposerPanel({ loading, pendingInputs }: AskUserComposerPanelProps) {
   const [activeKey, setActiveKey] = useState<string | null>(null);
   const [draftsByKey, setDraftsByKey] = useState<Record<string, string>>({});
 

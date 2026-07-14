@@ -2,16 +2,13 @@ import { mergeRefs } from "foxact/merge-refs";
 import { ComponentPropsWithRef, useCallback, useEffect, useRef } from "react";
 import { SlotOptions, slotText, SlotTextController } from "slot-text";
 
+type SlotTextProps = { text: string; options?: SlotOptions } & ComponentPropsWithRef<"span">;
+
 /**
  * Controlled wrapper around the imperative `slotText()` API.
  * Prefer this over `slot-text/react` for consistent lifecycle control.
  */
-export function SlotText({
-  text,
-  options,
-  ref,
-  ...props
-}: { text: string; options?: SlotOptions } & ComponentPropsWithRef<"span">) {
+export function SlotText({ text, options, ref, ...props }: SlotTextProps) {
   const initial = useRef({ text, options });
   const controller = useRef<SlotTextController>(null);
   useEffect(() => {

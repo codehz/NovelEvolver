@@ -132,17 +132,19 @@ function ChangeFolderRow({
   );
 }
 
+type ChangesListProps = {
+  manuscriptChanges: Change[];
+  resourceChanges: Change[];
+  onRevert: (changeId: string) => void;
+  onOpenChange: (change: Change) => void;
+};
+
 export function ChangesList({
   manuscriptChanges,
   resourceChanges,
   onRevert,
   onOpenChange,
-}: {
-  manuscriptChanges: Change[];
-  resourceChanges: Change[];
-  onRevert: (changeId: string) => void;
-  onOpenChange: (change: Change) => void;
-}) {
+}: ChangesListProps) {
   const roots = useMemo(
     () => buildChangeRoots(manuscriptChanges, resourceChanges),
     [manuscriptChanges, resourceChanges],

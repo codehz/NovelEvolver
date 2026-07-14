@@ -12,6 +12,15 @@ const changeGroupRowClass = cn(
   "cursor-pointer text-xs font-medium text-ctp-text hover:bg-ctp-surface0/55",
 );
 
+type ChangesDomainRowProps = {
+  title: string;
+  iconClass: string;
+  expanded: boolean;
+  childCount: number;
+  layout: TreeRowLayout;
+  onToggle: () => void;
+};
+
 export function ChangesDomainRow({
   title,
   iconClass,
@@ -19,14 +28,7 @@ export function ChangesDomainRow({
   childCount,
   layout,
   onToggle,
-}: {
-  title: string;
-  iconClass: string;
-  expanded: boolean;
-  childCount: number;
-  layout: TreeRowLayout;
-  onToggle: () => void;
-}) {
+}: ChangesDomainRowProps) {
   return (
     <TreeMotionRow
       layout={layout}

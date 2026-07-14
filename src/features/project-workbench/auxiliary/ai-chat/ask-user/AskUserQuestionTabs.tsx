@@ -15,17 +15,19 @@ const tabButtonClass = cn(
  * 多个待回答问题时切换激活条目的标签栏。按 pending input 的稳定 key 渲染，
  * 标签文本来自各条目 DTO 的 `prompt` 摘要。
  */
+type AskUserQuestionTabsProps = {
+  keys: string[];
+  summaries: string[];
+  activeKey: string | null;
+  onSelectKey: (key: string) => void;
+};
+
 export function AskUserQuestionTabs({
   keys,
   summaries,
   activeKey,
   onSelectKey,
-}: {
-  keys: string[];
-  summaries: string[];
-  activeKey: string | null;
-  onSelectKey: (key: string) => void;
-}) {
+}: AskUserQuestionTabsProps) {
   if (keys.length <= 1) {
     return null;
   }

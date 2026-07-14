@@ -1,18 +1,19 @@
 import { cn } from "#app/shared/lib/ui/cn";
+import { useActiveBranchName } from "#workbench/branch/branch-scopes";
 
-import { useActiveBranchName } from "../branch/branch-scopes";
+type ChangesCommitFormProps = {
+  commitMessage: string;
+  committing: boolean;
+  onCommitMessageChange: (value: string) => void;
+  onCommit: () => void;
+};
 
 export function ChangesCommitForm({
   commitMessage,
   committing,
   onCommitMessageChange,
   onCommit,
-}: {
-  commitMessage: string;
-  committing: boolean;
-  onCommitMessageChange: (value: string) => void;
-  onCommit: () => void;
-}) {
+}: ChangesCommitFormProps) {
   const branchName = useActiveBranchName();
   const canCommit = commitMessage.trim() !== "" && !committing;
   const placeholder = `消息 (Ctrl+Enter 在 "${branchName}" 提交)`;

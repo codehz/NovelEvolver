@@ -10,9 +10,11 @@ import {
   reasoningLabelClass,
   reasoningPanelClass,
   reasoningToggleClass,
-} from "../ui/ai-chat-ui";
+} from "../ui/ai-chat-chrome";
 
-export function AiReasoningBlock({ reasoning }: { reasoning: AiChatReasoningPart }) {
+type AiReasoningBlockProps = { reasoning: AiChatReasoningPart };
+
+export function AiReasoningBlock({ reasoning }: AiReasoningBlockProps) {
   const [open, setOpen] = useState(reasoning.status === "streaming");
 
   useEffect(() => {

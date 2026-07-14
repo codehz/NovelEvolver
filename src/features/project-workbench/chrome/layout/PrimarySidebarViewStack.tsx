@@ -14,13 +14,15 @@ const primarySidebarViewStackClass = cn(
   "grid size-full min-h-0 min-w-0 grid-cols-1 grid-rows-[minmax(0,1fr)]",
 );
 
+type PrimarySidebarViewStackProps = {
+  views: readonly WorkbenchPrimaryView[];
+  activeViewId: string | null;
+};
+
 export const PrimarySidebarViewStack = memo(function PrimarySidebarViewStack({
   views,
   activeViewId,
-}: {
-  views: readonly WorkbenchPrimaryView[];
-  activeViewId: string | null;
-}) {
+}: PrimarySidebarViewStackProps) {
   return (
     <div className={primarySidebarViewStackClass}>
       {views.map((view) => {

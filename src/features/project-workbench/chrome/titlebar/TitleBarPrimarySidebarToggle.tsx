@@ -13,13 +13,15 @@ const toggleButtonClass = cn(
   controlFocusVisibleClass,
 );
 
+type TitleBarPrimarySidebarToggleProps = {
+  visible: boolean;
+  onToggle: () => void;
+};
+
 export function TitleBarPrimarySidebarToggle({
   visible,
   onToggle,
-}: {
-  visible: boolean;
-  onToggle: () => void;
-}) {
+}: TitleBarPrimarySidebarToggleProps) {
   return (
     <TitleBarActionsPortalContent>
       <IconTooltip label="主侧边栏" side="bottom">

@@ -6,9 +6,9 @@ import {
   type QuickPickListItem,
 } from "#app/shared/lib/quick-pick";
 import type { BranchSummary } from "#shared/rpc/session/index";
+import { useWorkbenchEditorActions } from "#workbench/editor/use-workbench-editor-actions";
+import { useProjectContext } from "#workbench/state/molecules";
 
-import { useWorkbenchEditorActions } from "../editor/use-workbench-editor-actions";
-import { useProjectContext } from "../state/molecules";
 import { useBranchPickerSnapshot } from "./branch-data";
 import { useActiveBranchName, useSetActiveBranchAtom } from "./branch-scopes";
 

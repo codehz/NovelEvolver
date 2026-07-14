@@ -3,17 +3,19 @@ import { formatCommitTime } from "#workbench/lib/format-history-time";
 
 import { HistoryGraphGlyph } from "./HistoryGraphGlyph";
 
+type HistoryCommitRowProps = {
+  commit: CommitSummary;
+  isHead: boolean;
+  showTopConnector: boolean;
+  showBottomConnector: boolean;
+};
+
 export function HistoryCommitRow({
   commit,
   isHead,
   showTopConnector,
   showBottomConnector,
-}: {
-  commit: CommitSummary;
-  isHead: boolean;
-  showTopConnector: boolean;
-  showBottomConnector: boolean;
-}) {
+}: HistoryCommitRowProps) {
   return (
     <li className="relative grid h-10 grid-cols-[1rem_minmax(0,1fr)] gap-2 px-2 text-xs">
       <div className="pointer-events-none absolute inset-y-0 left-2 w-4">

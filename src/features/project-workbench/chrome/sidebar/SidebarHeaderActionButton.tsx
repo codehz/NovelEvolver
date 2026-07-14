@@ -3,14 +3,14 @@ import { IconTooltip } from "#app/shared/ui";
 
 import { sidebarHeaderActionClass, sidebarHeaderIconClass } from "./sidebar-chrome";
 
-export interface SidebarHeaderActionButtonProps {
+export type SidebarHeaderActionButtonProps = {
   /** Accessible label (also used as tooltip). */
   label: string;
   /** Tailwind icon class, e.g. `"icon-[codicon--new-file]"`. */
   icon: string;
   disabled?: boolean;
   onClick: () => void;
-}
+};
 
 export function SidebarHeaderActionButton({
   label,

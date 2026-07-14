@@ -1,16 +1,19 @@
 import { useMemo, useState } from "react";
 
 import { SidebarPaneStack } from "#workbench/chrome";
-
-import { ManuscriptSectionBody } from "../explorer/manuscript/ManuscriptSection";
-import { ResourceLibrarySectionBody } from "../explorer/resource-library/ResourceLibrarySection";
-import { FileHistorySectionBody } from "../history/FileHistorySection";
+import { ManuscriptSectionBody } from "#workbench/explorer/manuscript/ManuscriptSection";
+import { ResourceLibrarySectionBody } from "#workbench/explorer/resource-library/ResourceLibrarySection";
+import { FileHistorySectionBody } from "#workbench/history/FileHistorySection";
 
 const DEFAULT_MANUSCRIPT_BODY_HEIGHT = 168;
 const DEFAULT_REFERENCE_BODY_HEIGHT = 148;
 const DEFAULT_HISTORY_BODY_HEIGHT = 116;
 
-export function ExplorerSidebar({ projectLabel }: { projectLabel: string }) {
+type ExplorerSidebarProps = {
+  projectLabel: string;
+};
+
+export function ExplorerSidebar({ projectLabel }: ExplorerSidebarProps) {
   const [manuscriptExpanded, setManuscriptExpanded] = useState(true);
   const [referenceExpanded, setReferenceExpanded] = useState(true);
   const [historyExpanded, setHistoryExpanded] = useState(true);

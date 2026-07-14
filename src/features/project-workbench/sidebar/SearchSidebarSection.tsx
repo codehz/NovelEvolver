@@ -1,8 +1,7 @@
 import { SidebarHeaderActions, SidebarHeaderActionButton, ErrorRetryView } from "#workbench/chrome";
-
-import { SearchQueryChrome } from "../search/SearchQueryChrome";
-import { SearchResultTree } from "../search/SearchResultTree";
-import { useWorktreeSearchState } from "../search/use-worktree-search-state";
+import { SearchQueryBar } from "#workbench/search/SearchQueryBar";
+import { SearchResultTree } from "#workbench/search/SearchResultTree";
+import { useWorktreeSearchState } from "#workbench/search/use-worktree-search-state";
 
 export function SearchSidebarSection() {
   const {
@@ -31,7 +30,7 @@ export function SearchSidebarSection() {
         />
       </SidebarHeaderActions>
       <div className="flex min-h-0 flex-1 flex-col">
-        <SearchQueryChrome
+        <SearchQueryBar
           query={query}
           isRegex={isRegex}
           statsLine={statsLine}

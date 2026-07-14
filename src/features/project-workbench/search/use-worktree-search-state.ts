@@ -1,12 +1,12 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 
 import type { WorktreeSearchHit, WorktreeSearchResult } from "#shared/rpc/worktree/index";
+import { useWorktreeSearch } from "#workbench/branch/branch-scopes";
+import type { WorkbenchEditorNavigationRequest } from "#workbench/editor/state/types";
+import { useWorkbenchEditorActions } from "#workbench/editor/use-workbench-editor-actions";
+import { contentDomainIconClass } from "#workbench/tree/content-tree-icons";
 import type { TreeBodyStatus } from "#workbench/tree/TreeBody";
 
-import { useWorktreeSearch } from "../branch/branch-scopes";
-import type { WorkbenchEditorNavigationRequest } from "../editor/state/types";
-import { useWorkbenchEditorActions } from "../editor/use-workbench-editor-actions";
-import { contentDomainIconClass } from "../tree/content-tree-icons";
 import { buildSearchPathTree } from "./build-search-path-tree";
 import { SEARCH_DEBOUNCE_MS, SEARCH_MAX_RESULTS_PER_DOMAIN } from "./constants";
 import { formatSearchStatsLine, summarizeSearchHits } from "./search-stats";

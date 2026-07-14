@@ -21,7 +21,7 @@ import type {
 } from "#shared/rpc/ai/index";
 import { useAiChat } from "#workbench/branch/branch-scopes";
 
-import { stripHiddenAiChatWarningsFromSnapshot } from "../ui/ai-chat-ui";
+import { stripHiddenAiChatWarningsFromSnapshot } from "../ui/ai-chat-helpers";
 
 function useAiChatStateValue() {
   const aiChat = useAiChat();

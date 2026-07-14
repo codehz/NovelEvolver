@@ -2,13 +2,12 @@ import { useEffect, useState } from "react";
 
 import { cn } from "#app/shared/lib/ui/cn";
 import type { AiChatSelectableModel } from "#shared/rpc/ai/index";
-import { StatusBarItemInfo } from "#workbench/chrome";
-
-import { useAiChatState } from "../auxiliary/ai-chat/state/use-ai-chat-state";
+import { useAiChatState } from "#workbench/auxiliary/ai-chat/state/use-ai-chat-state";
 import {
   describeContextUsageRatio,
   resolveLatestLastInputTokens,
-} from "../auxiliary/ai-chat/ui/ai-chat-ui";
+} from "#workbench/auxiliary/ai-chat/ui/ai-chat-helpers";
+import { StatusBarItemInfo } from "#workbench/chrome";
 
 export function AiContextStatusItem() {
   const { snapshot, loading, subscriptionError, listSelectableModels } = useAiChatState();

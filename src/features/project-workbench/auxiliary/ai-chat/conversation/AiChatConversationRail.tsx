@@ -45,13 +45,7 @@ function RailItem({
   );
 }
 
-export function AiChatConversationRail({
-  snapshot,
-  loading,
-  subscriptionError,
-  turnError,
-  onRetry,
-}: {
+type AiChatConversationRailProps = {
   snapshot: AiChatSnapshot;
   loading: boolean;
   /** Transport-level subscribe failure; stays at the top of the rail. */
@@ -59,7 +53,15 @@ export function AiChatConversationRail({
   /** Last model-request error; rendered under the last assistant turn. */
   turnError: string | null;
   onRetry?: () => void;
-}) {
+};
+
+export function AiChatConversationRail({
+  snapshot,
+  loading,
+  subscriptionError,
+  turnError,
+  onRetry,
+}: AiChatConversationRailProps) {
   const { warningsByMessageId, orphanWarnings } = useMemo(
     () => groupChatWarnings(snapshot.messages, snapshot.warnings),
     [snapshot.messages, snapshot.warnings],

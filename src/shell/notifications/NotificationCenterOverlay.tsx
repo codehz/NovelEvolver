@@ -8,7 +8,9 @@ import {
 } from "./notification-chrome";
 
 /** Animated height shell for the notification center body. */
-export function NotificationCenterHeightShell({ children }: { children: ReactNode }) {
+type NotificationCenterHeightShellProps = { children: ReactNode };
+
+export function NotificationCenterHeightShell({ children }: NotificationCenterHeightShellProps) {
   const panelRef = useRef<HTMLDivElement>(null);
   const contentRef = useRef<HTMLDivElement>(null);
   const { heightPx: shellHeightPx } = useAnimatedContentHeight(contentRef, panelRef);

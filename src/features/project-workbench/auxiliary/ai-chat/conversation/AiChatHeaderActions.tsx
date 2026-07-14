@@ -3,13 +3,12 @@ import { SidebarHeaderActionButton, SidebarHeaderActions } from "#workbench/chro
 import { AiChatHistorySelector } from "../history/AiChatHistorySelector";
 import { useAiChatSessionActions } from "../hooks/use-ai-chat-session-actions";
 
-export function AiChatHeaderActions({
-  mockAiAvailable,
-  onClearDraft,
-}: {
+type AiChatHeaderActionsProps = {
   mockAiAvailable: boolean;
   onClearDraft: () => void;
-}) {
+};
+
+export function AiChatHeaderActions({ mockAiAvailable, onClearDraft }: AiChatHeaderActionsProps) {
   const { loading, pending, handleCreateConversation, handleRunMockScenario } =
     useAiChatSessionActions(onClearDraft);
 

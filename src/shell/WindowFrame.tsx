@@ -155,7 +155,9 @@ function StatusBar() {
   );
 }
 
-export function WindowFrame({ children }: { children: ReactNode }) {
+type WindowFrameProps = { children: ReactNode };
+
+export function WindowFrame({ children }: WindowFrameProps) {
   return (
     <main className={cn("flex min-h-0 flex-1 flex-col bg-window-chrome text-app-foreground")}>
       <TitleBar />

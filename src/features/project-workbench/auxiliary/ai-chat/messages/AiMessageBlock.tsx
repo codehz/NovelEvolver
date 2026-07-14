@@ -4,11 +4,11 @@ import type { AiChatAssistantPart, AiChatMessage } from "#shared/rpc/ai/index";
 import {
   assistantMessageBlockClass,
   assistantMessageBodyClass,
-  describeAssistantMessageMeta,
   reasoningMetaClass,
   userMessageBubbleClass,
   userMessageRowClass,
-} from "../ui/ai-chat-ui";
+} from "../ui/ai-chat-chrome";
+import { describeAssistantMessageMeta } from "../ui/ai-chat-helpers";
 import { AiReasoningBlock } from "./AiReasoningBlock";
 import { AiToolCallBlock } from "./AiToolCallBlock";
 
@@ -31,7 +31,9 @@ function AiAssistantPartBlock({ part }: { part: AiChatAssistantPart }) {
   }
 }
 
-export function AiMessageBlock({ message }: { message: AiChatMessage }) {
+type AiMessageBlockProps = { message: AiChatMessage };
+
+export function AiMessageBlock({ message }: AiMessageBlockProps) {
   if (message.role === "user") {
     return (
       <div className={userMessageRowClass}>

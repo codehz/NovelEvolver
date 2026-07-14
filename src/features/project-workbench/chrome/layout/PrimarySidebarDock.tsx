@@ -25,6 +25,15 @@ const primarySidebarDockTitleOverlayClass = cn(
   "pointer-events-none absolute inset-x-0 top-0 z-20 flex h-workbench-tab items-center pr-3 pl-5",
 );
 
+type PrimarySidebarDockProps = {
+  visible: boolean;
+  spacerWidth: number;
+  panelWidth: number;
+  resizeTransitionDisabled: boolean;
+  title: string;
+  children?: ReactNode;
+};
+
 export const PrimarySidebarDock = memo(function PrimarySidebarDock({
   visible,
   spacerWidth,
@@ -32,14 +41,7 @@ export const PrimarySidebarDock = memo(function PrimarySidebarDock({
   resizeTransitionDisabled,
   title,
   children,
-}: {
-  visible: boolean;
-  spacerWidth: number;
-  panelWidth: number;
-  resizeTransitionDisabled: boolean;
-  title: string;
-  children?: ReactNode;
-}) {
+}: PrimarySidebarDockProps) {
   const spacerStyle: CSSProperties = { width: spacerWidth };
   const panelStyle: CSSProperties = {
     width: panelWidth,

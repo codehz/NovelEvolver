@@ -16,7 +16,9 @@ import {
 import { AiChatHistoryRow } from "./AiChatHistoryRow";
 import type { AiChatHistoryListController } from "./use-ai-chat-history-list";
 
-export function AiChatHistoryPanel({ list }: { list: AiChatHistoryListController }) {
+type AiChatHistoryPanelProps = { list: AiChatHistoryListController };
+
+export function AiChatHistoryPanel({ list }: AiChatHistoryPanelProps) {
   const titleId = useId();
   const listboxId = useId();
   const searchInputId = useId();

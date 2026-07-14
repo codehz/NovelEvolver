@@ -11,12 +11,14 @@ import type { ContentWorkbenchEditorTab } from "../state/types";
 import type { WorkbenchEditorDocumentRuntime } from "../use-workbench-editor-document-runtime";
 import type { WorkbenchEditorPaneProps } from "./types";
 
+type TextDocumentEditorPaneProps = WorkbenchEditorPaneProps & { tab: ContentWorkbenchEditorTab };
+
 export function TextDocumentEditorPane({
   tab,
   active,
   transient,
   documentRuntime,
-}: WorkbenchEditorPaneProps & { tab: ContentWorkbenchEditorTab }) {
+}: TextDocumentEditorPaneProps) {
   const { caretPositionAtom, selectionSnapshotAtom } = useMolecule(editorTabMolecule);
   const { onNavigationRequest, retryPendingNavigation } = useMolecule(workbenchEditorMolecule);
   const selectionSnapshot = useAtomValue(selectionSnapshotAtom);

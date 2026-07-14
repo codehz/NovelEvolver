@@ -4,11 +4,11 @@ import { cn } from "#app/shared/lib/ui/cn";
 import { rowHoverClass } from "#app/shared/lib/ui/interaction-chrome";
 import { IconTooltip } from "#app/shared/ui";
 import type { Change } from "#shared/rpc/worktree/index";
+import { contentEntityIconClass } from "#workbench/tree/content-tree-icons";
 import type { TreeRowLayout } from "#workbench/tree/tree-row-layout";
 import { treeRowDisclosureSpacerClass } from "#workbench/tree/tree-row-motion";
 import { TreeMotionRow } from "#workbench/tree/TreeMotionRow";
 
-import { contentEntityIconClass } from "../tree/content-tree-icons";
 import { ChangeStatsBadge } from "./ChangeStatsBadge";
 
 function changeKindIconClass(kind: Change["kind"]): string {
@@ -32,6 +32,21 @@ const changeRevertButtonClass = cn(
   "group-focus-within:flex group-hover:flex hover:bg-ctp-surface1 hover:text-ctp-subtext1",
 );
 
+type ChangeItemRowProps = {
+  item: Change;
+  depth: number;
+  layout: TreeRowLayout;
+  label?: string;
+  disclosure?: ReactNode;
+  iconClassName?: string;
+  className?: string;
+  ariaExpanded?: boolean;
+  onClick?: () => void;
+  onKeyDown?: (event: KeyboardEvent) => void;
+  onRevert: (changeId: string) => void;
+  onOpen?: (change: Change) => void;
+};
+
 export function ChangeItemRow({
   item,
   depth,
@@ -45,20 +60,7 @@ export function ChangeItemRow({
   onKeyDown,
   onRevert,
   onOpen,
-}: {
-  item: Change;
-  depth: number;
-  layout: TreeRowLayout;
-  label?: string;
-  disclosure?: ReactNode;
-  iconClassName?: string;
-  className?: string;
-  ariaExpanded?: boolean;
-  onClick?: () => void;
-  onKeyDown?: (event: KeyboardEvent) => void;
-  onRevert: (changeId: string) => void;
-  onOpen?: (change: Change) => void;
-}) {
+}: ChangeItemRowProps) {
   return (
     <TreeMotionRow
       layout={layout}

@@ -47,7 +47,7 @@ export type TreeBodyDragController<RowType extends string, DropTarget> = {
   ) => boolean;
 };
 
-export type TreeBodyProps<TItem, RowType extends string = string, DropTarget = never> = {
+type TreeBodyProps<TItem, RowType extends string = string, DropTarget = never> = {
   status: TreeBodyStatus;
   isEmpty: boolean;
   items: readonly TItem[];

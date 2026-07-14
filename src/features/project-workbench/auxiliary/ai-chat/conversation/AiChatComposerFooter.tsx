@@ -4,7 +4,9 @@ import { useAiChatSelectors } from "../hooks/use-ai-chat-selectors";
 import { useAiChatState } from "../state/use-ai-chat-state";
 import { AiChatMessageComposer } from "./AiChatMessageComposer";
 
-export function AiChatComposerFooter({ composer }: { composer: AiChatComposerState }) {
+type AiChatComposerFooterProps = { composer: AiChatComposerState };
+
+export function AiChatComposerFooter({ composer }: AiChatComposerFooterProps) {
   const { snapshot, loading } = useAiChatState();
   const {
     draft,

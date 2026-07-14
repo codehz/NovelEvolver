@@ -1,4 +1,6 @@
-export function ChangeStatsBadge({ added, removed }: { added: number; removed: number }) {
+type ChangeStatsBadgeProps = { added: number; removed: number };
+
+export function ChangeStatsBadge({ added, removed }: ChangeStatsBadgeProps) {
   return (
     <span className="shrink-0 font-mono text-[10px] leading-none">
       {added > 0 ? <span className="text-ctp-green">+{added}</span> : null}

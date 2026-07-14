@@ -7,7 +7,9 @@ import { cn } from "#app/shared/lib/ui/cn";
  * 自包含 16×16 槽位布局颜色，不依赖外部 slot class。
  * Motion ease matches collapsibleHeightMotionClass (0.22,1,0.36,1).
  */
-export function DisclosureChevron({ expanded }: { expanded: boolean }): ReactNode {
+type DisclosureChevronProps = { expanded: boolean };
+
+export function DisclosureChevron({ expanded }: DisclosureChevronProps): ReactNode {
   return (
     <span
       aria-hidden="true"

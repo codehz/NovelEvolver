@@ -34,15 +34,17 @@ export function treeChangeStatusLabelClass(
   return cn(status === "added" && "text-ctp-green", status === "modified" && "text-ctp-yellow");
 }
 
+type TreeChangeStatusBadgeProps = {
+  status: FileChangeStatus;
+  rowType: TreeRowChangeKind;
+  className?: string;
+};
+
 export function TreeChangeStatusBadge({
   status,
   rowType,
   className,
-}: {
-  status: FileChangeStatus;
-  rowType: TreeRowChangeKind;
-  className?: string;
-}): ReactNode {
+}: TreeChangeStatusBadgeProps): ReactNode {
   const iconClass = treeChangeStatusIconClass(status, rowType);
   if (!iconClass) {
     return null;

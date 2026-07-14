@@ -18,6 +18,23 @@ import {
 import { formatAbsoluteActivityTime, formatRelativeActivityTime } from "./format-relative-time";
 import { conversationBadges, conversationTitle } from "./history-list-model";
 
+type AiChatHistoryRowProps = {
+  conversation: AiConversationSummary;
+  snippet: string | null;
+  optionIndex: number;
+  active: boolean;
+  highlighted: boolean;
+  isRenaming: boolean;
+  renameDraft: string;
+  renameInputRef: RefObject<HTMLInputElement | null>;
+  onHighlight: () => void;
+  onSelect: () => void;
+  onContextMenu: (event: ReactMouseEvent) => void;
+  onRenameDraftChange: (value: string) => void;
+  onCommitRename: () => void;
+  onCancelRename: () => void;
+};
+
 export function AiChatHistoryRow({
   conversation,
   snippet,
@@ -33,22 +50,7 @@ export function AiChatHistoryRow({
   onRenameDraftChange,
   onCommitRename,
   onCancelRename,
-}: {
-  conversation: AiConversationSummary;
-  snippet: string | null;
-  optionIndex: number;
-  active: boolean;
-  highlighted: boolean;
-  isRenaming: boolean;
-  renameDraft: string;
-  renameInputRef: RefObject<HTMLInputElement | null>;
-  onHighlight: () => void;
-  onSelect: () => void;
-  onContextMenu: (event: ReactMouseEvent) => void;
-  onRenameDraftChange: (value: string) => void;
-  onCommitRename: () => void;
-  onCancelRename: () => void;
-}) {
+}: AiChatHistoryRowProps) {
   const badges = conversationBadges(conversation);
   const relativeTime = formatRelativeActivityTime(conversation.lastActiveAt);
   const absoluteTime = formatAbsoluteActivityTime(conversation.lastActiveAt);

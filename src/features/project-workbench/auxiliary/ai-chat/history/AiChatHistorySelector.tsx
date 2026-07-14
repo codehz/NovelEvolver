@@ -12,13 +12,12 @@ import { historyPopoverPanelClass, historyPositionerClass } from "./ai-chat-hist
 import { AiChatHistoryPanel } from "./AiChatHistoryPanel";
 import { useAiChatHistoryList } from "./use-ai-chat-history-list";
 
-export function AiChatHistorySelector({
-  disabled,
-  onClearDraft,
-}: {
+type AiChatHistorySelectorProps = {
   disabled: boolean;
   onClearDraft: () => void;
-}) {
+};
+
+export function AiChatHistorySelector({ disabled, onClearDraft }: AiChatHistorySelectorProps) {
   const [open, setOpen] = useState(false);
   const onClose = useCallback(() => {
     setOpen(false);

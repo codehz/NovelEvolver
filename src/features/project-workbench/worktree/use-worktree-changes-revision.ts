@@ -2,8 +2,7 @@ import { useEffect, useState } from "react";
 
 import { consumeRpcSubscription } from "#app/shared/lib/rpc/app-rpc-react";
 import type { ChangesEvent } from "#shared/rpc/worktree/index";
-
-import { useWorktreeChanges } from "../branch/branch-scopes";
+import { useWorktreeChanges } from "#workbench/branch/branch-scopes";
 
 export function useWorktreeChangesRevision(): number {
   const changesHandle = useWorktreeChanges();

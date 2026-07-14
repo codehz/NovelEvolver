@@ -10,8 +10,7 @@ import type { ManuscriptHandle } from "#shared/rpc/worktree/index";
 import type { ResourceLibraryHandle } from "#shared/rpc/worktree/index";
 import type { WorktreeChangesHandle } from "#shared/rpc/worktree/index";
 import type { WorktreeSearchHandle } from "#shared/rpc/worktree/index";
-
-import { projectMolecule } from "../state/molecules";
+import { projectMolecule } from "#workbench/state/molecules";
 
 export const DEFAULT_BRANCH_NAME = "main";
 

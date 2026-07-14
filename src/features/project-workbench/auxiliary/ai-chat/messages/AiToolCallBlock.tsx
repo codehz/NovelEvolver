@@ -7,20 +7,22 @@ import type { AiChatToolCall } from "#shared/rpc/ai/index";
 import { presentToolCall } from "../tools/ai-tool-presenters";
 import {
   collapsiblePanelClass,
-  describeToolCallStatus,
   toolCallBodyClass,
   toolCallLabelClass,
   toolCallPanelClass,
   toolCallQuestionClass,
   toolCallStatusClass,
   toolCallToggleClass,
-} from "../ui/ai-chat-ui";
+} from "../ui/ai-chat-chrome";
+import { describeToolCallStatus } from "../ui/ai-chat-helpers";
 
 /**
  * 工具调用历史展示块（纯展示）。需要用户回答时，交互入口由底部
  * `AskUserComposerPanel` 中的 handle 提供，此块不再承担选中/激活职责。
  */
-export function AiToolCallBlock({ toolCall }: { toolCall: AiChatToolCall }) {
+type AiToolCallBlockProps = { toolCall: AiChatToolCall };
+
+export function AiToolCallBlock({ toolCall }: AiToolCallBlockProps) {
   const [open, setOpen] = useState(false);
   const presentation = presentToolCall(toolCall);
   const indicator = presentation.indicator ?? describeToolCallStatus(toolCall.status);

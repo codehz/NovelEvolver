@@ -54,17 +54,14 @@ function HistoryGraphList({ commits }: { commits: CommitSummary[] }) {
   );
 }
 
-export function CommitGraphBody({
-  commits,
-  error,
-  loading,
-  onRetry,
-}: {
+type CommitGraphBodyProps = {
   commits: CommitSummary[] | null;
   error: boolean;
   loading: boolean;
   onRetry: () => void;
-}) {
+};
+
+export function CommitGraphBody({ commits, error, loading, onRetry }: CommitGraphBodyProps) {
   if (loading) {
     return <HistoryGraphLoading />;
   }
