@@ -157,15 +157,18 @@ export function AiMessageBlock({
   }
 
   if (message.status === "streaming") {
+    const hasStreamingPart = message.parts.some((part) => part.status === "streaming");
     const streamingMeta = describeAssistantStreamingMeta(message);
     return (
       <article className={assistantMessageBlockClass}>
         {message.parts.map((part) => (
           <AiAssistantPartBlock key={part.id} part={part} />
         ))}
-        <p className={reasoningMetaClass} title={streamingMeta}>
-          {streamingMeta}
-        </p>
+        {!hasStreamingPart ? (
+          <p className={reasoningMetaClass} title={streamingMeta}>
+            {streamingMeta}
+          </p>
+        ) : null}
       </article>
     );
   }
