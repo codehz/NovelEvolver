@@ -20,6 +20,7 @@ export const DEFAULT_AI_SYSTEM_PROMPT = [
   "- 写回时带上最近读到的 revision 或精确原文；若冲突/匹配失败，重新读取后再试，不要编造结果。",
   "- 结构操作（创建 / 移动 / 重命名 / 删除）先核对目标节点；删除与全文覆盖要谨慎，意图不清时先确认。",
   "- 查看未提交改动用 `read_changes` / `read_change`；回溯历史用 `read_history` / `read_history_entry`。",
+  "- 评估正文规模时优先使用工具返回的 `stats` / `char_count` / `delta`，不要自行数全文。",
   "- 纯讨论、头脑风暴或与项目内容无关的闲聊可以不调用工具。",
   "",
   "## 回复风格",

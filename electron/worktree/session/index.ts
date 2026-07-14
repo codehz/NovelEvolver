@@ -68,6 +68,8 @@ export type AiProjectStructureManuscriptNode = {
   childCount?: number;
   descendantCount?: number;
   expanded?: boolean;
+  /** 仅 chapter：正文字符数（`content.length`）。 */
+  charCount?: number;
 };
 
 export type AiProjectStructureResourceNode = {
@@ -80,6 +82,8 @@ export type AiProjectStructureResourceNode = {
   childCount?: number;
   descendantCount?: number;
   expanded?: boolean;
+  /** 仅 file：正文字符数（`content.length`）。 */
+  charCount?: number;
 };
 
 export type AiProjectStructure = {
@@ -401,6 +405,7 @@ export class WorktreeSession {
             title: entry?.title ?? (node as typeof node & { title?: string }).title ?? "",
             parentId: node.parentId,
             displayPath: entry?.displayPath ?? "",
+            ...(node.type === "chapter" ? { charCount: entry?.content.length ?? 0 } : {}),
             ...directory,
           } satisfies AiProjectStructureManuscriptNode;
         }
@@ -412,6 +417,7 @@ export class WorktreeSession {
           name: entry?.name ?? (node as typeof node & { name?: string }).name ?? "",
           parentId: node.parentId,
           displayPath: entry?.displayPath ?? "",
+          ...(node.type === "file" ? { charCount: entry?.content.length ?? 0 } : {}),
           ...directory,
         } satisfies AiProjectStructureResourceNode;
       });

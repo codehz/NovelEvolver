@@ -1,11 +1,12 @@
 import { parseNonEmptyString, parseToolArgs } from "../parse";
+import { computeOptionalTextStats } from "../text-stats";
 import type { ToolSpec } from "../types";
 
 export const readHistoryEntrySpec: ToolSpec<"read_history_entry"> = {
   name: "read_history_entry",
   definition: {
     description:
-      "读取一条历史记录保存的 content 和 before_content。entry_id 必须来自 read_history 返回的条目 id，不能传文档节点 id；无可用正文时字段为 null。",
+      "读取一条历史记录保存的 content 和 before_content。entry_id 必须来自 read_history 返回的条目 id，不能传文档节点 id；无可用正文时字段为 null。结果含 content_stats / before_content_stats（正文为 null 时 stats 也为 null）。",
     inputSchema: {
       type: "object",
       properties: {
@@ -23,6 +24,7 @@ export const readHistoryEntrySpec: ToolSpec<"read_history_entry"> = {
     const entryId = parseNonEmptyString(args.entry_id, "entry_id");
     const entry = worktree.readHistoryEntry(entryId);
     const content = worktree.readHistoryEntryContent(entryId);
+    const beforeContent = content.beforeContent ?? null;
 
     return {
       entry_id: entryId,
@@ -32,7 +34,9 @@ export const readHistoryEntrySpec: ToolSpec<"read_history_entry"> = {
       display_path: entry.displayPath,
       timestamp: entry.timestamp,
       content: content.content,
-      before_content: content.beforeContent ?? null,
+      before_content: beforeContent,
+      content_stats: computeOptionalTextStats(content.content),
+      before_content_stats: computeOptionalTextStats(beforeContent),
     };
   },
 };

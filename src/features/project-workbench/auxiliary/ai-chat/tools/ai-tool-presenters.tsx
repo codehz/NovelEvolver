@@ -83,6 +83,55 @@ function textStats(text: string | null): string {
   return `${text.length} 字符 · ${lines} 行`;
 }
 
+function formatStatsObject(stats: JsonObject | null): string | null {
+  if (stats === null) {
+    return null;
+  }
+  const charCount = getNumber(stats, "char_count");
+  if (charCount === null) {
+    return null;
+  }
+  const lineCount = getNumber(stats, "line_count");
+  return lineCount === null ? `${charCount} 字符` : `${charCount} 字符 · ${lineCount} 行`;
+}
+
+function formatDeltaObject(delta: JsonObject | null): string | null {
+  if (delta === null) {
+    return null;
+  }
+  const charDelta = getNumber(delta, "char_delta");
+  if (charDelta === null) {
+    return null;
+  }
+  const signed = charDelta > 0 ? `+${charDelta}` : `${charDelta}`;
+  const lineDelta = getNumber(delta, "line_delta");
+  if (lineDelta === null) {
+    return `${signed} 字符`;
+  }
+  const signedLines = lineDelta > 0 ? `+${lineDelta}` : `${lineDelta}`;
+  return `${signed} 字符 · ${signedLines} 行`;
+}
+
+function resultTextStats(result: JsonObject | null, contentKey = "content"): string | null {
+  const fromStats = formatStatsObject(getObject(result?.stats));
+  if (fromStats !== null) {
+    return fromStats;
+  }
+  return result === null ? null : textStats(getString(result, contentKey));
+}
+
+function resultWriteStats(result: JsonObject | null): {
+  stats: string | null;
+  previous: string | null;
+  delta: string | null;
+} {
+  return {
+    stats: formatStatsObject(getObject(result?.stats)),
+    previous: formatStatsObject(getObject(result?.previous_stats)),
+    delta: formatDeltaObject(getObject(result?.delta)),
+  };
+}
+
 function preview(text: string | null): string | null {
   if (!text) {
     return null;
@@ -184,6 +233,14 @@ const structurePresenter: ToolPresenter = (toolCall) => {
   const allNodes = [...manuscriptNodes, ...resourceNodes];
   const total = getNumber(result, "node_count") ?? allNodes.length;
   const collapsed = allNodes.filter((node) => getObject(node)?.expanded === false).length;
+  const textCharTotal = allNodes.reduce((sum, node) => {
+    const entry = getObject(node);
+    const charCount = getNumber(entry, "char_count");
+    return charCount === null ? sum : sum + charCount;
+  }, 0);
+  const textNodeCount = allNodes.filter(
+    (node) => getNumber(getObject(node), "char_count") !== null,
+  ).length;
   return {
     label: "读取项目结构",
     summary: `${domainLabel(domain)}${result ? ` · ${total} 个节点` : ""}`,
@@ -192,6 +249,11 @@ const structurePresenter: ToolPresenter = (toolCall) => {
         <DetailField label="范围">{domainLabel(domain)}</DetailField>
         {targetId ? <DetailField label="目标节点">{targetId}</DetailField> : null}
         {result ? <DetailField label="节点数">{total}</DetailField> : null}
+        {result && textNodeCount > 0 ? (
+          <DetailField label="可见正文">
+            {textNodeCount} 个节点 · {textCharTotal} 字符
+          </DetailField>
+        ) : null}
         {result ? (
           <DetailField label="节点预算">{getNumber(result, "budget") ?? "未知"}</DetailField>
         ) : null}
@@ -217,7 +279,7 @@ const readPresenter: ToolPresenter = (toolCall) => {
   const label = getString(resultTarget, "label");
   const displayPath = getString(resultTarget, "display_path");
   const documentName = displayPath || label || id || "未知文档";
-  const content = getString(result, "content");
+  const contentScale = resultTextStats(result);
   const revision = getNumber(result, "revision");
   return {
     label: "读取文档",
@@ -228,7 +290,7 @@ const readPresenter: ToolPresenter = (toolCall) => {
         {displayPath || label ? (
           <DetailField label="文档路径">{displayPath || label}</DetailField>
         ) : null}
-        {content !== null ? <DetailField label="正文规模">{textStats(content)}</DetailField> : null}
+        {contentScale !== null ? <DetailField label="正文规模">{contentScale}</DetailField> : null}
         {revision !== null ? <DetailField label="Revision">{revision}</DetailField> : null}
         <DetailField label="节点 ID">{id ?? "未知"}</DetailField>
       </DetailList>
@@ -293,10 +355,14 @@ const editPresenter: ToolPresenter = (toolCall) => {
   const expectedRevision = getNumber(args, "expected_revision");
   const after = getString(args, "new_content");
   const nextRevision = getNumber(result, "revision");
+  const writeStats = resultWriteStats(result);
+  const afterScale =
+    writeStats.stats ??
+    (toolCall.status === "pending" ? generationStats(after, toolCall.status) : textStats(after));
   return {
     label: "重写文档",
     summary: `${domainLabel(domain)} · ${documentName}`,
-    indicator: writeIndicator(after, toolCall.status),
+    indicator: writeStats.stats ?? writeIndicator(after, toolCall.status),
     detail: (
       <DetailList>
         {target.displayPath || target.label ? (
@@ -305,7 +371,13 @@ const editPresenter: ToolPresenter = (toolCall) => {
         {expectedRevision !== null ? (
           <DetailField label="期望 revision">{expectedRevision}</DetailField>
         ) : null}
-        <DetailField label="新正文">{generationStats(after, toolCall.status)}</DetailField>
+        {writeStats.previous !== null ? (
+          <DetailField label="原正文规模">{writeStats.previous}</DetailField>
+        ) : null}
+        <DetailField label="新正文">{afterScale}</DetailField>
+        {writeStats.delta !== null ? (
+          <DetailField label="变更量">{writeStats.delta}</DetailField>
+        ) : null}
         {nextRevision !== null ? (
           <DetailField label="新 revision">{nextRevision}</DetailField>
         ) : null}
@@ -330,6 +402,7 @@ const replacePresenter: ToolPresenter = (toolCall) => {
   const replacement = getString(args, "replacement_text");
   const removing = replacement === "";
   const nextRevision = getNumber(result, "revision");
+  const writeStats = resultWriteStats(result);
   return {
     label: removing ? "删除文档片段" : "替换文档片段",
     summary: `${domainLabel(domain)} · ${documentName}`,
@@ -337,7 +410,7 @@ const replacePresenter: ToolPresenter = (toolCall) => {
       ? toolCall.status === "complete"
         ? "已删除"
         : "删除片段"
-      : writeIndicator(replacement, toolCall.status),
+      : (writeStats.delta ?? writeIndicator(replacement, toolCall.status)),
     detail: (
       <DetailList>
         {target.displayPath || target.label ? (
@@ -348,6 +421,12 @@ const replacePresenter: ToolPresenter = (toolCall) => {
         <DetailField label={removing ? "操作" : "替换片段"}>
           {removing ? "删除匹配片段" : generationStats(replacement, toolCall.status)}
         </DetailField>
+        {writeStats.stats !== null ? (
+          <DetailField label="写后规模">{writeStats.stats}</DetailField>
+        ) : null}
+        {writeStats.delta !== null ? (
+          <DetailField label="变更量">{writeStats.delta}</DetailField>
+        ) : null}
         {!removing && preview(replacement) ? (
           <DetailField label="替换预览">{preview(replacement)}</DetailField>
         ) : null}
@@ -369,11 +448,17 @@ const createPresenter: ToolPresenter = (toolCall) => {
   const name = getString(args, "name") ?? "未命名节点";
   const content = getString(args, "content");
   const displayPath = getString(result, "display_path");
+  const writeStats = resultWriteStats(result);
+  const initialScale =
+    writeStats.stats ??
+    (toolCall.name === "create_document" ? generationStats(content, toolCall.status) : null);
   return {
     label: `创建${kindLabel(kind)}`,
     summary: `${domainLabel(domain)} · ${displayPath || name}`,
     indicator:
-      toolCall.name === "create_document" ? writeIndicator(content, toolCall.status) : undefined,
+      toolCall.name === "create_document"
+        ? (writeStats.stats ?? writeIndicator(content, toolCall.status))
+        : undefined,
     detail: (
       <DetailList>
         <DetailField label="名称">{name}</DetailField>
@@ -381,8 +466,8 @@ const createPresenter: ToolPresenter = (toolCall) => {
         {getNumber(args, "index") !== null ? (
           <DetailField label="插入位置">第 {getNumber(args, "index")! + 1} 位</DetailField>
         ) : null}
-        {toolCall.name === "create_document" ? (
-          <DetailField label="初始正文">{generationStats(content, toolCall.status)}</DetailField>
+        {toolCall.name === "create_document" && initialScale !== null ? (
+          <DetailField label="初始正文">{initialScale}</DetailField>
         ) : null}
         {displayPath ? <DetailField label="创建位置">{displayPath}</DetailField> : null}
         {getNumber(result, "revision") !== null ? (
@@ -480,22 +565,20 @@ const changePresenter: ToolPresenter = (toolCall) => {
   const target = targetFields(args);
   const path =
     getString(result, "display_path") ?? getString(result, "label") ?? target.id ?? "未知文档";
+  const originalScale =
+    formatStatsObject(getObject(result?.original_stats)) ??
+    (result ? textStats(getString(result, "original_content")) : null);
+  const currentScale =
+    formatStatsObject(getObject(result?.current_stats)) ??
+    (result ? textStats(getString(result, "current_content")) : null);
   return {
     label: "读取文档变更",
     summary: `${domainLabel(target.domain)} · ${path}`,
     detail: (
       <DetailList>
         <DetailField label="文档路径">{path}</DetailField>
-        {result ? (
-          <DetailField label="原正文">
-            {textStats(getString(result, "original_content"))}
-          </DetailField>
-        ) : null}
-        {result ? (
-          <DetailField label="当前正文">
-            {textStats(getString(result, "current_content"))}
-          </DetailField>
-        ) : null}
+        {originalScale !== null ? <DetailField label="原正文">{originalScale}</DetailField> : null}
+        {currentScale !== null ? <DetailField label="当前正文">{currentScale}</DetailField> : null}
         <DetailField label="节点 ID">{target.id ?? "未知"}</DetailField>
       </DetailList>
     ),
@@ -529,6 +612,12 @@ const historyEntryPresenter: ToolPresenter = (toolCall) => {
   const args = parseObject(toolCall.argumentsText);
   const result = parseObject(toolCall.resultText);
   const path = getString(result, "display_path") ?? getString(result, "label");
+  const contentScale =
+    formatStatsObject(getObject(result?.content_stats)) ??
+    (result ? textStats(getString(result, "content")) : null);
+  const beforeScale =
+    formatStatsObject(getObject(result?.before_content_stats)) ??
+    (result ? textStats(getString(result, "before_content")) : null);
   return {
     label: "读取历史版本",
     summary: path
@@ -537,14 +626,8 @@ const historyEntryPresenter: ToolPresenter = (toolCall) => {
     detail: (
       <DetailList>
         {path ? <DetailField label="文档路径">{path}</DetailField> : null}
-        {result ? (
-          <DetailField label="历史正文">{textStats(getString(result, "content"))}</DetailField>
-        ) : null}
-        {result ? (
-          <DetailField label="此前正文">
-            {textStats(getString(result, "before_content"))}
-          </DetailField>
-        ) : null}
+        {contentScale !== null ? <DetailField label="历史正文">{contentScale}</DetailField> : null}
+        {beforeScale !== null ? <DetailField label="此前正文">{beforeScale}</DetailField> : null}
         <DetailField label="历史条目 ID">
           {getString(result, "entry_id") ?? getString(args, "entry_id") ?? "未知"}
         </DetailField>

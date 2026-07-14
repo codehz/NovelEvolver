@@ -21,6 +21,8 @@ type ProjectStructureManuscriptNodeDto = {
   child_count?: number;
   descendant_count?: number;
   expanded?: boolean;
+  /** 仅 chapter：正文字符数。 */
+  char_count?: number;
 };
 
 type ProjectStructureResourceNodeDto = {
@@ -33,6 +35,8 @@ type ProjectStructureResourceNodeDto = {
   child_count?: number;
   descendant_count?: number;
   expanded?: boolean;
+  /** 仅 file：正文字符数。 */
+  char_count?: number;
 };
 
 type GetProjectStructureResult = {
@@ -56,6 +60,7 @@ function toManuscriptNodeDto(
     child_count: node.childCount,
     descendant_count: node.descendantCount,
     expanded: node.expanded,
+    char_count: node.charCount,
   };
 }
 
@@ -70,6 +75,7 @@ function toResourceNodeDto(node: AiProjectStructureResourceNode): ProjectStructu
     child_count: node.childCount,
     descendant_count: node.descendantCount,
     expanded: node.expanded,
+    char_count: node.charCount,
   };
 }
 
@@ -99,7 +105,7 @@ export const readStructureSpec: ToolSpec<"read_structure"> = {
   name: "read_structure",
   definition: {
     description:
-      "按固定预算获取项目结构摘要，不返回正文。首次无参数调用可同时浏览手稿和资源；结果会优先完整返回根的直接子级，并在预算内自动展开较小目录。目录 expanded=false 表示其子级未包含，可将该目录作为 target 继续读取。",
+      "按固定预算获取项目结构摘要，不返回正文。首次无参数调用可同时浏览手稿和资源；结果会优先完整返回根的直接子级，并在预算内自动展开较小目录。目录 expanded=false 表示其子级未包含，可将该目录作为 target 继续读取。chapter/file 节点带 char_count（字符数），便于评估体量。",
     inputSchema: {
       type: "object",
       properties: {

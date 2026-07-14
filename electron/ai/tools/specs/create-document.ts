@@ -4,6 +4,7 @@ import {
   parseOptionalIndex,
   parseToolArgs,
 } from "../parse";
+import { withWriteStats } from "../text-stats";
 import type { ToolSpec } from "../types";
 import { findCreatedNodePath } from "../worktree-helpers";
 
@@ -11,7 +12,7 @@ export const createDocumentSpec: ToolSpec<"create_document"> = {
   name: "create_document",
   definition: {
     description:
-      "在现有文件夹下创建带完整初始正文的文本节点。先用 read_structure 摘要或按 target 展开获取 parent_id；manuscript 创建 chapter 且可指定 index，resource 创建 file 且不得传 index。content 必须提供，本次调用应直接写入最终正文，不要先创建空节点再读取或编辑。成功时返回新节点信息与更新后的 worktree revision。",
+      "在现有文件夹下创建带完整初始正文的文本节点。先用 read_structure 摘要或按 target 展开获取 parent_id；manuscript 创建 chapter 且可指定 index，resource 创建 file 且不得传 index。content 必须提供，本次调用应直接写入最终正文，不要先创建空节点再读取或编辑。成功时返回新节点信息、stats / previous_stats / delta 与更新后的 worktree revision。",
     inputSchema: {
       type: "object",
       properties: {
@@ -54,6 +55,8 @@ export const createDocumentSpec: ToolSpec<"create_document"> = {
       throw new Error("content 需要字符串。");
     }
 
+    const writeStats = withWriteStats("", args.content);
+
     if (domain === "manuscript") {
       const created = worktree.createManuscriptChapter(parentId, name, index);
       worktree.writeChapter(created.nodeId, args.content);
@@ -64,6 +67,7 @@ export const createDocumentSpec: ToolSpec<"create_document"> = {
         parent_id: parentId,
         name,
         display_path: findCreatedNodePath(worktree, domain, parentId, created.nodeId),
+        ...writeStats,
         revision: worktree.getChangesSnapshot().revision,
       };
     }
@@ -80,6 +84,7 @@ export const createDocumentSpec: ToolSpec<"create_document"> = {
       parent_id: parentId,
       name,
       display_path: findCreatedNodePath(worktree, domain, parentId, created.nodeId),
+      ...writeStats,
       revision: worktree.getChangesSnapshot().revision,
     };
   },

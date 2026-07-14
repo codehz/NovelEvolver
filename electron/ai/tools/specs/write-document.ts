@@ -1,11 +1,12 @@
 import { parseDocumentTarget, parseExpectedRevision, parseToolArgs } from "../parse";
+import { withWriteStats } from "../text-stats";
 import type { ToolSpec } from "../types";
 
 export const writeDocumentSpec: ToolSpec<"write_document"> = {
   name: "write_document",
   definition: {
     description:
-      "将一个章节或资源文件的全文替换为 new_content。仅在大范围重写时使用；局部修改优先用 replace_document_text。必须先调用 read_document，并将返回的 revision 作为 expected_revision；若工作区已变更则调用失败，应重新读取后再写。",
+      "将一个章节或资源文件的全文替换为 new_content。仅在大范围重写时使用；局部修改优先用 replace_document_text。必须先调用 read_document，并将返回的 revision 作为 expected_revision；若工作区已变更则调用失败，应重新读取后再写。成功时返回 stats / previous_stats / delta。",
     inputSchema: {
       type: "object",
       properties: {
@@ -53,6 +54,11 @@ export const writeDocumentSpec: ToolSpec<"write_document"> = {
       );
     }
 
+    const previousContent =
+      target.domain === "manuscript"
+        ? worktree.readChapter(target.id)
+        : worktree.readResourceFile(target.id);
+
     if (target.domain === "manuscript") {
       worktree.writeChapter(target.id, args.new_content);
     } else {
@@ -69,6 +75,7 @@ export const writeDocumentSpec: ToolSpec<"write_document"> = {
         display_path: info.displayPath,
       },
       updated: true,
+      ...withWriteStats(previousContent, args.new_content),
       revision: worktree.getChangesSnapshot().revision,
     };
   },
