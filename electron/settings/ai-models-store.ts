@@ -542,15 +542,21 @@ function normalizeAvailableReasoningLevels(value: unknown): AiReasoningLevel[] {
   return AI_REASONING_LEVELS.filter((level) => selected.has(level));
 }
 
-/** Missing / invalid / not in available → null. */
+/**
+ * Empty available → null.
+ * Non-empty available → always a member (missing / invalid / out-of-set → first).
+ */
 function normalizeDefaultReasoningLevel(
   value: unknown,
   available: readonly AiReasoningLevel[],
 ): AiReasoningLevel | null {
-  if (!isAiReasoningLevel(value)) {
+  if (available.length === 0) {
     return null;
   }
-  return available.includes(value) ? value : null;
+  if (isAiReasoningLevel(value) && available.includes(value)) {
+    return value;
+  }
+  return available[0]!;
 }
 
 function parseAvailableReasoningLevelsFromWrite(input: AiModelConfigWrite): AiReasoningLevel[] {
@@ -572,17 +578,17 @@ function parseDefaultReasoningLevelFromWrite(
   input: AiModelConfigWrite,
   available: readonly AiReasoningLevel[],
 ): AiReasoningLevel | null {
-  if (input.defaultReasoningLevel === undefined || input.defaultReasoningLevel === null) {
+  if (available.length === 0) {
     return null;
+  }
+  if (input.defaultReasoningLevel === undefined || input.defaultReasoningLevel === null) {
+    return available[0]!;
   }
   if (!isAiReasoningLevel(input.defaultReasoningLevel)) {
     throw new Error(`不支持的默认 reasoning effort：${String(input.defaultReasoningLevel)}。`);
   }
-  if (available.length === 0) {
-    throw new Error("未公开任何 reasoning effort 时不能设置默认值。");
-  }
   if (!available.includes(input.defaultReasoningLevel)) {
-    throw new Error("默认 reasoning effort 必须属于已公开的可选项。");
+    return available[0]!;
   }
   return input.defaultReasoningLevel;
 }

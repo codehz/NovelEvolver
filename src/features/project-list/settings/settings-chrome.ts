@@ -198,6 +198,43 @@ export const settingsCheckboxLabelClass = cn(
   "has-data-disabled:cursor-default has-data-disabled:opacity-50",
 );
 
+/** Horizontal wrap list for multi-select pill chips (e.g. reasoning levels). */
+export const settingsChipListClass = cn("flex flex-wrap gap-1.5");
+
+/** Visual shell for a pill chip (contains body + optional star). */
+export const settingsChipClass = cn(
+  "inline-flex h-7 shrink-0 items-center rounded-full border border-titlebar-border bg-app-surface text-2xs leading-none text-app-muted select-none",
+);
+
+/** Selected (available) pill chip shell. */
+export const settingsChipSelectedClass = cn(
+  "border-badge-background/40 bg-ctp-surface0/55 text-app-foreground",
+);
+
+/** Selected + default pill chip shell. */
+export const settingsChipDefaultClass = cn(
+  "border-badge-background/55 bg-badge-background/15 text-badge-background",
+);
+
+/** Main toggle control inside a chip shell. */
+export const settingsChipBodyButtonClass = cn(
+  "inline-flex h-7 items-center gap-1 rounded-full px-2.5 outline-none",
+  "hover:not-disabled:text-app-foreground",
+  controlFocusVisibleInsetClass,
+  "disabled:cursor-default",
+);
+
+/** Nested star control inside a selected chip. */
+export const settingsChipStarButtonClass = cn(
+  "inline-flex size-4 shrink-0 items-center justify-center rounded-full text-[10px] leading-none outline-none",
+  "mr-1.5 text-app-muted hover:not-disabled:text-badge-background",
+  controlFocusVisibleInsetClass,
+  "disabled:cursor-default",
+);
+
+/** Active default star (filled). */
+export const settingsChipStarActiveClass = cn("text-badge-background");
+
 export const settingsFormActionsClass = cn("flex items-center justify-end gap-2");
 
 export const settingsFormErrorClass = cn("text-xs text-ctp-red");

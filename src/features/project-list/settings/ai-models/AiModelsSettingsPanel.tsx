@@ -395,9 +395,9 @@ export function AiModelsSettingsPanel() {
                                   <span aria-hidden="true">·</span>
                                   <span>
                                     effort{" "}
-                                    {model.defaultReasoningLevel != null
-                                      ? `${model.defaultReasoningLevel} / ${model.availableReasoningLevels.length}`
-                                      : `${model.availableReasoningLevels.length} 档`}
+                                    {model.defaultReasoningLevel ??
+                                      model.availableReasoningLevels[0]}{" "}
+                                    / {model.availableReasoningLevels.length}
                                   </span>
                                 </>
                               ) : null}

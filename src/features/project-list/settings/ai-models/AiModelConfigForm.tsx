@@ -1,4 +1,3 @@
-import { CheckboxGroup } from "@base-ui/react/checkbox-group";
 import { Field } from "@base-ui/react/field";
 import { Form } from "@base-ui/react/form";
 import { NumberField } from "@base-ui/react/number-field";
@@ -12,14 +11,12 @@ import type {
   AiReasoningLevel,
 } from "#shared/rpc/services/index";
 import {
-  AI_REASONING_LEVEL_LABELS,
   AI_REASONING_LEVELS,
   DEFAULT_AI_MODEL_MAX_OUTPUT_TOKENS,
   isLowMaxOutputTokensForNovelAgent,
 } from "#shared/rpc/services/index";
 
 import {
-  settingsCheckboxLabelClass,
   settingsFieldControlCellClass,
   settingsFieldDescriptionClass,
   settingsFieldErrorClass,
@@ -34,9 +31,9 @@ import {
   settingsPrimaryButtonClass,
   settingsSecondaryButtonClass,
 } from "../settings-chrome";
-import { SettingsCheckbox } from "../SettingsCheckbox";
 import { SettingsJsonEditor } from "../SettingsJsonEditor";
 import { SettingsSelect } from "../SettingsSelect";
+import { ReasoningLevelChipList } from "./ReasoningLevelChipList";
 
 type FormState = {
   providerId: string;
@@ -47,8 +44,8 @@ type FormState = {
   contextLength: number | null;
   /** Subset of AI_REASONING_LEVELS exposed for this model. */
   availableReasoningLevels: AiReasoningLevel[];
-  /** Empty string means no default. */
-  defaultReasoningLevel: string;
+  /** null only when available is empty; otherwise a member of available. */
+  defaultReasoningLevel: AiReasoningLevel | null;
   /** Raw JSON text for headers; empty string means not configured. */
   headersText: string;
   /** Raw JSON text for extraBody; empty string means not configured. */
@@ -76,7 +73,7 @@ function toFormState(
   initial: AiModelConfigPublic | null | undefined,
   defaultProviderId: string,
 ): FormState {
-  const availableReasoningLevels = initial?.availableReasoningLevels ?? [];
+  const availableReasoningLevels = orderReasoningLevels(initial?.availableReasoningLevels ?? []);
   const defaultLevel = initial?.defaultReasoningLevel;
   return {
     providerId: initial?.providerId ?? defaultProviderId,
@@ -84,9 +81,8 @@ function toFormState(
     model: initial?.model ?? "",
     maxOutputTokens: initial?.maxOutputTokens ?? DEFAULT_AI_MODEL_MAX_OUTPUT_TOKENS,
     contextLength: initial?.contextLength ?? null,
-    availableReasoningLevels: [...availableReasoningLevels],
-    defaultReasoningLevel:
-      defaultLevel != null && availableReasoningLevels.includes(defaultLevel) ? defaultLevel : "",
+    availableReasoningLevels,
+    defaultReasoningLevel: resolveDefaultReasoningLevel(availableReasoningLevels, defaultLevel),
     headersText: recordToEditorText(initial?.headers),
     extraBodyText: recordToEditorText(initial?.extraBody),
   };
@@ -96,6 +92,20 @@ function toFormState(
 function orderReasoningLevels(levels: readonly string[]): AiReasoningLevel[] {
   const selected = new Set(levels);
   return AI_REASONING_LEVELS.filter((level) => selected.has(level));
+}
+
+/** Non-empty available always has a default (first available when missing/invalid). */
+function resolveDefaultReasoningLevel(
+  available: readonly AiReasoningLevel[],
+  candidate: AiReasoningLevel | null | undefined,
+): AiReasoningLevel | null {
+  if (available.length === 0) {
+    return null;
+  }
+  if (candidate != null && available.includes(candidate)) {
+    return candidate;
+  }
+  return available[0]!;
 }
 
 function isPositiveInteger(value: unknown): value is number {
@@ -211,11 +221,10 @@ export function AiModelConfigForm({
         }
 
         const availableReasoningLevels = orderReasoningLevels(form.availableReasoningLevels);
-        const defaultReasoningLevel =
-          form.defaultReasoningLevel !== "" &&
-          availableReasoningLevels.includes(form.defaultReasoningLevel as AiReasoningLevel)
-            ? (form.defaultReasoningLevel as AiReasoningLevel)
-            : null;
+        const defaultReasoningLevel = resolveDefaultReasoningLevel(
+          availableReasoningLevels,
+          form.defaultReasoningLevel,
+        );
 
         const payload: AiModelConfigWrite = {
           ...(isEdit ? { id: initial.id } : {}),
@@ -364,68 +373,23 @@ export function AiModelConfigForm({
         >
           <Field.Label className={settingsFieldLabelClass}>Reasoning Effort</Field.Label>
           <div className={settingsFieldControlCellClass}>
-            <CheckboxGroup
-              className="flex flex-col gap-1.5"
-              value={form.availableReasoningLevels}
-              onValueChange={(next) => {
-                const ordered = orderReasoningLevels(next);
-                setForm((prev) => {
-                  const nextDefault =
-                    prev.defaultReasoningLevel !== "" &&
-                    ordered.includes(prev.defaultReasoningLevel as AiReasoningLevel)
-                      ? prev.defaultReasoningLevel
-                      : "";
-                  return {
-                    ...prev,
-                    availableReasoningLevels: ordered,
-                    defaultReasoningLevel: nextDefault,
-                  };
-                });
+            <ReasoningLevelChipList
+              available={form.availableReasoningLevels}
+              defaultLevel={form.defaultReasoningLevel}
+              disabled={busy}
+              onChange={({ available, defaultLevel }) => {
+                setForm((prev) => ({
+                  ...prev,
+                  availableReasoningLevels: available,
+                  defaultReasoningLevel: defaultLevel,
+                }));
               }}
-            >
-              {AI_REASONING_LEVELS.map((level) => (
-                <label key={level} className={settingsCheckboxLabelClass}>
-                  <SettingsCheckbox value={level} />
-                  <span className="min-w-0 flex-1 leading-tight">
-                    <span className="font-medium">{AI_REASONING_LEVEL_LABELS[level]}</span>
-                    <span className="text-app-muted">（{level}）</span>
-                  </span>
-                </label>
-              ))}
-            </CheckboxGroup>
+            />
             <Field.Description className={settingsFieldDescriptionClass}>
-              勾选此模型在 UI 中公开的 reasoning effort 档位。不勾选表示该模型不暴露该选项。
+              点选公开档位，星标设默认。至少选一时必有默认；全部取消表示不暴露该选项。
             </Field.Description>
           </div>
         </Field.Root>
-
-        {form.availableReasoningLevels.length > 0 ? (
-          <Field.Root
-            className={settingsFieldRootClass}
-            disabled={busy}
-            name="defaultReasoningLevel"
-          >
-            <Field.Label className={settingsFieldLabelClass}>默认 Effort</Field.Label>
-            <div className={settingsFieldControlCellClass}>
-              <SettingsSelect
-                value={form.defaultReasoningLevel}
-                options={[
-                  { value: "", label: "不设默认（请求不带 reasoningLevel）" },
-                  ...form.availableReasoningLevels.map((level) => ({
-                    value: level,
-                    label: `${AI_REASONING_LEVEL_LABELS[level]}（${level}）`,
-                  })),
-                ]}
-                onValueChange={(next) => {
-                  update("defaultReasoningLevel", next);
-                }}
-              />
-              <Field.Description className={settingsFieldDescriptionClass}>
-                发起对话时默认使用的 reasoning effort。仅可从上方已公开档位中选择。
-              </Field.Description>
-            </div>
-          </Field.Root>
-        ) : null}
 
         <Field.Root
           className={settingsFieldRootClass}

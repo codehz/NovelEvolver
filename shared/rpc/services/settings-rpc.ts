@@ -92,9 +92,9 @@ export type AiModelConfigPublic = {
    */
   availableReasoningLevels: AiReasoningLevel[];
   /**
-   * Default reasoning effort when the model exposes levels.
-   * `null` means no default (request omits reasoningLevel unless user picks one).
-   * When set, must be a member of `availableReasoningLevels`.
+   * Default reasoning effort among exposed levels.
+   * - Empty `availableReasoningLevels` → must be `null` (request omits reasoningLevel).
+   * - Non-empty available → always a member of that set (never "no default").
    */
   defaultReasoningLevel: AiReasoningLevel | null;
   /**
@@ -124,7 +124,9 @@ export type AiModelConfigWrite = {
   availableReasoningLevels?: AiReasoningLevel[];
   /**
    * Default among available levels.
-   * Omit / null → no default. Must be in availableReasoningLevels when set.
+   * - Available empty → coerced to `null`.
+   * - Available non-empty → required member of available (omit / null / out-of-set
+   *   is filled with the first available level on write / load).
    */
   defaultReasoningLevel?: AiReasoningLevel | null;
   /** Full replace; omit or `{}` → clear / not configured. */
