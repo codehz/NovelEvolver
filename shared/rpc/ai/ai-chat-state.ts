@@ -39,7 +39,12 @@ export function cloneAiChatAssistantPartPatch(
 
 export function cloneAiChatMessage(message: AiChatMessage): AiChatMessage {
   if (message.role === "user") {
-    return { ...message };
+    // Legacy rows / partial wire payloads may omit `slash`.
+    const slash = message.slash ? { ...message.slash } : null;
+    return {
+      ...message,
+      slash,
+    };
   }
 
   return {

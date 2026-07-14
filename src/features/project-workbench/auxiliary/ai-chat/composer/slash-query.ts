@@ -15,11 +15,13 @@ export type SlashQuery = {
 };
 
 /**
- * Detect a slash-command token immediately before the primary caret.
- * Requires `/` at doc start or after whitespace; query is `[a-zA-Z0-9_-]*`.
+ * Detect a leading slash-command token under the primary caret.
  *
- * Tokens whose leading `/` sits inside an existing prompt chip are ignored so
- * typing directly after a chip (e.g. `/expand` + `123`) does not reopen the menu.
+ * Rules (single-command redesign):
+ * - collapsed selection only
+ * - leading `/` must be at document start (`from === 0`)
+ * - query is `[a-zA-Z0-9_-]*`
+ * - ignored when a prompt chip already exists (at most one slash command)
  */
 export function detectSlashQuery(state: EditorState): SlashQuery | null {
   const main = state.selection.main;
@@ -32,31 +34,21 @@ export function detectSlashQuery(state: EditorState): SlashQuery | null {
     return null;
   }
 
-  const line = state.doc.lineAt(caret);
-  const textBefore = state.doc.sliceString(line.from, caret);
-  const match = /(?:^|[\s\u3000])\/([a-zA-Z0-9_-]*)$/.exec(textBefore);
+  // Only one slash command per draft: block while any chip is present.
+  const chips = state.field(promptChipsField, false);
+  if (chips && chips.size > 0) {
+    return null;
+  }
+
+  // Strict document start only (no mid-line / after-whitespace triggers).
+  const textBefore = state.doc.sliceString(0, caret);
+  const match = /^\/([a-zA-Z0-9_-]*)$/.exec(textBefore);
   if (!match) {
     return null;
   }
 
   const query = match[1] ?? "";
-  const from = caret - query.length - 1;
-
-  // Chip markers are still plain `/{slug}` text under the decoration; reject
-  // any token that starts inside (or is) an existing chip range.
-  const chips = state.field(promptChipsField, false);
-  if (chips) {
-    let insideChip = false;
-    chips.between(from, from + 1, () => {
-      insideChip = true;
-      return false;
-    });
-    if (insideChip) {
-      return null;
-    }
-  }
-
-  return { from, to: caret, query };
+  return { from: 0, to: caret, query };
 }
 
 export type PromptSlashItem = {

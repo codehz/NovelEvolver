@@ -9,9 +9,10 @@ import { drawSelection, EditorView, keymap, placeholder as placeholderExt } from
 import { useCallback, useEffect, useImperativeHandle, useRef, useState, type Ref } from "react";
 
 import { cn } from "#app/shared/lib/ui/cn";
+import type { AiChatSendMessageInput } from "#shared/rpc/ai/index";
 
 import { composerEditorHostClass } from "./composer-chrome";
-import { isComposerStateEmpty, serializeComposerState } from "./composer-doc";
+import { buildComposerSendPayload, isComposerStateEmpty } from "./composer-doc";
 import {
   addPromptChipEffect,
   clearPromptChipsEffect,
@@ -25,7 +26,7 @@ import { usePromptCatalog } from "./use-prompt-catalog";
 export type ComposerEditorHandle = {
   focus: () => void;
   clear: () => void;
-  getSerializedText: () => string;
+  getSendPayload: () => AiChatSendMessageInput;
   isEmpty: () => boolean;
 };
 
@@ -234,12 +235,12 @@ export function ComposerEditor({
         setSlashMenu(CLOSED_SLASH_MENU);
         onDocChangeRef.current?.();
       },
-      getSerializedText: () => {
+      getSendPayload: () => {
         const view = viewRef.current;
         if (!view) {
-          return "";
+          return { text: "", slash: null };
         }
-        return serializeComposerState(view.state);
+        return buildComposerSendPayload(view.state);
       },
       isEmpty: () => {
         const view = viewRef.current;

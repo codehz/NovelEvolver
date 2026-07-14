@@ -65,6 +65,12 @@ export const userMessageRowClass = cn("flex justify-end");
 export const userMessageBubbleClass = cn(
   "max-w-[88%] rounded-lg bg-window-chrome px-3 py-2 text-chat leading-5 text-app-foreground shadow-[inset_0_1px_0_0_color-mix(in_srgb,var(--color-ctp-surface0)_24%,transparent)]",
 );
+/** Slash chip inside a sent user bubble (matches composer prompt-chip semantics). */
+export const userSlashChipClass = cn(
+  "mr-1 inline-flex max-w-full shrink-0 items-center rounded-sm border border-ctp-mauve/35",
+  "bg-ctp-mauve/14 px-[0.35em] text-[0.92em] leading-[1.4] font-semibold text-ctp-mauve",
+  "align-baseline whitespace-nowrap select-none",
+);
 export const composerShellClass = cn(
   "mx-auto flex w-full max-w-3xl flex-col gap-1 rounded-lg border border-transparent bg-app-background p-1.5 transition-colors",
   "focus-within:border-badge-background",

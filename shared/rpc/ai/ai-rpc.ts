@@ -114,10 +114,36 @@ export type AiChatAssistantPartPatch = {
   errorMessage?: string | null;
 };
 
+/**
+ * Menu-confirmed slash prompt snapshot (insert-time body).
+ * Display keeps `/{slug}`; model input expands `body` on the backend.
+ */
+export type AiChatSlashRef = {
+  promptId: string;
+  slug: string;
+  title: string;
+  /** Prompt body snapshot at chip insert / send time. */
+  body: string;
+};
+
+/** Composer → main payload. Only a menu-confirmed chip sets `slash`. */
+export type AiChatSendMessageInput = {
+  /** Remainder after the leading slash chip, or the full plain draft. */
+  text: string;
+  /** Present only when the composer had a confirmed prompt chip. */
+  slash?: AiChatSlashRef | null;
+};
+
 export type AiChatUserMessage = {
   id: string;
   role: "user";
+  /**
+   * Plain remainder (with slash) or full user text (without).
+   * Never the expanded prompt body — that lives only in model history.
+   */
   text: string;
+  /** Menu-confirmed slash command; `null` for plain messages / legacy rows. */
+  slash: AiChatSlashRef | null;
   status: "complete";
 };
 
@@ -313,7 +339,7 @@ export type AiChatEvent = AiChatSnapshotEvent | AiChatDeltaEvent;
 
 export interface AiChatHandle extends RpcTarget {
   subscribeChat(): RpcSubscriptionResult<AiChatEvent>;
-  sendMessage(text: string): void;
+  sendMessage(input: AiChatSendMessageInput): void;
   /** Abort the in-flight model stream / tool loop when `pending`. No-op otherwise. */
   stopGeneration(): void;
   /**

@@ -2,7 +2,7 @@ import { describe, expect, test } from "bun:test";
 
 import { EditorState } from "@codemirror/state";
 
-import { serializeComposerState } from "./composer-doc";
+import { buildComposerSendPayload, isComposerStateEmpty } from "./composer-doc";
 import {
   addPromptChipEffect,
   promptChipExtension,
@@ -23,14 +23,18 @@ function stateWithDoc(doc: string, cursor = doc.length): EditorState {
 }
 
 describe("detectSlashQuery", () => {
-  test("detects bare slash at start", () => {
+  test("detects bare slash at document start", () => {
     const q = detectSlashQuery(stateWithDoc("/"));
     expect(q).toEqual({ from: 0, to: 1, query: "" });
   });
 
-  test("detects slash after whitespace with query", () => {
-    const q = detectSlashQuery(stateWithDoc("hello /exp"));
-    expect(q).toEqual({ from: 6, to: 10, query: "exp" });
+  test("detects slash query at document start", () => {
+    const q = detectSlashQuery(stateWithDoc("/exp"));
+    expect(q).toEqual({ from: 0, to: 4, query: "exp" });
+  });
+
+  test("rejects slash after whitespace mid-doc", () => {
+    expect(detectSlashQuery(stateWithDoc("hello /exp"))).toBeNull();
   });
 
   test("rejects slash mid-word", () => {
@@ -45,7 +49,7 @@ describe("detectSlashQuery", () => {
     expect(detectSlashQuery(state)).toBeNull();
   });
 
-  test("ignores token that starts inside an existing prompt chip", () => {
+  test("ignores any slash while a prompt chip exists", () => {
     const data: PromptChipData = {
       promptId: "p1",
       slug: "expand",
@@ -61,11 +65,10 @@ describe("detectSlashQuery", () => {
     const withChip = base.update({
       effects: addPromptChipEffect.of({ from: 0, to: marker.length, data }),
     }).state;
-    // Without the chip guard this would look like query "expand123".
     expect(detectSlashQuery(withChip)).toBeNull();
   });
 
-  test("still detects a fresh slash after a chip when separated by whitespace", () => {
+  test("does not reopen after chip even with trailing slash token", () => {
     const data: PromptChipData = {
       promptId: "p1",
       slug: "expand",
@@ -81,11 +84,7 @@ describe("detectSlashQuery", () => {
     const withChip = base.update({
       effects: addPromptChipEffect.of({ from: 0, to: marker.length, data }),
     }).state;
-    expect(detectSlashQuery(withChip)).toEqual({
-      from: marker.length + 1,
-      to: marker.length + 5,
-      query: "pol",
-    });
+    expect(detectSlashQuery(withChip)).toBeNull();
   });
 });
 
@@ -116,8 +115,16 @@ describe("filterPromptSlashItems", () => {
   });
 });
 
-describe("serializeComposerState", () => {
-  test("expands chip body and keeps surrounding text", () => {
+describe("buildComposerSendPayload", () => {
+  test("plain draft returns full text without slash", () => {
+    const state = stateWithDoc("第三章");
+    expect(buildComposerSendPayload(state)).toEqual({
+      text: "第三章",
+      slash: null,
+    });
+  });
+
+  test("chip + remainder keeps slash metadata and unexpanded remainder", () => {
     const data: PromptChipData = {
       promptId: "p1",
       slug: "expand",
@@ -133,7 +140,36 @@ describe("serializeComposerState", () => {
     const next = state.update({
       effects: addPromptChipEffect.of({ from: 0, to: marker.length, data }),
     }).state;
-    expect(serializeComposerState(next)).toBe("请扩写以下内容： 第三章");
+    expect(buildComposerSendPayload(next)).toEqual({
+      text: " 第三章",
+      slash: {
+        promptId: "p1",
+        slug: "expand",
+        title: "扩写",
+        body: "请扩写以下内容：",
+      },
+    });
+    expect(isComposerStateEmpty(next)).toBe(false);
+  });
+
+  test("chip only is non-empty", () => {
+    const data: PromptChipData = {
+      promptId: "p1",
+      slug: "expand",
+      title: "扩写",
+      body: "请扩写以下内容：",
+    };
+    const marker = "/expand";
+    const state = EditorState.create({
+      doc: marker,
+      extensions: promptChipExtension(),
+      selection: { anchor: marker.length },
+    });
+    const next = state.update({
+      effects: addPromptChipEffect.of({ from: 0, to: marker.length, data }),
+    }).state;
+    expect(isComposerStateEmpty(next)).toBe(false);
+    expect(buildComposerSendPayload(next).slash?.slug).toBe("expand");
   });
 });
 

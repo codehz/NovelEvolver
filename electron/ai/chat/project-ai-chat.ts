@@ -2,6 +2,7 @@ import type {
   AiChatEvent,
   AiChatSelectableAgent,
   AiChatSelectableModel,
+  AiChatSendMessageInput,
   AiConversationListOptions,
   AiConversationSearchHit,
   AiConversationSearchOptions,
@@ -26,6 +27,7 @@ import {
   resolveDefaultSelectedModelId,
   resolveReasoningLevelForModel,
 } from "./selectable-models";
+import { formatUserMessageDisplay } from "./slash-expand";
 
 const SEARCH_SNIPPET_RADIUS = 36;
 const SEARCH_SNIPPET_MAX = 96;
@@ -78,7 +80,23 @@ function extractSnippetFromMessagesJson(messagesJson: string, query: string): st
       }
       const message = entry as Record<string, unknown>;
       if (message.role === "user" && typeof message.text === "string") {
-        const snippet = extractSearchSnippet(message.text, query);
+        const slash =
+          message.slash && typeof message.slash === "object"
+            ? (message.slash as { slug?: unknown })
+            : null;
+        const display =
+          slash && typeof slash.slug === "string"
+            ? formatUserMessageDisplay(
+                {
+                  promptId: "",
+                  slug: slash.slug,
+                  title: "",
+                  body: "",
+                },
+                message.text,
+              )
+            : message.text;
+        const snippet = extractSearchSnippet(display, query);
         if (snippet) {
           return snippet;
         }
@@ -164,8 +182,8 @@ export class ProjectAiChatController {
     });
   }
 
-  sendMessage(text: string): void {
-    this.#getActiveRuntime().sendMessage(text);
+  sendMessage(input: AiChatSendMessageInput): void {
+    this.#getActiveRuntime().sendMessage(input);
   }
 
   stopGeneration(): void {
@@ -281,7 +299,7 @@ export class ProjectAiChatController {
       selectedModelId: MOCK_AI_MODEL_ID,
     });
     this.#setActiveRuntime(runtime, true);
-    runtime.sendMessage(scenario.initialPrompt);
+    runtime.sendMessage({ text: scenario.initialPrompt, slash: null });
   }
 
   rerunActiveScenario(): void {

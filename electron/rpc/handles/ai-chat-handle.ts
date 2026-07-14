@@ -5,6 +5,7 @@ import type {
   AiChatHandle,
   AiChatSelectableAgent,
   AiChatSelectableModel,
+  AiChatSendMessageInput,
   AiConversationListOptions,
   AiConversationSearchHit,
   AiConversationSearchOptions,
@@ -26,8 +27,8 @@ export class AiChatHandleImpl extends RpcTarget implements AiChatHandle {
     return this.#chat.subscribe();
   }
 
-  sendMessage(text: string): void {
-    this.#chat.sendMessage(text);
+  sendMessage(input: AiChatSendMessageInput): void {
+    this.#chat.sendMessage(input);
   }
 
   stopGeneration(): void {

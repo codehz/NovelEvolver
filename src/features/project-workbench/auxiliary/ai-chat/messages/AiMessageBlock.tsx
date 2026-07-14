@@ -7,6 +7,7 @@ import {
   reasoningMetaClass,
   userMessageBubbleClass,
   userMessageRowClass,
+  userSlashChipClass,
 } from "../ui/ai-chat-chrome";
 import { describeAssistantMessageMeta } from "../ui/ai-chat-helpers";
 import { AiReasoningBlock } from "./AiReasoningBlock";
@@ -35,10 +36,24 @@ type AiMessageBlockProps = { message: AiChatMessage };
 
 export function AiMessageBlock({ message }: AiMessageBlockProps) {
   if (message.role === "user") {
+    const slash = message.slash;
+    const remainder = message.text;
     return (
       <div className={userMessageRowClass}>
         <div className={userMessageBubbleClass}>
-          <p className="whitespace-pre-wrap">{message.text}</p>
+          {slash ? (
+            <p className="whitespace-pre-wrap">
+              <span
+                className={userSlashChipClass}
+                title={slash.title !== "" ? `${slash.title}\n${slash.body}` : slash.body}
+              >
+                /{slash.slug}
+              </span>
+              {remainder}
+            </p>
+          ) : (
+            <p className="whitespace-pre-wrap">{remainder}</p>
+          )}
         </div>
       </div>
     );

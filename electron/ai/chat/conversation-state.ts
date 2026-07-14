@@ -16,6 +16,8 @@ import type {
   AiChatDeltaOp,
   AiChatMessage,
   AiChatMessagePatch,
+  AiChatSendMessageInput,
+  AiChatSlashRef,
   AiChatSnapshot,
   AiChatToolCall,
   AiChatUserMessage,
@@ -43,6 +45,7 @@ import {
   type PendingToolBatch,
 } from "./pending-tool-batch";
 import { rebuildLastRequestInput } from "./request-history";
+import { formatUserMessageDisplay } from "./slash-expand";
 
 const EMPTY_TITLE = "新会话";
 const TITLE_MAX_LENGTH = 40;
@@ -116,6 +119,51 @@ function normalizeStoredWarning(entry: unknown): AiChatWarning {
     }
   }
   return { id, messageId, message, code };
+}
+
+function normalizeStoredSlash(value: unknown): AiChatSlashRef | null {
+  if (value == null || typeof value !== "object") {
+    return null;
+  }
+  const raw = value as Record<string, unknown>;
+  if (
+    typeof raw.promptId !== "string" ||
+    typeof raw.slug !== "string" ||
+    typeof raw.title !== "string" ||
+    typeof raw.body !== "string"
+  ) {
+    return null;
+  }
+  return {
+    promptId: raw.promptId,
+    slug: raw.slug,
+    title: raw.title,
+    body: raw.body,
+  };
+}
+
+/** Prototype-safe hydrate: legacy user rows without `slash` become `slash: null`. */
+function normalizeStoredMessage(entry: unknown): AiChatMessage {
+  if (entry == null || typeof entry !== "object") {
+    return {
+      id: `ai-chat-legacy-${randomUUID()}`,
+      role: "user",
+      text: "",
+      slash: null,
+      status: "complete",
+    };
+  }
+  const raw = entry as Record<string, unknown>;
+  if (raw.role === "assistant") {
+    return entry as AiChatMessage;
+  }
+  return {
+    id: typeof raw.id === "string" ? raw.id : `ai-chat-legacy-${randomUUID()}`,
+    role: "user",
+    text: typeof raw.text === "string" ? raw.text : "",
+    slash: normalizeStoredSlash(raw.slash),
+    status: "complete",
+  };
 }
 
 export function recordToConversationActivity(
@@ -305,7 +353,7 @@ export class AiConversationState {
     const texts: string[] = [];
     for (const message of this.#messages) {
       if (message.role === "user") {
-        const text = message.text.trim();
+        const text = formatUserMessageDisplay(message.slash, message.text).trim();
         if (text !== "") {
           texts.push(text);
         }
@@ -478,11 +526,12 @@ export class AiConversationState {
     this.#markDirty();
   }
 
-  appendUserMessage(text: string): AiChatUserMessage {
+  appendUserMessage(input: AiChatSendMessageInput): AiChatUserMessage {
     const message: AiChatUserMessage = {
       id: `ai-chat-${this.#messageCounter++}`,
       role: "user",
-      text,
+      text: typeof input.text === "string" ? input.text : "",
+      slash: input.slash ?? null,
       status: "complete",
     };
     this.#messages.push(message);
@@ -811,7 +860,7 @@ export class AiConversationState {
       if (!Array.isArray(parsed)) {
         return [];
       }
-      return parsed as AiChatMessage[];
+      return parsed.map((entry) => normalizeStoredMessage(entry));
     } catch {
       return [];
     }
@@ -858,7 +907,9 @@ export class AiConversationState {
     if (!firstUser || firstUser.role !== "user") {
       return this.#title || EMPTY_TITLE;
     }
-    const text = firstUser.text.trim().replace(/\s+/g, " ");
+    const text = formatUserMessageDisplay(firstUser.slash, firstUser.text)
+      .trim()
+      .replace(/\s+/g, " ");
     if (text === "") {
       return EMPTY_TITLE;
     }

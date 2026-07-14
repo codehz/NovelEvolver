@@ -13,6 +13,7 @@ import { applyAiChatEvent, createInitialAiChatSnapshot } from "#shared/rpc/ai/in
 import type {
   AiChatSelectableAgent,
   AiChatSelectableModel,
+  AiChatSendMessageInput,
   AiChatSnapshot,
   AiConversationListOptions,
   AiConversationSearchHit,
@@ -53,13 +54,23 @@ function useAiChatStateValue() {
   }, [aiChat]);
 
   const sendMessage = useCallback(
-    async (text: string): Promise<boolean> => {
-      const normalized = text.trim();
-      if (normalized === "" || snapshot.pending || snapshot.pendingUserInputs.length > 0) {
+    async (input: AiChatSendMessageInput): Promise<boolean> => {
+      const hasSlash = input.slash != null;
+      const normalizedText = input.text.trim();
+      if (
+        (!hasSlash && normalizedText === "") ||
+        snapshot.pending ||
+        snapshot.pendingUserInputs.length > 0
+      ) {
         return false;
       }
 
-      await Promise.resolve(aiChat.sendMessage(normalized));
+      await Promise.resolve(
+        aiChat.sendMessage({
+          text: input.text,
+          slash: input.slash ?? null,
+        }),
+      );
       return true;
     },
     [aiChat, snapshot.pendingUserInputs, snapshot.pending],

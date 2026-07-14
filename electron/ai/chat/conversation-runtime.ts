@@ -13,6 +13,7 @@ import type {
   AiChatSelectableModelKind,
   AiChatDeltaOp,
   AiChatEvent,
+  AiChatSendMessageInput,
   AiChatSnapshot,
   AiConversationStatus,
   AiConversationSummary,
@@ -41,6 +42,7 @@ import { AiConversationState } from "./conversation-state";
 import { createPendingUserInputFromRequest, type PendingToolBatch } from "./pending-tool-batch";
 import { countCommittedAssistantParts, rebuildLastRequestInput } from "./request-history";
 import { resolveReasoningLevelForModel } from "./selectable-models";
+import { expandSlashForModel } from "./slash-expand";
 
 type RuntimeEventListener = (event: AiChatEvent) => void;
 
@@ -310,9 +312,11 @@ export class AiConversationRuntime {
     this.#state.setStatus(status);
   }
 
-  sendMessage(text: string): void {
-    const normalized = text.trim();
-    if (normalized === "") {
+  sendMessage(input: AiChatSendMessageInput): void {
+    const slash = input.slash ?? null;
+    const text = typeof input.text === "string" ? input.text : "";
+    const modelText = expandSlashForModel(slash, text);
+    if (modelText === "") {
       throw new Error("AI 消息不能为空。");
     }
     if (this.#state.pending) {
@@ -322,9 +326,10 @@ export class AiConversationRuntime {
       throw new Error("AI 正在等待当前工具步骤的用户回答。");
     }
 
-    const userMessage = this.#state.appendUserMessage(normalized);
+    // Persist display form (slash chip + remainder); expand only into model history.
+    const userMessage = this.#state.appendUserMessage({ text, slash });
     const assistantMessage = this.#state.appendAssistantMessage();
-    const requestInput = [...this.#state.history, toInputItem(userMessage.text)];
+    const requestInput = [...this.#state.history, toInputItem(modelText)];
 
     this.#state.setPending(true);
     this.#state.setErrorMessage(null);
