@@ -51,9 +51,14 @@ export function SlashCommandPicker({
   const titleId = useId();
   const listRef = useRef<HTMLDivElement | null>(null);
   const [activeIndex, setActiveIndex] = useState(0);
+  /** Keep last rect so exit animation does not jump to (0,0) when parent clears anchor. */
+  const lastAnchorRef = useRef<SlashPickerAnchor | null>(null);
+  if (anchor) {
+    lastAnchorRef.current = anchor;
+  }
 
   const filtered = useMemo(() => filterPromptSlashItems(items, query), [items, query]);
-  const resolvedAnchor = anchor ?? createFallbackAnchor();
+  const resolvedAnchor = anchor ?? lastAnchorRef.current ?? createFallbackAnchor();
 
   useEffect(() => {
     setActiveIndex(0);
