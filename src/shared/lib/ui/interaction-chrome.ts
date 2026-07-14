@@ -45,10 +45,29 @@ export const popoverSurfaceClass = cn(
   "overflow-hidden rounded-lg border border-titlebar-border bg-app-surface text-xs text-app-foreground app-region-no-drag",
 );
 
-/** Compact search/filter input used in pickers and overlays. */
-export const pickerSearchInputClass = cn(
-  "h-7 w-full rounded-sm border border-badge-background bg-app-background px-2 text-xs leading-none text-app-foreground outline-none app-region-no-drag placeholder:text-app-muted",
+/**
+ * Text-field surface: light fill + transparent border at rest; accent border only when focused.
+ * Compose with local size / padding; use `fieldSurfaceFocusWithinClass` for shells with adornments.
+ */
+export const fieldSurfaceClass = cn(
+  "rounded-sm border border-transparent bg-ctp-surface0 transition-colors outline-none",
+  "focus:border-badge-background",
 );
+
+/** Field surface that shows the accent border when any descendant is focused. */
+export const fieldSurfaceFocusWithinClass = cn(
+  "rounded-sm border border-transparent bg-ctp-surface0 transition-colors outline-none",
+  "focus-within:border-badge-background",
+);
+
+/** Single-line text input baseline on top of `fieldSurfaceClass` (add height/padding locally). */
+export const fieldInputClass = cn(
+  fieldSurfaceClass,
+  "w-full min-w-0 text-xs leading-none text-app-foreground placeholder:text-app-muted disabled:opacity-50",
+);
+
+/** Compact search/filter input used in pickers and overlays. */
+export const pickerSearchInputClass = cn(fieldInputClass, "h-7 px-2 app-region-no-drag");
 
 /** Collapsible panel height motion (disclosure), not for overlays. */
 export const collapsibleHeightMotionClass = cn(

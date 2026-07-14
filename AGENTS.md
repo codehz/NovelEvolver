@@ -123,16 +123,18 @@ The renderer uses **Tailwind CSS v4** with theme tokens defined in `src/index.cs
 
 Prefer the shared classes from `#app/shared/lib/ui/interaction-chrome` over inventing new variants:
 
-| Role                           | Canonical                                                                            |
-| ------------------------------ | ------------------------------------------------------------------------------------ |
-| Control focus ring             | `controlFocusVisibleClass` — `outline-2` + `badge-background` (not `ring-*` / mauve) |
-| Icon-button hover              | `iconButtonHoverClass` — `hover:bg-ctp-text/8`                                       |
-| List row hover                 | `rowHoverClass` — `hover:bg-ctp-surface0/55`                                         |
-| Panel / secondary hover        | `panelHoverClass` — `hover:bg-ctp-surface0/40`                                       |
-| Combobox / QuickPick highlight | `listRowHighlightClass` — `data-highlighted:bg-ctp-surface0/55`                      |
-| Menu / Select highlight        | `menuItemHighlightClass` — `data-highlighted:bg-ctp-surface0/70`                     |
-| Overlay enter/exit             | `overlayMotionClass` — `duration-220` + `cubic-bezier(0.33,1,0.68,1)`                |
-| Popover surface                | `popoverSurfaceClass` — border + `bg-app-surface` + `rounded-lg`                     |
+| Role                           | Canonical                                                                                                     |
+| ------------------------------ | ------------------------------------------------------------------------------------------------------------- |
+| Control focus ring             | `controlFocusVisibleClass` — `outline-2` + `badge-background` (not `ring-*` / mauve)                          |
+| Icon-button hover              | `iconButtonHoverClass` — `hover:bg-ctp-text/8`                                                                |
+| List row hover                 | `rowHoverClass` — `hover:bg-ctp-surface0/55`                                                                  |
+| Panel / secondary hover        | `panelHoverClass` — `hover:bg-ctp-surface0/40`                                                                |
+| Combobox / QuickPick highlight | `listRowHighlightClass` — `data-highlighted:bg-ctp-surface0/55`                                               |
+| Menu / Select highlight        | `menuItemHighlightClass` — `data-highlighted:bg-ctp-surface0/70`                                              |
+| Overlay enter/exit             | `overlayMotionClass` — `duration-220` + `cubic-bezier(0.33,1,0.68,1)`                                         |
+| Popover surface                | `popoverSurfaceClass` — border + `bg-app-surface` + `rounded-lg`                                              |
+| Field surface                  | `fieldSurfaceClass` / `fieldInputClass` — transparent border + `bg-ctp-surface0`; accent border only on focus |
+| Field shell (adornments)       | `fieldSurfaceFocusWithinClass` — same rest surface; accent border via `focus-within`                          |
 
 Additional shape / type scale rules:
 

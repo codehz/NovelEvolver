@@ -1,4 +1,5 @@
 import { cn } from "#app/shared/lib/ui/cn";
+import { fieldSurfaceClass } from "#app/shared/lib/ui/interaction-chrome";
 import { useActiveBranchName } from "#workbench/branch/branch-scopes";
 
 type ChangesCommitFormProps = {
@@ -21,7 +22,10 @@ export function ChangesCommitForm({
   return (
     <div className="shrink-0 py-0.5 pr-3 pl-5">
       <textarea
-        className="field-sizing-content min-h-0 w-full resize-none rounded-sm bg-ctp-surface0 px-2 py-1.5 text-xs leading-tight text-ctp-text outline-none placeholder:text-ctp-overlay0"
+        className={cn(
+          fieldSurfaceClass,
+          "field-sizing-content min-h-0 w-full resize-none px-2 py-1.5 text-xs leading-tight text-app-foreground placeholder:text-app-muted",
+        )}
         rows={1}
         placeholder={placeholder}
         value={commitMessage}

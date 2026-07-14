@@ -1,6 +1,9 @@
 import { cn } from "#app/shared/lib/ui/cn";
 import {
   controlFocusVisibleInsetClass,
+  fieldInputClass,
+  fieldSurfaceClass,
+  fieldSurfaceFocusWithinClass,
   iconButtonHoverClass,
   menuItemHighlightClass,
   menuMotionClass,
@@ -38,9 +41,7 @@ export const settingsIconButtonClass = cn(
 
 export const settingsSearchWrapClass = cn("shrink-0 border-b border-titlebar-border px-4 py-2.5");
 
-export const settingsSearchInputClass = cn(
-  "h-8 w-full rounded-sm border border-titlebar-border bg-app-background px-2.5 text-xs leading-none text-app-foreground outline-none placeholder:text-app-muted",
-);
+export const settingsSearchInputClass = cn(fieldInputClass, "h-8 px-2.5");
 
 /** Row body under a column flex panel — children scroll with `h-full overflow-y-auto`. */
 export const settingsBodyClass = cn("flex min-h-0 flex-1 overflow-hidden");
@@ -157,21 +158,18 @@ export const settingsFieldDescriptionClass = cn("text-2xs text-app-muted");
 export const settingsFieldErrorClass = cn("text-2xs text-ctp-red");
 
 /** Fixed height + leading-none: py + leading-tight overflows the input content box and scrolls. */
-export const settingsInputClass = cn(
-  "h-8 w-full rounded-sm border border-titlebar-border bg-app-surface px-2.5 text-xs leading-none text-app-foreground outline-none",
-  "placeholder:text-app-muted focus:border-badge-background/60 disabled:opacity-50",
-);
+export const settingsInputClass = cn(fieldInputClass, "h-8 px-2.5");
 
 /** Multi-line control — do not share `h-8` / `leading-none` with single-line inputs. */
 export const settingsTextareaClass = cn(
-  "w-full resize-y rounded-sm border border-titlebar-border bg-app-surface px-2.5 py-1.5 text-xs leading-5 text-app-foreground outline-none",
-  "placeholder:text-app-muted focus:border-badge-background/60 disabled:opacity-50",
+  fieldSurfaceClass,
+  "w-full resize-y px-2.5 py-1.5 text-xs leading-5 text-app-foreground placeholder:text-app-muted disabled:opacity-50",
 );
 
 /** Host shell for settings CodeMirror JSON editors (matches textarea chrome). */
 export const settingsJsonEditorHostClass = cn(
-  "w-full min-w-0 overflow-hidden rounded-sm border border-titlebar-border bg-app-surface outline-none",
-  "focus-within:border-badge-background/60",
+  fieldSurfaceFocusWithinClass,
+  "w-full min-w-0 overflow-hidden",
 );
 
 /** Visually hidden native control used to register custom editors with Base UI Field. */
@@ -179,10 +177,11 @@ export const settingsFieldHiddenControlClass = cn("sr-only");
 
 /** Base UI Select trigger — replaces native `<select>`. */
 export const settingsSelectTriggerClass = cn(
-  "flex h-8 w-full min-w-0 items-center justify-between gap-2 rounded-sm border border-titlebar-border bg-app-surface px-2.5 text-left text-xs leading-none text-app-foreground outline-none select-none",
-  "hover:not-data-disabled:bg-ctp-surface0/30",
-  "focus-visible:border-badge-background/60",
-  "data-popup-open:border-badge-background/60 data-popup-open:bg-ctp-surface0/30",
+  fieldSurfaceClass,
+  "flex h-8 w-full min-w-0 items-center justify-between gap-2 px-2.5 text-left text-xs leading-none text-app-foreground select-none",
+  "hover:not-data-disabled:bg-ctp-surface1/40",
+  "focus:border-transparent focus-visible:border-badge-background",
+  "data-popup-open:border-badge-background data-popup-open:bg-ctp-surface1/40",
   "data-disabled:cursor-default data-disabled:opacity-50",
 );
 

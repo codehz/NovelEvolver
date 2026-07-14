@@ -2,13 +2,16 @@ import { Toggle } from "@base-ui/react/toggle";
 import { useRef } from "react";
 
 import { cn } from "#app/shared/lib/ui/cn";
-import { controlFocusVisibleClass } from "#app/shared/lib/ui/interaction-chrome";
+import {
+  controlFocusVisibleClass,
+  fieldSurfaceFocusWithinClass,
+} from "#app/shared/lib/ui/interaction-chrome";
 import { IconTooltip, SlotText } from "#app/shared/ui";
 
-const searchFieldRowClass = cn("flex h-7 items-center gap-1.5 rounded-sm bg-ctp-surface0 px-2");
+const searchFieldRowClass = cn(fieldSurfaceFocusWithinClass, "flex h-7 items-center gap-1.5 px-2");
 
 const searchInputClass = cn(
-  "min-h-0 min-w-0 flex-1 border-0 bg-transparent py-0 text-xs leading-none text-ctp-text outline-none placeholder:text-ctp-overlay0",
+  "min-h-0 min-w-0 flex-1 border-0 bg-transparent py-0 text-xs leading-none text-app-foreground outline-none placeholder:text-app-muted",
   "appearance-none",
   "[&::-webkit-search-cancel-button]:hidden",
   "[&::-webkit-search-decoration]:hidden",

@@ -1,6 +1,7 @@
 import { cn } from "#app/shared/lib/ui/cn";
 import {
   controlFocusVisibleClass,
+  fieldInputClass,
   overlayMotionClass,
   pickerSearchInputClass,
   popoverSurfaceClass,
@@ -70,7 +71,4 @@ export const historyFooterToggleClass = cn(
   controlFocusVisibleClass,
 );
 
-export const historyRenameInputClass = cn(
-  "h-6 w-full rounded-sm border border-badge-background bg-app-background px-1.5 text-xs leading-none text-app-foreground outline-none",
-  controlFocusVisibleClass,
-);
+export const historyRenameInputClass = cn(fieldInputClass, "h-6 px-1.5");

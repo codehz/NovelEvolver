@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 
 import { cn } from "#app/shared/lib/ui/cn";
+import { fieldInputClass } from "#app/shared/lib/ui/interaction-chrome";
 
 type TreeInlineInputProps = {
   ariaLabel: string;
@@ -57,9 +58,7 @@ export function TreeInlineInput({
       ref={inputRef}
       aria-label={ariaLabel}
       autoComplete="off"
-      className={cn(
-        "h-5 min-w-0 flex-1 rounded-sm border border-badge-background bg-app-background px-1 text-xs leading-none text-app-foreground outline-none app-region-no-drag",
-      )}
+      className={cn(fieldInputClass, "h-5 min-w-0 flex-1 px-1 app-region-no-drag")}
       placeholder={placeholder}
       spellCheck={false}
       type="text"
