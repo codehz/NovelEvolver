@@ -14,17 +14,21 @@ import { isLowMaxOutputTokensForNovelAgent } from "#shared/rpc/services/index";
 import {
   settingsEmptyStateClass,
   settingsIconButtonClass,
+  settingsLayerHiddenClass,
   settingsListClass,
   settingsListItemClass,
   settingsListItemMetaClass,
   settingsListItemTitleClass,
   settingsPanelHeaderClass,
+  settingsPanelRootClass,
+  settingsPanelScrollClass,
   settingsPanelSectionClass,
   settingsPrimaryButtonClass,
   settingsSecondaryButtonClass,
   settingsStatusBadgeClass,
   settingsStatusBadgeDefaultClass,
 } from "../settings-chrome";
+import { SettingsSubpageHeader } from "../SettingsSubpageHeader";
 import { aiAdapterLabel } from "./ai-adapter-labels";
 import { AiModelConfigForm } from "./AiModelConfigForm";
 import { AiProviderConfigForm } from "./AiProviderConfigForm";
@@ -47,6 +51,25 @@ function errorMessage(error: unknown, fallback: string): string {
     return error;
   }
   return fallback;
+}
+
+function resolveModelsSubpageTitle(
+  providerEditor: ProviderEditorMode,
+  modelEditor: ModelEditorMode,
+): string | null {
+  if (providerEditor.type === "create") {
+    return "添加供应商";
+  }
+  if (providerEditor.type === "edit") {
+    return `编辑：${providerEditor.provider.name}`;
+  }
+  if (modelEditor.type === "create") {
+    return "添加模型";
+  }
+  if (modelEditor.type === "edit") {
+    return `编辑：${modelEditor.model.name}`;
+  }
+  return null;
 }
 
 export function AiModelsSettingsPanel() {
@@ -116,6 +139,26 @@ export function AiModelsSettingsPanel() {
     }
   };
 
+  const closeProviderEditor = () => {
+    setActionError(null);
+    setProviderEditor({ type: "closed" });
+  };
+
+  const closeModelEditor = () => {
+    setActionError(null);
+    setModelEditor({ type: "closed" });
+  };
+
+  const handleBack = () => {
+    if (providerEditor.type !== "closed") {
+      closeProviderEditor();
+      return;
+    }
+    if (modelEditor.type !== "closed") {
+      closeModelEditor();
+    }
+  };
+
   const handleProviderSubmit = async (input: AiProviderConfigWrite) => {
     const ok = await runMutation(
       () => settingsService.upsertAiProvider(input),
@@ -169,117 +212,79 @@ export function AiModelsSettingsPanel() {
   };
 
   if (loading && snapshot === null) {
-    return <div className={settingsEmptyStateClass}>加载中…</div>;
-  }
-
-  if (loadError && snapshot === null) {
     return (
-      <div className={settingsPanelSectionClass}>
-        <p className="text-xs text-ctp-red">{loadError}</p>
-        <button
-          className={settingsSecondaryButtonClass}
-          type="button"
-          onClick={() => {
-            void refresh();
-          }}
-        >
-          重试
-        </button>
+      <div className={settingsPanelRootClass}>
+        <div className={settingsPanelScrollClass}>
+          <div className={settingsEmptyStateClass}>加载中…</div>
+        </div>
       </div>
     );
   }
 
-  const showListChrome = providerEditor.type === "closed" && modelEditor.type === "closed";
+  if (loadError && snapshot === null) {
+    return (
+      <div className={settingsPanelRootClass}>
+        <div className={settingsPanelScrollClass}>
+          <div className={settingsPanelSectionClass}>
+            <p className="text-xs text-ctp-red">{loadError}</p>
+            <button
+              className={settingsSecondaryButtonClass}
+              type="button"
+              onClick={() => {
+                void refresh();
+              }}
+            >
+              重试
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  const isSubpageOpen = providerEditor.type !== "closed" || modelEditor.type !== "closed";
+  const subpageTitle = resolveModelsSubpageTitle(providerEditor, modelEditor);
 
   return (
-    <div className={settingsPanelSectionClass}>
-      <div className={settingsPanelHeaderClass}>
-        <div className="min-w-0 flex-1">
-          <h3 className="text-sm font-medium text-app-foreground">供应商与模型</h3>
-          <p className="mt-0.5 text-2xs text-app-muted">
-            先配置 API 供应商（连接与密钥），再在其下添加多个模型。密钥经系统加密后写入本地{" "}
-            <span className="font-mono">ai-settings.json</span>。
-          </p>
-        </div>
-        {showListChrome ? (
-          <button
-            className={settingsPrimaryButtonClass}
-            disabled={busy}
-            type="button"
-            onClick={() => {
-              setActionError(null);
-              setProviderEditor({ type: "create" });
-            }}
-          >
-            <span aria-hidden="true" className="icon-[codicon--add] text-sm" />
-            添加供应商
-          </button>
-        ) : null}
-      </div>
-
-      {actionError && showListChrome ? <p className="text-xs text-ctp-red">{actionError}</p> : null}
-
-      {providerEditor.type === "create" ? (
-        <AiProviderConfigForm
-          busy={busy}
-          error={actionError}
-          onCancel={() => {
-            setActionError(null);
-            setProviderEditor({ type: "closed" });
-          }}
-          onSubmit={handleProviderSubmit}
-        />
+    <div className={settingsPanelRootClass}>
+      {isSubpageOpen && subpageTitle ? (
+        <SettingsSubpageHeader title={subpageTitle} onBack={handleBack} />
       ) : null}
 
-      {providerEditor.type === "edit" ? (
-        <AiProviderConfigForm
-          key={providerEditor.provider.id}
-          busy={busy}
-          error={actionError}
-          initial={providerEditor.provider}
-          onCancel={() => {
-            setActionError(null);
-            setProviderEditor({ type: "closed" });
-          }}
-          onSubmit={handleProviderSubmit}
-        />
-      ) : null}
+      {/* Keep-alive list layer: own scrollport so form scroll cannot clobber list position. */}
+      <div className={cn(settingsPanelScrollClass, isSubpageOpen && settingsLayerHiddenClass)}>
+        <div className={settingsPanelSectionClass}>
+          <div className={settingsPanelHeaderClass}>
+            <div className="min-w-0 flex-1">
+              <h3 className="text-sm font-medium text-app-foreground">供应商与模型</h3>
+              <p className="mt-0.5 text-2xs text-app-muted">
+                先配置 API 供应商（连接与密钥），再在其下添加多个模型。密钥经系统加密后写入本地{" "}
+                <span className="font-mono">ai-settings.json</span>。
+              </p>
+            </div>
+            <button
+              className={settingsPrimaryButtonClass}
+              disabled={busy}
+              type="button"
+              onClick={() => {
+                setActionError(null);
+                setProviderEditor({ type: "create" });
+              }}
+            >
+              <span aria-hidden="true" className="icon-[codicon--add] text-sm" />
+              添加供应商
+            </button>
+          </div>
 
-      {modelEditor.type === "create" ? (
-        <AiModelConfigForm
-          busy={busy}
-          defaultProviderId={modelEditor.providerId}
-          error={actionError}
-          providers={providers}
-          onCancel={() => {
-            setActionError(null);
-            setModelEditor({ type: "closed" });
-          }}
-          onSubmit={handleModelSubmit}
-        />
-      ) : null}
+          {actionError ? <p className="text-xs text-ctp-red">{actionError}</p> : null}
 
-      {modelEditor.type === "edit" ? (
-        <AiModelConfigForm
-          key={modelEditor.model.id}
-          busy={busy}
-          error={actionError}
-          initial={modelEditor.model}
-          providers={providers}
-          onCancel={() => {
-            setActionError(null);
-            setModelEditor({ type: "closed" });
-          }}
-          onSubmit={handleModelSubmit}
-        />
-      ) : null}
+          {providers.length === 0 ? (
+            <div className={settingsEmptyStateClass}>
+              还没有 API 供应商，点击「添加供应商」开始。
+            </div>
+          ) : null}
 
-      {providers.length === 0 && showListChrome ? (
-        <div className={settingsEmptyStateClass}>还没有 API 供应商，点击「添加供应商」开始。</div>
-      ) : null}
-
-      {showListChrome
-        ? providers.map((provider) => {
+          {providers.map((provider) => {
             const providerModels = modelsByProvider.get(provider.id) ?? [];
 
             return (
@@ -462,8 +467,58 @@ export function AiModelsSettingsPanel() {
                 )}
               </section>
             );
-          })
-        : null}
+          })}
+        </div>
+      </div>
+
+      {isSubpageOpen ? (
+        <div className={settingsPanelScrollClass}>
+          <div className={settingsPanelSectionClass}>
+            {providerEditor.type === "create" ? (
+              <AiProviderConfigForm
+                busy={busy}
+                error={actionError}
+                onCancel={closeProviderEditor}
+                onSubmit={handleProviderSubmit}
+              />
+            ) : null}
+
+            {providerEditor.type === "edit" ? (
+              <AiProviderConfigForm
+                key={providerEditor.provider.id}
+                busy={busy}
+                error={actionError}
+                initial={providerEditor.provider}
+                onCancel={closeProviderEditor}
+                onSubmit={handleProviderSubmit}
+              />
+            ) : null}
+
+            {modelEditor.type === "create" ? (
+              <AiModelConfigForm
+                busy={busy}
+                defaultProviderId={modelEditor.providerId}
+                error={actionError}
+                providers={providers}
+                onCancel={closeModelEditor}
+                onSubmit={handleModelSubmit}
+              />
+            ) : null}
+
+            {modelEditor.type === "edit" ? (
+              <AiModelConfigForm
+                key={modelEditor.model.id}
+                busy={busy}
+                error={actionError}
+                initial={modelEditor.model}
+                providers={providers}
+                onCancel={closeModelEditor}
+                onSubmit={handleModelSubmit}
+              />
+            ) : null}
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }

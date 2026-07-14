@@ -56,13 +56,31 @@ export const settingsTabChipActiveClass = cn(
   "border-badge-background/40 bg-ctp-surface0/55 text-app-foreground",
 );
 
-/** Column body under header + tabs — content scrolls with `h-full overflow-y-auto`. */
+/** Column body under header + tabs — panels own their scrollports. */
 export const settingsBodyClass = cn("flex min-h-0 flex-1 flex-col overflow-hidden");
 
-/** Settings main pane: full-width stretch-to-body scrollport. */
+/** Settings main pane shell: fills body; child panels manage header + scroll. */
 export const settingsContentClass = cn(
-  "h-full min-h-0 min-w-0 flex-1 overflow-x-hidden overflow-y-auto",
+  "flex h-full min-h-0 min-w-0 flex-1 flex-col overflow-hidden",
 );
+
+/** Panel root: optional fixed subpage header + independent scroll layers. */
+export const settingsPanelRootClass = cn("flex h-full min-h-0 flex-col");
+
+/** Scrollport inside a settings panel (list or subpage form). */
+export const settingsPanelScrollClass = cn("min-h-0 flex-1 overflow-x-hidden overflow-y-auto");
+
+/** Fixed subpage navigation bar above the panel scrollport. */
+export const settingsSubpageHeaderClass = cn(
+  "flex shrink-0 items-center gap-1.5 border-b border-titlebar-border bg-app-surface px-3 py-2",
+);
+
+export const settingsSubpageTitleClass = cn(
+  "min-w-0 flex-1 truncate text-sm font-medium text-app-foreground",
+);
+
+/** Keep-alive list layer while a subpage form is shown. */
+export const settingsLayerHiddenClass = cn("hidden");
 
 export const settingsHeaderActionButtonClass = cn(
   "inline-flex size-8 shrink-0 items-center justify-center rounded-sm border border-titlebar-border bg-app-surface text-app-foreground",

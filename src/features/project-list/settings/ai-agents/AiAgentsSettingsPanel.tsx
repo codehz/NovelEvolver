@@ -12,16 +12,20 @@ import type {
 import {
   settingsEmptyStateClass,
   settingsIconButtonClass,
+  settingsLayerHiddenClass,
   settingsListClass,
   settingsListItemClass,
   settingsListItemMetaClass,
   settingsListItemTitleClass,
   settingsPanelHeaderClass,
+  settingsPanelRootClass,
+  settingsPanelScrollClass,
   settingsPanelSectionClass,
   settingsPrimaryButtonClass,
   settingsSecondaryButtonClass,
   settingsStatusBadgeClass,
 } from "../settings-chrome";
+import { SettingsSubpageHeader } from "../SettingsSubpageHeader";
 import { AiAgentConfigForm } from "./AiAgentConfigForm";
 
 type AgentEditorMode =
@@ -38,6 +42,19 @@ function errorMessage(error: unknown, fallback: string): string {
     return error;
   }
   return fallback;
+}
+
+function resolveAgentSubpageTitle(editor: AgentEditorMode): string | null {
+  if (editor.type === "create") {
+    return "添加 Agent";
+  }
+  if (editor.type === "edit") {
+    return `编辑：${editor.agent.name}`;
+  }
+  if (editor.type === "detail") {
+    return `详情：${editor.agent.name}`;
+  }
+  return null;
 }
 
 export function AiAgentsSettingsPanel() {
@@ -106,6 +123,11 @@ export function AiAgentsSettingsPanel() {
     }
   };
 
+  const closeEditor = () => {
+    setActionError(null);
+    setEditor({ type: "closed" });
+  };
+
   const handleSubmit = async (input: AiAgentConfigWrite) => {
     const ok = await runMutation(
       () => settingsService.upsertAiAgent(input),
@@ -132,192 +154,211 @@ export function AiAgentsSettingsPanel() {
   };
 
   if (loading && agentSnapshot === null) {
-    return <div className={settingsEmptyStateClass}>加载中…</div>;
-  }
-
-  if (loadError && agentSnapshot === null) {
     return (
-      <div className={settingsPanelSectionClass}>
-        <p className="text-xs text-ctp-red">{loadError}</p>
-        <button
-          className={settingsSecondaryButtonClass}
-          type="button"
-          onClick={() => {
-            void refresh();
-          }}
-        >
-          重试
-        </button>
+      <div className={settingsPanelRootClass}>
+        <div className={settingsPanelScrollClass}>
+          <div className={settingsPanelSectionClass}>
+            <div className={settingsEmptyStateClass}>加载中…</div>
+          </div>
+        </div>
       </div>
     );
   }
 
-  const showListChrome = editor.type === "closed";
+  if (loadError && agentSnapshot === null) {
+    return (
+      <div className={settingsPanelRootClass}>
+        <div className={settingsPanelScrollClass}>
+          <div className={settingsPanelSectionClass}>
+            <p className="text-xs text-ctp-red">{loadError}</p>
+            <button
+              className={settingsSecondaryButtonClass}
+              type="button"
+              onClick={() => {
+                void refresh();
+              }}
+            >
+              重试
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  const isSubpageOpen = editor.type !== "closed";
+  const subpageTitle = resolveAgentSubpageTitle(editor);
 
   return (
-    <div className={settingsPanelSectionClass}>
-      <div className={settingsPanelHeaderClass}>
-        <div className="min-w-0 flex-1">
-          <h3 className="text-sm font-medium text-app-foreground">AI Agent</h3>
-          <p className="mt-0.5 text-2xs text-app-muted">
-            定义拥有独立系统提示词和工具权限的 AI 角色，可在对话中切换。
-          </p>
+    <div className={settingsPanelRootClass}>
+      {isSubpageOpen && subpageTitle ? (
+        <SettingsSubpageHeader title={subpageTitle} onBack={closeEditor} />
+      ) : null}
+
+      {/* Keep-alive list layer: own scrollport so form scroll cannot clobber list position. */}
+      <div className={cn(settingsPanelScrollClass, isSubpageOpen && settingsLayerHiddenClass)}>
+        <div className={settingsPanelSectionClass}>
+          <div className={settingsPanelHeaderClass}>
+            <div className="min-w-0 flex-1">
+              <h3 className="text-sm font-medium text-app-foreground">AI Agent</h3>
+              <p className="mt-0.5 text-2xs text-app-muted">
+                定义拥有独立系统提示词和工具权限的 AI 角色，可在对话中切换。
+              </p>
+            </div>
+            <button
+              className={settingsPrimaryButtonClass}
+              disabled={busy}
+              type="button"
+              onClick={() => {
+                handleOpenEditor({ type: "create" });
+              }}
+            >
+              <span aria-hidden="true" className="icon-[codicon--add] text-sm" />
+              添加 Agent
+            </button>
+          </div>
+
+          {actionError ? <p className="text-xs text-ctp-red">{actionError}</p> : null}
+
+          {agents.length === 0 ? (
+            <div className={settingsEmptyStateClass}>
+              还没有自定义 Agent，点击「添加 Agent」开始。
+            </div>
+          ) : null}
+
+          {agents.length > 0 ? (
+            <ul className={settingsListClass}>
+              {agents.map((agent) => {
+                const defaultModelName = agent.defaultModelId
+                  ? (modelNameById.get(agent.defaultModelId) ?? agent.defaultModelId)
+                  : null;
+
+                return (
+                  <li key={agent.id} className={settingsListItemClass}>
+                    <div className="min-w-0 flex-1">
+                      <div className="flex min-w-0 flex-wrap items-center gap-1.5">
+                        <span className={settingsListItemTitleClass}>{agent.name}</span>
+                        {agent.builtin ? (
+                          <span
+                            className={cn(
+                              settingsStatusBadgeClass,
+                              "bg-badge-background/20 text-badge-background",
+                            )}
+                          >
+                            内置
+                          </span>
+                        ) : (
+                          <span className={settingsStatusBadgeClass}>自定义</span>
+                        )}
+                      </div>
+                      <div className={settingsListItemMetaClass}>
+                        <span>{agent.availableToolNames.length} 个工具</span>
+                        {defaultModelName ? (
+                          <>
+                            <span aria-hidden="true">·</span>
+                            <span>默认模型：{defaultModelName}</span>
+                          </>
+                        ) : (
+                          <>
+                            <span aria-hidden="true">·</span>
+                            <span>继承对话默认模型</span>
+                          </>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="flex shrink-0 items-center gap-0.5">
+                      {agent.builtin ? (
+                        <button
+                          aria-label={`查看 ${agent.name} 详情`}
+                          className={settingsSecondaryButtonClass}
+                          disabled={busy}
+                          type="button"
+                          onClick={() => {
+                            handleOpenEditor({ type: "detail", agent });
+                          }}
+                        >
+                          详情
+                        </button>
+                      ) : (
+                        <>
+                          <button
+                            aria-label={`编辑 Agent ${agent.name}`}
+                            className={settingsIconButtonClass}
+                            disabled={busy}
+                            type="button"
+                            onClick={() => {
+                              handleOpenEditor({ type: "edit", agent });
+                            }}
+                          >
+                            <span aria-hidden="true" className="icon-[codicon--edit] text-base" />
+                          </button>
+                          <button
+                            aria-label={`删除 Agent ${agent.name}`}
+                            className={settingsIconButtonClass}
+                            disabled={busy}
+                            type="button"
+                            onClick={() => {
+                              void handleRemove(agent.id);
+                            }}
+                          >
+                            <span aria-hidden="true" className="icon-[codicon--trash] text-base" />
+                          </button>
+                        </>
+                      )}
+                    </div>
+                  </li>
+                );
+              })}
+            </ul>
+          ) : null}
         </div>
-        {showListChrome ? (
-          <button
-            className={settingsPrimaryButtonClass}
-            disabled={busy}
-            type="button"
-            onClick={() => {
-              handleOpenEditor({ type: "create" });
-            }}
-          >
-            <span aria-hidden="true" className="icon-[codicon--add] text-sm" />
-            添加 Agent
-          </button>
-        ) : null}
       </div>
 
-      {actionError && showListChrome ? <p className="text-xs text-ctp-red">{actionError}</p> : null}
+      {isSubpageOpen ? (
+        <div className={settingsPanelScrollClass}>
+          <div className={settingsPanelSectionClass}>
+            {editor.type === "create" ? (
+              <AiAgentConfigForm
+                busy={busy}
+                error={actionError}
+                models={models}
+                providers={providers}
+                tools={tools}
+                onCancel={closeEditor}
+                onSubmit={handleSubmit}
+              />
+            ) : null}
 
-      {editor.type === "create" ? (
-        <AiAgentConfigForm
-          busy={busy}
-          error={actionError}
-          models={models}
-          providers={providers}
-          tools={tools}
-          onCancel={() => {
-            setActionError(null);
-            setEditor({ type: "closed" });
-          }}
-          onSubmit={handleSubmit}
-        />
-      ) : null}
+            {editor.type === "edit" ? (
+              <AiAgentConfigForm
+                key={editor.agent.id}
+                busy={busy}
+                error={actionError}
+                initial={editor.agent}
+                models={models}
+                providers={providers}
+                tools={tools}
+                onCancel={closeEditor}
+                onSubmit={handleSubmit}
+              />
+            ) : null}
 
-      {editor.type === "edit" ? (
-        <AiAgentConfigForm
-          key={editor.agent.id}
-          busy={busy}
-          error={actionError}
-          initial={editor.agent}
-          models={models}
-          providers={providers}
-          tools={tools}
-          onCancel={() => {
-            setActionError(null);
-            setEditor({ type: "closed" });
-          }}
-          onSubmit={handleSubmit}
-        />
-      ) : null}
-
-      {editor.type === "detail" ? (
-        <AiAgentConfigForm
-          key={editor.agent.id}
-          busy={busy}
-          error={actionError}
-          initial={editor.agent}
-          models={models}
-          providers={providers}
-          readOnly
-          tools={tools}
-          onCancel={() => {
-            setActionError(null);
-            setEditor({ type: "closed" });
-          }}
-        />
-      ) : null}
-
-      {agents.length === 0 && showListChrome ? (
-        <div className={settingsEmptyStateClass}>还没有自定义 Agent，点击「添加 Agent」开始。</div>
-      ) : null}
-
-      {showListChrome && agents.length > 0 ? (
-        <ul className={settingsListClass}>
-          {agents.map((agent) => {
-            const defaultModelName = agent.defaultModelId
-              ? (modelNameById.get(agent.defaultModelId) ?? agent.defaultModelId)
-              : null;
-
-            return (
-              <li key={agent.id} className={settingsListItemClass}>
-                <div className="min-w-0 flex-1">
-                  <div className="flex min-w-0 flex-wrap items-center gap-1.5">
-                    <span className={settingsListItemTitleClass}>{agent.name}</span>
-                    {agent.builtin ? (
-                      <span
-                        className={cn(
-                          settingsStatusBadgeClass,
-                          "bg-badge-background/20 text-badge-background",
-                        )}
-                      >
-                        内置
-                      </span>
-                    ) : (
-                      <span className={settingsStatusBadgeClass}>自定义</span>
-                    )}
-                  </div>
-                  <div className={settingsListItemMetaClass}>
-                    <span>{agent.availableToolNames.length} 个工具</span>
-                    {defaultModelName ? (
-                      <>
-                        <span aria-hidden="true">·</span>
-                        <span>默认模型：{defaultModelName}</span>
-                      </>
-                    ) : (
-                      <>
-                        <span aria-hidden="true">·</span>
-                        <span>继承对话默认模型</span>
-                      </>
-                    )}
-                  </div>
-                </div>
-
-                <div className="flex shrink-0 items-center gap-0.5">
-                  {agent.builtin ? (
-                    <button
-                      aria-label={`查看 ${agent.name} 详情`}
-                      className={settingsSecondaryButtonClass}
-                      disabled={busy}
-                      type="button"
-                      onClick={() => {
-                        handleOpenEditor({ type: "detail", agent });
-                      }}
-                    >
-                      详情
-                    </button>
-                  ) : (
-                    <>
-                      <button
-                        aria-label={`编辑 Agent ${agent.name}`}
-                        className={settingsIconButtonClass}
-                        disabled={busy}
-                        type="button"
-                        onClick={() => {
-                          handleOpenEditor({ type: "edit", agent });
-                        }}
-                      >
-                        <span aria-hidden="true" className="icon-[codicon--edit] text-base" />
-                      </button>
-                      <button
-                        aria-label={`删除 Agent ${agent.name}`}
-                        className={settingsIconButtonClass}
-                        disabled={busy}
-                        type="button"
-                        onClick={() => {
-                          void handleRemove(agent.id);
-                        }}
-                      >
-                        <span aria-hidden="true" className="icon-[codicon--trash] text-base" />
-                      </button>
-                    </>
-                  )}
-                </div>
-              </li>
-            );
-          })}
-        </ul>
+            {editor.type === "detail" ? (
+              <AiAgentConfigForm
+                key={editor.agent.id}
+                busy={busy}
+                error={actionError}
+                initial={editor.agent}
+                models={models}
+                providers={providers}
+                readOnly
+                tools={tools}
+                onCancel={closeEditor}
+              />
+            ) : null}
+          </div>
+        </div>
       ) : null}
     </div>
   );
