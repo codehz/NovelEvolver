@@ -138,21 +138,12 @@ export function AiMessageBlock({ message }: AiMessageBlockProps) {
 
   return (
     <article className={assistantMessageBlockClass}>
-      {message.parts.length > 0 ? (
-        message.parts.map((part) => <AiAssistantPartBlock key={part.id} part={part} />)
-      ) : (
-        <div className={assistantMessageBodyClass}>
-          <p className="text-ctp-subtext0">
-            {message.status === "streaming" ? "思考中..." : "未生成正文。"}
-          </p>
-        </div>
-      )}
-
-      {metaText !== "" ? (
-        <p className={reasoningMetaClass} title={metaText}>
-          {metaText}
-        </p>
-      ) : null}
+      {message.parts.map((part) => (
+        <AiAssistantPartBlock key={part.id} part={part} />
+      ))}
+      <p className={reasoningMetaClass} title={metaText}>
+        {metaText}
+      </p>
     </article>
   );
 }
