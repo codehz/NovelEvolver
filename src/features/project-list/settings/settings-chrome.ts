@@ -39,7 +39,7 @@ export const settingsIconButtonClass = cn(
 export const settingsSearchWrapClass = cn("shrink-0 border-b border-titlebar-border px-4 py-2.5");
 
 export const settingsSearchInputClass = cn(
-  "w-full rounded-sm border border-titlebar-border bg-app-background px-2.5 py-1.5 text-xs leading-tight text-app-foreground outline-none placeholder:text-app-muted",
+  "h-8 w-full rounded-sm border border-titlebar-border bg-app-background px-2.5 text-xs leading-none text-app-foreground outline-none placeholder:text-app-muted",
 );
 
 /** Row body under a column flex panel — children scroll with `h-full overflow-y-auto`. */
@@ -114,20 +114,27 @@ export const settingsFieldRootClass = cn("contents");
 
 export const settingsFieldControlCellClass = cn("flex min-w-0 flex-col gap-1.5");
 
-export const settingsFieldLabelClass = cn("py-1.5 text-2xs text-app-muted");
+export const settingsFieldLabelClass = cn("flex h-8 items-center text-2xs text-app-muted");
 
 export const settingsFieldDescriptionClass = cn("text-2xs text-app-muted");
 
 export const settingsFieldErrorClass = cn("text-2xs text-ctp-red");
 
+/** Fixed height + leading-none: py + leading-tight overflows the input content box and scrolls. */
 export const settingsInputClass = cn(
-  "w-full rounded-sm border border-titlebar-border bg-app-surface px-2.5 py-1.5 text-xs leading-tight text-app-foreground outline-none",
+  "h-8 w-full rounded-sm border border-titlebar-border bg-app-surface px-2.5 text-xs leading-none text-app-foreground outline-none",
+  "placeholder:text-app-muted focus:border-badge-background/60 disabled:opacity-50",
+);
+
+/** Multi-line control — do not share `h-8` / `leading-none` with single-line inputs. */
+export const settingsTextareaClass = cn(
+  "w-full resize-y rounded-sm border border-titlebar-border bg-app-surface px-2.5 py-1.5 text-xs leading-5 text-app-foreground outline-none",
   "placeholder:text-app-muted focus:border-badge-background/60 disabled:opacity-50",
 );
 
 /** Base UI Select trigger — replaces native `<select>`. */
 export const settingsSelectTriggerClass = cn(
-  "flex w-full min-w-0 items-center justify-between gap-2 rounded-sm border border-titlebar-border bg-app-surface px-2.5 py-1.5 text-left text-xs leading-tight text-app-foreground outline-none select-none",
+  "flex h-8 w-full min-w-0 items-center justify-between gap-2 rounded-sm border border-titlebar-border bg-app-surface px-2.5 text-left text-xs leading-none text-app-foreground outline-none select-none",
   "hover:not-data-disabled:bg-ctp-surface0/30",
   "focus-visible:border-badge-background/60",
   "data-popup-open:border-badge-background/60 data-popup-open:bg-ctp-surface0/30",

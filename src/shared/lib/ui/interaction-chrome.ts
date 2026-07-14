@@ -47,7 +47,7 @@ export const popoverSurfaceClass = cn(
 
 /** Compact search/filter input used in pickers and overlays. */
 export const pickerSearchInputClass = cn(
-  "w-full rounded-sm border border-badge-background bg-app-background px-2 py-1 text-xs leading-tight text-app-foreground outline-none app-region-no-drag placeholder:text-app-muted",
+  "h-7 w-full rounded-sm border border-badge-background bg-app-background px-2 text-xs leading-none text-app-foreground outline-none app-region-no-drag placeholder:text-app-muted",
 );
 
 /** Collapsible panel height motion (disclosure), not for overlays. */

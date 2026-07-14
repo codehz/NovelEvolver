@@ -71,6 +71,6 @@ export const historyFooterToggleClass = cn(
 );
 
 export const historyRenameInputClass = cn(
-  "w-full rounded-sm border border-badge-background bg-app-background px-1.5 py-0.5 text-xs text-app-foreground outline-none",
+  "h-6 w-full rounded-sm border border-badge-background bg-app-background px-1.5 text-xs leading-none text-app-foreground outline-none",
   controlFocusVisibleClass,
 );

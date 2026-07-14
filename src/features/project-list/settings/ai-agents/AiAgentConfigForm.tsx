@@ -24,6 +24,7 @@ import {
   settingsInputClass,
   settingsPrimaryButtonClass,
   settingsSecondaryButtonClass,
+  settingsTextareaClass,
 } from "../settings-chrome";
 import { SettingsCheckbox } from "../SettingsCheckbox";
 import { SettingsSelect } from "../SettingsSelect";
@@ -130,7 +131,7 @@ export function AiAgentConfigForm({
           <Field.Label className={settingsFieldLabelClass}>系统提示词</Field.Label>
           <div className={settingsFieldControlCellClass}>
             <Field.Control
-              className={settingsInputClass}
+              className={settingsTextareaClass}
               placeholder={readOnly ? undefined : "设定 Agent 的行为、性格与限制…"}
               readOnly={readOnly}
               render={<textarea rows={5} />}
