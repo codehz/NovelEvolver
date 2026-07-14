@@ -1,7 +1,7 @@
 import { Collapsible } from "@base-ui/react/collapsible";
 import { useState } from "react";
 
-import { DisclosureChevron } from "#app/shared/ui/DisclosureChevron";
+import { DisclosureChevron } from "#app/shared/ui";
 import type { AiChatToolCall } from "#shared/rpc/ai/index";
 
 import { presentToolCall } from "../tools/ai-tool-presenters";

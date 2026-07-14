@@ -8,36 +8,36 @@ import {
 } from "react";
 
 import { cn } from "#app/shared/lib/ui/cn";
-import { IconTooltip } from "#app/shared/ui/IconTooltip";
+import { IconTooltip } from "#app/shared/ui";
 import type { AskUserPendingInput } from "#shared/rpc/ai/index";
 
 const composerShellClass = cn(
-  "mx-auto flex w-full max-w-3xl flex-col gap-2 rounded-xl bg-app-background p-2 ring-1 ring-ctp-blue/30",
+  "mx-auto flex w-full max-w-3xl flex-col gap-2 rounded-lg bg-app-background p-2 ring-1 ring-ctp-blue/30",
 );
 const headerClass = cn("flex items-center gap-1.5 px-1");
 const headerLabelClass = cn("text-2xs font-medium tracking-[0.02em] text-ctp-blue");
 const headerToolNameClass = cn("truncate font-mono text-2xs text-ctp-green");
-const questionClass = cn("px-1 text-[0.8125rem] leading-5 text-app-foreground");
+const questionClass = cn("px-1 text-chat leading-5 text-app-foreground");
 const contextClass = cn("px-1 text-2xs leading-4 text-ctp-subtext1");
 const choicesClass = cn("flex flex-col gap-1.5 px-1");
 const choicesLabelClass = cn("text-2xs font-medium text-ctp-subtext0");
 const choiceButtonClass = cn(
-  "flex flex-col gap-0.5 rounded-md border border-titlebar-border bg-app-surface px-2.5 py-1.5 text-left hover:bg-window-chrome disabled:cursor-not-allowed disabled:opacity-40",
+  "flex flex-col gap-0.5 rounded-sm border border-titlebar-border bg-app-surface px-2.5 py-1.5 text-left hover:bg-window-chrome disabled:cursor-not-allowed disabled:opacity-40",
 );
-const choiceTitleClass = cn("text-[0.75rem] leading-5 text-app-foreground");
+const choiceTitleClass = cn("text-chat-meta leading-5 text-app-foreground");
 const choiceDescriptionClass = cn("text-2xs leading-4 text-ctp-subtext1");
 const composerTextareaClass = cn(
-  "field-sizing-content min-h-20 w-full resize-none border-0 bg-transparent p-1 text-[0.8125rem] leading-5 text-app-foreground outline-none placeholder:text-ctp-overlay0",
+  "field-sizing-content min-h-20 w-full resize-none border-0 bg-transparent p-1 text-chat leading-5 text-app-foreground outline-none placeholder:text-ctp-overlay0",
   "max-h-[50vh]",
 );
 const sendButtonClass = cn(
-  "inline-flex size-8 shrink-0 items-center justify-center rounded-lg bg-badge-background text-badge-foreground hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40",
+  "inline-flex size-8 shrink-0 items-center justify-center rounded-sm bg-badge-background text-badge-foreground hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40",
 );
 const cancelButtonClass = cn(
-  "inline-flex size-8 shrink-0 items-center justify-center rounded-lg bg-app-surface text-ctp-subtext1 hover:bg-window-chrome hover:text-app-foreground disabled:cursor-not-allowed disabled:opacity-40",
+  "inline-flex size-8 shrink-0 items-center justify-center rounded-sm bg-app-surface text-ctp-subtext1 hover:bg-window-chrome hover:text-app-foreground disabled:cursor-not-allowed disabled:opacity-40",
 );
 const loadingClass = cn(
-  "mx-auto w-full max-w-3xl rounded-xl bg-app-background p-3 text-center text-xs text-ctp-subtext0",
+  "mx-auto w-full max-w-3xl rounded-lg bg-app-background p-3 text-center text-xs text-ctp-subtext0",
 );
 
 /**

@@ -18,6 +18,8 @@
   --font-display: "MiSans", sans-serif;
   --font-mono: "Maple Mono CN", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
   --text-2xs: 0.6875rem;
+  --text-chat: 0.8125rem;
+  --text-chat-meta: 0.75rem;
 
   --color-app-background: var(--color-ctp-base);
   --color-app-foreground: var(--color-ctp-text);

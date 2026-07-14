@@ -2,7 +2,7 @@ import { AutoTransition, effects, preset } from "@codehz/auto-transition";
 import type { ReactNode } from "react";
 
 import { cn } from "#app/shared/lib/ui/cn";
-import { SlotText } from "#app/shared/ui/SlotText";
+import { SlotText } from "#app/shared/ui";
 
 export type TabItem = {
   id: string;

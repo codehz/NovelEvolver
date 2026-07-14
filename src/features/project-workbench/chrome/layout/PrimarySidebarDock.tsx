@@ -1,7 +1,7 @@
 import { memo, type CSSProperties, type ReactNode } from "react";
 
 import { cn } from "#app/shared/lib/ui/cn";
-import { SlotText } from "#app/shared/ui/SlotText";
+import { SlotText } from "#app/shared/ui";
 
 import { primarySidebarChromeTitleTextClass } from "../sidebar/sidebar-chrome";
 

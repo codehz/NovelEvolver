@@ -1,4 +1,4 @@
-import { MarkdownStream } from "#app/shared/ui/MarkdownStream";
+import { MarkdownStream } from "#app/shared/ui";
 import type { AiChatAssistantPart, AiChatMessage } from "#shared/rpc/ai/index";
 
 import {

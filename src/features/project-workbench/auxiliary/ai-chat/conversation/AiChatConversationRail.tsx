@@ -2,6 +2,7 @@ import { MessageScroller } from "@shadcn/react/message-scroller";
 import { useMemo, type ReactNode } from "react";
 
 import { cn } from "#app/shared/lib/ui/cn";
+import { controlFocusVisibleClass, panelHoverClass } from "#app/shared/lib/ui/interaction-chrome";
 import type { AiChatSnapshot } from "#shared/rpc/ai/index";
 
 import { AiMessageBlock } from "../messages/AiMessageBlock";
@@ -11,17 +12,18 @@ import {
   conversationScrollerRootClass,
   conversationScrollerViewportClass,
   panelSectionClass,
-} from "../ui/ai-chat-ui";
+} from "../ui/ai-chat-chrome";
 import { groupChatWarnings } from "../ui/group-chat-warnings";
 import { AiChatWarningBanner } from "./AiChatWarningBanner";
 
 const turnErrorBannerClass = cn(
-  "rounded-xl border border-ctp-red/40 bg-ctp-red/10 px-3 py-2 text-xs text-ctp-red",
+  "rounded-lg border border-ctp-red/40 bg-ctp-red/10 px-3 py-2 text-xs text-ctp-red",
 );
 const turnRetryButtonClass = cn(
-  "inline-flex items-center gap-1 self-start rounded-md px-1.5 py-0.5 text-2xs text-ctp-subtext1",
-  "underline-offset-2 transition-colors hover:bg-ctp-surface0 hover:text-app-foreground hover:underline",
-  "focus-visible:ring-1 focus-visible:ring-ctp-mauve focus-visible:outline-none",
+  "inline-flex items-center gap-1 self-start rounded-sm px-1.5 py-0.5 text-2xs text-ctp-subtext1 outline-none",
+  "underline-offset-2 transition-colors hover:text-app-foreground hover:underline",
+  panelHoverClass,
+  controlFocusVisibleClass,
 );
 const railItemStackClass = cn("flex flex-col gap-2");
 

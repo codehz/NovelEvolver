@@ -2,8 +2,8 @@ import { Toggle } from "@base-ui/react/toggle";
 import { useRef } from "react";
 
 import { cn } from "#app/shared/lib/ui/cn";
-import { IconTooltip } from "#app/shared/ui/IconTooltip";
-import { SlotText } from "#app/shared/ui/SlotText";
+import { controlFocusVisibleClass } from "#app/shared/lib/ui/interaction-chrome";
+import { IconTooltip, SlotText } from "#app/shared/ui";
 
 const searchFieldRowClass = cn("flex h-7 items-center gap-1.5 rounded-sm bg-ctp-surface0 px-2");
 
@@ -16,9 +16,9 @@ const searchInputClass = cn(
 );
 
 const searchOptionButtonClass = cn(
-  "flex size-5 shrink-0 items-center justify-center rounded text-ctp-overlay0",
+  "flex size-5 shrink-0 items-center justify-center rounded-sm text-ctp-overlay0",
   "hover:bg-ctp-surface1 hover:text-ctp-subtext1",
-  "focus-visible:outline-2 focus-visible:-outline-offset-1 focus-visible:outline-badge-background",
+  controlFocusVisibleClass,
 );
 
 const searchRegexToggleClass = cn(
@@ -27,19 +27,21 @@ const searchRegexToggleClass = cn(
   "hover:data-pressed:bg-ctp-blue/25 hover:data-pressed:text-ctp-blue",
 );
 
+type SearchQueryChromeProps = {
+  query: string;
+  isRegex: boolean;
+  statsLine: string | null;
+  onQueryChange: (value: string) => void;
+  onToggleRegex: () => void;
+};
+
 export function SearchQueryChrome({
   query,
   isRegex,
   statsLine,
   onQueryChange,
   onToggleRegex,
-}: {
-  query: string;
-  isRegex: boolean;
-  statsLine: string | null;
-  onQueryChange: (value: string) => void;
-  onToggleRegex: () => void;
-}) {
+}: SearchQueryChromeProps) {
   const lastStatsLineRef = useRef<string>("请输入搜索内容");
   if (statsLine !== null) {
     lastStatsLineRef.current = statsLine;

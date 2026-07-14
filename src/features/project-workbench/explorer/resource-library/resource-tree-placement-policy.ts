@@ -1,8 +1,8 @@
 import type { ResourceTreeNode, ResourceTreeSnapshot } from "#shared/rpc/worktree/index";
+import type { TreeResolvedDrop, TreeRowHoverZone } from "#workbench/tree/tree-drag";
+import type { TreeRowDomData } from "#workbench/tree/tree-row-dom";
+import { TREE_ROW_HEIGHT_PX } from "#workbench/tree/tree-row-motion";
 
-import type { TreeResolvedDrop, TreeRowHoverZone } from "../../tree/tree-drag";
-import type { TreeRowDomData } from "../../tree/tree-row-dom";
-import { TREE_ROW_HEIGHT_PX } from "../../tree/tree-row-motion";
 import { isResourceDescendant } from "./resource-tree";
 import type { ResourceRenderProjection } from "./resource-tree-projector";
 

@@ -4,10 +4,10 @@ import { useCallback, useMemo, useRef } from "react";
 
 import type { ManuscriptTreeNode } from "#shared/rpc/worktree/index";
 import { SidebarHeaderActionButton, SidebarHeaderActions } from "#workbench/chrome";
+import { runTreeRowContextMenu } from "#workbench/tree/run-tree-row-context-menu";
+import { TreeBody } from "#workbench/tree/TreeBody";
+import type { TreeDropResolveInput } from "#workbench/tree/use-tree-row-pointer-drag";
 
-import { runTreeRowContextMenu } from "../../tree/run-tree-row-context-menu";
-import { TreeBody } from "../../tree/TreeBody";
-import type { TreeDropResolveInput } from "../../tree/use-tree-row-pointer-drag";
 import { useContentTreeReveal } from "../shared/content-tree-reveal";
 import { manuscriptParentChain } from "./manuscript-tree";
 import { buildManuscriptTreeContextMenuItems } from "./manuscript-tree-context-menu";

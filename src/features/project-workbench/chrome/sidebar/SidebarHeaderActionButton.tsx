@@ -1,5 +1,5 @@
 import { cn } from "#app/shared/lib/ui/cn";
-import { IconTooltip } from "#app/shared/ui/IconTooltip";
+import { IconTooltip } from "#app/shared/ui";
 
 import { sidebarHeaderActionClass, sidebarHeaderIconClass } from "./sidebar-chrome";
 

@@ -11,7 +11,7 @@ const tableCardRowClass = cn(
 );
 const tableCardFieldClass = cn("flex min-w-24 flex-col gap-0.5");
 const tableCardLabelClass = cn("text-2xs font-medium tracking-[0.02em] text-ctp-subtext0");
-const tableCardValueClass = cn("text-[0.8125rem] leading-5 text-app-foreground");
+const tableCardValueClass = cn("text-chat leading-5 text-app-foreground");
 
 type TableStructure = {
   headers: ReactNode[];

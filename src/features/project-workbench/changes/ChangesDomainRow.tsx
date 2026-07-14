@@ -1,5 +1,5 @@
 import { cn } from "#app/shared/lib/ui/cn";
-import { DisclosureChevron } from "#app/shared/ui/DisclosureChevron";
+import { DisclosureChevron } from "#app/shared/ui";
 import { activateOnEnterSpace } from "#workbench/lib/activate-on-enter-space";
 import type { TreeRowLayout } from "#workbench/tree/tree-row-layout";
 import { getTreeRowPaddingLeft } from "#workbench/tree/tree-row-motion";
@@ -9,7 +9,7 @@ const changeGroupCountClass = cn(
   "ml-auto shrink-0 bg-ctp-surface0 px-1 py-px font-mono text-[10px] text-ctp-subtext0",
 );
 const changeGroupRowClass = cn(
-  "cursor-pointer text-xs font-medium text-ctp-text hover:bg-ctp-surface0/50",
+  "cursor-pointer text-xs font-medium text-ctp-text hover:bg-ctp-surface0/55",
 );
 
 export function ChangesDomainRow({

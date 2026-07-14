@@ -70,17 +70,57 @@ Use Bun for local work because the repo is locked with `bun.lock`.
 
 Write TypeScript with 2-space indentation, semicolons, and double quotes, matching the current codebase. Use PascalCase for React components, camelCase for functions and variables, and descriptive RPC service/handle names. Keep renderer code in `src/`, Electron-only code in `electron/`, and prefer small local types over loosely typed objects. Let `oxlint` and `oxfmt` enforce import order and Tailwind class ordering.
 
+### Frontend module conventions (`src/`)
+
+- **Named exports only.** Exception: Vite app entry may use `export default` (`src/app/App.tsx`).
+- **File names:** `ComponentName.tsx`, `use-foo.ts` (hooks), `foo-bar.ts` (utils), `foo-chrome.ts` (shared Tailwind class constants only). Do not mix pure helpers and chrome class constants in the same file.
+- **Props:** declare `type XxxProps = { ... }` next to the component. Do not export the type unless another module needs it. Avoid anonymous inline props objects on exported components.
+- **Import paths:**
+  - `#app/*` — cross-feature / shared renderer code
+  - `#shared/*` — RPC contracts and DTOs
+  - `#workbench/*` — workbench **cross-domain** imports
+  - `./` — same domain folder only
+  - Do **not** use `../../` (or deeper) to reach another workbench domain; switch to `#workbench/...`.
+- **shared/ui:** import public primitives from `#app/shared/ui` (barrel). Feature-local controls stay in their feature folder.
+- **Hooks / state:** keep hooks next to the domain they own (`state/` for providers/molecules, domain root or `hooks/` for action hooks). Do not add re-export-only stub files under parent folders.
+- **Style constants:**
+  - Multi-component / overlay shell styles → `*-chrome.ts`, every string via `cn(...)`
+  - Single-component local reuse → `const fooClass = cn(...)` in that component file, or inline `className`
+  - Shared interaction primitives (focus, hover, list highlight, overlay motion, popover surface) live in `#app/shared/lib/ui/interaction-chrome` — reuse them instead of re-copying the same utilities.
+
 ## Styling & Design Tokens
 
 The renderer uses **Tailwind CSS v4** with theme tokens defined in `src/index.css` under `@theme` (for example `app-*`, `titlebar-*`, `badge-*` colors, spacing, and typography). When designing UI:
 
-- Prefer **existing shared tokens** for app-wide roles (`text-app-foreground`, `bg-window-chrome`, `bg-app-surface`, `h-titlebar`, etc.) over raw hex values.
+- Prefer **existing shared tokens** for app-wide roles (`text-app-foreground`, `bg-window-chrome`, `bg-app-surface`, `h-titlebar`, `text-chat`, `text-chat-meta`, etc.) over raw hex values or one-off arbitrary sizes.
 - Do **not** add a new semantic **color** token unless that role is shared across multiple components or needs centralized theme control. If a color choice is local to one component or one narrow variant, use the underlying palette/theme utility directly instead of inventing a new alias.
 - **Do not add new ad-hoc CSS classes** in stylesheets for layout or appearance; express styling with Tailwind utilities wired to `@theme` tokens.
 - **Exception:** minimal global or component-scoped CSS is allowed only when integrating a **third-party component library** that cannot be styled via tokens/utilities, or for platform hooks (e.g. `-webkit-app-region`) already centralized in `index.css`.
 - Extend `@theme` with new named tokens only when the value represents a reusable semantic role, repeated state, or shared sizing/spacing primitive. Avoid one-to-one wrapper tokens that only rename a Catppuccin color for a single component.
 - **Tailwind class constants must use `cn()`:** Any module-level or local constant whose value is a Tailwind utility string (including a single short string) must be assigned via `cn("...")` or `cn("...", condition && "...")`, not a bare string literal. This lets `oxlint-tailwindcss` statically validate classes (unknown utilities, duplicates, conflicts, sort order, etc.). Inline `className="..."` on JSX is fine; the rule applies to extracted `*Class` / `*Classes` variables and similar reuse.
 - **Trust `bun run lint` for Tailwind after `@theme` / CSS changes:** The editor may show stale Tailwind diagnostics (e.g. “unknown class” for new theme tokens) because IDE Tailwind plugins do not always reload `src/index.css` immediately. Treat **`bun run lint`** (oxlint + `oxlint-tailwindcss`) as the authority; do not “fix” working theme utilities solely to clear editor squiggles.
+
+### Interaction & visual semantics (locked)
+
+Prefer the shared classes from `#app/shared/lib/ui/interaction-chrome` over inventing new variants:
+
+| Role                           | Canonical                                                                            |
+| ------------------------------ | ------------------------------------------------------------------------------------ |
+| Control focus ring             | `controlFocusVisibleClass` — `outline-2` + `badge-background` (not `ring-*` / mauve) |
+| Icon-button hover              | `iconButtonHoverClass` — `hover:bg-ctp-text/8`                                       |
+| List row hover                 | `rowHoverClass` — `hover:bg-ctp-surface0/55`                                         |
+| Panel / secondary hover        | `panelHoverClass` — `hover:bg-ctp-surface0/40`                                       |
+| Combobox / QuickPick highlight | `listRowHighlightClass` — `data-highlighted:bg-ctp-surface0/55`                      |
+| Menu / Select highlight        | `menuItemHighlightClass` — `data-highlighted:bg-ctp-surface0/70`                     |
+| Overlay enter/exit             | `overlayMotionClass` — `duration-220` + `cubic-bezier(0.33,1,0.68,1)`                |
+| Popover surface                | `popoverSurfaceClass` — border + `bg-app-surface` + `rounded-lg`                     |
+
+Additional shape / type scale rules:
+
+- **Radius:** controls `rounded-sm`; panels/cards `rounded-lg`; pills/progress `rounded-full`. Do not mix radii for the same role.
+- **Accent:** chrome emphasis uses `badge-background` / existing semantic tokens. Decorative severity colors (info/warn/error) may stay raw `ctp-*`.
+- **Chat type scale:** body `text-chat`, meta/secondary `text-chat-meta` (theme tokens) — avoid `text-[0.8125rem]` / `text-[0.75rem]` arbitrary values.
+- **Collapsible height motion** may keep the separate ease in `collapsibleHeightMotionClass`; do not use it for overlays.
 
 ## Testing Guidelines
 

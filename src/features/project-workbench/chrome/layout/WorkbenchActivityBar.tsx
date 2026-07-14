@@ -2,7 +2,8 @@ import { memo } from "react";
 import { Link } from "wouter";
 
 import { cn } from "#app/shared/lib/ui/cn";
-import { IconTooltip } from "#app/shared/ui/IconTooltip";
+import { controlFocusVisibleClass } from "#app/shared/lib/ui/interaction-chrome";
+import { IconTooltip } from "#app/shared/ui";
 
 type ActivityItem = {
   id: string;
@@ -14,7 +15,7 @@ const activityButtonClass = cn(
   "flex size-activity-bar shrink-0 items-center justify-center border-0 bg-transparent p-2.5",
   "text-ctp-overlay0 transition-colors duration-150",
   "hover:text-ctp-mauve",
-  "focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-badge-background",
+  controlFocusVisibleClass,
 );
 
 const activityIconClass = cn(

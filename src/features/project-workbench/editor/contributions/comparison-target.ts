@@ -1,8 +1,8 @@
 import { cn } from "#app/shared/lib/ui/cn";
 import type { HistoryTarget } from "#shared/rpc/worktree/index";
 import { isMissingComparisonTargetError } from "#workbench/lib/comparison-errors";
+import { contentTreeIconLayoutClass } from "#workbench/tree/content-tree-icons";
 
-import { contentTreeIconLayoutClass } from "../../tree/content-tree-icons";
 import type { WorkbenchEditorTab, WorkbenchEditorTarget } from "../state/types";
 import type {
   WorkbenchEditorTargetContribution,

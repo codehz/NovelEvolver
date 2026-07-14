@@ -1,6 +1,6 @@
 import { cn } from "#app/shared/lib/ui/cn";
+import { contentFileLeafIconClass } from "#workbench/tree/content-tree-icons";
 
-import { contentFileLeafIconClass } from "../../tree/content-tree-icons";
 import type { WorkbenchEditorTab, WorkbenchEditorTarget } from "../state/types";
 import type { WorkbenchEditorTargetContribution } from "./types";
 

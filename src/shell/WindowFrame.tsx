@@ -12,7 +12,7 @@ import {
 import { TitleBarActionsPortalTarget } from "#app/shared/lib/shell/titlebar-portal";
 import { titleBarTitleAtom } from "#app/shared/lib/shell/titlebar-title";
 import { cn } from "#app/shared/lib/ui/cn";
-import { SlotText } from "#app/shared/ui/SlotText";
+import { SlotText } from "#app/shared/ui";
 import { ContextMenuHost } from "#app/shell/context-menu";
 import { NotificationBellButton, NotificationToastStack } from "#app/shell/notifications";
 import { QuickPickHost } from "#app/shell/quick-pick";

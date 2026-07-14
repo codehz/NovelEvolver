@@ -1,7 +1,15 @@
 import { cn } from "#app/shared/lib/ui/cn";
+import {
+  controlFocusVisibleInsetClass,
+  iconButtonHoverClass,
+  menuItemHighlightClass,
+  menuMotionClass,
+  overlayOpacityMotionClass,
+  panelHoverClass,
+} from "#app/shared/lib/ui/interaction-chrome";
 
 const settingsOverlayTransitionClass = cn(
-  "transition-opacity duration-220 ease-[cubic-bezier(0.33,1,0.68,1)]",
+  overlayOpacityMotionClass,
   "data-ending-style:opacity-0 data-starting-style:opacity-0",
 );
 
@@ -11,7 +19,7 @@ export const settingsBackdropClass = cn(
 );
 
 export const settingsPanelClass = cn(
-  "fixed top-1/2 left-1/2 z-settings flex h-[min(70vh,36rem)] w-settings-dialog -translate-x-1/2 -translate-y-1/2 flex-col overflow-hidden rounded-md border border-titlebar-border bg-app-surface text-sm text-app-foreground shadow-quick-pick outline-none app-region-no-drag",
+  "fixed top-1/2 left-1/2 z-settings flex h-[min(70vh,36rem)] w-settings-dialog -translate-x-1/2 -translate-y-1/2 flex-col overflow-hidden rounded-lg border border-titlebar-border bg-app-surface text-sm text-app-foreground shadow-quick-pick outline-none app-region-no-drag",
   settingsOverlayTransitionClass,
 );
 
@@ -24,7 +32,8 @@ export const settingsTitleClass = cn(
 );
 
 export const settingsIconButtonClass = cn(
-  "inline-flex size-7 shrink-0 items-center justify-center rounded-sm text-app-muted hover:bg-ctp-text/8 hover:text-app-foreground",
+  "inline-flex size-7 shrink-0 items-center justify-center rounded-sm text-app-muted hover:text-app-foreground",
+  iconButtonHoverClass,
 );
 
 export const settingsSearchWrapClass = cn("shrink-0 border-b border-titlebar-border px-4 py-2.5");
@@ -43,7 +52,8 @@ export const settingsSidebarClass = cn(
 
 export const settingsCategoryButtonClass = cn(
   "flex w-full items-center gap-2 px-3 py-1.5 text-left text-xs leading-tight text-app-muted outline-none",
-  "hover:bg-ctp-surface0/40 hover:text-app-foreground",
+  panelHoverClass,
+  "hover:text-app-foreground",
 );
 
 export const settingsCategoryButtonActiveClass = cn(
@@ -60,8 +70,9 @@ export const settingsPlaceholderClass = cn(
 );
 
 export const settingsHeaderActionButtonClass = cn(
-  "inline-flex size-8 shrink-0 items-center justify-center rounded-md border border-titlebar-border bg-app-surface text-app-foreground",
-  "hover:bg-ctp-surface0/40 disabled:opacity-50",
+  "inline-flex size-8 shrink-0 items-center justify-center rounded-sm border border-titlebar-border bg-app-surface text-app-foreground",
+  panelHoverClass,
+  "disabled:opacity-50",
 );
 
 export const settingsPanelSectionClass = cn("flex flex-col gap-3 px-4 py-3");
@@ -132,8 +143,9 @@ export const settingsSelectIconClass = cn("flex shrink-0 items-center text-sm te
 export const settingsSelectPositionerClass = cn("z-settings outline-none");
 
 export const settingsSelectPopupClass = cn(
-  "max-h-[min(16rem,var(--available-height))] min-w-(--anchor-width) origin-(--transform-origin) overflow-hidden rounded-md border border-titlebar-border bg-app-surface text-xs text-app-foreground shadow-quick-pick outline-none app-region-no-drag",
-  "transition-[opacity,scale] duration-120 ease-[cubic-bezier(0.33,1,0.68,1)]",
+  "max-h-[min(16rem,var(--available-height))] min-w-(--anchor-width) origin-(--transform-origin) overflow-hidden rounded-lg border border-titlebar-border bg-app-surface text-xs text-app-foreground shadow-quick-pick outline-none app-region-no-drag",
+  menuMotionClass,
+  "transition-[opacity,scale]",
   "data-starting-style:scale-[0.98] data-starting-style:opacity-0",
   "data-ending-style:scale-[0.98] data-ending-style:opacity-0",
 );
@@ -142,7 +154,8 @@ export const settingsSelectListClass = cn("max-h-[inherit] overflow-y-auto py-1 
 
 export const settingsSelectItemClass = cn(
   "grid cursor-default grid-cols-[1rem_minmax(0,1fr)] items-center gap-2 px-2.5 py-1.5 text-left text-xs leading-tight outline-none select-none",
-  "text-app-foreground data-highlighted:bg-ctp-surface0/70",
+  "text-app-foreground",
+  menuItemHighlightClass,
   "data-disabled:cursor-default data-disabled:text-app-muted",
 );
 
@@ -156,7 +169,7 @@ export const settingsSelectItemTextClass = cn("col-start-2 min-w-0 truncate");
 export const settingsCheckboxClass = cn(
   "mt-0.5 flex size-3.5 shrink-0 items-center justify-center rounded-sm border border-titlebar-border bg-app-surface text-badge-foreground outline-none",
   "data-checked:border-badge-background data-checked:bg-badge-background",
-  "focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-badge-background/70",
+  controlFocusVisibleInsetClass,
   "data-disabled:opacity-50",
 );
 
@@ -180,5 +193,6 @@ export const settingsPrimaryButtonClass = cn(
 
 export const settingsSecondaryButtonClass = cn(
   "inline-flex items-center justify-center gap-1 rounded-sm border border-titlebar-border bg-app-surface px-2.5 py-1.5 text-2xs text-app-foreground",
-  "hover:bg-ctp-surface0/40 disabled:opacity-50",
+  panelHoverClass,
+  "disabled:opacity-50",
 );

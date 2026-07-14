@@ -1,12 +1,16 @@
 import { TitleBarActionsPortalContent } from "#app/shared/lib/shell/titlebar-portal";
 import { cn } from "#app/shared/lib/ui/cn";
-import { IconTooltip } from "#app/shared/ui/IconTooltip";
+import {
+  controlFocusVisibleClass,
+  iconButtonHoverClass,
+} from "#app/shared/lib/ui/interaction-chrome";
+import { IconTooltip } from "#app/shared/ui";
 
 const toggleButtonClass = cn(
   "inline-flex size-7 shrink-0 items-center justify-center rounded-full border-0 bg-transparent p-0",
   "text-titlebar-foreground transition-colors duration-150",
-  "hover:bg-ctp-text/8",
-  "focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-badge-background",
+  iconButtonHoverClass,
+  controlFocusVisibleClass,
 );
 
 export function TitleBarAuxiliaryToggle({

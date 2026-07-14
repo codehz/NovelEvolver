@@ -2,7 +2,7 @@ import type { MouseEventHandler, ReactNode, RefObject } from "react";
 import { useCallback } from "react";
 
 import { cn } from "#app/shared/lib/ui/cn";
-import { DisclosureChevron } from "#app/shared/ui/DisclosureChevron";
+import { DisclosureChevron } from "#app/shared/ui";
 
 import type { TreeResolvedDrop } from "./tree-drag";
 import type { TreeRowLayout } from "./tree-row-layout";

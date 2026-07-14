@@ -5,6 +5,7 @@ import { cn } from "#app/shared/lib/ui/cn";
 /**
  * 展开箭头图标 + 展开时旋转 90° 动画。
  * 自包含 16×16 槽位布局颜色，不依赖外部 slot class。
+ * Motion ease matches collapsibleHeightMotionClass (0.22,1,0.36,1).
  */
 export function DisclosureChevron({ expanded }: { expanded: boolean }): ReactNode {
   return (

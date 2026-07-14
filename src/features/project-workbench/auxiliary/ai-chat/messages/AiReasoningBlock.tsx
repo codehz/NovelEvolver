@@ -1,8 +1,7 @@
 import { Collapsible } from "@base-ui/react/collapsible";
 import { useEffect, useState } from "react";
 
-import { DisclosureChevron } from "#app/shared/ui/DisclosureChevron";
-import { MarkdownStream } from "#app/shared/ui/MarkdownStream";
+import { DisclosureChevron, MarkdownStream } from "#app/shared/ui";
 import type { AiChatReasoningPart } from "#shared/rpc/ai/index";
 
 import {

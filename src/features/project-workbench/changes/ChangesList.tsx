@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { cn } from "#app/shared/lib/ui/cn";
-import { DisclosureChevron } from "#app/shared/ui/DisclosureChevron";
+import { DisclosureChevron } from "#app/shared/ui";
 import type { Change } from "#shared/rpc/worktree/index";
 import { activateOnEnterSpace } from "#workbench/lib/activate-on-enter-space";
 import { contentDomainIconClass, contentFolderIconClass } from "#workbench/tree/content-tree-icons";

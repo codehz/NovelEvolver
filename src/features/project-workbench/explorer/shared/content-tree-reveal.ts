@@ -4,8 +4,7 @@ import {
   type OneShotRequestChannel,
   useOneShotRequestConsumer,
 } from "#app/shared/lib/ui/one-shot-request";
-
-import { queryTreeRowById } from "../../tree/tree-row-dom";
+import { queryTreeRowById } from "#workbench/tree/tree-row-dom";
 
 export function scrollContentTreeRowIntoView(
   listRef: RefObject<HTMLUListElement | null>,

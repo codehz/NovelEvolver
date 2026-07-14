@@ -1,8 +1,8 @@
 import { cn } from "#app/shared/lib/ui/cn";
-
-const sidebarChromeFocusVisibleClass = cn(
-  "focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-badge-background",
-);
+import {
+  controlFocusVisibleClass,
+  iconButtonHoverClass,
+} from "#app/shared/lib/ui/interaction-chrome";
 
 // --- View header (primary / auxiliary top chrome row) ---
 
@@ -13,9 +13,10 @@ export const primarySidebarChromeTitleTextClass = cn(
 
 export const sidebarHeaderActionClass = cn(
   "inline-flex size-6 shrink-0 items-center justify-center rounded border-0 bg-transparent p-0",
-  "text-ctp-mauve hover:bg-ctp-text/8 hover:text-ctp-mauve",
+  "text-ctp-mauve hover:text-ctp-mauve",
   "disabled:pointer-events-none disabled:opacity-40",
-  sidebarChromeFocusVisibleClass,
+  iconButtonHoverClass,
+  controlFocusVisibleClass,
 );
 
 export const sidebarHeaderIconClass = cn(
@@ -28,7 +29,7 @@ export const sidebarHeaderIconClass = cn(
 export const sidebarSectionHeaderButtonClass = cn(
   "flex h-6 min-w-0 flex-1 items-center gap-0.5 bg-app-surface px-0.5 text-left",
   "text-2xs font-semibold tracking-wide uppercase",
-  sidebarChromeFocusVisibleClass,
+  controlFocusVisibleClass,
 );
 
 export const sidebarSectionHeaderChevronClass = cn(

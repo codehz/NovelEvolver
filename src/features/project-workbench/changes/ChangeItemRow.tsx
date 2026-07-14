@@ -1,7 +1,8 @@
 import type { KeyboardEvent, ReactNode } from "react";
 
 import { cn } from "#app/shared/lib/ui/cn";
-import { IconTooltip } from "#app/shared/ui/IconTooltip";
+import { rowHoverClass } from "#app/shared/lib/ui/interaction-chrome";
+import { IconTooltip } from "#app/shared/ui";
 import type { Change } from "#shared/rpc/worktree/index";
 import type { TreeRowLayout } from "#workbench/tree/tree-row-layout";
 import { treeRowDisclosureSpacerClass } from "#workbench/tree/tree-row-motion";
@@ -21,9 +22,7 @@ function changeKindIconClass(kind: Change["kind"]): string {
   );
 }
 
-const changeRowClass = cn(
-  "group cursor-default text-xs text-ctp-subtext1 hover:bg-ctp-surface0/50",
-);
+const changeRowClass = cn("group cursor-default text-xs text-ctp-subtext1", rowHoverClass);
 const changeMetaClass = cn("ml-auto flex shrink-0 items-center gap-1");
 const changeMetaIdleClass = cn(
   "flex shrink-0 items-center gap-1 group-focus-within:hidden group-hover:hidden",

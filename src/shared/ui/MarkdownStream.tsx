@@ -3,7 +3,8 @@ import { useMemo } from "react";
 import { Streamdown, type ControlsConfig, type StreamdownProps } from "streamdown";
 
 import { cn } from "#app/shared/lib/ui/cn";
-import { MarkdownTableCards } from "#app/shared/ui/MarkdownTableCards";
+
+import { MarkdownTableCards } from "./MarkdownTableCards";
 
 const markdownStreamComponents: StreamdownProps["components"] = {
   table: MarkdownTableCards,

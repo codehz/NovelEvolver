@@ -3,8 +3,8 @@ import type {
   ManuscriptTreeNode,
   ManuscriptTreeSnapshot,
 } from "#shared/rpc/worktree/index";
+import { buildSubtreeEndIndexArray, buildTreeRowIndexMap } from "#workbench/tree/tree-row-helpers";
 
-import { buildSubtreeEndIndexArray, buildTreeRowIndexMap } from "../../tree/tree-row-helpers";
 import { flattenManuscriptTree } from "./manuscript-tree";
 import type { ManuscriptEditingState, ManuscriptTreeState } from "./state/types";
 

@@ -1,19 +1,25 @@
 import { cn } from "#app/shared/lib/ui/cn";
+import {
+  listRowHighlightClass,
+  overlayMotionClass,
+  pickerSearchInputClass,
+  popoverSurfaceClass,
+} from "#app/shared/lib/ui/interaction-chrome";
 
 export const quickPickPanelClass = cn(
-  "fixed top-titlebar left-1/2 z-quick-pick m-0 w-quick-pick -translate-x-1/2 overflow-hidden rounded-lg bg-app-surface text-sm text-app-foreground shadow-quick-pick outline-none app-region-no-drag",
-  "transition-[opacity,translate] duration-220 ease-[cubic-bezier(0.33,1,0.68,1)]",
+  "fixed top-titlebar left-1/2 z-quick-pick m-0 w-quick-pick -translate-x-1/2 shadow-quick-pick outline-none",
   "data-starting-style:-translate-y-2 data-starting-style:opacity-0",
   "data-ending-style:-translate-y-2 data-ending-style:opacity-0",
+  overlayMotionClass,
+  popoverSurfaceClass,
+  "text-sm",
 );
 
 export const quickPickPanelContentClass = cn("flex w-full flex-col");
 
 export const quickPickSearchWrapClass = cn("px-2 pt-2 pb-1.5");
 
-export const quickPickSearchInputClass = cn(
-  "w-full rounded-sm border border-badge-background bg-app-background px-2 py-1 text-xs leading-tight text-app-foreground outline-none app-region-no-drag placeholder:text-app-muted",
-);
+export const quickPickSearchInputClass = pickerSearchInputClass;
 
 /** Self-clamped list scrollport (search stays outside). */
 export const quickPickListScrollClass = cn("max-h-80 w-full overflow-x-hidden overflow-y-auto");
@@ -25,7 +31,7 @@ export const quickPickListClass = cn("flex flex-col px-2 pt-0 pb-2 text-xs", "da
 
 export const quickPickRowButtonClass = cn(
   "relative flex w-full cursor-default items-center gap-2 rounded-sm px-2 py-1 text-left text-xs leading-tight outline-none",
-  "data-highlighted:bg-ctp-surface0/55",
+  listRowHighlightClass,
 );
 
 export const quickPickRowEmphasisClass = cn("text-ctp-mauve");

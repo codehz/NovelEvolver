@@ -1,6 +1,6 @@
 import type { KeyboardEvent, RefObject, SubmitEvent } from "react";
 
-import { IconTooltip } from "#app/shared/ui/IconTooltip";
+import { IconTooltip } from "#app/shared/ui";
 
 import { AiChatAgentSelector, AiChatModelSelector, type AiChatSelectorItem } from "../selectors";
 import {

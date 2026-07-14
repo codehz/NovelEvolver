@@ -1,13 +1,16 @@
 import type { RefObject } from "react";
 
 import type { FileChangeStatus, ManuscriptTreeNode } from "#shared/rpc/worktree/index";
+import { manuscriptTreeNodeIconClass } from "#workbench/tree/content-tree-icons";
+import {
+  TreeChangeStatusBadge,
+  treeChangeStatusLabelClass,
+} from "#workbench/tree/tree-change-status";
+import type { TreeResolvedDrop } from "#workbench/tree/tree-drag";
+import type { TreeRowLayout } from "#workbench/tree/tree-row-layout";
+import { TreeRowShell } from "#workbench/tree/TreeRowShell";
+import type { TreeDropResolveInput } from "#workbench/tree/use-tree-row-pointer-drag";
 
-import { manuscriptTreeNodeIconClass } from "../../tree/content-tree-icons";
-import { TreeChangeStatusBadge, treeChangeStatusLabelClass } from "../../tree/tree-change-status";
-import type { TreeResolvedDrop } from "../../tree/tree-drag";
-import type { TreeRowLayout } from "../../tree/tree-row-layout";
-import { TreeRowShell } from "../../tree/TreeRowShell";
-import type { TreeDropResolveInput } from "../../tree/use-tree-row-pointer-drag";
 import type { ManuscriptEditingState, ManuscriptMoveTarget } from "./state/types";
 
 type ManuscriptTreeRowProps = {

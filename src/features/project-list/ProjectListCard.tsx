@@ -1,14 +1,19 @@
 import { projectDisplayName } from "#app/shared/lib/project-display-name";
 import { cn } from "#app/shared/lib/ui/cn";
+import {
+  controlFocusVisibleClass,
+  iconButtonHoverClass,
+} from "#app/shared/lib/ui/interaction-chrome";
 import type { ProjectMetadata } from "#shared/project";
 
 import { formatLastOpened } from "./format-last-opened";
 
 const projectCardActionClass = cn(
-  "inline-flex size-7 shrink-0 items-center justify-center rounded-md border-0 bg-transparent p-0",
+  "inline-flex size-7 shrink-0 items-center justify-center rounded-sm border-0 bg-transparent p-0",
   "text-ctp-subtext0 transition-colors duration-150",
-  "hover:bg-ctp-text/8 hover:text-ctp-red",
-  "focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-badge-background",
+  iconButtonHoverClass,
+  "hover:text-ctp-red",
+  controlFocusVisibleClass,
 );
 
 type ProjectListCardProps = {
