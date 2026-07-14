@@ -8,36 +8,34 @@ import {
 } from "react";
 
 import { cn } from "#app/shared/lib/ui/cn";
+import { controlFocusVisibleClass, rowHoverClass } from "#app/shared/lib/ui/interaction-chrome";
 import { IconTooltip } from "#app/shared/ui";
 import type { AskUserPendingInput } from "#shared/rpc/ai/index";
 
-const composerShellClass = cn(
-  "mx-auto flex w-full max-w-3xl flex-col gap-2 rounded-lg bg-app-background p-2 ring-1 ring-ctp-blue/30",
-);
+import {
+  composerShellClass,
+  composerTextareaClass,
+  sendButtonClass,
+  stopButtonClass,
+  toolCallLabelClass,
+} from "../ui/ai-chat-chrome";
+
 const headerClass = cn("flex items-center gap-1.5 px-1");
-const headerLabelClass = cn("text-2xs font-medium tracking-[0.02em] text-ctp-blue");
-const headerToolNameClass = cn("truncate font-mono text-2xs text-ctp-green");
+const headerToolNameClass = cn("truncate font-mono text-2xs text-ctp-overlay0");
 const questionClass = cn("px-1 text-chat leading-5 text-app-foreground");
-const contextClass = cn("px-1 text-2xs leading-4 text-ctp-subtext1");
-const choicesClass = cn("flex flex-col gap-1.5 px-1");
-const choicesLabelClass = cn("text-2xs font-medium text-ctp-subtext0");
+const contextClass = cn("px-1 text-chat-meta leading-5 text-app-muted");
+const choicesClass = cn("flex flex-col gap-1 px-1");
+const choicesLabelClass = cn("text-2xs font-medium text-ctp-subtext1");
 const choiceButtonClass = cn(
-  "flex flex-col gap-0.5 rounded-sm border border-titlebar-border bg-app-surface px-2.5 py-1.5 text-left hover:bg-window-chrome disabled:cursor-not-allowed disabled:opacity-40",
+  "flex flex-col gap-0.5 rounded-sm px-2 py-1.5 text-left transition-colors outline-none",
+  rowHoverClass,
+  controlFocusVisibleClass,
+  "disabled:cursor-not-allowed disabled:opacity-40",
 );
 const choiceTitleClass = cn("text-chat-meta leading-5 text-app-foreground");
-const choiceDescriptionClass = cn("text-2xs leading-4 text-ctp-subtext1");
-const composerTextareaClass = cn(
-  "field-sizing-content min-h-20 w-full resize-none border-0 bg-transparent p-1 text-chat leading-5 text-app-foreground outline-none placeholder:text-ctp-overlay0",
-  "max-h-[50vh]",
-);
-const sendButtonClass = cn(
-  "inline-flex size-8 shrink-0 items-center justify-center rounded-sm bg-badge-background text-badge-foreground hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40",
-);
-const cancelButtonClass = cn(
-  "inline-flex size-8 shrink-0 items-center justify-center rounded-sm bg-app-surface text-ctp-subtext1 hover:bg-window-chrome hover:text-app-foreground disabled:cursor-not-allowed disabled:opacity-40",
-);
+const choiceDescriptionClass = cn("text-2xs leading-4 text-app-muted");
 const loadingClass = cn(
-  "mx-auto w-full max-w-3xl rounded-lg bg-app-background p-3 text-center text-xs text-ctp-subtext0",
+  "mx-auto w-full max-w-3xl rounded-lg bg-app-background p-3 text-center text-chat-meta text-ctp-subtext0",
 );
 
 /**
@@ -114,7 +112,7 @@ export function AskUserComposer({
   return (
     <form className={composerShellClass} onSubmit={handleSubmit}>
       <div className={headerClass}>
-        <span className={headerLabelClass}>需要你回答</span>
+        <span className={toolCallLabelClass}>需要你回答</span>
         <span className={headerToolNameClass}>{input.toolName}</span>
       </div>
 
@@ -158,11 +156,14 @@ export function AskUserComposer({
         onKeyDown={handleKeyDown}
       />
 
-      <div className="flex justify-end gap-2">
+      <div className="flex min-w-0 items-center justify-end gap-1">
         <IconTooltip label="取消回答" side="top" disabled={inputDisabled}>
           <button
             aria-label="取消回答"
-            className={cancelButtonClass}
+            className={cn(
+              stopButtonClass,
+              "disabled:cursor-not-allowed disabled:text-ctp-overlay0 hover:disabled:bg-transparent",
+            )}
             disabled={inputDisabled}
             type="button"
             onClick={handleCancel}
@@ -177,7 +178,7 @@ export function AskUserComposer({
             disabled={inputDisabled || draft.trim() === ""}
             type="submit"
           >
-            <span aria-hidden="true" className="icon-[codicon--send] text-sm" />
+            <span aria-hidden="true" className="icon-[codicon--newline] text-sm" />
           </button>
         </IconTooltip>
       </div>

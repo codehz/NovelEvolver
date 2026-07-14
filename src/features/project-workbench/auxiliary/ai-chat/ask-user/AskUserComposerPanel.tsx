@@ -49,7 +49,7 @@ export function AskUserComposerPanel({ loading, pendingInputs }: AskUserComposer
   const activeDraft = draftsByKey[activeKeyStr] ?? "";
 
   return (
-    <div className="mx-auto flex w-full max-w-3xl flex-col gap-2">
+    <div className="mx-auto flex w-full max-w-3xl flex-col gap-1">
       <AskUserQuestionTabs
         activeKey={activeKeyStr}
         keys={pendingKeys}
