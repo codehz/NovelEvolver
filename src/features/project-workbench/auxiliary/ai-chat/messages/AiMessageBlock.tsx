@@ -9,6 +9,7 @@ import {
   assistantMessageFooterClass,
   assistantMessageFooterLeadingClass,
   assistantMessageFooterTrailingClass,
+  assistantMessageModelLabelClass,
   reasoningMetaClass,
   userMentionChipClass,
   userMessageBubbleClass,
@@ -181,9 +182,13 @@ export function AiMessageBlock({ message, onRetry, retryLabel = "重新生成" }
             </IconTooltip>
           </div>
         ) : null}
-        <p className={assistantMessageFooterTrailingClass} title={usageMeta}>
-          {modelLabel}
-        </p>
+        <div className={assistantMessageFooterTrailingClass}>
+          <IconTooltip label={usageMeta} side="top">
+            <span tabIndex={0} className={assistantMessageModelLabelClass}>
+              {modelLabel}
+            </span>
+          </IconTooltip>
+        </div>
       </div>
     </article>
   );
