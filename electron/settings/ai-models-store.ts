@@ -11,8 +11,14 @@ import type {
   AiModelsSettingsSnapshot,
   AiProviderConfigPublic,
   AiProviderConfigWrite,
+  AiReasoningLevel,
 } from "#shared/rpc/services/index";
-import { AI_ADAPTER_KINDS, DEFAULT_AI_MODEL_MAX_OUTPUT_TOKENS } from "#shared/rpc/services/index";
+import {
+  AI_ADAPTER_KINDS,
+  AI_REASONING_LEVELS,
+  DEFAULT_AI_MODEL_MAX_OUTPUT_TOKENS,
+  isAiReasoningLevel,
+} from "#shared/rpc/services/index";
 
 const FILE_VERSION = 2 as const;
 
@@ -31,6 +37,8 @@ type StoredModelRecord = {
   model: string;
   maxOutputTokens: number;
   contextLength: number | null;
+  availableReasoningLevels: AiReasoningLevel[];
+  defaultReasoningLevel: AiReasoningLevel | null;
   headers: Record<string, string>;
   extraBody: Record<string, unknown>;
 };
@@ -44,6 +52,8 @@ export type AiModelRuntimeConfig = {
   apiKey: string | null;
   maxOutputTokens: number;
   contextLength: number | null;
+  availableReasoningLevels: AiReasoningLevel[];
+  defaultReasoningLevel: AiReasoningLevel | null;
   headers: Record<string, string>;
   extraBody: Record<string, unknown>;
 };
@@ -87,6 +97,8 @@ function toModelPublic(record: StoredModelRecord): AiModelConfigPublic {
     model: record.model,
     maxOutputTokens: record.maxOutputTokens,
     contextLength: record.contextLength,
+    availableReasoningLevels: [...record.availableReasoningLevels],
+    defaultReasoningLevel: record.defaultReasoningLevel,
     headers: { ...record.headers },
     extraBody: { ...record.extraBody },
   };
@@ -230,6 +242,11 @@ export class AiModelsStore {
 
     const maxOutputTokens = parseMaxOutputTokensFromWrite(input);
     const contextLength = parseContextLengthFromWrite(input);
+    const availableReasoningLevels = parseAvailableReasoningLevelsFromWrite(input);
+    const defaultReasoningLevel = parseDefaultReasoningLevelFromWrite(
+      input,
+      availableReasoningLevels,
+    );
     const headers = parseHeadersFromWrite(input);
     const extraBody = parseExtraBodyFromWrite(input);
 
@@ -247,6 +264,8 @@ export class AiModelsStore {
         model,
         maxOutputTokens,
         contextLength,
+        availableReasoningLevels,
+        defaultReasoningLevel,
         headers,
         extraBody,
       };
@@ -258,6 +277,8 @@ export class AiModelsStore {
         model,
         maxOutputTokens,
         contextLength,
+        availableReasoningLevels,
+        defaultReasoningLevel,
         headers,
         extraBody,
       });
@@ -318,6 +339,8 @@ export class AiModelsStore {
       apiKey,
       maxOutputTokens: record.maxOutputTokens,
       contextLength: record.contextLength,
+      availableReasoningLevels: [...record.availableReasoningLevels],
+      defaultReasoningLevel: record.defaultReasoningLevel,
       headers: { ...record.headers },
       extraBody: { ...record.extraBody },
     };
@@ -360,6 +383,8 @@ export class AiModelsStore {
         model: entry.model,
         maxOutputTokens: entry.maxOutputTokens,
         contextLength: entry.contextLength,
+        availableReasoningLevels: entry.availableReasoningLevels,
+        defaultReasoningLevel: entry.defaultReasoningLevel,
         headers: entry.headers,
         extraBody: entry.extraBody,
       })),
@@ -423,6 +448,9 @@ function normalizeStoredFile(value: unknown): StoredFile {
       continue;
     }
 
+    const availableReasoningLevels = normalizeAvailableReasoningLevels(
+      entry.availableReasoningLevels,
+    );
     models.push({
       id: entry.id,
       providerId: entry.providerId,
@@ -430,6 +458,11 @@ function normalizeStoredFile(value: unknown): StoredFile {
       model: entry.model,
       maxOutputTokens: normalizeMaxOutputTokens(entry.maxOutputTokens),
       contextLength: normalizeContextLength(entry.contextLength),
+      availableReasoningLevels,
+      defaultReasoningLevel: normalizeDefaultReasoningLevel(
+        entry.defaultReasoningLevel,
+        availableReasoningLevels,
+      ),
       headers: normalizeHeaders(entry.headers),
       extraBody: normalizeExtraBody(entry.extraBody),
     });
@@ -490,6 +523,68 @@ function parseContextLengthFromWrite(input: AiModelConfigWrite): number | null {
     throw new Error("上下文长度不能超过 2000000。");
   }
   return normalized;
+}
+
+/**
+ * Missing / invalid → empty (no reasoning UI).
+ * Dedupes and preserves AI_REASONING_LEVELS order.
+ */
+function normalizeAvailableReasoningLevels(value: unknown): AiReasoningLevel[] {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+  const selected = new Set<AiReasoningLevel>();
+  for (const item of value) {
+    if (isAiReasoningLevel(item)) {
+      selected.add(item);
+    }
+  }
+  return AI_REASONING_LEVELS.filter((level) => selected.has(level));
+}
+
+/** Missing / invalid / not in available → null. */
+function normalizeDefaultReasoningLevel(
+  value: unknown,
+  available: readonly AiReasoningLevel[],
+): AiReasoningLevel | null {
+  if (!isAiReasoningLevel(value)) {
+    return null;
+  }
+  return available.includes(value) ? value : null;
+}
+
+function parseAvailableReasoningLevelsFromWrite(input: AiModelConfigWrite): AiReasoningLevel[] {
+  if (input.availableReasoningLevels === undefined) {
+    return [];
+  }
+  if (!Array.isArray(input.availableReasoningLevels)) {
+    throw new Error("可用 reasoning effort 必须是数组。");
+  }
+  for (const item of input.availableReasoningLevels) {
+    if (!isAiReasoningLevel(item)) {
+      throw new Error(`不支持的 reasoning effort：${String(item)}。`);
+    }
+  }
+  return normalizeAvailableReasoningLevels(input.availableReasoningLevels);
+}
+
+function parseDefaultReasoningLevelFromWrite(
+  input: AiModelConfigWrite,
+  available: readonly AiReasoningLevel[],
+): AiReasoningLevel | null {
+  if (input.defaultReasoningLevel === undefined || input.defaultReasoningLevel === null) {
+    return null;
+  }
+  if (!isAiReasoningLevel(input.defaultReasoningLevel)) {
+    throw new Error(`不支持的默认 reasoning effort：${String(input.defaultReasoningLevel)}。`);
+  }
+  if (available.length === 0) {
+    throw new Error("未公开任何 reasoning effort 时不能设置默认值。");
+  }
+  if (!available.includes(input.defaultReasoningLevel)) {
+    throw new Error("默认 reasoning effort 必须属于已公开的可选项。");
+  }
+  return input.defaultReasoningLevel;
 }
 
 function isPlainObject(value: unknown): value is Record<string, unknown> {

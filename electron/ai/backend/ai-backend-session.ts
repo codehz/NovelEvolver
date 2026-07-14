@@ -1,4 +1,4 @@
-import type { AIClient } from "@codehz/ai";
+import type { AIClient, ReasoningLevel } from "@codehz/ai";
 
 import type { AiChatSelectableModelKind } from "#shared/rpc/ai/index";
 
@@ -10,4 +10,9 @@ export type AiBackendSession = {
   scenarioId: string | null;
   /** Omitted for mock backends (no provider limit). */
   maxOutputTokens?: number;
+  /**
+   * Default reasoning effort from model config.
+   * Omitted when unset / mock (request does not send reasoningLevel).
+   */
+  defaultReasoningLevel?: ReasoningLevel;
 };

@@ -436,6 +436,9 @@ export class AiConversationRuntime {
             ...(backend.maxOutputTokens !== undefined
               ? { maxOutputTokens: backend.maxOutputTokens }
               : {}),
+            ...(backend.defaultReasoningLevel !== undefined
+              ? { reasoningLevel: backend.defaultReasoningLevel }
+              : {}),
           }),
           context.assistantMessageId,
         );

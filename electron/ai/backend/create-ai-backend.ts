@@ -107,5 +107,8 @@ function createProviderBackendSession(
     client: createAIClient({ adapter, model: config.model }),
     scenarioId: null,
     maxOutputTokens: config.maxOutputTokens,
+    ...(config.defaultReasoningLevel != null
+      ? { defaultReasoningLevel: config.defaultReasoningLevel }
+      : {}),
   };
 }

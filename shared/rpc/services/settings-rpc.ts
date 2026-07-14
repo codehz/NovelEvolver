@@ -20,6 +20,34 @@ export function isLowMaxOutputTokensForNovelAgent(maxOutputTokens: number): bool
   return maxOutputTokens <= AI_MODEL_MAX_OUTPUT_TOKENS_LOW_THRESHOLD;
 }
 
+/**
+ * Portable reasoning / thinking effort levels (aligned with `@codehz/ai` ReasoningLevel).
+ * Mapped per-adapter to provider wire fields (Responses `reasoning.effort`, etc.).
+ */
+export type AiReasoningLevel = "none" | "minimal" | "low" | "medium" | "high" | "xhigh";
+
+export const AI_REASONING_LEVELS: readonly AiReasoningLevel[] = [
+  "none",
+  "minimal",
+  "low",
+  "medium",
+  "high",
+  "xhigh",
+] as const;
+
+export const AI_REASONING_LEVEL_LABELS: Record<AiReasoningLevel, string> = {
+  none: "关闭",
+  minimal: "极低",
+  low: "低",
+  medium: "中",
+  high: "高",
+  xhigh: "极高",
+};
+
+export function isAiReasoningLevel(value: unknown): value is AiReasoningLevel {
+  return typeof value === "string" && (AI_REASONING_LEVELS as readonly string[]).includes(value);
+}
+
 /** API 供应商（连接与密钥），不含具体模型。 */
 export type AiProviderConfigPublic = {
   id: string;
@@ -58,6 +86,17 @@ export type AiModelConfigPublic = {
    */
   contextLength: number | null;
   /**
+   * Reasoning effort levels exposed for this model (subset of AI_REASONING_LEVELS).
+   * Empty array means the model does not support / expose reasoning effort UI.
+   */
+  availableReasoningLevels: AiReasoningLevel[];
+  /**
+   * Default reasoning effort when the model exposes levels.
+   * `null` means no default (request omits reasoningLevel unless user picks one).
+   * When set, must be a member of `availableReasoningLevels`.
+   */
+  defaultReasoningLevel: AiReasoningLevel | null;
+  /**
    * Extra HTTP headers for the provider adapter (constructor-time).
    * Empty object means not configured.
    */
@@ -77,6 +116,16 @@ export type AiModelConfigWrite = {
   maxOutputTokens: number;
   /** Omit, null, or 0 → not configured. */
   contextLength?: number | null;
+  /**
+   * Full replace of exposed reasoning levels.
+   * Omit or `[]` → no reasoning effort UI / not configured.
+   */
+  availableReasoningLevels?: AiReasoningLevel[];
+  /**
+   * Default among available levels.
+   * Omit / null → no default. Must be in availableReasoningLevels when set.
+   */
+  defaultReasoningLevel?: AiReasoningLevel | null;
   /** Full replace; omit or `{}` → clear / not configured. */
   headers?: Record<string, string>;
   /** Full replace; omit or `{}` → clear / not configured. */

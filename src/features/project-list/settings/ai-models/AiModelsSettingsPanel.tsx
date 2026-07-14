@@ -390,6 +390,17 @@ export function AiModelsSettingsPanel() {
                                   <span>上下文 {model.contextLength}</span>
                                 </>
                               ) : null}
+                              {model.availableReasoningLevels.length > 0 ? (
+                                <>
+                                  <span aria-hidden="true">·</span>
+                                  <span>
+                                    effort{" "}
+                                    {model.defaultReasoningLevel != null
+                                      ? `${model.defaultReasoningLevel} / ${model.availableReasoningLevels.length}`
+                                      : `${model.availableReasoningLevels.length} 档`}
+                                  </span>
+                                </>
+                              ) : null}
                             </div>
                           </div>
 
