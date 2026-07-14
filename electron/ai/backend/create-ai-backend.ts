@@ -56,23 +56,46 @@ function requireApiKey(config: AiModelRuntimeConfig): string {
   throw new Error(`模型“${config.name}”缺少 API Key，请先在设置中配置。`);
 }
 
+function hasEntries(record: Record<string, unknown>): boolean {
+  return Object.keys(record).length > 0;
+}
+
 function createProviderBackendSession(
   config: AiModelRuntimeConfig,
   instructionsOverride: string | null,
 ): AiBackendSession {
   const baseUrl = config.baseUrl || undefined;
+  const headers = hasEntries(config.headers) ? config.headers : undefined;
+  const extraBody = hasEntries(config.extraBody) ? config.extraBody : undefined;
   const adapter = (() => {
     switch (config.kind) {
       case "responses":
-        return new ResponsesAdapter({ apiKey: requireApiKey(config), baseUrl });
+        return new ResponsesAdapter({
+          apiKey: requireApiKey(config),
+          baseUrl,
+          ...(headers ? { headers } : {}),
+          ...(extraBody ? { extraBody } : {}),
+        });
       case "chat-completions":
-        return new ChatCompletionsAdapter({ apiKey: requireApiKey(config), baseUrl });
+        return new ChatCompletionsAdapter({
+          apiKey: requireApiKey(config),
+          baseUrl,
+          ...(headers ? { headers } : {}),
+          ...(extraBody ? { extraBody } : {}),
+        });
       case "messages":
-        return new MessagesAdapter({ apiKey: requireApiKey(config), baseUrl });
+        return new MessagesAdapter({
+          apiKey: requireApiKey(config),
+          baseUrl,
+          ...(headers ? { headers } : {}),
+          ...(extraBody ? { extraBody } : {}),
+        });
       case "ollama":
         return new OllamaAdapter({
           baseUrl,
           ...(config.apiKey ? { apiKey: config.apiKey } : {}),
+          ...(headers ? { headers } : {}),
+          ...(extraBody ? { extraBody } : {}),
         });
     }
   })();

@@ -57,6 +57,16 @@ export type AiModelConfigPublic = {
    * `null` means not configured (do not show context occupancy).
    */
   contextLength: number | null;
+  /**
+   * Extra HTTP headers for the provider adapter (constructor-time).
+   * Empty object means not configured.
+   */
+  headers: Record<string, string>;
+  /**
+   * Extra top-level JSON body fields for the provider adapter (constructor-time).
+   * Empty object means not configured. Shallow-merged; same-name keys may override built-ins.
+   */
+  extraBody: Record<string, unknown>;
 };
 
 export type AiModelConfigWrite = {
@@ -67,6 +77,10 @@ export type AiModelConfigWrite = {
   maxOutputTokens: number;
   /** Omit, null, or 0 → not configured. */
   contextLength?: number | null;
+  /** Full replace; omit or `{}` → clear / not configured. */
+  headers?: Record<string, string>;
+  /** Full replace; omit or `{}` → clear / not configured. */
+  extraBody?: Record<string, unknown>;
 };
 
 export type AiModelsSettingsSnapshot = {

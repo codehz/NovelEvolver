@@ -27,6 +27,7 @@ import {
   settingsInputClass,
   settingsPrimaryButtonClass,
   settingsSecondaryButtonClass,
+  settingsTextareaClass,
 } from "../settings-chrome";
 import { SettingsSelect } from "../SettingsSelect";
 
@@ -37,6 +38,10 @@ type FormState = {
   maxOutputTokens: number | null;
   /** null means not configured. */
   contextLength: number | null;
+  /** Raw JSON text for headers; empty string means not configured. */
+  headersText: string;
+  /** Raw JSON text for extraBody; empty string means not configured. */
+  extraBodyText: string;
 };
 
 type AiModelConfigFormProps = {
@@ -49,6 +54,13 @@ type AiModelConfigFormProps = {
   onSubmit: (input: AiModelConfigWrite) => void | Promise<void>;
 };
 
+function recordToEditorText(value: Record<string, unknown> | undefined | null): string {
+  if (!value || Object.keys(value).length === 0) {
+    return "";
+  }
+  return JSON.stringify(value, null, 2);
+}
+
 function toFormState(
   initial: AiModelConfigPublic | null | undefined,
   defaultProviderId: string,
@@ -59,11 +71,72 @@ function toFormState(
     model: initial?.model ?? "",
     maxOutputTokens: initial?.maxOutputTokens ?? DEFAULT_AI_MODEL_MAX_OUTPUT_TOKENS,
     contextLength: initial?.contextLength ?? null,
+    headersText: recordToEditorText(initial?.headers),
+    extraBodyText: recordToEditorText(initial?.extraBody),
   };
 }
 
 function isPositiveInteger(value: unknown): value is number {
   return typeof value === "number" && Number.isInteger(value) && value >= 1;
+}
+
+function isPlainObject(value: unknown): value is Record<string, unknown> {
+  return value !== null && typeof value === "object" && !Array.isArray(value);
+}
+
+function parseHeadersText(
+  text: string,
+): { ok: true; value: Record<string, string> } | { ok: false; error: string } {
+  const trimmed = text.trim();
+  if (trimmed === "") {
+    return { ok: true, value: {} };
+  }
+
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(trimmed) as unknown;
+  } catch {
+    return { ok: false, error: "headers 不是合法 JSON。" };
+  }
+
+  if (!isPlainObject(parsed)) {
+    return { ok: false, error: "headers 必须是 JSON 对象。" };
+  }
+
+  const value: Record<string, string> = {};
+  for (const [key, entry] of Object.entries(parsed)) {
+    if (typeof key !== "string" || key.trim() === "") {
+      return { ok: false, error: "headers 的键不能为空。" };
+    }
+    if (typeof entry !== "string") {
+      return { ok: false, error: `headers 的值必须是字符串（键：${key}）。` };
+    }
+    value[key] = entry;
+  }
+
+  return { ok: true, value };
+}
+
+function parseExtraBodyText(
+  text: string,
+): { ok: true; value: Record<string, unknown> } | { ok: false; error: string } {
+  const trimmed = text.trim();
+  if (trimmed === "") {
+    return { ok: true, value: {} };
+  }
+
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(trimmed) as unknown;
+  } catch {
+    return { ok: false, error: "extraBody 不是合法 JSON。" };
+  }
+
+  if (!isPlainObject(parsed)) {
+    return { ok: false, error: "extraBody 必须是 JSON 对象。" };
+  }
+
+  return { ok: true, value: { ...parsed } };
 }
 
 const maxOutputTokensWarningClass = cn(
@@ -106,6 +179,15 @@ export function AiModelConfigForm({
           return;
         }
 
+        const headersResult = parseHeadersText(form.headersText);
+        if (!headersResult.ok) {
+          return;
+        }
+        const extraBodyResult = parseExtraBodyText(form.extraBodyText);
+        if (!extraBodyResult.ok) {
+          return;
+        }
+
         const payload: AiModelConfigWrite = {
           ...(isEdit ? { id: initial.id } : {}),
           providerId: form.providerId,
@@ -113,6 +195,8 @@ export function AiModelConfigForm({
           model: form.model,
           maxOutputTokens: form.maxOutputTokens,
           contextLength: form.contextLength,
+          headers: headersResult.value,
+          extraBody: extraBodyResult.value,
         };
 
         void onSubmit(payload);
@@ -237,6 +321,68 @@ export function AiModelConfigForm({
             </NumberField.Root>
             <Field.Description className={settingsFieldDescriptionClass}>
               模型上下文窗口（token）。用于侧边栏显示当前占用占比；留空表示不统计。不会传给 API。
+            </Field.Description>
+            <Field.Error className={settingsFieldErrorClass} />
+          </div>
+        </Field.Root>
+
+        <Field.Root
+          className={settingsFieldRootClass}
+          disabled={busy}
+          name="headersText"
+          validate={(value) => {
+            if (typeof value !== "string") {
+              return null;
+            }
+            const result = parseHeadersText(value);
+            return result.ok ? null : result.error;
+          }}
+        >
+          <Field.Label className={settingsFieldLabelClass}>Headers</Field.Label>
+          <div className={settingsFieldControlCellClass}>
+            <Field.Control
+              className={settingsTextareaClass}
+              placeholder={'可选，例如：\n{\n  "OpenAI-Organization": "org-..."\n}'}
+              render={<textarea rows={4} spellCheck={false} />}
+              value={form.headersText}
+              onValueChange={(next) => {
+                update("headersText", next);
+              }}
+            />
+            <Field.Description className={settingsFieldDescriptionClass}>
+              额外 HTTP 请求头（JSON
+              对象，值必须是字符串）。与内置鉴权头浅合并，同名键后写覆盖。留空表示不配置。
+            </Field.Description>
+            <Field.Error className={settingsFieldErrorClass} />
+          </div>
+        </Field.Root>
+
+        <Field.Root
+          className={settingsFieldRootClass}
+          disabled={busy}
+          name="extraBodyText"
+          validate={(value) => {
+            if (typeof value !== "string") {
+              return null;
+            }
+            const result = parseExtraBodyText(value);
+            return result.ok ? null : result.error;
+          }}
+        >
+          <Field.Label className={settingsFieldLabelClass}>Extra Body</Field.Label>
+          <div className={settingsFieldControlCellClass}>
+            <Field.Control
+              className={settingsTextareaClass}
+              placeholder={'可选，例如：\n{\n  "top_p": 0.9\n}'}
+              render={<textarea rows={4} spellCheck={false} />}
+              value={form.extraBodyText}
+              onValueChange={(next) => {
+                update("extraBodyText", next);
+              }}
+            />
+            <Field.Description className={settingsFieldDescriptionClass}>
+              额外请求 body 顶层字段（JSON 对象）。与适配器构建的 body
+              浅合并，同名键可覆盖内置字段（如 model / max_output_tokens）。留空表示不配置。
             </Field.Description>
             <Field.Error className={settingsFieldErrorClass} />
           </div>

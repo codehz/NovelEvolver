@@ -31,6 +31,8 @@ type StoredModelRecord = {
   model: string;
   maxOutputTokens: number;
   contextLength: number | null;
+  headers: Record<string, string>;
+  extraBody: Record<string, unknown>;
 };
 
 export type AiModelRuntimeConfig = {
@@ -42,7 +44,12 @@ export type AiModelRuntimeConfig = {
   apiKey: string | null;
   maxOutputTokens: number;
   contextLength: number | null;
+  headers: Record<string, string>;
+  extraBody: Record<string, unknown>;
 };
+
+const MAX_PROVIDER_OPTION_KEYS = 64;
+const MAX_PROVIDER_OPTION_JSON_BYTES = 16 * 1024;
 
 type StoredFile = {
   version: typeof FILE_VERSION;
@@ -80,6 +87,8 @@ function toModelPublic(record: StoredModelRecord): AiModelConfigPublic {
     model: record.model,
     maxOutputTokens: record.maxOutputTokens,
     contextLength: record.contextLength,
+    headers: { ...record.headers },
+    extraBody: { ...record.extraBody },
   };
 }
 
@@ -221,6 +230,8 @@ export class AiModelsStore {
 
     const maxOutputTokens = parseMaxOutputTokensFromWrite(input);
     const contextLength = parseContextLengthFromWrite(input);
+    const headers = parseHeadersFromWrite(input);
+    const extraBody = parseExtraBodyFromWrite(input);
 
     if (input.id) {
       const index = this.#data.models.findIndex((entry) => entry.id === input.id);
@@ -236,6 +247,8 @@ export class AiModelsStore {
         model,
         maxOutputTokens,
         contextLength,
+        headers,
+        extraBody,
       };
     } else {
       this.#data.models.push({
@@ -245,6 +258,8 @@ export class AiModelsStore {
         model,
         maxOutputTokens,
         contextLength,
+        headers,
+        extraBody,
       });
     }
 
@@ -303,6 +318,8 @@ export class AiModelsStore {
       apiKey,
       maxOutputTokens: record.maxOutputTokens,
       contextLength: record.contextLength,
+      headers: { ...record.headers },
+      extraBody: { ...record.extraBody },
     };
   }
 
@@ -343,6 +360,8 @@ export class AiModelsStore {
         model: entry.model,
         maxOutputTokens: entry.maxOutputTokens,
         contextLength: entry.contextLength,
+        headers: entry.headers,
+        extraBody: entry.extraBody,
       })),
     };
 
@@ -411,6 +430,8 @@ function normalizeStoredFile(value: unknown): StoredFile {
       model: entry.model,
       maxOutputTokens: normalizeMaxOutputTokens(entry.maxOutputTokens),
       contextLength: normalizeContextLength(entry.contextLength),
+      headers: normalizeHeaders(entry.headers),
+      extraBody: normalizeExtraBody(entry.extraBody),
     });
   }
 
@@ -469,4 +490,98 @@ function parseContextLengthFromWrite(input: AiModelConfigWrite): number | null {
     throw new Error("上下文长度不能超过 2000000。");
   }
   return normalized;
+}
+
+function isPlainObject(value: unknown): value is Record<string, unknown> {
+  return value !== null && typeof value === "object" && !Array.isArray(value);
+}
+
+/** Missing / invalid → empty object (field-level degrade). */
+function normalizeHeaders(value: unknown): Record<string, string> {
+  if (!isPlainObject(value)) {
+    return {};
+  }
+
+  const result: Record<string, string> = {};
+  for (const [key, entry] of Object.entries(value)) {
+    if (typeof key !== "string" || key === "" || typeof entry !== "string") {
+      continue;
+    }
+    result[key] = entry;
+    if (Object.keys(result).length >= MAX_PROVIDER_OPTION_KEYS) {
+      break;
+    }
+  }
+  return result;
+}
+
+/** Missing / invalid → empty object (field-level degrade). */
+function normalizeExtraBody(value: unknown): Record<string, unknown> {
+  if (!isPlainObject(value)) {
+    return {};
+  }
+
+  const result: Record<string, unknown> = {};
+  for (const [key, entry] of Object.entries(value)) {
+    if (typeof key !== "string" || key === "") {
+      continue;
+    }
+    result[key] = entry;
+    if (Object.keys(result).length >= MAX_PROVIDER_OPTION_KEYS) {
+      break;
+    }
+  }
+  return result;
+}
+
+function assertProviderOptionSize(label: string, value: Record<string, unknown>): void {
+  const keys = Object.keys(value);
+  if (keys.length > MAX_PROVIDER_OPTION_KEYS) {
+    throw new Error(`${label} 最多 ${MAX_PROVIDER_OPTION_KEYS} 个字段。`);
+  }
+  let json: string;
+  try {
+    json = JSON.stringify(value);
+  } catch {
+    throw new Error(`${label} 无法序列化为 JSON。`);
+  }
+  if (json.length > MAX_PROVIDER_OPTION_JSON_BYTES) {
+    throw new Error(`${label} 序列化后不能超过 ${MAX_PROVIDER_OPTION_JSON_BYTES} 字节。`);
+  }
+}
+
+function parseHeadersFromWrite(input: AiModelConfigWrite): Record<string, string> {
+  if (input.headers === undefined) {
+    return {};
+  }
+  if (!isPlainObject(input.headers)) {
+    throw new Error("headers 必须是对象。");
+  }
+
+  const result: Record<string, string> = {};
+  for (const [key, value] of Object.entries(input.headers)) {
+    if (typeof key !== "string" || key.trim() === "") {
+      throw new Error("headers 的键不能为空。");
+    }
+    if (typeof value !== "string") {
+      throw new Error(`headers 的值必须是字符串（键：${key}）。`);
+    }
+    result[key] = value;
+  }
+
+  assertProviderOptionSize("headers", result);
+  return result;
+}
+
+function parseExtraBodyFromWrite(input: AiModelConfigWrite): Record<string, unknown> {
+  if (input.extraBody === undefined) {
+    return {};
+  }
+  if (!isPlainObject(input.extraBody)) {
+    throw new Error("extraBody 必须是对象。");
+  }
+
+  const result: Record<string, unknown> = { ...input.extraBody };
+  assertProviderOptionSize("extraBody", result);
+  return result;
 }
