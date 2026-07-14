@@ -1,6 +1,7 @@
 import type { MouseEvent as ReactMouseEvent, RefObject } from "react";
 
 import { cn } from "#app/shared/lib/ui/cn";
+import { RelativeTime } from "#app/shared/ui";
 import type { AiConversationSummary } from "#shared/rpc/ai/index";
 
 import { SELECTOR_OPTION_INDEX_ATTR } from "../selectors/use-selector-list-navigation";
@@ -15,7 +16,6 @@ import {
   historyRowMetaClass,
   historyRowMutedClass,
 } from "./ai-chat-history-chrome";
-import { formatAbsoluteActivityTime, formatRelativeActivityTime } from "./format-relative-time";
 import { conversationBadges, conversationTitle } from "./history-list-model";
 
 type AiChatHistoryRowProps = {
@@ -52,8 +52,6 @@ export function AiChatHistoryRow({
   onCancelRename,
 }: AiChatHistoryRowProps) {
   const badges = conversationBadges(conversation);
-  const relativeTime = formatRelativeActivityTime(conversation.updatedAt);
-  const absoluteTime = formatAbsoluteActivityTime(conversation.updatedAt);
 
   return (
     <li
@@ -119,9 +117,10 @@ export function AiChatHistoryRow({
                 {snippet}
               </span>
             ) : (
-              <span className={historyRowDetailClass} title={absoluteTime}>
-                {relativeTime}
-              </span>
+              <RelativeTime
+                timestampMs={conversation.updatedAt}
+                className={historyRowDetailClass}
+              />
             )}
           </span>
         </button>
