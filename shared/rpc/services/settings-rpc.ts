@@ -24,7 +24,7 @@ export function isLowMaxOutputTokensForNovelAgent(maxOutputTokens: number): bool
  * Portable reasoning / thinking effort levels (aligned with `@codehz/ai` ReasoningLevel).
  * Mapped per-adapter to provider wire fields (Responses `reasoning.effort`, etc.).
  */
-export type AiReasoningLevel = "none" | "minimal" | "low" | "medium" | "high" | "xhigh";
+export type AiReasoningLevel = "none" | "minimal" | "low" | "medium" | "high" | "xhigh" | "max";
 
 export const AI_REASONING_LEVELS: readonly AiReasoningLevel[] = [
   "none",
@@ -42,6 +42,7 @@ export const AI_REASONING_LEVEL_LABELS: Record<AiReasoningLevel, string> = {
   medium: "中",
   high: "高",
   xhigh: "极高",
+  max: "最大",
 };
 
 export function isAiReasoningLevel(value: unknown): value is AiReasoningLevel {
