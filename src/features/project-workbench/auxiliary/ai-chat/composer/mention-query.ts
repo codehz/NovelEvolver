@@ -1,8 +1,10 @@
 import type { EditorState } from "@codemirror/state";
+import type { DecorationSet } from "@codemirror/view";
 
 import type { AiChatMentionRef } from "#shared/rpc/ai/index";
 
 import { mentionChipsField } from "./mention-chip-extension";
+import { promptChipsField } from "./prompt-chip-extension";
 
 /** Active `@query` token under the primary caret (collapsed selection only). */
 export type MentionQuery = {
@@ -28,17 +30,51 @@ function isMentionBoundary(char: string | undefined): boolean {
   return /[\s([{（【「『"'`，。、；：！？,.!?;:]/.test(char);
 }
 
+function chipEndsAt(deco: DecorationSet | undefined, pos: number): boolean {
+  if (!deco || deco.size === 0) {
+    return false;
+  }
+  const iter = deco.iter();
+  while (iter.value) {
+    if (iter.to === pos) {
+      return true;
+    }
+    iter.next();
+  }
+  return false;
+}
+
+/**
+ * Slash/mention chips are atomic widgets whose underlying doc text is still
+ * `/slug` or `@path`. Typing `@` immediately after a chip looks like a new
+ * token to the user, but the raw char before `@` is a letter — treat chip end
+ * as a boundary so `/expand@…` opens mention without requiring a space.
+ */
+function isAfterComposerChip(state: EditorState, pos: number): boolean {
+  return (
+    chipEndsAt(state.field(promptChipsField, false), pos) ||
+    chipEndsAt(state.field(mentionChipsField, false), pos)
+  );
+}
+
+/**
+ * Half-open overlap `[from, to)` ∩ `[chip.from, chip.to)`.
+ * Touching only at a chip's end (`from === chip.to`) is **not** an overlap, so
+ * `@` typed immediately after a mention chip can open a new query.
+ */
 function rangeOverlapsMentionChip(state: EditorState, from: number, to: number): boolean {
   const chips = state.field(mentionChipsField, false);
   if (!chips || chips.size === 0) {
     return false;
   }
-  let overlaps = false;
-  chips.between(from, to, () => {
-    overlaps = true;
-    return false;
-  });
-  return overlaps;
+  const iter = chips.iter();
+  while (iter.value) {
+    if (iter.from < to && iter.to > from) {
+      return true;
+    }
+    iter.next();
+  }
+  return false;
 }
 
 /**
@@ -46,7 +82,8 @@ function rangeOverlapsMentionChip(state: EditorState, from: number, to: number):
  *
  * Rules:
  * - collapsed selection only
- * - `@` preceded by start-of-doc or a boundary char (not email-like mid-word)
+ * - `@` preceded by start-of-doc, a boundary char, or the end of a composer chip
+ *   (not email-like mid-word)
  * - query is continuous non-space mention chars
  * - ignored when caret sits inside an existing mention chip atomic range
  */
@@ -84,7 +121,7 @@ export function detectMentionQuery(state: EditorState): MentionQuery | null {
 
   const from = index - 1;
   const before = from === 0 ? undefined : state.doc.sliceString(from - 1, from);
-  if (!isMentionBoundary(before)) {
+  if (!isMentionBoundary(before) && !isAfterComposerChip(state, from)) {
     return null;
   }
 

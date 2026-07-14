@@ -13,6 +13,11 @@ import {
   filterMentionItems,
   type MentionCatalogItem,
 } from "./mention-query";
+import {
+  addPromptChipEffect,
+  promptChipExtension,
+  type PromptChipData,
+} from "./prompt-chip-extension";
 
 function stateWithDoc(doc: string, cursor = doc.length): EditorState {
   return EditorState.create({
@@ -97,6 +102,80 @@ describe("detectMentionQuery", () => {
     }).state;
     expect(detectMentionQuery(withChip)).toEqual({
       from: token.length + 1,
+      to: doc.length,
+      query: "",
+    });
+  });
+
+  test("allows @ immediately after a slash prompt chip (no space)", () => {
+    const data: PromptChipData = {
+      promptId: "p1",
+      slug: "expand",
+      title: "扩写",
+      body: "body",
+    };
+    const marker = "/expand";
+    const doc = `${marker}@`;
+    const base = EditorState.create({
+      doc,
+      extensions: [...promptChipExtension(), ...mentionChipExtension()],
+      selection: { anchor: doc.length },
+    });
+    const withChip = base.update({
+      effects: addPromptChipEffect.of({ from: 0, to: marker.length, data }),
+    }).state;
+    expect(detectMentionQuery(withChip)).toEqual({
+      from: marker.length,
+      to: doc.length,
+      query: "",
+    });
+  });
+
+  test("allows @query immediately after a slash prompt chip", () => {
+    const data: PromptChipData = {
+      promptId: "p1",
+      slug: "expand",
+      title: "扩写",
+      body: "body",
+    };
+    const marker = "/expand";
+    const doc = `${marker}@第三`;
+    const base = EditorState.create({
+      doc,
+      extensions: [...promptChipExtension(), ...mentionChipExtension()],
+      selection: { anchor: doc.length },
+    });
+    const withChip = base.update({
+      effects: addPromptChipEffect.of({ from: 0, to: marker.length, data }),
+    }).state;
+    expect(detectMentionQuery(withChip)).toEqual({
+      from: marker.length,
+      to: doc.length,
+      query: "第三",
+    });
+  });
+
+  test("allows @ immediately after a mention chip without space", () => {
+    const data: MentionChipData = {
+      domain: "manuscript",
+      id: "ch-3",
+      kind: "chapter",
+      label: "第三章",
+      displayPath: "卷一/第三章",
+      token: "@卷一/第三章",
+    };
+    const token = data.token;
+    const doc = `${token}@`;
+    const base = EditorState.create({
+      doc,
+      extensions: mentionChipExtension(),
+      selection: { anchor: doc.length },
+    });
+    const withChip = base.update({
+      effects: addMentionChipEffect.of({ from: 0, to: token.length, data }),
+    }).state;
+    expect(detectMentionQuery(withChip)).toEqual({
+      from: token.length,
       to: doc.length,
       query: "",
     });
