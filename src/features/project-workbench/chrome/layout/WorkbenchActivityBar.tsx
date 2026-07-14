@@ -14,7 +14,7 @@ type ActivityItem = {
 const activityButtonClass = cn(
   "flex size-activity-bar shrink-0 items-center justify-center border-0 bg-transparent p-2.5",
   "text-ctp-overlay0 transition-colors duration-150",
-  "hover:text-ctp-mauve",
+  "hover:bg-transparent hover:text-ctp-mauve",
   controlFocusVisibleClass,
 );
 
