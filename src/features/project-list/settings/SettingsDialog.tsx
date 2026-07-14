@@ -5,6 +5,7 @@ import { cn } from "#app/shared/lib/ui/cn";
 
 import { AiAgentsSettingsPanel } from "./ai-agents/AiAgentsSettingsPanel";
 import { AiModelsSettingsPanel } from "./ai-models/AiModelsSettingsPanel";
+import { AiPromptsSettingsPanel } from "./ai-prompts/AiPromptsSettingsPanel";
 import {
   settingsBackdropClass,
   settingsBodyClass,
@@ -21,6 +22,7 @@ import {
 const SETTINGS_CATEGORIES = [
   { id: "ai-models", label: "AI 模型" },
   { id: "ai-agents", label: "AI Agent" },
+  { id: "ai-prompts", label: "AI 提示词" },
 ] as const;
 
 type SettingsCategoryId = (typeof SETTINGS_CATEGORIES)[number]["id"];
@@ -96,7 +98,13 @@ function SettingsDialogChrome({
 
       <div className={settingsBodyClass}>
         <div className={settingsContentClass} role="tabpanel">
-          {activeCategoryId === "ai-models" ? <AiModelsSettingsPanel /> : <AiAgentsSettingsPanel />}
+          {activeCategoryId === "ai-models" ? (
+            <AiModelsSettingsPanel />
+          ) : activeCategoryId === "ai-agents" ? (
+            <AiAgentsSettingsPanel />
+          ) : (
+            <AiPromptsSettingsPanel />
+          )}
         </div>
       </div>
     </>

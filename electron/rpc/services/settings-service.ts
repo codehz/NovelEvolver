@@ -5,6 +5,8 @@ import type {
   AiAgentsSettingsSnapshot,
   AiModelConfigWrite,
   AiModelsSettingsSnapshot,
+  AiPromptConfigWrite,
+  AiPromptsSettingsSnapshot,
   AiProviderConfigWrite,
   SettingsService,
 } from "#shared/rpc/services/index";
@@ -53,5 +55,17 @@ export class SettingsServiceImpl extends RpcTarget implements SettingsService {
 
   removeAiAgent(id: string): AiAgentsSettingsSnapshot {
     return this.#deps.getAiAgentsStore().remove(id);
+  }
+
+  getAiPrompts(): AiPromptsSettingsSnapshot {
+    return this.#deps.getAiPromptsStore().getSnapshot();
+  }
+
+  upsertAiPrompt(input: AiPromptConfigWrite): AiPromptsSettingsSnapshot {
+    return this.#deps.getAiPromptsStore().upsert(input);
+  }
+
+  removeAiPrompt(id: string): AiPromptsSettingsSnapshot {
+    return this.#deps.getAiPromptsStore().remove(id);
   }
 }

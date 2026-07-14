@@ -6,6 +6,7 @@ import { AppDatabase } from "./db/app-database";
 import { ElectronRpcServer } from "./rpc/server/connect";
 import { AiAgentsStore } from "./settings/ai-agents-store";
 import { AiModelsStore } from "./settings/ai-models-store";
+import { AiPromptsStore } from "./settings/ai-prompts-store";
 
 app.commandLine.appendSwitch("enable-features", "OverlayScrollbar");
 
@@ -14,6 +15,7 @@ const isDev = !app.isPackaged;
 let appDb: AppDatabase | null = null;
 let aiModelsStore: AiModelsStore | null = null;
 let aiAgentsStore: AiAgentsStore | null = null;
+let aiPromptsStore: AiPromptsStore | null = null;
 let rpcServer: ElectronRpcServer | null = null;
 
 function getAppDb(): AppDatabase {
@@ -37,6 +39,13 @@ function getAiAgentsStore(): AiAgentsStore {
     throw new Error("AI agents store is not initialized.");
   }
   return aiAgentsStore;
+}
+
+function getAiPromptsStore(): AiPromptsStore {
+  if (!aiPromptsStore) {
+    throw new Error("AI prompts store is not initialized.");
+  }
+  return aiPromptsStore;
 }
 
 function createWindow() {
@@ -69,10 +78,12 @@ void app.whenReady().then(() => {
   appDb = new AppDatabase(join(userData, "app-state.db"));
   aiModelsStore = new AiModelsStore(join(userData, "ai-settings.json"));
   aiAgentsStore = new AiAgentsStore(join(userData, "ai-agents.json"), getAiModelsStore);
+  aiPromptsStore = new AiPromptsStore(join(userData, "ai-prompts.json"));
   rpcServer = new ElectronRpcServer({
     getAppDb,
     getAiModelsStore,
     getAiAgentsStore,
+    getAiPromptsStore,
     mockAiEnabled: process.env.NOVEL_EVOLVER_MOCK_AI === "1",
     getWindowState: (window) => ({
       isFocused: window.isFocused(),
@@ -102,5 +113,6 @@ app.on("will-quit", () => {
   appDb = null;
   aiModelsStore = null;
   aiAgentsStore = null;
+  aiPromptsStore = null;
   rpcServer = null;
 });

@@ -170,6 +170,41 @@ export type AiAgentsSettingsSnapshot = {
   tools: AiAgentTool[];
 };
 
+/**
+ * User-defined reusable prompt template.
+ * Invoked later from the AI chat composer via `/{slug}` (composer wiring is out of scope here).
+ */
+export type AiPromptConfigPublic = {
+  id: string;
+  /** Human-readable title shown in settings list. */
+  title: string;
+  /**
+   * Slash-command name without leading `/`.
+   * Must match `^[a-z][a-z0-9_-]*$` and be unique among prompts.
+   */
+  slug: string;
+  /** Prompt body inserted / sent when the slash command is used. */
+  prompt: string;
+};
+
+export type AiPromptConfigWrite = {
+  id?: string;
+  title: string;
+  slug: string;
+  prompt: string;
+};
+
+export type AiPromptsSettingsSnapshot = {
+  prompts: AiPromptConfigPublic[];
+};
+
+/** ASCII identifier for prompt slash commands (no leading `/`). */
+export const AI_PROMPT_SLUG_PATTERN = /^[a-z][a-z0-9_-]*$/;
+
+export function isAiPromptSlug(value: unknown): value is string {
+  return typeof value === "string" && AI_PROMPT_SLUG_PATTERN.test(value);
+}
+
 export interface SettingsService extends RpcTarget {
   getAiModels(): AiModelsSettingsSnapshot;
   upsertAiProvider(input: AiProviderConfigWrite): AiModelsSettingsSnapshot;
@@ -180,4 +215,7 @@ export interface SettingsService extends RpcTarget {
   getAiAgents(): AiAgentsSettingsSnapshot;
   upsertAiAgent(input: AiAgentConfigWrite): AiAgentsSettingsSnapshot;
   removeAiAgent(id: string): AiAgentsSettingsSnapshot;
+  getAiPrompts(): AiPromptsSettingsSnapshot;
+  upsertAiPrompt(input: AiPromptConfigWrite): AiPromptsSettingsSnapshot;
+  removeAiPrompt(id: string): AiPromptsSettingsSnapshot;
 }
