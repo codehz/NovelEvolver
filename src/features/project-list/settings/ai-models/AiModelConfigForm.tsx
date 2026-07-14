@@ -385,7 +385,7 @@ export function AiModelConfigForm({
               }}
             />
             <Field.Description className={settingsFieldDescriptionClass}>
-              点选公开档位，星标设默认。至少选一时必有默认；全部取消表示不暴露该选项。
+              点选公开档位；悬停已选项可切换默认。至少选一时必有默认；全部取消表示不暴露该选项。
             </Field.Description>
           </div>
         </Field.Root>

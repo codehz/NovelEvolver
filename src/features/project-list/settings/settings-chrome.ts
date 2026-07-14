@@ -237,12 +237,16 @@ export const settingsCheckboxLabelClass = cn(
 /** Horizontal wrap list for multi-select pill chips (e.g. reasoning levels). */
 export const settingsChipListClass = cn("flex flex-wrap gap-1.5");
 
-/** Visual shell for a pill chip (contains body + optional star). */
+/** ToggleGroup item shell for a reasoning-level pill. */
 export const settingsChipClass = cn(
-  "inline-flex h-7 shrink-0 items-center rounded-full border border-titlebar-border bg-app-surface text-2xs leading-none text-app-muted select-none",
+  "inline-flex h-7 shrink-0 items-center gap-1 rounded-full border border-titlebar-border bg-app-surface px-2.5 text-2xs leading-none text-app-muted outline-none select-none",
+  "hover:not-disabled:text-app-foreground",
+  "data-pressed:border-badge-background/40 data-pressed:bg-ctp-surface0/55 data-pressed:text-app-foreground",
+  controlFocusVisibleInsetClass,
+  "disabled:cursor-default",
 );
 
-/** Selected (available) pill chip shell. */
+/** Selected (available) pill — kept for explicit default/selected class composition. */
 export const settingsChipSelectedClass = cn(
   "border-badge-background/40 bg-ctp-surface0/55 text-app-foreground",
 );
@@ -252,32 +256,24 @@ export const settingsChipDefaultClass = cn(
   "border-badge-background/55 bg-badge-background/15 text-badge-background",
 );
 
-/** Main toggle control inside a chip shell. */
-export const settingsChipBodyButtonClass = cn(
-  "inline-flex h-7 items-center gap-1 rounded-full px-2.5 outline-none",
-  "hover:not-disabled:text-app-foreground",
+/** Hover popover positioner for chip secondary actions. */
+export const settingsChipPopoverPositionerClass = cn("z-settings outline-none");
+
+/** Compact hover popover surface for “set default” control. */
+export const settingsChipPopoverPanelClass = cn(
+  "origin-(--transform-origin) rounded-md border border-titlebar-border bg-app-surface p-1 shadow-context-menu outline-none app-region-no-drag",
+  "transition-[opacity,transform] duration-100 ease-out",
+  "data-starting-style:scale-[0.98] data-starting-style:opacity-0",
+  "data-ending-style:scale-[0.98] data-ending-style:opacity-0",
+);
+
+/** “设为默认” control inside the chip hover popover (plain button, not Toggle). */
+export const settingsChipDefaultButtonClass = cn(
+  "inline-flex h-7 items-center gap-1.5 rounded-sm px-2 text-2xs leading-none text-app-foreground outline-none select-none",
+  "hover:not-disabled:bg-ctp-surface0/55",
   controlFocusVisibleInsetClass,
-  "disabled:cursor-default",
+  "disabled:cursor-default disabled:opacity-80",
 );
-
-/**
- * Star slot always reserved so selecting a chip does not shift layout.
- * Hosts either the interactive star button or an empty spacer.
- */
-export const settingsChipStarSlotClass = cn(
-  "mr-1.5 inline-flex size-4 shrink-0 items-center justify-center",
-);
-
-/** Nested star control inside a selected chip. */
-export const settingsChipStarButtonClass = cn(
-  "inline-flex size-4 shrink-0 items-center justify-center rounded-full text-[10px] leading-none outline-none",
-  "text-app-muted hover:not-disabled:text-badge-background",
-  controlFocusVisibleInsetClass,
-  "disabled:cursor-default",
-);
-
-/** Active default star (filled). */
-export const settingsChipStarActiveClass = cn("text-badge-background");
 
 export const settingsFormActionsClass = cn("flex items-center justify-end gap-2");
 
