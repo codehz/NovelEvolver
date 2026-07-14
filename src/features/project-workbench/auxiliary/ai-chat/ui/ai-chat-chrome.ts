@@ -36,7 +36,10 @@ export const assistantMessageBodyClass = cn(
   "**:data-[streamdown='heading-1']:text-ctp-mauve **:data-[streamdown='heading-2']:text-ctp-mauve **:data-[streamdown='heading-3']:text-ctp-mauve",
   "**:data-[streamdown='inline-code']:text-ctp-green",
 );
-export const reasoningPanelClass = cn("flex flex-col gap-1");
+// No gap on Collapsible.Root — flex gap stays after panel height hits 0 until
+// unmount, causing a 1-step jump at the end of the collapse animation. Spacing
+// lives on the body (inside the measured panel) instead.
+export const reasoningPanelClass = cn("flex flex-col");
 export const reasoningToggleClass = cn(
   "flex w-full items-center gap-1.5 text-left text-2xs text-ctp-subtext1 outline-none",
   controlFocusVisibleClass,
@@ -53,7 +56,7 @@ export const collapsiblePanelClass = cn(
   "[&[hidden]:not([hidden='until-found'])]:hidden",
 );
 export const reasoningBodyClass = cn(
-  "text-chat-meta leading-5 text-app-muted",
+  "pt-1 text-chat-meta leading-5 text-app-muted",
   "[&_code]:rounded-sm [&_code]:bg-app-background [&_code]:px-1.5 [&_code]:py-0.5 [&_code]:font-mono",
   "**:data-[streamdown='blockquote']:border-ctp-blue/30 **:data-[streamdown='blockquote']:text-ctp-subtext0",
   "**:data-[streamdown='code-block']:border-titlebar-border **:data-[streamdown='code-block']:bg-app-surface/80",
@@ -111,7 +114,8 @@ export const agentSelectorButtonClass = cn(
   "disabled:cursor-not-allowed disabled:opacity-40",
 );
 export const modelSelectorLabelClass = cn("min-w-0 truncate");
-export const toolCallPanelClass = cn("flex flex-col gap-1");
+// Same as reasoningPanelClass: no root gap — keep spacing inside the panel body.
+export const toolCallPanelClass = cn("flex flex-col");
 export const toolCallToggleClass = cn(
   "grid w-full grid-cols-[auto_auto_minmax(0,1fr)_auto] items-center gap-1.5 text-left text-2xs text-ctp-subtext1 outline-none",
   controlFocusVisibleClass,
@@ -121,7 +125,9 @@ export const toolCallLabelClass = cn(
   "font-medium tracking-[0.02em] whitespace-nowrap text-ctp-blue",
 );
 export const toolCallStatusClass = cn("text-2xs whitespace-nowrap text-ctp-overlay0");
-export const toolCallBodyClass = cn("flex flex-col gap-2 text-chat-meta leading-5 text-app-muted");
+export const toolCallBodyClass = cn(
+  "flex flex-col gap-2 pt-1 text-chat-meta leading-5 text-app-muted",
+);
 export const toolCallQuestionClass = cn("text-chat-meta leading-5 text-app-foreground");
 export const warningBannerClass = cn(
   "rounded-sm border border-ctp-yellow/40 bg-ctp-yellow/10 px-3 py-2 text-xs break-all whitespace-pre-wrap text-ctp-yellow select-text",
