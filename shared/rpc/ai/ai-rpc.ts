@@ -200,8 +200,8 @@ export type AiConversationSummary = {
   id: string;
   title: string;
   createdAt: number;
+  /** Content/state change time; used for sidebar ordering and time groups. */
   updatedAt: number;
-  lastActiveAt: number;
   activity: AiConversationActivity;
   persisted: boolean;
   scenarioId: string | null;

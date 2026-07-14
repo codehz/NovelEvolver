@@ -24,20 +24,20 @@ function startOfLocalDay(timestampMs: number): number {
 }
 
 export function resolveConversationTimeGroupId(
-  lastActiveAt: number,
+  updatedAt: number,
   nowMs = Date.now(),
 ): ConversationTimeGroupId {
   const todayStart = startOfLocalDay(nowMs);
   const yesterdayStart = todayStart - 24 * 60 * 60 * 1000;
   const last7Start = todayStart - 6 * 24 * 60 * 60 * 1000;
 
-  if (lastActiveAt >= todayStart) {
+  if (updatedAt >= todayStart) {
     return "today";
   }
-  if (lastActiveAt >= yesterdayStart) {
+  if (updatedAt >= yesterdayStart) {
     return "yesterday";
   }
-  if (lastActiveAt >= last7Start) {
+  if (updatedAt >= last7Start) {
     return "last7days";
   }
   return "earlier";
@@ -53,7 +53,7 @@ export function groupConversationsByActivity(
   }
 
   for (const conversation of conversations) {
-    const groupId = resolveConversationTimeGroupId(conversation.lastActiveAt, nowMs);
+    const groupId = resolveConversationTimeGroupId(conversation.updatedAt, nowMs);
     buckets.get(groupId)!.push(conversation);
   }
 

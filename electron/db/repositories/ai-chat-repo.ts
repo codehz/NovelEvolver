@@ -12,7 +12,6 @@ export type AiConversationSummaryRecord = {
   status: AiConversationStatus;
   createdAt: number;
   updatedAt: number;
-  lastActiveAt: number;
   adapterKind: string;
   model: string;
   selectedModelId: string;
@@ -42,7 +41,6 @@ type AiConversationSummaryRow = {
   status: string;
   created_at: number;
   updated_at: number;
-  last_active_at: number;
   adapter_kind: string;
   model: string;
   selected_model_id: string | null;
@@ -63,7 +61,7 @@ type AiConversationSearchRow = AiConversationSummaryRow & {
 };
 
 const SUMMARY_COLUMNS = `
-  id, project_id, title, title_customized, status, created_at, updated_at, last_active_at,
+  id, project_id, title, title_customized, status, created_at, updated_at,
   adapter_kind, model, selected_model_id, selected_agent_id, scenario_id, pending_tool_batch_json
 `;
 
@@ -88,7 +86,6 @@ function rowToSummary(row: AiConversationSummaryRow): AiConversationSummaryRecor
     status: toStatus(row.status),
     createdAt: row.created_at,
     updatedAt: row.updated_at,
-    lastActiveAt: row.last_active_at,
     adapterKind: row.adapter_kind,
     model: row.model,
     selectedModelId: row.selected_model_id ?? "",
@@ -109,7 +106,6 @@ function rowToRecord(row: AiConversationRow): AiConversationRecord {
     status: summary.status,
     createdAt: summary.createdAt,
     updatedAt: summary.updatedAt,
-    lastActiveAt: summary.lastActiveAt,
     adapterKind: summary.adapterKind,
     model: summary.model,
     selectedModelId: summary.selectedModelId,
@@ -164,7 +160,7 @@ export class AiChatRepository {
         SELECT ${SUMMARY_COLUMNS}
         FROM ai_conversation
         WHERE project_id = ?${statusClause}
-        ORDER BY last_active_at DESC
+        ORDER BY updated_at DESC
         `,
       )
       .all(...params) as AiConversationSummaryRow[];
@@ -180,7 +176,7 @@ export class AiChatRepository {
         SELECT ${FULL_COLUMNS}
         FROM ai_conversation
         WHERE project_id = ? AND status = 'active'
-        ORDER BY last_active_at DESC
+        ORDER BY updated_at DESC
         `,
       )
       .all(projectId) as AiConversationRow[];
@@ -209,7 +205,7 @@ export class AiChatRepository {
         FROM ai_conversation
         WHERE project_id = ?${statusClause}
           AND (title LIKE ? ESCAPE '\\' OR messages_json LIKE ? ESCAPE '\\')
-        ORDER BY last_active_at DESC
+        ORDER BY updated_at DESC
         `,
       )
       .all(...params) as AiConversationSearchRow[];
@@ -227,7 +223,7 @@ export class AiChatRepository {
         SELECT ${FULL_COLUMNS}
         FROM ai_conversation
         WHERE project_id = ? AND status = 'active'
-        ORDER BY last_active_at DESC
+        ORDER BY updated_at DESC
         LIMIT 1
         `,
       )
@@ -251,6 +247,7 @@ export class AiChatRepository {
   }
 
   upsert(record: AiConversationRecord): void {
+    // last_active_at is retained as a legacy NOT NULL column; mirror updated_at.
     this.#db
       .prepare(
         `
@@ -285,7 +282,7 @@ export class AiChatRepository {
         record.status,
         record.createdAt,
         record.updatedAt,
-        record.lastActiveAt,
+        record.updatedAt,
         record.adapterKind,
         record.model,
         record.selectedModelId,

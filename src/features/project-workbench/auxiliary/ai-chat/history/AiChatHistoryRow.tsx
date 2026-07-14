@@ -52,8 +52,8 @@ export function AiChatHistoryRow({
   onCancelRename,
 }: AiChatHistoryRowProps) {
   const badges = conversationBadges(conversation);
-  const relativeTime = formatRelativeActivityTime(conversation.lastActiveAt);
-  const absoluteTime = formatAbsoluteActivityTime(conversation.lastActiveAt);
+  const relativeTime = formatRelativeActivityTime(conversation.updatedAt);
+  const absoluteTime = formatAbsoluteActivityTime(conversation.updatedAt);
 
   return (
     <li

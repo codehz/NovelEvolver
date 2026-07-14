@@ -118,7 +118,6 @@ export function recordToConversationSummary(
     title: record.title,
     createdAt: record.createdAt,
     updatedAt: record.updatedAt,
-    lastActiveAt: record.lastActiveAt,
     activity: recordToConversationActivity(record),
     persisted: true,
     scenarioId: record.scenarioId,
@@ -141,7 +140,6 @@ export class AiConversationState {
   #title = EMPTY_TITLE;
   #createdAt = 0;
   #updatedAt = 0;
-  #lastActiveAt = 0;
   #status: AiConversationStatus = "active";
   #selectedModelId = "";
   #selectedAgentId: string = BUILTIN_AI_AGENT_ID;
@@ -267,7 +265,6 @@ export class AiConversationState {
       title: this.#deriveTitle(),
       createdAt: this.#createdAt,
       updatedAt: this.#updatedAt,
-      lastActiveAt: this.#lastActiveAt,
       activity: this.#activity,
       persisted: this.#persisted,
       scenarioId: this.#scenarioId,
@@ -296,10 +293,6 @@ export class AiConversationState {
       }
     }
     return texts;
-  }
-
-  touchLastActive(): void {
-    this.#markDirty();
   }
 
   /** Skip future persists (used before hard-delete dispose). */
@@ -358,9 +351,6 @@ export class AiConversationState {
     if (this.#updatedAt === 0) {
       this.#updatedAt = now;
     }
-    if (this.#lastActiveAt === 0) {
-      this.#lastActiveAt = now;
-    }
 
     const title = this.#deriveTitle();
     this.#title = title;
@@ -372,7 +362,6 @@ export class AiConversationState {
       status: this.#status,
       createdAt: this.#createdAt,
       updatedAt: this.#updatedAt,
-      lastActiveAt: this.#lastActiveAt,
       adapterKind: this.#adapterKind,
       model: this.#model,
       selectedModelId: this.#selectedModelId,
@@ -721,7 +710,6 @@ export class AiConversationState {
     this.#titleCustomized = false;
     this.#createdAt = now;
     this.#updatedAt = now;
-    this.#lastActiveAt = now;
     this.#status = "active";
     this.#messages.length = 0;
     this.#messageIndexById.clear();
@@ -742,7 +730,6 @@ export class AiConversationState {
     this.#titleCustomized = record.titleCustomized;
     this.#createdAt = record.createdAt;
     this.#updatedAt = record.updatedAt;
-    this.#lastActiveAt = record.lastActiveAt;
     this.#status = record.status;
     this.#adapterKind = toAdapterKind(record.adapterKind);
     this.#model = record.model;
@@ -823,7 +810,6 @@ export class AiConversationState {
       this.#createdAt = now;
     }
     this.#updatedAt = now;
-    this.#lastActiveAt = now;
   }
 
   #deriveTitle(): string {

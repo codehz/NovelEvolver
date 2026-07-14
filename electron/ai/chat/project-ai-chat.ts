@@ -30,11 +30,11 @@ const SEARCH_SNIPPET_RADIUS = 36;
 const SEARCH_SNIPPET_MAX = 96;
 
 function compareConversationRecency(
-  left: Pick<AiConversationSummary, "lastActiveAt" | "id">,
-  right: Pick<AiConversationSummary, "lastActiveAt" | "id">,
+  left: Pick<AiConversationSummary, "updatedAt" | "id">,
+  right: Pick<AiConversationSummary, "updatedAt" | "id">,
 ): number {
-  if (right.lastActiveAt !== left.lastActiveAt) {
-    return right.lastActiveAt - left.lastActiveAt;
+  if (right.updatedAt !== left.updatedAt) {
+    return right.updatedAt - left.updatedAt;
   }
   return right.id.localeCompare(left.id);
 }
@@ -383,8 +383,6 @@ export class ProjectAiChatController {
 
     this.#getActiveRuntime().persistIfNeeded();
     const runtime = this.#getOrLoadRuntime(normalized);
-    runtime.touchLastActive();
-    runtime.persistIfNeeded();
     this.#setActiveRuntime(runtime, true);
   }
 
@@ -559,8 +557,6 @@ export class ProjectAiChatController {
     );
     if (next) {
       const runtime = this.#getOrLoadRuntime(next.id);
-      runtime.touchLastActive();
-      runtime.persistIfNeeded();
       this.#setActiveRuntime(runtime, true);
       return;
     }

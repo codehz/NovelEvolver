@@ -234,10 +234,6 @@ export class AiConversationRuntime {
     return this.#state.collectSearchableTexts();
   }
 
-  touchLastActive(): void {
-    this.#state.touchLastActive();
-  }
-
   persistIfNeeded(): void {
     this.#state.persistIfNeeded();
   }

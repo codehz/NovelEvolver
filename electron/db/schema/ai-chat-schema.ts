@@ -30,9 +30,13 @@ export function initAiChatSchema(db: DatabaseSync): void {
       PRIMARY KEY (id),
       FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE
     );
+  `);
 
-    CREATE INDEX IF NOT EXISTS idx_ai_conversation_project_active
-      ON ai_conversation(project_id, last_active_at DESC);
+  // Prototype: list/search order by content update time, not open/view time.
+  db.exec(`DROP INDEX IF EXISTS idx_ai_conversation_project_active`);
+  db.exec(`
+    CREATE INDEX IF NOT EXISTS idx_ai_conversation_project_updated
+      ON ai_conversation(project_id, updated_at DESC);
   `);
 
   const columns = db.prepare("PRAGMA table_info(ai_conversation)").all() as { name: string }[];
