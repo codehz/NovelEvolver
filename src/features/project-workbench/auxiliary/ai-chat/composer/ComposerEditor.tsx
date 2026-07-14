@@ -297,12 +297,10 @@ export function ComposerEditor({
     const existingTokens = collectMentionTokens(view.state);
     const token = buildMentionToken(item, existingTokens);
     const data = toMentionRef(item, token);
-    // Insert token + trailing space for continued typing.
-    const insert = `${token} `;
 
     view.dispatch({
-      changes: { from, to, insert },
-      selection: EditorSelection.cursor(from + token.length + 1),
+      changes: { from, to, insert: token },
+      selection: EditorSelection.cursor(from + token.length),
       effects: confirmMentionEffect.of(data),
       userEvent: "input.complete",
     });
