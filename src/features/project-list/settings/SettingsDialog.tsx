@@ -2,6 +2,7 @@ import { Dialog } from "@base-ui/react/dialog";
 import { useState } from "react";
 
 import { cn } from "#app/shared/lib/ui/cn";
+import { Button } from "#app/shared/ui";
 
 import { AiAgentsSettingsPanel } from "./ai-agents/AiAgentsSettingsPanel";
 import { AiModelsSettingsPanel } from "./ai-models/AiModelsSettingsPanel";
@@ -80,18 +81,18 @@ function SettingsDialogChrome({
         {SETTINGS_CATEGORIES.map((category) => {
           const active = category.id === activeCategoryId;
           return (
-            <button
+            <Button
               key={category.id}
               aria-selected={active}
               className={cn(settingsTabChipClass, active && settingsTabChipActiveClass)}
               role="tab"
-              type="button"
+              variant="ghost"
               onClick={() => {
                 onSelectCategory(category.id);
               }}
             >
               {category.label}
-            </button>
+            </Button>
           );
         })}
       </div>

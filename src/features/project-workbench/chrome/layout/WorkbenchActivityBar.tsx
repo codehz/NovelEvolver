@@ -3,7 +3,7 @@ import { Link } from "wouter";
 
 import { cn } from "#app/shared/lib/ui/cn";
 import { controlFocusVisibleClass } from "#app/shared/lib/ui/interaction-chrome";
-import { IconTooltip } from "#app/shared/ui";
+import { Button, IconTooltip } from "#app/shared/ui";
 
 type ActivityItem = {
   id: string;
@@ -45,16 +45,16 @@ export const WorkbenchActivityBar = memo(function WorkbenchActivityBar({
           const isActive = primarySidebarVisible && activeView === item.id;
           return (
             <IconTooltip key={item.id} label={item.label} side="right">
-              <button
+              <Button
+                variant="ghost"
                 aria-current={isActive ? "page" : undefined}
                 aria-expanded={isActive ? true : undefined}
                 aria-label={item.label}
                 className={cn(activityButtonClass, isActive && "text-ctp-mauve")}
-                type="button"
                 onClick={() => onSelectView(item.id)}
               >
                 <span aria-hidden="true" className={cn(activityIconClass, item.iconClass)} />
-              </button>
+              </Button>
             </IconTooltip>
           );
         })}

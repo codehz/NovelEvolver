@@ -3,6 +3,7 @@ import { Form } from "@base-ui/react/form";
 import { useState } from "react";
 
 import { cn } from "#app/shared/lib/ui/cn";
+import { Button } from "#app/shared/ui";
 import type {
   AiAdapterKind,
   AiProviderConfigPublic,
@@ -20,8 +21,6 @@ import {
   settingsFormErrorClass,
   settingsFormGridClass,
   settingsInputClass,
-  settingsPrimaryButtonClass,
-  settingsSecondaryButtonClass,
 } from "../settings-chrome";
 import { SettingsCheckbox } from "../SettingsCheckbox";
 import { SettingsSelect } from "../SettingsSelect";
@@ -196,17 +195,12 @@ export function AiProviderConfigForm({
       {error ? <p className={settingsFormErrorClass}>{error}</p> : null}
 
       <div className={settingsFormActionsClass}>
-        <button
-          className={settingsSecondaryButtonClass}
-          disabled={busy}
-          type="button"
-          onClick={onCancel}
-        >
+        <Button disabled={busy} onClick={onCancel}>
           取消
-        </button>
-        <button className={settingsPrimaryButtonClass} disabled={busy} type="submit">
+        </Button>
+        <Button disabled={busy} type="submit" variant="primary">
           {busy ? "保存中…" : isEdit ? "保存" : "添加"}
-        </button>
+        </Button>
       </div>
     </Form>
   );

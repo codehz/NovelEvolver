@@ -2,6 +2,7 @@ import { Field } from "@base-ui/react/field";
 import { Form } from "@base-ui/react/form";
 import { useState } from "react";
 
+import { Button } from "#app/shared/ui";
 import type {
   AiAgentConfigPublic,
   AiAgentConfigWrite,
@@ -20,8 +21,6 @@ import {
   settingsFormErrorClass,
   settingsFormGridClass,
   settingsInputClass,
-  settingsPrimaryButtonClass,
-  settingsSecondaryButtonClass,
   settingsTextareaClass,
 } from "../settings-chrome";
 import { SettingsSelect } from "../SettingsSelect";
@@ -195,18 +194,13 @@ export function AiAgentConfigForm({
       {error ? <p className={settingsFormErrorClass}>{error}</p> : null}
 
       <div className={settingsFormActionsClass}>
-        <button
-          className={settingsSecondaryButtonClass}
-          disabled={busy}
-          type="button"
-          onClick={onCancel}
-        >
+        <Button disabled={busy} onClick={onCancel}>
           {readOnly ? "返回" : "取消"}
-        </button>
+        </Button>
         {readOnly ? null : (
-          <button className={settingsPrimaryButtonClass} disabled={busy} type="submit">
+          <Button disabled={busy} type="submit" variant="primary">
             {isEdit ? "保存" : "添加"}
-          </button>
+          </Button>
         )}
       </div>
     </Form>

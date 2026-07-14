@@ -4,6 +4,7 @@ import { NumberField } from "@base-ui/react/number-field";
 import { useState } from "react";
 
 import { cn } from "#app/shared/lib/ui/cn";
+import { Button } from "#app/shared/ui";
 import type {
   AiModelConfigPublic,
   AiModelConfigWrite,
@@ -28,8 +29,6 @@ import {
   settingsFormErrorClass,
   settingsFormGridClass,
   settingsInputClass,
-  settingsPrimaryButtonClass,
-  settingsSecondaryButtonClass,
 } from "../settings-chrome";
 import { SettingsJsonEditor } from "../SettingsJsonEditor";
 import { SettingsSelect } from "../SettingsSelect";
@@ -473,17 +472,12 @@ export function AiModelConfigForm({
       {error ? <p className={settingsFormErrorClass}>{error}</p> : null}
 
       <div className={settingsFormActionsClass}>
-        <button
-          className={settingsSecondaryButtonClass}
-          disabled={busy}
-          type="button"
-          onClick={onCancel}
-        >
+        <Button disabled={busy} onClick={onCancel}>
           取消
-        </button>
-        <button className={settingsPrimaryButtonClass} disabled={busy} type="submit">
+        </Button>
+        <Button disabled={busy} type="submit" variant="primary">
           {busy ? "保存中…" : isEdit ? "保存" : "添加"}
-        </button>
+        </Button>
       </div>
     </Form>
   );

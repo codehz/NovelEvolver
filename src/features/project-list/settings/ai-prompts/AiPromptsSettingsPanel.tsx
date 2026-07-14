@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 
 import { settingsService } from "#app/shared/lib/rpc/app-rpc";
 import { cn } from "#app/shared/lib/ui/cn";
+import { Button } from "#app/shared/ui";
 import type {
   AiPromptConfigPublic,
   AiPromptConfigWrite,
@@ -10,7 +11,6 @@ import type {
 
 import {
   settingsEmptyStateClass,
-  settingsIconButtonClass,
   settingsLayerHiddenClass,
   settingsListClass,
   settingsListItemClass,
@@ -20,8 +20,6 @@ import {
   settingsPanelRootClass,
   settingsPanelScrollClass,
   settingsPanelSectionClass,
-  settingsPrimaryButtonClass,
-  settingsSecondaryButtonClass,
 } from "../settings-chrome";
 import { SettingsSubpageHeader } from "../SettingsSubpageHeader";
 import { AiPromptConfigForm } from "./AiPromptConfigForm";
@@ -161,15 +159,13 @@ export function AiPromptsSettingsPanel() {
         <div className={settingsPanelScrollClass}>
           <div className={settingsPanelSectionClass}>
             <p className="text-xs text-ctp-red">{loadError}</p>
-            <button
-              className={settingsSecondaryButtonClass}
-              type="button"
+            <Button
               onClick={() => {
                 void refresh();
               }}
             >
               重试
-            </button>
+            </Button>
           </div>
         </div>
       </div>
@@ -195,17 +191,16 @@ export function AiPromptsSettingsPanel() {
                 配置可复用提示词模板，后续可在侧栏通过 /调用名 使用。
               </p>
             </div>
-            <button
-              className={settingsPrimaryButtonClass}
+            <Button
               disabled={busy}
-              type="button"
+              variant="primary"
               onClick={() => {
                 handleOpenEditor({ type: "create" });
               }}
             >
               <span aria-hidden="true" className="icon-[codicon--add] text-sm" />
               添加提示词
-            </button>
+            </Button>
           </div>
 
           {actionError ? <p className="text-xs text-ctp-red">{actionError}</p> : null}
@@ -231,39 +226,39 @@ export function AiPromptsSettingsPanel() {
                   </div>
 
                   <div className="flex shrink-0 items-center gap-0.5">
-                    <button
+                    <Button
                       aria-label={`查看提示词 ${item.title} 详情`}
-                      className={settingsIconButtonClass}
                       disabled={busy}
-                      type="button"
+                      variant="ghost"
+                      size="icon-md"
                       onClick={() => {
                         handleOpenEditor({ type: "detail", prompt: item });
                       }}
                     >
                       <span aria-hidden="true" className="icon-[codicon--info] text-base" />
-                    </button>
-                    <button
+                    </Button>
+                    <Button
                       aria-label={`编辑提示词 ${item.title}`}
-                      className={settingsIconButtonClass}
                       disabled={busy}
-                      type="button"
+                      variant="ghost"
+                      size="icon-md"
                       onClick={() => {
                         handleOpenEditor({ type: "edit", prompt: item });
                       }}
                     >
                       <span aria-hidden="true" className="icon-[codicon--edit] text-base" />
-                    </button>
-                    <button
+                    </Button>
+                    <Button
                       aria-label={`删除提示词 ${item.title}`}
-                      className={settingsIconButtonClass}
                       disabled={busy}
-                      type="button"
+                      variant="ghost"
+                      size="icon-md"
                       onClick={() => {
                         void handleRemove(item.id);
                       }}
                     >
                       <span aria-hidden="true" className="icon-[codicon--trash] text-base" />
-                    </button>
+                    </Button>
                   </div>
                 </li>
               ))}

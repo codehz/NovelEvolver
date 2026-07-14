@@ -1,6 +1,7 @@
 import type { CSSProperties, PointerEvent as ReactPointerEvent, ReactNode } from "react";
 
 import { cn } from "#app/shared/lib/ui/cn";
+import { Button } from "#app/shared/ui";
 
 import {
   sidebarSectionHeaderButtonClass,
@@ -54,11 +55,11 @@ export function SidebarViewSection({
         style={sectionStyle}
       >
         <div className="flex shrink-0 items-center pr-3">
-          <button
+          <Button
+            variant="ghost"
             aria-controls={panelId}
             aria-expanded={expanded}
             className={sidebarSectionHeaderButtonClass}
-            type="button"
             onClick={onToggleExpanded}
           >
             <span
@@ -69,7 +70,7 @@ export function SidebarViewSection({
               )}
             />
             <span className="truncate">{title}</span>
-          </button>
+          </Button>
           <SidebarHeaderActionsPortalTarget as="div" className="flex shrink-0 items-center" />
         </div>
         {expanded ? (

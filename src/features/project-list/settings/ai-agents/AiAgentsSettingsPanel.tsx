@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 
 import { settingsService } from "#app/shared/lib/rpc/app-rpc";
 import { cn } from "#app/shared/lib/ui/cn";
+import { Button } from "#app/shared/ui";
 import type {
   AiAgentConfigPublic,
   AiAgentConfigWrite,
@@ -11,7 +12,6 @@ import type {
 
 import {
   settingsEmptyStateClass,
-  settingsIconButtonClass,
   settingsLayerHiddenClass,
   settingsListClass,
   settingsListItemClass,
@@ -21,8 +21,6 @@ import {
   settingsPanelRootClass,
   settingsPanelScrollClass,
   settingsPanelSectionClass,
-  settingsPrimaryButtonClass,
-  settingsSecondaryButtonClass,
   settingsStatusBadgeClass,
 } from "../settings-chrome";
 import { SettingsSubpageHeader } from "../SettingsSubpageHeader";
@@ -171,15 +169,13 @@ export function AiAgentsSettingsPanel() {
         <div className={settingsPanelScrollClass}>
           <div className={settingsPanelSectionClass}>
             <p className="text-xs text-ctp-red">{loadError}</p>
-            <button
-              className={settingsSecondaryButtonClass}
-              type="button"
+            <Button
               onClick={() => {
                 void refresh();
               }}
             >
               重试
-            </button>
+            </Button>
           </div>
         </div>
       </div>
@@ -205,17 +201,16 @@ export function AiAgentsSettingsPanel() {
                 定义拥有独立系统提示词和工具权限的 AI 角色，可在对话中切换。
               </p>
             </div>
-            <button
-              className={settingsPrimaryButtonClass}
+            <Button
               disabled={busy}
-              type="button"
+              variant="primary"
               onClick={() => {
                 handleOpenEditor({ type: "create" });
               }}
             >
               <span aria-hidden="true" className="icon-[codicon--add] text-sm" />
               添加 Agent
-            </button>
+            </Button>
           </div>
 
           {actionError ? <p className="text-xs text-ctp-red">{actionError}</p> : null}
@@ -269,41 +264,39 @@ export function AiAgentsSettingsPanel() {
 
                     <div className="flex shrink-0 items-center gap-0.5">
                       {agent.builtin ? (
-                        <button
+                        <Button
                           aria-label={`查看 ${agent.name} 详情`}
-                          className={settingsSecondaryButtonClass}
                           disabled={busy}
-                          type="button"
                           onClick={() => {
                             handleOpenEditor({ type: "detail", agent });
                           }}
                         >
                           详情
-                        </button>
+                        </Button>
                       ) : (
                         <>
-                          <button
+                          <Button
                             aria-label={`编辑 Agent ${agent.name}`}
-                            className={settingsIconButtonClass}
                             disabled={busy}
-                            type="button"
+                            variant="ghost"
+                            size="icon-md"
                             onClick={() => {
                               handleOpenEditor({ type: "edit", agent });
                             }}
                           >
                             <span aria-hidden="true" className="icon-[codicon--edit] text-base" />
-                          </button>
-                          <button
+                          </Button>
+                          <Button
                             aria-label={`删除 Agent ${agent.name}`}
-                            className={settingsIconButtonClass}
                             disabled={busy}
-                            type="button"
+                            variant="ghost"
+                            size="icon-md"
                             onClick={() => {
                               void handleRemove(agent.id);
                             }}
                           >
                             <span aria-hidden="true" className="icon-[codicon--trash] text-base" />
-                          </button>
+                          </Button>
                         </>
                       )}
                     </div>

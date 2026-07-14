@@ -2,7 +2,7 @@ import { AutoTransition, effects, preset } from "@codehz/auto-transition";
 import type { ReactNode } from "react";
 
 import { cn } from "#app/shared/lib/ui/cn";
-import { SlotText } from "#app/shared/ui";
+import { Button, SlotText } from "#app/shared/ui";
 
 export type TabItem = {
   id: string;
@@ -86,14 +86,15 @@ export function TabBar<T extends TabItem>({
             )}
             <SlotText className={cn("truncate pr-1.5", transient && "italic")} text={tab.label} />
             {onClose && (
-              <button
+              <Button
+                variant="ghost"
+                size="icon-sm"
                 aria-label={`关闭 ${tab.label}`}
                 className={cn(
-                  "inline-flex items-center justify-center rounded p-0.5 text-[17px] text-ctp-mauve opacity-0 transition-opacity",
+                  "rounded p-0.5 text-[17px] text-ctp-mauve opacity-0 transition-opacity",
                   "group-hover:opacity-100 hover:bg-ctp-text/8",
                   active && "opacity-100",
                 )}
-                type="button"
                 onClick={(event) => {
                   event.stopPropagation();
                   onClose(tab.id);
@@ -103,7 +104,7 @@ export function TabBar<T extends TabItem>({
                 }}
               >
                 <span aria-hidden="true" className="icon-[codicon--close]" />
-              </button>
+              </Button>
             )}
           </div>
         );

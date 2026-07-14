@@ -82,12 +82,6 @@ export const settingsSubpageTitleClass = cn(
 /** Keep-alive list layer while a subpage form is shown. */
 export const settingsLayerHiddenClass = cn("hidden");
 
-export const settingsHeaderActionButtonClass = cn(
-  "inline-flex size-8 shrink-0 items-center justify-center rounded-sm border border-titlebar-border bg-app-surface text-app-foreground",
-  panelHoverClass,
-  "disabled:opacity-50",
-);
-
 export const settingsPanelSectionClass = cn("flex flex-col gap-3 px-4 py-3");
 
 export const settingsPanelHeaderClass = cn("flex items-start justify-between gap-3");
@@ -114,14 +108,6 @@ export const settingsToolPickerToolbarClass = cn("flex min-w-0 items-center just
 export const settingsToolPickerCountClass = cn("text-2xs text-app-muted");
 
 export const settingsToolPickerActionsClass = cn("flex shrink-0 items-center gap-1");
-
-/** Compact text action used for select-all / clear-all style controls. */
-export const settingsTextActionButtonClass = cn(
-  "inline-flex shrink-0 items-center justify-center rounded-sm px-1.5 py-0.5 text-2xs text-badge-background outline-none",
-  "hover:not-disabled:bg-badge-background/10",
-  controlFocusVisibleInsetClass,
-  "disabled:cursor-default disabled:opacity-40",
-);
 
 /** Vertical stack of selectable tool cards. */
 export const settingsToolCardListClass = cn("flex flex-col gap-1.5");
@@ -293,14 +279,3 @@ export const settingsChipStarActiveClass = cn("text-badge-background");
 export const settingsFormActionsClass = cn("flex items-center justify-end gap-2");
 
 export const settingsFormErrorClass = cn("text-xs text-ctp-red");
-
-export const settingsPrimaryButtonClass = cn(
-  "inline-flex shrink-0 items-center justify-center gap-1 rounded-sm bg-badge-background px-2.5 py-1.5 text-2xs font-medium whitespace-nowrap text-badge-foreground",
-  "hover:opacity-90 disabled:opacity-50",
-);
-
-export const settingsSecondaryButtonClass = cn(
-  "inline-flex items-center justify-center gap-1 rounded-sm border border-titlebar-border bg-app-surface px-2.5 py-1.5 text-2xs text-app-foreground",
-  panelHoverClass,
-  "disabled:opacity-50",
-);

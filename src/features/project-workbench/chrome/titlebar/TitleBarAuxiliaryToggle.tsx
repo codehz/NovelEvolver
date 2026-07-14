@@ -4,7 +4,7 @@ import {
   controlFocusVisibleClass,
   iconButtonHoverClass,
 } from "#app/shared/lib/ui/interaction-chrome";
-import { IconTooltip } from "#app/shared/ui";
+import { Button, IconTooltip } from "#app/shared/ui";
 
 const toggleButtonClass = cn(
   "inline-flex size-7 shrink-0 items-center justify-center rounded-full border-0 bg-transparent p-0",
@@ -22,11 +22,12 @@ export function TitleBarAuxiliaryToggle({ visible, onToggle }: TitleBarAuxiliary
   return (
     <TitleBarActionsPortalContent>
       <IconTooltip label="AI 助手面板" side="bottom">
-        <button
+        <Button
+          variant="ghost"
+          size="icon-md"
           aria-label={visible ? "隐藏 AI 侧边栏" : "显示 AI 侧边栏"}
           aria-pressed={visible}
           className={toggleButtonClass}
-          type="button"
           onClick={onToggle}
         >
           <span
@@ -38,7 +39,7 @@ export function TitleBarAuxiliaryToggle({ visible, onToggle }: TitleBarAuxiliary
                 : "icon-[codicon--layout-sidebar-right-off]",
             )}
           />
-        </button>
+        </Button>
       </IconTooltip>
     </TitleBarActionsPortalContent>
   );

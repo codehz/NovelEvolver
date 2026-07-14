@@ -1,6 +1,6 @@
 import type { RefObject, SubmitEvent } from "react";
 
-import { IconTooltip } from "#app/shared/ui";
+import { Button, IconTooltip } from "#app/shared/ui";
 import type { AiReasoningLevel } from "#shared/rpc/services/index";
 
 import { ComposerEditor, type ComposerEditorHandle } from "../composer/ComposerEditor";
@@ -104,26 +104,28 @@ export function AiChatMessageComposer({
         <span className="min-w-0 flex-1" />
         {canStop ? (
           <IconTooltip label="停止" side="top">
-            <button
+            <Button
+              variant="ghost"
+              size="icon-sm"
               aria-label="停止"
               className={stopButtonClass}
-              type="button"
               onClick={onStopClick}
             >
               <span aria-hidden="true" className="icon-[codicon--debug-stop] text-sm" />
-            </button>
+            </Button>
           </IconTooltip>
         ) : (
           <IconTooltip label="发送" side="top" disabled={!canSend}>
-            <button
+            <Button
+              variant="ghost"
+              size="icon-sm"
               aria-label="发送"
               className={sendButtonClass}
               disabled={!canSend}
-              type="button"
               onClick={onSendClick}
             >
               <span aria-hidden="true" className="icon-[codicon--newline] text-sm" />
-            </button>
+            </Button>
           </IconTooltip>
         )}
       </div>

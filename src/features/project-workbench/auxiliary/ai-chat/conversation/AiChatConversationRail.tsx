@@ -3,6 +3,7 @@ import { useMemo, type ReactNode } from "react";
 
 import { cn } from "#app/shared/lib/ui/cn";
 import { controlFocusVisibleClass, panelHoverClass } from "#app/shared/lib/ui/interaction-chrome";
+import { Button } from "#app/shared/ui";
 import type { AiChatSnapshot } from "#shared/rpc/ai/index";
 
 import { AiMessageBlock } from "../messages/AiMessageBlock";
@@ -145,9 +146,9 @@ export function AiChatConversationRail({
               <RailItem messageId="meta:turn-footer" className={railItemStackClass}>
                 {turnError ? <div className={turnErrorBannerClass}>{turnError}</div> : null}
                 {showTurnRetry ? (
-                  <button type="button" className={turnRetryButtonClass} onClick={onRetry}>
+                  <Button variant="link" className={turnRetryButtonClass} onClick={onRetry}>
                     {turnError ? "重试" : "重新生成"}
-                  </button>
+                  </Button>
                 ) : null}
               </RailItem>
             ) : null}

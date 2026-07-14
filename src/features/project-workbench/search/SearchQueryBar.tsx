@@ -6,7 +6,7 @@ import {
   controlFocusVisibleClass,
   fieldSurfaceFocusWithinClass,
 } from "#app/shared/lib/ui/interaction-chrome";
-import { IconTooltip, SlotText } from "#app/shared/ui";
+import { Button, IconTooltip, SlotText } from "#app/shared/ui";
 
 const searchFieldRowClass = cn(fieldSurfaceFocusWithinClass, "flex h-7 items-center gap-1.5 px-2");
 
@@ -85,14 +85,15 @@ export function SearchQueryBar({
         </IconTooltip>
         {query !== "" ? (
           <IconTooltip label="清除" side="bottom">
-            <button
-              type="button"
+            <Button
+              variant="ghost"
+              size="icon-sm"
               className={searchOptionButtonClass}
               aria-label="清除"
               onClick={() => onQueryChange("")}
             >
               <span className="icon-[codicon--close] text-sm" />
-            </button>
+            </Button>
           </IconTooltip>
         ) : null}
       </div>

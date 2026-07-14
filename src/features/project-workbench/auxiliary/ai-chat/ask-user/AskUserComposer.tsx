@@ -9,7 +9,7 @@ import {
 
 import { cn } from "#app/shared/lib/ui/cn";
 import { controlFocusVisibleClass, rowHoverClass } from "#app/shared/lib/ui/interaction-chrome";
-import { IconTooltip } from "#app/shared/ui";
+import { Button, IconTooltip } from "#app/shared/ui";
 import type { AskUserPendingInput } from "#shared/rpc/ai/index";
 
 import {
@@ -123,11 +123,11 @@ export function AskUserComposer({
         <div className={choicesClass}>
           <p className={choicesLabelClass}>参考选项（点击快速填入）</p>
           {choices.map((choice) => (
-            <button
+            <Button
               key={choice.title}
+              variant="ghost"
               className={choiceButtonClass}
               disabled={inputDisabled}
-              type="button"
               onClick={() => {
                 onDraftChange(choice.title);
                 textareaRef.current?.focus();
@@ -137,7 +137,7 @@ export function AskUserComposer({
               {choice.description ? (
                 <span className={choiceDescriptionClass}>{choice.description}</span>
               ) : null}
-            </button>
+            </Button>
           ))}
         </div>
       ) : null}
@@ -158,28 +158,31 @@ export function AskUserComposer({
 
       <div className="flex min-w-0 items-center justify-end gap-1">
         <IconTooltip label="取消回答" side="top" disabled={inputDisabled}>
-          <button
+          <Button
+            variant="ghost"
+            size="icon-sm"
             aria-label="取消回答"
             className={cn(
               stopButtonClass,
               "disabled:cursor-not-allowed disabled:text-ctp-overlay0 hover:disabled:bg-transparent",
             )}
             disabled={inputDisabled}
-            type="button"
             onClick={handleCancel}
           >
             <span aria-hidden="true" className="icon-[codicon--close] text-sm" />
-          </button>
+          </Button>
         </IconTooltip>
         <IconTooltip label="提交回答" side="top" disabled={inputDisabled || draft.trim() === ""}>
-          <button
+          <Button
+            variant="ghost"
+            size="icon-sm"
             aria-label="提交回答"
             className={sendButtonClass}
             disabled={inputDisabled || draft.trim() === ""}
             type="submit"
           >
             <span aria-hidden="true" className="icon-[codicon--newline] text-sm" />
-          </button>
+          </Button>
         </IconTooltip>
       </div>
     </form>

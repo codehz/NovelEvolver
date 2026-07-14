@@ -5,6 +5,7 @@ import type { Ref } from "react";
 import type { AppNotification } from "#app/shared/lib/notifications";
 import { notificationApi } from "#app/shared/lib/notifications";
 import { cn } from "#app/shared/lib/ui/cn";
+import { Button } from "#app/shared/ui";
 
 import {
   notificationActionButtonClass,
@@ -89,34 +90,36 @@ export function NotificationItem({ notification, variant, ref }: NotificationIte
         {actions.length > 0 ? (
           <div className="flex flex-wrap gap-1">
             {actions.map((action) => (
-              <button
+              <Button
                 key={action.id}
+                variant="ghost"
+                size="sm"
                 className={notificationActionButtonClass}
-                type="button"
                 onClick={() => {
                   notificationApi.runAction(id, action.id);
                 }}
               >
                 {action.label}
-              </button>
+              </Button>
             ))}
           </div>
         ) : null}
       </div>
-      <button
+      <Button
+        variant="ghost"
+        size="icon-sm"
         aria-label="关闭通知"
         className={cn(
           notificationIconButtonClass,
           "text-ctp-mauve opacity-0 transition-opacity duration-150",
           "group-focus-within:opacity-100 group-hover:opacity-100 focus-visible:opacity-100",
         )}
-        type="button"
         onClick={() => {
           notificationApi.close(id);
         }}
       >
         <span aria-hidden="true" className="icon-[codicon--close] text-sm" />
-      </button>
+      </Button>
     </motion.article>
   );
 }

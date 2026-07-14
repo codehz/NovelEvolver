@@ -1,5 +1,6 @@
 import { cn } from "#app/shared/lib/ui/cn";
 import { fieldSurfaceClass } from "#app/shared/lib/ui/interaction-chrome";
+import { Button } from "#app/shared/ui";
 import { useActiveBranchName } from "#workbench/branch/branch-scopes";
 
 type ChangesCommitFormProps = {
@@ -38,14 +39,10 @@ export function ChangesCommitForm({
         }}
         disabled={committing}
       />
-      <button
-        type="button"
-        className={cn(
-          "mt-1 flex w-full items-center justify-center gap-1.5 rounded-sm px-2 py-1 text-xs font-medium",
-          canCommit
-            ? "bg-ctp-mauve text-ctp-crust hover:brightness-110"
-            : "cursor-not-allowed bg-ctp-surface0 text-ctp-overlay0",
-        )}
+      <Button
+        variant="primary"
+        size="sm"
+        className="mt-1 flex w-full items-center justify-center gap-1.5"
         disabled={!canCommit}
         onClick={onCommit}
       >
@@ -60,7 +57,7 @@ export function ChangesCommitForm({
             提交
           </>
         )}
-      </button>
+      </Button>
     </div>
   );
 }

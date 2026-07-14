@@ -1,6 +1,4 @@
-import { cn } from "#app/shared/lib/ui/cn";
-
-import { settingsHeaderActionButtonClass } from "./settings/settings-chrome";
+import { Button } from "#app/shared/ui";
 
 type ProjectListHeaderProps = {
   pending: boolean;
@@ -21,39 +19,23 @@ export function ProjectListHeader({
     <div className="flex items-center justify-between gap-4">
       <h1 className="text-lg font-semibold text-app-foreground">项目</h1>
       <div className="flex items-center gap-2">
-        <button
+        <Button
           aria-expanded={settingsOpen}
           aria-haspopup="dialog"
           aria-label="设置"
-          className={settingsHeaderActionButtonClass}
           disabled={pending}
-          type="button"
+          variant="secondary"
+          size="icon-lg"
           onClick={onOpenSettings}
         >
           <span aria-hidden="true" className="icon-[codicon--settings-gear] text-base" />
-        </button>
-        <button
-          className={cn(
-            "rounded-md border border-titlebar-border bg-app-surface px-3 py-1.5 text-sm font-medium text-app-foreground",
-            "hover:bg-ctp-surface0/40 disabled:opacity-50",
-          )}
-          disabled={pending}
-          type="button"
-          onClick={onCreate}
-        >
+        </Button>
+        <Button disabled={pending} variant="secondary" size="md" onClick={onCreate}>
           {pending ? "创建中…" : "新建项目"}
-        </button>
-        <button
-          className={cn(
-            "rounded-md bg-badge-background px-3 py-1.5 text-sm font-medium text-badge-foreground",
-            "hover:opacity-90 disabled:opacity-50",
-          )}
-          disabled={pending}
-          type="button"
-          onClick={onOpenDialog}
-        >
+        </Button>
+        <Button disabled={pending} variant="primary" size="md" onClick={onOpenDialog}>
           {pending ? "处理中…" : "打开项目"}
-        </button>
+        </Button>
       </div>
     </div>
   );

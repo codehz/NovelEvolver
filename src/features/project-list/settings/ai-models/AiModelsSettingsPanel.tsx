@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 
 import { settingsService } from "#app/shared/lib/rpc/app-rpc";
 import { cn } from "#app/shared/lib/ui/cn";
+import { Button } from "#app/shared/ui";
 import type {
   AiModelConfigPublic,
   AiModelConfigWrite,
@@ -13,7 +14,6 @@ import { isLowMaxOutputTokensForNovelAgent } from "#shared/rpc/services/index";
 
 import {
   settingsEmptyStateClass,
-  settingsIconButtonClass,
   settingsLayerHiddenClass,
   settingsListClass,
   settingsListItemClass,
@@ -23,8 +23,6 @@ import {
   settingsPanelRootClass,
   settingsPanelScrollClass,
   settingsPanelSectionClass,
-  settingsPrimaryButtonClass,
-  settingsSecondaryButtonClass,
   settingsStatusBadgeClass,
   settingsStatusBadgeDefaultClass,
 } from "../settings-chrome";
@@ -227,15 +225,13 @@ export function AiModelsSettingsPanel() {
         <div className={settingsPanelScrollClass}>
           <div className={settingsPanelSectionClass}>
             <p className="text-xs text-ctp-red">{loadError}</p>
-            <button
-              className={settingsSecondaryButtonClass}
-              type="button"
+            <Button
               onClick={() => {
                 void refresh();
               }}
             >
               重试
-            </button>
+            </Button>
           </div>
         </div>
       </div>
@@ -262,10 +258,9 @@ export function AiModelsSettingsPanel() {
                 <span className="font-mono">ai-settings.json</span>。
               </p>
             </div>
-            <button
-              className={settingsPrimaryButtonClass}
+            <Button
               disabled={busy}
-              type="button"
+              variant="primary"
               onClick={() => {
                 setActionError(null);
                 setProviderEditor({ type: "create" });
@@ -273,7 +268,7 @@ export function AiModelsSettingsPanel() {
             >
               <span aria-hidden="true" className="icon-[codicon--add] text-sm" />
               添加供应商
-            </button>
+            </Button>
           </div>
 
           {actionError ? <p className="text-xs text-ctp-red">{actionError}</p> : null}
@@ -312,40 +307,38 @@ export function AiModelsSettingsPanel() {
                     </div>
                   </div>
                   <div className="flex shrink-0 items-center gap-0.5">
-                    <button
-                      className={settingsSecondaryButtonClass}
+                    <Button
                       disabled={busy}
-                      type="button"
                       onClick={() => {
                         setActionError(null);
                         setModelEditor({ type: "create", providerId: provider.id });
                       }}
                     >
                       添加模型
-                    </button>
-                    <button
+                    </Button>
+                    <Button
                       aria-label={`编辑供应商 ${provider.name}`}
-                      className={settingsIconButtonClass}
                       disabled={busy}
-                      type="button"
+                      variant="ghost"
+                      size="icon-md"
                       onClick={() => {
                         setActionError(null);
                         setProviderEditor({ type: "edit", provider });
                       }}
                     >
                       <span aria-hidden="true" className="icon-[codicon--edit] text-base" />
-                    </button>
-                    <button
+                    </Button>
+                    <Button
                       aria-label={`删除供应商 ${provider.name}`}
-                      className={settingsIconButtonClass}
                       disabled={busy}
-                      type="button"
+                      variant="ghost"
+                      size="icon-md"
                       onClick={() => {
                         void handleRemoveProvider(provider.id);
                       }}
                     >
                       <span aria-hidden="true" className="icon-[codicon--trash] text-base" />
-                    </button>
+                    </Button>
                   </div>
                 </div>
 
@@ -411,45 +404,41 @@ export function AiModelsSettingsPanel() {
 
                           <div className="flex shrink-0 items-center gap-0.5">
                             {!isDefault ? (
-                              <button
-                                className={settingsSecondaryButtonClass}
+                              <Button
                                 disabled={busy}
-                                type="button"
                                 onClick={() => {
                                   void handleSetDefault(model.id);
                                 }}
                               >
                                 设为默认
-                              </button>
+                              </Button>
                             ) : (
-                              <button
-                                className={settingsSecondaryButtonClass}
+                              <Button
                                 disabled={busy}
-                                type="button"
                                 onClick={() => {
                                   void handleSetDefault(null);
                                 }}
                               >
                                 取消默认
-                              </button>
+                              </Button>
                             )}
-                            <button
+                            <Button
                               aria-label={`编辑模型 ${model.name}`}
-                              className={settingsIconButtonClass}
                               disabled={busy}
-                              type="button"
+                              variant="ghost"
+                              size="icon-md"
                               onClick={() => {
                                 setActionError(null);
                                 setModelEditor({ type: "edit", model });
                               }}
                             >
                               <span aria-hidden="true" className="icon-[codicon--edit] text-base" />
-                            </button>
-                            <button
+                            </Button>
+                            <Button
                               aria-label={`删除模型 ${model.name}`}
-                              className={settingsIconButtonClass}
                               disabled={busy}
-                              type="button"
+                              variant="ghost"
+                              size="icon-md"
                               onClick={() => {
                                 void handleRemoveModel(model.id);
                               }}
@@ -458,7 +447,7 @@ export function AiModelsSettingsPanel() {
                                 aria-hidden="true"
                                 className="icon-[codicon--trash] text-base"
                               />
-                            </button>
+                            </Button>
                           </div>
                         </li>
                       );

@@ -4,6 +4,7 @@ import {
   controlFocusVisibleClass,
   iconButtonHoverClass,
 } from "#app/shared/lib/ui/interaction-chrome";
+import { Button } from "#app/shared/ui";
 import type { ProjectMetadata } from "#shared/project";
 
 import { formatLastOpened } from "./format-last-opened";
@@ -33,23 +34,24 @@ export function ProjectListCard({ project, onOpen, onRemove }: ProjectListCardPr
           "bg-app-surface transition-colors hover:border-ctp-surface1 hover:bg-ctp-surface0/30",
         )}
       >
-        <button
+        <Button
+          variant="ghost"
+          size="icon-sm"
           aria-label={`从列表移除 ${name}`}
           className={cn(
             projectCardActionClass,
             "absolute top-2 right-2 z-10 opacity-0 group-hover:opacity-100",
           )}
-          type="button"
           onClick={() => {
             onRemove(project.id);
           }}
         >
           <span aria-hidden="true" className="icon-[codicon--trash] text-sm" />
-        </button>
+        </Button>
 
-        <button
-          className="flex w-full min-w-0 flex-col gap-2 p-4 text-left"
-          type="button"
+        <Button
+          className="h-auto w-full min-w-0 flex-col items-stretch gap-2 rounded-lg p-4 text-left text-app-foreground hover:bg-transparent"
+          variant="ghost"
           onClick={() => {
             onOpen(project.id);
           }}
@@ -67,7 +69,7 @@ export function ProjectListCard({ project, onOpen, onRemove }: ProjectListCardPr
           <span className="mt-auto text-xs text-ctp-subtext1">
             {formatLastOpened(project.lastOpenedAt)}
           </span>
-        </button>
+        </Button>
       </article>
     </li>
   );

@@ -1,3 +1,5 @@
+export { Button } from "./Button";
+export type { ButtonProps, ButtonSize, ButtonVariant } from "./Button";
 export { DisclosureChevron } from "./DisclosureChevron";
 export { IconTooltip } from "./IconTooltip";
 export { MarkdownStream } from "./MarkdownStream";

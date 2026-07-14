@@ -1,6 +1,7 @@
 import { useId } from "react";
 
 import { cn } from "#app/shared/lib/ui/cn";
+import { Button } from "#app/shared/ui";
 
 import {
   historyEmptyClass,
@@ -109,8 +110,8 @@ export function AiChatHistoryPanel({ list }: AiChatHistoryPanelProps) {
           </ul>
         </div>
         <div className={historyFooterClass}>
-          <button
-            type="button"
+          <Button
+            variant="ghost"
             className={historyFooterToggleClass}
             onClick={list.toggleIncludeArchived}
           >
@@ -124,7 +125,7 @@ export function AiChatHistoryPanel({ list }: AiChatHistoryPanelProps) {
               )}
             />
             显示已归档
-          </button>
+          </Button>
           <span className="text-2xs text-app-muted">
             {list.loadingList ? "刷新中" : `${list.selectableCount} 条`}
           </span>

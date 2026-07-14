@@ -25,10 +25,12 @@ export const sidebarHeaderIconClass = cn(
 
 // --- Section header (collapsible panels inside sidebar body) ---
 
-// Section Header 应该是白色加粗文字和主题色按钮的，不要在这里加 text-ctp-mauve
+// Section Header 应该是白色加粗文字和主题色按钮的，不要在这里加 text-ctp-mauve。
+// Overrides shared Button defaults (justify-center, shrink-0, size sm padding, ghost hover).
 export const sidebarSectionHeaderButtonClass = cn(
-  "flex h-6 min-w-0 flex-1 items-center gap-0.5 bg-app-surface px-0.5 text-left",
-  "text-2xs font-semibold tracking-wide uppercase",
+  "flex h-6 min-w-0 w-auto flex-1 shrink items-center justify-start gap-0.5 rounded-none bg-app-surface px-0.5 py-0 text-left",
+  "text-2xs font-semibold tracking-wide text-app-foreground uppercase",
+  "hover:bg-transparent hover:text-app-foreground",
   controlFocusVisibleClass,
 );
 

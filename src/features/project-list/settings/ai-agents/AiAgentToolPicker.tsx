@@ -1,6 +1,7 @@
 import { CheckboxGroup } from "@base-ui/react/checkbox-group";
 
 import { cn } from "#app/shared/lib/ui/cn";
+import { Button } from "#app/shared/ui";
 import type { AiAgentTool } from "#shared/rpc/services/index";
 
 import {
@@ -13,7 +14,6 @@ import {
   settingsToolPickerActionsClass,
   settingsToolPickerCountClass,
   settingsToolPickerToolbarClass,
-  settingsTextActionButtonClass,
 } from "../settings-chrome";
 import { SettingsCheckbox } from "../SettingsCheckbox";
 
@@ -54,26 +54,28 @@ export function AiAgentToolPicker({
         </span>
         {readOnly ? null : (
           <div className={settingsToolPickerActionsClass}>
-            <button
-              type="button"
-              className={settingsTextActionButtonClass}
+            <Button
+              variant="text"
+              size="sm"
+              className="px-1.5 py-0.5 text-2xs"
               disabled={!interactive || allSelected}
               onClick={() => {
                 onChange(tools.map((tool) => tool.name));
               }}
             >
               全选
-            </button>
-            <button
-              type="button"
-              className={settingsTextActionButtonClass}
+            </Button>
+            <Button
+              variant="text"
+              size="sm"
+              className="px-1.5 py-0.5 text-2xs"
               disabled={!interactive || noneSelected}
               onClick={() => {
                 onChange([]);
               }}
             >
               取消全选
-            </button>
+            </Button>
           </div>
         )}
       </div>

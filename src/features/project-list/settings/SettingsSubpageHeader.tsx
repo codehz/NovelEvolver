@@ -1,8 +1,6 @@
-import {
-  settingsIconButtonClass,
-  settingsSubpageHeaderClass,
-  settingsSubpageTitleClass,
-} from "./settings-chrome";
+import { Button } from "#app/shared/ui";
+
+import { settingsSubpageHeaderClass, settingsSubpageTitleClass } from "./settings-chrome";
 
 type SettingsSubpageHeaderProps = {
   title: string;
@@ -17,14 +15,9 @@ export function SettingsSubpageHeader({
 }: SettingsSubpageHeaderProps) {
   return (
     <header className={settingsSubpageHeaderClass}>
-      <button
-        aria-label={backLabel}
-        className={settingsIconButtonClass}
-        type="button"
-        onClick={onBack}
-      >
+      <Button aria-label={backLabel} variant="ghost" size="icon-md" onClick={onBack}>
         <span aria-hidden="true" className="icon-[codicon--arrow-left] text-base" />
-      </button>
+      </Button>
       <h3 className={settingsSubpageTitleClass}>{title}</h3>
     </header>
   );
