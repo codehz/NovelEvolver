@@ -18,6 +18,7 @@ import {
   settingsFieldControlCellClass,
   settingsFieldDescriptionClass,
   settingsFieldErrorClass,
+  settingsFieldHiddenControlClass,
   settingsFieldLabelClass,
   settingsFieldRootClass,
   settingsFormActionsClass,
@@ -27,8 +28,8 @@ import {
   settingsInputClass,
   settingsPrimaryButtonClass,
   settingsSecondaryButtonClass,
-  settingsTextareaClass,
 } from "../settings-chrome";
+import { SettingsJsonEditor } from "../SettingsJsonEditor";
 import { SettingsSelect } from "../SettingsSelect";
 
 type FormState = {
@@ -341,9 +342,17 @@ export function AiModelConfigForm({
           <Field.Label className={settingsFieldLabelClass}>Headers</Field.Label>
           <div className={settingsFieldControlCellClass}>
             <Field.Control
-              className={settingsTextareaClass}
-              placeholder={'可选，例如：\n{\n  "OpenAI-Organization": "org-..."\n}'}
-              render={<textarea rows={4} spellCheck={false} />}
+              className={settingsFieldHiddenControlClass}
+              tabIndex={-1}
+              value={form.headersText}
+              onValueChange={(next) => {
+                update("headersText", next);
+              }}
+            />
+            <SettingsJsonEditor
+              aria-label="Headers JSON"
+              disabled={busy}
+              placeholder={'{\n  "OpenAI-Organization": "org-..."\n}'}
               value={form.headersText}
               onValueChange={(next) => {
                 update("headersText", next);
@@ -372,9 +381,17 @@ export function AiModelConfigForm({
           <Field.Label className={settingsFieldLabelClass}>Extra Body</Field.Label>
           <div className={settingsFieldControlCellClass}>
             <Field.Control
-              className={settingsTextareaClass}
-              placeholder={'可选，例如：\n{\n  "top_p": 0.9\n}'}
-              render={<textarea rows={4} spellCheck={false} />}
+              className={settingsFieldHiddenControlClass}
+              tabIndex={-1}
+              value={form.extraBodyText}
+              onValueChange={(next) => {
+                update("extraBodyText", next);
+              }}
+            />
+            <SettingsJsonEditor
+              aria-label="Extra Body JSON"
+              disabled={busy}
+              placeholder={'{\n  "top_p": 0.9\n}'}
               value={form.extraBodyText}
               onValueChange={(next) => {
                 update("extraBodyText", next);

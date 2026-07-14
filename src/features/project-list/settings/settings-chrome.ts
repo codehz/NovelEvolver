@@ -132,6 +132,15 @@ export const settingsTextareaClass = cn(
   "placeholder:text-app-muted focus:border-badge-background/60 disabled:opacity-50",
 );
 
+/** Host shell for settings CodeMirror JSON editors (matches textarea chrome). */
+export const settingsJsonEditorHostClass = cn(
+  "w-full min-w-0 overflow-hidden rounded-sm border border-titlebar-border bg-app-surface outline-none",
+  "focus-within:border-badge-background/60",
+);
+
+/** Visually hidden native control used to register custom editors with Base UI Field. */
+export const settingsFieldHiddenControlClass = cn("sr-only");
+
 /** Base UI Select trigger — replaces native `<select>`. */
 export const settingsSelectTriggerClass = cn(
   "flex h-8 w-full min-w-0 items-center justify-between gap-2 rounded-sm border border-titlebar-border bg-app-surface px-2.5 text-left text-xs leading-none text-app-foreground outline-none select-none",
