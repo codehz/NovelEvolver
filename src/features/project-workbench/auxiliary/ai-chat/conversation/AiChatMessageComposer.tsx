@@ -1,8 +1,14 @@
 import type { KeyboardEvent, RefObject, SubmitEvent } from "react";
 
 import { IconTooltip } from "#app/shared/ui";
+import type { AiReasoningLevel } from "#shared/rpc/services/index";
 
-import { AiChatAgentSelector, AiChatModelSelector, type AiChatSelectorItem } from "../selectors";
+import {
+  AiChatAgentSelector,
+  AiChatModelSelector,
+  AiChatReasoningSelector,
+  type AiChatSelectorItem,
+} from "../selectors";
 import {
   composerShellClass,
   composerTextareaClass,
@@ -19,6 +25,10 @@ type AiChatMessageComposerProps = {
   canStop: boolean;
   selectedAgentLabel: string;
   selectedModelLabel: string;
+  selectedReasoningLabel: string;
+  selectedReasoningLevel: AiReasoningLevel | null;
+  availableReasoningLevels: readonly AiReasoningLevel[];
+  showReasoningSelector: boolean;
   agentItems: readonly AiChatSelectorItem[];
   modelItems: readonly AiChatSelectorItem[];
   composerRef: RefObject<HTMLTextAreaElement | null>;
@@ -31,6 +41,7 @@ type AiChatMessageComposerProps = {
   onOpenModelPicker?: () => void;
   onSelectAgent: (id: string) => void;
   onSelectModel: (id: string) => void;
+  onSelectReasoningLevel: (level: AiReasoningLevel) => void;
 };
 
 export function AiChatMessageComposer({
@@ -42,6 +53,10 @@ export function AiChatMessageComposer({
   canStop,
   selectedAgentLabel,
   selectedModelLabel,
+  selectedReasoningLabel,
+  selectedReasoningLevel,
+  availableReasoningLevels,
+  showReasoningSelector,
   agentItems,
   modelItems,
   composerRef,
@@ -54,6 +69,7 @@ export function AiChatMessageComposer({
   onOpenModelPicker,
   onSelectAgent,
   onSelectModel,
+  onSelectReasoningLevel,
 }: AiChatMessageComposerProps) {
   return (
     <form className={composerShellClass} onSubmit={onSubmit}>
@@ -87,6 +103,15 @@ export function AiChatMessageComposer({
           onOpen={onOpenModelPicker}
           onSelect={onSelectModel}
         />
+        {showReasoningSelector ? (
+          <AiChatReasoningSelector
+            label={selectedReasoningLabel}
+            disabled={modelSelectorDisabled}
+            levels={availableReasoningLevels}
+            selectedLevel={selectedReasoningLevel}
+            onSelect={onSelectReasoningLevel}
+          />
+        ) : null}
         <span className="min-w-0 flex-1" />
         {canStop ? (
           <IconTooltip label="停止" side="top">

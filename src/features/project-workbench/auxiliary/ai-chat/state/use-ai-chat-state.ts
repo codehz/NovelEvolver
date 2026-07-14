@@ -19,6 +19,7 @@ import type {
   AiConversationSearchOptions,
   AiConversationSummary,
 } from "#shared/rpc/ai/index";
+import type { AiReasoningLevel } from "#shared/rpc/services/index";
 import { useAiChat } from "#workbench/branch/branch-scopes";
 
 import { stripHiddenAiChatWarningsFromSnapshot } from "../ui/ai-chat-helpers";
@@ -149,6 +150,13 @@ function useAiChatStateValue() {
     [aiChat],
   );
 
+  const setSelectedReasoningLevel = useCallback(
+    async (level: AiReasoningLevel | null): Promise<void> => {
+      await Promise.resolve(aiChat.setSelectedReasoningLevel(level));
+    },
+    [aiChat],
+  );
+
   const retryLastRequest = useCallback(async (): Promise<void> => {
     await Promise.resolve(aiChat.retryLastRequest());
   }, [aiChat]);
@@ -172,6 +180,7 @@ function useAiChatStateValue() {
     setSelectedModel,
     listSelectableAgents,
     setSelectedAgent,
+    setSelectedReasoningLevel,
   };
 }
 

@@ -16,6 +16,8 @@ export type AiConversationSummaryRecord = {
   model: string;
   selectedModelId: string;
   selectedAgentId: string;
+  /** Session reasoning effort; null when unset / unsupported. */
+  selectedReasoningLevel: string | null;
   scenarioId: string | null;
   /** Used only to derive list activity for persisted rows. */
   hasPendingToolBatch: boolean;
@@ -45,6 +47,7 @@ type AiConversationSummaryRow = {
   model: string;
   selected_model_id: string | null;
   selected_agent_id: string | null;
+  selected_reasoning_level: string | null;
   scenario_id: string | null;
   pending_tool_batch_json: string | null;
 };
@@ -62,7 +65,8 @@ type AiConversationSearchRow = AiConversationSummaryRow & {
 
 const SUMMARY_COLUMNS = `
   id, project_id, title, title_customized, status, created_at, updated_at,
-  adapter_kind, model, selected_model_id, selected_agent_id, scenario_id, pending_tool_batch_json
+  adapter_kind, model, selected_model_id, selected_agent_id, selected_reasoning_level,
+  scenario_id, pending_tool_batch_json
 `;
 
 const FULL_COLUMNS = `
@@ -75,6 +79,14 @@ function toStatus(value: string): AiConversationStatus {
 
 function toTitleCustomized(value: number | null | undefined): boolean {
   return value === 1;
+}
+
+function toSelectedReasoningLevel(value: string | null | undefined): string | null {
+  if (value == null) {
+    return null;
+  }
+  const normalized = value.trim();
+  return normalized === "" ? null : normalized;
 }
 
 function rowToSummary(row: AiConversationSummaryRow): AiConversationSummaryRecord {
@@ -90,6 +102,7 @@ function rowToSummary(row: AiConversationSummaryRow): AiConversationSummaryRecor
     model: row.model,
     selectedModelId: row.selected_model_id ?? "",
     selectedAgentId: row.selected_agent_id ?? "builtin-writing-assistant",
+    selectedReasoningLevel: toSelectedReasoningLevel(row.selected_reasoning_level),
     scenarioId: row.scenario_id,
     hasPendingToolBatch:
       row.pending_tool_batch_json != null && row.pending_tool_batch_json.trim() !== "",
@@ -110,6 +123,7 @@ function rowToRecord(row: AiConversationRow): AiConversationRecord {
     model: summary.model,
     selectedModelId: summary.selectedModelId,
     selectedAgentId: summary.selectedAgentId,
+    selectedReasoningLevel: summary.selectedReasoningLevel,
     scenarioId: summary.scenarioId,
     messagesJson: row.messages_json,
     historyJson: row.history_json,
@@ -253,8 +267,9 @@ export class AiChatRepository {
         `
         INSERT INTO ai_conversation (
           id, project_id, title, title_customized, status, created_at, updated_at, last_active_at,
-          adapter_kind, model, selected_model_id, selected_agent_id, scenario_id, messages_json, history_json, pending_tool_batch_json, warnings_json, error_message
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+          adapter_kind, model, selected_model_id, selected_agent_id, selected_reasoning_level,
+          scenario_id, messages_json, history_json, pending_tool_batch_json, warnings_json, error_message
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         ON CONFLICT(id) DO UPDATE SET
           project_id = excluded.project_id,
           title = excluded.title,
@@ -266,6 +281,7 @@ export class AiChatRepository {
           model = excluded.model,
           selected_model_id = excluded.selected_model_id,
           selected_agent_id = excluded.selected_agent_id,
+          selected_reasoning_level = excluded.selected_reasoning_level,
           scenario_id = excluded.scenario_id,
           messages_json = excluded.messages_json,
           history_json = excluded.history_json,
@@ -287,6 +303,7 @@ export class AiChatRepository {
         record.model,
         record.selectedModelId,
         record.selectedAgentId,
+        record.selectedReasoningLevel,
         record.scenarioId,
         record.messagesJson,
         record.historyJson,

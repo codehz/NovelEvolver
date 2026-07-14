@@ -21,6 +21,7 @@ export function initAiChatSchema(db: DatabaseSync): void {
       model TEXT NOT NULL,
       selected_model_id TEXT NOT NULL DEFAULT '',
       selected_agent_id TEXT NOT NULL DEFAULT 'builtin-writing-assistant',
+      selected_reasoning_level TEXT,
       scenario_id TEXT,
       messages_json TEXT NOT NULL,
       history_json TEXT NOT NULL,
@@ -56,5 +57,8 @@ export function initAiChatSchema(db: DatabaseSync): void {
   }
   if (!columns.some((column) => column.name === "title_customized")) {
     db.exec("ALTER TABLE ai_conversation ADD COLUMN title_customized INTEGER NOT NULL DEFAULT 0");
+  }
+  if (!columns.some((column) => column.name === "selected_reasoning_level")) {
+    db.exec("ALTER TABLE ai_conversation ADD COLUMN selected_reasoning_level TEXT");
   }
 }

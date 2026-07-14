@@ -16,6 +16,7 @@ export function createInitialAiChatSnapshot(model = "mock-assistant"): AiChatSna
     model,
     selectedModelId: "",
     selectedAgentId: BUILTIN_AI_AGENT_ID,
+    selectedReasoningLevel: null,
     scenarioId: null,
     warnings: [],
     messages: [],

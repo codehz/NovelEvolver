@@ -10,6 +10,7 @@ import type {
   AiConversationSearchOptions,
   AiConversationSummary,
 } from "#shared/rpc/ai/index";
+import type { AiReasoningLevel } from "#shared/rpc/services/index";
 
 import type { ProjectAiChatController } from "../../ai/chat/project-ai-chat";
 
@@ -86,5 +87,9 @@ export class AiChatHandleImpl extends RpcTarget implements AiChatHandle {
 
   setSelectedAgent(agentId: string): void {
     this.#chat.setSelectedAgent(agentId);
+  }
+
+  setSelectedReasoningLevel(level: AiReasoningLevel | null): void {
+    this.#chat.setSelectedReasoningLevel(level);
   }
 }

@@ -9,7 +9,7 @@ import type {
   AiConversationSummary,
 } from "#shared/rpc/ai/index";
 import { MOCK_AI_MODEL_ID } from "#shared/rpc/ai/index";
-import { BUILTIN_AI_AGENT_ID } from "#shared/rpc/services/index";
+import { BUILTIN_AI_AGENT_ID, type AiReasoningLevel } from "#shared/rpc/services/index";
 
 import type { AiChatRepository, AiConversationRecord } from "../../db/repositories/ai-chat-repo";
 import { RpcStreamPublisher } from "../../lib/stream-publisher";
@@ -24,6 +24,7 @@ import {
   isSelectableModelId,
   listSelectableModels,
   resolveDefaultSelectedModelId,
+  resolveReasoningLevelForModel,
 } from "./selectable-models";
 
 const SEARCH_SNIPPET_RADIUS = 36;
@@ -261,6 +262,10 @@ export class ProjectAiChatController {
     );
   }
 
+  setSelectedReasoningLevel(level: AiReasoningLevel | null): void {
+    this.#getActiveRuntime().setSelectedReasoningLevel(level);
+  }
+
   runScenario(options: {
     scenarioId: string;
     pacing: MockScenarioPacing;
@@ -453,6 +458,10 @@ export class ProjectAiChatController {
       options?.selectedModelId ??
       this.#resolveInitialSelectedModelId(record?.selectedModelId ?? null);
     const selectedModel = this.listSelectableModels().find((model) => model.id === selectedModelId);
+    // New conversations (no record): use model default. Loaded records: let runtime validate stored value.
+    const selectedReasoningLevel = record
+      ? undefined
+      : resolveReasoningLevelForModel(selectedModel, null);
     const runtime = new AiConversationRuntime({
       ...this.#runtimeOptions,
       record,
@@ -461,6 +470,7 @@ export class ProjectAiChatController {
       persistence: scenario?.persistence,
       selectedModelId,
       selectedAgentId: options?.selectedAgentId ?? record?.selectedAgentId ?? BUILTIN_AI_AGENT_ID,
+      selectedReasoningLevel,
       initialAdapterKind: selectedModel?.kind ?? "mock",
       initialModel: selectedModel?.model ?? "",
     });

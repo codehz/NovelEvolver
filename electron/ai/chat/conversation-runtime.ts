@@ -17,6 +17,7 @@ import type {
   AiConversationStatus,
   AiConversationSummary,
 } from "#shared/rpc/ai/index";
+import { isAiReasoningLevel, type AiReasoningLevel } from "#shared/rpc/services/index";
 
 import type { AiChatRepository, AiConversationRecord } from "../../db/repositories/ai-chat-repo";
 import { RpcStreamPublisher } from "../../lib/stream-publisher";
@@ -39,6 +40,7 @@ import {
 import { AiConversationState } from "./conversation-state";
 import { createPendingUserInputFromRequest, type PendingToolBatch } from "./pending-tool-batch";
 import { countCommittedAssistantParts, rebuildLastRequestInput } from "./request-history";
+import { resolveReasoningLevelForModel } from "./selectable-models";
 
 type RuntimeEventListener = (event: AiChatEvent) => void;
 
@@ -55,6 +57,11 @@ export type AiConversationRuntimeOptions = {
   selectedModelId?: string;
   /** Initial selected agent id for new conversations. */
   selectedAgentId?: string;
+  /**
+   * Initial session reasoning effort (already validated against the selected model).
+   * When loading a record, prefer this over the raw stored value if provided.
+   */
+  selectedReasoningLevel?: AiReasoningLevel | null;
   initialAdapterKind: AiChatSelectableModelKind;
   initialModel: string;
   resolveModelConfig: (modelId: string) => AiModelRuntimeConfig | null;
@@ -104,14 +111,24 @@ export class AiConversationRuntime {
       realToolRunner,
       scenarioId ? getMockScenario(scenarioId) : null,
     );
+    const selectedModelId = options.selectedModelId ?? options.record?.selectedModelId ?? "";
+    const preferredFromRecord = (() => {
+      const raw = options.record?.selectedReasoningLevel?.trim() ?? "";
+      return isAiReasoningLevel(raw) ? raw : null;
+    })();
+    const selectedReasoningLevel =
+      options.selectedReasoningLevel !== undefined
+        ? options.selectedReasoningLevel
+        : this.#resolveReasoningLevelForModelId(selectedModelId, preferredFromRecord);
     this.#state = new AiConversationState({
       projectId: options.projectId,
       repository: options.repository,
       record: options.record,
       adapterKind: this.#scenarioBackend?.adapterKind ?? options.initialAdapterKind,
       model: this.#scenarioBackend?.model ?? options.initialModel,
-      selectedModelId: options.selectedModelId ?? "",
+      selectedModelId,
       selectedAgentId: options.selectedAgentId ?? "builtin-writing-assistant",
+      selectedReasoningLevel,
       scenarioId: this.#scenarioBackend?.scenarioId ?? null,
       persistence: options.persistence ?? "persistent",
     });
@@ -145,6 +162,10 @@ export class AiConversationRuntime {
     return this.#state.selectedModelId;
   }
 
+  get selectedReasoningLevel(): AiReasoningLevel | null {
+    return this.#state.selectedReasoningLevel;
+  }
+
   setSelectedModel(modelId: string, adapterKind: AiChatSelectableModelKind, model: string): void {
     if (this.#state.selectedModelId === modelId) {
       return;
@@ -152,8 +173,10 @@ export class AiConversationRuntime {
     if (this.#state.pending || this.#state.pendingToolBatch !== null) {
       throw new Error("AI 请求处理中，无法切换模型。");
     }
+    const selectedReasoningLevel = this.#resolveReasoningLevelForModelId(modelId, null);
     this.#state.setSelectedModelId(modelId);
     this.#state.setBackend(adapterKind, model);
+    this.#state.setSelectedReasoningLevel(selectedReasoningLevel);
     this.#state.persistIfNeeded();
     this.#emit({
       kind: "delta",
@@ -164,6 +187,7 @@ export class AiConversationRuntime {
             selectedModelId: modelId,
             adapterKind,
             model,
+            selectedReasoningLevel,
           },
         },
       ],
@@ -182,9 +206,11 @@ export class AiConversationRuntime {
     if (this.#state.pending || this.#state.pendingToolBatch !== null) {
       throw new Error("AI 请求处理中，无法切换 Agent。");
     }
+    const selectedReasoningLevel = this.#resolveReasoningLevelForModelId(modelId, null);
     this.#state.setSelectedAgentId(agentId);
     this.#state.setSelectedModelId(modelId);
     this.#state.setBackend(adapterKind, model);
+    this.#state.setSelectedReasoningLevel(selectedReasoningLevel);
     this.#state.persistIfNeeded();
     this.#emit({
       kind: "delta",
@@ -196,6 +222,40 @@ export class AiConversationRuntime {
             selectedModelId: modelId,
             adapterKind,
             model,
+            selectedReasoningLevel,
+          },
+        },
+      ],
+    });
+  }
+
+  setSelectedReasoningLevel(level: AiReasoningLevel | null): void {
+    if (this.#state.selectedReasoningLevel === level) {
+      return;
+    }
+    if (this.#state.pending || this.#state.pendingToolBatch !== null) {
+      throw new Error("AI 请求处理中，无法切换推理强度。");
+    }
+
+    const modelConfig = this.#resolveModelConfig(this.#state.selectedModelId);
+    const available = modelConfig?.availableReasoningLevels ?? [];
+    if (level === null) {
+      if (available.length > 0) {
+        throw new Error("当前模型需要选择推理强度档位。");
+      }
+    } else if (!available.includes(level)) {
+      throw new Error("所选推理强度对当前模型不可用。");
+    }
+
+    this.#state.setSelectedReasoningLevel(level);
+    this.#state.persistIfNeeded();
+    this.#emit({
+      kind: "delta",
+      ops: [
+        {
+          type: "state.updated",
+          patch: {
+            selectedReasoningLevel: level,
           },
         },
       ],
@@ -436,8 +496,8 @@ export class AiConversationRuntime {
             ...(backend.maxOutputTokens !== undefined
               ? { maxOutputTokens: backend.maxOutputTokens }
               : {}),
-            ...(backend.defaultReasoningLevel !== undefined
-              ? { reasoningLevel: backend.defaultReasoningLevel }
+            ...(this.#state.selectedReasoningLevel != null
+              ? { reasoningLevel: this.#state.selectedReasoningLevel }
               : {}),
           }),
           context.assistantMessageId,
@@ -712,6 +772,16 @@ export class AiConversationRuntime {
       modelConfig,
       instructionsOverride: agentConfig.systemPrompt,
     });
+  }
+
+  #resolveReasoningLevelForModelId(
+    modelId: string,
+    preferred: AiReasoningLevel | null,
+  ): AiReasoningLevel | null {
+    if (modelId === "" || modelId === "mock") {
+      return null;
+    }
+    return resolveReasoningLevelForModel(this.#resolveModelConfig(modelId), preferred);
   }
 
   #emit(event: AiChatEvent): void {

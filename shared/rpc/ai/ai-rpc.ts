@@ -1,5 +1,6 @@
 import type { RpcTarget } from "capnweb";
 
+import type { AiReasoningLevel } from "../services/settings-rpc";
 import type { RpcSubscriptionResult } from "../transport/stream";
 
 export type AiChatMessageUsage = {
@@ -150,6 +151,16 @@ export type AiChatSelectableModel = {
   isDefault: boolean;
   /** Configured context window; `null` when unset (hide occupancy UI). */
   contextLength: number | null;
+  /**
+   * Reasoning effort levels exposed for this model.
+   * Empty array means hide effort UI and omit reasoningLevel on requests.
+   */
+  availableReasoningLevels: AiReasoningLevel[];
+  /**
+   * Default reasoning effort among available levels.
+   * `null` when available is empty.
+   */
+  defaultReasoningLevel: AiReasoningLevel | null;
 };
 
 export type AiChatSelectableAgent = {
@@ -167,6 +178,11 @@ export type AiChatSnapshot = {
   /** User-selected model config id (`MOCK_AI_MODEL_ID` for mock). Empty when none. */
   selectedModelId: string;
   selectedAgentId: string;
+  /**
+   * Session reasoning effort for the next request.
+   * `null` when the current model has no available levels (omit on wire).
+   */
+  selectedReasoningLevel: AiReasoningLevel | null;
   scenarioId: string | null;
   warnings: AiChatWarning[];
   messages: AiChatMessage[];
@@ -227,6 +243,7 @@ export type AiChatStatePatch = {
   canRetry?: boolean;
   selectedModelId?: string;
   selectedAgentId?: string;
+  selectedReasoningLevel?: AiReasoningLevel | null;
 };
 
 export type AiChatDeltaOp =
@@ -320,4 +337,9 @@ export interface AiChatHandle extends RpcTarget {
   setSelectedModel(modelId: string): void;
   listSelectableAgents(): AiChatSelectableAgent[];
   setSelectedAgent(agentId: string): void;
+  /**
+   * Session reasoning effort for subsequent requests.
+   * Must be a member of the current model's available levels, or `null` when unavailable.
+   */
+  setSelectedReasoningLevel(level: AiReasoningLevel | null): void;
 }

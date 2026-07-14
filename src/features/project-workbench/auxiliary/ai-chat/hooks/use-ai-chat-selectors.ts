@@ -1,9 +1,16 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 
 import type { AiChatSelectableAgent, AiChatSelectableModel } from "#shared/rpc/ai/index";
+import type { AiReasoningLevel } from "#shared/rpc/services/index";
+import { AI_REASONING_LEVEL_LABELS, AI_REASONING_LEVELS } from "#shared/rpc/services/index";
 
 import { toAgentSelectorItems, toModelSelectorItems, type AiChatSelectorItem } from "../selectors";
 import { useAiChatState } from "../state/use-ai-chat-state";
+
+function orderAvailableReasoningLevels(levels: readonly AiReasoningLevel[]): AiReasoningLevel[] {
+  const selected = new Set(levels);
+  return AI_REASONING_LEVELS.filter((level) => selected.has(level));
+}
 
 export function useAiChatSelectors() {
   const {
@@ -13,6 +20,7 @@ export function useAiChatSelectors() {
     setSelectedModel,
     listSelectableAgents,
     setSelectedAgent,
+    setSelectedReasoningLevel,
   } = useAiChatState();
 
   const [selectableModels, setSelectableModels] = useState<AiChatSelectableModel[]>([]);
@@ -70,6 +78,19 @@ export function useAiChatSelectors() {
     null;
   const selectedAgentLabel = selectedAgent?.name ?? "选择 Agent";
 
+  const availableReasoningLevels = useMemo(
+    () => orderAvailableReasoningLevels(selectedModel?.availableReasoningLevels ?? []),
+    [selectedModel?.availableReasoningLevels],
+  );
+  const showReasoningSelector = availableReasoningLevels.length > 0;
+  const selectedReasoningLevel = snapshot.selectedReasoningLevel;
+  const selectedReasoningLabel =
+    selectedReasoningLevel != null
+      ? AI_REASONING_LEVEL_LABELS[selectedReasoningLevel]
+      : availableReasoningLevels[0]
+        ? AI_REASONING_LEVEL_LABELS[availableReasoningLevels[0]]
+        : "推理强度";
+
   const modelItems: AiChatSelectorItem[] = useMemo(
     () => toModelSelectorItems(selectableModels, snapshot.selectedModelId),
     [selectableModels, snapshot.selectedModelId],
@@ -111,6 +132,16 @@ export function useAiChatSelectors() {
     [hasPendingUserInputs, loading, setSelectedAgent, snapshot.pending, snapshot.selectedAgentId],
   );
 
+  const handleSelectReasoningLevel = useCallback(
+    (level: AiReasoningLevel) => {
+      if (loading || snapshot.pending || level === snapshot.selectedReasoningLevel) {
+        return;
+      }
+      void setSelectedReasoningLevel(level);
+    },
+    [loading, setSelectedReasoningLevel, snapshot.pending, snapshot.selectedReasoningLevel],
+  );
+
   const selectorDisabled = useMemo(
     () => loading || snapshot.pending || hasPendingUserInputs,
     [hasPendingUserInputs, loading, snapshot.pending],
@@ -124,6 +155,10 @@ export function useAiChatSelectors() {
   return {
     selectedModelLabel,
     selectedAgentLabel,
+    selectedReasoningLabel,
+    selectedReasoningLevel,
+    availableReasoningLevels,
+    showReasoningSelector,
     agentItems,
     modelItems,
     selectorDisabled,
@@ -133,5 +168,6 @@ export function useAiChatSelectors() {
     handleOpenModelPicker,
     handleSelectModel,
     handleSelectAgent,
+    handleSelectReasoningLevel,
   };
 }

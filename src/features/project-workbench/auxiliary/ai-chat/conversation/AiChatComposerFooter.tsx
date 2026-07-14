@@ -25,6 +25,10 @@ export function AiChatComposerFooter({ composer }: AiChatComposerFooterProps) {
   const {
     selectedModelLabel,
     selectedAgentLabel,
+    selectedReasoningLabel,
+    selectedReasoningLevel,
+    availableReasoningLevels,
+    showReasoningSelector,
     agentItems,
     modelItems,
     selectorDisabled,
@@ -33,6 +37,7 @@ export function AiChatComposerFooter({ composer }: AiChatComposerFooterProps) {
     handleOpenModelPicker,
     handleSelectModel,
     handleSelectAgent,
+    handleSelectReasoningLevel,
   } = useAiChatSelectors();
 
   if (hasPendingUserInputs) {
@@ -53,17 +58,22 @@ export function AiChatComposerFooter({ composer }: AiChatComposerFooterProps) {
         draft={draft}
         agentItems={agentItems}
         modelItems={modelItems}
+        availableReasoningLevels={availableReasoningLevels}
+        showReasoningSelector={showReasoningSelector}
         onComposerKeyDown={handleComposerKeyDown}
         onDraftChange={setDraft}
         onOpenAgentPicker={handleOpenAgentPicker}
         onOpenModelPicker={handleOpenModelPicker}
         onSelectAgent={handleSelectAgent}
         onSelectModel={handleSelectModel}
+        onSelectReasoningLevel={handleSelectReasoningLevel}
         onSendClick={handleSendClick}
         onStopClick={handleStopClick}
         onSubmit={handleSubmit}
         selectedAgentLabel={selectedAgentLabel}
         selectedModelLabel={selectedModelLabel}
+        selectedReasoningLabel={selectedReasoningLabel}
+        selectedReasoningLevel={selectedReasoningLevel}
         selectorDisabled={selectorDisabled}
         modelSelectorDisabled={modelSelectorDisabled}
       />

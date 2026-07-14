@@ -24,7 +24,11 @@ import type {
   AiConversationSummary,
   AiChatSelectableModelKind,
 } from "#shared/rpc/ai/index";
-import { BUILTIN_AI_AGENT_ID } from "#shared/rpc/services/index";
+import {
+  BUILTIN_AI_AGENT_ID,
+  isAiReasoningLevel,
+  type AiReasoningLevel,
+} from "#shared/rpc/services/index";
 
 import type {
   AiChatRepository,
@@ -64,9 +68,22 @@ type AiConversationStateOptions = {
   model: string;
   selectedModelId: string;
   selectedAgentId: string;
+  /** Initial session reasoning effort (new conversations / overrides). */
+  selectedReasoningLevel?: AiReasoningLevel | null;
   scenarioId: string | null;
   persistence: "persistent" | "ephemeral";
 };
+
+function parseStoredReasoningLevel(value: string | null | undefined): AiReasoningLevel | null {
+  if (value == null) {
+    return null;
+  }
+  const normalized = value.trim();
+  if (normalized === "" || !isAiReasoningLevel(normalized)) {
+    return null;
+  }
+  return normalized;
+}
 
 function applyToolCallStatusPatch(
   current: AiChatToolCall["status"],
@@ -143,6 +160,7 @@ export class AiConversationState {
   #status: AiConversationStatus = "active";
   #selectedModelId = "";
   #selectedAgentId: string = BUILTIN_AI_AGENT_ID;
+  #selectedReasoningLevel: AiReasoningLevel | null = null;
   #pendingToolBatch: PendingToolBatch | null = null;
   #pending = false;
   #errorMessage: string | null = null;
@@ -161,8 +179,13 @@ export class AiConversationState {
     this.#persistence = options.persistence;
     this.#selectedModelId = options.selectedModelId;
     this.#selectedAgentId = options.selectedAgentId;
+    this.#selectedReasoningLevel = options.selectedReasoningLevel ?? null;
     if (options.record) {
       this.#loadRecord(options.record);
+      // Prefer explicit constructor override (e.g. model default after invalid stored value).
+      if (options.selectedReasoningLevel !== undefined) {
+        this.#selectedReasoningLevel = options.selectedReasoningLevel;
+      }
       return;
     }
     this.#beginEmptyConversation();
@@ -221,6 +244,10 @@ export class AiConversationState {
     return this.#selectedAgentId;
   }
 
+  get selectedReasoningLevel(): AiReasoningLevel | null {
+    return this.#selectedReasoningLevel;
+  }
+
   getSnapshot(): AiChatSnapshot {
     return {
       conversationId: this.#conversationId,
@@ -228,6 +255,7 @@ export class AiConversationState {
       model: this.#model,
       selectedModelId: this.#selectedModelId,
       selectedAgentId: this.#selectedAgentId,
+      selectedReasoningLevel: this.#selectedReasoningLevel,
       scenarioId: this.#scenarioId,
       warnings: this.#warnings.map((warning) => ({ ...warning })),
       messages: this.#messages.map(cloneAiChatMessage),
@@ -366,6 +394,7 @@ export class AiConversationState {
       model: this.#model,
       selectedModelId: this.#selectedModelId,
       selectedAgentId: this.#selectedAgentId,
+      selectedReasoningLevel: this.#selectedReasoningLevel,
       scenarioId: this.#scenarioId,
       messagesJson: JSON.stringify(this.#messages.map(cloneAiChatMessage)),
       historyJson: JSON.stringify(this.#history),
@@ -423,6 +452,14 @@ export class AiConversationState {
       return;
     }
     this.#selectedAgentId = agentId;
+    this.#markDirty();
+  }
+
+  setSelectedReasoningLevel(level: AiReasoningLevel | null): void {
+    if (this.#selectedReasoningLevel === level) {
+      return;
+    }
+    this.#selectedReasoningLevel = level;
     this.#markDirty();
   }
 
@@ -735,6 +772,7 @@ export class AiConversationState {
     this.#model = record.model;
     this.#selectedModelId = this.#selectedModelId || record.selectedModelId;
     this.#selectedAgentId = record.selectedAgentId;
+    this.#selectedReasoningLevel = parseStoredReasoningLevel(record.selectedReasoningLevel);
     this.#pending = false;
     this.#errorMessage = record.errorMessage;
     this.#dirty = false;

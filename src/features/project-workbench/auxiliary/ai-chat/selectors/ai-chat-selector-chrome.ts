@@ -2,6 +2,8 @@ import { cn } from "#app/shared/lib/ui/cn";
 import {
   controlFocusVisibleClass,
   listRowHighlightClass,
+  menuItemHighlightClass,
+  menuMotionClass,
   overlayMotionClass,
   pickerSearchInputClass,
   popoverSurfaceClass,
@@ -12,6 +14,8 @@ export const agentSelectorAnchorClass = cn("relative inline-flex max-w-full min-
 
 export const modelSelectorAnchorClass = cn("relative inline-flex max-w-full min-w-0");
 
+export const reasoningSelectorAnchorClass = cn("relative inline-flex shrink-0");
+
 export const selectorPositionerClass = cn("z-ai-chat-selector outline-none");
 
 export const selectorPopoverPanelClass = cn(
@@ -21,6 +25,22 @@ export const selectorPopoverPanelClass = cn(
   overlayMotionClass,
   popoverSurfaceClass,
 );
+
+/** Compact menu panel for reasoning effort levels (no search). */
+export const reasoningMenuPanelClass = cn(
+  "min-w-28 origin-(--transform-origin) overflow-hidden rounded-lg border border-titlebar-border bg-app-surface py-1 text-xs text-app-foreground shadow-quick-pick outline-none",
+  menuMotionClass,
+  "data-starting-style:opacity-0",
+  "data-ending-style:opacity-0",
+);
+
+export const reasoningMenuItemClass = cn(
+  "relative flex w-full cursor-default items-center gap-2 px-3 py-1 text-left text-xs leading-tight outline-none select-none",
+  "text-app-foreground",
+  menuItemHighlightClass,
+);
+
+export const reasoningMenuItemActiveClass = cn("text-ctp-mauve");
 
 export const selectorSearchWrapClass = cn("px-2 pt-2 pb-1.5");
 

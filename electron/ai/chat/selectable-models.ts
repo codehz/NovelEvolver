@@ -1,7 +1,37 @@
 import { MOCK_AI_MODEL_ID, type AiChatSelectableModel } from "#shared/rpc/ai/index";
-import type { AiModelsSettingsSnapshot } from "#shared/rpc/services/index";
+import type { AiModelsSettingsSnapshot, AiReasoningLevel } from "#shared/rpc/services/index";
 
 export type ResolveAiModelsSnapshot = () => AiModelsSettingsSnapshot;
+
+export type ReasoningLevelSource = {
+  availableReasoningLevels: readonly AiReasoningLevel[];
+  defaultReasoningLevel: AiReasoningLevel | null;
+};
+
+/**
+ * Resolve the effective session reasoning level for a model.
+ * - available empty → null
+ * - preferred in available → preferred
+ * - otherwise → defaultReasoningLevel (or first available)
+ */
+export function resolveReasoningLevelForModel(
+  source: ReasoningLevelSource | null | undefined,
+  preferred?: AiReasoningLevel | null,
+): AiReasoningLevel | null {
+  if (!source || source.availableReasoningLevels.length === 0) {
+    return null;
+  }
+  if (preferred != null && source.availableReasoningLevels.includes(preferred)) {
+    return preferred;
+  }
+  if (
+    source.defaultReasoningLevel != null &&
+    source.availableReasoningLevels.includes(source.defaultReasoningLevel)
+  ) {
+    return source.defaultReasoningLevel;
+  }
+  return source.availableReasoningLevels[0] ?? null;
+}
 
 export function listSelectableModels(options: {
   mockAiEnabled: boolean;
@@ -19,6 +49,8 @@ export function listSelectableModels(options: {
       model: "mock-assistant",
       isDefault: options.models.defaultModelId === null && options.models.models.length === 0,
       contextLength: null,
+      availableReasoningLevels: [],
+      defaultReasoningLevel: null,
     });
   }
 
@@ -34,6 +66,8 @@ export function listSelectableModels(options: {
       model: model.model,
       isDefault: model.id === options.models.defaultModelId,
       contextLength: model.contextLength,
+      availableReasoningLevels: [...model.availableReasoningLevels],
+      defaultReasoningLevel: model.defaultReasoningLevel,
     });
   }
 
