@@ -39,35 +39,29 @@ export const settingsIconButtonClass = cn(
   iconButtonHoverClass,
 );
 
-export const settingsSearchWrapClass = cn("shrink-0 border-b border-titlebar-border px-4 py-2.5");
-
-export const settingsSearchInputClass = cn(fieldInputClass, "h-8 px-2.5");
-
-/** Row body under a column flex panel — children scroll with `h-full overflow-y-auto`. */
-export const settingsBodyClass = cn("flex min-h-0 flex-1 overflow-hidden");
-
-/** Settings nav: fixed width + stretch-to-body scrollport. */
-export const settingsSidebarClass = cn(
-  "h-full min-h-0 w-44 shrink-0 overflow-x-hidden overflow-y-auto border-r border-titlebar-border bg-ctp-mantle/40",
+/** Horizontal bubble tab strip under the dialog header. */
+export const settingsTabListClass = cn(
+  "flex shrink-0 flex-wrap items-center gap-1.5 border-b border-titlebar-border px-4 py-2.5",
 );
 
-export const settingsCategoryButtonClass = cn(
-  "flex w-full items-center gap-2 px-3 py-1.5 text-left text-xs leading-tight text-app-muted outline-none",
-  panelHoverClass,
-  "hover:text-app-foreground",
+/** Inactive bubble tab chip. */
+export const settingsTabChipClass = cn(
+  "inline-flex h-7 shrink-0 items-center rounded-full border border-titlebar-border bg-app-surface px-2.5 text-2xs leading-none font-medium text-app-muted outline-none select-none",
+  "hover:not-disabled:text-app-foreground",
+  controlFocusVisibleInsetClass,
 );
 
-export const settingsCategoryButtonActiveClass = cn(
-  "border-l-2 border-badge-background bg-ctp-surface0/35 pl-2.5 text-app-foreground",
+/** Active bubble tab chip. */
+export const settingsTabChipActiveClass = cn(
+  "border-badge-background/40 bg-ctp-surface0/55 text-app-foreground",
 );
 
-/** Settings main pane: remaining width + stretch-to-body scrollport. */
+/** Column body under header + tabs — content scrolls with `h-full overflow-y-auto`. */
+export const settingsBodyClass = cn("flex min-h-0 flex-1 flex-col overflow-hidden");
+
+/** Settings main pane: full-width stretch-to-body scrollport. */
 export const settingsContentClass = cn(
   "h-full min-h-0 min-w-0 flex-1 overflow-x-hidden overflow-y-auto",
-);
-
-export const settingsPlaceholderClass = cn(
-  "flex min-h-40 items-center justify-center px-6 py-10 text-xs text-app-muted",
 );
 
 export const settingsHeaderActionButtonClass = cn(

@@ -1,5 +1,5 @@
 import { Dialog } from "@base-ui/react/dialog";
-import { useId, useState } from "react";
+import { useState } from "react";
 
 import { cn } from "#app/shared/lib/ui/cn";
 
@@ -8,26 +8,19 @@ import { AiModelsSettingsPanel } from "./ai-models/AiModelsSettingsPanel";
 import {
   settingsBackdropClass,
   settingsBodyClass,
-  settingsCategoryButtonActiveClass,
-  settingsCategoryButtonClass,
   settingsContentClass,
   settingsHeaderClass,
   settingsIconButtonClass,
   settingsPanelClass,
-  settingsPlaceholderClass,
-  settingsSearchInputClass,
-  settingsSearchWrapClass,
-  settingsSidebarClass,
+  settingsTabChipActiveClass,
+  settingsTabChipClass,
+  settingsTabListClass,
   settingsTitleClass,
 } from "./settings-chrome";
 
 const SETTINGS_CATEGORIES = [
-  { id: "common", label: "常用" },
   { id: "ai-models", label: "AI 模型" },
   { id: "ai-agents", label: "AI Agent" },
-  { id: "editor", label: "编辑器" },
-  { id: "appearance", label: "外观" },
-  { id: "extensions", label: "扩展" },
 ] as const;
 
 type SettingsCategoryId = (typeof SETTINGS_CATEGORIES)[number]["id"];
@@ -38,12 +31,7 @@ type SettingsDialogProps = {
 };
 
 export function SettingsDialog({ open, onDismiss }: SettingsDialogProps) {
-  const searchInputId = useId();
-  const [activeCategoryId, setActiveCategoryId] = useState<SettingsCategoryId>("common");
-
-  const activeCategory =
-    SETTINGS_CATEGORIES.find((category) => category.id === activeCategoryId) ??
-    SETTINGS_CATEGORIES[0];
+  const [activeCategoryId, setActiveCategoryId] = useState<SettingsCategoryId>("ai-models");
 
   return (
     <Dialog.Root
@@ -58,9 +46,7 @@ export function SettingsDialog({ open, onDismiss }: SettingsDialogProps) {
         <Dialog.Backdrop className={settingsBackdropClass} />
         <Dialog.Popup className={settingsPanelClass}>
           <SettingsDialogChrome
-            activeCategory={activeCategory}
             activeCategoryId={activeCategoryId}
-            searchInputId={searchInputId}
             onSelectCategory={setActiveCategoryId}
           />
         </Dialog.Popup>
@@ -70,14 +56,10 @@ export function SettingsDialog({ open, onDismiss }: SettingsDialogProps) {
 }
 
 function SettingsDialogChrome({
-  searchInputId,
   activeCategoryId,
-  activeCategory,
   onSelectCategory,
 }: {
-  searchInputId: string;
   activeCategoryId: SettingsCategoryId;
-  activeCategory: (typeof SETTINGS_CATEGORIES)[number];
   onSelectCategory: (id: SettingsCategoryId) => void;
 }) {
   return (
@@ -92,52 +74,29 @@ function SettingsDialogChrome({
         </Dialog.Close>
       </header>
 
-      <div className={settingsSearchWrapClass}>
-        <label className="sr-only" htmlFor={searchInputId}>
-          搜索设置
-        </label>
-        <input
-          className={settingsSearchInputClass}
-          disabled
-          id={searchInputId}
-          placeholder="搜索设置"
-          type="search"
-        />
+      <div aria-label="设置分类" className={settingsTabListClass} role="tablist">
+        {SETTINGS_CATEGORIES.map((category) => {
+          const active = category.id === activeCategoryId;
+          return (
+            <button
+              key={category.id}
+              aria-selected={active}
+              className={cn(settingsTabChipClass, active && settingsTabChipActiveClass)}
+              role="tab"
+              type="button"
+              onClick={() => {
+                onSelectCategory(category.id);
+              }}
+            >
+              {category.label}
+            </button>
+          );
+        })}
       </div>
 
       <div className={settingsBodyClass}>
-        <div className={settingsSidebarClass}>
-          <nav aria-label="设置分类" className="flex flex-col">
-            {SETTINGS_CATEGORIES.map((category) => {
-              const active = category.id === activeCategoryId;
-              return (
-                <button
-                  key={category.id}
-                  aria-current={active ? "page" : undefined}
-                  className={cn(
-                    settingsCategoryButtonClass,
-                    active && settingsCategoryButtonActiveClass,
-                  )}
-                  type="button"
-                  onClick={() => {
-                    onSelectCategory(category.id);
-                  }}
-                >
-                  {category.label}
-                </button>
-              );
-            })}
-          </nav>
-        </div>
-
-        <div className={settingsContentClass}>
-          {activeCategoryId === "ai-models" ? (
-            <AiModelsSettingsPanel />
-          ) : activeCategoryId === "ai-agents" ? (
-            <AiAgentsSettingsPanel />
-          ) : (
-            <div className={settingsPlaceholderClass}>「{activeCategory.label}」分类暂无设置项</div>
-          )}
+        <div className={settingsContentClass} role="tabpanel">
+          {activeCategoryId === "ai-models" ? <AiModelsSettingsPanel /> : <AiAgentsSettingsPanel />}
         </div>
       </div>
     </>
