@@ -3,6 +3,7 @@ import {
   createContext,
   useCallback,
   useContext,
+  useLayoutEffect,
   useMemo,
   useRef,
   useState,
@@ -44,9 +45,18 @@ type QuickPickOverlayProps = {
 };
 
 export function QuickPickOverlay({ titleId, onDismiss, children }: QuickPickOverlayProps) {
-  const [open, setOpen] = useState(true);
+  // Base UI only applies `data-starting-style` on false→true open transitions.
+  // Mounting with open=true skips the enter animation entirely.
+  const [open, setOpen] = useState(false);
   const pendingAfterCloseRef = useRef<(() => void) | null>(null);
   const settledRef = useRef(false);
+
+  useLayoutEffect(() => {
+    if (settledRef.current) {
+      return;
+    }
+    setOpen(true);
+  }, []);
 
   const settle = useCallback(() => {
     if (settledRef.current) {
