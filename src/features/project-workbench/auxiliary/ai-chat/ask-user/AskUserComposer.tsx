@@ -9,7 +9,7 @@ import {
 
 import { cn } from "#app/shared/lib/ui/cn";
 import { controlFocusVisibleClass, rowHoverClass } from "#app/shared/lib/ui/interaction-chrome";
-import { Button, IconTooltip } from "#app/shared/ui";
+import { Button, AppTooltip } from "#app/shared/ui";
 import type { AskUserPendingInput } from "#shared/rpc/ai/index";
 
 import {
@@ -157,7 +157,7 @@ export function AskUserComposer({
       />
 
       <div className="flex min-w-0 items-center justify-end gap-1">
-        <IconTooltip label="取消回答" side="top" disabled={inputDisabled}>
+        <AppTooltip label="取消回答" side="top" disabled={inputDisabled}>
           <Button
             variant="ghost"
             size="icon-sm"
@@ -171,8 +171,8 @@ export function AskUserComposer({
           >
             <span aria-hidden="true" className="icon-[codicon--close] text-sm" />
           </Button>
-        </IconTooltip>
-        <IconTooltip label="提交回答" side="top" disabled={inputDisabled || draft.trim() === ""}>
+        </AppTooltip>
+        <AppTooltip label="提交回答" side="top" disabled={inputDisabled || draft.trim() === ""}>
           <Button
             variant="ghost"
             size="icon-sm"
@@ -183,7 +183,7 @@ export function AskUserComposer({
           >
             <span aria-hidden="true" className="icon-[codicon--newline] text-sm" />
           </Button>
-        </IconTooltip>
+        </AppTooltip>
       </div>
     </form>
   );

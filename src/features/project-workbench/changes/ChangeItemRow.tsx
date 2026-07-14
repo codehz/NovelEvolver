@@ -2,7 +2,7 @@ import type { KeyboardEvent, ReactNode } from "react";
 
 import { cn } from "#app/shared/lib/ui/cn";
 import { rowHoverClass } from "#app/shared/lib/ui/interaction-chrome";
-import { Button, IconTooltip } from "#app/shared/ui";
+import { Button, AppTooltip } from "#app/shared/ui";
 import type { Change } from "#shared/rpc/worktree/index";
 import { contentEntityIconClass } from "#workbench/tree/content-tree-icons";
 import type { TreeRowLayout } from "#workbench/tree/tree-row-layout";
@@ -85,7 +85,7 @@ export function ChangeItemRow({
           ) : null}
           <span className={cn(changeKindIconClass(item.kind), "shrink-0 text-sm")} />
         </span>
-        <IconTooltip label="还原此变更" side="left">
+        <AppTooltip label="还原此变更" side="left">
           <Button
             variant="ghost"
             size="icon-sm"
@@ -104,7 +104,7 @@ export function ChangeItemRow({
           >
             <span className="icon-[codicon--discard] text-sm" />
           </Button>
-        </IconTooltip>
+        </AppTooltip>
       </span>
     </TreeMotionRow>
   );

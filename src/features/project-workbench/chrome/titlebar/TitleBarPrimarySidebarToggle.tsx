@@ -4,7 +4,7 @@ import {
   controlFocusVisibleClass,
   iconButtonHoverClass,
 } from "#app/shared/lib/ui/interaction-chrome";
-import { Button, IconTooltip } from "#app/shared/ui";
+import { Button, AppTooltip } from "#app/shared/ui";
 
 const toggleButtonClass = cn(
   "inline-flex size-7 shrink-0 items-center justify-center rounded-full border-0 bg-transparent p-0",
@@ -24,7 +24,7 @@ export function TitleBarPrimarySidebarToggle({
 }: TitleBarPrimarySidebarToggleProps) {
   return (
     <TitleBarActionsPortalContent>
-      <IconTooltip label="主侧边栏" side="bottom">
+      <AppTooltip label="主侧边栏" side="bottom">
         <Button
           variant="ghost"
           size="icon-md"
@@ -43,7 +43,7 @@ export function TitleBarPrimarySidebarToggle({
             )}
           />
         </Button>
-      </IconTooltip>
+      </AppTooltip>
     </TitleBarActionsPortalContent>
   );
 }

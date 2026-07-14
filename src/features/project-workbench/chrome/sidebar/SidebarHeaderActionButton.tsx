@@ -1,5 +1,5 @@
 import { cn } from "#app/shared/lib/ui/cn";
-import { Button, IconTooltip } from "#app/shared/ui";
+import { Button, AppTooltip } from "#app/shared/ui";
 
 import { sidebarHeaderActionClass, sidebarHeaderIconClass } from "./sidebar-chrome";
 
@@ -19,7 +19,7 @@ export function SidebarHeaderActionButton({
   onClick,
 }: SidebarHeaderActionButtonProps) {
   return (
-    <IconTooltip label={label} side="bottom">
+    <AppTooltip label={label} side="bottom">
       <Button
         aria-label={label}
         className={sidebarHeaderActionClass}
@@ -30,6 +30,6 @@ export function SidebarHeaderActionButton({
       >
         <span aria-hidden="true" className={cn(sidebarHeaderIconClass, icon)} />
       </Button>
-    </IconTooltip>
+    </AppTooltip>
   );
 }

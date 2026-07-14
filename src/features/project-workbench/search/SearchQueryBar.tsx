@@ -6,7 +6,7 @@ import {
   controlFocusVisibleClass,
   fieldSurfaceFocusWithinClass,
 } from "#app/shared/lib/ui/interaction-chrome";
-import { Button, IconTooltip, SlotText } from "#app/shared/ui";
+import { Button, AppTooltip, SlotText } from "#app/shared/ui";
 
 const searchFieldRowClass = cn(fieldSurfaceFocusWithinClass, "flex h-7 items-center gap-1.5 px-2");
 
@@ -71,7 +71,7 @@ export function SearchQueryBar({
           placeholder={isRegex ? "正则表达式" : undefined}
           onChange={(event) => onQueryChange(event.target.value)}
         />
-        <IconTooltip label="使用正则表达式" side="bottom">
+        <AppTooltip label="使用正则表达式" side="bottom">
           <Toggle
             pressed={isRegex}
             className={searchRegexToggleClass}
@@ -82,9 +82,9 @@ export function SearchQueryBar({
           >
             <span className="icon-[codicon--regex] text-sm" />
           </Toggle>
-        </IconTooltip>
+        </AppTooltip>
         {query !== "" ? (
-          <IconTooltip label="清除" side="bottom">
+          <AppTooltip label="清除" side="bottom">
             <Button
               variant="ghost"
               size="icon-sm"
@@ -94,7 +94,7 @@ export function SearchQueryBar({
             >
               <span className="icon-[codicon--close] text-sm" />
             </Button>
-          </IconTooltip>
+          </AppTooltip>
         ) : null}
       </div>
       <p className="mt-1.5 px-0.5 text-[10px] leading-snug text-ctp-subtext0">

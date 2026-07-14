@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 
-import { Button, IconTooltip, MarkdownStream } from "#app/shared/ui";
+import { Button, AppTooltip, MarkdownStream } from "#app/shared/ui";
 import type { AiChatAssistantPart, AiChatMentionRef, AiChatMessage } from "#shared/rpc/ai/index";
 
 import {
@@ -169,7 +169,7 @@ export function AiMessageBlock({ message, onRetry, retryLabel = "重新生成" }
       <div className={assistantMessageFooterClass}>
         {onRetry ? (
           <div className={assistantMessageFooterLeadingClass}>
-            <IconTooltip label={retryLabel} side="top">
+            <AppTooltip label={retryLabel} side="top">
               <Button
                 variant="ghost"
                 size="icon-sm"
@@ -179,15 +179,15 @@ export function AiMessageBlock({ message, onRetry, retryLabel = "重新生成" }
               >
                 <span aria-hidden="true" className="icon-[codicon--refresh] text-sm" />
               </Button>
-            </IconTooltip>
+            </AppTooltip>
           </div>
         ) : null}
         <div className={assistantMessageFooterTrailingClass}>
-          <IconTooltip label={usageMeta} side="top">
+          <AppTooltip label={usageMeta} side="top">
             <span tabIndex={0} className={assistantMessageModelLabelClass}>
               {modelLabel}
             </span>
-          </IconTooltip>
+          </AppTooltip>
         </div>
       </div>
     </article>

@@ -4,7 +4,7 @@ import {
   controlFocusVisibleClass,
   iconButtonHoverClass,
 } from "#app/shared/lib/ui/interaction-chrome";
-import { Button, IconTooltip } from "#app/shared/ui";
+import { Button, AppTooltip } from "#app/shared/ui";
 
 const toggleButtonClass = cn(
   "inline-flex size-7 shrink-0 items-center justify-center rounded-full border-0 bg-transparent p-0",
@@ -21,7 +21,7 @@ type TitleBarAuxiliaryToggleProps = {
 export function TitleBarAuxiliaryToggle({ visible, onToggle }: TitleBarAuxiliaryToggleProps) {
   return (
     <TitleBarActionsPortalContent>
-      <IconTooltip label="AI 助手面板" side="bottom">
+      <AppTooltip label="AI 助手面板" side="bottom">
         <Button
           variant="ghost"
           size="icon-md"
@@ -40,7 +40,7 @@ export function TitleBarAuxiliaryToggle({ visible, onToggle }: TitleBarAuxiliary
             )}
           />
         </Button>
-      </IconTooltip>
+      </AppTooltip>
     </TitleBarActionsPortalContent>
   );
 }

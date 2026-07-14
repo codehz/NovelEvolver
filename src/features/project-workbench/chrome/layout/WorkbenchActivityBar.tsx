@@ -3,7 +3,7 @@ import { Link } from "wouter";
 
 import { cn } from "#app/shared/lib/ui/cn";
 import { controlFocusVisibleClass } from "#app/shared/lib/ui/interaction-chrome";
-import { Button, IconTooltip } from "#app/shared/ui";
+import { Button, AppTooltip } from "#app/shared/ui";
 
 type ActivityItem = {
   id: string;
@@ -44,7 +44,7 @@ export const WorkbenchActivityBar = memo(function WorkbenchActivityBar({
         {items.map((item) => {
           const isActive = primarySidebarVisible && activeView === item.id;
           return (
-            <IconTooltip key={item.id} label={item.label} side="right">
+            <AppTooltip key={item.id} label={item.label} side="right">
               <Button
                 variant="ghost"
                 aria-current={isActive ? "page" : undefined}
@@ -55,13 +55,13 @@ export const WorkbenchActivityBar = memo(function WorkbenchActivityBar({
               >
                 <span aria-hidden="true" className={cn(activityIconClass, item.iconClass)} />
               </Button>
-            </IconTooltip>
+            </AppTooltip>
           );
         })}
       </div>
 
       <div className="mt-auto flex flex-col">
-        <IconTooltip label="返回项目列表" side="right">
+        <AppTooltip label="返回项目列表" side="right">
           <Link
             aria-label="返回项目列表"
             className={cn(activityButtonClass, "app-region-no-drag")}
@@ -69,7 +69,7 @@ export const WorkbenchActivityBar = memo(function WorkbenchActivityBar({
           >
             <span aria-hidden="true" className={cn(activityIconClass, "icon-[codicon--home]")} />
           </Link>
-        </IconTooltip>
+        </AppTooltip>
       </div>
     </nav>
   );

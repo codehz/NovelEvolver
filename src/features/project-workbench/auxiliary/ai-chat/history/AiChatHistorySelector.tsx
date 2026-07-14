@@ -2,7 +2,7 @@ import { Popover } from "@base-ui/react/popover";
 import { useCallback, useState } from "react";
 
 import { cn } from "#app/shared/lib/ui/cn";
-import { IconTooltip } from "#app/shared/ui";
+import { AppTooltip } from "#app/shared/ui";
 import {
   sidebarHeaderActionClass,
   sidebarHeaderIconClass,
@@ -60,7 +60,7 @@ export function AiChatHistorySelector({ disabled, onClearDraft }: AiChatHistoryS
       onOpenChange={handleOpenChange}
       onOpenChangeComplete={handleOpenChangeComplete}
     >
-      <IconTooltip label="历史会话" side="bottom">
+      <AppTooltip label="历史会话" side="bottom">
         <Popover.Trigger
           className={sidebarHeaderActionClass}
           disabled={disabled}
@@ -72,7 +72,7 @@ export function AiChatHistorySelector({ disabled, onClearDraft }: AiChatHistoryS
             className={cn(sidebarHeaderIconClass, "icon-[codicon--history]")}
           />
         </Popover.Trigger>
-      </IconTooltip>
+      </AppTooltip>
       <Popover.Portal>
         <Popover.Positioner
           className={historyPositionerClass}

@@ -13,14 +13,14 @@ const tooltipPopupClass = cn(
   "data-instant:transition-none",
 );
 
-export type IconTooltipSide = "top" | "bottom" | "left" | "right";
+export type AppTooltipSide = "top" | "bottom" | "left" | "right";
 
-type IconTooltipProps = {
+type AppTooltipProps = {
   /** Visible tooltip text; also used when the trigger lacks an accessible name. */
   label: string;
-  /** Existing focusable control (usually a `<button>`). Merged via `render`. */
+  /** Existing focusable control or labeled element. Merged via `render`. */
   children: ReactElement;
-  side?: IconTooltipSide;
+  side?: AppTooltipSide;
   /** Open delay in ms (Provider delay still applies for grouping). */
   delay?: number;
   /** Suppress open without disabling the trigger control. */
@@ -28,7 +28,7 @@ type IconTooltipProps = {
 };
 
 /**
- * Base UI tooltip for icon-only controls. Pass the existing button/link as
+ * App-wide Base UI tooltip shell. Pass the existing control/label as
  * `children`; props are merged onto it so nesting is avoided.
  */
 export function AppTooltip({
@@ -37,7 +37,7 @@ export function AppTooltip({
   side = "bottom",
   delay = 400,
   disabled = false,
-}: IconTooltipProps) {
+}: AppTooltipProps) {
   if (label === "") {
     return children;
   }

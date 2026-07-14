@@ -26,7 +26,7 @@ export const conversationScrollerJumpButtonClass = cn(
 export const assistantMessageBlockClass = cn("flex w-full flex-col gap-1");
 export const assistantMessageFooterClass = cn("flex w-full min-w-0 items-center gap-2 pt-0.5");
 export const assistantMessageFooterLeadingClass = cn("flex shrink-0 items-center");
-/** Flex slot so IconTooltip root can sit on the trailing edge without losing `ml-auto`. */
+/** Flex slot so AppTooltip root can sit on the trailing edge without losing `ml-auto`. */
 export const assistantMessageFooterTrailingClass = cn("ml-auto min-w-0");
 export const assistantMessageModelLabelClass = cn(
   "block max-w-full truncate text-right text-2xs text-ctp-subtext1 tabular-nums outline-none",
