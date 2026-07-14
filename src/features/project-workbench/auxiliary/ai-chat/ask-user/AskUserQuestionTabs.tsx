@@ -1,4 +1,5 @@
 import { Tabs } from "@base-ui/react/tabs";
+import { useEffect, useRef } from "react";
 
 import { cn } from "#app/shared/lib/ui/cn";
 import { controlFocusVisibleClass, panelHoverClass } from "#app/shared/lib/ui/interaction-chrome";
@@ -30,6 +31,29 @@ export function AskUserQuestionTabs({
   activeKey,
   onSelectKey,
 }: AskUserQuestionTabsProps) {
+  const listRef = useRef<HTMLDivElement | null>(null);
+  const tabRefs = useRef(new Map<string, HTMLElement>());
+
+  useEffect(() => {
+    if (!activeKey) {
+      return;
+    }
+
+    const tab = tabRefs.current.get(activeKey);
+    const list = listRef.current;
+    if (!tab || !list) {
+      return;
+    }
+
+    const tabCenter = tab.offsetLeft + tab.offsetWidth / 2;
+    const targetLeft = tabCenter - list.clientWidth / 2;
+    const maxLeft = Math.max(0, list.scrollWidth - list.clientWidth);
+    list.scrollTo({
+      left: Math.min(Math.max(0, targetLeft), maxLeft),
+      behavior: "smooth",
+    });
+  }, [activeKey, keys]);
+
   if (keys.length <= 1) {
     return null;
   }
@@ -43,12 +67,24 @@ export function AskUserQuestionTabs({
         }
       }}
     >
-      <Tabs.List className={tabsRailClass}>
+      <Tabs.List ref={listRef} className={tabsRailClass}>
         {keys.map((key, index) => {
           const label = summaries[index] ?? `问题 ${index + 1}`;
 
           return (
-            <Tabs.Tab key={key} value={key} className={tabButtonClass} title={label}>
+            <Tabs.Tab
+              key={key}
+              value={key}
+              className={tabButtonClass}
+              title={label}
+              ref={(node) => {
+                if (node) {
+                  tabRefs.current.set(key, node);
+                } else {
+                  tabRefs.current.delete(key);
+                }
+              }}
+            >
               <span className="truncate">{label}</span>
             </Tabs.Tab>
           );
