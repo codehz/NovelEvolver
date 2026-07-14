@@ -224,10 +224,18 @@ export const settingsChipBodyButtonClass = cn(
   "disabled:cursor-default",
 );
 
+/**
+ * Star slot always reserved so selecting a chip does not shift layout.
+ * Hosts either the interactive star button or an empty spacer.
+ */
+export const settingsChipStarSlotClass = cn(
+  "mr-1.5 inline-flex size-4 shrink-0 items-center justify-center",
+);
+
 /** Nested star control inside a selected chip. */
 export const settingsChipStarButtonClass = cn(
   "inline-flex size-4 shrink-0 items-center justify-center rounded-full text-[10px] leading-none outline-none",
-  "mr-1.5 text-app-muted hover:not-disabled:text-badge-background",
+  "text-app-muted hover:not-disabled:text-badge-background",
   controlFocusVisibleInsetClass,
   "disabled:cursor-default",
 );

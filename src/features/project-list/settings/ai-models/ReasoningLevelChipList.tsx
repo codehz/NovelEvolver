@@ -10,6 +10,7 @@ import {
   settingsChipSelectedClass,
   settingsChipStarActiveClass,
   settingsChipStarButtonClass,
+  settingsChipStarSlotClass,
 } from "../settings-chrome";
 
 type ReasoningLevelChipListProps = {
@@ -108,31 +109,33 @@ export function ReasoningLevelChipList({
                 {level}
               </span>
             </button>
-            {isSelected ? (
-              <button
-                type="button"
-                disabled={disabled || isDefault}
-                aria-label={
-                  isDefault ? "当前默认" : `设 ${AI_REASONING_LEVEL_LABELS[level]} 为默认`
-                }
-                aria-pressed={isDefault}
-                className={cn(
-                  settingsChipStarButtonClass,
-                  isDefault && settingsChipStarActiveClass,
-                )}
-                onClick={() => {
-                  setDefault(level);
-                }}
-              >
-                <span
-                  aria-hidden="true"
+            <span className={settingsChipStarSlotClass} aria-hidden={!isSelected}>
+              {isSelected ? (
+                <button
+                  type="button"
+                  disabled={disabled || isDefault}
+                  aria-label={
+                    isDefault ? "当前默认" : `设 ${AI_REASONING_LEVEL_LABELS[level]} 为默认`
+                  }
+                  aria-pressed={isDefault}
                   className={cn(
-                    "leading-none",
-                    isDefault ? "icon-[codicon--star-full]" : "icon-[codicon--star-empty]",
+                    settingsChipStarButtonClass,
+                    isDefault && settingsChipStarActiveClass,
                   )}
-                />
-              </button>
-            ) : null}
+                  onClick={() => {
+                    setDefault(level);
+                  }}
+                >
+                  <span
+                    aria-hidden="true"
+                    className={cn(
+                      "leading-none",
+                      isDefault ? "icon-[codicon--star-full]" : "icon-[codicon--star-empty]",
+                    )}
+                  />
+                </button>
+              ) : null}
+            </span>
           </div>
         );
       })}
