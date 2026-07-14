@@ -1,23 +1,18 @@
-import type { KeyboardEvent, RefObject, SubmitEvent } from "react";
+import type { RefObject, SubmitEvent } from "react";
 
 import { IconTooltip } from "#app/shared/ui";
 import type { AiReasoningLevel } from "#shared/rpc/services/index";
 
+import { ComposerEditor, type ComposerEditorHandle } from "../composer/ComposerEditor";
 import {
   AiChatAgentSelector,
   AiChatModelSelector,
   AiChatReasoningSelector,
   type AiChatSelectorItem,
 } from "../selectors";
-import {
-  composerShellClass,
-  composerTextareaClass,
-  sendButtonClass,
-  stopButtonClass,
-} from "../ui/ai-chat-chrome";
+import { composerShellClass, sendButtonClass, stopButtonClass } from "../ui/ai-chat-chrome";
 
 type AiChatMessageComposerProps = {
-  draft: string;
   composerDisabled: boolean;
   selectorDisabled: boolean;
   modelSelectorDisabled: boolean;
@@ -31,12 +26,12 @@ type AiChatMessageComposerProps = {
   showReasoningSelector: boolean;
   agentItems: readonly AiChatSelectorItem[];
   modelItems: readonly AiChatSelectorItem[];
-  composerRef: RefObject<HTMLTextAreaElement | null>;
-  onDraftChange: (value: string) => void;
+  composerRef: RefObject<ComposerEditorHandle | null>;
+  onDocChange: () => void;
   onSubmit: (event: SubmitEvent<HTMLFormElement>) => void;
   onSendClick: () => void;
   onStopClick: () => void;
-  onComposerKeyDown: (event: KeyboardEvent<HTMLTextAreaElement>) => void;
+  onComposerSubmitKey: () => boolean;
   onOpenAgentPicker?: () => void;
   onOpenModelPicker?: () => void;
   onSelectAgent: (id: string) => void;
@@ -45,7 +40,6 @@ type AiChatMessageComposerProps = {
 };
 
 export function AiChatMessageComposer({
-  draft,
   composerDisabled,
   selectorDisabled,
   modelSelectorDisabled,
@@ -60,11 +54,11 @@ export function AiChatMessageComposer({
   agentItems,
   modelItems,
   composerRef,
-  onDraftChange,
+  onDocChange,
   onSubmit,
   onSendClick,
   onStopClick,
-  onComposerKeyDown,
+  onComposerSubmitKey,
   onOpenAgentPicker,
   onOpenModelPicker,
   onSelectAgent,
@@ -73,18 +67,13 @@ export function AiChatMessageComposer({
 }: AiChatMessageComposerProps) {
   return (
     <form className={composerShellClass} onSubmit={onSubmit}>
-      <textarea
-        aria-label="消息输入"
-        className={composerTextareaClass}
+      <ComposerEditor
         ref={composerRef}
-        placeholder="输入章节目标、修改要求，或直接粘贴长段正文…"
-        rows={6}
-        value={draft}
-        onChange={(event) => {
-          onDraftChange(event.target.value);
-        }}
-        onKeyDown={onComposerKeyDown}
         disabled={composerDisabled}
+        aria-label="消息输入"
+        placeholder="输入章节目标、修改要求，或 / 插入提示词模板…"
+        onDocChange={onDocChange}
+        onSubmit={onComposerSubmitKey}
       />
 
       <div className="flex min-w-0 items-center gap-1">

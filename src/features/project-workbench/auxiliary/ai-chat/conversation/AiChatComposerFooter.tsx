@@ -9,8 +9,6 @@ type AiChatComposerFooterProps = { composer: AiChatComposerState };
 export function AiChatComposerFooter({ composer }: AiChatComposerFooterProps) {
   const { snapshot, loading } = useAiChatState();
   const {
-    draft,
-    setDraft,
     composerRef,
     composerDisabled,
     hasPendingUserInputs,
@@ -19,7 +17,8 @@ export function AiChatComposerFooter({ composer }: AiChatComposerFooterProps) {
     handleSubmit,
     handleSendClick,
     handleStopClick,
-    handleComposerKeyDown,
+    handleComposerSubmitKey,
+    handleDocChange,
   } = composer;
 
   const {
@@ -55,13 +54,12 @@ export function AiChatComposerFooter({ composer }: AiChatComposerFooterProps) {
         canStop={canStop}
         composerDisabled={composerDisabled}
         composerRef={composerRef}
-        draft={draft}
         agentItems={agentItems}
         modelItems={modelItems}
         availableReasoningLevels={availableReasoningLevels}
         showReasoningSelector={showReasoningSelector}
-        onComposerKeyDown={handleComposerKeyDown}
-        onDraftChange={setDraft}
+        onComposerSubmitKey={handleComposerSubmitKey}
+        onDocChange={handleDocChange}
         onOpenAgentPicker={handleOpenAgentPicker}
         onOpenModelPicker={handleOpenModelPicker}
         onSelectAgent={handleSelectAgent}

@@ -124,7 +124,7 @@ export function AiPromptConfigForm({
                   须为小写字母开头，仅含 a-z、0-9、_、-。
                 </Field.Error>
                 <p className="mt-1 text-2xs text-app-muted">
-                  侧栏输入 /调用名 使用（后续版本接入）。
+                  侧栏输入 /调用名 可插入此模板；发送时展开为提示词正文。
                 </p>
               </>
             )}

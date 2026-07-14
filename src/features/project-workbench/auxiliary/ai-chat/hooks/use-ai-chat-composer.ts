@@ -1,23 +1,26 @@
-import {
-  useCallback,
-  useEffect,
-  useRef,
-  useState,
-  type KeyboardEvent,
-  type SubmitEvent,
-} from "react";
+import { useCallback, useEffect, useRef, useState, type SubmitEvent } from "react";
 
+import type { ComposerEditorHandle } from "../composer/ComposerEditor";
 import { useAiChatState } from "../state/use-ai-chat-state";
 
 export function useAiChatComposer() {
   const { snapshot, loading, sendMessage, stopGeneration } = useAiChatState();
-  const [draft, setDraft] = useState("");
-  const composerRef = useRef<HTMLTextAreaElement | null>(null);
+  const composerRef = useRef<ComposerEditorHandle | null>(null);
   const shouldRestoreComposerFocusRef = useRef(false);
+  const [canSend, setCanSend] = useState(false);
 
   const hasPendingUserInputs = snapshot.pendingUserInputs.length > 0;
   const composerDisabled = loading || snapshot.pending;
   const canStop = !loading && snapshot.pending;
+
+  const syncCanSend = useCallback(() => {
+    const empty = composerRef.current?.isEmpty() ?? true;
+    setCanSend(!empty && !composerDisabled);
+  }, [composerDisabled]);
+
+  useEffect(() => {
+    syncCanSend();
+  }, [syncCanSend]);
 
   useEffect(() => {
     if (composerDisabled || hasPendingUserInputs || !shouldRestoreComposerFocusRef.current) {
@@ -29,12 +32,14 @@ export function useAiChatComposer() {
   }, [composerDisabled, hasPendingUserInputs]);
 
   const submitDraft = useCallback(async (): Promise<void> => {
-    const submitted = await sendMessage(draft);
+    const text = composerRef.current?.getSerializedText() ?? "";
+    const submitted = await sendMessage(text);
     if (submitted) {
       shouldRestoreComposerFocusRef.current = true;
-      setDraft("");
+      composerRef.current?.clear();
+      setCanSend(false);
     }
-  }, [draft, sendMessage]);
+  }, [sendMessage]);
 
   const handleSubmit = useCallback(
     (event: SubmitEvent<HTMLFormElement>) => {
@@ -55,37 +60,31 @@ export function useAiChatComposer() {
     void stopGeneration();
   }, [stopGeneration]);
 
-  const handleComposerKeyDown = useCallback(
-    (event: KeyboardEvent<HTMLTextAreaElement>) => {
-      if (event.key !== "Enter" || event.shiftKey) {
-        return;
-      }
-
-      event.preventDefault();
-      if (canStop) {
-        return;
-      }
-      void submitDraft();
-    },
-    [canStop, submitDraft],
-  );
+  /** Enter-to-send from the CodeMirror keymap (slash menu already filtered). */
+  const handleComposerSubmitKey = useCallback((): boolean => {
+    if (canStop || composerDisabled) {
+      return true;
+    }
+    void submitDraft();
+    return true;
+  }, [canStop, composerDisabled, submitDraft]);
 
   const clearDraft = useCallback(() => {
-    setDraft("");
+    composerRef.current?.clear();
+    setCanSend(false);
   }, []);
 
   return {
-    draft,
-    setDraft,
     composerRef,
     composerDisabled,
     hasPendingUserInputs,
-    canSend: draft.trim() !== "" && !composerDisabled,
+    canSend,
     canStop,
     handleSubmit,
     handleSendClick,
     handleStopClick,
-    handleComposerKeyDown,
+    handleComposerSubmitKey,
+    handleDocChange: syncCanSend,
     clearDraft,
   };
 }
