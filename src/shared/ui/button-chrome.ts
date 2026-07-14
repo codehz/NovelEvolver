@@ -14,7 +14,7 @@ export const buttonBaseClass = cn(
 );
 
 export type ButtonVariant = "primary" | "secondary" | "ghost" | "danger" | "link" | "text";
-export type ButtonSize = "sm" | "md" | "icon-sm" | "icon-md" | "icon-lg" | "statusbar";
+export type ButtonSize = "sm" | "md" | "icon-sm" | "icon-md" | "icon-lg";
 
 export const buttonVariantClass: Record<ButtonVariant, string> = {
   primary: cn(
@@ -56,7 +56,6 @@ export const buttonSizeClass: Record<ButtonSize, string> = {
   "icon-sm": cn("size-6 p-0"),
   "icon-md": cn("size-7 p-0"),
   "icon-lg": cn("size-8 p-0"),
-  statusbar: cn("shrink-0 items-center px-2.5"),
 };
 
 /**

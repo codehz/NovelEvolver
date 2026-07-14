@@ -1,7 +1,6 @@
 import type { ComponentPropsWithRef, ReactNode } from "react";
 
 import { cn } from "#app/shared/lib/ui/cn";
-import { Button } from "#app/shared/ui";
 
 import {
   statusBarIconOnlyButtonClass,
@@ -27,7 +26,7 @@ export function StatusBarItemButton({
   const withIcon = icon != null && children != null;
 
   return (
-    <Button
+    <button
       ref={ref}
       className={cn(
         iconOnly
@@ -37,13 +36,11 @@ export function StatusBarItemButton({
             : statusBarItemButtonClass,
         className,
       )}
-      size="statusbar"
       type={type}
-      variant="ghost"
       {...rest}
     >
       {icon != null ? <span aria-hidden="true" className={icon} /> : null}
       {children}
-    </Button>
+    </button>
   );
 }

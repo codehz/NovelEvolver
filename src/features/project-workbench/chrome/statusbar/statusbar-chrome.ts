@@ -1,8 +1,15 @@
 import { cn } from "#app/shared/lib/ui/cn";
+import {
+  controlFocusVisibleClass,
+  iconButtonHoverClass,
+} from "#app/shared/lib/ui/interaction-chrome";
 
-/** Interactive status bar segment (encoding, branch, sync, etc.). */
+/** Interactive status bar segment (encoding, branch, sync, etc.). Flat, no radius; hover wash only. */
 export const statusBarItemButtonClass = cn(
-  "flex shrink-0 items-center px-2.5 hover:bg-ctp-text/8 hover:text-app-foreground",
+  "inline-flex shrink-0 items-center border-0 bg-transparent px-2.5 outline-none select-none",
+  "disabled:pointer-events-none disabled:opacity-50",
+  iconButtonHoverClass,
+  controlFocusVisibleClass,
 );
 
 export const statusBarItemButtonWithIconClass = cn(statusBarItemButtonClass, "gap-1.5");
