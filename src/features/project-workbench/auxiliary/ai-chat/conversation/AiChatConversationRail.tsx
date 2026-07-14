@@ -129,12 +129,9 @@ export function AiChatConversationRail({
 
             {snapshot.messages.map((message) => {
               const messageWarnings = warningsByMessageId.get(message.id) ?? [];
-              const messageRetry =
-                showTurnRetry &&
-                message.role === "assistant" &&
-                message.id === lastAssistantMessageId
-                  ? onRetry
-                  : undefined;
+              const isLastAssistant =
+                message.role === "assistant" && message.id === lastAssistantMessageId;
+              const messageRetry = showTurnRetry && isLastAssistant ? onRetry : undefined;
               return (
                 <RailItem
                   key={message.id}
@@ -146,6 +143,7 @@ export function AiChatConversationRail({
                     message={message}
                     onRetry={messageRetry}
                     retryLabel={messageRetry ? retryLabel : undefined}
+                    footerAlwaysVisible={isLastAssistant}
                   />
                   {messageWarnings.map((warning) => (
                     <AiChatWarningBanner key={warning.id} warning={warning} />

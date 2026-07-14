@@ -1,12 +1,14 @@
 import type { ReactNode } from "react";
 
-import { Button, AppTooltip, MarkdownStream } from "#app/shared/ui";
+import { cn } from "#app/shared/lib/ui/cn";
+import { AppTooltip, Button, MarkdownStream } from "#app/shared/ui";
 import type { AiChatAssistantPart, AiChatMentionRef, AiChatMessage } from "#shared/rpc/ai/index";
 
 import {
   assistantMessageBlockClass,
   assistantMessageBodyClass,
   assistantMessageFooterClass,
+  assistantMessageFooterHoverRevealClass,
   assistantMessageFooterLeadingClass,
   assistantMessageFooterTrailingClass,
   assistantMessageModelLabelClass,
@@ -116,9 +118,19 @@ type AiMessageBlockProps = {
   onRetry?: () => void;
   /** Retry button label/aria when `onRetry` is set. */
   retryLabel?: string;
+  /**
+   * When true, completed footer stays visible.
+   * When false, only reveal on block hover / focus-within (historical turns).
+   */
+  footerAlwaysVisible?: boolean;
 };
 
-export function AiMessageBlock({ message, onRetry, retryLabel = "重新生成" }: AiMessageBlockProps) {
+export function AiMessageBlock({
+  message,
+  onRetry,
+  retryLabel = "重新生成",
+  footerAlwaysVisible = false,
+}: AiMessageBlockProps) {
   if (message.role === "user") {
     const slash = message.slash;
     const mentions = message.mentions ?? [];
@@ -166,7 +178,12 @@ export function AiMessageBlock({ message, onRetry, retryLabel = "重新生成" }
       {message.parts.map((part) => (
         <AiAssistantPartBlock key={part.id} part={part} />
       ))}
-      <div className={assistantMessageFooterClass}>
+      <div
+        className={cn(
+          assistantMessageFooterClass,
+          !footerAlwaysVisible && assistantMessageFooterHoverRevealClass,
+        )}
+      >
         {onRetry ? (
           <div className={assistantMessageFooterLeadingClass}>
             <AppTooltip label={retryLabel} side="top">

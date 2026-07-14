@@ -23,8 +23,15 @@ export const conversationScrollerJumpButtonClass = cn(
   controlFocusVisibleClass,
   "inert:pointer-events-none inert:opacity-0",
 );
-export const assistantMessageBlockClass = cn("flex w-full flex-col gap-1");
+export const assistantMessageBlockClass = cn("group/assistant-msg flex w-full flex-col gap-1");
 export const assistantMessageFooterClass = cn("flex w-full min-w-0 items-center gap-2 pt-0.5");
+/** Hide completed footer until the block is hovered or focus moves into it. */
+export const assistantMessageFooterHoverRevealClass = cn(
+  "opacity-0 transition-opacity",
+  "pointer-events-none",
+  "group-hover/assistant-msg:pointer-events-auto group-hover/assistant-msg:opacity-100",
+  "group-focus-within/assistant-msg:pointer-events-auto group-focus-within/assistant-msg:opacity-100",
+);
 export const assistantMessageFooterLeadingClass = cn("flex shrink-0 items-center");
 /** Flex slot so AppTooltip root can sit on the trailing edge without losing `ml-auto`. */
 export const assistantMessageFooterTrailingClass = cn("ml-auto min-w-0");
