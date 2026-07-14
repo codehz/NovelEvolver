@@ -26,7 +26,8 @@ export const historyPickerShellClass = cn("flex max-h-80 w-full flex-col overflo
 /** Scrollport between fixed search and footer chrome. */
 export const historyPickerBodyClass = cn("min-h-0 flex-1 overflow-x-hidden overflow-y-auto");
 
-export const historyListClass = cn("flex flex-col gap-0.5 px-1.5 pt-0 pb-1.5");
+/** No inter-item gap so pointer movement between rows never hits a dead zone. */
+export const historyListClass = cn("flex flex-col px-1.5 pt-0 pb-1.5");
 
 export const historyGroupLabelClass = cn(
   "px-2 pt-1.5 pb-0.5 text-2xs font-medium tracking-wide text-app-muted uppercase",

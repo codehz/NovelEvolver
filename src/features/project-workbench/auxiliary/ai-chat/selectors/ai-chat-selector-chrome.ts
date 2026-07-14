@@ -30,8 +30,10 @@ export const selectorPickerShellClass = cn("flex max-h-72 w-full flex-col overfl
 /** Scrollport under fixed search chrome. */
 export const selectorPickerBodyClass = cn("min-h-0 flex-1 overflow-x-hidden overflow-y-auto");
 
-/** List chrome only. */
-export const selectorListClass = cn("flex flex-col gap-0.5 px-1.5 pt-0 pb-1.5");
+/** List chrome only.
+ * No inter-item gap: pointer dead zones between rows reset Combobox highlight to the first item
+ * under autoHighlight="always". */
+export const selectorListClass = cn("flex flex-col px-1.5 pt-0 pb-1.5");
 
 export const selectorRowButtonClass = cn(
   "relative flex w-full cursor-default flex-col gap-0.5 rounded-sm px-2 py-1.5 text-left outline-none",

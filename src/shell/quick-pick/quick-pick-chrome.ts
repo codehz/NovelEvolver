@@ -18,11 +18,10 @@ export const quickPickSearchInputClass = cn(
 /** Self-clamped list scrollport (search stays outside). */
 export const quickPickListScrollClass = cn("max-h-80 w-full overflow-x-hidden overflow-y-auto");
 
-/** List chrome only. Collapse when empty so Empty doesn't leave a flex gap. */
-export const quickPickListClass = cn(
-  "flex flex-col gap-1 px-2 pt-0 pb-2 text-xs",
-  "data-empty:hidden",
-);
+/** List chrome only. Collapse when empty so Empty doesn't leave a flex gap.
+ * No inter-item gap: pointer dead zones between rows reset Combobox highlight to the first item
+ * under autoHighlight="always". */
+export const quickPickListClass = cn("flex flex-col px-2 pt-0 pb-2 text-xs", "data-empty:hidden");
 
 export const quickPickRowButtonClass = cn(
   "relative flex w-full cursor-default items-center gap-2 rounded-sm px-2 py-1 text-left text-xs leading-tight outline-none",

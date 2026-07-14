@@ -208,8 +208,10 @@ function QuickPickListPanelBody({
 
   return (
     <Combobox.Root
-      // Base UI Aria supports "always"; public ComboboxRoot typedef is boolean-only.
+      // Base UI Aria supports "always" + keepHighlight; public ComboboxRoot typedef is narrower.
       autoHighlight={"always" as never}
+      // @ts-expect-error Aria-only: keep highlight when pointer is between items / leaves the list.
+      keepHighlight
       filter={null}
       inline
       isItemEqualToValue={isSameSelectable}
