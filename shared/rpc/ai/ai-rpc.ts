@@ -126,12 +126,31 @@ export type AiChatSlashRef = {
   body: string;
 };
 
+/**
+ * Menu-confirmed project-node mention snapshot (insert-time path/label).
+ * Display keeps the doc `token` (typically `@path`); model input expands to a
+ * structured ref so tools can use `id` via `read_document` / `read_structure`.
+ */
+export type AiChatMentionRef = {
+  domain: "manuscript" | "resource";
+  id: string;
+  kind: "folder" | "chapter" | "file";
+  /** Chapter title or resource name at insert time. */
+  label: string;
+  /** Path snapshot at insert time (manuscript titles / resource names). */
+  displayPath: string;
+  /** Exact in-document token including leading `@` (stable multi-mention replace). */
+  token: string;
+};
+
 /** Composer → main payload. Only a menu-confirmed chip sets `slash`. */
 export type AiChatSendMessageInput = {
   /** Remainder after the leading slash chip, or the full plain draft. */
   text: string;
   /** Present only when the composer had a confirmed prompt chip. */
   slash?: AiChatSlashRef | null;
+  /** Menu-confirmed `@` mentions in document order; omitted / empty when none. */
+  mentions?: readonly AiChatMentionRef[] | null;
 };
 
 export type AiChatUserMessage = {
@@ -140,10 +159,13 @@ export type AiChatUserMessage = {
   /**
    * Plain remainder (with slash) or full user text (without).
    * Never the expanded prompt body — that lives only in model history.
+   * Mention tokens remain as stored; model history expands them separately.
    */
   text: string;
   /** Menu-confirmed slash command; `null` for plain messages / legacy rows. */
   slash: AiChatSlashRef | null;
+  /** Menu-confirmed mentions; empty array for plain / legacy rows. */
+  mentions: readonly AiChatMentionRef[];
   status: "complete";
 };
 

@@ -14,6 +14,7 @@ import type {
   AiChatAssistantPart,
   AiChatAssistantPartPatch,
   AiChatDeltaOp,
+  AiChatMentionRef,
   AiChatMessage,
   AiChatMessagePatch,
   AiChatSendMessageInput,
@@ -142,7 +143,46 @@ function normalizeStoredSlash(value: unknown): AiChatSlashRef | null {
   };
 }
 
-/** Prototype-safe hydrate: legacy user rows without `slash` become `slash: null`. */
+function normalizeStoredMention(value: unknown): AiChatMentionRef | null {
+  if (value == null || typeof value !== "object") {
+    return null;
+  }
+  const raw = value as Record<string, unknown>;
+  if (
+    (raw.domain !== "manuscript" && raw.domain !== "resource") ||
+    typeof raw.id !== "string" ||
+    (raw.kind !== "folder" && raw.kind !== "chapter" && raw.kind !== "file") ||
+    typeof raw.label !== "string" ||
+    typeof raw.displayPath !== "string" ||
+    typeof raw.token !== "string"
+  ) {
+    return null;
+  }
+  return {
+    domain: raw.domain,
+    id: raw.id,
+    kind: raw.kind,
+    label: raw.label,
+    displayPath: raw.displayPath,
+    token: raw.token,
+  };
+}
+
+function normalizeStoredMentions(value: unknown): AiChatMentionRef[] {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+  const mentions: AiChatMentionRef[] = [];
+  for (const entry of value) {
+    const mention = normalizeStoredMention(entry);
+    if (mention) {
+      mentions.push(mention);
+    }
+  }
+  return mentions;
+}
+
+/** Prototype-safe hydrate: legacy user rows without `slash`/`mentions` get defaults. */
 function normalizeStoredMessage(entry: unknown): AiChatMessage {
   if (entry == null || typeof entry !== "object") {
     return {
@@ -150,6 +190,7 @@ function normalizeStoredMessage(entry: unknown): AiChatMessage {
       role: "user",
       text: "",
       slash: null,
+      mentions: [],
       status: "complete",
     };
   }
@@ -162,6 +203,7 @@ function normalizeStoredMessage(entry: unknown): AiChatMessage {
     role: "user",
     text: typeof raw.text === "string" ? raw.text : "",
     slash: normalizeStoredSlash(raw.slash),
+    mentions: normalizeStoredMentions(raw.mentions),
     status: "complete",
   };
 }
@@ -527,11 +569,13 @@ export class AiConversationState {
   }
 
   appendUserMessage(input: AiChatSendMessageInput): AiChatUserMessage {
+    const mentions = (input.mentions ?? []).map((mention) => ({ ...mention }));
     const message: AiChatUserMessage = {
       id: `ai-chat-${this.#messageCounter++}`,
       role: "user",
       text: typeof input.text === "string" ? input.text : "",
       slash: input.slash ?? null,
+      mentions,
       status: "complete",
     };
     this.#messages.push(message);

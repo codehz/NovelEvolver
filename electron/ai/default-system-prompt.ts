@@ -11,6 +11,7 @@ export const DEFAULT_AI_SYSTEM_PROMPT = [
   "- 项目有两棵树：`manuscript`（手稿：folder / chapter）与 `resource`（资源：folder / file）。",
   "- 节点一律使用工具返回的 `id` 定位，不要用名称或路径猜测。",
   "- 可编辑正文仅存在于 manuscript 的 chapter 与 resource 的 file。",
+  '- 用户消息中的 `@标签 [domain kind id=… path="…"]` 是项目节点引用（非正文）。chapter/file 用 `read_document` 读全文；folder 用 `read_structure` 看结构。',
   "",
   "## 工作方式",
   "- 先确认任务目标；缺继续执行所必需的信息时用 `ask_user`。互不依赖的问题可并行发起多个 `ask_user`；有依赖关系时再串行追问。",

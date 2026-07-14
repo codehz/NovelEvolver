@@ -39,6 +39,7 @@ import {
   type ToolRunner,
 } from "../tools";
 import { AiConversationState } from "./conversation-state";
+import { expandMentionsForModel } from "./mention-expand";
 import { createPendingUserInputFromRequest, type PendingToolBatch } from "./pending-tool-batch";
 import { countCommittedAssistantParts, rebuildLastRequestInput } from "./request-history";
 import { resolveReasoningLevelForModel } from "./selectable-models";
@@ -315,7 +316,9 @@ export class AiConversationRuntime {
   sendMessage(input: AiChatSendMessageInput): void {
     const slash = input.slash ?? null;
     const text = typeof input.text === "string" ? input.text : "";
-    const modelText = expandSlashForModel(slash, text);
+    const mentions = input.mentions ?? [];
+    // Display form keeps slash remainder + mention tokens; expand only for the model.
+    const modelText = expandMentionsForModel(expandSlashForModel(slash, text), mentions);
     if (modelText === "") {
       throw new Error("AI 消息不能为空。");
     }
@@ -326,8 +329,8 @@ export class AiConversationRuntime {
       throw new Error("AI 正在等待当前工具步骤的用户回答。");
     }
 
-    // Persist display form (slash chip + remainder); expand only into model history.
-    const userMessage = this.#state.appendUserMessage({ text, slash });
+    // Persist display form (slash chip + remainder + mention tokens); expand only into model history.
+    const userMessage = this.#state.appendUserMessage({ text, slash, mentions });
     const assistantMessage = this.#state.appendAssistantMessage();
     const requestInput = [...this.#state.history, toInputItem(modelText)];
 

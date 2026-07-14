@@ -71,6 +71,12 @@ export const userSlashChipClass = cn(
   "bg-ctp-mauve/14 px-[0.35em] text-[0.92em] leading-[1.4] font-semibold text-ctp-mauve",
   "align-baseline whitespace-nowrap select-none",
 );
+/** Mention chip inside a sent user bubble (matches composer mention-chip semantics). */
+export const userMentionChipClass = cn(
+  "mx-[0.1em] inline-flex max-w-full shrink-0 items-center rounded-sm border border-ctp-teal/35",
+  "bg-ctp-teal/14 px-[0.35em] text-[0.92em] leading-[1.4] font-semibold text-ctp-teal",
+  "align-baseline whitespace-nowrap select-none",
+);
 export const composerShellClass = cn(
   "mx-auto flex w-full max-w-3xl flex-col gap-1 rounded-lg border border-transparent bg-app-background p-1.5 transition-colors",
   "focus-within:border-badge-background",

@@ -32,7 +32,11 @@ export function useAiChatComposer() {
   }, [composerDisabled, hasPendingUserInputs]);
 
   const submitDraft = useCallback(async (): Promise<void> => {
-    const payload = composerRef.current?.getSendPayload() ?? { text: "", slash: null };
+    const payload = composerRef.current?.getSendPayload() ?? {
+      text: "",
+      slash: null,
+      mentions: [],
+    };
     const submitted = await sendMessage(payload);
     if (submitted) {
       shouldRestoreComposerFocusRef.current = true;

@@ -14,6 +14,19 @@ import type { AiChatSendMessageInput } from "#shared/rpc/ai/index";
 import { composerEditorHostClass } from "./composer-chrome";
 import { buildComposerSendPayload, isComposerStateEmpty } from "./composer-doc";
 import {
+  addMentionChipEffect,
+  clearMentionChipsEffect,
+  collectMentionTokens,
+  mentionChipExtension,
+} from "./mention-chip-extension";
+import {
+  buildMentionToken,
+  detectMentionQuery,
+  toMentionRef,
+  type MentionCatalogItem,
+} from "./mention-query";
+import { MentionPicker, type MentionPickerAnchor } from "./MentionPicker";
+import {
   addPromptChipEffect,
   clearPromptChipsEffect,
   promptChipExtension,
@@ -21,6 +34,7 @@ import {
 } from "./prompt-chip-extension";
 import { detectSlashQuery, type PromptSlashItem } from "./slash-query";
 import { SlashCommandPicker, type SlashPickerAnchor } from "./SlashCommandPicker";
+import { useMentionCatalog } from "./use-mention-catalog";
 import { usePromptCatalog } from "./use-prompt-catalog";
 
 export type ComposerEditorHandle = {
@@ -38,7 +52,7 @@ type ComposerEditorProps = {
   className?: string;
   /** Called when document emptiness / serialized payload may have changed. */
   onDocChange?: () => void;
-  /** Enter (no modifiers) when slash menu is closed. Return true if handled. */
+  /** Enter (no modifiers) when slash/mention menu is closed. Return true if handled. */
   onSubmit?: () => boolean;
 };
 
@@ -52,7 +66,11 @@ function editableExtensions(disabled: boolean): Extension {
   ];
 }
 
-function coordsToAnchor(coords: { left: number; top: number; bottom: number }): SlashPickerAnchor {
+function coordsToAnchor(coords: {
+  left: number;
+  top: number;
+  bottom: number;
+}): SlashPickerAnchor & MentionPickerAnchor {
   const x = coords.left;
   const y = coords.top;
   const height = Math.max(1, coords.bottom - coords.top);
@@ -113,7 +131,23 @@ type SlashMenuState = {
   anchor: SlashPickerAnchor | null;
 };
 
+type MentionMenuState = {
+  open: boolean;
+  query: string;
+  from: number;
+  to: number;
+  anchor: MentionPickerAnchor | null;
+};
+
 const CLOSED_SLASH_MENU: SlashMenuState = {
+  open: false,
+  query: "",
+  from: 0,
+  to: 0,
+  anchor: null,
+};
+
+const CLOSED_MENTION_MENU: MentionMenuState = {
   open: false,
   query: "",
   from: 0,
@@ -137,14 +171,21 @@ export function ComposerEditor({
   const editableCompartmentRef = useRef(new Compartment());
   const placeholderCompartmentRef = useRef(new Compartment());
   const slashMenuFromRef = useRef(0);
+  const mentionMenuFromRef = useRef(0);
 
   const catalog = usePromptCatalog();
   const catalogRefreshRef = useRef(catalog.refresh);
   catalogRefreshRef.current = catalog.refresh;
 
+  const mentionCatalog = useMentionCatalog();
+
   const [slashMenu, setSlashMenu] = useState<SlashMenuState>(CLOSED_SLASH_MENU);
   const slashMenuOpenRef = useRef(false);
   slashMenuOpenRef.current = slashMenu.open;
+
+  const [mentionMenu, setMentionMenu] = useState<MentionMenuState>(CLOSED_MENTION_MENU);
+  const mentionMenuOpenRef = useRef(false);
+  mentionMenuOpenRef.current = mentionMenu.open;
 
   onDocChangeRef.current = onDocChange;
   onSubmitRef.current = onSubmit;
@@ -153,32 +194,60 @@ export function ComposerEditor({
     setSlashMenu(CLOSED_SLASH_MENU);
   }, []);
 
-  const syncSlashMenu = useCallback((view: EditorView) => {
+  const closeMentionMenu = useCallback(() => {
+    setMentionMenu(CLOSED_MENTION_MENU);
+  }, []);
+
+  const syncMenus = useCallback((view: EditorView) => {
     if (view.composing) {
       return;
     }
-    const detected = detectSlashQuery(view.state);
-    if (!detected) {
-      if (slashMenuOpenRef.current) {
-        setSlashMenu(CLOSED_SLASH_MENU);
+
+    // Slash wins when both could match (doc-start `/`).
+    const slashDetected = detectSlashQuery(view.state);
+    if (slashDetected) {
+      if (mentionMenuOpenRef.current) {
+        setMentionMenu(CLOSED_MENTION_MENU);
+      }
+      const coords = view.coordsAtPos(slashDetected.from);
+      const anchor = coords ? coordsToAnchor(coords) : null;
+      slashMenuFromRef.current = slashDetected.from;
+      setSlashMenu({
+        open: true,
+        query: slashDetected.query,
+        from: slashDetected.from,
+        to: slashDetected.to,
+        anchor,
+      });
+      return;
+    }
+
+    if (slashMenuOpenRef.current) {
+      setSlashMenu(CLOSED_SLASH_MENU);
+    }
+
+    const mentionDetected = detectMentionQuery(view.state);
+    if (!mentionDetected) {
+      if (mentionMenuOpenRef.current) {
+        setMentionMenu(CLOSED_MENTION_MENU);
       }
       return;
     }
 
-    const coords = view.coordsAtPos(detected.from);
+    const coords = view.coordsAtPos(mentionDetected.from);
     const anchor = coords ? coordsToAnchor(coords) : null;
-    slashMenuFromRef.current = detected.from;
-    setSlashMenu({
+    mentionMenuFromRef.current = mentionDetected.from;
+    setMentionMenu({
       open: true,
-      query: detected.query,
-      from: detected.from,
-      to: detected.to,
+      query: mentionDetected.query,
+      from: mentionDetected.from,
+      to: mentionDetected.to,
       anchor,
     });
   }, []);
 
-  const syncSlashMenuRef = useRef(syncSlashMenu);
-  syncSlashMenuRef.current = syncSlashMenu;
+  const syncMenusRef = useRef(syncMenus);
+  syncMenusRef.current = syncMenus;
 
   const insertPromptChip = useCallback((item: PromptSlashItem) => {
     const view = viewRef.current;
@@ -216,6 +285,40 @@ export function ComposerEditor({
     onDocChangeRef.current?.();
   }, []);
 
+  const insertMentionChip = useCallback((item: MentionCatalogItem) => {
+    const view = viewRef.current;
+    if (!view) {
+      return;
+    }
+
+    const detected = detectMentionQuery(view.state);
+    const from = detected?.from ?? mentionMenuFromRef.current;
+    const to = detected?.to ?? view.state.selection.main.head;
+    if (to < from) {
+      return;
+    }
+
+    const existingTokens = collectMentionTokens(view.state);
+    const token = buildMentionToken(item, existingTokens);
+    const data = toMentionRef(item, token);
+    // Insert token + trailing space for continued typing.
+    const insert = `${token} `;
+
+    view.dispatch({
+      changes: { from, to, insert },
+      selection: EditorSelection.cursor(from + token.length + 1),
+      effects: addMentionChipEffect.of({
+        from,
+        to: from + token.length,
+        data,
+      }),
+      userEvent: "input.complete",
+    });
+    setMentionMenu(CLOSED_MENTION_MENU);
+    view.focus();
+    onDocChangeRef.current?.();
+  }, []);
+
   useImperativeHandle(
     ref,
     () => ({
@@ -229,16 +332,17 @@ export function ComposerEditor({
         }
         view.dispatch({
           changes: { from: 0, to: view.state.doc.length, insert: "" },
-          effects: clearPromptChipsEffect.of(null),
+          effects: [clearPromptChipsEffect.of(null), clearMentionChipsEffect.of(null)],
           selection: EditorSelection.cursor(0),
         });
         setSlashMenu(CLOSED_SLASH_MENU);
+        setMentionMenu(CLOSED_MENTION_MENU);
         onDocChangeRef.current?.();
       },
       getSendPayload: () => {
         const view = viewRef.current;
         if (!view) {
-          return { text: "", slash: null };
+          return { text: "", slash: null, mentions: [] };
         }
         return buildComposerSendPayload(view.state);
       },
@@ -266,8 +370,8 @@ export function ComposerEditor({
       {
         key: "Enter",
         run: (view) => {
-          if (slashMenuOpenRef.current) {
-            // Slash picker capture handler owns Enter.
+          if (slashMenuOpenRef.current || mentionMenuOpenRef.current) {
+            // Picker capture handler owns Enter.
             return true;
           }
           if (view.composing) {
@@ -280,11 +384,15 @@ export function ComposerEditor({
       {
         key: "Escape",
         run: () => {
-          if (!slashMenuOpenRef.current) {
-            return false;
+          if (slashMenuOpenRef.current) {
+            setSlashMenu(CLOSED_SLASH_MENU);
+            return true;
           }
-          setSlashMenu(CLOSED_SLASH_MENU);
-          return true;
+          if (mentionMenuOpenRef.current) {
+            setMentionMenu(CLOSED_MENTION_MENU);
+            return true;
+          }
+          return false;
         },
       },
     ]);
@@ -295,6 +403,7 @@ export function ComposerEditor({
       history(),
       drawSelection(),
       promptChipExtension(),
+      mentionChipExtension(),
       // Highest so Enter submits instead of defaultKeymap insertNewlineAndIndent.
       Prec.highest(submitKeymap),
       keymap.of([...defaultKeymap.filter((binding) => binding.key !== "Enter"), ...historyKeymap]),
@@ -305,7 +414,7 @@ export function ComposerEditor({
           if (update.docChanged) {
             onDocChangeRef.current?.();
           }
-          syncSlashMenuRef.current(update.view);
+          syncMenusRef.current(update.view);
         }
       }),
       EditorView.contentAttributes.of({
@@ -380,6 +489,19 @@ export function ComposerEditor({
           }
         }}
         onSelect={insertPromptChip}
+      />
+      <MentionPicker
+        open={mentionMenu.open}
+        query={mentionMenu.query}
+        items={mentionCatalog.items}
+        loading={mentionCatalog.loading}
+        anchor={mentionMenu.anchor}
+        onOpenChange={(next) => {
+          if (!next) {
+            closeMentionMenu();
+          }
+        }}
+        onSelect={insertMentionChip}
       />
     </>
   );

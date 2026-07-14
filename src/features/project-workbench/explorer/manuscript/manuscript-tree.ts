@@ -110,6 +110,22 @@ export function getManuscriptNodeDepth(snapshot: ManuscriptTreeSnapshot, id: str
   return getManuscriptTreeMetadata(snapshot).depthById.get(id) ?? -1;
 }
 
+/**
+ * Title path from root children downward (excludes root itself).
+ * Example: `卷一/第三章`. Root id → `""`.
+ */
+export function getManuscriptNodePath(snapshot: ManuscriptTreeSnapshot, id: string): string {
+  if (id === snapshot.rootId) {
+    return "";
+  }
+  const chain = manuscriptParentChain(snapshot, id);
+  // Drop root title from path segments.
+  return chain
+    .filter((node) => node.id !== snapshot.rootId)
+    .map((node) => node.title)
+    .join("/");
+}
+
 export function collectManuscriptChapterIds(
   snapshot: ManuscriptTreeSnapshot,
   id: string,

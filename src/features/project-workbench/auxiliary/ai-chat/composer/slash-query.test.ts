@@ -121,6 +121,7 @@ describe("buildComposerSendPayload", () => {
     expect(buildComposerSendPayload(state)).toEqual({
       text: "第三章",
       slash: null,
+      mentions: [],
     });
   });
 
@@ -148,6 +149,7 @@ describe("buildComposerSendPayload", () => {
         title: "扩写",
         body: "请扩写以下内容：",
       },
+      mentions: [],
     });
     expect(isComposerStateEmpty(next)).toBe(false);
   });

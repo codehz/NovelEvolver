@@ -56,9 +56,10 @@ function useAiChatStateValue() {
   const sendMessage = useCallback(
     async (input: AiChatSendMessageInput): Promise<boolean> => {
       const hasSlash = input.slash != null;
+      const hasMentions = (input.mentions?.length ?? 0) > 0;
       const normalizedText = input.text.trim();
       if (
-        (!hasSlash && normalizedText === "") ||
+        (!hasSlash && !hasMentions && normalizedText === "") ||
         snapshot.pending ||
         snapshot.pendingUserInputs.length > 0
       ) {
@@ -69,6 +70,7 @@ function useAiChatStateValue() {
         aiChat.sendMessage({
           text: input.text,
           slash: input.slash ?? null,
+          mentions: input.mentions ?? [],
         }),
       );
       return true;
