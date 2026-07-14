@@ -1,10 +1,9 @@
 import type { EditorState } from "@codemirror/state";
-import type { DecorationSet } from "@codemirror/view";
 
 import type { AiChatMentionRef } from "#shared/rpc/ai/index";
 
-import { mentionChipsField } from "./mention-chip-extension";
-import { promptChipsField } from "./prompt-chip-extension";
+import { mentionChipEndsAt, rangeOverlapsMentionChip } from "./mention-chip-extension";
+import { promptChipEndsAt } from "./prompt-chip-extension";
 
 /** Active `@query` token under the primary caret (collapsed selection only). */
 export type MentionQuery = {
@@ -30,20 +29,6 @@ function isMentionBoundary(char: string | undefined): boolean {
   return /[\s([{（【「『"'`，。、；：！？,.!?;:]/.test(char);
 }
 
-function chipEndsAt(deco: DecorationSet | undefined, pos: number): boolean {
-  if (!deco || deco.size === 0) {
-    return false;
-  }
-  const iter = deco.iter();
-  while (iter.value) {
-    if (iter.to === pos) {
-      return true;
-    }
-    iter.next();
-  }
-  return false;
-}
-
 /**
  * Slash/mention chips are atomic widgets whose underlying doc text is still
  * `/slug` or `@path`. Typing `@` immediately after a chip looks like a new
@@ -51,30 +36,7 @@ function chipEndsAt(deco: DecorationSet | undefined, pos: number): boolean {
  * as a boundary so `/expand@…` opens mention without requiring a space.
  */
 function isAfterComposerChip(state: EditorState, pos: number): boolean {
-  return (
-    chipEndsAt(state.field(promptChipsField, false), pos) ||
-    chipEndsAt(state.field(mentionChipsField, false), pos)
-  );
-}
-
-/**
- * Half-open overlap `[from, to)` ∩ `[chip.from, chip.to)`.
- * Touching only at a chip's end (`from === chip.to`) is **not** an overlap, so
- * `@` typed immediately after a mention chip can open a new query.
- */
-function rangeOverlapsMentionChip(state: EditorState, from: number, to: number): boolean {
-  const chips = state.field(mentionChipsField, false);
-  if (!chips || chips.size === 0) {
-    return false;
-  }
-  const iter = chips.iter();
-  while (iter.value) {
-    if (iter.from < to && iter.to > from) {
-      return true;
-    }
-    iter.next();
-  }
-  return false;
+  return promptChipEndsAt(state, pos) || mentionChipEndsAt(state, pos);
 }
 
 /**

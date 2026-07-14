@@ -1,12 +1,7 @@
-import { invertedEffects } from "@codemirror/commands";
-import {
-  StateEffect,
-  StateField,
-  type ChangeDesc,
-  type EditorState,
-  type Transaction,
-} from "@codemirror/state";
+import { StateEffect, StateField, type EditorState, type Transaction } from "@codemirror/state";
 import { Decoration, EditorView, WidgetType, type DecorationSet } from "@codemirror/view";
+
+import { findFirstToken } from "./token-scan";
 
 export type PromptChipData = {
   promptId: string;
@@ -17,31 +12,26 @@ export type PromptChipData = {
 };
 
 export type PromptChipRange = {
-  /** Positions in the document **after** the transaction changes are applied. */
   from: number;
   to: number;
   data: PromptChipData;
 };
 
-function mapChipRange(value: PromptChipRange, mapping: ChangeDesc): PromptChipRange | undefined {
-  const from = mapping.mapPos(value.from, 1);
-  const to = mapping.mapPos(value.to, -1);
-  if (from >= to) {
-    return undefined;
-  }
-  return { from, to, data: value.data };
+function promptToken(data: PromptChipData): string {
+  return `/${data.slug}`;
 }
 
-export const addPromptChipEffect = StateEffect.define<PromptChipRange>({
-  map: mapChipRange,
-});
+/** Confirm / replace the single slash prompt ref. */
+export const confirmPromptEffect = StateEffect.define<PromptChipData>();
 
-/** Inverse of add — used so history undo/redo restores chip widgets. */
-export const removePromptChipEffect = StateEffect.define<PromptChipRange>({
-  map: mapChipRange,
-});
+/** Drop the prompt registry (composer clear). */
+export const clearPromptRegistryEffect = StateEffect.define<null>();
 
-export const clearPromptChipsEffect = StateEffect.define<null>();
+/** @deprecated Use {@link confirmPromptEffect}. */
+export const addPromptChipEffect = confirmPromptEffect;
+
+/** @deprecated Use {@link clearPromptRegistryEffect}. */
+export const clearPromptChipsEffect = clearPromptRegistryEffect;
 
 export class PromptChipWidget extends WidgetType {
   constructor(readonly data: PromptChipData) {
@@ -85,123 +75,63 @@ function chipDecoration(data: PromptChipData) {
   });
 }
 
-function isValidChipRange(state: EditorState, from: number, to: number): boolean {
-  return from >= 0 && to > from && to <= state.doc.length;
-}
-
-function chipDataAt(deco: DecorationSet, from: number, to: number): PromptChipData | null {
-  let found: PromptChipData | null = null;
-  deco.between(from, to, (f, t, value) => {
-    if (f === from && t === to && value.spec.widget instanceof PromptChipWidget) {
-      found = value.spec.widget.data;
-      return false;
-    }
-    return undefined;
-  });
-  return found;
-}
-
-function collectChips(deco: DecorationSet): PromptChipRange[] {
-  const chips: PromptChipRange[] = [];
-  const iter = deco.iter();
-  while (iter.value) {
-    if (iter.value.spec.widget instanceof PromptChipWidget) {
-      chips.push({
-        from: iter.from,
-        to: iter.to,
-        data: iter.value.spec.widget.data,
-      });
-    }
-    iter.next();
-  }
-  return chips;
-}
-
-function updateChips(deco: DecorationSet, tr: Transaction): DecorationSet {
-  let next = deco.map(tr.changes);
-
-  for (const effect of tr.effects) {
-    if (effect.is(clearPromptChipsEffect)) {
-      next = Decoration.none;
-      continue;
-    }
-    if (effect.is(removePromptChipEffect)) {
-      const { from, to } = effect.value;
-      next = next.update({
-        filter: (f, t) => t <= from || f >= to,
-      });
-      continue;
-    }
-    if (effect.is(addPromptChipEffect)) {
-      const { from, to, data } = effect.value;
-      if (!isValidChipRange(tr.state, from, to)) {
-        continue;
-      }
-      next = next.update({
-        add: [chipDecoration(data).range(from, to)],
-        filter: (f, t) => t <= from || f >= to,
-      });
-    }
-  }
-
-  if (tr.docChanged && next.size > 0) {
-    next = next.update({
-      filter: (from, to) => to > from,
-    });
-  }
-
-  return next;
-}
-
-export const promptChipsField = StateField.define<DecorationSet>({
+/**
+ * Sticky single prompt registry.
+ * Decorations only appear while `/${slug}` is present in the document.
+ */
+export const promptRegistryField = StateField.define<PromptChipData | null>({
   create() {
+    return null;
+  },
+  update(current, tr) {
+    let next = current;
+    for (const effect of tr.effects) {
+      if (effect.is(clearPromptRegistryEffect)) {
+        next = null;
+      } else if (effect.is(confirmPromptEffect)) {
+        next = effect.value;
+      }
+    }
+    return next;
+  },
+});
+
+function buildPromptDecorations(state: EditorState): DecorationSet {
+  const data = state.field(promptRegistryField, false);
+  if (!data) {
     return Decoration.none;
+  }
+  const match = findFirstToken(state.doc.toString(), promptToken(data));
+  if (!match) {
+    return Decoration.none;
+  }
+  return Decoration.set([chipDecoration(data).range(match.from, match.to)]);
+}
+
+function registryTouched(tr: Transaction): boolean {
+  for (const effect of tr.effects) {
+    if (effect.is(confirmPromptEffect) || effect.is(clearPromptRegistryEffect)) {
+      return true;
+    }
+  }
+  return false;
+}
+
+/** Derived decoration — rebuilt from doc ∩ registry. */
+export const promptChipsField = StateField.define<DecorationSet>({
+  create(state) {
+    return buildPromptDecorations(state);
   },
   update(deco, tr) {
-    return updateChips(deco, tr);
+    if (tr.docChanged || registryTouched(tr)) {
+      return buildPromptDecorations(tr.state);
+    }
+    return deco;
   },
   provide: (field) => [
     EditorView.decorations.from(field),
     EditorView.atomicRanges.of((view) => view.state.field(field)),
   ],
-});
-
-/**
- * History invert:
- * - add ⇄ remove (explicit effects)
- * - clear → re-add every chip from startState
- * - pure doc deletions that collapse a chip → re-add at startState positions
- */
-const invertPromptChipEffects = invertedEffects.of((tr) => {
-  const inverted = [];
-
-  const startChips = tr.startState.field(promptChipsField);
-  let cleared = false;
-
-  for (const effect of tr.effects) {
-    if (effect.is(addPromptChipEffect)) {
-      inverted.push(removePromptChipEffect.of(effect.value));
-    } else if (effect.is(removePromptChipEffect)) {
-      inverted.push(addPromptChipEffect.of(effect.value));
-    } else if (effect.is(clearPromptChipsEffect)) {
-      cleared = true;
-      for (const chip of collectChips(startChips)) {
-        inverted.push(addPromptChipEffect.of(chip));
-      }
-    }
-  }
-
-  if (!cleared && tr.docChanged) {
-    for (const chip of collectChips(startChips)) {
-      const mappedFrom = tr.changes.mapPos(chip.from, 1);
-      const mappedTo = tr.changes.mapPos(chip.to, -1);
-      if (mappedFrom >= mappedTo) {
-        inverted.push(addPromptChipEffect.of(chip));
-      }
-    }
-  }
-
-  return inverted;
 });
 
 export const promptChipTheme = EditorView.theme({
@@ -225,17 +155,39 @@ export const promptChipTheme = EditorView.theme({
 });
 
 export function promptChipExtension() {
-  return [promptChipsField, promptChipTheme, invertPromptChipEffects];
+  return [promptRegistryField, promptChipsField, promptChipTheme];
+}
+
+/**
+ * Active prompt chip only when registry is set **and** its token still appears in the doc.
+ */
+export function getActivePromptChip(state: EditorState): PromptChipRange | null {
+  const data = state.field(promptRegistryField, false);
+  if (!data) {
+    return null;
+  }
+  const match = findFirstToken(state.doc.toString(), promptToken(data));
+  if (!match) {
+    return null;
+  }
+  return { from: match.from, to: match.to, data };
+}
+
+export function hasActivePromptChip(state: EditorState): boolean {
+  return getActivePromptChip(state) !== null;
+}
+
+export function promptChipEndsAt(state: EditorState, pos: number): boolean {
+  const chip = getActivePromptChip(state);
+  return chip !== null && chip.to === pos;
 }
 
 export function rangeOverlapsChip(state: EditorState, from: number, to: number): boolean {
-  const chips = state.field(promptChipsField);
-  let overlaps = false;
-  chips.between(from, to, () => {
-    overlaps = true;
+  const chip = getActivePromptChip(state);
+  if (!chip) {
     return false;
-  });
-  return overlaps;
+  }
+  return chip.from < to && chip.to > from;
 }
 
 export function getPromptChipData(
@@ -243,5 +195,9 @@ export function getPromptChipData(
   from: number,
   to: number,
 ): PromptChipData | null {
-  return chipDataAt(state.field(promptChipsField), from, to);
+  const chip = getActivePromptChip(state);
+  if (!chip || chip.from !== from || chip.to !== to) {
+    return null;
+  }
+  return chip.data;
 }

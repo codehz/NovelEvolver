@@ -7,35 +7,27 @@ import type {
 } from "#shared/rpc/ai/index";
 
 import { collectMentionChips } from "./mention-chip-extension";
-import { promptChipsField, PromptChipWidget } from "./prompt-chip-extension";
+import { getActivePromptChip } from "./prompt-chip-extension";
 
 function firstPromptChip(state: EditorState): {
   from: number;
   to: number;
   slash: AiChatSlashRef;
 } | null {
-  const chips = state.field(promptChipsField, false);
-  if (!chips) {
+  const chip = getActivePromptChip(state);
+  if (!chip) {
     return null;
   }
-  const iter = chips.iter();
-  while (iter.value) {
-    const widget = iter.value.spec.widget;
-    if (widget instanceof PromptChipWidget) {
-      return {
-        from: iter.from,
-        to: iter.to,
-        slash: {
-          promptId: widget.data.promptId,
-          slug: widget.data.slug,
-          title: widget.data.title,
-          body: widget.data.body,
-        },
-      };
-    }
-    iter.next();
-  }
-  return null;
+  return {
+    from: chip.from,
+    to: chip.to,
+    slash: {
+      promptId: chip.data.promptId,
+      slug: chip.data.slug,
+      title: chip.data.title,
+      body: chip.data.body,
+    },
+  };
 }
 
 function collectMentionsInOrder(state: EditorState): AiChatMentionRef[] {

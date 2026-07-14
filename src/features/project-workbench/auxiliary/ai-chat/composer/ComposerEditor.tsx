@@ -14,9 +14,9 @@ import type { AiChatSendMessageInput } from "#shared/rpc/ai/index";
 import { composerEditorHostClass } from "./composer-chrome";
 import { buildComposerSendPayload, isComposerStateEmpty } from "./composer-doc";
 import {
-  addMentionChipEffect,
-  clearMentionChipsEffect,
+  clearMentionRegistryEffect,
   collectMentionTokens,
+  confirmMentionEffect,
   mentionChipExtension,
 } from "./mention-chip-extension";
 import {
@@ -27,8 +27,8 @@ import {
 } from "./mention-query";
 import { MentionPicker, type MentionPickerAnchor } from "./MentionPicker";
 import {
-  addPromptChipEffect,
-  clearPromptChipsEffect,
+  clearPromptRegistryEffect,
+  confirmPromptEffect,
   promptChipExtension,
   type PromptChipData,
 } from "./prompt-chip-extension";
@@ -273,11 +273,7 @@ export function ComposerEditor({
     view.dispatch({
       changes: { from, to, insert: marker },
       selection: EditorSelection.cursor(from + marker.length),
-      effects: addPromptChipEffect.of({
-        from,
-        to: from + marker.length,
-        data,
-      }),
+      effects: confirmPromptEffect.of(data),
       userEvent: "input.complete",
     });
     setSlashMenu(CLOSED_SLASH_MENU);
@@ -307,11 +303,7 @@ export function ComposerEditor({
     view.dispatch({
       changes: { from, to, insert },
       selection: EditorSelection.cursor(from + token.length + 1),
-      effects: addMentionChipEffect.of({
-        from,
-        to: from + token.length,
-        data,
-      }),
+      effects: confirmMentionEffect.of(data),
       userEvent: "input.complete",
     });
     setMentionMenu(CLOSED_MENTION_MENU);
@@ -332,7 +324,7 @@ export function ComposerEditor({
         }
         view.dispatch({
           changes: { from: 0, to: view.state.doc.length, insert: "" },
-          effects: [clearPromptChipsEffect.of(null), clearMentionChipsEffect.of(null)],
+          effects: [clearPromptRegistryEffect.of(null), clearMentionRegistryEffect.of(null)],
           selection: EditorSelection.cursor(0),
         });
         setSlashMenu(CLOSED_SLASH_MENU);

@@ -1,43 +1,29 @@
-import { invertedEffects } from "@codemirror/commands";
-import {
-  StateEffect,
-  StateField,
-  type ChangeDesc,
-  type EditorState,
-  type Transaction,
-} from "@codemirror/state";
+import { StateEffect, StateField, type EditorState, type Transaction } from "@codemirror/state";
 import { Decoration, EditorView, WidgetType, type DecorationSet } from "@codemirror/view";
 
 import type { AiChatMentionRef } from "#shared/rpc/ai/index";
 
+import { findTokenMatches } from "./token-scan";
+
 export type MentionChipData = AiChatMentionRef;
 
 export type MentionChipRange = {
-  /** Positions in the document **after** the transaction changes are applied. */
   from: number;
   to: number;
   data: MentionChipData;
 };
 
-function mapChipRange(value: MentionChipRange, mapping: ChangeDesc): MentionChipRange | undefined {
-  const from = mapping.mapPos(value.from, 1);
-  const to = mapping.mapPos(value.to, -1);
-  if (from >= to) {
-    return undefined;
-  }
-  return { from, to, data: value.data };
-}
+/** Confirm / upsert a mention ref keyed by its in-document `token`. */
+export const confirmMentionEffect = StateEffect.define<MentionChipData>();
 
-export const addMentionChipEffect = StateEffect.define<MentionChipRange>({
-  map: mapChipRange,
-});
+/** Drop the entire mention registry (composer clear). */
+export const clearMentionRegistryEffect = StateEffect.define<null>();
 
-/** Inverse of add — used so history undo/redo restores chip widgets. */
-export const removeMentionChipEffect = StateEffect.define<MentionChipRange>({
-  map: mapChipRange,
-});
+/** @deprecated Use {@link confirmMentionEffect} — kept as alias for call-site clarity during migrate. */
+export const addMentionChipEffect = confirmMentionEffect;
 
-export const clearMentionChipsEffect = StateEffect.define<null>();
+/** @deprecated Use {@link clearMentionRegistryEffect}. */
+export const clearMentionChipsEffect = clearMentionRegistryEffect;
 
 export class MentionChipWidget extends WidgetType {
   constructor(readonly data: MentionChipData) {
@@ -87,123 +73,84 @@ function chipDecoration(data: MentionChipData) {
   });
 }
 
-function isValidChipRange(state: EditorState, from: number, to: number): boolean {
-  return from >= 0 && to > from && to <= state.doc.length;
-}
-
-function chipDataAt(deco: DecorationSet, from: number, to: number): MentionChipData | null {
-  let found: MentionChipData | null = null;
-  deco.between(from, to, (f, t, value) => {
-    if (f === from && t === to && value.spec.widget instanceof MentionChipWidget) {
-      found = value.spec.widget.data;
-      return false;
-    }
-    return undefined;
-  });
-  return found;
-}
-
-function collectChips(deco: DecorationSet): MentionChipRange[] {
-  const chips: MentionChipRange[] = [];
-  const iter = deco.iter();
-  while (iter.value) {
-    if (iter.value.spec.widget instanceof MentionChipWidget) {
-      chips.push({
-        from: iter.from,
-        to: iter.to,
-        data: iter.value.spec.widget.data,
-      });
-    }
-    iter.next();
-  }
-  return chips;
-}
-
-function updateChips(deco: DecorationSet, tr: Transaction): DecorationSet {
-  let next = deco.map(tr.changes);
-
-  for (const effect of tr.effects) {
-    if (effect.is(clearMentionChipsEffect)) {
-      next = Decoration.none;
-      continue;
-    }
-    if (effect.is(removeMentionChipEffect)) {
-      const { from, to } = effect.value;
-      next = next.update({
-        filter: (f, t) => t <= from || f >= to,
-      });
-      continue;
-    }
-    if (effect.is(addMentionChipEffect)) {
-      const { from, to, data } = effect.value;
-      if (!isValidChipRange(tr.state, from, to)) {
+/**
+ * Sticky token → ref registry.
+ * Tokens missing from the doc simply produce no decoration (soft chip);
+ * undo that restores the token text re-derives the widget without invert effects.
+ */
+export const mentionRegistryField = StateField.define<ReadonlyMap<string, MentionChipData>>({
+  create() {
+    return new Map();
+  },
+  update(registry, tr) {
+    let next: Map<string, MentionChipData> | null = null;
+    for (const effect of tr.effects) {
+      if (effect.is(clearMentionRegistryEffect)) {
+        next = new Map();
         continue;
       }
-      next = next.update({
-        add: [chipDecoration(data).range(from, to)],
-        filter: (f, t) => t <= from || f >= to,
-      });
+      if (effect.is(confirmMentionEffect)) {
+        const data = effect.value;
+        if (data.token === "") {
+          continue;
+        }
+        if (!next) {
+          next = new Map(registry);
+        }
+        next.set(data.token, data);
+      }
     }
+    return next ?? registry;
+  },
+});
+
+function buildMentionDecorations(state: EditorState): DecorationSet {
+  const registry = state.field(mentionRegistryField, false);
+  if (!registry || registry.size === 0) {
+    return Decoration.none;
   }
 
-  if (tr.docChanged && next.size > 0) {
-    next = next.update({
-      filter: (from, to) => to > from,
-    });
+  const text = state.doc.toString();
+  const matches = findTokenMatches(text, [...registry.keys()]);
+  if (matches.length === 0) {
+    return Decoration.none;
   }
 
-  return next;
+  const ranges = [];
+  for (const match of matches) {
+    const data = registry.get(match.token);
+    if (!data) {
+      continue;
+    }
+    ranges.push(chipDecoration(data).range(match.from, match.to));
+  }
+  return Decoration.set(ranges, true);
 }
 
+function registryTouched(tr: Transaction): boolean {
+  for (const effect of tr.effects) {
+    if (effect.is(confirmMentionEffect) || effect.is(clearMentionRegistryEffect)) {
+      return true;
+    }
+  }
+  return false;
+}
+
+/** Derived decoration set — rebuilt from doc ∩ registry, not range-mapped. */
 export const mentionChipsField = StateField.define<DecorationSet>({
-  create() {
-    return Decoration.none;
+  create(state) {
+    return buildMentionDecorations(state);
   },
   update(deco, tr) {
-    return updateChips(deco, tr);
+    if (tr.docChanged || registryTouched(tr)) {
+      return buildMentionDecorations(tr.state);
+    }
+    return deco;
   },
   provide: (field) => [
     EditorView.decorations.from(field),
     EditorView.atomicRanges.of((view) => view.state.field(field)),
   ],
-});
-
-/**
- * History invert:
- * - add ⇄ remove (explicit effects)
- * - clear → re-add every chip from startState
- * - pure doc deletions that collapse a chip → re-add at startState positions
- */
-const invertMentionChipEffects = invertedEffects.of((tr) => {
-  const inverted = [];
-
-  const startChips = tr.startState.field(mentionChipsField);
-  let cleared = false;
-
-  for (const effect of tr.effects) {
-    if (effect.is(addMentionChipEffect)) {
-      inverted.push(removeMentionChipEffect.of(effect.value));
-    } else if (effect.is(removeMentionChipEffect)) {
-      inverted.push(addMentionChipEffect.of(effect.value));
-    } else if (effect.is(clearMentionChipsEffect)) {
-      cleared = true;
-      for (const chip of collectChips(startChips)) {
-        inverted.push(addMentionChipEffect.of(chip));
-      }
-    }
-  }
-
-  if (!cleared && tr.docChanged) {
-    for (const chip of collectChips(startChips)) {
-      const mappedFrom = tr.changes.mapPos(chip.from, 1);
-      const mappedTo = tr.changes.mapPos(chip.to, -1);
-      if (mappedFrom >= mappedTo) {
-        inverted.push(addMentionChipEffect.of(chip));
-      }
-    }
-  }
-
-  return inverted;
 });
 
 export const mentionChipTheme = EditorView.theme({
@@ -227,15 +174,23 @@ export const mentionChipTheme = EditorView.theme({
 });
 
 export function mentionChipExtension() {
-  return [mentionChipsField, mentionChipTheme, invertMentionChipEffects];
+  return [mentionRegistryField, mentionChipsField, mentionChipTheme];
 }
 
 export function collectMentionChips(state: EditorState): MentionChipRange[] {
-  const chips = state.field(mentionChipsField, false);
-  if (!chips) {
+  const registry = state.field(mentionRegistryField, false);
+  if (!registry || registry.size === 0) {
     return [];
   }
-  return collectChips(chips);
+  const matches = findTokenMatches(state.doc.toString(), [...registry.keys()]);
+  const chips: MentionChipRange[] = [];
+  for (const match of matches) {
+    const data = registry.get(match.token);
+    if (data) {
+      chips.push({ from: match.from, to: match.to, data });
+    }
+  }
+  return chips;
 }
 
 export function getMentionChipData(
@@ -243,17 +198,39 @@ export function getMentionChipData(
   from: number,
   to: number,
 ): MentionChipData | null {
-  const chips = state.field(mentionChipsField, false);
-  if (!chips) {
-    return null;
+  for (const chip of collectMentionChips(state)) {
+    if (chip.from === from && chip.to === to) {
+      return chip.data;
+    }
   }
-  return chipDataAt(chips, from, to);
+  return null;
 }
 
+/** Tokens currently registered (sticky — may include tokens absent from the doc). */
 export function collectMentionTokens(state: EditorState): Set<string> {
-  const tokens = new Set<string>();
-  for (const chip of collectMentionChips(state)) {
-    tokens.add(chip.data.token);
+  const registry = state.field(mentionRegistryField, false);
+  if (!registry) {
+    return new Set();
   }
-  return tokens;
+  return new Set(registry.keys());
+}
+
+/** True when any derived mention chip ends exactly at `pos`. */
+export function mentionChipEndsAt(state: EditorState, pos: number): boolean {
+  for (const chip of collectMentionChips(state)) {
+    if (chip.to === pos) {
+      return true;
+    }
+  }
+  return false;
+}
+
+/** Half-open overlap with any active (doc-present) mention chip. */
+export function rangeOverlapsMentionChip(state: EditorState, from: number, to: number): boolean {
+  for (const chip of collectMentionChips(state)) {
+    if (chip.from < to && chip.to > from) {
+      return true;
+    }
+  }
+  return false;
 }

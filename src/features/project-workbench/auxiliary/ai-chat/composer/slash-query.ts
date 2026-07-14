@@ -2,7 +2,7 @@ import type { EditorState } from "@codemirror/state";
 
 import type { AiPromptConfigPublic } from "#shared/rpc/services/index";
 
-import { promptChipsField } from "./prompt-chip-extension";
+import { hasActivePromptChip } from "./prompt-chip-extension";
 
 /** Active `/query` token under the primary caret (collapsed selection only). */
 export type SlashQuery = {
@@ -34,9 +34,8 @@ export function detectSlashQuery(state: EditorState): SlashQuery | null {
     return null;
   }
 
-  // Only one slash command per draft: block while any chip is present.
-  const chips = state.field(promptChipsField, false);
-  if (chips && chips.size > 0) {
+  // Only one slash command per draft: block while any active chip is present.
+  if (hasActivePromptChip(state)) {
     return null;
   }
 

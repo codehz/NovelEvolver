@@ -63,7 +63,7 @@ describe("detectSlashQuery", () => {
       selection: { anchor: marker.length + 3 },
     });
     const withChip = base.update({
-      effects: addPromptChipEffect.of({ from: 0, to: marker.length, data }),
+      effects: addPromptChipEffect.of(data),
     }).state;
     expect(detectSlashQuery(withChip)).toBeNull();
   });
@@ -82,7 +82,7 @@ describe("detectSlashQuery", () => {
       selection: { anchor: marker.length + 5 },
     });
     const withChip = base.update({
-      effects: addPromptChipEffect.of({ from: 0, to: marker.length, data }),
+      effects: addPromptChipEffect.of(data),
     }).state;
     expect(detectSlashQuery(withChip)).toBeNull();
   });
@@ -139,7 +139,7 @@ describe("buildComposerSendPayload", () => {
       selection: { anchor: marker.length },
     });
     const next = state.update({
-      effects: addPromptChipEffect.of({ from: 0, to: marker.length, data }),
+      effects: addPromptChipEffect.of(data),
     }).state;
     expect(buildComposerSendPayload(next)).toEqual({
       text: " 第三章",
@@ -168,7 +168,7 @@ describe("buildComposerSendPayload", () => {
       selection: { anchor: marker.length },
     });
     const next = state.update({
-      effects: addPromptChipEffect.of({ from: 0, to: marker.length, data }),
+      effects: addPromptChipEffect.of(data),
     }).state;
     expect(isComposerStateEmpty(next)).toBe(false);
     expect(buildComposerSendPayload(next).slash?.slug).toBe("expand");

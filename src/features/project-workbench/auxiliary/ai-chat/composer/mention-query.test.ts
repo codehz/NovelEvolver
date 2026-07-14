@@ -75,7 +75,7 @@ describe("detectMentionQuery", () => {
       selection: { anchor: token.length },
     });
     const withChip = base.update({
-      effects: addMentionChipEffect.of({ from: 0, to: token.length, data }),
+      effects: addMentionChipEffect.of(data),
     }).state;
     // Caret at end of chip range still overlaps the decoration range.
     expect(detectMentionQuery(withChip)).toBeNull();
@@ -98,7 +98,7 @@ describe("detectMentionQuery", () => {
       selection: { anchor: doc.length },
     });
     const withChip = base.update({
-      effects: addMentionChipEffect.of({ from: 0, to: token.length, data }),
+      effects: addMentionChipEffect.of(data),
     }).state;
     expect(detectMentionQuery(withChip)).toEqual({
       from: token.length + 1,
@@ -122,7 +122,7 @@ describe("detectMentionQuery", () => {
       selection: { anchor: doc.length },
     });
     const withChip = base.update({
-      effects: addPromptChipEffect.of({ from: 0, to: marker.length, data }),
+      effects: addPromptChipEffect.of(data),
     }).state;
     expect(detectMentionQuery(withChip)).toEqual({
       from: marker.length,
@@ -146,7 +146,7 @@ describe("detectMentionQuery", () => {
       selection: { anchor: doc.length },
     });
     const withChip = base.update({
-      effects: addPromptChipEffect.of({ from: 0, to: marker.length, data }),
+      effects: addPromptChipEffect.of(data),
     }).state;
     expect(detectMentionQuery(withChip)).toEqual({
       from: marker.length,
@@ -172,7 +172,7 @@ describe("detectMentionQuery", () => {
       selection: { anchor: doc.length },
     });
     const withChip = base.update({
-      effects: addMentionChipEffect.of({ from: 0, to: token.length, data }),
+      effects: addMentionChipEffect.of(data),
     }).state;
     expect(detectMentionQuery(withChip)).toEqual({
       from: token.length,
