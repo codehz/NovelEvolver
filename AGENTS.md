@@ -139,6 +139,7 @@ Additional shape / type scale rules:
 - **Radius:** controls `rounded-sm`; panels/cards `rounded-lg`; pills/progress `rounded-full`. Do not mix radii for the same role.
 - **Accent:** chrome emphasis uses `badge-background` / existing semantic tokens. Decorative severity colors (info/warn/error) may stay raw `ctp-*`.
 - **Chat type scale:** body `text-chat`, meta/secondary `text-chat-meta` (theme tokens) — avoid `text-[0.8125rem]` / `text-[0.75rem]` arbitrary values.
+- **Custom `@theme --text-*` sizes must also be registered** in `src/shared/lib/ui/cn.ts` under `extendTailwindMerge` → `classGroups["font-size"]` (e.g. `2xs`, `chat`, `chat-meta`). Otherwise `cn()` treats them as text-color and drops them when merged with `text-app-foreground` / other `text-*` color utilities.
 - **Collapsible height motion** may keep the separate ease in `collapsibleHeightMotionClass`; do not use it for overlays.
 
 ## Testing Guidelines

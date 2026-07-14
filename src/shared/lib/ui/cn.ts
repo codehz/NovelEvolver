@@ -4,7 +4,8 @@ import { extendTailwindMerge } from "tailwind-merge";
 const twMerge = extendTailwindMerge({
   extend: {
     classGroups: {
-      "font-size": [{ text: ["titlebar", "activity-bar-icon"] }],
+      // Theme font sizes from `@theme --text-*` (must not merge with text-color).
+      "font-size": [{ text: ["2xs", "chat", "chat-meta", "titlebar", "activity-bar-icon"] }],
     },
   },
 });
