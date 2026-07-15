@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { useLocation } from "wouter";
 
 import { useNotifyAction } from "#app/shared/lib/notifications";
@@ -8,7 +8,6 @@ import type { ProjectMetadata } from "#shared/project";
 
 import { ProjectListCard } from "./ProjectListCard";
 import { ProjectListHeader } from "./ProjectListHeader";
-import { SettingsDialog } from "./settings/SettingsDialog";
 
 const projectLoader = createAsyncLoader(() => projectLibraryService.recentProjects);
 
@@ -16,7 +15,6 @@ export function ProjectList() {
   const [, navigate] = useLocation();
   const projects = useAsyncLoader(projectLoader);
   const notifyAction = useNotifyAction();
-  const [settingsOpen, setSettingsOpen] = useState(false);
 
   useEffect(() => {
     void projects.refresh();
@@ -60,22 +58,11 @@ export function ProjectList() {
     <div className="flex min-h-0 flex-1 flex-col gap-4 p-6">
       <ProjectListHeader
         pending={notifyAction.pending}
-        settingsOpen={settingsOpen}
         onCreate={() => {
           void handleCreateDialog();
         }}
         onOpenDialog={() => {
           void handleOpenDialog();
-        }}
-        onOpenSettings={() => {
-          setSettingsOpen(true);
-        }}
-      />
-
-      <SettingsDialog
-        open={settingsOpen}
-        onDismiss={() => {
-          setSettingsOpen(false);
         }}
       />
 

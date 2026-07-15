@@ -16,6 +16,7 @@ import { SlotText } from "#app/shared/ui";
 import { ContextMenuHost } from "#app/shell/context-menu";
 import { NotificationBellButton, NotificationToastStack } from "#app/shell/notifications";
 import { QuickPickHost } from "#app/shell/quick-pick";
+import { SettingsHost } from "#app/shell/settings";
 import type { WindowState } from "#shared/window";
 
 const windowControlButtonClass = cn(
@@ -165,6 +166,7 @@ export function WindowFrame({ children }: WindowFrameProps) {
       <StatusBar />
       <NotificationToastStack />
       <QuickPickHost />
+      <SettingsHost />
       <ContextMenuHost />
     </main>
   );

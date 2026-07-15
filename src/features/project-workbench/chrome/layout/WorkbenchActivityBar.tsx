@@ -1,6 +1,8 @@
+import { useAtomValue } from "jotai";
 import { memo } from "react";
 import { Link } from "wouter";
 
+import { settingsApi, settingsOpenAtom } from "#app/shared/lib/settings";
 import { cn } from "#app/shared/lib/ui/cn";
 import { Button, AppTooltip } from "#app/shared/ui";
 
@@ -56,19 +58,17 @@ type WorkbenchActivityBarProps = {
   items: readonly ActivityItem[];
   activeView: string;
   primarySidebarVisible: boolean;
-  settingsOpen: boolean;
   onSelectView: (viewId: string) => void;
-  onOpenSettings: () => void;
 };
 
 export const WorkbenchActivityBar = memo(function WorkbenchActivityBar({
   items,
   activeView,
   primarySidebarVisible,
-  settingsOpen,
   onSelectView,
-  onOpenSettings,
 }: WorkbenchActivityBarProps) {
+  const settingsOpen = useAtomValue(settingsOpenAtom);
+
   return (
     <nav
       aria-label="活动栏"
@@ -99,7 +99,9 @@ export const WorkbenchActivityBar = memo(function WorkbenchActivityBar({
           iconClass="icon-[codicon--settings-gear]"
           label="设置"
           noDrag
-          onClick={onOpenSettings}
+          onClick={() => {
+            settingsApi.open();
+          }}
         />
         <AppTooltip label="返回项目列表" side="right">
           <Link

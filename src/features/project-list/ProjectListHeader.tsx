@@ -1,20 +1,17 @@
+import { useAtomValue } from "jotai";
+
+import { settingsApi, settingsOpenAtom } from "#app/shared/lib/settings";
 import { Button } from "#app/shared/ui";
 
 type ProjectListHeaderProps = {
   pending: boolean;
-  settingsOpen: boolean;
   onCreate: () => void;
   onOpenDialog: () => void;
-  onOpenSettings: () => void;
 };
 
-export function ProjectListHeader({
-  pending,
-  settingsOpen,
-  onCreate,
-  onOpenDialog,
-  onOpenSettings,
-}: ProjectListHeaderProps) {
+export function ProjectListHeader({ pending, onCreate, onOpenDialog }: ProjectListHeaderProps) {
+  const settingsOpen = useAtomValue(settingsOpenAtom);
+
   return (
     <div className="flex items-center justify-between gap-4">
       <h1 className="text-lg font-semibold text-app-foreground">项目</h1>
@@ -26,7 +23,9 @@ export function ProjectListHeader({
           disabled={pending}
           variant="secondary"
           size="icon-lg"
-          onClick={onOpenSettings}
+          onClick={() => {
+            settingsApi.open();
+          }}
         >
           <span aria-hidden="true" className="icon-[codicon--settings-gear] text-base" />
         </Button>

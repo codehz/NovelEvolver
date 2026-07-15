@@ -1,12 +1,10 @@
 import {
   useCallback,
   useMemo,
-  useState,
   type PointerEvent as ReactPointerEvent,
   type ReactNode,
 } from "react";
 
-import { SettingsDialog } from "#app/features/project-list/settings/SettingsDialog";
 import { cn } from "#app/shared/lib/ui/cn";
 
 import { TitleBarAuxiliaryToggle } from "../titlebar/TitleBarAuxiliaryToggle";
@@ -71,7 +69,6 @@ export function WorkbenchLayout({
     throw new Error("WorkbenchLayout requires at least one primary view");
   }
 
-  const [settingsOpen, setSettingsOpen] = useState(false);
   const { layoutPreferences, setLayoutPreferences, togglePrimarySidebar, toggleAuxiliarySidebar } =
     useWorkbenchLayoutPreferences();
   const { activePrimaryView, activeViewId, handleSelectView } = useWorkbenchActiveView({
@@ -134,10 +131,6 @@ export function WorkbenchLayout({
           items={activityItems}
           activeView={activeViewId}
           primarySidebarVisible={primary.visible}
-          settingsOpen={settingsOpen}
-          onOpenSettings={() => {
-            setSettingsOpen(true);
-          }}
           onSelectView={handleActivitySelectView}
         />
         <PrimarySidebarDock
@@ -179,13 +172,6 @@ export function WorkbenchLayout({
           />
         ) : null}
       </div>
-
-      <SettingsDialog
-        open={settingsOpen}
-        onDismiss={() => {
-          setSettingsOpen(false);
-        }}
-      />
     </div>
   );
 }
