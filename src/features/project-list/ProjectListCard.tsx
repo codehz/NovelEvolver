@@ -30,8 +30,8 @@ export function ProjectListCard({ project, onOpen, onRemove }: ProjectListCardPr
     <li>
       <article
         className={cn(
-          "group relative flex min-h-28 flex-col rounded-lg border border-titlebar-border",
-          "bg-app-surface transition-colors hover:border-ctp-surface1 hover:bg-ctp-surface0/30",
+          "group relative flex min-h-28 flex-col rounded-lg",
+          "bg-app-surface transition-colors hover:bg-ctp-surface0/30",
         )}
       >
         <Button
