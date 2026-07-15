@@ -38,8 +38,18 @@ export function HistoryCommitRow({
   onRetry,
   onOpenChange,
 }: HistoryCommitRowProps) {
+  // Rail lives on the full <li> so bottom connector can span expanded children
+  // without scaling the node. Continue the line whenever there is a next commit
+  // or this row is expanded (so the track does not break above children).
+  const continueBottom = showBottomConnector || expanded;
+
   return (
     <li className="relative">
+      <HistoryGraphGlyph
+        isHead={isHead}
+        showBottomConnector={continueBottom}
+        showTopConnector={showTopConnector}
+      />
       <div
         className={commitHeaderClass}
         role="button"
@@ -48,13 +58,6 @@ export function HistoryCommitRow({
         onClick={onToggle}
         onKeyDown={activateOnEnterSpace(onToggle)}
       >
-        <div className="pointer-events-none absolute inset-y-0 left-2 w-4">
-          <HistoryGraphGlyph
-            isHead={isHead}
-            showBottomConnector={showBottomConnector || expanded}
-            showTopConnector={showTopConnector}
-          />
-        </div>
         <div aria-hidden="true" className="w-4" />
         <div className="flex min-w-0 items-start gap-1 py-1">
           <DisclosureChevron expanded={expanded} />
@@ -73,34 +76,26 @@ export function HistoryCommitRow({
         </div>
       </div>
       {expanded ? (
-        <div className="relative pl-6">
-          {showBottomConnector || expanded ? (
-            <div
-              aria-hidden="true"
-              className="pointer-events-none absolute top-0 bottom-0 left-4 w-px bg-ctp-surface1"
+        <div className="min-w-0 pb-1 pl-6">
+          {cacheEntry === undefined || cacheEntry.status === "loading" ? (
+            <div className="flex items-center gap-2 px-2 py-1.5 text-[10px] text-ctp-overlay0">
+              <span aria-hidden="true" className="icon-[codicon--loading] animate-spin text-sm" />
+              <span>正在加载提交变更…</span>
+            </div>
+          ) : cacheEntry.status === "error" ? (
+            <div className="flex flex-col items-start gap-1 px-2 py-1.5 text-[10px] text-ctp-overlay0">
+              <p>{cacheEntry.message}</p>
+              <Button variant="link" className="h-auto p-0 text-[10px]" onClick={onRetry}>
+                重试
+              </Button>
+            </div>
+          ) : (
+            <CommitChangesTree
+              manuscriptChanges={cacheEntry.snapshot.manuscriptChanges}
+              resourceChanges={cacheEntry.snapshot.resourceChanges}
+              onOpenChange={onOpenChange}
             />
-          ) : null}
-          <div className="relative min-w-0 pb-1">
-            {cacheEntry === undefined || cacheEntry.status === "loading" ? (
-              <div className="flex items-center gap-2 px-2 py-1.5 text-[10px] text-ctp-overlay0">
-                <span aria-hidden="true" className="icon-[codicon--loading] animate-spin text-sm" />
-                <span>正在加载提交变更…</span>
-              </div>
-            ) : cacheEntry.status === "error" ? (
-              <div className="flex flex-col items-start gap-1 px-2 py-1.5 text-[10px] text-ctp-overlay0">
-                <p>{cacheEntry.message}</p>
-                <Button variant="link" className="h-auto p-0 text-[10px]" onClick={onRetry}>
-                  重试
-                </Button>
-              </div>
-            ) : (
-              <CommitChangesTree
-                manuscriptChanges={cacheEntry.snapshot.manuscriptChanges}
-                resourceChanges={cacheEntry.snapshot.resourceChanges}
-                onOpenChange={onOpenChange}
-              />
-            )}
-          </div>
+          )}
         </div>
       ) : null}
     </li>

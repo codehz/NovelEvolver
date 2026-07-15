@@ -1,18 +1,28 @@
 import { cn } from "#app/shared/lib/ui/cn";
 
-const glyphRootClass = cn("block h-full w-4 overflow-visible");
-const connectorGroupClass = cn("text-ctp-surface1");
-const nodeClass = cn("fill-current text-ctp-overlay0");
-const headNodeClass = cn("fill-current text-ctp-mauve");
-const headRingClass = cn("fill-none stroke-current text-ctp-mauve/30");
+/**
+ * Timeline rail for a commit row.
+ *
+ * Node is a fixed-size circle pinned near the top of the row (header band).
+ * Connectors are independent CSS lines that can stretch the full row height
+ * (including expanded children) without distorting the node.
+ */
+const railClass = cn("pointer-events-none absolute inset-y-0 left-2 w-4");
+const connectorClass = cn("absolute left-1/2 w-px -translate-x-1/2 bg-ctp-surface1");
+const nodeClass = cn(
+  "absolute left-1/2 size-1.5 -translate-x-1/2 -translate-y-1/2 rounded-full bg-ctp-overlay0",
+);
+const headNodeClass = cn(
+  "absolute left-1/2 size-1.75 -translate-x-1/2 -translate-y-1/2 rounded-full bg-ctp-mauve",
+);
+const headRingClass = cn(
+  "absolute left-1/2 size-2.75 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-ctp-mauve/30",
+);
 
-const GLYPH_WIDTH = 16;
-const GLYPH_HEIGHT = 40;
-const GLYPH_CENTER_X = 8;
-const GLYPH_NODE_CENTER_Y = 12;
-const NODE_RADIUS = 3;
-const HEAD_NODE_RADIUS = 3.5;
-const HEAD_RING_RADIUS = 5.5;
+/** Vertical center of the node within the fixed header band (matches previous SVG y=12 in 40px). */
+const NODE_CENTER_Y_PX = 12;
+const NODE_RADIUS_PX = 3;
+const HEAD_RING_RADIUS_PX = 5.5;
 
 type HistoryGraphGlyphProps = {
   isHead: boolean;
@@ -25,62 +35,27 @@ export function HistoryGraphGlyph({
   showTopConnector,
   showBottomConnector,
 }: HistoryGraphGlyphProps) {
-  const connectorGap = isHead ? HEAD_RING_RADIUS : NODE_RADIUS;
+  const gap = isHead ? HEAD_RING_RADIUS_PX : NODE_RADIUS_PX;
 
   return (
-    <svg
-      aria-hidden="true"
-      className={glyphRootClass}
-      focusable="false"
-      preserveAspectRatio="none"
-      viewBox={`0 0 ${GLYPH_WIDTH} ${GLYPH_HEIGHT}`}
-    >
-      <g className={connectorGroupClass}>
-        {showTopConnector ? (
-          <line
-            stroke="currentColor"
-            strokeWidth="1.5"
-            x1={GLYPH_CENTER_X}
-            x2={GLYPH_CENTER_X}
-            y1="0"
-            y2={GLYPH_NODE_CENTER_Y - connectorGap}
-          />
-        ) : null}
-        {showBottomConnector ? (
-          <line
-            stroke="currentColor"
-            strokeWidth="1.5"
-            x1={GLYPH_CENTER_X}
-            x2={GLYPH_CENTER_X}
-            y1={GLYPH_NODE_CENTER_Y + connectorGap}
-            y2={GLYPH_HEIGHT}
-          />
-        ) : null}
-      </g>
+    <div aria-hidden="true" className={railClass}>
+      {showTopConnector ? (
+        <div
+          className={connectorClass}
+          style={{ top: 0, height: Math.max(0, NODE_CENTER_Y_PX - gap) }}
+        />
+      ) : null}
+      {showBottomConnector ? (
+        <div className={connectorClass} style={{ top: NODE_CENTER_Y_PX + gap, bottom: 0 }} />
+      ) : null}
       {isHead ? (
         <>
-          <circle
-            className={headRingClass}
-            cx={GLYPH_CENTER_X}
-            cy={GLYPH_NODE_CENTER_Y}
-            r={HEAD_RING_RADIUS}
-            strokeWidth="2"
-          />
-          <circle
-            className={headNodeClass}
-            cx={GLYPH_CENTER_X}
-            cy={GLYPH_NODE_CENTER_Y}
-            r={HEAD_NODE_RADIUS}
-          />
+          <div className={headRingClass} style={{ top: NODE_CENTER_Y_PX }} />
+          <div className={headNodeClass} style={{ top: NODE_CENTER_Y_PX }} />
         </>
       ) : (
-        <circle
-          className={nodeClass}
-          cx={GLYPH_CENTER_X}
-          cy={GLYPH_NODE_CENTER_Y}
-          r={NODE_RADIUS}
-        />
+        <div className={nodeClass} style={{ top: NODE_CENTER_Y_PX }} />
       )}
-    </svg>
+    </div>
   );
 }
