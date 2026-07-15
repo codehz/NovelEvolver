@@ -115,7 +115,6 @@ export function normalizeSidebarWidth(width: number, minWidth: number) {
 export function snapshotLayoutPreferences(
   preferences: LayoutPreferences,
   resolvedLayout: ResolvedWorkbenchLayout,
-  hasAuxiliary: boolean,
 ): LayoutPreferences {
   return {
     ...preferences,
@@ -123,11 +122,10 @@ export function snapshotLayoutPreferences(
     primaryWidth: resolvedLayout.primaryVisible
       ? resolvedLayout.primaryWidth
       : preferences.primaryWidth,
-    auxiliaryVisible: hasAuxiliary && resolvedLayout.auxiliaryVisible,
-    auxiliaryWidth:
-      hasAuxiliary && resolvedLayout.auxiliaryVisible
-        ? resolvedLayout.auxiliaryWidth
-        : preferences.auxiliaryWidth,
+    auxiliaryVisible: resolvedLayout.auxiliaryVisible,
+    auxiliaryWidth: resolvedLayout.auxiliaryVisible
+      ? resolvedLayout.auxiliaryWidth
+      : preferences.auxiliaryWidth,
   };
 }
 
@@ -135,9 +133,8 @@ export function deriveWorkbenchChromeLayout(input: {
   layoutPreferences: LayoutPreferences;
   containerWidth: number;
   canShowPrimary: boolean;
-  hasAuxiliary: boolean;
 }): WorkbenchChromeLayout {
-  const { layoutPreferences, containerWidth, canShowPrimary, hasAuxiliary } = input;
+  const { layoutPreferences, containerWidth, canShowPrimary } = input;
   const resolved = resolveWorkbenchLayout(
     {
       ...layoutPreferences,
@@ -156,7 +153,7 @@ export function deriveWorkbenchChromeLayout(input: {
       minWidth: MIN_PRIMARY_WIDTH,
     }),
     auxiliary: resolveSidebarChrome({
-      enabled: hasAuxiliary,
+      enabled: true,
       resolvedVisible: resolved.auxiliaryVisible,
       resolvedWidth: resolved.auxiliaryWidth,
       preferredWidth: layoutPreferences.auxiliaryWidth,

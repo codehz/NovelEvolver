@@ -6,35 +6,14 @@ import {
   type LayoutPreferences,
 } from "./workbench-layout-resolver";
 
-export function useWorkbenchLayoutPreferences({
-  hasAuxiliary,
-  hasPrimaryViews,
-}: {
-  hasAuxiliary: boolean;
-  hasPrimaryViews: boolean;
-}) {
+export function useWorkbenchLayoutPreferences({ hasPrimaryViews }: { hasPrimaryViews: boolean }) {
   const [layoutPreferences, setLayoutPreferences] = useState<LayoutPreferences>({
     primaryVisible: hasPrimaryViews,
     primaryWidth: DEFAULT_PRIMARY_WIDTH,
-    auxiliaryVisible: hasAuxiliary,
+    auxiliaryVisible: true,
     auxiliaryWidth: DEFAULT_AUXILIARY_WIDTH,
     priority: "primary",
   });
-
-  useEffect(() => {
-    if (hasAuxiliary) {
-      return;
-    }
-
-    setLayoutPreferences((value) =>
-      value.auxiliaryVisible
-        ? {
-            ...value,
-            auxiliaryVisible: false,
-          }
-        : value,
-    );
-  }, [hasAuxiliary]);
 
   useEffect(() => {
     if (hasPrimaryViews) {

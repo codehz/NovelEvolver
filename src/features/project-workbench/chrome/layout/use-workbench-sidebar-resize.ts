@@ -22,12 +22,10 @@ import {
 export type ResizeSide = ResizePriority;
 
 export function useWorkbenchSidebarResize({
-  hasAuxiliary,
   layoutPreferences,
   resolvedLayout,
   setLayoutPreferences,
 }: {
-  hasAuxiliary: boolean;
   layoutPreferences: LayoutPreferences;
   resolvedLayout: ResolvedWorkbenchLayout;
   setLayoutPreferences: Dispatch<SetStateAction<LayoutPreferences>>;
@@ -51,11 +49,7 @@ export function useWorkbenchSidebarResize({
       dragCleanupRef.current?.();
 
       const startX = event.clientX;
-      const startLayout = snapshotLayoutPreferences(
-        layoutPreferences,
-        resolvedLayout,
-        hasAuxiliary,
-      );
+      const startLayout = snapshotLayoutPreferences(layoutPreferences, resolvedLayout);
       let pendingDeltaX = 0;
       let animationFrameId: number | null = null;
 
@@ -146,7 +140,7 @@ export function useWorkbenchSidebarResize({
       window.addEventListener("pointerup", cleanup, { once: true });
       window.addEventListener("pointercancel", cleanup, { once: true });
     },
-    [hasAuxiliary, layoutPreferences, resolvedLayout, setLayoutPreferences],
+    [layoutPreferences, resolvedLayout, setLayoutPreferences],
   );
 
   return {

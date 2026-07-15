@@ -1,5 +1,4 @@
 import {
-  memo,
   useCallback,
   useMemo,
   useState,
@@ -35,17 +34,14 @@ const resizeHandleClass = cn(
   "hover:opacity-100 hover:delay-300 focus-visible:opacity-100 focus-visible:delay-150",
 );
 
-const ResizeHandle = memo(function ResizeHandle({
-  active,
-  ariaLabel,
-  position,
-  onPointerDown,
-}: {
+type ResizeHandleProps = {
   active: boolean;
   ariaLabel: string;
   position: number;
   onPointerDown: (event: ReactPointerEvent<HTMLDivElement>) => void;
-}) {
+};
+
+function ResizeHandle({ active, ariaLabel, position, onPointerDown }: ResizeHandleProps) {
   return (
     <div
       aria-label={ariaLabel}
@@ -56,12 +52,12 @@ const ResizeHandle = memo(function ResizeHandle({
       onPointerDown={onPointerDown}
     />
   );
-});
+}
 
 export type WorkbenchLayoutProps = {
   primaryViews: readonly WorkbenchPrimaryView[];
   editor: ReactNode;
-  auxiliary?: ReactNode;
+  auxiliary: ReactNode;
   defaultActiveViewId?: string;
 };
 
@@ -71,14 +67,10 @@ export function WorkbenchLayout({
   auxiliary,
   defaultActiveViewId,
 }: WorkbenchLayoutProps) {
-  const hasAuxiliary = auxiliary != null;
   const hasPrimaryViews = primaryViews.length > 0;
   const [settingsOpen, setSettingsOpen] = useState(false);
   const { layoutPreferences, setLayoutPreferences, toggleAuxiliarySidebar } =
-    useWorkbenchLayoutPreferences({
-      hasAuxiliary,
-      hasPrimaryViews,
-    });
+    useWorkbenchLayoutPreferences({ hasPrimaryViews });
   const { activePrimaryView, activeViewId, handlePrimarySidebarToggle, handleSelectView } =
     useWorkbenchActiveView({
       defaultActiveViewId,
@@ -89,29 +81,20 @@ export function WorkbenchLayout({
     ACTIVITY_BAR_WIDTH + DEFAULT_PRIMARY_WIDTH + DEFAULT_AUXILIARY_WIDTH + MIN_EDITOR_WIDTH,
   );
   const canShowPrimary = hasPrimaryViews && activePrimaryView != null;
-  const chromeLayout = useMemo(
+  const {
+    resolved: resolvedLayout,
+    primary,
+    auxiliary: auxiliaryChrome,
+  } = useMemo(
     () =>
       deriveWorkbenchChromeLayout({
         layoutPreferences,
         containerWidth,
         canShowPrimary,
-        hasAuxiliary,
       }),
-    [canShowPrimary, containerWidth, hasAuxiliary, layoutPreferences],
+    [canShowPrimary, containerWidth, layoutPreferences],
   );
-  const {
-    resolved: resolvedLayout,
-    primary: primaryChrome,
-    auxiliary: auxiliaryChrome,
-  } = chromeLayout;
-  const primarySidebarVisible = primaryChrome.visible;
-  const primarySidebarPanelWidth = primaryChrome.panelWidth;
-  const primarySidebarSpacerWidth = primaryChrome.spacerWidth;
-  const auxiliaryVisible = auxiliaryChrome.visible;
-  const auxiliarySidebarPanelWidth = auxiliaryChrome.panelWidth;
-  const auxiliarySidebarSpacerWidth = auxiliaryChrome.spacerWidth;
   const { activeResizeSide, startResizeDrag } = useWorkbenchSidebarResize({
-    hasAuxiliary,
     layoutPreferences,
     resolvedLayout,
     setLayoutPreferences,
@@ -125,105 +108,88 @@ export function WorkbenchLayout({
       })),
     [primaryViews],
   );
-  const handlePrimaryTitleBarToggle = useCallback(() => {
-    handlePrimarySidebarToggle(primarySidebarVisible);
-  }, [handlePrimarySidebarToggle, primarySidebarVisible]);
-  const handleAuxiliaryTitleBarToggle = useCallback(() => {
-    toggleAuxiliarySidebar(auxiliaryVisible);
-  }, [auxiliaryVisible, toggleAuxiliarySidebar]);
   const handleActivitySelectView = useCallback(
     (viewId: string) => {
-      handleSelectView(viewId, primarySidebarVisible);
+      handleSelectView(viewId, primary.visible);
     },
-    [handleSelectView, primarySidebarVisible],
-  );
-  const handleOpenSettings = useCallback(() => {
-    setSettingsOpen(true);
-  }, []);
-  const handleDismissSettings = useCallback(() => {
-    setSettingsOpen(false);
-  }, []);
-  const handlePrimaryResizePointerDown = useCallback(
-    (event: ReactPointerEvent<HTMLDivElement>) => {
-      startResizeDrag("primary", event);
-    },
-    [startResizeDrag],
-  );
-  const handleAuxiliaryResizePointerDown = useCallback(
-    (event: ReactPointerEvent<HTMLDivElement>) => {
-      startResizeDrag("auxiliary", event);
-    },
-    [startResizeDrag],
-  );
-  const primarySidebarContent = useMemo(
-    () => <PrimarySidebarViewStack activeViewId={activeViewId} views={primaryViews} />,
-    [activeViewId, primaryViews],
+    [handleSelectView, primary.visible],
   );
 
   return (
     <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
       {hasPrimaryViews ? (
         <TitleBarPrimarySidebarToggle
-          visible={primarySidebarVisible}
-          onToggle={handlePrimaryTitleBarToggle}
+          visible={primary.visible}
+          onToggle={() => {
+            handlePrimarySidebarToggle(primary.visible);
+          }}
         />
       ) : null}
-      {hasAuxiliary ? (
-        <TitleBarAuxiliaryToggle
-          visible={auxiliaryVisible}
-          onToggle={handleAuxiliaryTitleBarToggle}
-        />
-      ) : null}
+      <TitleBarAuxiliaryToggle
+        visible={auxiliaryChrome.visible}
+        onToggle={() => {
+          toggleAuxiliarySidebar(auxiliaryChrome.visible);
+        }}
+      />
       <div ref={containerRef} className="relative flex min-h-0 flex-1 overflow-hidden">
         <WorkbenchActivityBar
           items={activityItems}
           activeView={activeViewId}
-          primarySidebarVisible={primarySidebarVisible}
+          primarySidebarVisible={primary.visible}
           settingsOpen={settingsOpen}
-          onOpenSettings={handleOpenSettings}
+          onOpenSettings={() => {
+            setSettingsOpen(true);
+          }}
           onSelectView={handleActivitySelectView}
         />
         {hasPrimaryViews ? (
           <PrimarySidebarDock
-            panelWidth={primarySidebarPanelWidth}
+            panelWidth={primary.panelWidth}
             resizeTransitionDisabled={activeResizeSide === "primary"}
-            spacerWidth={primarySidebarSpacerWidth}
+            spacerWidth={primary.spacerWidth}
             title={activePrimaryView?.title ?? primaryViews[0]!.title}
-            visible={primarySidebarVisible}
+            visible={primary.visible}
           >
-            {primarySidebarContent}
+            <PrimarySidebarViewStack activeViewId={activeViewId} views={primaryViews} />
           </PrimarySidebarDock>
         ) : null}
         <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">{editor}</div>
-        {hasAuxiliary ? (
-          <AuxiliarySidebarDock
-            panelWidth={auxiliarySidebarPanelWidth}
-            resizeTransitionDisabled={activeResizeSide === "auxiliary"}
-            spacerWidth={auxiliarySidebarSpacerWidth}
-            visible={auxiliaryVisible}
-          >
-            {auxiliary}
-          </AuxiliarySidebarDock>
-        ) : null}
-        {primarySidebarVisible ? (
+        <AuxiliarySidebarDock
+          panelWidth={auxiliaryChrome.panelWidth}
+          resizeTransitionDisabled={activeResizeSide === "auxiliary"}
+          spacerWidth={auxiliaryChrome.spacerWidth}
+          visible={auxiliaryChrome.visible}
+        >
+          {auxiliary}
+        </AuxiliarySidebarDock>
+        {primary.visible ? (
           <ResizeHandle
             active={activeResizeSide === "primary"}
             ariaLabel="调整主侧边栏宽度"
-            position={ACTIVITY_BAR_WIDTH + primaryChrome.spacerWidth}
-            onPointerDown={handlePrimaryResizePointerDown}
+            position={ACTIVITY_BAR_WIDTH + primary.spacerWidth}
+            onPointerDown={(event) => {
+              startResizeDrag("primary", event);
+            }}
           />
         ) : null}
-        {auxiliaryVisible ? (
+        {auxiliaryChrome.visible ? (
           <ResizeHandle
             active={activeResizeSide === "auxiliary"}
             ariaLabel="调整辅助侧边栏宽度"
             position={containerWidth - auxiliaryChrome.spacerWidth - 1}
-            onPointerDown={handleAuxiliaryResizePointerDown}
+            onPointerDown={(event) => {
+              startResizeDrag("auxiliary", event);
+            }}
           />
         ) : null}
       </div>
 
-      <SettingsDialog open={settingsOpen} onDismiss={handleDismissSettings} />
+      <SettingsDialog
+        open={settingsOpen}
+        onDismiss={() => {
+          setSettingsOpen(false);
+        }}
+      />
     </div>
   );
 }
