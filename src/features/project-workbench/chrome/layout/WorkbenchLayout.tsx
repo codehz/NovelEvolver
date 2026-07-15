@@ -67,10 +67,13 @@ export function WorkbenchLayout({
   auxiliary,
   defaultActiveViewId,
 }: WorkbenchLayoutProps) {
-  const hasPrimaryViews = primaryViews.length > 0;
+  if (primaryViews.length === 0) {
+    throw new Error("WorkbenchLayout requires at least one primary view");
+  }
+
   const [settingsOpen, setSettingsOpen] = useState(false);
   const { layoutPreferences, setLayoutPreferences, toggleAuxiliarySidebar } =
-    useWorkbenchLayoutPreferences({ hasPrimaryViews });
+    useWorkbenchLayoutPreferences();
   const { activePrimaryView, activeViewId, handlePrimarySidebarToggle, handleSelectView } =
     useWorkbenchActiveView({
       defaultActiveViewId,
@@ -80,7 +83,6 @@ export function WorkbenchLayout({
   const { ref: containerRef, width: containerWidth } = useMeasuredElementWidth<HTMLDivElement>(
     ACTIVITY_BAR_WIDTH + DEFAULT_PRIMARY_WIDTH + DEFAULT_AUXILIARY_WIDTH + MIN_EDITOR_WIDTH,
   );
-  const canShowPrimary = hasPrimaryViews && activePrimaryView != null;
   const {
     resolved: resolvedLayout,
     primary,
@@ -90,9 +92,8 @@ export function WorkbenchLayout({
       deriveWorkbenchChromeLayout({
         layoutPreferences,
         containerWidth,
-        canShowPrimary,
       }),
-    [canShowPrimary, containerWidth, layoutPreferences],
+    [containerWidth, layoutPreferences],
   );
   const { activeResizeSide, startResizeDrag } = useWorkbenchSidebarResize({
     layoutPreferences,
@@ -117,14 +118,12 @@ export function WorkbenchLayout({
 
   return (
     <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
-      {hasPrimaryViews ? (
-        <TitleBarPrimarySidebarToggle
-          visible={primary.visible}
-          onToggle={() => {
-            handlePrimarySidebarToggle(primary.visible);
-          }}
-        />
-      ) : null}
+      <TitleBarPrimarySidebarToggle
+        visible={primary.visible}
+        onToggle={() => {
+          handlePrimarySidebarToggle(primary.visible);
+        }}
+      />
       <TitleBarAuxiliaryToggle
         visible={auxiliaryChrome.visible}
         onToggle={() => {
@@ -142,17 +141,15 @@ export function WorkbenchLayout({
           }}
           onSelectView={handleActivitySelectView}
         />
-        {hasPrimaryViews ? (
-          <PrimarySidebarDock
-            panelWidth={primary.panelWidth}
-            resizeTransitionDisabled={activeResizeSide === "primary"}
-            spacerWidth={primary.spacerWidth}
-            title={activePrimaryView?.title ?? primaryViews[0]!.title}
-            visible={primary.visible}
-          >
-            <PrimarySidebarViewStack activeViewId={activeViewId} views={primaryViews} />
-          </PrimarySidebarDock>
-        ) : null}
+        <PrimarySidebarDock
+          panelWidth={primary.panelWidth}
+          resizeTransitionDisabled={activeResizeSide === "primary"}
+          spacerWidth={primary.spacerWidth}
+          title={activePrimaryView.title}
+          visible={primary.visible}
+        >
+          <PrimarySidebarViewStack activeViewId={activeViewId} views={primaryViews} />
+        </PrimarySidebarDock>
         <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">{editor}</div>
         <AuxiliarySidebarDock
           panelWidth={auxiliaryChrome.panelWidth}

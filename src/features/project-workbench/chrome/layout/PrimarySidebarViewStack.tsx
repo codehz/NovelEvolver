@@ -16,7 +16,7 @@ const primarySidebarViewStackClass = cn(
 
 type PrimarySidebarViewStackProps = {
   views: readonly WorkbenchPrimaryView[];
-  activeViewId: string | null;
+  activeViewId: string;
 };
 
 export const PrimarySidebarViewStack = memo(function PrimarySidebarViewStack({

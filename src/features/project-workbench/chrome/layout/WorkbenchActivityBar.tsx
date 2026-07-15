@@ -54,7 +54,7 @@ function ActivityBarIconButton({
 
 type WorkbenchActivityBarProps = {
   items: readonly ActivityItem[];
-  activeView: string | null;
+  activeView: string;
   primarySidebarVisible: boolean;
   settingsOpen: boolean;
   onSelectView: (viewId: string) => void;

@@ -132,21 +132,14 @@ export function snapshotLayoutPreferences(
 export function deriveWorkbenchChromeLayout(input: {
   layoutPreferences: LayoutPreferences;
   containerWidth: number;
-  canShowPrimary: boolean;
 }): WorkbenchChromeLayout {
-  const { layoutPreferences, containerWidth, canShowPrimary } = input;
-  const resolved = resolveWorkbenchLayout(
-    {
-      ...layoutPreferences,
-      primaryVisible: canShowPrimary && layoutPreferences.primaryVisible,
-    },
-    containerWidth,
-  );
+  const { layoutPreferences, containerWidth } = input;
+  const resolved = resolveWorkbenchLayout(layoutPreferences, containerWidth);
 
   return {
     resolved,
     primary: resolveSidebarChrome({
-      enabled: canShowPrimary,
+      enabled: true,
       resolvedVisible: resolved.primaryVisible,
       resolvedWidth: resolved.primaryWidth,
       preferredWidth: layoutPreferences.primaryWidth,

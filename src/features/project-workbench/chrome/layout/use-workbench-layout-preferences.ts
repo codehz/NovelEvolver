@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useState } from "react";
 
 import {
   DEFAULT_AUXILIARY_WIDTH,
@@ -6,29 +6,14 @@ import {
   type LayoutPreferences,
 } from "./workbench-layout-resolver";
 
-export function useWorkbenchLayoutPreferences({ hasPrimaryViews }: { hasPrimaryViews: boolean }) {
+export function useWorkbenchLayoutPreferences() {
   const [layoutPreferences, setLayoutPreferences] = useState<LayoutPreferences>({
-    primaryVisible: hasPrimaryViews,
+    primaryVisible: true,
     primaryWidth: DEFAULT_PRIMARY_WIDTH,
     auxiliaryVisible: true,
     auxiliaryWidth: DEFAULT_AUXILIARY_WIDTH,
     priority: "primary",
   });
-
-  useEffect(() => {
-    if (hasPrimaryViews) {
-      return;
-    }
-
-    setLayoutPreferences((value) =>
-      value.primaryVisible
-        ? {
-            ...value,
-            primaryVisible: false,
-          }
-        : value,
-    );
-  }, [hasPrimaryViews]);
 
   const toggleAuxiliarySidebar = useCallback((auxiliaryVisible: boolean) => {
     setLayoutPreferences((value) => ({
