@@ -60,10 +60,57 @@ export const fieldSurfaceFocusWithinClass = cn(
   "focus-within:border-badge-background",
 );
 
+/**
+ * Standard disabled for clickable chrome controls (Button base, status bar items).
+ * Blocks pointer so hover/focus washes cannot fire; dims to 50%.
+ * Prefer this over ad-hoc `disabled:opacity-*` / `cursor-not-allowed`.
+ */
+export const controlDisabledClass = cn(
+  "disabled:pointer-events-none disabled:opacity-50",
+  "data-disabled:pointer-events-none data-disabled:opacity-50",
+);
+
+/**
+ * Soft disabled for compact/icon chrome that should stay legible
+ * (sidebar header actions, text-variant buttons, chat selector chips).
+ */
+export const controlDisabledSoftClass = cn(
+  "disabled:pointer-events-none disabled:opacity-40",
+  "data-disabled:pointer-events-none data-disabled:opacity-40",
+);
+
+/**
+ * Field / select-trigger disabled: keep the control in layout (no PE kill) so
+ * form focus semantics stay intact; dim + default cursor.
+ */
+export const fieldDisabledClass = cn(
+  "disabled:cursor-default disabled:opacity-50",
+  "data-disabled:cursor-default data-disabled:opacity-50",
+);
+
+/**
+ * Menu / select / context-menu item: mute label color only (full structural opacity).
+ */
+export const menuItemDisabledClass = cn(
+  "data-disabled:cursor-default data-disabled:text-app-muted",
+);
+
+/**
+ * Label/card wrapper that follows a Base UI child with `data-disabled`.
+ */
+export const hasDisabledClass = cn("has-data-disabled:cursor-default has-data-disabled:opacity-50");
+
+/**
+ * Conditional surface dim for non-native disabled hosts
+ * (CodeMirror shell, Toggle chips without native disabled styles).
+ */
+export const disabledSurfaceClass = cn("cursor-default opacity-50");
+
 /** Single-line text input baseline on top of `fieldSurfaceClass` (add height/padding locally). */
 export const fieldInputClass = cn(
   fieldSurfaceClass,
-  "w-full min-w-0 text-xs leading-none text-app-foreground placeholder:text-app-muted disabled:opacity-50",
+  fieldDisabledClass,
+  "w-full min-w-0 text-xs leading-none text-app-foreground placeholder:text-app-muted",
 );
 
 /** Compact search/filter input used in pickers and overlays. */

@@ -8,6 +8,7 @@ import { tags as t } from "@lezer/highlight";
 import { useEffect, useRef } from "react";
 
 import { cn } from "#app/shared/lib/ui/cn";
+import { disabledSurfaceClass } from "#app/shared/lib/ui/interaction-chrome";
 
 import { settingsJsonEditorHostClass } from "./settings-chrome";
 
@@ -206,7 +207,7 @@ export function SettingsJsonEditor({
   return (
     <div
       ref={hostRef}
-      className={cn(settingsJsonEditorHostClass, disabled && "opacity-50", className)}
+      className={cn(settingsJsonEditorHostClass, disabled && disabledSurfaceClass, className)}
       data-disabled={disabled ? "" : undefined}
     />
   );

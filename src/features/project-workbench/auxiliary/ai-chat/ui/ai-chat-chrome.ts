@@ -1,6 +1,7 @@
 import { cn } from "#app/shared/lib/ui/cn";
 import {
   collapsibleHeightMotionClass,
+  controlDisabledSoftClass,
   controlFocusVisibleClass,
   panelHoverClass,
 } from "#app/shared/lib/ui/interaction-chrome";
@@ -106,7 +107,8 @@ export const sendButtonClass = cn(
   "inline-flex size-6 shrink-0 items-center justify-center rounded-sm bg-transparent text-ctp-mauve transition-colors",
   panelHoverClass,
   controlFocusVisibleClass,
-  "disabled:cursor-not-allowed disabled:text-ctp-overlay0 hover:disabled:bg-transparent",
+  // Icon-color mute (not opacity) so the send glyph stays aligned with stop/cancel chrome.
+  "disabled:pointer-events-none disabled:text-ctp-overlay0",
 );
 export const stopButtonClass = cn(
   "inline-flex size-6 shrink-0 items-center justify-center rounded-sm bg-transparent text-ctp-red transition-colors",
@@ -118,14 +120,14 @@ export const modelSelectorButtonClass = cn(
   panelHoverClass,
   controlFocusVisibleClass,
   "focus-visible:bg-window-chrome",
-  "disabled:cursor-not-allowed disabled:opacity-40",
+  controlDisabledSoftClass,
 );
 export const agentSelectorButtonClass = cn(
   "inline-flex h-6 min-w-0 items-center gap-1 rounded-sm px-1 text-2xs text-ctp-mauve transition-colors",
   panelHoverClass,
   controlFocusVisibleClass,
   "focus-visible:bg-window-chrome",
-  "disabled:cursor-not-allowed disabled:opacity-40",
+  controlDisabledSoftClass,
 );
 export const modelSelectorLabelClass = cn("min-w-0 truncate");
 // Same as reasoningPanelClass: no root gap — keep spacing inside the panel body.

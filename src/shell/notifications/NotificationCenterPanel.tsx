@@ -28,7 +28,7 @@ export function NotificationCenterPanel({ titleId }: NotificationCenterPanelProp
           <Popover.Close
             className={cn(
               notificationIconButtonClass,
-              items.length > 0 ? "text-ctp-mauve" : "cursor-not-allowed text-app-muted opacity-50",
+              items.length > 0 ? "text-ctp-mauve" : "text-app-muted",
             )}
             type="button"
             disabled={items.length === 0}

@@ -1,5 +1,7 @@
 import { cn } from "#app/shared/lib/ui/cn";
 import {
+  controlDisabledClass,
+  controlDisabledSoftClass,
   controlFocusVisibleClass,
   controlFocusVisibleInsetClass,
   iconButtonHoverClass,
@@ -9,8 +11,7 @@ import {
 /** Shared layout baseline for text-bearing action buttons. */
 export const buttonBaseClass = cn(
   "inline-flex shrink-0 items-center justify-center gap-1 outline-none select-none",
-  "disabled:pointer-events-none disabled:opacity-50",
-  "data-disabled:pointer-events-none data-disabled:opacity-50",
+  controlDisabledClass,
 );
 
 export type ButtonVariant = "primary" | "secondary" | "ghost" | "danger" | "link" | "text";
@@ -46,7 +47,8 @@ export const buttonVariantClass: Record<ButtonVariant, string> = {
     "rounded-sm border-0 bg-transparent text-badge-background",
     "hover:not-disabled:bg-badge-background/10 hover:not-data-disabled:bg-badge-background/10",
     controlFocusVisibleInsetClass,
-    "disabled:cursor-default disabled:opacity-40 data-disabled:cursor-default data-disabled:opacity-40",
+    // Soften the base controlDisabledClass dim for text-only actions.
+    controlDisabledSoftClass,
   ),
 };
 

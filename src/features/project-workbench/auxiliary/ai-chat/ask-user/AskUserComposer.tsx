@@ -8,7 +8,11 @@ import {
 } from "react";
 
 import { cn } from "#app/shared/lib/ui/cn";
-import { controlFocusVisibleClass, rowHoverClass } from "#app/shared/lib/ui/interaction-chrome";
+import {
+  controlDisabledSoftClass,
+  controlFocusVisibleClass,
+  rowHoverClass,
+} from "#app/shared/lib/ui/interaction-chrome";
 import { Button, AppTooltip } from "#app/shared/ui";
 import type { AskUserPendingInput } from "#shared/rpc/ai/index";
 
@@ -30,7 +34,7 @@ const choiceButtonClass = cn(
   "flex flex-col gap-0.5 rounded-sm px-2 py-1.5 text-left transition-colors outline-none",
   rowHoverClass,
   controlFocusVisibleClass,
-  "disabled:cursor-not-allowed disabled:opacity-40",
+  controlDisabledSoftClass,
 );
 const choiceTitleClass = cn("text-chat-meta leading-5 text-app-foreground");
 const choiceDescriptionClass = cn("text-2xs leading-4 text-app-muted");
@@ -164,7 +168,8 @@ export function AskUserComposer({
             aria-label="取消回答"
             className={cn(
               stopButtonClass,
-              "disabled:cursor-not-allowed disabled:text-ctp-overlay0 hover:disabled:bg-transparent",
+              // Match sendButtonClass mute: icon-color, not opacity.
+              "disabled:pointer-events-none disabled:text-ctp-overlay0",
             )}
             disabled={inputDisabled}
             onClick={handleCancel}

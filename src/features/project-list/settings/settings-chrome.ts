@@ -1,10 +1,13 @@
 import { cn } from "#app/shared/lib/ui/cn";
 import {
   controlFocusVisibleInsetClass,
+  fieldDisabledClass,
   fieldInputClass,
   fieldSurfaceClass,
   fieldSurfaceFocusWithinClass,
+  hasDisabledClass,
   iconButtonHoverClass,
+  menuItemDisabledClass,
   menuItemHighlightClass,
   menuMotionClass,
   overlayOpacityMotionClass,
@@ -118,7 +121,7 @@ export const settingsToolCardListClass = cn("flex flex-col gap-1.5");
 /** Selectable tool card shell (label wrapping checkbox + copy). */
 export const settingsToolCardClass = cn(
   "flex cursor-pointer items-start gap-2.5 rounded-md border border-titlebar-border bg-app-surface px-2.5 py-2 text-app-foreground outline-none",
-  "has-data-disabled:cursor-default has-data-disabled:opacity-50",
+  hasDisabledClass,
   panelHoverClass,
 );
 
@@ -164,7 +167,8 @@ export const settingsInputClass = cn(fieldInputClass, "h-8 px-2.5");
 /** Multi-line control — do not share `h-8` / `leading-none` with single-line inputs. */
 export const settingsTextareaClass = cn(
   fieldSurfaceClass,
-  "w-full resize-y px-2.5 py-1.5 text-xs leading-5 text-app-foreground placeholder:text-app-muted disabled:opacity-50",
+  fieldDisabledClass,
+  "w-full resize-y px-2.5 py-1.5 text-xs leading-5 text-app-foreground placeholder:text-app-muted",
 );
 
 /** Host shell for settings CodeMirror JSON editors (matches textarea chrome). */
@@ -179,11 +183,11 @@ export const settingsFieldHiddenControlClass = cn("sr-only");
 /** Base UI Select trigger — replaces native `<select>`. */
 export const settingsSelectTriggerClass = cn(
   fieldSurfaceClass,
+  fieldDisabledClass,
   "flex h-8 w-full min-w-0 items-center justify-between gap-2 px-2.5 text-left text-xs leading-none text-app-foreground select-none",
   "hover:not-data-disabled:bg-ctp-surface1/40",
   "focus:border-transparent focus-visible:border-badge-background",
   "data-popup-open:border-badge-background data-popup-open:bg-ctp-surface1/40",
-  "data-disabled:cursor-default data-disabled:opacity-50",
 );
 
 export const settingsSelectValueClass = cn(
@@ -208,7 +212,7 @@ export const settingsSelectItemClass = cn(
   "grid cursor-default grid-cols-[1rem_minmax(0,1fr)] items-center gap-2 px-2.5 py-1.5 text-left text-xs leading-tight outline-none select-none",
   "text-app-foreground",
   menuItemHighlightClass,
-  "data-disabled:cursor-default data-disabled:text-app-muted",
+  menuItemDisabledClass,
 );
 
 export const settingsSelectItemIndicatorClass = cn(
@@ -222,7 +226,7 @@ export const settingsCheckboxClass = cn(
   "mt-0.5 flex size-3.5 shrink-0 items-center justify-center rounded-sm border border-titlebar-border bg-app-surface text-badge-foreground outline-none",
   "data-checked:border-badge-background data-checked:bg-badge-background",
   controlFocusVisibleInsetClass,
-  "data-disabled:opacity-50",
+  fieldDisabledClass,
 );
 
 export const settingsCheckboxIndicatorClass = cn(
@@ -231,7 +235,7 @@ export const settingsCheckboxIndicatorClass = cn(
 
 export const settingsCheckboxLabelClass = cn(
   "flex cursor-pointer items-start gap-1.5 text-2xs text-app-foreground",
-  "has-data-disabled:cursor-default has-data-disabled:opacity-50",
+  hasDisabledClass,
 );
 
 /** Horizontal wrap list for multi-select pill chips (e.g. reasoning levels). */
@@ -243,7 +247,7 @@ export const settingsChipClass = cn(
   "hover:not-disabled:text-app-foreground",
   "data-pressed:border-badge-background/40 data-pressed:bg-ctp-surface0/55 data-pressed:text-app-foreground",
   controlFocusVisibleInsetClass,
-  "disabled:cursor-default",
+  fieldDisabledClass,
 );
 
 /** Selected (available) pill — kept for explicit default/selected class composition. */
@@ -272,6 +276,7 @@ export const settingsChipDefaultButtonClass = cn(
   "inline-flex h-7 items-center gap-1.5 rounded-sm px-2 text-2xs leading-none text-app-foreground outline-none select-none",
   "hover:not-disabled:bg-ctp-surface0/55",
   controlFocusVisibleInsetClass,
+  // Already-default chip action: keep nearly full opacity so “当前默认” stays readable.
   "disabled:cursor-default disabled:opacity-80",
 );
 

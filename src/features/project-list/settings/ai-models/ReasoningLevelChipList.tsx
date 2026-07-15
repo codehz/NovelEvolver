@@ -3,6 +3,7 @@ import { Toggle } from "@base-ui/react/toggle";
 import { ToggleGroup } from "@base-ui/react/toggle-group";
 
 import { cn } from "#app/shared/lib/ui/cn";
+import { disabledSurfaceClass } from "#app/shared/lib/ui/interaction-chrome";
 import type { AiReasoningLevel } from "#shared/rpc/services/index";
 import { AI_REASONING_LEVEL_LABELS, AI_REASONING_LEVELS } from "#shared/rpc/services/index";
 
@@ -86,7 +87,7 @@ function ReasoningLevelChip({
               settingsChipClass,
               isSelected && settingsChipSelectedClass,
               isDefault && settingsChipDefaultClass,
-              disabled && "opacity-50",
+              disabled && disabledSurfaceClass,
             )}
           />
         }

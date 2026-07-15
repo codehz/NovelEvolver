@@ -1,6 +1,7 @@
 import type { NotificationSeverity } from "#app/shared/lib/notifications";
 import { cn } from "#app/shared/lib/ui/cn";
 import {
+  controlDisabledClass,
   iconButtonHoverClass,
   overlayMotionClass,
   popoverSurfaceClass,
@@ -52,6 +53,7 @@ export const notificationSeverityIconClass: Record<NotificationSeverity, string>
 
 export const notificationActionButtonClass = cn(
   "shrink-0 rounded-sm px-1.5 py-0.5",
+  controlDisabledClass,
   iconButtonHoverClass,
   notificationAccentTextClass,
 );
@@ -59,6 +61,7 @@ export const notificationActionButtonClass = cn(
 /** Square icon-only control (panel header, list dismiss, etc.). */
 export const notificationIconButtonClass = cn(
   "inline-flex size-6 shrink-0 items-center justify-center rounded-sm",
+  controlDisabledClass,
   iconButtonHoverClass,
 );
 

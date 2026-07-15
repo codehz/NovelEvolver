@@ -1,5 +1,9 @@
 import { cn } from "#app/shared/lib/ui/cn";
-import { menuItemHighlightClass, menuMotionClass } from "#app/shared/lib/ui/interaction-chrome";
+import {
+  menuItemDisabledClass,
+  menuItemHighlightClass,
+  menuMotionClass,
+} from "#app/shared/lib/ui/interaction-chrome";
 
 export const contextMenuPositionerClass = cn("z-context-menu outline-none");
 
@@ -14,7 +18,7 @@ export const contextMenuItemClass = cn(
   "relative flex w-full cursor-default items-center gap-3 px-3 py-1 text-left text-xs leading-tight outline-none select-none",
   "text-app-foreground",
   menuItemHighlightClass,
-  "data-disabled:cursor-default data-disabled:text-app-muted",
+  menuItemDisabledClass,
 );
 
 export const contextMenuItemLabelClass = cn("min-w-0 flex-1 truncate");

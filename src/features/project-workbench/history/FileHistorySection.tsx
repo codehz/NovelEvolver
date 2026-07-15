@@ -15,7 +15,8 @@ import { useWorktreeChangesRevision } from "#workbench/worktree/use-worktree-cha
 const historyRowClass = cn(
   "group flex w-full min-w-0 items-start gap-2 border-b border-titlebar-border p-2 text-left",
   "hover:bg-ctp-surface0/40 focus-visible:bg-ctp-surface0/40 focus-visible:outline-none",
-  "disabled:cursor-default hover:disabled:bg-transparent",
+  // Non-content history rows stay fully opaque; only kill hover wash + pointer.
+  "disabled:pointer-events-none hover:disabled:bg-transparent",
 );
 
 function entryIconClass(entry: HistoryEntry): string {

@@ -131,6 +131,12 @@ Prefer the shared classes from `#app/shared/lib/ui/interaction-chrome` over inve
 | Panel / secondary hover        | `panelHoverClass` — `hover:bg-ctp-surface0/40`                                                                |
 | Combobox / QuickPick highlight | `listRowHighlightClass` — `data-highlighted:bg-ctp-surface0/55`                                               |
 | Menu / Select highlight        | `menuItemHighlightClass` — `data-highlighted:bg-ctp-surface0/70`                                              |
+| Control disabled (standard)    | `controlDisabledClass` — `pointer-events-none` + `opacity-50` (`disabled:` / `data-disabled:`)                |
+| Control disabled (soft)        | `controlDisabledSoftClass` — same as standard but `opacity-40` (compact/icon/text chrome)                     |
+| Field / select disabled        | `fieldDisabledClass` — `cursor-default` + `opacity-50` (no PE kill; keep form focus semantics)                |
+| Menu item disabled             | `menuItemDisabledClass` — mute to `text-app-muted` only (no structural opacity)                               |
+| Wrapper has-disabled           | `hasDisabledClass` — label/card shell following a Base UI child with `data-disabled`                          |
+| Non-native disabled surface    | `disabledSurfaceClass` — conditional `cursor-default opacity-50` (CodeMirror host, Toggle chips)              |
 | Overlay enter/exit             | `overlayMotionClass` — `duration-220` + `cubic-bezier(0.33,1,0.68,1)`                                         |
 | Popover surface                | `popoverSurfaceClass` — border + `bg-app-surface` + `rounded-lg`                                              |
 | Field surface                  | `fieldSurfaceClass` / `fieldInputClass` — transparent border + `bg-ctp-surface0`; accent border only on focus |

@@ -9,6 +9,7 @@ import { drawSelection, EditorView, keymap, placeholder as placeholderExt } from
 import { useCallback, useEffect, useImperativeHandle, useRef, useState, type Ref } from "react";
 
 import { cn } from "#app/shared/lib/ui/cn";
+import { disabledSurfaceClass } from "#app/shared/lib/ui/interaction-chrome";
 import type { AiChatSendMessageInput } from "#shared/rpc/ai/index";
 
 import { composerEditorHostClass } from "./composer-chrome";
@@ -463,7 +464,7 @@ export function ComposerEditor({
     <>
       <div
         ref={hostRef}
-        className={cn(composerEditorHostClass, disabled && "opacity-50", className)}
+        className={cn(composerEditorHostClass, disabled && disabledSurfaceClass, className)}
         data-disabled={disabled ? "" : undefined}
       />
       <SlashCommandPicker

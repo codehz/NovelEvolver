@@ -1,5 +1,6 @@
 import { cn } from "#app/shared/lib/ui/cn";
 import {
+  controlDisabledSoftClass,
   controlFocusVisibleClass,
   iconButtonHoverClass,
 } from "#app/shared/lib/ui/interaction-chrome";
@@ -14,7 +15,7 @@ export const primarySidebarChromeTitleTextClass = cn(
 export const sidebarHeaderActionClass = cn(
   "inline-flex size-6 shrink-0 items-center justify-center rounded border-0 bg-transparent p-0",
   "text-ctp-mauve hover:text-ctp-mauve",
-  "disabled:pointer-events-none disabled:opacity-40",
+  controlDisabledSoftClass,
   iconButtonHoverClass,
   controlFocusVisibleClass,
 );
