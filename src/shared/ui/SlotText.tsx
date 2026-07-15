@@ -1,3 +1,4 @@
+import { PresenceHost } from "@codehz/auto-transition";
 import { mergeRefs } from "foxact/merge-refs";
 import { ComponentPropsWithRef, useCallback, useEffect, useRef } from "react";
 import { SlotOptions, slotText, SlotTextController } from "slot-text";
@@ -25,5 +26,5 @@ export function SlotText({ text, options, ref, ...props }: SlotTextProps) {
     return () => local.destroy();
   }, []);
 
-  return <span ref={useCallback(mergeRefs(ref, refCallback), [ref])} {...props} />;
+  return <PresenceHost ref={useCallback(mergeRefs(ref, refCallback), [ref])} {...props} />;
 }
