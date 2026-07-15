@@ -1,3 +1,4 @@
+import { PresenceHost } from "@codehz/auto-transition";
 import { defaultKeymap, history, historyKeymap } from "@codemirror/commands";
 import { Compartment, EditorState, type Extension } from "@codemirror/state";
 import {
@@ -275,7 +276,7 @@ export function PlainTextEditor({
 
   return (
     <div className={editorRootClass}>
-      <div ref={setHostNode} className={editorHostClass} />
+      <PresenceHost ref={setHostNode} className={editorHostClass} />
     </div>
   );
 }
