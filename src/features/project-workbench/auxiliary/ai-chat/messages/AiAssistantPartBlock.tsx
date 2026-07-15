@@ -17,7 +17,10 @@ export function AiAssistantPartBlock({ part }: AiAssistantPartBlockProps) {
           {part.text !== "" ? (
             <MarkdownStream isAnimating={part.status === "streaming"}>{part.text}</MarkdownStream>
           ) : (
-            <p className="text-ctp-subtext0">...</p>
+            <span
+              aria-hidden="true"
+              className="icon-[codicon--loading] animate-spin text-sm text-ctp-subtext0"
+            />
           )}
         </div>
       );
