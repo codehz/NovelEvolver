@@ -1,6 +1,8 @@
 import { RpcTarget } from "capnweb";
 
 import type {
+  WorktreeReplaceQuery,
+  WorktreeReplaceResult,
   WorktreeSearchHandle,
   WorktreeSearchQuery,
   WorktreeSearchResult,
@@ -18,5 +20,9 @@ export class WorktreeSearchHandleImpl extends RpcTarget implements WorktreeSearc
 
   search(options: WorktreeSearchQuery): WorktreeSearchResult {
     return this.#session.searchWorktree(options);
+  }
+
+  replace(options: WorktreeReplaceQuery): WorktreeReplaceResult {
+    return this.#session.replaceInWorktree(options);
   }
 }

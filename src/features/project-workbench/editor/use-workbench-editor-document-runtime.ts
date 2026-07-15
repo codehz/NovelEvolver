@@ -58,7 +58,7 @@ export function useWorkbenchEditorDocumentRuntime(): WorkbenchEditorDocumentRunt
   resourcesRef.current = resources;
   manuscriptRef.current = manuscript;
 
-  useWorkbenchEditorDocumentSync(editorHandlesRef);
+  useWorkbenchEditorDocumentSync(editorHandlesRef, autosaveTimersRef);
 
   useEffect(() => {
     cancelStaleAutosaves(autosaveTimersRef.current, documents);
@@ -115,8 +115,11 @@ export function useWorkbenchEditorDocumentRuntime(): WorkbenchEditorDocumentRunt
         key,
         setTimeout(() => {
           autosaveTimersRef.current.delete(key);
+          // Re-read the live buffer so a closed-over pre-sync snapshot cannot
+          // overwrite search-replace / revision-driven content after debounce.
+          const liveContent = editorHandlesRef.current.get(key)?.getValue() ?? content;
           const write = Promise.resolve(
-            writeWorkbenchEditorContentTab(tab, content, {
+            writeWorkbenchEditorContentTab(tab, liveContent, {
               manuscript: manuscriptRef.current,
               resources: resourcesRef.current,
             }),

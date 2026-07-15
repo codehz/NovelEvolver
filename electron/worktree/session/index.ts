@@ -15,7 +15,12 @@ import type {
   ChangesEvent,
   ChangesSnapshot,
 } from "#shared/rpc/worktree/index";
-import type { WorktreeSearchQuery, WorktreeSearchResult } from "#shared/rpc/worktree/index";
+import type {
+  WorktreeReplaceQuery,
+  WorktreeReplaceResult,
+  WorktreeSearchQuery,
+  WorktreeSearchResult,
+} from "#shared/rpc/worktree/index";
 
 import type { WorktreeRepository } from "../../db/repositories/worktree-repo";
 import type { ObjectDatabase } from "../git/diff-utils";
@@ -25,6 +30,7 @@ import { resolveBaseTree } from "./helpers";
 import * as historyOps from "./history-ops";
 import { loadOrSeed } from "./load";
 import * as manuscriptOps from "./manuscript-ops";
+import { replaceInWorktree } from "./replace-ops";
 import * as resourceOps from "./resource-ops";
 import { searchWorktree } from "./search-ops";
 import { createWorktreeSessionState, type WorktreeSessionState } from "./state";
@@ -268,6 +274,10 @@ export class WorktreeSession {
 
   searchWorktree(options: WorktreeSearchQuery): WorktreeSearchResult {
     return searchWorktree(this.#state, options);
+  }
+
+  replaceInWorktree(options: WorktreeReplaceQuery): WorktreeReplaceResult {
+    return replaceInWorktree(this.#state, options);
   }
 
   getTextDocumentInfo(domain: AiProjectStructureDomain, id: string): AiTextDocumentInfo {

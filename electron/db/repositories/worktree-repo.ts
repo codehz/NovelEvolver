@@ -57,7 +57,8 @@ export type WorktreeJournalSource =
   | "structure-edit"
   | "restore"
   | "commit"
-  | "import";
+  | "import"
+  | "search-replace";
 export type WorktreeJournalActor = "user" | "system";
 export type WorktreeJournalOperationKind =
   | "create"

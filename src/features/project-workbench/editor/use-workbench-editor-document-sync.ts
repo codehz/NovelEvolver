@@ -13,6 +13,7 @@ import { workbenchEditorMolecule } from "./state/molecules";
 
 export function useWorkbenchEditorDocumentSync(
   editorHandlesRef: RefObject<Map<string, PlainTextEditorHandle>>,
+  autosaveTimersRef: RefObject<Map<string, ReturnType<typeof setTimeout>>>,
 ): void {
   const revision = useWorktreeChangesRevision();
   const manuscript = useManuscript();
@@ -32,12 +33,27 @@ export function useWorkbenchEditorDocumentSync(
     }
 
     void Promise.all(
-      documents.map((document) => {
+      documents.map(async (document) => {
         const editorHandle = editorHandlesRef.current.get(document.key);
-        return syncWorkbenchEditorDocument(document, editorHandle, {
-          manuscript,
-          resources,
-        }).catch(() => document);
+        const valueBeforeSync = editorHandle?.getValue();
+        try {
+          const nextDocument = await syncWorkbenchEditorDocument(document, editorHandle, {
+            manuscript,
+            resources,
+          });
+          // Force-reload (setValue) means server content won; drop any pending
+          // autosave that still closes over the pre-replace dirty buffer.
+          if (valueBeforeSync !== editorHandle?.getValue()) {
+            const pending = autosaveTimersRef.current.get(document.key);
+            if (pending !== undefined) {
+              clearTimeout(pending);
+              autosaveTimersRef.current.delete(document.key);
+            }
+          }
+          return nextDocument;
+        } catch {
+          return document;
+        }
       }),
     )
       .then((nextDocuments) => {
@@ -70,5 +86,5 @@ export function useWorkbenchEditorDocumentSync(
     return () => {
       cancelled = true;
     };
-  }, [editorHandlesRef, manuscript, resources, revision, setEditorState]);
+  }, [autosaveTimersRef, editorHandlesRef, manuscript, resources, revision, setEditorState]);
 }

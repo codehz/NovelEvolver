@@ -1,6 +1,10 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 
-import type { WorktreeSearchHit, WorktreeSearchResult } from "#shared/rpc/worktree/index";
+import type {
+  WorktreeReplaceQuery,
+  WorktreeSearchHit,
+  WorktreeSearchResult,
+} from "#shared/rpc/worktree/index";
 import { useWorktreeSearch } from "#workbench/branch/branch-scopes";
 import type { WorkbenchEditorNavigationRequest } from "#workbench/editor/state/types";
 import { useWorkbenchEditorActions } from "#workbench/editor/use-workbench-editor-actions";
@@ -39,17 +43,27 @@ function formatSearchError(error: unknown): string {
   return "搜索失败";
 }
 
+function formatReplaceError(error: unknown): string {
+  if (error instanceof Error && error.message.trim() !== "") {
+    return error.message;
+  }
+  return "替换失败";
+}
+
 export function useWorktreeSearchState() {
   const searchHandle = useWorktreeSearch();
   const { focusTarget, openTarget } = useWorkbenchEditorActions();
 
   const [query, setQuery] = useState("");
+  const [replaceText, setReplaceText] = useState("");
   const [isRegex, setIsRegex] = useState(false);
   const [debouncedQuery, setDebouncedQuery] = useState("");
   const [result, setResult] = useState<WorktreeSearchResult | null>(null);
   const [status, setStatus] = useState<TreeBodyStatus>("idle");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [retryKey, setRetryKey] = useState(0);
+  const [replaceBusy, setReplaceBusy] = useState(false);
+  const [replaceStatusLine, setReplaceStatusLine] = useState<string | null>(null);
 
   useEffect(() => {
     const trimmed = query.trim();
@@ -104,7 +118,7 @@ export function useWorktreeSearchState() {
     };
   }, [debouncedQuery, isRegex, retryKey, searchHandle]);
 
-  const retry = useCallback(() => {
+  const refreshSearch = useCallback(() => {
     const trimmed = query.trim();
     if (trimmed === "") {
       return;
@@ -113,11 +127,78 @@ export function useWorktreeSearchState() {
     setRetryKey((current) => current + 1);
   }, [query]);
 
+  const retry = refreshSearch;
+
   const toggleRegex = useCallback(() => {
     setIsRegex((current) => !current);
   }, []);
 
+  const runReplace = useCallback(
+    async (partial: Omit<WorktreeReplaceQuery, "query" | "replacement" | "isRegex">) => {
+      // Use the settled search needle so replace matches the result tree / matchStart.
+      const trimmedQuery = debouncedQuery;
+      if (trimmedQuery === "" || replaceBusy || status === "loading") {
+        return;
+      }
+
+      setReplaceBusy(true);
+      setReplaceStatusLine("正在替换…");
+      try {
+        const replaceResult = await searchHandle.replace({
+          query: trimmedQuery,
+          replacement: replaceText,
+          isRegex,
+          scope: "all",
+          ...partial,
+        });
+        if (replaceResult.totalReplacements === 0) {
+          setReplaceStatusLine("未替换任何内容");
+        } else {
+          setReplaceStatusLine(
+            `已替换 ${replaceResult.totalReplacements} 处（${replaceResult.filesUpdated} 个文件）`,
+          );
+        }
+        refreshSearch();
+      } catch (error: unknown) {
+        setReplaceStatusLine(formatReplaceError(error));
+      } finally {
+        setReplaceBusy(false);
+      }
+    },
+    [debouncedQuery, isRegex, refreshSearch, replaceBusy, replaceText, searchHandle, status],
+  );
+
+  const replaceAll = useCallback(() => {
+    void runReplace({});
+  }, [runReplace]);
+
+  const replaceInFile = useCallback(
+    (hit: WorktreeSearchHit) => {
+      void runReplace({
+        targets: [{ domain: hit.domain, nodeId: hit.nodeId }],
+      });
+    },
+    [runReplace],
+  );
+
+  const replaceOccurrence = useCallback(
+    (hit: WorktreeSearchHit) => {
+      void runReplace({
+        targets: [{ domain: hit.domain, nodeId: hit.nodeId }],
+        occurrenceStart: hit.matchStart,
+      });
+    },
+    [runReplace],
+  );
+
+  useEffect(() => {
+    setReplaceStatusLine(null);
+  }, [query, isRegex, replaceText]);
+
   const statsLine = useMemo(() => {
+    if (replaceBusy) {
+      return replaceStatusLine ?? "正在替换…";
+    }
     if (debouncedQuery === "") {
       return isRegex ? "请输入正则表达式" : "请输入搜索内容";
     }
@@ -127,9 +208,12 @@ export function useWorktreeSearchState() {
     if (status === "error") {
       return errorMessage ?? "搜索失败";
     }
+    if (replaceStatusLine !== null) {
+      return replaceStatusLine;
+    }
     const allHits = [...(result?.manuscript ?? []), ...(result?.resources ?? [])];
     return formatSearchStatsLine(summarizeSearchHits(allHits));
-  }, [debouncedQuery, errorMessage, isRegex, result, status]);
+  }, [debouncedQuery, errorMessage, isRegex, replaceBusy, replaceStatusLine, result, status]);
 
   const roots = useMemo((): SearchResultDomainRoot[] => {
     const manuscriptTree = buildSearchPathTree(result?.manuscript ?? []);
@@ -183,6 +267,8 @@ export function useWorktreeSearchState() {
   return {
     query,
     setQuery,
+    replaceText,
+    setReplaceText,
     isRegex,
     toggleRegex,
     status,
@@ -193,5 +279,14 @@ export function useWorktreeSearchState() {
     retry,
     canRefresh: query.trim() !== "",
     openHit,
+    replaceBusy,
+    replaceAll,
+    replaceInFile,
+    replaceOccurrence,
+    canReplace:
+      debouncedQuery !== "" &&
+      query.trim() === debouncedQuery &&
+      !replaceBusy &&
+      status === "ready",
   };
 }

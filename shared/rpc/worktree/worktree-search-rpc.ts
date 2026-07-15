@@ -20,6 +20,40 @@ export type WorktreeSearchQuery = {
   maxResultsPerDomain?: number;
 };
 
+export type WorktreeReplaceTarget = {
+  domain: "manuscript" | "resource";
+  nodeId: string;
+};
+
+export type WorktreeReplaceQuery = {
+  query: string;
+  replacement: string;
+  isRegex?: boolean;
+  scope?: WorktreeSearchScope;
+  targets?: WorktreeReplaceTarget[];
+  /** absolute UTF-16 start for single-occurrence replace; requires exactly one target */
+  occurrenceStart?: number;
+};
+
+export type WorktreeReplaceFileResult = {
+  domain: WorktreeSearchDomain;
+  nodeId: string;
+  label: string;
+  displayPath: string;
+  matchCount: number;
+  updated: boolean;
+};
+
+export type WorktreeReplaceResult = {
+  query: string;
+  replacement: string;
+  isRegex: boolean;
+  files: WorktreeReplaceFileResult[];
+  totalReplacements: number;
+  filesUpdated: number;
+  revision: number;
+};
+
 type WorktreeSearchHitBase = {
   domain: WorktreeSearchDomain;
   /** 树节点 id，用于打开编辑器 / 定位侧栏项。 */
@@ -35,6 +69,8 @@ type WorktreeSearchHitBase = {
   column: number;
   /** 该行内首个命中的 UTF-16 长度。 */
   matchLength: number;
+  /** UTF-16 offset in full document content. */
+  matchStart: number;
 };
 
 export type ManuscriptSearchHit = WorktreeSearchHitBase & {
@@ -67,4 +103,5 @@ export type WorktreeSearchResult = {
  */
 export interface WorktreeSearchHandle extends RpcTarget {
   search(options: WorktreeSearchQuery): WorktreeSearchResult;
+  replace(options: WorktreeReplaceQuery): WorktreeReplaceResult;
 }

@@ -64,21 +64,30 @@ const replaceToggleClass = cn(
 
 type SearchQueryBarProps = {
   query: string;
+  replaceText: string;
   isRegex: boolean;
   statsLine: string | null;
+  replaceBusy?: boolean;
+  canReplaceAll?: boolean;
   onQueryChange: (value: string) => void;
+  onReplaceTextChange: (value: string) => void;
   onToggleRegex: () => void;
+  onReplaceAll: () => void;
 };
 
 export function SearchQueryBar({
   query,
+  replaceText,
   isRegex,
   statsLine,
+  replaceBusy = false,
+  canReplaceAll = false,
   onQueryChange,
+  onReplaceTextChange,
   onToggleRegex,
+  onReplaceAll,
 }: SearchQueryBarProps) {
   const [replaceExpanded, setReplaceExpanded] = useState(false);
-  const [replaceText, setReplaceText] = useState("");
   const replacePanelId = useId();
   const replaceInputRef = useRef<HTMLInputElement>(null);
   const lastStatsLineRef = useRef<string>("请输入搜索内容");
@@ -86,6 +95,7 @@ export function SearchQueryBar({
     lastStatsLineRef.current = statsLine;
   }
   const displayStatsLine = statsLine ?? lastStatsLineRef.current;
+  const replaceAllEnabled = canReplaceAll && !replaceBusy;
 
   useEffect(() => {
     if (!replaceExpanded) {
@@ -172,7 +182,13 @@ export function SearchQueryBar({
                     className={searchInputClass}
                     value={replaceText}
                     placeholder="替换"
-                    onChange={(event) => setReplaceText(event.target.value)}
+                    onChange={(event) => onReplaceTextChange(event.target.value)}
+                    onKeyDown={(event) => {
+                      if (event.key === "Enter" && replaceAllEnabled) {
+                        event.preventDefault();
+                        onReplaceAll();
+                      }
+                    }}
                   />
                 </div>
                 <AppTooltip label="全部替换" side="bottom">
@@ -181,10 +197,8 @@ export function SearchQueryBar({
                     size="icon-sm"
                     className={searchOptionButtonClass}
                     aria-label="全部替换"
-                    disabled={query.trim() === ""}
-                    onClick={() => {
-                      // UI stub — replace-all backend not wired yet.
-                    }}
+                    disabled={!replaceAllEnabled}
+                    onClick={onReplaceAll}
                   >
                     <span className="icon-[codicon--replace-all] text-sm" />
                   </Button>

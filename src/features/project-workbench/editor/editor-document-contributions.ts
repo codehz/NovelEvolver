@@ -46,15 +46,13 @@ function applySyncedContent(
     };
   }
 
-  if (currentValue === undefined || currentValue === document.baselineContent) {
-    editorHandle?.setValue(content);
-    return {
-      ...document,
-      baselineContent: content,
-    };
-  }
-
-  return document;
+  // Always accept server content on revision bumps (including dirty buffers).
+  // Search-replace and restore would otherwise be clobbered by the next autosave.
+  editorHandle?.setValue(content);
+  return {
+    ...document,
+    baselineContent: content,
+  };
 }
 
 const resourceDocumentContribution: WorkbenchEditorDocumentContribution = {

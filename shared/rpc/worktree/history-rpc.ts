@@ -37,7 +37,8 @@ export type HistoryEntryRevisionSource =
   | "structure-edit"
   | "restore"
   | "commit"
-  | "import";
+  | "import"
+  | "search-replace";
 
 export type HistoryEntryStats = {
   added: number;

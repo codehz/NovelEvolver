@@ -2,7 +2,11 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { ReactNode } from "react";
 
 import { cn } from "#app/shared/lib/ui/cn";
-import { DisclosureChevron } from "#app/shared/ui";
+import {
+  controlFocusVisibleClass,
+  iconButtonHoverClass,
+} from "#app/shared/lib/ui/interaction-chrome";
+import { AppTooltip, Button, DisclosureChevron } from "#app/shared/ui";
 import type { WorktreeSearchHit } from "#shared/rpc/worktree/index";
 import { activateOnEnterSpace } from "#workbench/lib/activate-on-enter-space";
 import { contentEntityIconClass, contentFolderIconClass } from "#workbench/tree/content-tree-icons";
@@ -36,6 +40,14 @@ const searchResultCountPillClass = cn(
   "ml-auto shrink-0 rounded-full bg-ctp-surface0 px-1 py-px font-mono text-[10px] text-ctp-subtext0",
 );
 
+const searchRowActionButtonClass = cn(
+  "flex size-5 shrink-0 items-center justify-center rounded-sm text-ctp-overlay0",
+  "opacity-0 group-focus-within/search-row:opacity-100 group-hover/search-row:opacity-100",
+  "data-disabled:opacity-40",
+  iconButtonHoverClass,
+  controlFocusVisibleClass,
+);
+
 function SearchHighlightText({ children, className }: { children: string; className?: string }) {
   return (
     <span data-search-highlight className={className}>
@@ -47,17 +59,23 @@ function SearchHighlightText({ children, className }: { children: string; classN
 function SearchFlatRowView({
   row,
   layout,
+  replaceEnabled,
   onToggleDomain,
   onToggleFolder,
   onToggleLeaf,
   onOpen,
+  onReplaceInFile,
+  onReplaceOccurrence,
 }: {
   row: SearchResultFlatRow;
   layout: TreeRowLayout;
+  replaceEnabled: boolean;
   onToggleDomain: (id: string) => void;
   onToggleFolder: (key: string) => void;
   onToggleLeaf: (key: string) => void;
   onOpen: (hit: WorktreeSearchHit, intent: "focus" | "open") => void;
+  onReplaceInFile: (hit: WorktreeSearchHit) => void;
+  onReplaceOccurrence: (hit: WorktreeSearchHit) => void;
 }) {
   if (row.kind === "domain") {
     return (
@@ -104,17 +122,32 @@ function SearchFlatRowView({
         layout={layout}
         depth={row.leafDepth}
         paddingLeftPx={searchTreeMatchPaddingLeft(row.leafDepth)}
-        className="cursor-pointer text-2xs text-ctp-subtext1 hover:bg-ctp-surface0/50"
+        className="group/search-row cursor-pointer text-2xs text-ctp-subtext1 hover:bg-ctp-surface0/50"
         tabIndex={0}
         onClick={() => onOpen(row.hit, "focus")}
         onDoubleClick={() => onOpen(row.hit, "open")}
         onKeyDown={activateOnEnterSpace(() => onOpen(row.hit, "focus"))}
       >
         <span className="icon-[codicon--list-flat] shrink-0 text-sm text-ctp-overlay0" />
-        <span className="truncate font-mono text-ctp-text">
+        <span className="min-w-0 flex-1 truncate font-mono text-ctp-text">
           <span className="mr-1 text-ctp-overlay0">{row.hit.line}:</span>
           <SearchHighlightText>{row.hit.snippet}</SearchHighlightText>
         </span>
+        <AppTooltip label="替换此处" side="left">
+          <Button
+            variant="ghost"
+            size="icon-sm"
+            className={searchRowActionButtonClass}
+            aria-label="替换此处"
+            disabled={!replaceEnabled}
+            onClick={(event) => {
+              event.stopPropagation();
+              onReplaceOccurrence(row.hit);
+            }}
+          >
+            <span className="icon-[codicon--replace] text-sm" />
+          </Button>
+        </AppTooltip>
       </TreeMotionRow>
     );
   }
@@ -143,7 +176,10 @@ function SearchFlatRowView({
       layout={layout}
       depth={row.depth}
       paddingLeftPx={getTreeRowPaddingLeft(row.depth)}
-      className={cn("text-xs text-ctp-subtext1", "cursor-pointer hover:bg-ctp-surface0/50")}
+      className={cn(
+        "group/search-row text-xs text-ctp-subtext1",
+        "cursor-pointer hover:bg-ctp-surface0/50",
+      )}
       aria-expanded={row.showMatches ? row.expanded : undefined}
       tabIndex={0}
       onClick={onActivate}
@@ -156,9 +192,26 @@ function SearchFlatRowView({
         <span className={treeRowDisclosureSpacerClass} />
       )}
       <span className={contentEntityIconClass(leaf.entityKind)} />
-      <span className="truncate">{leaf.name}</span>
+      <span className="min-w-0 flex-1 truncate">{leaf.name}</span>
       {row.showMatches ? (
         <span className={searchResultCountPillClass}>{leaf.hits.length}</span>
+      ) : null}
+      {primaryHit !== undefined ? (
+        <AppTooltip label="在此文件中全部替换" side="left">
+          <Button
+            variant="ghost"
+            size="icon-sm"
+            className={searchRowActionButtonClass}
+            aria-label="在此文件中全部替换"
+            disabled={!replaceEnabled}
+            onClick={(event) => {
+              event.stopPropagation();
+              onReplaceInFile(primaryHit);
+            }}
+          >
+            <span className="icon-[codicon--replace-all] text-sm" />
+          </Button>
+        </AppTooltip>
       ) : null}
     </TreeMotionRow>
   );
@@ -170,7 +223,10 @@ type SearchResultTreeProps = {
   roots: SearchResultDomainRoot[];
   highlightQuery: string;
   highlightIsRegex?: boolean;
+  replaceEnabled?: boolean;
   onOpenHit: (hit: WorktreeSearchHit, intent: "focus" | "open") => void;
+  onReplaceInFile?: (hit: WorktreeSearchHit) => void;
+  onReplaceOccurrence?: (hit: WorktreeSearchHit) => void;
 };
 
 export function SearchResultTree({
@@ -179,7 +235,10 @@ export function SearchResultTree({
   roots,
   highlightQuery,
   highlightIsRegex = false,
+  replaceEnabled = false,
   onOpenHit,
+  onReplaceInFile,
+  onReplaceOccurrence,
 }: SearchResultTreeProps) {
   const highlightContainerRef = useRef<HTMLDivElement>(null);
 
@@ -249,6 +308,20 @@ export function SearchResultTree({
     });
   }, []);
 
+  const handleReplaceInFile = useCallback(
+    (hit: WorktreeSearchHit) => {
+      onReplaceInFile?.(hit);
+    },
+    [onReplaceInFile],
+  );
+
+  const handleReplaceOccurrence = useCallback(
+    (hit: WorktreeSearchHit) => {
+      onReplaceOccurrence?.(hit);
+    },
+    [onReplaceOccurrence],
+  );
+
   const getItemKey = useCallback((row: SearchResultFlatRow) => row.key, []);
 
   return (
@@ -265,10 +338,13 @@ export function SearchResultTree({
           <SearchFlatRowView
             row={row}
             layout={layout}
+            replaceEnabled={replaceEnabled}
             onToggleDomain={onToggleDomain}
             onToggleFolder={onToggleFolder}
             onToggleLeaf={onToggleLeaf}
             onOpen={onOpenHit}
+            onReplaceInFile={handleReplaceInFile}
+            onReplaceOccurrence={handleReplaceOccurrence}
           />
         )}
       />

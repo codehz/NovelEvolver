@@ -7,6 +7,8 @@ export function SearchSidebarSection() {
   const {
     query,
     setQuery,
+    replaceText,
+    setReplaceText,
     isRegex,
     toggleRegex,
     highlightQuery,
@@ -17,6 +19,11 @@ export function SearchSidebarSection() {
     retry,
     canRefresh,
     openHit,
+    replaceBusy,
+    replaceAll,
+    replaceInFile,
+    replaceOccurrence,
+    canReplace,
   } = useWorktreeSearchState();
 
   return (
@@ -32,10 +39,15 @@ export function SearchSidebarSection() {
       <div className="flex min-h-0 flex-1 flex-col">
         <SearchQueryBar
           query={query}
+          replaceText={replaceText}
           isRegex={isRegex}
           statsLine={statsLine}
+          replaceBusy={replaceBusy}
+          canReplaceAll={canReplace}
           onQueryChange={setQuery}
+          onReplaceTextChange={setReplaceText}
           onToggleRegex={toggleRegex}
+          onReplaceAll={replaceAll}
         />
         <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
           <SearchResultTree
@@ -44,7 +56,10 @@ export function SearchSidebarSection() {
             roots={roots}
             highlightQuery={highlightQuery}
             highlightIsRegex={highlightIsRegex}
+            replaceEnabled={canReplace}
             onOpenHit={openHit}
+            onReplaceInFile={replaceInFile}
+            onReplaceOccurrence={replaceOccurrence}
           />
         </div>
       </div>
