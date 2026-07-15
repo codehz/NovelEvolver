@@ -161,6 +161,28 @@ export function buildChangeTree(changes: readonly Change[]): ChangeTreeNode[] {
   return sortTreeRecursive(root.children);
 }
 
+export function buildChangeRoots(
+  manuscriptChanges: readonly Change[],
+  resourceChanges: readonly Change[],
+  domainIconClass: (domain: "manuscript" | "resource") => string,
+): ChangeDomainRoot[] {
+  const roots: ChangeDomainRoot[] = [
+    {
+      id: "manuscript",
+      title: "正文变更",
+      iconClass: domainIconClass("manuscript"),
+      nodes: buildChangeTree(manuscriptChanges),
+    },
+    {
+      id: "resource",
+      title: "资源变更",
+      iconClass: domainIconClass("resource"),
+      nodes: buildChangeTree(resourceChanges),
+    },
+  ];
+  return roots.filter((root) => root.nodes.length > 0);
+}
+
 function folderChildCount(node: ChangeTreeFolderNode): number {
   return node.children.length + (node.selfChanges.length > 1 ? node.selfChanges.length : 0);
 }

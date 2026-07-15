@@ -15,10 +15,9 @@ import {
 import { TreeMotionRow } from "#workbench/tree/TreeMotionRow";
 
 import {
-  buildChangeTree,
+  buildChangeRoots,
   collectChangeTreeFolderKeys,
   flattenChangeTree,
-  type ChangeDomainRoot,
   type ChangeFlatRow,
   type ChangeTreeFolderNode,
 } from "./change-tree-projector";
@@ -36,27 +35,6 @@ function isPreviewableChange(change: Change): boolean {
     (change.kind === "create" || change.kind === "delete" || change.kind === "content") &&
     (change.entityKind === "chapter" || change.entityKind === "file")
   );
-}
-
-function buildChangeRoots(
-  manuscriptChanges: Change[],
-  resourceChanges: Change[],
-): ChangeDomainRoot[] {
-  const roots: ChangeDomainRoot[] = [
-    {
-      id: "manuscript",
-      title: "正文变更",
-      iconClass: contentDomainIconClass("manuscript"),
-      nodes: buildChangeTree(manuscriptChanges),
-    },
-    {
-      id: "resource",
-      title: "资源变更",
-      iconClass: contentDomainIconClass("resource"),
-      nodes: buildChangeTree(resourceChanges),
-    },
-  ];
-  return roots.filter((root) => root.nodes.length > 0);
 }
 
 function folderIconClass(node: ChangeTreeFolderNode, expanded: boolean): string {
@@ -146,7 +124,7 @@ export function ChangesList({
   onOpenChange,
 }: ChangesListProps) {
   const roots = useMemo(
-    () => buildChangeRoots(manuscriptChanges, resourceChanges),
+    () => buildChangeRoots(manuscriptChanges, resourceChanges, contentDomainIconClass),
     [manuscriptChanges, resourceChanges],
   );
   const domainIds = useMemo(() => roots.map((root) => root.id), [roots]);
