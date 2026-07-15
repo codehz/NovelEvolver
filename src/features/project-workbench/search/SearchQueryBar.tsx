@@ -1,9 +1,11 @@
+import { Collapsible } from "@base-ui/react/collapsible";
 import { Toggle } from "@base-ui/react/toggle";
 import { motion } from "motion/react";
 import { useEffect, useId, useRef, useState } from "react";
 
 import { cn } from "#app/shared/lib/ui/cn";
 import {
+  collapsibleHeightMotionClass,
   controlFocusVisibleClass,
   fieldSurfaceFocusWithinClass,
   iconButtonHoverClass,
@@ -15,6 +17,17 @@ const replaceToggleLayoutTransition = {
   duration: 0.22,
   ease: [0.22, 1, 0.36, 1] as const,
 };
+
+/** Base UI Collapsible.Panel shell — height via `--collapsible-panel-height`. */
+const replacePanelClass = cn(
+  "h-(--collapsible-panel-height) overflow-hidden outline-none",
+  collapsibleHeightMotionClass,
+  "data-ending-style:h-0 data-starting-style:h-0",
+  "[&[hidden]:not([hidden='until-found'])]:hidden",
+);
+
+/** Spacing lives inside the measured panel so collapse does not leave a residual flex gap. */
+const replacePanelBodyClass = cn("flex items-center gap-1 pt-1");
 
 const searchFieldRowClass = cn(fieldSurfaceFocusWithinClass, "flex h-7 items-center gap-1.5 px-2");
 
@@ -101,7 +114,7 @@ export function SearchQueryBar({
           </motion.button>
         </AppTooltip>
 
-        <div className="flex min-w-0 flex-1 flex-col gap-1">
+        <div className="flex min-w-0 flex-1 flex-col">
           <label className="sr-only" htmlFor="workbench-search-input">
             搜索
           </label>
@@ -143,9 +156,9 @@ export function SearchQueryBar({
             ) : null}
           </div>
 
-          <div id={replacePanelId} hidden={!replaceExpanded}>
-            {replaceExpanded ? (
-              <div className="flex items-center gap-1">
+          <Collapsible.Root open={replaceExpanded} onOpenChange={setReplaceExpanded}>
+            <Collapsible.Panel id={replacePanelId} className={replacePanelClass}>
+              <div className={replacePanelBodyClass}>
                 <label className="sr-only" htmlFor="workbench-replace-input">
                   替换
                 </label>
@@ -177,8 +190,8 @@ export function SearchQueryBar({
                   </Button>
                 </AppTooltip>
               </div>
-            ) : null}
-          </div>
+            </Collapsible.Panel>
+          </Collapsible.Root>
         </div>
       </div>
 
