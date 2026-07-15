@@ -126,7 +126,7 @@ export function SearchQueryBar({
               spellCheck={false}
               className={searchInputClass}
               value={query}
-              placeholder={isRegex ? "正则表达式" : undefined}
+              placeholder="搜索"
               onChange={(event) => onQueryChange(event.target.value)}
             />
             <AppTooltip label="使用正则表达式" side="bottom">
