@@ -51,16 +51,6 @@ export function SettingsDialog({ open, onDismiss }: SettingsDialogProps) {
       <Dialog.Portal>
         <Dialog.Backdrop className={settingsBackdropClass} />
         <Dialog.Popup className={settingsPanelClass}>
-          <header className={settingsHeaderClass}>
-            <Dialog.Title className={settingsTitleClass}>
-              <span aria-hidden="true" className="icon-[codicon--settings-gear] text-base" />
-              设置
-            </Dialog.Title>
-            <Dialog.Close aria-label="关闭" className={settingsIconButtonClass}>
-              <span aria-hidden="true" className="icon-[codicon--close] text-base" />
-            </Dialog.Close>
-          </header>
-
           <Tabs.Root
             className={settingsTabsRootClass}
             value={activeCategoryId}
@@ -70,14 +60,25 @@ export function SettingsDialog({ open, onDismiss }: SettingsDialogProps) {
               }
             }}
           >
-            <Tabs.List aria-label="设置分类" className={settingsTabListClass}>
-              {SETTINGS_CATEGORIES.map((category) => (
-                <Tabs.Tab key={category.id} className={settingsTabChipClass} value={category.id}>
-                  {category.label}
-                </Tabs.Tab>
-              ))}
-              <Tabs.Indicator className={settingsTabIndicatorClass} />
-            </Tabs.List>
+            <header className={settingsHeaderClass}>
+              <Dialog.Title className={settingsTitleClass}>
+                <span aria-hidden="true" className="icon-[codicon--settings-gear] text-sm" />
+                设置
+              </Dialog.Title>
+
+              <Tabs.List aria-label="设置分类" className={settingsTabListClass}>
+                {SETTINGS_CATEGORIES.map((category) => (
+                  <Tabs.Tab key={category.id} className={settingsTabChipClass} value={category.id}>
+                    {category.label}
+                  </Tabs.Tab>
+                ))}
+                <Tabs.Indicator className={settingsTabIndicatorClass} />
+              </Tabs.List>
+
+              <Dialog.Close aria-label="关闭" className={settingsIconButtonClass}>
+                <span aria-hidden="true" className="icon-[codicon--close] text-sm" />
+              </Dialog.Close>
+            </header>
 
             <div className={settingsBodyClass}>
               <Tabs.Panel className={settingsContentClass} value="ai-models">

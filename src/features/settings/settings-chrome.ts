@@ -29,33 +29,32 @@ export const settingsPanelClass = cn(
   settingsOverlayTransitionClass,
 );
 
+/** Merged chrome row: title + category tabs + close. */
 export const settingsHeaderClass = cn(
-  "flex shrink-0 items-center justify-between gap-3 border-b border-titlebar-border px-4 py-2.5",
+  "flex h-9 shrink-0 items-center gap-2 border-b border-titlebar-border px-2.5",
 );
 
 export const settingsTitleClass = cn(
-  "flex min-w-0 items-center gap-2 font-medium text-app-foreground",
+  "flex shrink-0 items-center gap-1 text-xs font-medium text-app-muted",
 );
 
 export const settingsIconButtonClass = cn(
-  "inline-flex size-7 shrink-0 items-center justify-center rounded-sm text-app-muted hover:text-app-foreground",
+  "inline-flex size-6 shrink-0 items-center justify-center rounded-sm text-app-muted hover:text-app-foreground",
   iconButtonHoverClass,
 );
 
 /** Ghost icon actions in settings lists / subpage headers: keep muted rest, brighten on hover. */
 export const settingsGhostActionClass = cn("hover:text-app-foreground");
 
-/** Tabs root fills remaining dialog height under the title bar. */
+/** Tabs root fills the dialog popup. */
 export const settingsTabsRootClass = cn("flex min-h-0 flex-1 flex-col overflow-hidden");
 
-/** Horizontal tab strip under the dialog header. */
-export const settingsTabListClass = cn(
-  "relative flex shrink-0 items-center gap-1 border-b border-titlebar-border px-4 pt-1",
-);
+/** Category tabs share the header row (no second chrome strip). */
+export const settingsTabListClass = cn("relative flex h-full min-w-0 flex-1 items-center gap-0.5");
 
 /** Settings category tab — active color via Base UI `data-active`. */
 export const settingsTabChipClass = cn(
-  "relative z-1 inline-flex h-8 shrink-0 items-center px-2.5 text-2xs leading-none font-medium text-app-muted outline-none select-none",
+  "relative z-1 inline-flex h-full shrink-0 items-center px-2 text-2xs leading-none font-medium text-app-muted outline-none select-none",
   "transition-colors duration-150 ease-[cubic-bezier(0.33,1,0.68,1)]",
   "hover:not-disabled:text-app-foreground",
   "data-active:text-app-foreground",
@@ -68,7 +67,7 @@ export const settingsTabIndicatorClass = cn(
   "transition-[translate,width] duration-220 ease-[cubic-bezier(0.33,1,0.68,1)]",
 );
 
-/** Column body under header + tabs — panels own their scrollports. */
+/** Column body under the merged header — panels own their scrollports. */
 export const settingsBodyClass = cn("flex min-h-0 flex-1 flex-col overflow-hidden");
 
 /** Settings main pane shell: fills body; child panels manage header + scroll. */
@@ -84,7 +83,7 @@ export const settingsPanelScrollClass = cn("min-h-0 flex-1 overflow-x-hidden ove
 
 /** Fixed subpage navigation bar above the panel scrollport. */
 export const settingsSubpageHeaderClass = cn(
-  "flex shrink-0 items-center gap-1.5 border-b border-titlebar-border bg-app-surface px-3 py-2",
+  "flex h-8 shrink-0 items-center gap-1 border-b border-titlebar-border bg-app-surface px-2.5",
 );
 
 export const settingsSubpageTitleClass = cn(
@@ -94,18 +93,18 @@ export const settingsSubpageTitleClass = cn(
 /** Keep-alive list layer while a subpage form is shown. */
 export const settingsLayerHiddenClass = cn("hidden");
 
-export const settingsPanelSectionClass = cn("flex flex-col gap-3 px-4 py-3");
+export const settingsPanelSectionClass = cn("flex flex-col gap-2.5 px-3 py-2.5");
 
-export const settingsPanelHeaderClass = cn("flex items-start justify-between gap-3");
+export const settingsPanelHeaderClass = cn("flex items-start justify-between gap-2");
 
 export const settingsEmptyStateClass = cn(
-  "rounded-md border border-dashed border-titlebar-border px-4 py-8 text-center text-xs text-app-muted",
+  "rounded-md border border-dashed border-titlebar-border px-3 py-6 text-center text-xs text-app-muted",
 );
 
-export const settingsListClass = cn("flex flex-col gap-2");
+export const settingsListClass = cn("flex flex-col gap-1.5");
 
 export const settingsListItemClass = cn(
-  "flex items-start gap-3 rounded-md border border-titlebar-border bg-app-background/40 px-3 py-2.5",
+  "flex items-start gap-2.5 rounded-md border border-titlebar-border bg-app-background/40 px-2.5 py-2",
 );
 
 export const settingsListItemTitleClass = cn("truncate text-xs font-medium text-app-foreground");
