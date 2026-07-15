@@ -62,6 +62,8 @@
   --spacing-settings-dialog: 52rem;
   --z-index-settings: 50;
 
+  --z-index-confirm-dialog: 55;
+
   --z-index-tooltip: 70;
 
   --color-pte-line-highlight: color-mix(in srgb, var(--color-ctp-surface0) 42%, transparent);

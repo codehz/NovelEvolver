@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 
+import { confirmDialogApi } from "#app/shared/lib/confirm-dialog";
 import { settingsService } from "#app/shared/lib/rpc/app-rpc";
 import { createAsyncLoader, useAsyncLoader } from "#app/shared/lib/ui/async-loader";
 import { cn } from "#app/shared/lib/ui/cn";
@@ -114,7 +115,13 @@ export function AiModelsSettingsPanel() {
   };
 
   const handleRemoveProvider = async (id: string) => {
-    if (!window.confirm("删除供应商将同时删除其下所有模型配置，确定继续？")) {
+    const confirmed = await confirmDialogApi.confirm({
+      title: "删除供应商",
+      description: "删除供应商将同时删除其下所有模型配置，此操作不可恢复。",
+      confirmLabel: "删除",
+      tone: "danger",
+    });
+    if (!confirmed) {
       return;
     }
     const ok = await runMutation(() => settingsService.removeAiProvider(id), "删除供应商失败");
@@ -134,7 +141,13 @@ export function AiModelsSettingsPanel() {
   };
 
   const handleRemoveModel = async (id: string) => {
-    if (!window.confirm("确定删除该模型配置？")) {
+    const confirmed = await confirmDialogApi.confirm({
+      title: "删除模型配置",
+      description: "确定删除该模型配置？此操作不可恢复。",
+      confirmLabel: "删除",
+      tone: "danger",
+    });
+    if (!confirmed) {
       return;
     }
     const ok = await runMutation(() => settingsService.removeAiModel(id), "删除模型配置失败");

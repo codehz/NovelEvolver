@@ -13,6 +13,7 @@ import { TitleBarActionsPortalTarget } from "#app/shared/lib/shell/titlebar-port
 import { titleBarTitleAtom } from "#app/shared/lib/shell/titlebar-title";
 import { cn } from "#app/shared/lib/ui/cn";
 import { SlotText } from "#app/shared/ui";
+import { ConfirmDialogHost } from "#app/shell/confirm-dialog";
 import { ContextMenuHost } from "#app/shell/context-menu";
 import { NotificationBellButton, NotificationToastStack } from "#app/shell/notifications";
 import { QuickPickHost } from "#app/shell/quick-pick";
@@ -167,6 +168,7 @@ export function WindowFrame({ children }: WindowFrameProps) {
       <NotificationToastStack />
       <QuickPickHost />
       <SettingsHost />
+      <ConfirmDialogHost />
       <ContextMenuHost />
     </main>
   );

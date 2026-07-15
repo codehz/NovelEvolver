@@ -8,6 +8,7 @@ import {
   type MouseEvent as ReactMouseEvent,
 } from "react";
 
+import { confirmDialogApi } from "#app/shared/lib/confirm-dialog";
 import { popupContextMenu } from "#app/shared/lib/shell/popup-context-menu";
 import type { AiConversationSearchHit, AiConversationSummary } from "#shared/rpc/ai/index";
 
@@ -240,7 +241,13 @@ export function useAiChatHistoryList({
         }
         if (actionId === "delete") {
           const title = conversationTitle(conversation);
-          if (!window.confirm(`确定删除会话「${title}」吗？此操作不可恢复。`)) {
+          const confirmed = await confirmDialogApi.confirm({
+            title: "删除会话",
+            description: `确定删除会话「${title}」吗？此操作不可恢复。`,
+            confirmLabel: "删除",
+            tone: "danger",
+          });
+          if (!confirmed) {
             return;
           }
           await deleteConversation(conversation.id);
