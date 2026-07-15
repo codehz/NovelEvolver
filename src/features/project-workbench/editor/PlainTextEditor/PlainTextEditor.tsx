@@ -7,7 +7,7 @@ import {
   highlightActiveLineGutter,
   keymap,
 } from "@codemirror/view";
-import { useCallback, useEffect, useImperativeHandle, useLayoutEffect, useRef } from "react";
+import { useCallback, useImperativeHandle, useLayoutEffect, useRef } from "react";
 
 import { cn } from "#app/shared/lib/ui/cn";
 
@@ -73,7 +73,6 @@ export function PlainTextEditor({
   "aria-label": ariaLabel = "纯文本编辑器",
 }: PlainTextEditorProps) {
   const initialDefaultRef = useRef(defaultValue);
-  const hostRef = useRef<HTMLDivElement>(null);
   const viewRef = useRef<EditorView | null>(null);
   const selectionSnapshotRef = useRef(selectionSnapshot);
   const wasActiveRef = useRef(active);
@@ -81,6 +80,7 @@ export function PlainTextEditor({
   const onCaretChangeRef = useRef(onCaretChange);
   const onSelectionSnapshotChangeRef = useRef(onSelectionSnapshotChange);
   const highlightCurrentLineRef = useRef(highlightCurrentLine);
+  const ariaLabelRef = useRef(ariaLabel);
   const suppressOnChangeRef = useRef(false);
   const activeLineCollapsedRef = useRef<boolean | null>(null);
   const activeLineCompartmentRef = useRef(new Compartment());
@@ -90,6 +90,7 @@ export function PlainTextEditor({
   onCaretChangeRef.current = onCaretChange;
   onSelectionSnapshotChangeRef.current = onSelectionSnapshotChange;
   highlightCurrentLineRef.current = highlightCurrentLine;
+  ariaLabelRef.current = ariaLabel;
 
   const syncActiveLineHighlight = useCallback(
     (view: EditorView, snapshot: PlainTextEditorSelectionSnapshot) => {
@@ -129,13 +130,13 @@ export function PlainTextEditor({
     },
     [syncActiveLineHighlight],
   );
+  const publishSelectionStateRef = useRef(publishSelectionState);
+  publishSelectionStateRef.current = publishSelectionState;
 
-  useEffect(() => {
-    const host = hostRef.current;
-    if (!host) {
-      return;
-    }
-
+  // React 19 callback ref: EditorView 生命周期绑定到 host DOM 的 attach/detach。
+  // - 稳定 identity，避免 props 变更导致 teardown/recreate 丢文档
+  // - 返回 cleanup 后，卸载时 React 跑 cleanup，而不是再以 null 调用 ref
+  const setHostNode = useCallback((host: HTMLDivElement) => {
     const activeLineCompartment = activeLineCompartmentRef.current;
     const extensions: Extension[] = [
       ...plainTextEditorViewExtensions,
@@ -152,11 +153,11 @@ export function PlainTextEditor({
           }
         }
         if (update.docChanged || update.selectionSet || update.focusChanged) {
-          publishSelectionState(update.view);
+          publishSelectionStateRef.current(update.view);
         }
       }),
       EditorView.contentAttributes.of({
-        "aria-label": ariaLabel,
+        "aria-label": ariaLabelRef.current,
         "aria-multiline": "true",
         role: "textbox",
       }),
@@ -179,10 +180,12 @@ export function PlainTextEditor({
 
     return () => {
       view.destroy();
-      viewRef.current = null;
+      if (viewRef.current === view) {
+        viewRef.current = null;
+      }
       activeLineCollapsedRef.current = null;
     };
-  }, [ariaLabel, publishSelectionState]);
+  }, []);
 
   const applySelection = useCallback(
     (
@@ -272,7 +275,7 @@ export function PlainTextEditor({
 
   return (
     <div className={editorRootClass}>
-      <div ref={hostRef} className={editorHostClass} />
+      <div ref={setHostNode} className={editorHostClass} />
     </div>
   );
 }
