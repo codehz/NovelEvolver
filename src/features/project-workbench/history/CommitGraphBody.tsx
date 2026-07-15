@@ -1,7 +1,8 @@
 import { Button } from "#app/shared/ui";
-import type { CommitSummary } from "#shared/rpc/worktree/index";
+import type { Change, CommitSummary } from "#shared/rpc/worktree/index";
 
 import { HistoryCommitRow } from "./HistoryCommitRow";
+import type { CommitChangesCacheEntry } from "./use-commit-changes-state";
 
 function HistoryGraphEmptyState() {
   return (
@@ -33,7 +34,23 @@ function HistoryGraphError({ onRetry }: { onRetry: () => void }) {
   );
 }
 
-function HistoryGraphList({ commits }: { commits: CommitSummary[] }) {
+type HistoryGraphListProps = {
+  commits: CommitSummary[];
+  expandedHashes: ReadonlySet<string>;
+  cache: ReadonlyMap<string, CommitChangesCacheEntry>;
+  onToggleCommit: (commitHash: string) => void;
+  onRetryCommit: (commitHash: string) => void;
+  onOpenChange: (commit: CommitSummary, change: Change) => void;
+};
+
+function HistoryGraphList({
+  commits,
+  expandedHashes,
+  cache,
+  onToggleCommit,
+  onRetryCommit,
+  onOpenChange,
+}: HistoryGraphListProps) {
   return (
     <div className="py-1">
       <ul className="flex flex-col" role="list">
@@ -44,6 +61,11 @@ function HistoryGraphList({ commits }: { commits: CommitSummary[] }) {
             isHead={index === 0}
             showBottomConnector={index < commits.length - 1}
             showTopConnector={index > 0}
+            expanded={expandedHashes.has(commit.hash)}
+            cacheEntry={cache.get(commit.hash)}
+            onToggle={() => onToggleCommit(commit.hash)}
+            onRetry={() => onRetryCommit(commit.hash)}
+            onOpenChange={(change) => onOpenChange(commit, change)}
           />
         ))}
       </ul>
@@ -56,9 +78,24 @@ type CommitGraphBodyProps = {
   error: boolean;
   loading: boolean;
   onRetry: () => void;
+  expandedHashes: ReadonlySet<string>;
+  cache: ReadonlyMap<string, CommitChangesCacheEntry>;
+  onToggleCommit: (commitHash: string) => void;
+  onRetryCommit: (commitHash: string) => void;
+  onOpenChange: (commit: CommitSummary, change: Change) => void;
 };
 
-export function CommitGraphBody({ commits, error, loading, onRetry }: CommitGraphBodyProps) {
+export function CommitGraphBody({
+  commits,
+  error,
+  loading,
+  onRetry,
+  expandedHashes,
+  cache,
+  onToggleCommit,
+  onRetryCommit,
+  onOpenChange,
+}: CommitGraphBodyProps) {
   if (loading) {
     return <HistoryGraphLoading />;
   }
@@ -68,5 +105,14 @@ export function CommitGraphBody({ commits, error, loading, onRetry }: CommitGrap
   if (commits === null || commits.length === 0) {
     return <HistoryGraphEmptyState />;
   }
-  return <HistoryGraphList commits={commits} />;
+  return (
+    <HistoryGraphList
+      commits={commits}
+      expandedHashes={expandedHashes}
+      cache={cache}
+      onToggleCommit={onToggleCommit}
+      onRetryCommit={onRetryCommit}
+      onOpenChange={onOpenChange}
+    />
+  );
 }

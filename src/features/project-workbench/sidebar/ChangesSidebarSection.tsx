@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
 
+import type { Change, CommitSummary } from "#shared/rpc/worktree/index";
 import { ChangesBody } from "#workbench/changes/ChangesBody";
 import {
   CHANGES_PANEL_DEFAULT_BODY_HEIGHT,
@@ -9,6 +10,7 @@ import { useChangesState } from "#workbench/changes/use-changes-state";
 import { SidebarPaneStack } from "#workbench/chrome";
 import { useWorkbenchEditorActions } from "#workbench/editor/use-workbench-editor-actions";
 import { CommitGraphBody } from "#workbench/history/CommitGraphBody";
+import { useCommitChangesState } from "#workbench/history/use-commit-changes-state";
 import { useCommitGraphState } from "#workbench/history/use-commit-graph-state";
 
 export function ChangesSidebarSection() {
@@ -25,6 +27,7 @@ export function ChangesSidebarSection() {
     setCommitMessage,
   } = useChangesState();
   const graph = useCommitGraphState(commitsRefreshKey);
+  const commitChanges = useCommitChangesState(commitsRefreshKey);
   const { focusTarget } = useWorkbenchEditorActions();
   const [changesExpanded, setChangesExpanded] = useState(true);
   const [graphExpanded, setGraphExpanded] = useState(true);
@@ -79,6 +82,25 @@ export function ChangesSidebarSection() {
             error={graph.error}
             loading={graph.loading}
             onRetry={graph.retry}
+            expandedHashes={commitChanges.expandedHashes}
+            cache={commitChanges.cache}
+            onToggleCommit={commitChanges.toggleExpanded}
+            onRetryCommit={commitChanges.retry}
+            onOpenChange={(commitSummary: CommitSummary, change: Change) =>
+              focusTarget({
+                kind: "commit-change",
+                commitHash: commitSummary.hash,
+                shortHash: commitSummary.shortHash,
+                changeId: change.id,
+                sourceTarget: {
+                  domain: change.domain,
+                  entityId: change.entityId,
+                },
+                changeKind: change.kind,
+                label: change.label,
+                displayPath: change.displayPath,
+              })
+            }
           />
         ),
         onToggleExpanded: () => setGraphExpanded((value) => !value),
@@ -89,6 +111,10 @@ export function ChangesSidebarSection() {
       commit,
       commitMessage,
       committing,
+      commitChanges.cache,
+      commitChanges.expandedHashes,
+      commitChanges.retry,
+      commitChanges.toggleExpanded,
       error,
       graph.commits,
       graph.error,

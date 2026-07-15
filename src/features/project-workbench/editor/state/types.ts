@@ -39,6 +39,17 @@ export type ComparisonWorkbenchEditorTab = {
         };
         changeId: string;
         changeKind: ChangeKind;
+      }
+    | {
+        kind: "commit-change";
+        commitHash: string;
+        shortHash?: string;
+        sourceTarget: {
+          domain: ChangeDomain;
+          entityId: string;
+        };
+        changeId: string;
+        changeKind: ChangeKind;
       };
   displayPath: string;
   originalContent: string;
@@ -105,6 +116,19 @@ export type WorkbenchEditorTarget =
     }
   | {
       kind: "change";
+      changeId: string;
+      sourceTarget: {
+        domain: ChangeDomain;
+        entityId: string;
+      };
+      changeKind: ChangeKind;
+      label: string;
+      displayPath: string;
+    }
+  | {
+      kind: "commit-change";
+      commitHash: string;
+      shortHash?: string;
       changeId: string;
       sourceTarget: {
         domain: ChangeDomain;

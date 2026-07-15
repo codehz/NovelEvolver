@@ -173,7 +173,11 @@ export function ComparisonEditorPane({ tab, active }: ComparisonEditorPaneProps)
           }
 
           notificationApi.error(error instanceof Error ? error.message : "自动保存失败", {
-            source: currentTab.target.kind === "history-entry" ? "历史" : "更改",
+            source:
+              currentTab.target.kind === "history-entry" ||
+              currentTab.target.kind === "commit-change"
+                ? "历史"
+                : "更改",
           });
 
           void readComparisonTargetCurrentContent(
@@ -203,6 +207,9 @@ export function ComparisonEditorPane({ tab, active }: ComparisonEditorPaneProps)
     async ({ beforeContent, afterContent }: TextComparisonRestoreHunkChange) => {
       try {
         clearPendingAutosave();
+        if (tab.target.kind === "commit-change") {
+          throw new Error("提交内差异为只读预览，无法恢复到工作区。");
+        }
         if (tab.target.kind === "history-entry") {
           await Promise.resolve(
             history.restoreHistoryEntryContentHunk(tab.target.entryId, beforeContent, afterContent),
@@ -227,13 +234,23 @@ export function ComparisonEditorPane({ tab, active }: ComparisonEditorPaneProps)
         }));
       } catch (error) {
         notificationApi.error(error instanceof Error ? error.message : "局部恢复失败", {
-          source: tab.target.kind === "history-entry" ? "历史" : "更改",
+          source:
+            tab.target.kind === "history-entry" || tab.target.kind === "commit-change"
+              ? "历史"
+              : "更改",
         });
         throw error;
       }
     },
     [changes, clearPendingAutosave, history, setEditorState, syncChangeComparisonTab, tab],
   );
+
+  const comparisonAriaLabel =
+    tab.target.kind === "history-entry"
+      ? "历史差异预览"
+      : tab.target.kind === "commit-change"
+        ? "提交差异预览"
+        : "更改差异预览";
 
   return (
     <TextComparisonEditor
@@ -242,8 +259,8 @@ export function ComparisonEditorPane({ tab, active }: ComparisonEditorPaneProps)
       originalContent={tab.originalContent}
       editable={tab.canEditCurrent}
       onChange={handleChange}
-      onRestoreHunk={handleRestoreHistoryHunk}
-      aria-label={tab.target.kind === "history-entry" ? "历史差异预览" : "更改差异预览"}
+      onRestoreHunk={tab.canEditCurrent ? handleRestoreHistoryHunk : undefined}
+      aria-label={comparisonAriaLabel}
     />
   );
 }

@@ -1,6 +1,8 @@
 import type { Repository } from "nano-git/repository/core";
 
 import type {
+  CommitChangeTextComparison,
+  CommitChangesSnapshot,
   CommitSummary,
   HistoryEntry,
   HistoryEntryContent,
@@ -231,6 +233,17 @@ export class WorktreeSession {
 
   listBranchCommits(maxCount = 50): CommitSummary[] {
     return historyOps.listBranchCommits(this.#state, maxCount);
+  }
+
+  listCommitChanges(commitHash: string): CommitChangesSnapshot {
+    return historyOps.listCommitChanges(this.#state, commitHash);
+  }
+
+  readCommitChangeTextComparison(
+    commitHash: string,
+    target: ChangeTextComparisonTarget,
+  ): CommitChangeTextComparison {
+    return historyOps.readCommitChangeTextComparison(this.#state, commitHash, target);
   }
 
   listFileHistory(target: HistoryTarget, limit = 50): HistoryEntry[] {

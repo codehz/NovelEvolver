@@ -1,6 +1,11 @@
+import type { SHA1 } from "nano-git";
 import { walkLogEntries } from "nano-git/log";
 
 import type {
+  Change,
+  ChangeTextComparisonTarget,
+  CommitChangeTextComparison,
+  CommitChangesSnapshot,
   CommitSummary,
   HistoryEntry,
   HistoryEntryContent,
@@ -8,9 +13,173 @@ import type {
 } from "#shared/rpc/worktree/index";
 
 import type { WorktreeJournalEntryRecord } from "../../db/repositories/worktree-repo";
+import { readTextFromTree } from "../git/diff-utils";
+import { buildJournalChangesSnapshot } from "../journal/journal-pending-projector";
 import { journalHistoryEntryId, parseJournalHistoryEntryId } from "../journal/journal-types";
+import { chapterBodyPath } from "../manuscript/paths";
+import { buildBaseManuscriptSnapshot } from "../snapshots/manuscript";
+import type { ResourceSnapshotState } from "../snapshots/resource";
+import { buildResourceSnapshotFromTree } from "../trees/worktree-tree-bridge";
+import { readResourceTreeFromTree } from "./helpers";
 import { persistAndEmit } from "./persistence";
-import type { WorktreeSessionState } from "./state";
+import { RESOURCES_FILES_DIR, type WorktreeSessionState } from "./state";
+
+function buildResourceSnapshotAtTree(
+  state: WorktreeSessionState,
+  treeHash: SHA1,
+): ResourceSnapshotState {
+  const tree = readResourceTreeFromTree(state, treeHash);
+  return buildResourceSnapshotFromTree(
+    tree,
+    (id) => readTextFromTree(state.objects, treeHash, `${RESOURCES_FILES_DIR}/${id}.txt`) ?? "",
+  ).snapshot;
+}
+
+type CommitBoundary = {
+  commitHash: SHA1;
+  parentHash: SHA1 | null;
+  commitTree: SHA1;
+  parentTree: SHA1;
+};
+
+function requireCommitObject(state: WorktreeSessionState, commitHash: string) {
+  let object;
+  try {
+    object = state.repo.catFile(commitHash as SHA1);
+  } catch {
+    throw new Error(`Unknown commit: ${commitHash}`);
+  }
+  if (object.type !== "commit") {
+    throw new Error(`Expected commit at ${commitHash}, got ${object.type}.`);
+  }
+  return object;
+}
+
+function resolveCommitBoundary(state: WorktreeSessionState, commitHash: string): CommitBoundary {
+  const commit = requireCommitObject(state, commitHash);
+  const parentHash = commit.parents[0] ?? null;
+  let parentTree: SHA1;
+  if (parentHash === null) {
+    parentTree = state.repo.createTree([]);
+  } else {
+    const parent = requireCommitObject(state, parentHash);
+    parentTree = parent.tree;
+  }
+  return {
+    commitHash: commitHash as SHA1,
+    parentHash,
+    commitTree: commit.tree,
+    parentTree,
+  };
+}
+
+function scopeChangeId(commitHash: string, change: Change): Change {
+  return {
+    ...change,
+    id: `commit:${commitHash}:${change.id}`,
+  };
+}
+
+function readEntityTextFromTree(
+  state: WorktreeSessionState,
+  treeHash: SHA1,
+  domain: ChangeTextComparisonTarget["domain"],
+  entityId: string,
+): string {
+  if (domain === "manuscript") {
+    return readTextFromTree(state.objects, treeHash, chapterBodyPath(entityId)) ?? "";
+  }
+  return readTextFromTree(state.objects, treeHash, `${RESOURCES_FILES_DIR}/${entityId}.txt`) ?? "";
+}
+
+export function listCommitChanges(
+  state: WorktreeSessionState,
+  commitHash: string,
+): CommitChangesSnapshot {
+  const boundary = resolveCommitBoundary(state, commitHash);
+  const baseManuscript = buildBaseManuscriptSnapshot(state.objects, boundary.parentTree);
+  const currentManuscript = buildBaseManuscriptSnapshot(state.objects, boundary.commitTree);
+  const baseResources = buildResourceSnapshotAtTree(state, boundary.parentTree);
+  const currentResources = buildResourceSnapshotAtTree(state, boundary.commitTree);
+
+  const projected = buildJournalChangesSnapshot({
+    revision: 0,
+    baseTree: boundary.parentTree,
+    warning: null,
+    baseManuscript,
+    currentManuscript,
+    baseResources,
+    currentResources,
+  });
+
+  return {
+    commitHash: boundary.commitHash,
+    parentHash: boundary.parentHash,
+    manuscriptChanges: projected.manuscriptChanges.map((change) =>
+      scopeChangeId(boundary.commitHash, change),
+    ),
+    resourceChanges: projected.resourceChanges.map((change) =>
+      scopeChangeId(boundary.commitHash, change),
+    ),
+  };
+}
+
+export function readCommitChangeTextComparison(
+  state: WorktreeSessionState,
+  commitHash: string,
+  target: ChangeTextComparisonTarget,
+): CommitChangeTextComparison {
+  const boundary = resolveCommitBoundary(state, commitHash);
+  const baseManuscript = buildBaseManuscriptSnapshot(state.objects, boundary.parentTree);
+  const currentManuscript = buildBaseManuscriptSnapshot(state.objects, boundary.commitTree);
+  const baseResources = buildResourceSnapshotAtTree(state, boundary.parentTree);
+  const currentResources = buildResourceSnapshotAtTree(state, boundary.commitTree);
+
+  const projected = buildJournalChangesSnapshot({
+    revision: 0,
+    baseTree: boundary.parentTree,
+    warning: null,
+    baseManuscript,
+    currentManuscript,
+    baseResources,
+    currentResources,
+  });
+
+  const allChanges = [...projected.manuscriptChanges, ...projected.resourceChanges];
+  const change = allChanges.find(
+    (candidate) =>
+      candidate.domain === target.domain &&
+      candidate.entityId === target.entityId &&
+      (candidate.kind === "create" ||
+        candidate.kind === "delete" ||
+        candidate.kind === "content") &&
+      (candidate.entityKind === "chapter" || candidate.entityKind === "file"),
+  );
+  if (change === undefined) {
+    throw new Error(
+      `No previewable text change for ${target.domain}:${target.entityId} in commit ${commitHash}.`,
+    );
+  }
+
+  const originalContent =
+    change.kind === "create"
+      ? ""
+      : readEntityTextFromTree(state, boundary.parentTree, target.domain, target.entityId);
+  const currentContent =
+    change.kind === "delete"
+      ? ""
+      : readEntityTextFromTree(state, boundary.commitTree, target.domain, target.entityId);
+
+  return {
+    target,
+    changeId: scopeChangeId(boundary.commitHash, change).id,
+    kind: change.kind,
+    label: change.label,
+    displayPath: change.displayPath,
+    originalContent,
+    currentContent,
+  };
+}
 
 export function journalEntryToHistoryEntry(
   state: WorktreeSessionState,

@@ -1,5 +1,11 @@
 import type { RpcTarget } from "capnweb";
 
+import type {
+  Change,
+  ChangeTextComparison,
+  ChangeTextComparisonTarget,
+} from "./worktree-changes-rpc";
+
 export type HistoryDomain = "manuscript" | "resource";
 
 export type HistoryTarget =
@@ -73,8 +79,23 @@ export type CommitSummary = {
   committedAt: number;
 };
 
+export type CommitChangesSnapshot = {
+  commitHash: string;
+  parentHash: string | null;
+  manuscriptChanges: Change[];
+  resourceChanges: Change[];
+};
+
+/** Parent→commit text comparison; same shape as pending-change comparison. */
+export type CommitChangeTextComparison = ChangeTextComparison;
+
 export interface HistoryHandle extends RpcTarget {
   listCommits(maxCount?: number): CommitSummary[];
+  listCommitChanges(commitHash: string): CommitChangesSnapshot;
+  readCommitChangeTextComparison(
+    commitHash: string,
+    target: ChangeTextComparisonTarget,
+  ): CommitChangeTextComparison;
   listFileHistory(target: HistoryTarget, limit?: number): HistoryEntry[];
   readHistoryEntryContent(entryId: string): HistoryEntryContent;
   restoreHistoryEntryContentHunk(

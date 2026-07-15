@@ -20,7 +20,7 @@ const workbenchEditorTargetContributions = [
 function getWorkbenchEditorTargetContribution(
   target: WorkbenchEditorTarget,
 ): WorkbenchEditorTargetContribution {
-  if (target.kind === "change") {
+  if (target.kind === "change" || target.kind === "commit-change") {
     return comparisonEditorContribution;
   }
   const contribution = workbenchEditorTargetContributions.find(

@@ -41,30 +41,44 @@ export const comparisonEditorContribution: WorkbenchEditorTargetContribution = {
     if (target.kind === "history-entry") {
       return `预览：${target.label}`;
     }
+    if (target.kind === "commit-change") {
+      const short = target.shortHash ?? target.commitHash.slice(0, 7);
+      return `提交：${target.label}@${short}`;
+    }
     const changeTarget = target as Extract<WorkbenchEditorTarget, { kind: "change" }>;
     return `更改：${changeTarget.label}`;
   },
   notificationSource: "历史",
-  getTargetKey: (target) =>
-    target.kind === "history-entry"
-      ? `history-entry:${target.entryId}`
-      : `change:${
-          (target as Extract<WorkbenchEditorTarget, { kind: "change" }>).sourceTarget.domain
-        }:${(target as Extract<WorkbenchEditorTarget, { kind: "change" }>).sourceTarget.entityId}`,
-  getTabTargetKey: (tab) =>
-    (() => {
-      const comparisonTab = tab as Extract<WorkbenchEditorTab, { kind: "comparison" }>;
-      return comparisonTab.target.kind === "history-entry"
-        ? `history-entry:${comparisonTab.target.entryId}`
-        : `change:${comparisonTab.target.sourceTarget.domain}:${comparisonTab.target.sourceTarget.entityId}`;
-    })(),
-  getHistoryTarget: (tab) =>
-    (() => {
-      const comparisonTab = tab as Extract<WorkbenchEditorTab, { kind: "comparison" }>;
-      return comparisonTab.target.kind === "history-entry"
-        ? comparisonTab.target.sourceTarget
-        : comparisonTab.target.sourceTarget;
-    })(),
+  getTargetKey: (target) => {
+    if (target.kind === "history-entry") {
+      return `history-entry:${target.entryId}`;
+    }
+    if (target.kind === "commit-change") {
+      return `commit-change:${target.commitHash}:${target.sourceTarget.domain}:${target.sourceTarget.entityId}`;
+    }
+    const changeTarget = target as Extract<WorkbenchEditorTarget, { kind: "change" }>;
+    return `change:${changeTarget.sourceTarget.domain}:${changeTarget.sourceTarget.entityId}`;
+  },
+  getTabTargetKey: (tab) => {
+    const comparisonTab = tab as Extract<WorkbenchEditorTab, { kind: "comparison" }>;
+    if (comparisonTab.target.kind === "history-entry") {
+      return `history-entry:${comparisonTab.target.entryId}`;
+    }
+    if (comparisonTab.target.kind === "commit-change") {
+      return `commit-change:${comparisonTab.target.commitHash}:${comparisonTab.target.sourceTarget.domain}:${comparisonTab.target.sourceTarget.entityId}`;
+    }
+    return `change:${comparisonTab.target.sourceTarget.domain}:${comparisonTab.target.sourceTarget.entityId}`;
+  },
+  getHistoryTarget: (tab) => {
+    const comparisonTab = tab as Extract<WorkbenchEditorTab, { kind: "comparison" }>;
+    if (comparisonTab.target.kind === "history-entry") {
+      return comparisonTab.target.sourceTarget;
+    }
+    if (comparisonTab.target.kind === "commit-change") {
+      return comparisonTab.target.sourceTarget;
+    }
+    return comparisonTab.target.sourceTarget;
+  },
   syncTabWithTree: (tab) => tab,
   areTabsEqual: (left, right) => {
     const comparisonTab = left as Extract<WorkbenchEditorTab, { kind: "comparison" }>;
@@ -107,6 +121,32 @@ export const comparisonEditorContribution: WorkbenchEditorTargetContribution = {
           displayPath: target.displayPath,
           originalContent: historyContent.content,
           currentContent: current.content,
+        },
+      };
+    }
+
+    if (target.kind === "commit-change") {
+      const comparison = await Promise.resolve(
+        context.history.readCommitChangeTextComparison(target.commitHash, target.sourceTarget),
+      );
+      const short = target.shortHash ?? target.commitHash.slice(0, 7);
+      return {
+        tab: {
+          id: `commit-change:${target.commitHash}:${comparison.target.domain}:${comparison.target.entityId}`,
+          kind: "comparison",
+          label: `提交：${comparison.label}@${short}`,
+          canEditCurrent: false,
+          target: {
+            kind: "commit-change",
+            commitHash: target.commitHash,
+            shortHash: target.shortHash,
+            sourceTarget: comparison.target,
+            changeId: comparison.changeId,
+            changeKind: comparison.kind,
+          },
+          displayPath: comparison.displayPath,
+          originalContent: comparison.originalContent,
+          currentContent: comparison.currentContent,
         },
       };
     }

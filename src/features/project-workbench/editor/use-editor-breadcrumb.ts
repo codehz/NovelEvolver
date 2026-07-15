@@ -157,19 +157,32 @@ function buildComparisonBreadcrumbModel(
           current: false,
         }));
 
+  const comparisonSuffix =
+    tab.target.kind === "history-entry"
+      ? "历史预览"
+      : tab.target.kind === "commit-change"
+        ? "提交预览"
+        : "更改预览";
+  const comparisonKey =
+    tab.target.kind === "history-entry"
+      ? `history-comparison:${tab.target.entryId}`
+      : tab.target.kind === "commit-change"
+        ? `commit-comparison:${tab.target.commitHash}:${tab.target.sourceTarget.domain}:${tab.target.sourceTarget.entityId}`
+        : `change-comparison:${tab.target.sourceTarget.domain}:${tab.target.sourceTarget.entityId}`;
+  const comparisonLabel =
+    tab.target.kind === "history-entry"
+      ? `预览 ${tab.target.entryShortHash ?? tab.target.entryMessage}`
+      : tab.target.kind === "commit-change"
+        ? `提交 ${tab.target.shortHash ?? tab.target.commitHash.slice(0, 7)}`
+        : `预览 ${tab.target.changeKind}`;
+
   return {
-    ariaLabel: `${targetModel.ariaLabel}${tab.target.kind === "history-entry" ? "历史预览" : "更改预览"}`,
+    ariaLabel: `${targetModel.ariaLabel}${comparisonSuffix}`,
     segments: [
       ...segments,
       {
-        key:
-          tab.target.kind === "history-entry"
-            ? `history-comparison:${tab.target.entryId}`
-            : `change-comparison:${tab.target.sourceTarget.domain}:${tab.target.sourceTarget.entityId}`,
-        label:
-          tab.target.kind === "history-entry"
-            ? `预览 ${tab.target.entryShortHash ?? tab.target.entryMessage}`
-            : `预览 ${tab.target.changeKind}`,
+        key: comparisonKey,
+        label: comparisonLabel,
         clickable: false,
         current: true,
       },

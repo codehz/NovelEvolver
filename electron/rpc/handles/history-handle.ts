@@ -1,6 +1,9 @@
 import { RpcTarget } from "capnweb";
 
 import type {
+  ChangeTextComparisonTarget,
+  CommitChangeTextComparison,
+  CommitChangesSnapshot,
   CommitSummary,
   HistoryEntry,
   HistoryEntryContent,
@@ -20,6 +23,17 @@ export class HistoryHandleImpl extends RpcTarget implements HistoryHandle {
 
   listCommits(maxCount?: number): CommitSummary[] {
     return this.#session.listBranchCommits(maxCount);
+  }
+
+  listCommitChanges(commitHash: string): CommitChangesSnapshot {
+    return this.#session.listCommitChanges(commitHash);
+  }
+
+  readCommitChangeTextComparison(
+    commitHash: string,
+    target: ChangeTextComparisonTarget,
+  ): CommitChangeTextComparison {
+    return this.#session.readCommitChangeTextComparison(commitHash, target);
   }
 
   listFileHistory(target: HistoryTarget, limit?: number): HistoryEntry[] {
