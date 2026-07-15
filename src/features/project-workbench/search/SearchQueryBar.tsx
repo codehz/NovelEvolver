@@ -1,4 +1,5 @@
 import { Toggle } from "@base-ui/react/toggle";
+import { motion } from "motion/react";
 import { useEffect, useId, useRef, useState } from "react";
 
 import { cn } from "#app/shared/lib/ui/cn";
@@ -8,6 +9,12 @@ import {
   iconButtonHoverClass,
 } from "#app/shared/lib/ui/interaction-chrome";
 import { Button, AppTooltip, DisclosureChevron, SlotText } from "#app/shared/ui";
+
+/** Matches DisclosureChevron / collapsible height ease. */
+const replaceToggleLayoutTransition = {
+  duration: 0.22,
+  ease: [0.22, 1, 0.36, 1] as const,
+};
 
 const searchFieldRowClass = cn(fieldSurfaceFocusWithinClass, "flex h-7 items-center gap-1.5 px-2");
 
@@ -78,16 +85,20 @@ export function SearchQueryBar({
     <div className="shrink-0 pt-1.5 pr-3 pl-5">
       <div className="flex items-stretch gap-0.5">
         <AppTooltip label={replaceExpanded ? "隐藏替换" : "显示替换"} side="bottom">
-          <button
+          <motion.button
             type="button"
+            layout
+            transition={replaceToggleLayoutTransition}
             className={replaceToggleClass}
             aria-label={replaceExpanded ? "隐藏替换" : "显示替换"}
             aria-expanded={replaceExpanded}
             aria-controls={replacePanelId}
             onClick={() => setReplaceExpanded((value) => !value)}
           >
-            <DisclosureChevron expanded={replaceExpanded} />
-          </button>
+            <motion.span layout transition={replaceToggleLayoutTransition} className="inline-flex">
+              <DisclosureChevron expanded={replaceExpanded} />
+            </motion.span>
+          </motion.button>
         </AppTooltip>
 
         <div className="flex min-w-0 flex-1 flex-col gap-1">
