@@ -19,7 +19,9 @@ import {
   settingsPanelScrollClass,
   settingsPanelSectionClass,
 } from "../settings-chrome";
+import { settingsErrorMessage } from "../settings-error";
 import { SettingsSubpageHeader } from "../SettingsSubpageHeader";
+import { useSettingsMutation } from "../use-settings-mutation";
 import { AiPromptConfigForm } from "./AiPromptConfigForm";
 
 type PromptEditorMode =
@@ -29,16 +31,6 @@ type PromptEditorMode =
   | { type: "detail"; prompt: AiPromptConfigPublic };
 
 const promptsSettingsLoader = createAsyncLoader(() => settingsService.getAiPrompts());
-
-function errorMessage(error: unknown, fallback: string): string {
-  if (error instanceof Error && error.message.trim() !== "") {
-    return error.message;
-  }
-  if (typeof error === "string" && error.trim() !== "") {
-    return error;
-  }
-  return fallback;
-}
 
 function resolvePromptSubpageTitle(editor: PromptEditorMode): string | null {
   if (editor.type === "create") {
@@ -68,8 +60,7 @@ export function AiPromptsSettingsPanel() {
     isLoading,
     refresh,
   } = useAsyncLoader(promptsSettingsLoader);
-  const [actionError, setActionError] = useState<string | null>(null);
-  const [busy, setBusy] = useState(false);
+  const { actionError, busy, clearActionError, runMutation } = useSettingsMutation(refresh);
   const [editor, setEditor] = useState<PromptEditorMode>({ type: "closed" });
 
   useEffect(() => {
@@ -77,27 +68,14 @@ export function AiPromptsSettingsPanel() {
   }, [refresh]);
 
   const loadError =
-    loadErrorRaw !== undefined ? errorMessage(loadErrorRaw, "加载 AI 提示词设置失败") : null;
+    loadErrorRaw !== undefined
+      ? settingsErrorMessage(loadErrorRaw, "加载 AI 提示词设置失败")
+      : null;
 
   const prompts = snapshot?.prompts ?? [];
 
-  const runMutation = async (action: () => PromiseLike<unknown>, fallback: string) => {
-    setBusy(true);
-    setActionError(null);
-    try {
-      await action();
-      await refresh();
-      return true;
-    } catch (error) {
-      setActionError(errorMessage(error, fallback));
-      return false;
-    } finally {
-      setBusy(false);
-    }
-  };
-
   const closeEditor = () => {
-    setActionError(null);
+    clearActionError();
     setEditor({ type: "closed" });
   };
 
@@ -122,7 +100,7 @@ export function AiPromptsSettingsPanel() {
   };
 
   const handleOpenEditor = (next: PromptEditorMode) => {
-    setActionError(null);
+    clearActionError();
     setEditor(next);
   };
 

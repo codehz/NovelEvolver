@@ -20,7 +20,9 @@ import {
   settingsPanelSectionClass,
   settingsStatusBadgeClass,
 } from "../settings-chrome";
+import { settingsErrorMessage } from "../settings-error";
 import { SettingsSubpageHeader } from "../SettingsSubpageHeader";
+import { useSettingsMutation } from "../use-settings-mutation";
 import { AiAgentConfigForm } from "./AiAgentConfigForm";
 
 type AgentEditorMode =
@@ -42,16 +44,6 @@ const agentsSettingsLoader = createAsyncLoader(async (): Promise<AgentsSettingsD
   return { agents, models };
 });
 
-function errorMessage(error: unknown, fallback: string): string {
-  if (error instanceof Error && error.message.trim() !== "") {
-    return error.message;
-  }
-  if (typeof error === "string" && error.trim() !== "") {
-    return error;
-  }
-  return fallback;
-}
-
 function resolveAgentSubpageTitle(editor: AgentEditorMode): string | null {
   if (editor.type === "create") {
     return "添加 Agent";
@@ -67,8 +59,7 @@ function resolveAgentSubpageTitle(editor: AgentEditorMode): string | null {
 
 export function AiAgentsSettingsPanel() {
   const { data, error: loadErrorRaw, isLoading, refresh } = useAsyncLoader(agentsSettingsLoader);
-  const [actionError, setActionError] = useState<string | null>(null);
-  const [busy, setBusy] = useState(false);
+  const { actionError, busy, clearActionError, runMutation } = useSettingsMutation(refresh);
   const [editor, setEditor] = useState<AgentEditorMode>({ type: "closed" });
 
   useEffect(() => {
@@ -76,7 +67,9 @@ export function AiAgentsSettingsPanel() {
   }, [refresh]);
 
   const loadError =
-    loadErrorRaw !== undefined ? errorMessage(loadErrorRaw, "加载 AI Agent 设置失败") : null;
+    loadErrorRaw !== undefined
+      ? settingsErrorMessage(loadErrorRaw, "加载 AI Agent 设置失败")
+      : null;
 
   const agents = data?.agents.agents ?? [];
   const tools = data?.agents.tools ?? [];
@@ -91,23 +84,8 @@ export function AiAgentsSettingsPanel() {
     return map;
   }, [models]);
 
-  const runMutation = async (action: () => PromiseLike<unknown>, fallback: string) => {
-    setBusy(true);
-    setActionError(null);
-    try {
-      await action();
-      await refresh();
-      return true;
-    } catch (error) {
-      setActionError(errorMessage(error, fallback));
-      return false;
-    } finally {
-      setBusy(false);
-    }
-  };
-
   const closeEditor = () => {
-    setActionError(null);
+    clearActionError();
     setEditor({ type: "closed" });
   };
 
@@ -132,7 +110,7 @@ export function AiAgentsSettingsPanel() {
   };
 
   const handleOpenEditor = (next: AgentEditorMode) => {
-    setActionError(null);
+    clearActionError();
     setEditor(next);
   };
 
