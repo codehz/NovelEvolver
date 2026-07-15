@@ -1,13 +1,23 @@
+import { useEffect, useState } from "react";
+
+import { cn } from "#app/shared/lib/ui/cn";
 import { Button } from "#app/shared/ui";
 import type { AiModelConfigPublic, AiProviderConfigPublic } from "#shared/rpc/services/index";
 
 import {
   settingsEmptyStateClass,
+  settingsGhostActionClass,
+  settingsListClass,
+  settingsListItemMetaClass,
+  settingsListItemTitleClass,
   settingsPanelHeaderClass,
   settingsPanelSectionClass,
+  settingsStatusBadgeClass,
 } from "../settings-chrome";
+import { aiAdapterLabel } from "./ai-adapter-labels";
 import type { EditorMode } from "./editor-mode";
-import { ProviderSection } from "./ProviderSection";
+import { ModelListItem } from "./ModelListItem";
+import { ProviderRailItem } from "./ProviderRailItem";
 
 type AiModelsListLayerProps = {
   providers: readonly AiProviderConfigPublic[];
@@ -32,55 +42,175 @@ export function AiModelsListLayer({
   onSetDefault,
   onRemoveModel,
 }: AiModelsListLayerProps) {
+  const [selectedProviderId, setSelectedProviderId] = useState<string | null>(
+    () => providers[0]?.id ?? null,
+  );
+
+  useEffect(() => {
+    const firstProvider = providers[0];
+    if (firstProvider === undefined) {
+      setSelectedProviderId(null);
+      return;
+    }
+    if (selectedProviderId === null || !providers.some((p) => p.id === selectedProviderId)) {
+      setSelectedProviderId(firstProvider.id);
+    }
+  }, [providers, selectedProviderId]);
+
+  const selectedProvider =
+    selectedProviderId === null
+      ? null
+      : (providers.find((provider) => provider.id === selectedProviderId) ?? null);
+  const selectedModels =
+    selectedProvider === null ? [] : (modelsByProvider.get(selectedProvider.id) ?? []);
+
   return (
-    <div className={settingsPanelSectionClass}>
-      <div className={settingsPanelHeaderClass}>
-        <div className="min-w-0 flex-1">
-          <h3 className="text-sm font-medium text-app-foreground">供应商与模型</h3>
-          <p className="mt-0.5 text-2xs text-app-muted">
-            先配置 API 供应商（连接与密钥），再在其下添加多个模型。密钥经系统加密后写入本地{" "}
-            <span className="font-mono">ai-settings.json</span>。
-          </p>
+    <div className="flex h-full min-h-0 flex-col">
+      <div className={cn(settingsPanelSectionClass, "shrink-0 pb-2")}>
+        <div className={settingsPanelHeaderClass}>
+          <div className="min-w-0 flex-1">
+            <h3 className="text-sm font-medium text-app-foreground">供应商与模型</h3>
+            <p className="mt-0.5 text-2xs text-app-muted">
+              左侧选择供应商，右侧管理其下模型。密钥经系统加密后写入本地{" "}
+              <span className="font-mono">ai-settings.json</span>。
+            </p>
+          </div>
+          <Button
+            disabled={busy}
+            variant="primary"
+            onClick={() => {
+              onOpenEditor({ type: "create-provider" });
+            }}
+          >
+            <span aria-hidden="true" className="icon-[codicon--add] text-sm" />
+            添加供应商
+          </Button>
         </div>
-        <Button
-          disabled={busy}
-          variant="primary"
-          onClick={() => {
-            onOpenEditor({ type: "create-provider" });
-          }}
-        >
-          <span aria-hidden="true" className="icon-[codicon--add] text-sm" />
-          添加供应商
-        </Button>
+
+        {actionError ? <p className="text-xs text-ctp-red">{actionError}</p> : null}
       </div>
 
-      {actionError ? <p className="text-xs text-ctp-red">{actionError}</p> : null}
-
       {providers.length === 0 ? (
-        <div className={settingsEmptyStateClass}>还没有 API 供应商，点击「添加供应商」开始。</div>
-      ) : null}
+        <div className={cn(settingsPanelSectionClass, "pt-0")}>
+          <div className={settingsEmptyStateClass}>还没有 API 供应商，点击「添加供应商」开始。</div>
+        </div>
+      ) : (
+        <div className="flex min-h-0 flex-1 border-t border-titlebar-border">
+          <aside className="flex w-44 shrink-0 flex-col border-r border-titlebar-border">
+            <div className="shrink-0 px-2.5 py-1.5 text-2xs font-medium text-app-muted">供应商</div>
+            <div className="min-h-0 flex-1 overflow-y-auto px-1.5 pb-2">
+              <ul className="flex flex-col gap-0.5" aria-label="供应商列表">
+                {providers.map((provider) => (
+                  <li key={provider.id}>
+                    <ProviderRailItem
+                      provider={provider}
+                      modelCount={modelsByProvider.get(provider.id)?.length ?? 0}
+                      selected={provider.id === selectedProviderId}
+                      onSelect={setSelectedProviderId}
+                    />
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </aside>
 
-      {providers.map((provider) => (
-        <ProviderSection
-          key={provider.id}
-          provider={provider}
-          models={modelsByProvider.get(provider.id) ?? []}
-          defaultModelId={defaultModelId}
-          busy={busy}
-          onAddModel={(providerId) => {
-            onOpenEditor({ type: "create-model", providerId });
-          }}
-          onEditProvider={(next) => {
-            onOpenEditor({ type: "edit-provider", provider: next });
-          }}
-          onRemoveProvider={onRemoveProvider}
-          onSetDefault={onSetDefault}
-          onEditModel={(model) => {
-            onOpenEditor({ type: "edit-model", model });
-          }}
-          onRemoveModel={onRemoveModel}
-        />
-      ))}
+          <section className="flex min-h-0 min-w-0 flex-1 flex-col">
+            {selectedProvider ? (
+              <>
+                <div className="flex shrink-0 items-start justify-between gap-2 border-b border-titlebar-border px-3 py-2">
+                  <div className="min-w-0">
+                    <div className="flex min-w-0 flex-wrap items-center gap-1.5">
+                      <h4 className={settingsListItemTitleClass}>{selectedProvider.name}</h4>
+                      {selectedProvider.hasApiKey ? (
+                        <span className={settingsStatusBadgeClass}>已配置密钥</span>
+                      ) : (
+                        <span className={settingsStatusBadgeClass}>无密钥</span>
+                      )}
+                    </div>
+                    <div className={settingsListItemMetaClass}>
+                      <span>{aiAdapterLabel(selectedProvider.kind)}</span>
+                      {selectedProvider.baseUrl ? (
+                        <>
+                          <span aria-hidden="true">·</span>
+                          <span className="truncate font-mono" title={selectedProvider.baseUrl}>
+                            {selectedProvider.baseUrl}
+                          </span>
+                        </>
+                      ) : null}
+                    </div>
+                  </div>
+                  <div className="flex shrink-0 items-center gap-0.5">
+                    <Button
+                      disabled={busy}
+                      onClick={() => {
+                        onOpenEditor({
+                          type: "create-model",
+                          providerId: selectedProvider.id,
+                        });
+                      }}
+                    >
+                      <span aria-hidden="true" className="icon-[codicon--add] text-sm" />
+                      添加模型
+                    </Button>
+                    <Button
+                      aria-label={`编辑供应商 ${selectedProvider.name}`}
+                      className={settingsGhostActionClass}
+                      disabled={busy}
+                      variant="ghost"
+                      size="icon-md"
+                      onClick={() => {
+                        onOpenEditor({ type: "edit-provider", provider: selectedProvider });
+                      }}
+                    >
+                      <span aria-hidden="true" className="icon-[codicon--edit] text-base" />
+                    </Button>
+                    <Button
+                      aria-label={`删除供应商 ${selectedProvider.name}`}
+                      className={settingsGhostActionClass}
+                      disabled={busy}
+                      variant="ghost"
+                      size="icon-md"
+                      onClick={() => {
+                        onRemoveProvider(selectedProvider.id);
+                      }}
+                    >
+                      <span aria-hidden="true" className="icon-[codicon--trash] text-base" />
+                    </Button>
+                  </div>
+                </div>
+
+                <div className="min-h-0 flex-1 overflow-y-auto px-3 py-2">
+                  {selectedModels.length === 0 ? (
+                    <div className={settingsEmptyStateClass}>
+                      该供应商下还没有模型，点击「添加模型」开始。
+                    </div>
+                  ) : (
+                    <ul className={settingsListClass}>
+                      {selectedModels.map((model) => (
+                        <ModelListItem
+                          key={model.id}
+                          model={model}
+                          isDefault={model.id === defaultModelId}
+                          busy={busy}
+                          onSetDefault={onSetDefault}
+                          onEdit={(next) => {
+                            onOpenEditor({ type: "edit-model", model: next });
+                          }}
+                          onRemove={onRemoveModel}
+                        />
+                      ))}
+                    </ul>
+                  )}
+                </div>
+              </>
+            ) : (
+              <div className={cn(settingsPanelSectionClass, "flex-1")}>
+                <div className={settingsEmptyStateClass}>请选择一个供应商。</div>
+              </div>
+            )}
+          </section>
+        </div>
+      )}
     </div>
   );
 }

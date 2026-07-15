@@ -73,8 +73,13 @@ export function AiModelsSettingsPanel() {
         <SettingsSubpageHeader title={subpageTitle} onBack={closeEditor} />
       ) : null}
 
-      {/* Keep-alive list layer: own scrollport so form scroll cannot clobber list position. */}
-      <div className={cn(settingsPanelScrollClass, isSubpageOpen && settingsLayerHiddenClass)}>
+      {/* Keep-alive list layer: dual-column owns its own column scrollports. */}
+      <div
+        className={cn(
+          "flex min-h-0 flex-1 flex-col overflow-hidden",
+          isSubpageOpen && settingsLayerHiddenClass,
+        )}
+      >
         <AiModelsListLayer
           actionError={actionError}
           busy={busy}
