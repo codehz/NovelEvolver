@@ -2,10 +2,12 @@ import {
   memo,
   useCallback,
   useMemo,
+  useState,
   type PointerEvent as ReactPointerEvent,
   type ReactNode,
 } from "react";
 
+import { SettingsDialog } from "#app/features/project-list/settings/SettingsDialog";
 import { cn } from "#app/shared/lib/ui/cn";
 
 import { TitleBarAuxiliaryToggle } from "../titlebar/TitleBarAuxiliaryToggle";
@@ -71,6 +73,7 @@ export function WorkbenchLayout({
 }: WorkbenchLayoutProps) {
   const hasAuxiliary = auxiliary != null;
   const hasPrimaryViews = primaryViews.length > 0;
+  const [settingsOpen, setSettingsOpen] = useState(false);
   const { layoutPreferences, setLayoutPreferences, toggleAuxiliarySidebar } =
     useWorkbenchLayoutPreferences({
       hasAuxiliary,
@@ -134,6 +137,12 @@ export function WorkbenchLayout({
     },
     [handleSelectView, primarySidebarVisible],
   );
+  const handleOpenSettings = useCallback(() => {
+    setSettingsOpen(true);
+  }, []);
+  const handleDismissSettings = useCallback(() => {
+    setSettingsOpen(false);
+  }, []);
   const handlePrimaryResizePointerDown = useCallback(
     (event: ReactPointerEvent<HTMLDivElement>) => {
       startResizeDrag("primary", event);
@@ -170,6 +179,8 @@ export function WorkbenchLayout({
           items={activityItems}
           activeView={activeViewId}
           primarySidebarVisible={primarySidebarVisible}
+          settingsOpen={settingsOpen}
+          onOpenSettings={handleOpenSettings}
           onSelectView={handleActivitySelectView}
         />
         {hasPrimaryViews ? (
@@ -211,6 +222,8 @@ export function WorkbenchLayout({
           />
         ) : null}
       </div>
+
+      <SettingsDialog open={settingsOpen} onDismiss={handleDismissSettings} />
     </div>
   );
 }

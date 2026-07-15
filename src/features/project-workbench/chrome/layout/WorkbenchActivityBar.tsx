@@ -2,8 +2,9 @@ import { memo } from "react";
 import { Link } from "wouter";
 
 import { cn } from "#app/shared/lib/ui/cn";
-import { controlFocusVisibleClass } from "#app/shared/lib/ui/interaction-chrome";
 import { Button, AppTooltip } from "#app/shared/ui";
+
+import { activityButtonClass, activityIconClass } from "./activity-bar-chrome";
 
 type ActivityItem = {
   id: string;
@@ -11,29 +12,62 @@ type ActivityItem = {
   iconClass: string;
 };
 
-const activityButtonClass = cn(
-  "flex size-activity-bar shrink-0 items-center justify-center border-0 bg-transparent p-2.5",
-  "text-ctp-overlay0 transition-colors duration-150",
-  "hover:bg-transparent hover:text-ctp-mauve",
-  controlFocusVisibleClass,
-);
+type ActivityBarIconButtonProps = {
+  label: string;
+  iconClass: string;
+  active?: boolean;
+  expanded?: boolean;
+  hasPopup?: boolean;
+  noDrag?: boolean;
+  onClick: () => void;
+};
 
-const activityIconClass = cn(
-  "inline-flex size-6 shrink-0 items-center justify-center text-[1.375rem] leading-none",
-);
+function ActivityBarIconButton({
+  label,
+  iconClass,
+  active = false,
+  expanded,
+  hasPopup,
+  noDrag = false,
+  onClick,
+}: ActivityBarIconButtonProps) {
+  return (
+    <AppTooltip label={label} side="right">
+      <Button
+        variant="ghost"
+        aria-current={active ? "page" : undefined}
+        aria-expanded={expanded}
+        aria-haspopup={hasPopup ? "dialog" : undefined}
+        aria-label={label}
+        className={cn(
+          activityButtonClass,
+          active && "text-ctp-mauve",
+          noDrag && "app-region-no-drag",
+        )}
+        onClick={onClick}
+      >
+        <span aria-hidden="true" className={cn(activityIconClass, iconClass)} />
+      </Button>
+    </AppTooltip>
+  );
+}
 
 type WorkbenchActivityBarProps = {
   items: readonly ActivityItem[];
   activeView: string | null;
   primarySidebarVisible: boolean;
+  settingsOpen: boolean;
   onSelectView: (viewId: string) => void;
+  onOpenSettings: () => void;
 };
 
 export const WorkbenchActivityBar = memo(function WorkbenchActivityBar({
   items,
   activeView,
   primarySidebarVisible,
+  settingsOpen,
   onSelectView,
+  onOpenSettings,
 }: WorkbenchActivityBarProps) {
   return (
     <nav
@@ -44,23 +78,29 @@ export const WorkbenchActivityBar = memo(function WorkbenchActivityBar({
         {items.map((item) => {
           const isActive = primarySidebarVisible && activeView === item.id;
           return (
-            <AppTooltip key={item.id} label={item.label} side="right">
-              <Button
-                variant="ghost"
-                aria-current={isActive ? "page" : undefined}
-                aria-expanded={isActive ? true : undefined}
-                aria-label={item.label}
-                className={cn(activityButtonClass, isActive && "text-ctp-mauve")}
-                onClick={() => onSelectView(item.id)}
-              >
-                <span aria-hidden="true" className={cn(activityIconClass, item.iconClass)} />
-              </Button>
-            </AppTooltip>
+            <ActivityBarIconButton
+              key={item.id}
+              active={isActive}
+              expanded={isActive || undefined}
+              iconClass={item.iconClass}
+              label={item.label}
+              onClick={() => {
+                onSelectView(item.id);
+              }}
+            />
           );
         })}
       </div>
 
       <div className="mt-auto flex flex-col">
+        <ActivityBarIconButton
+          expanded={settingsOpen || undefined}
+          hasPopup
+          iconClass="icon-[codicon--settings-gear]"
+          label="设置"
+          noDrag
+          onClick={onOpenSettings}
+        />
         <AppTooltip label="返回项目列表" side="right">
           <Link
             aria-label="返回项目列表"
