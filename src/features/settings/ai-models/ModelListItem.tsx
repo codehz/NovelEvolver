@@ -6,6 +6,7 @@ import { isLowMaxOutputTokensForNovelAgent } from "#shared/rpc/services/index";
 import {
   settingsGhostActionClass,
   settingsListItemClass,
+  settingsListItemEmphasizedClass,
   settingsListItemMetaClass,
   settingsListItemTitleClass,
   settingsStatusBadgeClass,
@@ -30,7 +31,7 @@ export function ModelListItem({
   onRemove,
 }: ModelListItemProps) {
   return (
-    <li className={cn(settingsListItemClass, isDefault && "border-badge-background/40")}>
+    <li className={cn(settingsListItemClass, isDefault && settingsListItemEmphasizedClass)}>
       <div className="min-w-0 flex-1">
         <div className="flex min-w-0 flex-wrap items-center gap-1.5">
           <span className={settingsListItemTitleClass}>{model.name}</span>

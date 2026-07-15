@@ -11,7 +11,6 @@ import {
   menuItemHighlightClass,
   menuMotionClass,
   overlayOpacityMotionClass,
-  panelHoverClass,
 } from "#app/shared/lib/ui/interaction-chrome";
 
 const settingsOverlayTransitionClass = cn(
@@ -29,10 +28,11 @@ export const settingsPanelClass = cn(
   settingsOverlayTransitionClass,
 );
 
-/** Merged chrome row: title + category tabs + close. */
-export const settingsHeaderClass = cn(
-  "flex h-9 shrink-0 items-center gap-2 border-b border-titlebar-border px-2.5",
-);
+/**
+ * Merged chrome row: title + category tabs + close.
+ * Sits on the dialog surface; hierarchy vs body is body `bg-app-background`, not a hairline.
+ */
+export const settingsHeaderClass = cn("flex h-9 shrink-0 items-center gap-2 px-2.5");
 
 export const settingsTitleClass = cn(
   "flex shrink-0 items-center gap-1 text-xs font-medium text-app-muted",
@@ -67,8 +67,13 @@ export const settingsTabIndicatorClass = cn(
   "transition-[translate,width] duration-220 ease-[cubic-bezier(0.33,1,0.68,1)]",
 );
 
-/** Column body under the merged header — panels own their scrollports. */
-export const settingsBodyClass = cn("flex min-h-0 flex-1 flex-col overflow-hidden");
+/**
+ * Column body under the merged header — content canvas (`app-background`) inset into the
+ * dialog surface shell, matching workbench editor-vs-chrome layering.
+ */
+export const settingsBodyClass = cn(
+  "flex min-h-0 flex-1 flex-col overflow-hidden bg-app-background",
+);
 
 /** Settings main pane shell: fills body; child panels manage header + scroll. */
 export const settingsContentClass = cn(
@@ -81,9 +86,12 @@ export const settingsPanelRootClass = cn("flex h-full min-h-0 flex-col");
 /** Scrollport inside a settings panel (list or subpage form). */
 export const settingsPanelScrollClass = cn("min-h-0 flex-1 overflow-x-hidden overflow-y-auto");
 
-/** Fixed subpage navigation bar above the panel scrollport. */
+/**
+ * Fixed subpage navigation bar above the panel scrollport.
+ * Elevated surface strip on the body canvas — no hairline divider.
+ */
 export const settingsSubpageHeaderClass = cn(
-  "flex h-8 shrink-0 items-center gap-1 border-b border-titlebar-border bg-app-surface px-2.5",
+  "flex h-8 shrink-0 items-center gap-1 bg-app-surface px-2.5",
 );
 
 export const settingsSubpageTitleClass = cn(
@@ -97,15 +105,58 @@ export const settingsPanelSectionClass = cn("flex flex-col gap-2.5 px-3 py-2.5")
 
 export const settingsPanelHeaderClass = cn("flex items-start justify-between gap-2");
 
+/**
+ * Dual-pane shell (provider rail + detail): split by background, not hairlines.
+ * Rail reuses dialog-surface elevation; detail sits on the body canvas.
+ */
+export const settingsDualPaneClass = cn("flex min-h-0 flex-1");
+
+export const settingsDualPaneRailClass = cn("flex w-44 shrink-0 flex-col bg-app-surface");
+
+export const settingsDualPaneRailLabelClass = cn(
+  "shrink-0 px-2.5 py-1.5 text-2xs font-medium text-app-muted",
+);
+
+export const settingsDualPaneRailScrollClass = cn("min-h-0 flex-1 overflow-y-auto px-1.5 pb-2");
+
+export const settingsDualPaneRailListClass = cn("flex flex-col gap-0.5");
+
+export const settingsDualPaneDetailClass = cn("flex min-h-0 min-w-0 flex-1 flex-col");
+
+/** Detail header strip — same canvas as the list body; spacing only, no border-b. */
+export const settingsDualPaneDetailHeaderClass = cn(
+  "flex shrink-0 items-start justify-between gap-2 px-3 py-2",
+);
+
+export const settingsDualPaneDetailScrollClass = cn("min-h-0 flex-1 overflow-y-auto px-3 py-2");
+
+/**
+ * Provider rail row: transparent rest, selected punches to body canvas (tree-row language).
+ */
+export const settingsRailItemClass = cn(
+  "flex w-full min-w-0 flex-col gap-0.5 rounded-md px-2 py-1.5 text-left outline-none",
+  "hover:bg-app-background/60",
+);
+
+export const settingsRailItemSelectedClass = cn("bg-app-background hover:bg-app-background");
+
+/** Soft inset empty well on the body canvas — fill only, no dashed frame. */
 export const settingsEmptyStateClass = cn(
-  "rounded-md border border-dashed border-titlebar-border px-3 py-6 text-center text-xs text-app-muted",
+  "rounded-md bg-app-surface/70 px-3 py-6 text-center text-xs text-app-muted",
 );
 
 export const settingsListClass = cn("flex flex-col gap-1.5");
 
+/**
+ * List row card on the body canvas: elevated `app-surface` island, no stroke.
+ * Emphasis variants (e.g. default model) layer a tint wash instead of a border.
+ */
 export const settingsListItemClass = cn(
-  "flex items-start gap-2.5 rounded-md border border-titlebar-border bg-app-background/40 px-2.5 py-2",
+  "flex items-start gap-2.5 rounded-md bg-app-surface px-2.5 py-2",
 );
+
+/** Default / emphasized list row — badge wash, not a stroke. */
+export const settingsListItemEmphasizedClass = cn("bg-badge-background/10");
 
 export const settingsListItemTitleClass = cn("truncate text-xs font-medium text-app-foreground");
 
@@ -123,15 +174,20 @@ export const settingsToolPickerActionsClass = cn("flex shrink-0 items-center gap
 /** Vertical stack of selectable tool cards. */
 export const settingsToolCardListClass = cn("flex flex-col gap-1.5");
 
-/** Selectable tool card shell (label wrapping checkbox + copy). */
+/**
+ * Selectable tool card shell (label wrapping checkbox + copy).
+ * Lives on a surface form: rest punches through to the body canvas color.
+ */
 export const settingsToolCardClass = cn(
-  "flex cursor-pointer items-start gap-2.5 rounded-md border border-titlebar-border bg-app-surface px-2.5 py-2 text-app-foreground outline-none",
+  "flex cursor-pointer items-start gap-2.5 rounded-md bg-app-background px-2.5 py-2 text-app-foreground outline-none",
   hasDisabledClass,
-  panelHoverClass,
+  "hover:bg-app-background/80",
 );
 
-/** Selected tool card emphasis. */
-export const settingsToolCardSelectedClass = cn("border-badge-background/40 bg-ctp-surface0/40");
+/** Selected tool card emphasis — tint wash, not a stroke. */
+export const settingsToolCardSelectedClass = cn(
+  "bg-badge-background/12 hover:bg-badge-background/16",
+);
 
 export const settingsToolCardBodyClass = cn("min-w-0 flex-1");
 
@@ -147,9 +203,11 @@ export const settingsStatusBadgeClass = cn(
 
 export const settingsStatusBadgeDefaultClass = cn("bg-badge-background/20 text-badge-background");
 
-export const settingsFormClass = cn(
-  "flex flex-col gap-3 rounded-md border border-titlebar-border bg-app-background/40 p-3",
-);
+/**
+ * Form surface elevated on the body canvas (workbench sidebar-on-chrome language inverted:
+ * surface island on background, no card stroke).
+ */
+export const settingsFormClass = cn("flex flex-col gap-3 rounded-md bg-app-surface p-3");
 
 export const settingsFormGridClass = cn(
   "grid grid-cols-[6.5rem_minmax(0,1fr)] items-start gap-x-3 gap-y-2",
@@ -246,24 +304,20 @@ export const settingsCheckboxLabelClass = cn(
 /** Horizontal wrap list for multi-select pill chips (e.g. reasoning levels). */
 export const settingsChipListClass = cn("flex flex-wrap gap-1.5");
 
-/** ToggleGroup item shell for a reasoning-level pill. */
+/** ToggleGroup item shell for a reasoning-level pill — fill-only, field-like surface0. */
 export const settingsChipClass = cn(
-  "inline-flex h-7 shrink-0 items-center gap-1 rounded-full border border-titlebar-border bg-app-surface px-2.5 text-2xs leading-none text-app-muted outline-none select-none",
+  "inline-flex h-7 shrink-0 items-center gap-1 rounded-full bg-ctp-surface0 px-2.5 text-2xs leading-none text-app-muted outline-none select-none",
   "hover:not-disabled:text-app-foreground",
-  "data-pressed:border-badge-background/40 data-pressed:bg-ctp-surface0/55 data-pressed:text-app-foreground",
+  "data-pressed:bg-ctp-surface0/80 data-pressed:text-app-foreground",
   controlFocusVisibleInsetClass,
   fieldDisabledClass,
 );
 
 /** Selected (available) pill — kept for explicit default/selected class composition. */
-export const settingsChipSelectedClass = cn(
-  "border-badge-background/40 bg-ctp-surface0/55 text-app-foreground",
-);
+export const settingsChipSelectedClass = cn("bg-ctp-surface1/55 text-app-foreground");
 
 /** Selected + default pill chip shell. */
-export const settingsChipDefaultClass = cn(
-  "border-badge-background/55 bg-badge-background/15 text-badge-background",
-);
+export const settingsChipDefaultClass = cn("bg-badge-background/15 text-badge-background");
 
 /** Hover popover positioner for chip secondary actions. */
 export const settingsChipPopoverPositionerClass = cn("z-settings outline-none");

@@ -1,8 +1,13 @@
 import { cn } from "#app/shared/lib/ui/cn";
-import { controlFocusVisibleClass, panelHoverClass } from "#app/shared/lib/ui/interaction-chrome";
+import { controlFocusVisibleClass } from "#app/shared/lib/ui/interaction-chrome";
 import type { AiProviderConfigPublic } from "#shared/rpc/services/index";
 
-import { settingsListItemTitleClass, settingsStatusBadgeClass } from "../settings-chrome";
+import {
+  settingsListItemTitleClass,
+  settingsRailItemClass,
+  settingsRailItemSelectedClass,
+  settingsStatusBadgeClass,
+} from "../settings-chrome";
 import { aiAdapterLabel } from "./ai-adapter-labels";
 
 const metaLineClass = cn("truncate text-2xs text-app-muted");
@@ -28,10 +33,9 @@ export function ProviderRailItem({
       type="button"
       aria-current={selected ? "true" : undefined}
       className={cn(
-        "flex w-full min-w-0 flex-col gap-0.5 rounded-md border border-transparent px-2 py-1.5 text-left outline-none",
-        panelHoverClass,
+        settingsRailItemClass,
         controlFocusVisibleClass,
-        selected && "border-badge-background/40 bg-ctp-surface0/40",
+        selected && settingsRailItemSelectedClass,
       )}
       onClick={() => {
         onSelect(provider.id);

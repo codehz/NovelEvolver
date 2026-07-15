@@ -171,7 +171,7 @@ function parseExtraBodyText(
 }
 
 const maxOutputTokensWarningClass = cn(
-  "rounded-md border border-ctp-yellow/40 bg-ctp-yellow/10 px-2 py-1.5 text-2xs text-ctp-yellow",
+  "rounded-md bg-ctp-yellow/10 px-2 py-1.5 text-2xs text-ctp-yellow",
 );
 
 export function AiModelConfigForm({
