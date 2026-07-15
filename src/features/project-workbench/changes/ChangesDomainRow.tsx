@@ -17,6 +17,7 @@ type ChangesDomainRowProps = {
   iconClass: string;
   expanded: boolean;
   childCount: number;
+  depth?: number;
   layout: TreeRowLayout;
   onToggle: () => void;
 };
@@ -26,14 +27,15 @@ export function ChangesDomainRow({
   iconClass,
   expanded,
   childCount,
+  depth = 0,
   layout,
   onToggle,
 }: ChangesDomainRowProps) {
   return (
     <TreeMotionRow
       layout={layout}
-      depth={0}
-      paddingLeftPx={getTreeRowPaddingLeft(0)}
+      depth={depth}
+      paddingLeftPx={getTreeRowPaddingLeft(depth)}
       className={changeGroupRowClass}
       aria-expanded={expanded}
       tabIndex={0}

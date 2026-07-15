@@ -216,6 +216,7 @@ export function flattenChangeTree(
   roots: readonly ChangeDomainRoot[],
   expandedDomains: ReadonlySet<string>,
   expandedFolders: ReadonlySet<string>,
+  baseDepth = 0,
 ): ChangeFlatRow[] {
   const rows: ChangeFlatRow[] = [];
   for (const root of roots) {
@@ -225,12 +226,12 @@ export function flattenChangeTree(
       key: root.id,
       title: root.title,
       iconClass: root.iconClass,
-      depth: 0,
+      depth: baseDepth,
       expanded,
       childCount: root.nodes.length,
     });
     if (expanded) {
-      visitNodes(root.nodes, root.id, 1, expandedFolders, rows);
+      visitNodes(root.nodes, root.id, baseDepth + 1, expandedFolders, rows);
     }
   }
   return rows;

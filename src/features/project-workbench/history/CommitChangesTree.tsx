@@ -216,12 +216,15 @@ type CommitChangesTreeProps = {
   manuscriptChanges: Change[];
   resourceChanges: Change[];
   onOpenChange: (change: Change) => void;
+  /** Nest under a parent row (e.g. commit at depth 0 → children at 1). */
+  baseDepth?: number;
 };
 
 export function CommitChangesTree({
   manuscriptChanges,
   resourceChanges,
   onOpenChange,
+  baseDepth = 0,
 }: CommitChangesTreeProps) {
   const roots = useMemo(
     () => buildChangeRoots(manuscriptChanges, resourceChanges),
@@ -265,8 +268,8 @@ export function CommitChangesTree({
   }, [folderKeys]);
 
   const flatRows = useMemo(
-    () => flattenChangeTree(roots, expandedDomainIds, expandedFolderKeys),
-    [roots, expandedDomainIds, expandedFolderKeys],
+    () => flattenChangeTree(roots, expandedDomainIds, expandedFolderKeys, baseDepth),
+    [baseDepth, roots, expandedDomainIds, expandedFolderKeys],
   );
   const onToggleDomain = useCallback((domainId: string) => {
     setExpandedDomainIds((current) => {
@@ -310,6 +313,7 @@ export function CommitChangesTree({
               iconClass={row.iconClass}
               expanded={row.expanded}
               childCount={row.childCount}
+              depth={row.depth}
               layout={layout}
               onToggle={() => onToggleDomain(row.key)}
             />

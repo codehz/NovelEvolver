@@ -2,9 +2,9 @@ import { useCallback, useEffect, useState } from "react";
 
 import type { CommitSummary } from "#shared/rpc/worktree/index";
 import { useHistory } from "#workbench/branch/branch-scopes";
-import { HISTORY_GRAPH_MAX_COMMITS } from "#workbench/changes/constants";
+import { HISTORY_MAX_COMMITS } from "#workbench/changes/constants";
 
-export function useCommitGraphState(commitsRefreshKey: number) {
+export function useCommitHistoryState(commitsRefreshKey: number) {
   const history = useHistory();
   const [commits, setCommits] = useState<CommitSummary[] | null>(null);
   const [error, setError] = useState(false);
@@ -16,7 +16,7 @@ export function useCommitGraphState(commitsRefreshKey: number) {
     setLoading(true);
     setError(false);
 
-    void Promise.resolve(history.listCommits(HISTORY_GRAPH_MAX_COMMITS))
+    void Promise.resolve(history.listCommits(HISTORY_MAX_COMMITS))
       .then((list) => {
         if (!canceled) {
           setCommits(list);

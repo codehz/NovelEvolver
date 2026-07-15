@@ -4,14 +4,14 @@ import type { Change, CommitSummary } from "#shared/rpc/worktree/index";
 import { ChangesBody } from "#workbench/changes/ChangesBody";
 import {
   CHANGES_PANEL_DEFAULT_BODY_HEIGHT,
-  HISTORY_GRAPH_DEFAULT_BODY_HEIGHT,
+  HISTORY_DEFAULT_BODY_HEIGHT,
 } from "#workbench/changes/constants";
 import { useChangesState } from "#workbench/changes/use-changes-state";
 import { SidebarPaneStack } from "#workbench/chrome";
 import { useWorkbenchEditorActions } from "#workbench/editor/use-workbench-editor-actions";
-import { CommitGraphBody } from "#workbench/history/CommitGraphBody";
+import { HistoryBody } from "#workbench/history/HistoryBody";
 import { useCommitChangesState } from "#workbench/history/use-commit-changes-state";
-import { useCommitGraphState } from "#workbench/history/use-commit-graph-state";
+import { useCommitHistoryState } from "#workbench/history/use-commit-history-state";
 
 export function ChangesSidebarSection() {
   const {
@@ -26,11 +26,11 @@ export function ChangesSidebarSection() {
     revertChange,
     setCommitMessage,
   } = useChangesState();
-  const graph = useCommitGraphState(commitsRefreshKey);
+  const history = useCommitHistoryState(commitsRefreshKey);
   const commitChanges = useCommitChangesState(commitsRefreshKey);
   const { focusTarget } = useWorkbenchEditorActions();
   const [changesExpanded, setChangesExpanded] = useState(true);
-  const [graphExpanded, setGraphExpanded] = useState(true);
+  const [historyExpanded, setHistoryExpanded] = useState(true);
 
   const panes = useMemo(
     () => [
@@ -70,18 +70,18 @@ export function ChangesSidebarSection() {
         onToggleExpanded: () => setChangesExpanded((value) => !value),
       },
       {
-        id: "graph",
+        id: "history",
         title: "历史",
         ariaLabel: "历史",
-        panelId: "history-graph-panel",
-        expanded: graphExpanded,
-        defaultBodyHeight: HISTORY_GRAPH_DEFAULT_BODY_HEIGHT,
+        panelId: "history-panel",
+        expanded: historyExpanded,
+        defaultBodyHeight: HISTORY_DEFAULT_BODY_HEIGHT,
         body: (
-          <CommitGraphBody
-            commits={graph.commits}
-            error={graph.error}
-            loading={graph.loading}
-            onRetry={graph.retry}
+          <HistoryBody
+            commits={history.commits}
+            error={history.error}
+            loading={history.loading}
+            onRetry={history.retry}
             expandedHashes={commitChanges.expandedHashes}
             cache={commitChanges.cache}
             onToggleCommit={commitChanges.toggleExpanded}
@@ -103,7 +103,7 @@ export function ChangesSidebarSection() {
             }
           />
         ),
-        onToggleExpanded: () => setGraphExpanded((value) => !value),
+        onToggleExpanded: () => setHistoryExpanded((value) => !value),
       },
     ],
     [
@@ -116,11 +116,11 @@ export function ChangesSidebarSection() {
       commitChanges.retry,
       commitChanges.toggleExpanded,
       error,
-      graph.commits,
-      graph.error,
-      graph.loading,
-      graph.retry,
-      graphExpanded,
+      history.commits,
+      history.error,
+      history.loading,
+      history.retry,
+      historyExpanded,
       loading,
       focusTarget,
       result,
