@@ -1,14 +1,10 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 import { settingsService } from "#app/shared/lib/rpc/app-rpc";
+import { createAsyncLoader, useAsyncLoader } from "#app/shared/lib/ui/async-loader";
 import { cn } from "#app/shared/lib/ui/cn";
 import { Button } from "#app/shared/ui";
-import type {
-  AiAgentConfigPublic,
-  AiAgentConfigWrite,
-  AiAgentsSettingsSnapshot,
-  AiModelsSettingsSnapshot,
-} from "#shared/rpc/services/index";
+import type { AiAgentConfigPublic, AiAgentConfigWrite } from "#shared/rpc/services/index";
 
 import {
   settingsEmptyStateClass,
@@ -32,6 +28,19 @@ type AgentEditorMode =
   | { type: "create" }
   | { type: "edit"; agent: AiAgentConfigPublic }
   | { type: "detail"; agent: AiAgentConfigPublic };
+
+type AgentsSettingsData = {
+  agents: Awaited<ReturnType<typeof settingsService.getAiAgents>>;
+  models: Awaited<ReturnType<typeof settingsService.getAiModels>>;
+};
+
+const agentsSettingsLoader = createAsyncLoader(async (): Promise<AgentsSettingsData> => {
+  const [agents, models] = await Promise.all([
+    settingsService.getAiAgents(),
+    settingsService.getAiModels(),
+  ]);
+  return { agents, models };
+});
 
 function errorMessage(error: unknown, fallback: string): string {
   if (error instanceof Error && error.message.trim() !== "") {
@@ -57,39 +66,22 @@ function resolveAgentSubpageTitle(editor: AgentEditorMode): string | null {
 }
 
 export function AiAgentsSettingsPanel() {
-  const [agentSnapshot, setAgentSnapshot] = useState<AiAgentsSettingsSnapshot | null>(null);
-  const [modelsSnapshot, setModelsSnapshot] = useState<AiModelsSettingsSnapshot | null>(null);
-  const [loadError, setLoadError] = useState<string | null>(null);
+  const { data, error: loadErrorRaw, isLoading, refresh } = useAsyncLoader(agentsSettingsLoader);
   const [actionError, setActionError] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
   const [editor, setEditor] = useState<AgentEditorMode>({ type: "closed" });
-
-  const refresh = useCallback(async () => {
-    setLoading(true);
-    setLoadError(null);
-    try {
-      const [agents, models] = await Promise.all([
-        settingsService.getAiAgents(),
-        settingsService.getAiModels(),
-      ]);
-      setAgentSnapshot(agents);
-      setModelsSnapshot(models);
-    } catch (error) {
-      setLoadError(errorMessage(error, "加载 AI Agent 设置失败"));
-    } finally {
-      setLoading(false);
-    }
-  }, []);
 
   useEffect(() => {
     void refresh();
   }, [refresh]);
 
-  const agents = agentSnapshot?.agents ?? [];
-  const tools = agentSnapshot?.tools ?? [];
-  const models = modelsSnapshot?.models ?? [];
-  const providers = modelsSnapshot?.providers ?? [];
+  const loadError =
+    loadErrorRaw !== undefined ? errorMessage(loadErrorRaw, "加载 AI Agent 设置失败") : null;
+
+  const agents = data?.agents.agents ?? [];
+  const tools = data?.agents.tools ?? [];
+  const models = data?.models.models ?? [];
+  const providers = data?.models.providers ?? [];
 
   const modelNameById = useMemo(() => {
     const map = new Map<string, string>();
@@ -99,20 +91,12 @@ export function AiAgentsSettingsPanel() {
     return map;
   }, [models]);
 
-  const applySnapshot = (next: AiAgentsSettingsSnapshot) => {
-    setAgentSnapshot(next);
-    setActionError(null);
-  };
-
-  const runMutation = async (
-    action: () => Promise<AiAgentsSettingsSnapshot> | AiAgentsSettingsSnapshot,
-    fallback: string,
-  ) => {
+  const runMutation = async (action: () => PromiseLike<unknown>, fallback: string) => {
     setBusy(true);
     setActionError(null);
     try {
-      const next = await action();
-      applySnapshot(next);
+      await action();
+      await refresh();
       return true;
     } catch (error) {
       setActionError(errorMessage(error, fallback));
@@ -152,7 +136,7 @@ export function AiAgentsSettingsPanel() {
     setEditor(next);
   };
 
-  if (loading && agentSnapshot === null) {
+  if (isLoading && data === undefined) {
     return (
       <div className={settingsPanelRootClass}>
         <div className={settingsPanelScrollClass}>
@@ -164,7 +148,7 @@ export function AiAgentsSettingsPanel() {
     );
   }
 
-  if (loadError && agentSnapshot === null) {
+  if (loadError && data === undefined) {
     return (
       <div className={settingsPanelRootClass}>
         <div className={settingsPanelScrollClass}>

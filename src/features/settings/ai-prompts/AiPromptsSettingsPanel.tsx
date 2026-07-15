@@ -1,13 +1,10 @@
-import { useCallback, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 
 import { settingsService } from "#app/shared/lib/rpc/app-rpc";
+import { createAsyncLoader, useAsyncLoader } from "#app/shared/lib/ui/async-loader";
 import { cn } from "#app/shared/lib/ui/cn";
 import { Button } from "#app/shared/ui";
-import type {
-  AiPromptConfigPublic,
-  AiPromptConfigWrite,
-  AiPromptsSettingsSnapshot,
-} from "#shared/rpc/services/index";
+import type { AiPromptConfigPublic, AiPromptConfigWrite } from "#shared/rpc/services/index";
 
 import {
   settingsEmptyStateClass,
@@ -30,6 +27,8 @@ type PromptEditorMode =
   | { type: "create" }
   | { type: "edit"; prompt: AiPromptConfigPublic }
   | { type: "detail"; prompt: AiPromptConfigPublic };
+
+const promptsSettingsLoader = createAsyncLoader(() => settingsService.getAiPrompts());
 
 function errorMessage(error: unknown, fallback: string): string {
   if (error instanceof Error && error.message.trim() !== "") {
@@ -63,46 +62,31 @@ function summarizePrompt(text: string): string {
 }
 
 export function AiPromptsSettingsPanel() {
-  const [snapshot, setSnapshot] = useState<AiPromptsSettingsSnapshot | null>(null);
-  const [loadError, setLoadError] = useState<string | null>(null);
+  const {
+    data: snapshot,
+    error: loadErrorRaw,
+    isLoading,
+    refresh,
+  } = useAsyncLoader(promptsSettingsLoader);
   const [actionError, setActionError] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
   const [editor, setEditor] = useState<PromptEditorMode>({ type: "closed" });
-
-  const refresh = useCallback(async () => {
-    setLoading(true);
-    setLoadError(null);
-    try {
-      const next = await settingsService.getAiPrompts();
-      setSnapshot(next);
-    } catch (error) {
-      setLoadError(errorMessage(error, "加载 AI 提示词设置失败"));
-    } finally {
-      setLoading(false);
-    }
-  }, []);
 
   useEffect(() => {
     void refresh();
   }, [refresh]);
 
+  const loadError =
+    loadErrorRaw !== undefined ? errorMessage(loadErrorRaw, "加载 AI 提示词设置失败") : null;
+
   const prompts = snapshot?.prompts ?? [];
 
-  const applySnapshot = (next: AiPromptsSettingsSnapshot) => {
-    setSnapshot(next);
-    setActionError(null);
-  };
-
-  const runMutation = async (
-    action: () => Promise<AiPromptsSettingsSnapshot> | AiPromptsSettingsSnapshot,
-    fallback: string,
-  ) => {
+  const runMutation = async (action: () => PromiseLike<unknown>, fallback: string) => {
     setBusy(true);
     setActionError(null);
     try {
-      const next = await action();
-      applySnapshot(next);
+      await action();
+      await refresh();
       return true;
     } catch (error) {
       setActionError(errorMessage(error, fallback));
@@ -142,7 +126,7 @@ export function AiPromptsSettingsPanel() {
     setEditor(next);
   };
 
-  if (loading && snapshot === null) {
+  if (isLoading && snapshot === undefined) {
     return (
       <div className={settingsPanelRootClass}>
         <div className={settingsPanelScrollClass}>
@@ -154,7 +138,7 @@ export function AiPromptsSettingsPanel() {
     );
   }
 
-  if (loadError && snapshot === null) {
+  if (loadError && snapshot === undefined) {
     return (
       <div className={settingsPanelRootClass}>
         <div className={settingsPanelScrollClass}>

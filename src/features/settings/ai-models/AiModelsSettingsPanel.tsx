@@ -1,12 +1,12 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 import { settingsService } from "#app/shared/lib/rpc/app-rpc";
+import { createAsyncLoader, useAsyncLoader } from "#app/shared/lib/ui/async-loader";
 import { cn } from "#app/shared/lib/ui/cn";
 import { Button } from "#app/shared/ui";
 import type {
   AiModelConfigPublic,
   AiModelConfigWrite,
-  AiModelsSettingsSnapshot,
   AiProviderConfigPublic,
   AiProviderConfigWrite,
 } from "#shared/rpc/services/index";
@@ -42,6 +42,8 @@ type ProviderEditorMode =
   | { type: "create" }
   | { type: "edit"; provider: AiProviderConfigPublic };
 
+const modelsSettingsLoader = createAsyncLoader(() => settingsService.getAiModels());
+
 function errorMessage(error: unknown, fallback: string): string {
   if (error instanceof Error && error.message.trim() !== "") {
     return error.message;
@@ -72,30 +74,23 @@ function resolveModelsSubpageTitle(
 }
 
 export function AiModelsSettingsPanel() {
-  const [snapshot, setSnapshot] = useState<AiModelsSettingsSnapshot | null>(null);
-  const [loadError, setLoadError] = useState<string | null>(null);
+  const {
+    data: snapshot,
+    error: loadErrorRaw,
+    isLoading,
+    refresh,
+  } = useAsyncLoader(modelsSettingsLoader);
   const [actionError, setActionError] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
   const [modelEditor, setModelEditor] = useState<ModelEditorMode>({ type: "closed" });
   const [providerEditor, setProviderEditor] = useState<ProviderEditorMode>({ type: "closed" });
 
-  const refresh = useCallback(async () => {
-    setLoading(true);
-    setLoadError(null);
-    try {
-      const next = await settingsService.getAiModels();
-      setSnapshot(next);
-    } catch (error) {
-      setLoadError(errorMessage(error, "加载 AI 模型设置失败"));
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
   useEffect(() => {
     void refresh();
   }, [refresh]);
+
+  const loadError =
+    loadErrorRaw !== undefined ? errorMessage(loadErrorRaw, "加载 AI 模型设置失败") : null;
 
   const providers = snapshot?.providers ?? [];
   const models = snapshot?.models ?? [];
@@ -115,20 +110,12 @@ export function AiModelsSettingsPanel() {
     return map;
   }, [models, providers]);
 
-  const applySnapshot = (next: AiModelsSettingsSnapshot) => {
-    setSnapshot(next);
-    setActionError(null);
-  };
-
-  const runMutation = async (
-    action: () => Promise<AiModelsSettingsSnapshot> | AiModelsSettingsSnapshot,
-    fallback: string,
-  ) => {
+  const runMutation = async (action: () => PromiseLike<unknown>, fallback: string) => {
     setBusy(true);
     setActionError(null);
     try {
-      const next = await action();
-      applySnapshot(next);
+      await action();
+      await refresh();
       return true;
     } catch (error) {
       setActionError(errorMessage(error, fallback));
@@ -210,7 +197,7 @@ export function AiModelsSettingsPanel() {
     await runMutation(() => settingsService.setDefaultAiModel(id), "设置默认模型失败");
   };
 
-  if (loading && snapshot === null) {
+  if (isLoading && snapshot === undefined) {
     return (
       <div className={settingsPanelRootClass}>
         <div className={settingsPanelScrollClass}>
@@ -220,7 +207,7 @@ export function AiModelsSettingsPanel() {
     );
   }
 
-  if (loadError && snapshot === null) {
+  if (loadError && snapshot === undefined) {
     return (
       <div className={settingsPanelRootClass}>
         <div className={settingsPanelScrollClass}>
