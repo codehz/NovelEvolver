@@ -82,21 +82,9 @@ export function useWorkbenchActiveView({
     [activeViewId, setLayoutPreferences],
   );
 
-  const handlePrimarySidebarToggle = useCallback(
-    (primarySidebarVisible: boolean) => {
-      setLayoutPreferences((value) => ({
-        ...value,
-        primaryVisible: !primarySidebarVisible,
-        priority: "primary",
-      }));
-    },
-    [setLayoutPreferences],
-  );
-
   return {
     activePrimaryView,
     activeViewId,
-    handlePrimarySidebarToggle,
     handleSelectView,
   };
 }

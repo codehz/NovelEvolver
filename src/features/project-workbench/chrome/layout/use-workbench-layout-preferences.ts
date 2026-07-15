@@ -15,6 +15,14 @@ export function useWorkbenchLayoutPreferences() {
     priority: "primary",
   });
 
+  const togglePrimarySidebar = useCallback((primaryVisible: boolean) => {
+    setLayoutPreferences((value) => ({
+      ...value,
+      primaryVisible: !primaryVisible,
+      priority: "primary",
+    }));
+  }, []);
+
   const toggleAuxiliarySidebar = useCallback((auxiliaryVisible: boolean) => {
     setLayoutPreferences((value) => ({
       ...value,
@@ -26,6 +34,7 @@ export function useWorkbenchLayoutPreferences() {
   return {
     layoutPreferences,
     setLayoutPreferences,
+    togglePrimarySidebar,
     toggleAuxiliarySidebar,
   };
 }

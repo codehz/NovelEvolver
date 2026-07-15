@@ -72,14 +72,13 @@ export function WorkbenchLayout({
   }
 
   const [settingsOpen, setSettingsOpen] = useState(false);
-  const { layoutPreferences, setLayoutPreferences, toggleAuxiliarySidebar } =
+  const { layoutPreferences, setLayoutPreferences, togglePrimarySidebar, toggleAuxiliarySidebar } =
     useWorkbenchLayoutPreferences();
-  const { activePrimaryView, activeViewId, handlePrimarySidebarToggle, handleSelectView } =
-    useWorkbenchActiveView({
-      defaultActiveViewId,
-      primaryViews,
-      setLayoutPreferences,
-    });
+  const { activePrimaryView, activeViewId, handleSelectView } = useWorkbenchActiveView({
+    defaultActiveViewId,
+    primaryViews,
+    setLayoutPreferences,
+  });
   const { ref: containerRef, width: containerWidth } = useMeasuredElementWidth<HTMLDivElement>(
     ACTIVITY_BAR_WIDTH + DEFAULT_PRIMARY_WIDTH + DEFAULT_AUXILIARY_WIDTH + MIN_EDITOR_WIDTH,
   );
@@ -121,7 +120,7 @@ export function WorkbenchLayout({
       <TitleBarPrimarySidebarToggle
         visible={primary.visible}
         onToggle={() => {
-          handlePrimarySidebarToggle(primary.visible);
+          togglePrimarySidebar(primary.visible);
         }}
       />
       <TitleBarAuxiliaryToggle
