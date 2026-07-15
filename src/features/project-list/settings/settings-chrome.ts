@@ -53,14 +53,19 @@ export const settingsTabListClass = cn(
   "relative flex shrink-0 items-center gap-1 border-b border-titlebar-border px-4 pt-1",
 );
 
-/** Settings category tab — underline active state via Base UI `data-active`. */
+/** Settings category tab — active color via Base UI `data-active`. */
 export const settingsTabChipClass = cn(
-  "relative inline-flex h-8 shrink-0 items-center px-2.5 text-2xs leading-none font-medium text-app-muted outline-none select-none",
+  "relative z-1 inline-flex h-8 shrink-0 items-center px-2.5 text-2xs leading-none font-medium text-app-muted outline-none select-none",
+  "transition-colors duration-150 ease-[cubic-bezier(0.33,1,0.68,1)]",
   "hover:not-disabled:text-app-foreground",
   "data-active:text-app-foreground",
-  "after:pointer-events-none after:absolute after:inset-x-1 after:bottom-0 after:h-0.5 after:rounded-full after:bg-transparent after:content-['']",
-  "data-active:after:bg-badge-background",
   controlFocusVisibleInsetClass,
+);
+
+/** Sliding underline driven by Base UI Tabs.Indicator CSS vars. */
+export const settingsTabIndicatorClass = cn(
+  "pointer-events-none absolute bottom-0 left-0 z-0 h-0.5 w-(--active-tab-width) translate-x-(--active-tab-left) rounded-full bg-badge-background",
+  "transition-[translate,width] duration-220 ease-[cubic-bezier(0.33,1,0.68,1)]",
 );
 
 /** Column body under header + tabs — panels own their scrollports. */

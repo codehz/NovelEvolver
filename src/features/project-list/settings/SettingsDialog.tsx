@@ -13,6 +13,7 @@ import {
   settingsIconButtonClass,
   settingsPanelClass,
   settingsTabChipClass,
+  settingsTabIndicatorClass,
   settingsTabListClass,
   settingsTabsRootClass,
   settingsTitleClass,
@@ -75,6 +76,7 @@ export function SettingsDialog({ open, onDismiss }: SettingsDialogProps) {
                   {category.label}
                 </Tabs.Tab>
               ))}
+              <Tabs.Indicator className={settingsTabIndicatorClass} />
             </Tabs.List>
 
             <div className={settingsBodyClass}>
