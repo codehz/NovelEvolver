@@ -8,7 +8,7 @@
         "@base-ui/react": "^1.6.0",
         "@catppuccin/tailwindcss": "^1.0.0",
         "@codehz/ai": "^0.4.6",
-        "@codehz/auto-transition": "^0.0.7-14",
+        "@codehz/auto-transition": "^0.0.8-1",
         "@codemirror/commands": "^6.10.4",
         "@codemirror/lang-json": "^6.0.2",
         "@codemirror/lang-markdown": "^6.5.0",
@@ -88,7 +88,7 @@
 
     "@codehz/ai": ["@codehz/ai@0.4.6", "", {}, "sha512-vH1yhCQ6C4kZulswBjFgeAAz83z5rh1bl07o19IrQtE3ilPwO/bFK4+wCkWhZOXwsTklDpuiJ5aUJ/7JIPKbIw=="],
 
-    "@codehz/auto-transition": ["@codehz/auto-transition@0.0.7-14", "", { "dependencies": { "@radix-ui/react-slot": "^1.2.4" }, "peerDependencies": { "react": "^19.2.4" } }, "sha512-XZ357ZZYk8PZ+fy/22mfs6dPTo96llb77NdxWWgPRrcf03fIZ0Xo/V79GRTx7/6g4VhJK7hwAMHmpxRjcnzI9g=="],
+    "@codehz/auto-transition": ["@codehz/auto-transition@0.0.8-1", "", { "dependencies": { "@radix-ui/react-slot": "^1.2.4" }, "peerDependencies": { "react": "^19.2.4" } }, "sha512-U9VW7MV1DpBY4XIac6gwBjApnu5hYi88q6wbIKqKSQcUAhQASpDLcwZIjfkTq90Cpp3VT7bN5I5Sl7OshLRV7g=="],
 
     "@codemirror/autocomplete": ["@codemirror/autocomplete@6.20.3", "", { "dependencies": { "@codemirror/language": "^6.0.0", "@codemirror/state": "^6.0.0", "@codemirror/view": "^6.17.0", "@lezer/common": "^1.0.0" } }, "sha512-tlosUqb+3BbxCxZdu4tKeRghPFC+QM7q4X5YhKV2eCmPG+1r2F3f4AaSz5sCrFqUtX4Jh20VFTKecl16MgiV9g=="],
 

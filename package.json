@@ -22,7 +22,7 @@
     "@base-ui/react": "^1.6.0",
     "@catppuccin/tailwindcss": "^1.0.0",
     "@codehz/ai": "^0.4.6",
-    "@codehz/auto-transition": "^0.0.7-14",
+    "@codehz/auto-transition": "^0.0.8-1",
     "@codemirror/commands": "^6.10.4",
     "@codemirror/lang-json": "^6.0.2",
     "@codemirror/lang-markdown": "^6.5.0",
