@@ -1,8 +1,6 @@
 import { Dialog } from "@base-ui/react/dialog";
+import { Tabs } from "@base-ui/react/tabs";
 import { useState } from "react";
-
-import { cn } from "#app/shared/lib/ui/cn";
-import { Button } from "#app/shared/ui";
 
 import { AiAgentsSettingsPanel } from "./ai-agents/AiAgentsSettingsPanel";
 import { AiModelsSettingsPanel } from "./ai-models/AiModelsSettingsPanel";
@@ -14,9 +12,9 @@ import {
   settingsHeaderClass,
   settingsIconButtonClass,
   settingsPanelClass,
-  settingsTabChipActiveClass,
   settingsTabChipClass,
   settingsTabListClass,
+  settingsTabsRootClass,
   settingsTitleClass,
 } from "./settings-chrome";
 
@@ -27,6 +25,10 @@ const SETTINGS_CATEGORIES = [
 ] as const;
 
 type SettingsCategoryId = (typeof SETTINGS_CATEGORIES)[number]["id"];
+
+function isSettingsCategoryId(value: unknown): value is SettingsCategoryId {
+  return SETTINGS_CATEGORIES.some((category) => category.id === value);
+}
 
 type SettingsDialogProps = {
   open: boolean;
@@ -48,66 +50,47 @@ export function SettingsDialog({ open, onDismiss }: SettingsDialogProps) {
       <Dialog.Portal>
         <Dialog.Backdrop className={settingsBackdropClass} />
         <Dialog.Popup className={settingsPanelClass}>
-          <SettingsDialogChrome
-            activeCategoryId={activeCategoryId}
-            onSelectCategory={setActiveCategoryId}
-          />
+          <header className={settingsHeaderClass}>
+            <Dialog.Title className={settingsTitleClass}>
+              <span aria-hidden="true" className="icon-[codicon--settings-gear] text-base" />
+              设置
+            </Dialog.Title>
+            <Dialog.Close aria-label="关闭" className={settingsIconButtonClass}>
+              <span aria-hidden="true" className="icon-[codicon--close] text-base" />
+            </Dialog.Close>
+          </header>
+
+          <Tabs.Root
+            className={settingsTabsRootClass}
+            value={activeCategoryId}
+            onValueChange={(next) => {
+              if (isSettingsCategoryId(next)) {
+                setActiveCategoryId(next);
+              }
+            }}
+          >
+            <Tabs.List aria-label="设置分类" className={settingsTabListClass}>
+              {SETTINGS_CATEGORIES.map((category) => (
+                <Tabs.Tab key={category.id} className={settingsTabChipClass} value={category.id}>
+                  {category.label}
+                </Tabs.Tab>
+              ))}
+            </Tabs.List>
+
+            <div className={settingsBodyClass}>
+              <Tabs.Panel className={settingsContentClass} value="ai-models">
+                <AiModelsSettingsPanel />
+              </Tabs.Panel>
+              <Tabs.Panel className={settingsContentClass} value="ai-agents">
+                <AiAgentsSettingsPanel />
+              </Tabs.Panel>
+              <Tabs.Panel className={settingsContentClass} value="ai-prompts">
+                <AiPromptsSettingsPanel />
+              </Tabs.Panel>
+            </div>
+          </Tabs.Root>
         </Dialog.Popup>
       </Dialog.Portal>
     </Dialog.Root>
-  );
-}
-
-function SettingsDialogChrome({
-  activeCategoryId,
-  onSelectCategory,
-}: {
-  activeCategoryId: SettingsCategoryId;
-  onSelectCategory: (id: SettingsCategoryId) => void;
-}) {
-  return (
-    <>
-      <header className={settingsHeaderClass}>
-        <Dialog.Title className={settingsTitleClass}>
-          <span aria-hidden="true" className="icon-[codicon--settings-gear] text-base" />
-          设置
-        </Dialog.Title>
-        <Dialog.Close aria-label="关闭" className={settingsIconButtonClass}>
-          <span aria-hidden="true" className="icon-[codicon--close] text-base" />
-        </Dialog.Close>
-      </header>
-
-      <div aria-label="设置分类" className={settingsTabListClass} role="tablist">
-        {SETTINGS_CATEGORIES.map((category) => {
-          const active = category.id === activeCategoryId;
-          return (
-            <Button
-              key={category.id}
-              aria-selected={active}
-              className={cn(settingsTabChipClass, active && settingsTabChipActiveClass)}
-              role="tab"
-              variant="ghost"
-              onClick={() => {
-                onSelectCategory(category.id);
-              }}
-            >
-              {category.label}
-            </Button>
-          );
-        })}
-      </div>
-
-      <div className={settingsBodyClass}>
-        <div className={settingsContentClass} role="tabpanel">
-          {activeCategoryId === "ai-models" ? (
-            <AiModelsSettingsPanel />
-          ) : activeCategoryId === "ai-agents" ? (
-            <AiAgentsSettingsPanel />
-          ) : (
-            <AiPromptsSettingsPanel />
-          )}
-        </div>
-      </div>
-    </>
   );
 }

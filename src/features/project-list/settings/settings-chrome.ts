@@ -45,21 +45,22 @@ export const settingsIconButtonClass = cn(
 /** Ghost icon actions in settings lists / subpage headers: keep muted rest, brighten on hover. */
 export const settingsGhostActionClass = cn("hover:text-app-foreground");
 
-/** Horizontal bubble tab strip under the dialog header. */
+/** Tabs root fills remaining dialog height under the title bar. */
+export const settingsTabsRootClass = cn("flex min-h-0 flex-1 flex-col overflow-hidden");
+
+/** Horizontal tab strip under the dialog header. */
 export const settingsTabListClass = cn(
-  "flex shrink-0 flex-wrap items-center gap-1.5 border-b border-titlebar-border px-4 py-2.5",
+  "relative flex shrink-0 items-center gap-1 border-b border-titlebar-border px-4 pt-1",
 );
 
-/** Inactive bubble tab chip. */
+/** Settings category tab — underline active state via Base UI `data-active`. */
 export const settingsTabChipClass = cn(
-  "inline-flex h-7 shrink-0 items-center rounded-full border border-titlebar-border bg-app-surface px-2.5 text-2xs leading-none font-medium text-app-muted outline-none select-none",
+  "relative inline-flex h-8 shrink-0 items-center px-2.5 text-2xs leading-none font-medium text-app-muted outline-none select-none",
   "hover:not-disabled:text-app-foreground",
+  "data-active:text-app-foreground",
+  "after:pointer-events-none after:absolute after:inset-x-1 after:bottom-0 after:h-0.5 after:rounded-full after:bg-transparent after:content-['']",
+  "data-active:after:bg-badge-background",
   controlFocusVisibleInsetClass,
-);
-
-/** Active bubble tab chip. */
-export const settingsTabChipActiveClass = cn(
-  "border-badge-background/40 bg-ctp-surface0/55 text-app-foreground",
 );
 
 /** Column body under header + tabs — panels own their scrollports. */
