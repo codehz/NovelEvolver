@@ -17,7 +17,7 @@ const auxiliarySidebarDockSpacerClass = cn(
 
 const auxiliarySidebarDockPanelClass = cn(
   "absolute z-0 overflow-hidden",
-  "transition-transform will-change-transform",
+  "transition-opacity will-change-[opacity]",
   auxiliarySidebarDockMotionClass,
 );
 
@@ -42,7 +42,6 @@ export const AuxiliarySidebarDock = memo(function AuxiliarySidebarDock({
     right: WORKBENCH_SIDEBAR_INSET,
     bottom: 0,
     width: panelWidth,
-    transform: visible ? "translateX(0)" : "translateX(100%)",
   };
 
   return (
@@ -58,8 +57,7 @@ export const AuxiliarySidebarDock = memo(function AuxiliarySidebarDock({
       <div
         className={cn(
           auxiliarySidebarDockPanelClass,
-          resizeTransitionDisabled && "transition-none",
-          !visible && "pointer-events-none",
+          visible ? "opacity-100" : "pointer-events-none opacity-0",
         )}
         style={panelStyle}
       >

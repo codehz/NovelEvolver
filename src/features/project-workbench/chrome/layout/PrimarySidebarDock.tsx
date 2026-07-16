@@ -17,7 +17,7 @@ const primarySidebarDockSpacerClass = cn(
 
 const primarySidebarDockPanelClass = cn(
   "absolute z-0 overflow-hidden",
-  "transition-transform will-change-transform",
+  "transition-opacity will-change-[opacity]",
   primarySidebarDockMotionClass,
 );
 
@@ -48,7 +48,6 @@ export const PrimarySidebarDock = memo(function PrimarySidebarDock({
     bottom: 0,
     left: 0,
     width: panelWidth,
-    transform: visible ? "translateX(0)" : "translateX(-100%)",
   };
 
   return (
@@ -61,8 +60,7 @@ export const PrimarySidebarDock = memo(function PrimarySidebarDock({
       <div
         className={cn(
           primarySidebarDockPanelClass,
-          resizeTransitionDisabled && "transition-none",
-          !visible && "pointer-events-none",
+          visible ? "opacity-100" : "pointer-events-none opacity-0",
         )}
         style={panelStyle}
       >
