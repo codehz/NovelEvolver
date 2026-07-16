@@ -5,6 +5,13 @@ import {
   iconButtonHoverClass,
 } from "#app/shared/lib/ui/interaction-chrome";
 
+// --- Floating sidebar surface (VS Code modern UI) ---
+
+/** Card shell for primary / auxiliary sidebars: border, radius, clip. */
+export const sidebarPanelSurfaceClass = cn(
+  "overflow-hidden rounded-lg border border-titlebar-border bg-app-surface",
+);
+
 // --- View header (primary / auxiliary top chrome row) ---
 
 /** Primary sidebar top chrome row — VS Code view title (2xs uppercase; not section headers). */

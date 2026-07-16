@@ -2,13 +2,16 @@ import { memo, type ReactNode } from "react";
 
 import { cn } from "#app/shared/lib/ui/cn";
 
-import { primarySidebarChromeTitleTextClass } from "../sidebar/sidebar-chrome";
+import {
+  primarySidebarChromeTitleTextClass,
+  sidebarPanelSurfaceClass,
+} from "../sidebar/sidebar-chrome";
 import {
   SidebarHeaderActionsPortalProvider,
   SidebarHeaderActionsPortalTarget,
 } from "../sidebar/sidebar-header-actions-portal";
 
-const auxiliarySidebarFrameClass = cn("flex w-full shrink-0 flex-col bg-app-surface");
+const auxiliarySidebarFrameClass = cn("flex w-full shrink-0 flex-col", sidebarPanelSurfaceClass);
 
 const auxiliarySidebarFrameHeaderClass = cn(
   "flex h-workbench-tab shrink-0 items-center justify-between gap-2 pr-3 pl-5",

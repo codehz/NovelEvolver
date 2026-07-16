@@ -3,6 +3,7 @@ import { memo, type CSSProperties, type ReactNode } from "react";
 import { cn } from "#app/shared/lib/ui/cn";
 
 import { AuxiliarySidebarFrame } from "./AuxiliarySidebarFrame";
+import { WORKBENCH_SIDEBAR_INSET } from "./workbench-layout-resolver";
 
 const auxiliarySidebarDockMotionClass = cn("duration-200 ease-out");
 
@@ -15,7 +16,7 @@ const auxiliarySidebarDockSpacerClass = cn(
 );
 
 const auxiliarySidebarDockPanelClass = cn(
-  "absolute inset-y-0 right-0 z-0 overflow-hidden",
+  "absolute z-0 overflow-hidden",
   "transition-transform will-change-transform",
   auxiliarySidebarDockMotionClass,
 );
@@ -37,6 +38,9 @@ export const AuxiliarySidebarDock = memo(function AuxiliarySidebarDock({
 }: AuxiliarySidebarDockProps) {
   const spacerStyle: CSSProperties = { width: spacerWidth };
   const panelStyle: CSSProperties = {
+    top: 0,
+    right: WORKBENCH_SIDEBAR_INSET,
+    bottom: 0,
     width: panelWidth,
     transform: visible ? "translateX(0)" : "translateX(100%)",
   };

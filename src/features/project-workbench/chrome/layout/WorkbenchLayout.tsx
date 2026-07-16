@@ -1,11 +1,4 @@
-import {
-  useCallback,
-  useMemo,
-  type PointerEvent as ReactPointerEvent,
-  type ReactNode,
-} from "react";
-
-import { cn } from "#app/shared/lib/ui/cn";
+import { useCallback, useMemo, type ReactNode } from "react";
 
 import { TitleBarAuxiliaryToggle } from "../titlebar/TitleBarAuxiliaryToggle";
 import { TitleBarPrimarySidebarToggle } from "../titlebar/TitleBarPrimarySidebarToggle";
@@ -13,6 +6,7 @@ import type { WorkbenchPrimaryView } from "../types";
 import { AuxiliarySidebarDock } from "./AuxiliarySidebarDock";
 import { PrimarySidebarDock } from "./PrimarySidebarDock";
 import { PrimarySidebarViewStack } from "./PrimarySidebarViewStack";
+import { SidebarResizeSash } from "./SidebarResizeSash";
 import { useMeasuredElementWidth } from "./use-measured-element-width";
 import { useWorkbenchActiveView } from "./use-workbench-active-view";
 import { useWorkbenchLayoutPreferences } from "./use-workbench-layout-preferences";
@@ -25,32 +19,6 @@ import {
   deriveWorkbenchChromeLayout,
 } from "./workbench-layout-resolver";
 import { WorkbenchActivityBar } from "./WorkbenchActivityBar";
-
-const resizeHandleClass = cn(
-  "absolute inset-y-0 z-20 w-1 cursor-col-resize touch-none bg-ctp-mauve select-none",
-  "opacity-0 transition-opacity delay-0 duration-150",
-  "hover:opacity-100 hover:delay-300 focus-visible:opacity-100 focus-visible:delay-150",
-);
-
-type ResizeHandleProps = {
-  active: boolean;
-  ariaLabel: string;
-  position: number;
-  onPointerDown: (event: ReactPointerEvent<HTMLDivElement>) => void;
-};
-
-function ResizeHandle({ active, ariaLabel, position, onPointerDown }: ResizeHandleProps) {
-  return (
-    <div
-      aria-label={ariaLabel}
-      aria-orientation="vertical"
-      className={cn(resizeHandleClass, active && "opacity-100")}
-      role="separator"
-      style={{ left: position }}
-      onPointerDown={onPointerDown}
-    />
-  );
-}
 
 export type WorkbenchLayoutProps = {
   primaryViews: readonly WorkbenchPrimaryView[];
@@ -126,7 +94,7 @@ export function WorkbenchLayout({
           toggleAuxiliarySidebar(auxiliaryChrome.visible);
         }}
       />
-      <div ref={containerRef} className="relative flex min-h-0 flex-1 overflow-hidden">
+      <div ref={containerRef} className="flex min-h-0 flex-1 overflow-hidden">
         <WorkbenchActivityBar
           items={activityItems}
           activeView={activeViewId}
@@ -142,7 +110,25 @@ export function WorkbenchLayout({
         >
           <PrimarySidebarViewStack activeViewId={activeViewId} views={primaryViews} />
         </PrimarySidebarDock>
+        {primary.visible ? (
+          <SidebarResizeSash
+            active={activeResizeSide === "primary"}
+            ariaLabel="调整主侧边栏宽度"
+            onPointerDown={(event) => {
+              startResizeDrag("primary", event);
+            }}
+          />
+        ) : null}
         <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">{editor}</div>
+        {auxiliaryChrome.visible ? (
+          <SidebarResizeSash
+            active={activeResizeSide === "auxiliary"}
+            ariaLabel="调整辅助侧边栏宽度"
+            onPointerDown={(event) => {
+              startResizeDrag("auxiliary", event);
+            }}
+          />
+        ) : null}
         <AuxiliarySidebarDock
           panelWidth={auxiliaryChrome.panelWidth}
           resizeTransitionDisabled={activeResizeSide === "auxiliary"}
@@ -151,26 +137,6 @@ export function WorkbenchLayout({
         >
           {auxiliary}
         </AuxiliarySidebarDock>
-        {primary.visible ? (
-          <ResizeHandle
-            active={activeResizeSide === "primary"}
-            ariaLabel="调整主侧边栏宽度"
-            position={ACTIVITY_BAR_WIDTH + primary.spacerWidth}
-            onPointerDown={(event) => {
-              startResizeDrag("primary", event);
-            }}
-          />
-        ) : null}
-        {auxiliaryChrome.visible ? (
-          <ResizeHandle
-            active={activeResizeSide === "auxiliary"}
-            ariaLabel="调整辅助侧边栏宽度"
-            position={containerWidth - auxiliaryChrome.spacerWidth - 1}
-            onPointerDown={(event) => {
-              startResizeDrag("auxiliary", event);
-            }}
-          />
-        ) : null}
       </div>
     </div>
   );

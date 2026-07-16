@@ -16,7 +16,7 @@ const primarySidebarDockSpacerClass = cn(
 );
 
 const primarySidebarDockPanelClass = cn(
-  "absolute inset-y-0 left-0 z-0 overflow-hidden",
+  "absolute z-0 overflow-hidden",
   "transition-transform will-change-transform",
   primarySidebarDockMotionClass,
 );
@@ -44,6 +44,9 @@ export const PrimarySidebarDock = memo(function PrimarySidebarDock({
 }: PrimarySidebarDockProps) {
   const spacerStyle: CSSProperties = { width: spacerWidth };
   const panelStyle: CSSProperties = {
+    top: 0,
+    bottom: 0,
+    left: 0,
     width: panelWidth,
     transform: visible ? "translateX(0)" : "translateX(-100%)",
   };

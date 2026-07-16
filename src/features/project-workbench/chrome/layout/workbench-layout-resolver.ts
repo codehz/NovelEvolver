@@ -5,6 +5,23 @@ export const MIN_PRIMARY_WIDTH = 208;
 export const MIN_AUXILIARY_WIDTH = 240;
 export const CLOSE_SIDEBAR_THRESHOLD = 160;
 export const MIN_EDITOR_WIDTH = 520;
+/**
+ * Horizontal chrome unit for modern UI:
+ * - sash between sidebar and editor (in-flow resize handle)
+ * - auxiliary right edge inset from the window
+ */
+export const WORKBENCH_SIDEBAR_INSET = 8;
+
+/** Dock host spacer only. Sash is a separate flex sibling, not part of the dock. */
+export function sidebarChromeOuterSize(panelWidth: number, side: "primary" | "auxiliary") {
+  // primary: panel flush; auxiliary: panel + right window edge inset
+  return side === "primary" ? panelWidth : panelWidth + WORKBENCH_SIDEBAR_INSET;
+}
+
+/** Extra width reserved beyond panel when a sidebar is visible (sash [+ right edge]). */
+export function sidebarChromeExtraWidth(side: "primary" | "auxiliary") {
+  return side === "primary" ? WORKBENCH_SIDEBAR_INSET : WORKBENCH_SIDEBAR_INSET * 2;
+}
 
 export type ResizePriority = "primary" | "auxiliary";
 
@@ -36,6 +53,7 @@ export type WorkbenchChromeLayout = {
 };
 
 type SidebarSpec = {
+  side: "primary" | "auxiliary";
   enabled: boolean;
   resolvedVisible: boolean;
   resolvedWidth: number;
@@ -44,6 +62,7 @@ type SidebarSpec = {
 };
 
 function resolveSidebarChrome({
+  side,
   enabled,
   resolvedVisible,
   resolvedWidth,
@@ -56,7 +75,7 @@ function resolveSidebarChrome({
   return {
     visible,
     panelWidth,
-    spacerWidth: visible ? panelWidth : 0,
+    spacerWidth: visible ? sidebarChromeOuterSize(panelWidth, side) : 0,
   };
 }
 
@@ -82,7 +101,9 @@ export function resolveWorkbenchLayout(
     }
 
     const minWidth = side === "primary" ? MIN_PRIMARY_WIDTH : MIN_AUXILIARY_WIDTH;
-    if (remainingSidebarWidth < minWidth) {
+    // primary: sash only; auxiliary: sash + right window edge
+    const chromeExtra = sidebarChromeExtraWidth(side);
+    if (remainingSidebarWidth < minWidth + chromeExtra) {
       continue;
     }
 
@@ -90,14 +111,14 @@ export function resolveWorkbenchLayout(
       side === "primary"
         ? Math.max(preferences.primaryWidth, MIN_PRIMARY_WIDTH)
         : Math.max(preferences.auxiliaryWidth, MIN_AUXILIARY_WIDTH);
-    const width = Math.min(preferredWidth, remainingSidebarWidth);
+    const width = Math.min(preferredWidth, remainingSidebarWidth - chromeExtra);
 
     if (side === "primary") {
       primaryWidth = width;
     } else {
       auxiliaryWidth = width;
     }
-    remainingSidebarWidth -= width;
+    remainingSidebarWidth -= width + chromeExtra;
   }
 
   return {
@@ -139,6 +160,7 @@ export function deriveWorkbenchChromeLayout(input: {
   return {
     resolved,
     primary: resolveSidebarChrome({
+      side: "primary",
       enabled: true,
       resolvedVisible: resolved.primaryVisible,
       resolvedWidth: resolved.primaryWidth,
@@ -146,6 +168,7 @@ export function deriveWorkbenchChromeLayout(input: {
       minWidth: MIN_PRIMARY_WIDTH,
     }),
     auxiliary: resolveSidebarChrome({
+      side: "auxiliary",
       enabled: true,
       resolvedVisible: resolved.auxiliaryVisible,
       resolvedWidth: resolved.auxiliaryWidth,
