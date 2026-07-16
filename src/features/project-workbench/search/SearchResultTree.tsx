@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import type { ReactNode } from "react";
 
 import { cn } from "#app/shared/lib/ui/cn";
@@ -28,7 +28,7 @@ import {
   type SearchResultDomainRoot,
   type SearchResultFlatRow,
 } from "./search-result-tree-projector";
-import { useSearchResultHighlights } from "./use-search-result-highlights";
+import { buildSearchSnippetParts } from "./search-snippet-parts";
 
 export type { SearchResultDomainRoot };
 
@@ -48,11 +48,58 @@ const searchRowActionButtonClass = cn(
   controlFocusVisibleClass,
 );
 
-function SearchHighlightText({ children, className }: { children: string; className?: string }) {
+const searchMatchMarkClass = cn("rounded-sm bg-ctp-yellow/38 text-inherit");
+
+const searchMatchOldClass = cn("rounded-sm bg-ctp-red/15 text-ctp-red line-through");
+
+const searchMatchNewClass = cn("rounded-sm bg-ctp-green/20 text-ctp-green");
+
+type SearchSnippetViewProps = {
+  hit: WorktreeSearchHit;
+  replacePreviewText?: string;
+  showReplacePreview?: boolean;
+};
+
+function SearchSnippetView({
+  hit,
+  replacePreviewText = "",
+  showReplacePreview = false,
+}: SearchSnippetViewProps) {
+  const parts = buildSearchSnippetParts({
+    snippetBefore: hit.snippetBefore,
+    matchText: hit.matchText,
+    snippetAfter: hit.snippetAfter,
+    showReplacePreview,
+    replacement: replacePreviewText,
+  });
+
   return (
-    <span data-search-highlight className={className}>
-      {children}
-    </span>
+    <>
+      {parts.map((part, index) => {
+        if (part.kind === "text") {
+          return <span key={index}>{part.text}</span>;
+        }
+        if (part.kind === "match") {
+          return (
+            <mark key={index} className={searchMatchMarkClass}>
+              {part.text}
+            </mark>
+          );
+        }
+        if (part.kind === "match-old") {
+          return (
+            <span key={index} className={searchMatchOldClass}>
+              {part.text}
+            </span>
+          );
+        }
+        return (
+          <span key={index} className={searchMatchNewClass}>
+            {part.text}
+          </span>
+        );
+      })}
+    </>
   );
 }
 
@@ -60,6 +107,8 @@ function SearchFlatRowView({
   row,
   layout,
   replaceEnabled,
+  replacePreviewText,
+  showReplacePreview,
   onToggleDomain,
   onToggleFolder,
   onToggleLeaf,
@@ -70,6 +119,8 @@ function SearchFlatRowView({
   row: SearchResultFlatRow;
   layout: TreeRowLayout;
   replaceEnabled: boolean;
+  replacePreviewText: string;
+  showReplacePreview: boolean;
   onToggleDomain: (id: string) => void;
   onToggleFolder: (key: string) => void;
   onToggleLeaf: (key: string) => void;
@@ -131,7 +182,11 @@ function SearchFlatRowView({
         <span className="icon-[codicon--list-flat] shrink-0 text-sm text-ctp-overlay0" />
         <span className="min-w-0 flex-1 truncate font-mono text-ctp-text">
           <span className="mr-1 text-ctp-overlay0">{row.hit.line}:</span>
-          <SearchHighlightText>{row.hit.snippet}</SearchHighlightText>
+          <SearchSnippetView
+            hit={row.hit}
+            replacePreviewText={replacePreviewText}
+            showReplacePreview={showReplacePreview}
+          />
         </span>
         <AppTooltip label="替换此处" side="left">
           <Button
@@ -221,8 +276,8 @@ type SearchResultTreeProps = {
   status: TreeBodyStatus;
   errorContent?: ReactNode;
   roots: SearchResultDomainRoot[];
-  highlightQuery: string;
-  highlightIsRegex?: boolean;
+  replacePreviewText?: string;
+  showReplacePreview?: boolean;
   replaceEnabled?: boolean;
   onOpenHit: (hit: WorktreeSearchHit, intent: "focus" | "open") => void;
   onReplaceInFile?: (hit: WorktreeSearchHit) => void;
@@ -233,15 +288,13 @@ export function SearchResultTree({
   status,
   errorContent,
   roots,
-  highlightQuery,
-  highlightIsRegex = false,
+  replacePreviewText = "",
+  showReplacePreview = false,
   replaceEnabled = false,
   onOpenHit,
   onReplaceInFile,
   onReplaceOccurrence,
 }: SearchResultTreeProps) {
-  const highlightContainerRef = useRef<HTMLDivElement>(null);
-
   const folderKeys = useMemo(() => collectSearchTreeFolderKeys(roots), [roots]);
   const leafIds = useMemo(() => collectSearchTreeLeafKeys(roots), [roots]);
   const domainIds = useMemo(() => roots.map((root) => root.id), [roots]);
@@ -259,17 +312,6 @@ export function SearchResultTree({
   const flatRows = useMemo(
     () => flattenSearchResultTree(roots, expandedDomains, expandedFolders, expandedLeaves),
     [roots, expandedDomains, expandedFolders, expandedLeaves],
-  );
-
-  const highlightLayoutRevision = useMemo(
-    () => flatRows.map((row) => row.key).join("\u0000"),
-    [flatRows],
-  );
-  useSearchResultHighlights(
-    highlightContainerRef,
-    highlightQuery,
-    highlightIsRegex,
-    highlightLayoutRevision,
   );
 
   const onToggleDomain = useCallback((domainId: string) => {
@@ -325,7 +367,7 @@ export function SearchResultTree({
   const getItemKey = useCallback((row: SearchResultFlatRow) => row.key, []);
 
   return (
-    <div ref={highlightContainerRef} className="py-1">
+    <div className="py-1">
       <TreeBody<SearchResultFlatRow>
         status={status}
         items={flatRows}
@@ -339,6 +381,8 @@ export function SearchResultTree({
             row={row}
             layout={layout}
             replaceEnabled={replaceEnabled}
+            replacePreviewText={replacePreviewText}
+            showReplacePreview={showReplacePreview}
             onToggleDomain={onToggleDomain}
             onToggleFolder={onToggleFolder}
             onToggleLeaf={onToggleLeaf}

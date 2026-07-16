@@ -146,11 +146,6 @@
     font: inherit;
   }
 
-  ::highlight(novel-search-hit) {
-    background-color: color-mix(in srgb, var(--color-ctp-yellow) 38%, transparent);
-    color: inherit;
-  }
-
   /* Native scrollbar colors app-wide (default width). Overlay auto-hide is
      Chromium-owned via Electron OverlayScrollbars. */
   * {

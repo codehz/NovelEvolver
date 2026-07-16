@@ -168,23 +168,49 @@ function normalizeLineText(line: string): string {
   return line.endsWith("\r") ? line.slice(0, -1) : line;
 }
 
-function snippetAroundMatch(line: string, matchIndex: number, matchLength: number): string {
+type SearchSnippetParts = {
+  snippet: string;
+  snippetBefore: string;
+  matchText: string;
+  snippetAfter: string;
+};
+
+function snippetAroundMatch(
+  line: string,
+  matchIndex: number,
+  matchLength: number,
+): SearchSnippetParts {
   const start = Math.max(0, matchIndex - SNIPPET_CONTEXT_CHARS);
-  const end = Math.min(line.length, matchIndex + matchLength + SNIPPET_CONTEXT_CHARS);
-  let snippet = line.slice(start, end);
+  const matchEnd = matchIndex + matchLength;
+  const end = Math.min(line.length, matchEnd + SNIPPET_CONTEXT_CHARS);
+
+  let snippetBefore = line.slice(start, matchIndex);
   if (start > 0) {
-    snippet = `…${snippet}`;
+    snippetBefore = `…${snippetBefore}`;
   }
+
+  const matchText = line.slice(matchIndex, matchEnd);
+
+  let snippetAfter = line.slice(matchEnd, end);
   if (end < line.length) {
-    snippet = `${snippet}…`;
+    snippetAfter = `${snippetAfter}…`;
   }
-  return snippet;
+
+  return {
+    snippetBefore,
+    matchText,
+    snippetAfter,
+    snippet: `${snippetBefore}${matchText}${snippetAfter}`,
+  };
 }
 
 function collectLineHits<
   TEntry,
   THit extends {
     snippet: string;
+    snippetBefore: string;
+    matchText: string;
+    snippetAfter: string;
     line: number;
     column: number;
     matchLength: number;
@@ -201,7 +227,7 @@ function collectLineHits<
     column: number,
     matchLength: number,
     matchStart: number,
-    snippet: string,
+    parts: SearchSnippetParts,
   ) => THit,
 ): THit[] {
   const hits: THit[] = [];
@@ -249,13 +275,13 @@ function searchManuscript(
     needle,
     maxResults,
     (entry) => entry.content,
-    (entry, line, column, matchLength, matchStart, snippet) => ({
+    (entry, line, column, matchLength, matchStart, parts) => ({
       domain: "manuscript",
       nodeId: entry.id,
       entityKind: "chapter",
       label: entry.title,
       displayPath: entry.displayPath,
-      snippet,
+      ...parts,
       line,
       column,
       matchLength,
@@ -274,13 +300,13 @@ function searchResources(
     needle,
     maxResults,
     (entry) => (entry.type === "file" ? entry.content : ""),
-    (entry, line, column, matchLength, matchStart, snippet) => ({
+    (entry, line, column, matchLength, matchStart, parts) => ({
       domain: "resource",
       nodeId: entry.id,
       entityKind: "file",
       label: entry.name,
       displayPath: entry.displayPath,
-      snippet,
+      ...parts,
       line,
       column,
       matchLength,

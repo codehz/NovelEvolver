@@ -11,8 +11,7 @@ export function SearchSidebarSection() {
     setReplaceText,
     isRegex,
     toggleRegex,
-    highlightQuery,
-    highlightIsRegex,
+    showReplacePreview,
     status,
     statsLine,
     roots,
@@ -54,8 +53,8 @@ export function SearchSidebarSection() {
             status={status}
             errorContent={<ErrorRetryView message="无法加载搜索结果。" onRetry={retry} />}
             roots={roots}
-            highlightQuery={highlightQuery}
-            highlightIsRegex={highlightIsRegex}
+            replacePreviewText={replaceText}
+            showReplacePreview={showReplacePreview}
             replaceEnabled={canReplace}
             onOpenHit={openHit}
             onReplaceInFile={replaceInFile}

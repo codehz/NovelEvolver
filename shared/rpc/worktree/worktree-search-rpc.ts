@@ -61,8 +61,17 @@ type WorktreeSearchHitBase = {
   label: string;
   /** 手稿为章节路径标题；资源为 `resources/` 下相对路径。 */
   displayPath: string;
-  /** 命中所在行的上下文片段（单行，不含高亮标记）。 */
+  /**
+   * 命中所在行的上下文片段（单行）。
+   * 等于 `snippetBefore + matchText + snippetAfter`，供纯文本消费者使用。
+   */
   snippet: string;
+  /** 匹配前的上下文（可含前导 `…`）。 */
+  snippetBefore: string;
+  /** 本条 hit 的匹配原文（零宽匹配时为空串）。 */
+  matchText: string;
+  /** 匹配后的上下文（可含尾随 `…`）。 */
+  snippetAfter: string;
   /** 命中行号，1-based。 */
   line: number;
   /** 该行内首个命中列，0-based UTF-16 偏移。 */
