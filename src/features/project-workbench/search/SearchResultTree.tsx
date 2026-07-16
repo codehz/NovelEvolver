@@ -40,9 +40,13 @@ const searchResultCountPillClass = cn(
   "ml-auto shrink-0 rounded-full bg-ctp-surface0 px-1 py-px font-mono text-[10px] text-ctp-subtext0",
 );
 
+/**
+ * Collapsed out of flex flow when idle (`hidden`); hover/focus-within mounts it back
+ * as `flex` so the button occupies space and pushes the trailing text.
+ */
 const searchRowActionButtonClass = cn(
-  "flex size-5 shrink-0 items-center justify-center rounded-sm text-ctp-overlay0",
-  "opacity-0 group-focus-within/search-row:opacity-100 group-hover/search-row:opacity-100",
+  "hidden size-5 shrink-0 items-center justify-center rounded-sm text-ctp-overlay0",
+  "group-focus-within/search-row:flex group-hover/search-row:flex",
   "data-disabled:opacity-40",
   iconButtonHoverClass,
   controlFocusVisibleClass,
