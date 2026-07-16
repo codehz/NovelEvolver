@@ -1,5 +1,5 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
-import type { ReactNode } from "react";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import type { ReactNode, Ref } from "react";
 
 import { cn } from "#app/shared/lib/ui/cn";
 import {
@@ -54,6 +54,55 @@ const searchMatchOldClass = cn("bg-ctp-red/15 text-ctp-red line-through");
 
 const searchMatchNewClass = cn("bg-ctp-green/20 text-ctp-green");
 
+/**
+ * Horizontal window: clip overflow, soft edge fade, no scrollbar.
+ * Fade width matches horizontal padding; negative margin keeps the flex layout
+ * slot width unchanged so the mask softens outside the text, not over it.
+ */
+const searchSnippetViewportClass = cn(
+  "-mx-3 min-w-0 flex-1 overflow-x-hidden px-3 font-mono whitespace-nowrap text-ctp-text",
+  "mask-[linear-gradient(to_right,transparent,black_0.75rem,black_calc(100%-0.75rem),transparent)]",
+);
+
+/**
+ * Center (or pin-start) a match element inside a horizontal overflow host.
+ * Uses scrollLeft only so virtualized tree ancestors do not jump vertically.
+ */
+function centerMatchInSnippetHost(host: HTMLElement, match: HTMLElement): void {
+  const maxScroll = Math.max(0, host.scrollWidth - host.clientWidth);
+  if (maxScroll === 0) {
+    host.scrollLeft = 0;
+    return;
+  }
+
+  const hostRect = host.getBoundingClientRect();
+  const matchRect = match.getBoundingClientRect();
+  if (hostRect.width <= 0) {
+    return;
+  }
+
+  const padLeft = Number.parseFloat(getComputedStyle(host).paddingLeft) || 0;
+  const padRight = Number.parseFloat(getComputedStyle(host).paddingRight) || 0;
+  // Content window between fade gutters (padding).
+  const contentLeft = hostRect.left + padLeft;
+  const contentWidth = hostRect.width - padLeft - padRight;
+  if (contentWidth <= 0) {
+    return;
+  }
+
+  if (matchRect.width >= contentWidth) {
+    // Prefer the start of a wide match over its center.
+    const next = host.scrollLeft + (matchRect.left - contentLeft);
+    host.scrollLeft = Math.max(0, Math.min(maxScroll, next));
+    return;
+  }
+
+  const matchCenter = matchRect.left + matchRect.width / 2;
+  const contentCenter = contentLeft + contentWidth / 2;
+  const next = host.scrollLeft + (matchCenter - contentCenter);
+  host.scrollLeft = Math.max(0, Math.min(maxScroll, next));
+}
+
 type SearchSnippetViewProps = {
   hit: WorktreeSearchHit;
   replacePreviewText?: string;
@@ -65,6 +114,12 @@ function SearchSnippetView({
   replacePreviewText = "",
   showReplacePreview = false,
 }: SearchSnippetViewProps) {
+  const hostRef = useRef<HTMLSpanElement>(null);
+  const matchRef = useRef<HTMLElement | null>(null);
+  const setMatchRef: Ref<HTMLElement> = (node) => {
+    matchRef.current = node;
+  };
+
   const parts = buildSearchSnippetParts({
     snippetBefore: hit.snippetBefore,
     matchText: hit.matchText,
@@ -73,33 +128,72 @@ function SearchSnippetView({
     replacement: replacePreviewText,
   });
 
-  return (
-    <>
-      {parts.map((part, index) => {
-        if (part.kind === "text") {
-          return <span key={index}>{part.text}</span>;
-        }
-        if (part.kind === "match") {
-          return (
-            <mark key={index} className={searchMatchMarkClass}>
-              {part.text}
-            </mark>
-          );
-        }
-        if (part.kind === "match-old") {
-          return (
-            <span key={index} className={searchMatchOldClass}>
-              {part.text}
-            </span>
-          );
-        }
-        return (
-          <span key={index} className={searchMatchNewClass}>
-            {part.text}
-          </span>
+  useLayoutEffect(() => {
+    const host = hostRef.current;
+    const match = matchRef.current;
+    if (host === null || match === null) {
+      if (host !== null) {
+        host.scrollLeft = 0;
+      }
+      return;
+    }
+    centerMatchInSnippetHost(host, match);
+  }, [hit.snippetBefore, hit.matchText, hit.snippetAfter, replacePreviewText, showReplacePreview]);
+
+  // Replace preview is consecutive match-old / match-new; wrap so the pair stays in view.
+  const nodes: ReactNode[] = [];
+  let replaceGroup: ReactNode[] | null = null;
+  let matchRefAttached = false;
+
+  for (let index = 0; index < parts.length; index++) {
+    const part = parts[index]!;
+    if (part.kind === "text") {
+      nodes.push(<span key={index}>{part.text}</span>);
+      continue;
+    }
+    if (part.kind === "match") {
+      nodes.push(
+        <mark
+          key={index}
+          ref={matchRefAttached ? undefined : setMatchRef}
+          className={searchMatchMarkClass}
+        >
+          {part.text}
+        </mark>,
+      );
+      matchRefAttached = true;
+      continue;
+    }
+    if (part.kind === "match-old" || part.kind === "match-new") {
+      if (replaceGroup === null) {
+        replaceGroup = [];
+      }
+      replaceGroup.push(
+        <span
+          key={index}
+          className={part.kind === "match-old" ? searchMatchOldClass : searchMatchNewClass}
+        >
+          {part.text}
+        </span>,
+      );
+      const next = parts[index + 1];
+      const moreReplace = next?.kind === "match-old" || next?.kind === "match-new";
+      if (!moreReplace) {
+        nodes.push(
+          <span key={`replace-${index}`} ref={matchRefAttached ? undefined : setMatchRef}>
+            {replaceGroup}
+          </span>,
         );
-      })}
-    </>
+        matchRefAttached = true;
+        replaceGroup = null;
+      }
+    }
+  }
+
+  return (
+    <span ref={hostRef} className={searchSnippetViewportClass}>
+      {nodes}
+    </span>
   );
 }
 
@@ -179,13 +273,11 @@ function SearchFlatRowView({
         onDoubleClick={() => onOpen(row.hit, "open")}
         onKeyDown={activateOnEnterSpace(() => onOpen(row.hit, "focus"))}
       >
-        <span className="min-w-0 flex-1 truncate font-mono text-ctp-text">
-          <SearchSnippetView
-            hit={row.hit}
-            replacePreviewText={replacePreviewText}
-            showReplacePreview={showReplacePreview}
-          />
-        </span>
+        <SearchSnippetView
+          hit={row.hit}
+          replacePreviewText={replacePreviewText}
+          showReplacePreview={showReplacePreview}
+        />
         <AppTooltip label="替换此处" side="left">
           <Button
             variant="ghost"
