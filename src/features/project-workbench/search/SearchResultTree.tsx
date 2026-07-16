@@ -48,11 +48,11 @@ const searchRowActionButtonClass = cn(
   controlFocusVisibleClass,
 );
 
-const searchMatchMarkClass = cn("rounded-sm bg-ctp-yellow/38 text-inherit");
+const searchMatchMarkClass = cn("bg-ctp-blue/38 text-inherit");
 
-const searchMatchOldClass = cn("rounded-sm bg-ctp-red/15 text-ctp-red line-through");
+const searchMatchOldClass = cn("bg-ctp-red/15 text-ctp-red line-through");
 
-const searchMatchNewClass = cn("rounded-sm bg-ctp-green/20 text-ctp-green");
+const searchMatchNewClass = cn("bg-ctp-green/20 text-ctp-green");
 
 type SearchSnippetViewProps = {
   hit: WorktreeSearchHit;
@@ -179,9 +179,7 @@ function SearchFlatRowView({
         onDoubleClick={() => onOpen(row.hit, "open")}
         onKeyDown={activateOnEnterSpace(() => onOpen(row.hit, "focus"))}
       >
-        <span className="icon-[codicon--list-flat] shrink-0 text-sm text-ctp-overlay0" />
         <span className="min-w-0 flex-1 truncate font-mono text-ctp-text">
-          <span className="mr-1 text-ctp-overlay0">{row.hit.line}:</span>
           <SearchSnippetView
             hit={row.hit}
             replacePreviewText={replacePreviewText}
