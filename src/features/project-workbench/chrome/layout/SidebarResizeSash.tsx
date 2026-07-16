@@ -10,7 +10,7 @@ const sashHostClass = cn(
 
 /** Full-height rail revealed on hover / active drag. */
 const sashRailClass = cn(
-  "absolute inset-y-1 left-1/2 w-1 -translate-x-1/2 rounded-full bg-ctp-mauve",
+  "absolute inset-y-0 left-1/2 w-1 -translate-x-1/2 rounded-full bg-ctp-mauve",
   "opacity-0 transition-opacity delay-0 duration-150",
   "group-hover:opacity-100 group-hover:delay-300",
   "group-focus-visible:opacity-100 group-focus-visible:delay-150",
