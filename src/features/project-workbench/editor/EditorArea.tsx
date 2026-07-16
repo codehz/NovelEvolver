@@ -2,8 +2,10 @@ import { AutoTransition } from "@codehz/auto-transition";
 import { useMolecule } from "bunshi/react";
 import { useAtomValue } from "jotai";
 
+import { cn } from "#app/shared/lib/ui/cn";
 import { TabBar } from "#workbench/editor/TabBar";
 
+import { editorBreadcrumbRowClass, editorPanelSurfaceClass } from "./editor-chrome";
 import { getWorkbenchEditorTabIconClass } from "./editor-contributions";
 import { EditorBreadcrumb } from "./EditorBreadcrumb";
 import { EditorPaneDeck } from "./EditorPaneDeck";
@@ -24,7 +26,7 @@ export function EditorArea() {
     <AutoTransition
       as="section"
       aria-label="编辑器"
-      className="relative flex min-h-0 min-w-0 flex-1 flex-col bg-app-background"
+      className={cn("relative flex min-h-0 min-w-0 flex-1 flex-col", editorPanelSurfaceClass)}
     >
       <TabBar
         tabs={tabs}
@@ -39,7 +41,7 @@ export function EditorArea() {
       />
 
       {activeTab && (
-        <div className="flex h-8 shrink-0 items-center gap-1 bg-app-background px-3 text-xs text-ctp-subtext0">
+        <div className={editorBreadcrumbRowClass}>
           <EditorBreadcrumb tab={activeTab} />
         </div>
       )}

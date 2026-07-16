@@ -1,3 +1,4 @@
+import { editorPaneDeckClass } from "./editor-chrome";
 import { EditorEmptyState } from "./EditorEmptyState";
 import { EditorTabPane } from "./EditorTabPane";
 import type { WorkbenchEditorTab } from "./state/types";
@@ -13,7 +14,7 @@ export function EditorPaneDeck({ tabs, activeTabId, transientTabId }: EditorPane
   const documentRuntime = useWorkbenchEditorDocumentRuntime();
 
   return (
-    <div key={+(tabs.length === 0)} className="flex min-h-0 min-w-0 flex-1 flex-col">
+    <div key={+(tabs.length === 0)} className={editorPaneDeckClass}>
       {tabs.length === 0 ? (
         <EditorEmptyState />
       ) : (

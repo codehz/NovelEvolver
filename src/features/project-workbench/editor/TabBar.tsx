@@ -4,6 +4,15 @@ import type { ReactNode } from "react";
 import { cn } from "#app/shared/lib/ui/cn";
 import { Button, SlotText } from "#app/shared/ui";
 
+import {
+  editorTabActiveClass,
+  editorTabBarClass,
+  editorTabClass,
+  editorTabCloseButtonActiveClass,
+  editorTabCloseButtonClass,
+  editorTabInactiveClass,
+} from "./editor-chrome";
+
 export type TabItem = {
   id: string;
   label: string;
@@ -50,7 +59,7 @@ export function TabBar<T extends TabItem>({
   return (
     <AutoTransition
       as="div"
-      className={cn("flex h-workbench-tab shrink-0 items-stretch bg-app-crust", className)}
+      className={cn(editorTabBarClass, className)}
       role="tablist"
       transition={tabTransition}
     >
@@ -60,12 +69,7 @@ export function TabBar<T extends TabItem>({
         return (
           <div
             key={tab.id}
-            className={cn(
-              "group relative flex max-w-xs cursor-pointer items-center pr-1.5 pl-3 text-sm",
-              active
-                ? "bg-app-background text-ctp-mauve before:absolute before:inset-x-0 before:top-0 before:h-px before:bg-ctp-mauve before:content-['']"
-                : "bg-app-surface text-ctp-subtext0",
-            )}
+            className={cn(editorTabClass, active ? editorTabActiveClass : editorTabInactiveClass)}
             role="tab"
             aria-selected={active}
             onClick={() => onActivate(tab.id)}
@@ -90,11 +94,7 @@ export function TabBar<T extends TabItem>({
                 variant="ghost"
                 size="icon-sm"
                 aria-label={`关闭 ${tab.label}`}
-                className={cn(
-                  "rounded p-0.5 text-[17px] text-ctp-mauve opacity-0 transition-opacity",
-                  "group-hover:opacity-100 hover:bg-ctp-text/8",
-                  active && "opacity-100",
-                )}
+                className={cn(editorTabCloseButtonClass, active && editorTabCloseButtonActiveClass)}
                 onClick={(event) => {
                   event.stopPropagation();
                   onClose(tab.id);
