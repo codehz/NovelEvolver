@@ -1,3 +1,5 @@
+import { useState } from "react";
+
 import { SidebarHeaderActions, SidebarHeaderActionButton, ErrorRetryView } from "#workbench/chrome";
 import { SearchQueryBar } from "#workbench/search/SearchQueryBar";
 import { SearchResultTree } from "#workbench/search/SearchResultTree";
@@ -24,6 +26,7 @@ export function SearchSidebarSection() {
     replaceOccurrence,
     canReplace,
   } = useWorktreeSearchState();
+  const [replaceExpanded, setReplaceExpanded] = useState(false);
 
   return (
     <>
@@ -41,10 +44,12 @@ export function SearchSidebarSection() {
           replaceText={replaceText}
           isRegex={isRegex}
           statsLine={statsLine}
+          replaceExpanded={replaceExpanded}
           replaceBusy={replaceBusy}
           canReplaceAll={canReplace}
           onQueryChange={setQuery}
           onReplaceTextChange={setReplaceText}
+          onReplaceExpandedChange={setReplaceExpanded}
           onToggleRegex={toggleRegex}
           onReplaceAll={replaceAll}
         />
@@ -55,6 +60,7 @@ export function SearchSidebarSection() {
             roots={roots}
             replacePreviewText={replaceText}
             showReplacePreview={showReplacePreview}
+            showReplaceActions={replaceExpanded}
             replaceEnabled={canReplace}
             onOpenHit={openHit}
             onReplaceInFile={replaceInFile}

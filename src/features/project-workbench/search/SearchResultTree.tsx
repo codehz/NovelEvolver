@@ -258,6 +258,7 @@ function SearchFlatRowView({
   replaceEnabled,
   replacePreviewText,
   showReplacePreview,
+  showReplaceActions,
   onToggleDomain,
   onToggleFolder,
   onToggleLeaf,
@@ -270,6 +271,7 @@ function SearchFlatRowView({
   replaceEnabled: boolean;
   replacePreviewText: string;
   showReplacePreview: boolean;
+  showReplaceActions: boolean;
   onToggleDomain: (id: string) => void;
   onToggleFolder: (key: string) => void;
   onToggleLeaf: (key: string) => void;
@@ -333,21 +335,23 @@ function SearchFlatRowView({
           replacePreviewText={replacePreviewText}
           showReplacePreview={showReplacePreview}
         />
-        <AppTooltip label="替换此处" side="left">
-          <Button
-            variant="ghost"
-            size="icon-sm"
-            className={searchRowActionButtonClass}
-            aria-label="替换此处"
-            disabled={!replaceEnabled}
-            onClick={(event) => {
-              event.stopPropagation();
-              onReplaceOccurrence(row.hit);
-            }}
-          >
-            <span className="icon-[codicon--replace] text-sm" />
-          </Button>
-        </AppTooltip>
+        {showReplaceActions ? (
+          <AppTooltip label="替换此处" side="left">
+            <Button
+              variant="ghost"
+              size="icon-sm"
+              className={searchRowActionButtonClass}
+              aria-label="替换此处"
+              disabled={!replaceEnabled}
+              onClick={(event) => {
+                event.stopPropagation();
+                onReplaceOccurrence(row.hit);
+              }}
+            >
+              <span className="icon-[codicon--replace] text-sm" />
+            </Button>
+          </AppTooltip>
+        ) : null}
       </TreeMotionRow>
     );
   }
@@ -396,7 +400,7 @@ function SearchFlatRowView({
       {row.showMatches ? (
         <span className={searchResultCountPillClass}>{leaf.hits.length}</span>
       ) : null}
-      {primaryHit !== undefined ? (
+      {showReplaceActions && primaryHit !== undefined ? (
         <AppTooltip label="在此文件中全部替换" side="left">
           <Button
             variant="ghost"
@@ -423,6 +427,8 @@ type SearchResultTreeProps = {
   roots: SearchResultDomainRoot[];
   replacePreviewText?: string;
   showReplacePreview?: boolean;
+  /** When true (replace panel open), row replace actions mount and appear on hover/focus. */
+  showReplaceActions?: boolean;
   replaceEnabled?: boolean;
   onOpenHit: (hit: WorktreeSearchHit, intent: "focus" | "open") => void;
   onReplaceInFile?: (hit: WorktreeSearchHit) => void;
@@ -435,6 +441,7 @@ export function SearchResultTree({
   roots,
   replacePreviewText = "",
   showReplacePreview = false,
+  showReplaceActions = false,
   replaceEnabled = false,
   onOpenHit,
   onReplaceInFile,
@@ -528,6 +535,7 @@ export function SearchResultTree({
             replaceEnabled={replaceEnabled}
             replacePreviewText={replacePreviewText}
             showReplacePreview={showReplacePreview}
+            showReplaceActions={showReplaceActions}
             onToggleDomain={onToggleDomain}
             onToggleFolder={onToggleFolder}
             onToggleLeaf={onToggleLeaf}

@@ -1,7 +1,7 @@
 import { Collapsible } from "@base-ui/react/collapsible";
 import { Toggle } from "@base-ui/react/toggle";
 import { motion } from "motion/react";
-import { useEffect, useId, useRef, useState } from "react";
+import { useEffect, useId, useRef } from "react";
 
 import { cn } from "#app/shared/lib/ui/cn";
 import {
@@ -67,10 +67,12 @@ type SearchQueryBarProps = {
   replaceText: string;
   isRegex: boolean;
   statsLine: string | null;
+  replaceExpanded: boolean;
   replaceBusy?: boolean;
   canReplaceAll?: boolean;
   onQueryChange: (value: string) => void;
   onReplaceTextChange: (value: string) => void;
+  onReplaceExpandedChange: (open: boolean) => void;
   onToggleRegex: () => void;
   onReplaceAll: () => void;
 };
@@ -80,14 +82,15 @@ export function SearchQueryBar({
   replaceText,
   isRegex,
   statsLine,
+  replaceExpanded,
   replaceBusy = false,
   canReplaceAll = false,
   onQueryChange,
   onReplaceTextChange,
+  onReplaceExpandedChange,
   onToggleRegex,
   onReplaceAll,
 }: SearchQueryBarProps) {
-  const [replaceExpanded, setReplaceExpanded] = useState(false);
   const replacePanelId = useId();
   const replaceInputRef = useRef<HTMLInputElement>(null);
   const lastStatsLineRef = useRef<string>("请输入搜索内容");
@@ -116,7 +119,7 @@ export function SearchQueryBar({
             aria-label={replaceExpanded ? "隐藏替换" : "显示替换"}
             aria-expanded={replaceExpanded}
             aria-controls={replacePanelId}
-            onClick={() => setReplaceExpanded((value) => !value)}
+            onClick={() => onReplaceExpandedChange(!replaceExpanded)}
           >
             <motion.span layout transition={replaceToggleLayoutTransition} className="inline-flex">
               <DisclosureChevron expanded={replaceExpanded} />
@@ -166,7 +169,7 @@ export function SearchQueryBar({
             ) : null}
           </div>
 
-          <Collapsible.Root open={replaceExpanded} onOpenChange={setReplaceExpanded}>
+          <Collapsible.Root open={replaceExpanded} onOpenChange={onReplaceExpandedChange}>
             <Collapsible.Panel id={replacePanelId} className={replacePanelClass}>
               <div className={replacePanelBodyClass}>
                 <label className="sr-only" htmlFor="workbench-replace-input">
