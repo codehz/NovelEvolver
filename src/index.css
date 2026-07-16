@@ -38,7 +38,7 @@
   --color-titlebar-border: var(--color-ctp-surface0);
   --color-titlebar-foreground: var(--color-ctp-text);
   --color-window-button-close-hover: var(--color-ctp-red);
-  --color-window-chrome: var(--color-ctp-crust);
+  --color-app-crust: var(--color-ctp-crust);
 
   --spacing-activity-bar: 3rem;
   --spacing-titlebar: 2.25rem;

@@ -50,7 +50,7 @@ export function TabBar<T extends TabItem>({
   return (
     <AutoTransition
       as="div"
-      className={cn("flex h-workbench-tab shrink-0 items-stretch bg-window-chrome", className)}
+      className={cn("flex h-workbench-tab shrink-0 items-stretch bg-app-crust", className)}
       role="tablist"
       transition={tabTransition}
     >

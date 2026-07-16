@@ -111,7 +111,7 @@ Write TypeScript with 2-space indentation, semicolons, and double quotes, matchi
 
 The renderer uses **Tailwind CSS v4** with theme tokens defined in `src/index.css` under `@theme` (for example `app-*`, `titlebar-*`, `badge-*` colors, spacing, and typography). When designing UI:
 
-- Prefer **existing shared tokens** for app-wide roles (`text-app-foreground`, `bg-window-chrome`, `bg-app-surface`, `h-titlebar`, `text-chat`, `text-chat-meta`, etc.) over raw hex values or one-off arbitrary sizes.
+- Prefer **existing shared tokens** for app-wide roles (`text-app-foreground`, `bg-app-crust`, `bg-app-surface`, `h-titlebar`, `text-chat`, `text-chat-meta`, etc.) over raw hex values or one-off arbitrary sizes.
 - Do **not** add a new semantic **color** token unless that role is shared across multiple components or needs centralized theme control. If a color choice is local to one component or one narrow variant, use the underlying palette/theme utility directly instead of inventing a new alias.
 - **Do not add new ad-hoc CSS classes** in stylesheets for layout or appearance; express styling with Tailwind utilities wired to `@theme` tokens.
 - **Exception:** minimal global or component-scoped CSS is allowed only when integrating a **third-party component library** that cannot be styled via tokens/utilities, or for platform hooks (e.g. `-webkit-app-region`) already centralized in `index.css`.

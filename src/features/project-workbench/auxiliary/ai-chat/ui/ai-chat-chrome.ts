@@ -42,11 +42,11 @@ export const assistantMessageModelLabelClass = cn(
 export const assistantMessageBodyClass = cn(
   "text-chat leading-5 text-app-foreground",
   "[&_a]:text-ctp-blue [&_a]:underline [&_a]:underline-offset-2",
-  "[&_code]:rounded-sm [&_code]:bg-window-chrome [&_code]:px-1.5 [&_code]:py-0.5 [&_code]:font-mono [&_code]:text-chat-meta",
+  "[&_code]:rounded-sm [&_code]:bg-app-crust [&_code]:px-1.5 [&_code]:py-0.5 [&_code]:font-mono [&_code]:text-chat-meta",
   "**:data-[streamdown='blockquote']:border-ctp-blue/40 **:data-[streamdown='blockquote']:text-app-muted",
   "**:data-[streamdown='code-block']:border-titlebar-border **:data-[streamdown='code-block']:bg-app-surface",
   "**:data-[streamdown='code-block-actions']:border-titlebar-border **:data-[streamdown='code-block-actions']:bg-app-surface/80",
-  "**:data-[streamdown='code-block-body']:border-titlebar-border **:data-[streamdown='code-block-body']:bg-window-chrome",
+  "**:data-[streamdown='code-block-body']:border-titlebar-border **:data-[streamdown='code-block-body']:bg-app-crust",
   "**:data-[streamdown='heading-1']:text-base",
   "**:data-[streamdown='heading-1']:text-ctp-mauve **:data-[streamdown='heading-2']:text-ctp-mauve **:data-[streamdown='heading-3']:text-ctp-mauve",
   "**:data-[streamdown='inline-code']:text-ctp-green",
@@ -81,7 +81,7 @@ export const reasoningBodyClass = cn(
 );
 export const userMessageRowClass = cn("flex justify-end");
 export const userMessageBubbleClass = cn(
-  "max-w-[88%] rounded-lg bg-window-chrome px-3 py-2 text-chat leading-5 text-app-foreground shadow-[inset_0_1px_0_0_color-mix(in_srgb,var(--color-ctp-surface0)_24%,transparent)]",
+  "max-w-[88%] rounded-lg bg-app-crust px-3 py-2 text-chat leading-5 text-app-foreground shadow-[inset_0_1px_0_0_color-mix(in_srgb,var(--color-ctp-surface0)_24%,transparent)]",
 );
 /** Slash chip inside a sent user bubble (matches composer prompt-chip semantics). */
 export const userSlashChipClass = cn(
@@ -119,14 +119,14 @@ export const modelSelectorButtonClass = cn(
   "inline-flex h-6 min-w-0 items-center gap-1 rounded-sm px-1 text-2xs text-ctp-mauve transition-colors",
   panelHoverClass,
   controlFocusVisibleClass,
-  "focus-visible:bg-window-chrome",
+  "focus-visible:bg-app-crust",
   controlDisabledSoftClass,
 );
 export const agentSelectorButtonClass = cn(
   "inline-flex h-6 min-w-0 items-center gap-1 rounded-sm px-1 text-2xs text-ctp-mauve transition-colors",
   panelHoverClass,
   controlFocusVisibleClass,
-  "focus-visible:bg-window-chrome",
+  "focus-visible:bg-app-crust",
   controlDisabledSoftClass,
 );
 export const modelSelectorLabelClass = cn("min-w-0 truncate");

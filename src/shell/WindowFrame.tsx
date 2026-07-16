@@ -161,7 +161,7 @@ type WindowFrameProps = { children: ReactNode };
 
 export function WindowFrame({ children }: WindowFrameProps) {
   return (
-    <main className={cn("flex min-h-0 flex-1 flex-col bg-window-chrome text-app-foreground")}>
+    <main className={cn("flex min-h-0 flex-1 flex-col bg-app-background text-app-foreground")}>
       <TitleBar />
       <div className="flex min-h-0 min-w-0 flex-1 flex-col bg-app-background">{children}</div>
       <StatusBar />

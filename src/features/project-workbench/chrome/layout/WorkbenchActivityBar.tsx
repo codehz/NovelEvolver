@@ -72,7 +72,7 @@ export const WorkbenchActivityBar = memo(function WorkbenchActivityBar({
   return (
     <nav
       aria-label="活动栏"
-      className="relative z-30 flex h-full min-h-0 w-activity-bar shrink-0 flex-col bg-window-chrome"
+      className="relative z-30 flex h-full min-h-0 w-activity-bar shrink-0 flex-col bg-app-background"
     >
       <div className="flex flex-col">
         {items.map((item) => {
