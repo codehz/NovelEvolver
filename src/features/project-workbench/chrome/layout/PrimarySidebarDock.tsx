@@ -14,7 +14,8 @@ import { WORKBENCH_SIDEBAR_INSET, sidebarChromeOuterSize } from "./workbench-lay
 
 const primarySidebarDockMotionClass = cn("duration-200 ease-out");
 
-const primarySidebarDockHostClass = cn("relative h-full min-h-0 shrink-0 overflow-visible");
+/** Above the editor flex sibling so fade-out chrome is not painted under the editor. Below activity bar `z-30`. */
+const primarySidebarDockHostClass = cn("relative z-20 h-full min-h-0 shrink-0 overflow-visible");
 
 const primarySidebarDockSpacerClass = cn(
   "pointer-events-none h-full min-h-0 shrink-0",
@@ -24,7 +25,7 @@ const primarySidebarDockSpacerClass = cn(
 
 /** Absolute chrome layer: panel + sash share one opacity transition. */
 const primarySidebarDockChromeClass = cn(
-  "absolute top-0 bottom-0 left-0 z-0 overflow-visible",
+  "absolute top-0 bottom-0 left-0 overflow-visible",
   "transition-opacity will-change-[opacity]",
   primarySidebarDockMotionClass,
 );
