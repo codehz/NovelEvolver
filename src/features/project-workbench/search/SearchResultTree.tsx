@@ -54,15 +54,54 @@ const searchMatchOldClass = cn("bg-ctp-red/15 text-ctp-red line-through");
 
 const searchMatchNewClass = cn("bg-ctp-green/20 text-ctp-green");
 
+/** Soft edge fade width; also used as the match-centering content inset when overflowing. */
+const SNIPPET_EDGE_FADE_PX = 12;
+
 /**
- * Horizontal window: clip overflow, soft edge fade, no scrollbar.
- * Fade width matches horizontal padding; negative margin keeps the flex layout
- * slot width unchanged so the mask softens outside the text, not over it.
+ * Horizontal snippet window: clip overflow, no scrollbar, rows share the same text origin
+ * (no negative-margin gutter). Edge masks are toggled via `data-edge` from scroll position
+ * so the start of a line is not faded when `scrollLeft === 0`.
+ *
+ * Note: CSS `scroll-state` container queries cannot style the query container itself, and
+ * `mix-blend-mode: destination-out` is unavailable — so masks stay on this host and
+ * `data-edge` is synced from scroll/resize instead.
  */
 const searchSnippetViewportClass = cn(
-  "-mx-3 min-w-0 flex-1 overflow-x-hidden px-3 font-mono whitespace-nowrap text-ctp-text",
-  "mask-[linear-gradient(to_right,transparent,black_0.75rem,black_calc(100%-0.75rem),transparent)]",
+  "min-w-0 flex-1 scrollbar-none overflow-x-auto font-mono whitespace-nowrap text-ctp-text",
+  "data-[edge=right]:mask-[linear-gradient(to_right,black,black_calc(100%-0.75rem),transparent)]",
+  "data-[edge=left]:mask-[linear-gradient(to_right,transparent,black_0.75rem,black)]",
+  "data-[edge=both]:mask-[linear-gradient(to_right,transparent,black_0.75rem,black_calc(100%-0.75rem),transparent)]",
 );
+
+type SnippetEdgeMask = "none" | "left" | "right" | "both";
+
+function snippetEdgeMask(host: HTMLElement): SnippetEdgeMask {
+  const maxScroll = Math.max(0, host.scrollWidth - host.clientWidth);
+  if (maxScroll <= 0) {
+    return "none";
+  }
+  const atStart = host.scrollLeft <= 0.5;
+  const atEnd = host.scrollLeft >= maxScroll - 0.5;
+  if (!atStart && !atEnd) {
+    return "both";
+  }
+  if (!atStart) {
+    return "left";
+  }
+  if (!atEnd) {
+    return "right";
+  }
+  return "none";
+}
+
+function syncSnippetEdgeMask(host: HTMLElement): void {
+  const edge = snippetEdgeMask(host);
+  if (edge === "none") {
+    delete host.dataset.edge;
+    return;
+  }
+  host.dataset.edge = edge;
+}
 
 /**
  * Center (or pin-start) a match element inside a horizontal overflow host.
@@ -81,11 +120,9 @@ function centerMatchInSnippetHost(host: HTMLElement, match: HTMLElement): void {
     return;
   }
 
-  const padLeft = Number.parseFloat(getComputedStyle(host).paddingLeft) || 0;
-  const padRight = Number.parseFloat(getComputedStyle(host).paddingRight) || 0;
-  // Content window between fade gutters (padding).
-  const contentLeft = hostRect.left + padLeft;
-  const contentWidth = hostRect.width - padLeft - padRight;
+  // Keep the match inside the non-faded content window when edges can soft-mask.
+  const contentLeft = hostRect.left + SNIPPET_EDGE_FADE_PX;
+  const contentWidth = hostRect.width - SNIPPET_EDGE_FADE_PX * 2;
   if (contentWidth <= 0) {
     return;
   }
@@ -130,14 +167,32 @@ function SearchSnippetView({
 
   useLayoutEffect(() => {
     const host = hostRef.current;
-    const match = matchRef.current;
-    if (host === null || match === null) {
-      if (host !== null) {
-        host.scrollLeft = 0;
-      }
+    if (host === null) {
       return;
     }
-    centerMatchInSnippetHost(host, match);
+
+    const match = matchRef.current;
+    if (match === null) {
+      host.scrollLeft = 0;
+    } else {
+      centerMatchInSnippetHost(host, match);
+    }
+    syncSnippetEdgeMask(host);
+
+    const onScroll = () => {
+      syncSnippetEdgeMask(host);
+    };
+    host.addEventListener("scroll", onScroll, { passive: true });
+
+    const resizeObserver = new ResizeObserver(() => {
+      syncSnippetEdgeMask(host);
+    });
+    resizeObserver.observe(host);
+
+    return () => {
+      host.removeEventListener("scroll", onScroll);
+      resizeObserver.disconnect();
+    };
   }, [hit.snippetBefore, hit.matchText, hit.snippetAfter, replacePreviewText, showReplacePreview]);
 
   // Replace preview is consecutive match-old / match-new; wrap so the pair stays in view.
