@@ -55,10 +55,10 @@ export function Tab({
       {icon ?? (
         <span
           aria-hidden="true"
-          className={cn("icon-[codicon--file-text]", "mr-2 shrink-0 text-base text-ctp-blue")}
+          className={cn("icon-[codicon--file-text]", "mr-1.5 shrink-0 text-base text-ctp-blue")}
         />
       )}
-      <SlotText className={cn("truncate pr-1.5", transient && "italic")} text={label} />
+      <SlotText className={cn("truncate pr-1", transient && "italic")} text={label} />
       {onClose && (
         <Button
           variant="ghost"

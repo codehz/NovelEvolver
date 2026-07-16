@@ -16,7 +16,7 @@ export const editorTabBarClass = cn(
 
 /** Shared geometry for an editor tab chip. */
 export const editorTabClass = cn(
-  "group relative flex h-7 max-w-xs shrink-0 cursor-pointer items-center rounded-md pr-1 pl-2.5 text-sm",
+  "group relative flex h-6 max-w-xs shrink-0 cursor-pointer items-center rounded-md pr-0.5 pl-1.5 text-xs",
   controlFocusVisibleClass,
 );
 
@@ -27,7 +27,7 @@ export const editorTabInactiveClass = cn(
 );
 
 export const editorTabCloseButtonClass = cn(
-  "rounded p-0.5 text-[15px] text-ctp-overlay1 opacity-0 transition-opacity",
+  "size-5 rounded p-0 text-[15px] text-ctp-overlay1 opacity-0 transition-opacity",
   "group-hover:opacity-100 hover:text-app-foreground",
   iconButtonHoverClass,
 );

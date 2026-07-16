@@ -7,7 +7,7 @@ import type { WorkbenchEditorTargetContribution } from "./types";
 export const resourceEditorContribution: WorkbenchEditorTargetContribution = {
   targetKind: "resource",
   tabKind: "resource",
-  iconClass: cn(contentFileLeafIconClass("file"), "mr-2"),
+  iconClass: cn(contentFileLeafIconClass("file"), "mr-1.5"),
   label: () => "资源文件",
   notificationSource: "资源库",
   getTargetKey: (target) =>

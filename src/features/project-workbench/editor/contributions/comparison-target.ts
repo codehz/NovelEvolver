@@ -36,7 +36,7 @@ async function readComparisonTargetCurrentState(
 export const comparisonEditorContribution: WorkbenchEditorTargetContribution = {
   targetKind: "history-entry",
   tabKind: "comparison",
-  iconClass: cn("icon-[codicon--diff]", "mr-2 text-ctp-green", contentTreeIconLayoutClass),
+  iconClass: cn("icon-[codicon--diff]", "mr-1.5 text-ctp-green", contentTreeIconLayoutClass),
   label: (target) => {
     if (target.kind === "history-entry") {
       return `预览：${target.label}`;

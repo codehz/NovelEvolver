@@ -7,7 +7,7 @@ import type { WorkbenchEditorTargetContribution } from "./types";
 export const manuscriptEditorContribution: WorkbenchEditorTargetContribution = {
   targetKind: "manuscript",
   tabKind: "manuscript",
-  iconClass: cn(contentFileLeafIconClass("chapter"), "mr-2"),
+  iconClass: cn(contentFileLeafIconClass("chapter"), "mr-1.5"),
   label: () => "章节",
   notificationSource: "正文",
   getTargetKey: (target) =>
