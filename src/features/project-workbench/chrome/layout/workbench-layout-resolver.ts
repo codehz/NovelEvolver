@@ -7,15 +7,22 @@ export const CLOSE_SIDEBAR_THRESHOLD = 160;
 export const MIN_EDITOR_WIDTH = 520;
 /**
  * Horizontal chrome unit for modern UI:
- * - sash between sidebar and editor (in-flow resize handle)
+ * - sash between sidebar and editor (owned by the dock chrome layer)
  * - auxiliary right edge inset from the window
  */
 export const WORKBENCH_SIDEBAR_INSET = 8;
 
-/** Dock host spacer only. Sash is a separate flex sibling, not part of the dock. */
+/**
+ * In-flow dock spacer width when visible.
+ * Sash lives inside the dock chrome layer (opacity-animated with the panel), so it
+ * is reserved here rather than as a separate flex sibling.
+ * - primary: panel + sash
+ * - auxiliary: sash + panel + right window edge inset
+ */
 export function sidebarChromeOuterSize(panelWidth: number, side: "primary" | "auxiliary") {
-  // primary: panel flush; auxiliary: panel + right window edge inset
-  return side === "primary" ? panelWidth : panelWidth + WORKBENCH_SIDEBAR_INSET;
+  return side === "primary"
+    ? panelWidth + WORKBENCH_SIDEBAR_INSET
+    : panelWidth + WORKBENCH_SIDEBAR_INSET * 2;
 }
 
 /** Extra width reserved beyond panel when a sidebar is visible (sash [+ right edge]). */

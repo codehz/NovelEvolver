@@ -6,7 +6,6 @@ import type { WorkbenchPrimaryView } from "../types";
 import { AuxiliarySidebarDock } from "./AuxiliarySidebarDock";
 import { PrimarySidebarDock } from "./PrimarySidebarDock";
 import { PrimarySidebarViewStack } from "./PrimarySidebarViewStack";
-import { SidebarResizeSash } from "./SidebarResizeSash";
 import { useMeasuredElementWidth } from "./use-measured-element-width";
 import { useWorkbenchActiveView } from "./use-workbench-active-view";
 import { useWorkbenchLayoutPreferences } from "./use-workbench-layout-preferences";
@@ -103,37 +102,27 @@ export function WorkbenchLayout({
         />
         <PrimarySidebarDock
           panelWidth={primary.panelWidth}
+          resizeActive={activeResizeSide === "primary"}
           resizeTransitionDisabled={activeResizeSide === "primary"}
           spacerWidth={primary.spacerWidth}
           title={activePrimaryView.title}
           visible={primary.visible}
+          onResizePointerDown={(event) => {
+            startResizeDrag("primary", event);
+          }}
         >
           <PrimarySidebarViewStack activeViewId={activeViewId} views={primaryViews} />
         </PrimarySidebarDock>
-        {primary.visible ? (
-          <SidebarResizeSash
-            active={activeResizeSide === "primary"}
-            ariaLabel="调整主侧边栏宽度"
-            onPointerDown={(event) => {
-              startResizeDrag("primary", event);
-            }}
-          />
-        ) : null}
         <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">{editor}</div>
-        {auxiliaryChrome.visible ? (
-          <SidebarResizeSash
-            active={activeResizeSide === "auxiliary"}
-            ariaLabel="调整辅助侧边栏宽度"
-            onPointerDown={(event) => {
-              startResizeDrag("auxiliary", event);
-            }}
-          />
-        ) : null}
         <AuxiliarySidebarDock
           panelWidth={auxiliaryChrome.panelWidth}
+          resizeActive={activeResizeSide === "auxiliary"}
           resizeTransitionDisabled={activeResizeSide === "auxiliary"}
           spacerWidth={auxiliaryChrome.spacerWidth}
           visible={auxiliaryChrome.visible}
+          onResizePointerDown={(event) => {
+            startResizeDrag("auxiliary", event);
+          }}
         >
           {auxiliary}
         </AuxiliarySidebarDock>
