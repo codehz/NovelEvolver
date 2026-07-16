@@ -1,13 +1,15 @@
 import { getOriginalDoc, originalDocChangeEffect, unifiedMergeView } from "@codemirror/merge";
 import { ChangeSet, Compartment, EditorState, type Extension } from "@codemirror/state";
-import { drawSelection, EditorView } from "@codemirror/view";
+import { drawSelection, EditorView, keymap } from "@codemirror/view";
 import { useEffect, useLayoutEffect, useRef } from "react";
 
 import { cn } from "#app/shared/lib/ui/cn";
 import { editorHostClass } from "#workbench/editor/PlainTextEditor/codemirror-theme";
 import { plainTextEditorViewExtensions } from "#workbench/editor/PlainTextEditor/codemirror-view-extensions";
+import { editorFindExtensions } from "#workbench/editor/PlainTextEditor/editor-find-extensions";
+import { useEditorFind } from "#workbench/editor/PlainTextEditor/use-editor-find";
 
-const textComparisonRootClass = cn("min-h-0 min-w-0 flex-1");
+const textComparisonRootClass = cn("relative min-h-0 min-w-0 flex-1");
 
 const textComparisonTheme = EditorView.theme(
   {
@@ -108,6 +110,9 @@ export function TextComparisonEditor({
   const onRestoreHunkRef = useRef(onRestoreHunk);
   const restoreInFlightRef = useRef(false);
   const suppressOnChangeRef = useRef(false);
+  const find = useEditorFind({ viewRef, allowReplace: editable });
+  const findRef = useRef(find);
+  findRef.current = find;
 
   onChangeRef.current = onChange;
   onRestoreHunkRef.current = onRestoreHunk;
@@ -122,8 +127,14 @@ export function TextComparisonEditor({
       ...plainTextEditorViewExtensions,
       drawSelection(),
       textComparisonTheme,
+      ...editorFindExtensions,
+      keymap.of([...findRef.current.keymap]),
       editableCompartmentRef.current.of(editableStateExtensions(initialEditableRef.current)),
       EditorView.updateListener.of((update) => {
+        if (findRef.current.isOpen() && (update.docChanged || update.selectionSet)) {
+          findRef.current.refreshStats();
+        }
+
         if (!update.docChanged) {
           return;
         }
@@ -208,6 +219,7 @@ export function TextComparisonEditor({
     viewRef.current = view;
 
     return () => {
+      findRef.current.closeFind();
       view.destroy();
       viewRef.current = null;
     };
@@ -290,6 +302,7 @@ export function TextComparisonEditor({
   return (
     <div className={textComparisonRootClass}>
       <div ref={hostRef} className={editorHostClass} />
+      {find.overlay}
     </div>
   );
 }

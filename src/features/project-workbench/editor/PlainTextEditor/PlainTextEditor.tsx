@@ -1,12 +1,5 @@
-import { AutoTransition, effects, PresenceHost, preset } from "@codehz/auto-transition";
+import { PresenceHost } from "@codehz/auto-transition";
 import { defaultKeymap, history, historyKeymap } from "@codemirror/commands";
-import {
-  findNext,
-  findPrevious,
-  getSearchQuery,
-  search,
-  selectNextOccurrence,
-} from "@codemirror/search";
 import { Compartment, EditorState, type Extension } from "@codemirror/state";
 import {
   drawSelection,
@@ -15,7 +8,7 @@ import {
   highlightActiveLineGutter,
   keymap,
 } from "@codemirror/view";
-import { useCallback, useImperativeHandle, useLayoutEffect, useRef, useState } from "react";
+import { useCallback, useImperativeHandle, useLayoutEffect, useRef } from "react";
 
 import { cn } from "#app/shared/lib/ui/cn";
 
@@ -27,24 +20,11 @@ import {
 } from "./codemirror-selection";
 import { editorHostClass } from "./codemirror-theme";
 import { plainTextEditorViewExtensions } from "./codemirror-view-extensions";
-import { clearEditorFindQuery, getEditorFindSeedFromSelection } from "./editor-find";
-import { editorFindHighlight } from "./editor-find-highlight";
-import { EditorFindBar } from "./EditorFindBar";
+import { editorFindExtensions } from "./editor-find-extensions";
 import type { PlainTextEditorCaretPosition, PlainTextEditorSelectionSnapshot } from "./types";
+import { useEditorFind } from "./use-editor-find";
 
 const editorRootClass = cn("relative min-h-0 min-w-0 flex-1");
-
-/** Matches workbench overlay ease (`overlayMotionClass`). */
-const editorFindBarEase = "cubic-bezier(0.33, 1, 0.68, 1)";
-
-const editorFindBarTransition = preset({
-  enter: [effects.fade(0), effects.translate({ x: 0, y: -6 }), effects.scale(0.98)],
-  exit: [effects.fade(0), effects.translate({ x: 0, y: -4 }), effects.scale(0.98)],
-  timing: {
-    enter: { duration: 220, easing: editorFindBarEase },
-    exit: { duration: 160, easing: editorFindBarEase },
-  },
-});
 
 export type PlainTextEditorApplySelectionOptions = {
   focus?: boolean;
@@ -107,17 +87,9 @@ export function PlainTextEditor({
   const suppressOnChangeRef = useRef(false);
   const activeLineCollapsedRef = useRef<boolean | null>(null);
   const activeLineCompartmentRef = useRef(new Compartment());
-  const [findOpen, setFindOpen] = useState(false);
-  const [findReplaceExpanded, setFindReplaceExpanded] = useState(false);
-  const [findSeed, setFindSeed] = useState("");
-  const [findSession, setFindSession] = useState(0);
-  const [findView, setFindView] = useState<EditorView | null>(null);
-  const findOpenRef = useRef(false);
-  const findStatsRefreshRef = useRef<(() => void) | null>(null);
-  const openFindRef = useRef((withReplace: boolean) => {
-    void withReplace;
-  });
-  const closeFindRef = useRef(() => {});
+  const find = useEditorFind({ viewRef, allowReplace: true });
+  const findRef = useRef(find);
+  findRef.current = find;
 
   selectionSnapshotRef.current = selectionSnapshot;
   onChangeRef.current = onChange;
@@ -125,28 +97,6 @@ export function PlainTextEditor({
   onSelectionSnapshotChangeRef.current = onSelectionSnapshotChange;
   highlightCurrentLineRef.current = highlightCurrentLine;
   ariaLabelRef.current = ariaLabel;
-  findOpenRef.current = findOpen;
-
-  openFindRef.current = (withReplace: boolean) => {
-    const view = viewRef.current;
-    if (!view) {
-      return;
-    }
-    setFindSeed(getEditorFindSeedFromSelection(view.state));
-    setFindReplaceExpanded(withReplace);
-    setFindView(view);
-    setFindSession((session) => session + 1);
-    setFindOpen(true);
-  };
-
-  closeFindRef.current = () => {
-    const view = viewRef.current;
-    if (view) {
-      clearEditorFindQuery(view);
-    }
-    setFindOpen(false);
-    setFindReplaceExpanded(false);
-  };
 
   const syncActiveLineHighlight = useCallback(
     (view: EditorView, snapshot: PlainTextEditorSelectionSnapshot) => {
@@ -194,76 +144,12 @@ export function PlainTextEditor({
   // - 返回 cleanup 后，卸载时 React 跑 cleanup，而不是再以 null 调用 ref
   const setHostNode = useCallback((host: HTMLDivElement) => {
     const activeLineCompartment = activeLineCompartmentRef.current;
-    const runFindStep = (view: EditorView, direction: "next" | "previous"): boolean => {
-      const query = getSearchQuery(view.state);
-      if (!query.valid || query.search === "") {
-        openFindRef.current(false);
-        return true;
-      }
-      const ran = direction === "next" ? findNext(view) : findPrevious(view);
-      if (ran && findOpenRef.current) {
-        findStatsRefreshRef.current?.();
-      }
-      return ran;
-    };
     const extensions: Extension[] = [
       ...plainTextEditorViewExtensions,
       history(),
       drawSelection(),
-      search({ top: true }),
-      editorFindHighlight,
-      keymap.of([
-        {
-          key: "Mod-f",
-          preventDefault: true,
-          run: () => {
-            openFindRef.current(false);
-            return true;
-          },
-        },
-        {
-          key: "Mod-h",
-          preventDefault: true,
-          run: () => {
-            openFindRef.current(true);
-            return true;
-          },
-        },
-        {
-          key: "Mod-Alt-f",
-          preventDefault: true,
-          run: () => {
-            openFindRef.current(true);
-            return true;
-          },
-        },
-        {
-          key: "Escape",
-          run: (view) => {
-            if (!findOpenRef.current) {
-              return false;
-            }
-            closeFindRef.current();
-            view.focus();
-            return true;
-          },
-        },
-        {
-          key: "Mod-g",
-          preventDefault: true,
-          run: (view) => runFindStep(view, "next"),
-          shift: (view) => runFindStep(view, "previous"),
-        },
-        {
-          key: "F3",
-          preventDefault: true,
-          run: (view) => runFindStep(view, "next"),
-          shift: (view) => runFindStep(view, "previous"),
-        },
-        { key: "Mod-d", run: selectNextOccurrence, preventDefault: true },
-        ...defaultKeymap,
-        ...historyKeymap,
-      ]),
+      ...editorFindExtensions,
+      keymap.of([...findRef.current.keymap, ...defaultKeymap, ...historyKeymap]),
       activeLineCompartment.of(activeLineExtensions(highlightCurrentLineRef.current, true)),
       EditorView.updateListener.of((update) => {
         if (update.docChanged) {
@@ -276,8 +162,8 @@ export function PlainTextEditor({
         if (update.docChanged || update.selectionSet || update.focusChanged) {
           publishSelectionStateRef.current(update.view);
         }
-        if (findOpenRef.current && (update.docChanged || update.selectionSet)) {
-          findStatsRefreshRef.current?.();
+        if (findRef.current.isOpen() && (update.docChanged || update.selectionSet)) {
+          findRef.current.refreshStats();
         }
       }),
       EditorView.contentAttributes.of({
@@ -400,28 +286,7 @@ export function PlainTextEditor({
   return (
     <div className={editorRootClass}>
       <PresenceHost ref={setHostNode} className={editorHostClass} />
-      <AutoTransition
-        as="div"
-        className="contents"
-        transition={editorFindBarTransition}
-        exitLayout="absolute"
-      >
-        {findOpen && findView ? (
-          <EditorFindBar
-            key={findSession}
-            view={findView}
-            replaceExpanded={findReplaceExpanded}
-            initialQuery={findSeed}
-            onReplaceExpandedChange={setFindReplaceExpanded}
-            onClose={() => {
-              closeFindRef.current();
-            }}
-            onBindRefresh={(refresh) => {
-              findStatsRefreshRef.current = refresh;
-            }}
-          />
-        ) : null}
-      </AutoTransition>
+      {find.overlay}
     </div>
   );
 }

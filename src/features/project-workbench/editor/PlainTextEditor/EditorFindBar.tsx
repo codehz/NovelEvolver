@@ -43,6 +43,8 @@ type EditorFindBarProps = {
   view: EditorView;
   replaceExpanded: boolean;
   initialQuery: string;
+  /** When false, hide replace disclosure / panel (read-only hosts). */
+  allowReplace?: boolean;
   onReplaceExpandedChange: (open: boolean) => void;
   onClose: () => void;
   /** Parent binds this so CM updateListener can refresh match stats. */
@@ -53,6 +55,7 @@ export function EditorFindBar({
   view,
   replaceExpanded,
   initialQuery,
+  allowReplace = true,
   onReplaceExpandedChange,
   onClose,
   onBindRefresh,
@@ -171,24 +174,26 @@ export function EditorFindBar({
       }}
     >
       <div className={editorFindRowClass}>
-        <AppTooltip label={replaceExpanded ? "隐藏替换" : "显示替换"} side="bottom">
-          <button
-            type="button"
-            className={editorFindReplaceToggleClass}
-            aria-label={replaceExpanded ? "隐藏替换" : "显示替换"}
-            aria-expanded={replaceExpanded}
-            aria-controls={replacePanelId}
-            onClick={() => {
-              const next = !replaceExpanded;
-              onReplaceExpandedChange(next);
-              if (next) {
-                queueMicrotaskFocus(replaceInputRef);
-              }
-            }}
-          >
-            <DisclosureChevron expanded={replaceExpanded} />
-          </button>
-        </AppTooltip>
+        {allowReplace ? (
+          <AppTooltip label={replaceExpanded ? "隐藏替换" : "显示替换"} side="bottom">
+            <button
+              type="button"
+              className={editorFindReplaceToggleClass}
+              aria-label={replaceExpanded ? "隐藏替换" : "显示替换"}
+              aria-expanded={replaceExpanded}
+              aria-controls={replacePanelId}
+              onClick={() => {
+                const next = !replaceExpanded;
+                onReplaceExpandedChange(next);
+                if (next) {
+                  queueMicrotaskFocus(replaceInputRef);
+                }
+              }}
+            >
+              <DisclosureChevron expanded={replaceExpanded} />
+            </button>
+          </AppTooltip>
+        ) : null}
 
         <div className="flex min-w-0 flex-1 flex-col">
           <div className={editorFindRowClass}>
@@ -302,66 +307,68 @@ export function EditorFindBar({
             </AppTooltip>
           </div>
 
-          <Collapsible.Root open={replaceExpanded} onOpenChange={onReplaceExpandedChange}>
-            <Collapsible.Panel id={replacePanelId} className={replacePanelClass}>
-              <div className={replacePanelBodyClass}>
-                <label className="sr-only" htmlFor={replaceInputId}>
-                  替换
-                </label>
-                <div className={cn(editorFindFieldRowClass, "min-w-0 flex-1")}>
-                  <input
-                    ref={replaceInputRef}
-                    id={replaceInputId}
-                    type="text"
-                    autoComplete="off"
-                    spellCheck={false}
-                    className={editorFindInputClass}
-                    value={replaceText}
-                    placeholder="替换"
-                    onChange={(event) => handleReplaceTextChange(event.target.value)}
-                    onKeyDown={(event) => {
-                      if (event.key === "Enter") {
-                        event.preventDefault();
-                        if (event.ctrlKey || event.metaKey) {
-                          if (canReplace) {
-                            handleReplaceAll();
+          {allowReplace ? (
+            <Collapsible.Root open={replaceExpanded} onOpenChange={onReplaceExpandedChange}>
+              <Collapsible.Panel id={replacePanelId} className={replacePanelClass}>
+                <div className={replacePanelBodyClass}>
+                  <label className="sr-only" htmlFor={replaceInputId}>
+                    替换
+                  </label>
+                  <div className={cn(editorFindFieldRowClass, "min-w-0 flex-1")}>
+                    <input
+                      ref={replaceInputRef}
+                      id={replaceInputId}
+                      type="text"
+                      autoComplete="off"
+                      spellCheck={false}
+                      className={editorFindInputClass}
+                      value={replaceText}
+                      placeholder="替换"
+                      onChange={(event) => handleReplaceTextChange(event.target.value)}
+                      onKeyDown={(event) => {
+                        if (event.key === "Enter") {
+                          event.preventDefault();
+                          if (event.ctrlKey || event.metaKey) {
+                            if (canReplace) {
+                              handleReplaceAll();
+                            }
+                            return;
                           }
-                          return;
+                          if (canReplace) {
+                            handleReplaceNext();
+                          }
                         }
-                        if (canReplace) {
-                          handleReplaceNext();
-                        }
-                      }
-                    }}
-                  />
+                      }}
+                    />
+                  </div>
+                  <AppTooltip label="替换" side="bottom">
+                    <Button
+                      variant="ghost"
+                      size="icon-sm"
+                      className={editorFindIconButtonClass}
+                      aria-label="替换当前匹配"
+                      disabled={!canReplace}
+                      onClick={handleReplaceNext}
+                    >
+                      <span className="icon-[codicon--replace] text-sm" />
+                    </Button>
+                  </AppTooltip>
+                  <AppTooltip label="全部替换" side="bottom">
+                    <Button
+                      variant="ghost"
+                      size="icon-sm"
+                      className={editorFindIconButtonClass}
+                      aria-label="全部替换"
+                      disabled={!canReplace}
+                      onClick={handleReplaceAll}
+                    >
+                      <span className="icon-[codicon--replace-all] text-sm" />
+                    </Button>
+                  </AppTooltip>
                 </div>
-                <AppTooltip label="替换" side="bottom">
-                  <Button
-                    variant="ghost"
-                    size="icon-sm"
-                    className={editorFindIconButtonClass}
-                    aria-label="替换当前匹配"
-                    disabled={!canReplace}
-                    onClick={handleReplaceNext}
-                  >
-                    <span className="icon-[codicon--replace] text-sm" />
-                  </Button>
-                </AppTooltip>
-                <AppTooltip label="全部替换" side="bottom">
-                  <Button
-                    variant="ghost"
-                    size="icon-sm"
-                    className={editorFindIconButtonClass}
-                    aria-label="全部替换"
-                    disabled={!canReplace}
-                    onClick={handleReplaceAll}
-                  >
-                    <span className="icon-[codicon--replace-all] text-sm" />
-                  </Button>
-                </AppTooltip>
-              </div>
-            </Collapsible.Panel>
-          </Collapsible.Root>
+              </Collapsible.Panel>
+            </Collapsible.Root>
+          ) : null}
         </div>
       </div>
     </div>
