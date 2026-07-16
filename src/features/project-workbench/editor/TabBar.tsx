@@ -2,21 +2,11 @@ import { AutoTransition, effects, preset } from "@codehz/auto-transition";
 import type { ReactNode } from "react";
 
 import { cn } from "#app/shared/lib/ui/cn";
-import { Button, SlotText } from "#app/shared/ui";
 
-import {
-  editorTabActiveClass,
-  editorTabBarClass,
-  editorTabClass,
-  editorTabCloseButtonActiveClass,
-  editorTabCloseButtonClass,
-  editorTabInactiveClass,
-} from "./editor-chrome";
+import { editorTabBarClass } from "./editor-chrome";
+import { Tab, type TabItem } from "./Tab";
 
-export type TabItem = {
-  id: string;
-  label: string;
-};
+export type { TabItem };
 
 type TabBarProps<T extends TabItem> = {
   tabs: readonly T[];
@@ -63,52 +53,18 @@ export function TabBar<T extends TabItem>({
       role="tablist"
       transition={tabTransition}
     >
-      {tabs.map((tab) => {
-        const active = tab.id === activeId;
-        const transient = tab.id === transientId;
-        return (
-          <div
-            key={tab.id}
-            className={cn(editorTabClass, active ? editorTabActiveClass : editorTabInactiveClass)}
-            role="tab"
-            aria-selected={active}
-            onClick={() => onActivate(tab.id)}
-            onDoubleClick={() => onPin?.(tab.id)}
-            onKeyDown={(event) => {
-              if (event.key === "Enter" || event.key === " ") {
-                event.preventDefault();
-                onActivate(tab.id);
-              }
-            }}
-            tabIndex={0}
-          >
-            {renderIcon?.(tab) ?? (
-              <span
-                aria-hidden="true"
-                className={cn("icon-[codicon--file-text]", "mr-2 shrink-0 text-base text-ctp-blue")}
-              />
-            )}
-            <SlotText className={cn("truncate pr-1.5", transient && "italic")} text={tab.label} />
-            {onClose && (
-              <Button
-                variant="ghost"
-                size="icon-sm"
-                aria-label={`关闭 ${tab.label}`}
-                className={cn(editorTabCloseButtonClass, active && editorTabCloseButtonActiveClass)}
-                onClick={(event) => {
-                  event.stopPropagation();
-                  onClose(tab.id);
-                }}
-                onDoubleClick={(event) => {
-                  event.stopPropagation();
-                }}
-              >
-                <span aria-hidden="true" className="icon-[codicon--close]" />
-              </Button>
-            )}
-          </div>
-        );
-      })}
+      {tabs.map((tab) => (
+        <Tab
+          key={tab.id}
+          label={tab.label}
+          active={tab.id === activeId}
+          transient={tab.id === transientId}
+          onActivate={() => onActivate(tab.id)}
+          onClose={onClose ? () => onClose(tab.id) : undefined}
+          onPin={onPin ? () => onPin(tab.id) : undefined}
+          icon={renderIcon?.(tab)}
+        />
+      ))}
     </AutoTransition>
   );
 }
