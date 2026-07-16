@@ -35,7 +35,7 @@ export function SearchSidebarSection() {
           onClick={retry}
         />
       </SidebarHeaderActions>
-      <div className="flex min-h-0 flex-1 flex-col">
+      <div className="flex h-0 min-h-0 flex-1 flex-col">
         <SearchQueryBar
           query={query}
           replaceText={replaceText}
@@ -48,7 +48,7 @@ export function SearchSidebarSection() {
           onToggleRegex={toggleRegex}
           onReplaceAll={replaceAll}
         />
-        <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+        <div className="h-0 min-h-0 flex-1 overflow-x-hidden overflow-y-auto">
           <SearchResultTree
             status={status}
             errorContent={<ErrorRetryView message="无法加载搜索结果。" onRetry={retry} />}
