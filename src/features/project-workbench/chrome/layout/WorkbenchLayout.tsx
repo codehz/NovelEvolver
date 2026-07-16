@@ -3,9 +3,9 @@ import { useCallback, useMemo, type ReactNode } from "react";
 import { TitleBarAuxiliaryToggle } from "../titlebar/TitleBarAuxiliaryToggle";
 import { TitleBarPrimarySidebarToggle } from "../titlebar/TitleBarPrimarySidebarToggle";
 import type { WorkbenchPrimaryView } from "../types";
-import { AuxiliarySidebarDock } from "./AuxiliarySidebarDock";
-import { PrimarySidebarDock } from "./PrimarySidebarDock";
 import { PrimarySidebarViewStack } from "./PrimarySidebarViewStack";
+import { SidebarDock } from "./SidebarDock";
+import { SidebarFrame } from "./SidebarFrame";
 import { useMeasuredElementWidth } from "./use-measured-element-width";
 import { useWorkbenchActiveView } from "./use-workbench-active-view";
 import { useWorkbenchLayoutPreferences } from "./use-workbench-layout-preferences";
@@ -100,10 +100,12 @@ export function WorkbenchLayout({
           primarySidebarVisible={primary.visible}
           onSelectView={handleActivitySelectView}
         />
-        <PrimarySidebarDock
+        <SidebarDock
           panelWidth={primary.panelWidth}
           resizeActive={activeResizeSide === "primary"}
+          resizeAriaLabel="调整主侧边栏宽度"
           resizeTransitionDisabled={activeResizeSide === "primary"}
+          side="primary"
           spacerWidth={primary.spacerWidth}
           title={activePrimaryView.title}
           visible={primary.visible}
@@ -112,20 +114,30 @@ export function WorkbenchLayout({
           }}
         >
           <PrimarySidebarViewStack activeViewId={activeViewId} views={primaryViews} />
-        </PrimarySidebarDock>
+        </SidebarDock>
         <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">{editor}</div>
-        <AuxiliarySidebarDock
+        <SidebarDock
           panelWidth={auxiliaryChrome.panelWidth}
           resizeActive={activeResizeSide === "auxiliary"}
+          resizeAriaLabel="调整辅助侧边栏宽度"
           resizeTransitionDisabled={activeResizeSide === "auxiliary"}
+          side="auxiliary"
           spacerWidth={auxiliaryChrome.spacerWidth}
+          title="AI 助手"
           visible={auxiliaryChrome.visible}
           onResizePointerDown={(event) => {
             startResizeDrag("auxiliary", event);
           }}
         >
-          {auxiliary}
-        </AuxiliarySidebarDock>
+          <SidebarFrame
+            aria-hidden={!auxiliaryChrome.visible}
+            className="h-full min-h-0"
+            title="AI 助手"
+            titleMode="ghost"
+          >
+            {auxiliary}
+          </SidebarFrame>
+        </SidebarDock>
       </div>
     </div>
   );

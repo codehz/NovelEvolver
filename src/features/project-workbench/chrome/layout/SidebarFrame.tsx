@@ -2,51 +2,48 @@ import { memo, type ReactNode } from "react";
 
 import { cn } from "#app/shared/lib/ui/cn";
 
-import {
-  primarySidebarChromeTitleTextClass,
-  sidebarPanelSurfaceClass,
-} from "../sidebar/sidebar-chrome";
+import { sidebarChromeTitleTextClass, sidebarPanelSurfaceClass } from "../sidebar/sidebar-chrome";
 import {
   SidebarHeaderActionsPortalProvider,
   SidebarHeaderActionsPortalTarget,
 } from "../sidebar/sidebar-header-actions-portal";
 
-const primarySidebarFrameClass = cn(
-  "flex min-h-0 w-full shrink-0 flex-col",
-  sidebarPanelSurfaceClass,
-);
+const sidebarFrameClass = cn("flex min-h-0 w-full shrink-0 flex-col", sidebarPanelSurfaceClass);
 
-const primarySidebarFrameHeaderClass = cn(
+const sidebarFrameHeaderClass = cn(
   "flex h-workbench-tab shrink-0 items-center justify-between gap-2 pr-3 pl-5",
 );
 
-const primarySidebarFrameBodyClass = cn("flex min-h-0 min-w-0 flex-1 flex-col text-sm");
+const sidebarFrameBodyClass = cn("flex min-h-0 min-w-0 flex-1 flex-col text-sm");
 
-type PrimarySidebarFrameProps = {
+type SidebarFrameProps = {
   title: string;
+  /** `ghost` keeps layout while a dock-level title overlay paints the visible label. */
+  titleMode?: "ghost" | "visible";
   className?: string;
   "aria-hidden"?: boolean;
   children?: ReactNode;
 };
 
-export const PrimarySidebarFrame = memo(function PrimarySidebarFrame({
+export const SidebarFrame = memo(function SidebarFrame({
   title,
+  titleMode = "visible",
   className,
   "aria-hidden": ariaHidden,
   children,
-}: PrimarySidebarFrameProps) {
+}: SidebarFrameProps) {
   return (
     <SidebarHeaderActionsPortalProvider>
       <aside
         aria-hidden={ariaHidden}
         aria-label={title}
-        className={cn(primarySidebarFrameClass, className)}
+        className={cn(sidebarFrameClass, className)}
       >
-        <header className={primarySidebarFrameHeaderClass}>
+        <header className={sidebarFrameHeaderClass}>
           <span
             className={cn(
-              primarySidebarChromeTitleTextClass,
-              "pointer-events-none text-transparent",
+              sidebarChromeTitleTextClass,
+              titleMode === "ghost" && "pointer-events-none text-transparent",
             )}
           >
             {title}
@@ -57,7 +54,7 @@ export const PrimarySidebarFrame = memo(function PrimarySidebarFrame({
           />
         </header>
 
-        <div className={primarySidebarFrameBodyClass}>{children}</div>
+        <div className={sidebarFrameBodyClass}>{children}</div>
       </aside>
     </SidebarHeaderActionsPortalProvider>
   );

@@ -14,8 +14,8 @@ export const sidebarPanelSurfaceClass = cn(
 
 // --- View header (primary / auxiliary top chrome row) ---
 
-/** Primary sidebar top chrome row — VS Code view title (2xs uppercase; not section headers). */
-export const primarySidebarChromeTitleTextClass = cn(
+/** Sidebar top chrome row — VS Code view title (2xs uppercase; not section headers). */
+export const sidebarChromeTitleTextClass = cn(
   "truncate text-2xs font-medium tracking-wide text-ctp-mauve uppercase",
 );
 

@@ -3,7 +3,7 @@ import { memo } from "react";
 import { cn } from "#app/shared/lib/ui/cn";
 
 import type { WorkbenchPrimaryView } from "../types";
-import { PrimarySidebarFrame } from "./PrimarySidebarFrame";
+import { SidebarFrame } from "./SidebarFrame";
 
 const primarySidebarViewPaneClass = cn(
   "col-start-1 row-start-1 flex size-full min-h-0 min-w-0 flex-col",
@@ -38,13 +38,14 @@ export const PrimarySidebarViewStack = memo(function PrimarySidebarViewStack({
                 : "pointer-events-none z-0 opacity-0",
             )}
           >
-            <PrimarySidebarFrame
+            <SidebarFrame
               aria-hidden={!isActive}
               className="h-full min-h-0"
               title={view.title}
+              titleMode="ghost"
             >
               {view.content}
-            </PrimarySidebarFrame>
+            </SidebarFrame>
           </section>
         );
       })}
