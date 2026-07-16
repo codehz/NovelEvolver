@@ -1,4 +1,4 @@
-import { PresenceHost } from "@codehz/auto-transition";
+import { AutoTransition, effects, PresenceHost, preset } from "@codehz/auto-transition";
 import { defaultKeymap, history, historyKeymap } from "@codemirror/commands";
 import {
   findNext,
@@ -33,6 +33,18 @@ import { EditorFindBar } from "./EditorFindBar";
 import type { PlainTextEditorCaretPosition, PlainTextEditorSelectionSnapshot } from "./types";
 
 const editorRootClass = cn("relative min-h-0 min-w-0 flex-1");
+
+/** Matches workbench overlay ease (`overlayMotionClass`). */
+const editorFindBarEase = "cubic-bezier(0.33, 1, 0.68, 1)";
+
+const editorFindBarTransition = preset({
+  enter: [effects.fade(0), effects.translate({ x: 0, y: -6 }), effects.scale(0.98)],
+  exit: [effects.fade(0), effects.translate({ x: 0, y: -4 }), effects.scale(0.98)],
+  timing: {
+    enter: { duration: 220, easing: editorFindBarEase },
+    exit: { duration: 160, easing: editorFindBarEase },
+  },
+});
 
 export type PlainTextEditorApplySelectionOptions = {
   focus?: boolean;
@@ -388,21 +400,28 @@ export function PlainTextEditor({
   return (
     <div className={editorRootClass}>
       <PresenceHost ref={setHostNode} className={editorHostClass} />
-      {findOpen && findView ? (
-        <EditorFindBar
-          key={findSession}
-          view={findView}
-          replaceExpanded={findReplaceExpanded}
-          initialQuery={findSeed}
-          onReplaceExpandedChange={setFindReplaceExpanded}
-          onClose={() => {
-            closeFindRef.current();
-          }}
-          onBindRefresh={(refresh) => {
-            findStatsRefreshRef.current = refresh;
-          }}
-        />
-      ) : null}
+      <AutoTransition
+        as="div"
+        className="contents"
+        transition={editorFindBarTransition}
+        exitLayout="absolute"
+      >
+        {findOpen && findView ? (
+          <EditorFindBar
+            key={findSession}
+            view={findView}
+            replaceExpanded={findReplaceExpanded}
+            initialQuery={findSeed}
+            onReplaceExpandedChange={setFindReplaceExpanded}
+            onClose={() => {
+              closeFindRef.current();
+            }}
+            onBindRefresh={(refresh) => {
+              findStatsRefreshRef.current = refresh;
+            }}
+          />
+        ) : null}
+      </AutoTransition>
     </div>
   );
 }
