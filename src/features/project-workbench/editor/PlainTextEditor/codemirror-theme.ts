@@ -60,6 +60,12 @@ export const novelEvolverEditorTheme = EditorView.theme(
     "&.cm-focused .cm-selectionBackground": {
       backgroundColor: "var(--color-pte-selection) !important",
     },
+    ".cm-searchMatch": {
+      backgroundColor: "color-mix(in srgb, var(--color-ctp-yellow) 32%, transparent)",
+    },
+    ".cm-searchMatch-selected": {
+      backgroundColor: "color-mix(in srgb, var(--color-ctp-peach) 42%, transparent)",
+    },
   },
   { dark: true },
 );

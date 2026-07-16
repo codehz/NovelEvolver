@@ -1,5 +1,12 @@
 import { PresenceHost } from "@codehz/auto-transition";
 import { defaultKeymap, history, historyKeymap } from "@codemirror/commands";
+import {
+  findNext,
+  findPrevious,
+  getSearchQuery,
+  search,
+  selectNextOccurrence,
+} from "@codemirror/search";
 import { Compartment, EditorState, type Extension } from "@codemirror/state";
 import {
   drawSelection,
@@ -8,7 +15,7 @@ import {
   highlightActiveLineGutter,
   keymap,
 } from "@codemirror/view";
-import { useCallback, useImperativeHandle, useLayoutEffect, useRef } from "react";
+import { useCallback, useImperativeHandle, useLayoutEffect, useRef, useState } from "react";
 
 import { cn } from "#app/shared/lib/ui/cn";
 
@@ -20,9 +27,12 @@ import {
 } from "./codemirror-selection";
 import { editorHostClass } from "./codemirror-theme";
 import { plainTextEditorViewExtensions } from "./codemirror-view-extensions";
+import { clearEditorFindQuery, getEditorFindSeedFromSelection } from "./editor-find";
+import { editorFindHighlight } from "./editor-find-highlight";
+import { EditorFindBar } from "./EditorFindBar";
 import type { PlainTextEditorCaretPosition, PlainTextEditorSelectionSnapshot } from "./types";
 
-const editorRootClass = cn("min-h-0 min-w-0 flex-1");
+const editorRootClass = cn("relative min-h-0 min-w-0 flex-1");
 
 export type PlainTextEditorApplySelectionOptions = {
   focus?: boolean;
@@ -85,6 +95,17 @@ export function PlainTextEditor({
   const suppressOnChangeRef = useRef(false);
   const activeLineCollapsedRef = useRef<boolean | null>(null);
   const activeLineCompartmentRef = useRef(new Compartment());
+  const [findOpen, setFindOpen] = useState(false);
+  const [findReplaceExpanded, setFindReplaceExpanded] = useState(false);
+  const [findSeed, setFindSeed] = useState("");
+  const [findSession, setFindSession] = useState(0);
+  const [findView, setFindView] = useState<EditorView | null>(null);
+  const findOpenRef = useRef(false);
+  const findStatsRefreshRef = useRef<(() => void) | null>(null);
+  const openFindRef = useRef((withReplace: boolean) => {
+    void withReplace;
+  });
+  const closeFindRef = useRef(() => {});
 
   selectionSnapshotRef.current = selectionSnapshot;
   onChangeRef.current = onChange;
@@ -92,6 +113,28 @@ export function PlainTextEditor({
   onSelectionSnapshotChangeRef.current = onSelectionSnapshotChange;
   highlightCurrentLineRef.current = highlightCurrentLine;
   ariaLabelRef.current = ariaLabel;
+  findOpenRef.current = findOpen;
+
+  openFindRef.current = (withReplace: boolean) => {
+    const view = viewRef.current;
+    if (!view) {
+      return;
+    }
+    setFindSeed(getEditorFindSeedFromSelection(view.state));
+    setFindReplaceExpanded(withReplace);
+    setFindView(view);
+    setFindSession((session) => session + 1);
+    setFindOpen(true);
+  };
+
+  closeFindRef.current = () => {
+    const view = viewRef.current;
+    if (view) {
+      clearEditorFindQuery(view);
+    }
+    setFindOpen(false);
+    setFindReplaceExpanded(false);
+  };
 
   const syncActiveLineHighlight = useCallback(
     (view: EditorView, snapshot: PlainTextEditorSelectionSnapshot) => {
@@ -139,11 +182,76 @@ export function PlainTextEditor({
   // - 返回 cleanup 后，卸载时 React 跑 cleanup，而不是再以 null 调用 ref
   const setHostNode = useCallback((host: HTMLDivElement) => {
     const activeLineCompartment = activeLineCompartmentRef.current;
+    const runFindStep = (view: EditorView, direction: "next" | "previous"): boolean => {
+      const query = getSearchQuery(view.state);
+      if (!query.valid || query.search === "") {
+        openFindRef.current(false);
+        return true;
+      }
+      const ran = direction === "next" ? findNext(view) : findPrevious(view);
+      if (ran && findOpenRef.current) {
+        findStatsRefreshRef.current?.();
+      }
+      return ran;
+    };
     const extensions: Extension[] = [
       ...plainTextEditorViewExtensions,
       history(),
       drawSelection(),
-      keymap.of([...defaultKeymap, ...historyKeymap]),
+      search({ top: true }),
+      editorFindHighlight,
+      keymap.of([
+        {
+          key: "Mod-f",
+          preventDefault: true,
+          run: () => {
+            openFindRef.current(false);
+            return true;
+          },
+        },
+        {
+          key: "Mod-h",
+          preventDefault: true,
+          run: () => {
+            openFindRef.current(true);
+            return true;
+          },
+        },
+        {
+          key: "Mod-Alt-f",
+          preventDefault: true,
+          run: () => {
+            openFindRef.current(true);
+            return true;
+          },
+        },
+        {
+          key: "Escape",
+          run: (view) => {
+            if (!findOpenRef.current) {
+              return false;
+            }
+            closeFindRef.current();
+            view.focus();
+            return true;
+          },
+        },
+        {
+          key: "Mod-g",
+          preventDefault: true,
+          run: (view) => runFindStep(view, "next"),
+          shift: (view) => runFindStep(view, "previous"),
+        },
+        {
+          key: "F3",
+          preventDefault: true,
+          run: (view) => runFindStep(view, "next"),
+          shift: (view) => runFindStep(view, "previous"),
+        },
+        { key: "Mod-d", run: selectNextOccurrence, preventDefault: true },
+        ...defaultKeymap,
+        ...historyKeymap,
+      ]),
       activeLineCompartment.of(activeLineExtensions(highlightCurrentLineRef.current, true)),
       EditorView.updateListener.of((update) => {
         if (update.docChanged) {
@@ -155,6 +263,9 @@ export function PlainTextEditor({
         }
         if (update.docChanged || update.selectionSet || update.focusChanged) {
           publishSelectionStateRef.current(update.view);
+        }
+        if (findOpenRef.current && (update.docChanged || update.selectionSet)) {
+          findStatsRefreshRef.current?.();
         }
       }),
       EditorView.contentAttributes.of({
@@ -277,6 +388,21 @@ export function PlainTextEditor({
   return (
     <div className={editorRootClass}>
       <PresenceHost ref={setHostNode} className={editorHostClass} />
+      {findOpen && findView ? (
+        <EditorFindBar
+          key={findSession}
+          view={findView}
+          replaceExpanded={findReplaceExpanded}
+          initialQuery={findSeed}
+          onReplaceExpandedChange={setFindReplaceExpanded}
+          onClose={() => {
+            closeFindRef.current();
+          }}
+          onBindRefresh={(refresh) => {
+            findStatsRefreshRef.current = refresh;
+          }}
+        />
+      ) : null}
     </div>
   );
 }
