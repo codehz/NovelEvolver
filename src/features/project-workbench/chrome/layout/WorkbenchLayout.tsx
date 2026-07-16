@@ -15,6 +15,7 @@ import {
   DEFAULT_AUXILIARY_WIDTH,
   DEFAULT_PRIMARY_WIDTH,
   MIN_EDITOR_WIDTH,
+  WORKBENCH_EDGE_INSET,
   deriveWorkbenchChromeLayout,
 } from "./workbench-layout-resolver";
 import { WorkbenchActivityBar } from "./WorkbenchActivityBar";
@@ -44,7 +45,11 @@ export function WorkbenchLayout({
     setLayoutPreferences,
   });
   const { ref: containerRef, width: containerWidth } = useMeasuredElementWidth<HTMLDivElement>(
-    ACTIVITY_BAR_WIDTH + DEFAULT_PRIMARY_WIDTH + DEFAULT_AUXILIARY_WIDTH + MIN_EDITOR_WIDTH,
+    ACTIVITY_BAR_WIDTH +
+      DEFAULT_PRIMARY_WIDTH +
+      DEFAULT_AUXILIARY_WIDTH +
+      MIN_EDITOR_WIDTH +
+      WORKBENCH_EDGE_INSET,
   );
   const {
     resolved: resolvedLayout,
@@ -138,6 +143,12 @@ export function WorkbenchLayout({
             {auxiliary}
           </SidebarFrame>
         </SidebarDock>
+        {/* Always reserve right edge breath room — independent of auxiliary visibility. */}
+        <div
+          aria-hidden
+          className="pointer-events-none h-full shrink-0"
+          style={{ width: WORKBENCH_EDGE_INSET }}
+        />
       </div>
     </div>
   );

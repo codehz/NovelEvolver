@@ -7,27 +7,28 @@ export const CLOSE_SIDEBAR_THRESHOLD = 160;
 export const MIN_EDITOR_WIDTH = 520;
 /**
  * Horizontal chrome unit for modern UI:
- * - sash between sidebar and editor (owned by the dock chrome layer)
- * - auxiliary right edge inset from the window
+ * sash between sidebar and editor (owned by the dock chrome layer).
  */
 export const WORKBENCH_SIDEBAR_INSET = 8;
+/**
+ * Always-present right window-edge gap at the workbench row level.
+ * Kept outside SidebarDock so the editor still breathes when auxiliary is hidden.
+ */
+export const WORKBENCH_EDGE_INSET = WORKBENCH_SIDEBAR_INSET;
 
 /**
  * In-flow dock spacer width when visible.
  * Sash lives inside the dock chrome layer (opacity-animated with the panel), so it
  * is reserved here rather than as a separate flex sibling.
- * - primary: panel + sash
- * - auxiliary: sash + panel + right window edge inset
+ * Both sides: panel + sash. Right window edge is reserved by WorkbenchLayout, not the dock.
  */
-export function sidebarChromeOuterSize(panelWidth: number, side: "primary" | "auxiliary") {
-  return side === "primary"
-    ? panelWidth + WORKBENCH_SIDEBAR_INSET
-    : panelWidth + WORKBENCH_SIDEBAR_INSET * 2;
+export function sidebarChromeOuterSize(panelWidth: number) {
+  return panelWidth + WORKBENCH_SIDEBAR_INSET;
 }
 
-/** Extra width reserved beyond panel when a sidebar is visible (sash [+ right edge]). */
-export function sidebarChromeExtraWidth(side: "primary" | "auxiliary") {
-  return side === "primary" ? WORKBENCH_SIDEBAR_INSET : WORKBENCH_SIDEBAR_INSET * 2;
+/** Extra width reserved beyond panel when a sidebar is visible (sash only). */
+export function sidebarChromeExtraWidth() {
+  return WORKBENCH_SIDEBAR_INSET;
 }
 
 export type ResizePriority = "primary" | "auxiliary";
@@ -60,7 +61,6 @@ export type WorkbenchChromeLayout = {
 };
 
 type SidebarSpec = {
-  side: "primary" | "auxiliary";
   enabled: boolean;
   resolvedVisible: boolean;
   resolvedWidth: number;
@@ -69,7 +69,6 @@ type SidebarSpec = {
 };
 
 function resolveSidebarChrome({
-  side,
   enabled,
   resolvedVisible,
   resolvedWidth,
@@ -82,7 +81,7 @@ function resolveSidebarChrome({
   return {
     visible,
     panelWidth,
-    spacerWidth: visible ? sidebarChromeOuterSize(panelWidth, side) : 0,
+    spacerWidth: visible ? sidebarChromeOuterSize(panelWidth) : 0,
   };
 }
 
@@ -90,7 +89,8 @@ export function resolveWorkbenchLayout(
   preferences: LayoutPreferences,
   containerWidth: number,
 ): ResolvedWorkbenchLayout {
-  const availableWidth = Math.max(containerWidth - ACTIVITY_BAR_WIDTH, 0);
+  // Activity bar (left) + right window-edge gap are always reserved.
+  const availableWidth = Math.max(containerWidth - ACTIVITY_BAR_WIDTH - WORKBENCH_EDGE_INSET, 0);
   const editorMinWidth = Math.min(MIN_EDITOR_WIDTH, availableWidth);
   let remainingSidebarWidth = Math.max(availableWidth - editorMinWidth, 0);
   let primaryWidth = 0;
@@ -99,6 +99,7 @@ export function resolveWorkbenchLayout(
     preferences.priority === "auxiliary"
       ? (["auxiliary", "primary"] as const)
       : (["primary", "auxiliary"] as const);
+  const chromeExtra = sidebarChromeExtraWidth();
 
   for (const side of allocationOrder) {
     const wantsVisible =
@@ -108,8 +109,6 @@ export function resolveWorkbenchLayout(
     }
 
     const minWidth = side === "primary" ? MIN_PRIMARY_WIDTH : MIN_AUXILIARY_WIDTH;
-    // primary: sash only; auxiliary: sash + right window edge
-    const chromeExtra = sidebarChromeExtraWidth(side);
     if (remainingSidebarWidth < minWidth + chromeExtra) {
       continue;
     }
@@ -167,7 +166,6 @@ export function deriveWorkbenchChromeLayout(input: {
   return {
     resolved,
     primary: resolveSidebarChrome({
-      side: "primary",
       enabled: true,
       resolvedVisible: resolved.primaryVisible,
       resolvedWidth: resolved.primaryWidth,
@@ -175,7 +173,6 @@ export function deriveWorkbenchChromeLayout(input: {
       minWidth: MIN_PRIMARY_WIDTH,
     }),
     auxiliary: resolveSidebarChrome({
-      side: "auxiliary",
       enabled: true,
       resolvedVisible: resolved.auxiliaryVisible,
       resolvedWidth: resolved.auxiliaryWidth,

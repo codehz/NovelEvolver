@@ -64,12 +64,13 @@ export const SidebarDock = memo(function SidebarDock({
 }: SidebarDockProps) {
   const isPrimary = side === "primary";
   const spacerStyle: CSSProperties = { width: spacerWidth };
+  // Dock owns panel + sash only; workbench row owns the right window-edge gap.
   const chromeStyle: CSSProperties = {
-    width: sidebarChromeOuterSize(panelWidth, side),
+    width: sidebarChromeOuterSize(panelWidth),
   };
   const panelStyle: CSSProperties = isPrimary
     ? { left: 0, width: panelWidth }
-    : { right: WORKBENCH_SIDEBAR_INSET, width: panelWidth };
+    : { right: 0, width: panelWidth };
   const sashStyle: CSSProperties = isPrimary
     ? { left: panelWidth, width: WORKBENCH_SIDEBAR_INSET }
     : { left: 0, width: WORKBENCH_SIDEBAR_INSET };
