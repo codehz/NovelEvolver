@@ -24,7 +24,7 @@ const sashGripClass = cn(
   "group-focus-visible:opacity-0 group-focus-visible:delay-150",
 );
 
-const sashDotClass = cn("size-1 shrink-0 rounded-full bg-ctp-mauve");
+const sashDotClass = cn("size-0.5 shrink-0 rounded-full bg-titlebar-border");
 
 type SidebarResizeSashProps = {
   active: boolean;
