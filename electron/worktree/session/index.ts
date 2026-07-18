@@ -26,6 +26,10 @@ import type { WorktreeRepository } from "../../db/repositories/worktree-repo";
 import type { ObjectDatabase } from "../git/diff-utils";
 import * as changesOps from "./changes-ops";
 import { currentChangesOnlySnapshot } from "./changes-snapshot";
+import {
+  getDocumentContentRevision as getDocumentContentRevisionFromState,
+  type DocumentRevisionDomain,
+} from "./document-revision";
 import { resolveBaseTree } from "./helpers";
 import * as historyOps from "./history-ops";
 import { loadOrSeed } from "./load";
@@ -147,6 +151,11 @@ export class WorktreeSession {
 
   getChangesSnapshot(): ChangesSnapshot {
     return currentChangesOnlySnapshot(this.#state);
+  }
+
+  /** Per-document content OCC revision (not the global worktree revision). */
+  getDocumentContentRevision(domain: DocumentRevisionDomain, id: string): number {
+    return getDocumentContentRevisionFromState(this.#state, domain, id);
   }
 
   createManuscriptFolder(parentId: string, title: string, index?: number): WorktreeNodeIdResult {

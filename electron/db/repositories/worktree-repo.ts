@@ -17,6 +17,7 @@ export type ManuscriptNodeCurrentRow = {
   title: string;
   sortIndex: number;
   content: Buffer | null;
+  contentRevision: number;
 };
 
 export type ManuscriptNodeCommittedRow = {
@@ -38,6 +39,7 @@ export type ResourceNodeCurrentRow = {
   type: "folder" | "file";
   name: string;
   content: Buffer | null;
+  contentRevision: number;
 };
 
 export type ResourceNodeCommittedRow = {
@@ -123,6 +125,7 @@ type ManuscriptCurrentSqlRow = {
   title: string;
   sort_index: number;
   content: Uint8Array | null;
+  content_revision: number;
 };
 
 type ManuscriptCommittedSqlRow = {
@@ -144,6 +147,7 @@ type ResourceCurrentSqlRow = {
   type: "folder" | "file";
   name: string;
   content: Uint8Array | null;
+  content_revision: number;
 };
 
 type ResourceCommittedSqlRow = {
@@ -297,7 +301,7 @@ export class WorktreeRepository {
     const rows = this.#db
       .prepare(
         `
-          SELECT project_id, branch_name, id, parent_id, type, title, sort_index, content
+          SELECT project_id, branch_name, id, parent_id, type, title, sort_index, content, content_revision
           FROM manuscript_node_current
           WHERE project_id = ? AND branch_name = ?
           ORDER BY parent_id IS NOT NULL, parent_id, sort_index, id
@@ -314,6 +318,7 @@ export class WorktreeRepository {
       title: row.title,
       sortIndex: row.sort_index,
       content: toBuffer(row.content),
+      contentRevision: row.content_revision,
     }));
   }
 
@@ -345,7 +350,7 @@ export class WorktreeRepository {
     const rows = this.#db
       .prepare(
         `
-          SELECT project_id, branch_name, id, parent_id, type, name, content
+          SELECT project_id, branch_name, id, parent_id, type, name, content, content_revision
           FROM resource_node_current
           WHERE project_id = ? AND branch_name = ?
           ORDER BY parent_id IS NOT NULL, parent_id, type, name, id
@@ -361,6 +366,7 @@ export class WorktreeRepository {
       type: row.type,
       name: row.name,
       content: toBuffer(row.content),
+      contentRevision: row.content_revision,
     }));
   }
 
@@ -396,8 +402,8 @@ export class WorktreeRepository {
       `DELETE FROM manuscript_node_current WHERE project_id = ? AND branch_name = ?`,
       `
         INSERT INTO manuscript_node_current (
-          project_id, branch_name, id, parent_id, type, title, sort_index, content
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+          project_id, branch_name, id, parent_id, type, title, sort_index, content, content_revision
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
       `,
       projectId,
       branchName,
@@ -410,6 +416,7 @@ export class WorktreeRepository {
         row.title,
         row.sortIndex,
         row.content,
+        row.contentRevision,
       ]),
     );
   }
@@ -450,8 +457,8 @@ export class WorktreeRepository {
       `DELETE FROM resource_node_current WHERE project_id = ? AND branch_name = ?`,
       `
         INSERT INTO resource_node_current (
-          project_id, branch_name, id, parent_id, type, name, content
-        ) VALUES (?, ?, ?, ?, ?, ?, ?)
+          project_id, branch_name, id, parent_id, type, name, content, content_revision
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
       `,
       projectId,
       branchName,
@@ -463,6 +470,7 @@ export class WorktreeRepository {
         row.type,
         row.name,
         row.content,
+        row.contentRevision,
       ]),
     );
   }

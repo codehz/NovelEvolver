@@ -28,6 +28,7 @@ export function initWorktreeSchema(db: DatabaseSync): void {
       title TEXT NOT NULL,
       sort_index INTEGER NOT NULL,
       content BLOB,
+      content_revision INTEGER NOT NULL DEFAULT 0,
       PRIMARY KEY (project_id, branch_name, id),
       FOREIGN KEY (project_id, branch_name)
         REFERENCES worktree(project_id, branch_name) ON DELETE CASCADE
@@ -55,6 +56,7 @@ export function initWorktreeSchema(db: DatabaseSync): void {
       type TEXT NOT NULL,
       name TEXT NOT NULL,
       content BLOB,
+      content_revision INTEGER NOT NULL DEFAULT 0,
       PRIMARY KEY (project_id, branch_name, id),
       FOREIGN KEY (project_id, branch_name)
         REFERENCES worktree(project_id, branch_name) ON DELETE CASCADE
@@ -131,4 +133,17 @@ export function initWorktreeSchema(db: DatabaseSync): void {
     CREATE INDEX IF NOT EXISTS idx_worktree_journal_entry_group
       ON worktree_journal_entry(project_id, branch_name, group_key, updated_at DESC);
   `);
+
+  ensureCurrentContentRevisionColumn(db, "manuscript_node_current");
+  ensureCurrentContentRevisionColumn(db, "resource_node_current");
+}
+
+function ensureCurrentContentRevisionColumn(
+  db: DatabaseSync,
+  tableName: "manuscript_node_current" | "resource_node_current",
+): void {
+  const columns = db.prepare(`PRAGMA table_info(${tableName})`).all() as { name: string }[];
+  if (!columns.some((column) => column.name === "content_revision")) {
+    db.exec(`ALTER TABLE ${tableName} ADD COLUMN content_revision INTEGER NOT NULL DEFAULT 0`);
+  }
 }

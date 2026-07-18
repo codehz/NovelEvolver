@@ -33,6 +33,10 @@ import {
   manuscriptTreeFromOutline,
   manuscriptTreeToOutline,
 } from "../trees/worktree-tree-bridge";
+import {
+  clearDocumentContentRevisions,
+  hydrateDocumentContentRevisions,
+} from "./document-revision";
 import { readResourceTreeFromTree, resolveBaseTree } from "./helpers";
 import { persistState } from "./persistence";
 import { recomputeAllChangeStatuses } from "./rebuild";
@@ -116,6 +120,7 @@ export function loadFromStore(state: WorktreeSessionState, record: WorktreeRecor
 
   state.baseManuscript = buildBaseManuscriptStateFromCommittedRows(state, manuscriptCommittedRows);
   state.baseResources = buildBaseResourceStateFromCommittedRows(state, resourceCommittedRows);
+  hydrateDocumentContentRevisions(state, manuscriptCurrentRows, resourceCurrentRows);
   recomputeAllChangeStatuses(state);
 }
 
@@ -127,6 +132,7 @@ export function seedFromBaseCommit(
   state.baseCommitSha = baseCommitSha;
   state.warning = warning;
   state.revision = warning === null ? 0 : state.revision + 1;
+  clearDocumentContentRevisions(state);
 
   if (baseCommitSha === null) {
     const outline = createEmptyOutline();

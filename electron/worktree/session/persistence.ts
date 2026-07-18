@@ -14,6 +14,7 @@ import { computeStats } from "../git/diff-utils";
 import { sha1Text } from "../journal/journal-types";
 import type { JournalOperationCapture, JournalRevisionCapture } from "../journal/journal-types";
 import { emitChanges } from "./changes-snapshot";
+import { applyDocumentRevisionsFromJournal, getDocumentContentRevision } from "./document-revision";
 import { recomputeAllChangeStatuses } from "./rebuild";
 import { AUTOSAVE_JOURNAL_MERGE_WINDOW_MS, RESTORE_HUNK_JOURNAL_MERGE_WINDOW_MS } from "./state";
 import type { WorktreeSessionState } from "./state";
@@ -66,6 +67,9 @@ export function persistAndEmit(
 ): void {
   state.warning = null;
   recomputeAllChangeStatuses(state);
+  if (journalCapture !== undefined) {
+    applyDocumentRevisionsFromJournal(state, journalCapture);
+  }
   state.revision += 1;
   persistState(state, includeCommitted, journalCapture);
   emitChanges(state);
@@ -95,6 +99,8 @@ export function serializeCurrentManuscriptRows(
         node.type === "chapter"
           ? Buffer.from(state.currentManuscript.entries.get(id)?.content ?? "", "utf-8")
           : null,
+      contentRevision:
+        node.type === "chapter" ? getDocumentContentRevision(state, "manuscript", id) : 0,
     });
     if (node.type === "folder") {
       node.childIds.forEach(visit);
@@ -160,6 +166,7 @@ export function serializeCurrentResourceRows(
         node.type === "file"
           ? Buffer.from(state.currentResources.entries.get(id)?.content ?? "", "utf-8")
           : null,
+      contentRevision: node.type === "file" ? getDocumentContentRevision(state, "resource", id) : 0,
     });
     if (node.type === "folder") {
       node.childIds.forEach(visit);

@@ -73,6 +73,7 @@ export function buildResourceTreeFromCommittedRows(
       type: row.type,
       name: row.name,
       content: null,
+      contentRevision: 0,
     })),
   );
 }
@@ -132,6 +133,7 @@ export function buildManuscriptTreeFromCommittedRows(
       title: row.title,
       sortIndex: row.sortIndex,
       content: null,
+      contentRevision: 0,
     })),
   );
 }

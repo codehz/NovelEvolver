@@ -43,6 +43,8 @@ export type WorktreeSessionState = {
   baseResources: ResourceSnapshotState;
   resourcePathById: Map<string, string>;
   resourceIdByPath: Map<string, string>;
+  /** Per-document content OCC; key = `manuscript:${id}` | `resource:${id}`. */
+  documentContentRevisions: Map<string, number>;
   lastPublishedManuscriptTree: ManuscriptTreeSnapshot | null;
   lastPublishedResourceTree: ResourceTreeSnapshot | null;
 };
@@ -81,6 +83,7 @@ export function createWorktreeSessionState(
     baseResources: { entries: new Map() },
     resourcePathById: new Map(),
     resourceIdByPath: new Map(),
+    documentContentRevisions: new Map(),
     lastPublishedManuscriptTree: null,
     lastPublishedResourceTree: null,
   };
