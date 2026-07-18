@@ -7,8 +7,8 @@ import { manuscriptEditorContribution } from "./manuscript-target";
 import { resourceEditorContribution } from "./resource-target";
 import type {
   ResolvedWorkbenchEditorTarget,
+  WorkbenchEditorResolveDeps,
   WorkbenchEditorTargetContribution,
-  WorkbenchEditorTargetContributionContext,
 } from "./types";
 
 const workbenchEditorTargetContributions = [
@@ -89,7 +89,7 @@ export function areWorkbenchEditorTabsStructurallyEqual(
 
 export function resolveWorkbenchEditorTarget(
   target: WorkbenchEditorTarget,
-  context: WorkbenchEditorTargetContributionContext,
+  deps: WorkbenchEditorResolveDeps,
 ): Promise<ResolvedWorkbenchEditorTarget> {
-  return getWorkbenchEditorTargetContribution(target).resolveTarget(target, context);
+  return getWorkbenchEditorTargetContribution(target).resolveTarget(target, deps);
 }

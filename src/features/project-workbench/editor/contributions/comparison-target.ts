@@ -4,20 +4,17 @@ import { isMissingComparisonTargetError } from "#workbench/lib/comparison-errors
 import { contentTreeIconLayoutClass } from "#workbench/tree/content-tree-icons";
 
 import type { WorkbenchEditorTab, WorkbenchEditorTarget } from "../state/types";
-import type {
-  WorkbenchEditorTargetContribution,
-  WorkbenchEditorTargetContributionContext,
-} from "./types";
+import type { WorkbenchEditorResolveDeps, WorkbenchEditorTargetContribution } from "./types";
 
 async function readComparisonTargetCurrentState(
   target: HistoryTarget,
-  context: Pick<WorkbenchEditorTargetContributionContext, "manuscript" | "resources">,
+  workspace: WorkbenchEditorResolveDeps["workspace"],
 ): Promise<{ content: string; canEditCurrent: boolean }> {
   try {
     const content =
       target.domain === "manuscript"
-        ? await Promise.resolve(context.manuscript.readChapter(target.entityId))
-        : await Promise.resolve(context.resources.readFile(target.entityId));
+        ? await Promise.resolve(workspace.manuscript.readChapter(target.entityId))
+        : await Promise.resolve(workspace.resources.readFile(target.entityId));
     return {
       content,
       canEditCurrent: true,
@@ -93,11 +90,13 @@ export const comparisonEditorContribution: WorkbenchEditorTargetContribution = {
       JSON.stringify(comparisonTab.target) === JSON.stringify(candidate.target)
     );
   },
-  resolveTarget: async (target, context) => {
+  resolveTarget: async (target, deps) => {
+    const { workspace } = deps;
+
     if (target.kind === "history-entry") {
       const [historyContent, current] = await Promise.all([
-        Promise.resolve(context.history.readHistoryEntryContent(target.entryId)),
-        readComparisonTargetCurrentState(target.sourceTarget, context),
+        Promise.resolve(workspace.history.readHistoryEntryContent(target.entryId)),
+        readComparisonTargetCurrentState(target.sourceTarget, workspace),
       ]);
 
       if (historyContent.content === null) {
@@ -127,7 +126,7 @@ export const comparisonEditorContribution: WorkbenchEditorTargetContribution = {
 
     if (target.kind === "commit-change") {
       const comparison = await Promise.resolve(
-        context.history.readCommitChangeTextComparison(target.commitHash, target.sourceTarget),
+        workspace.history.readCommitChangeTextComparison(target.commitHash, target.sourceTarget),
       );
       const short = target.shortHash ?? target.commitHash.slice(0, 7);
       return {
@@ -153,7 +152,7 @@ export const comparisonEditorContribution: WorkbenchEditorTargetContribution = {
 
     const changeTarget = target as Extract<WorkbenchEditorTarget, { kind: "change" }>;
     const comparison = await Promise.resolve(
-      context.changes.readChangeTextComparison(changeTarget.changeId),
+      workspace.changes.readChangeTextComparison(changeTarget.changeId),
     );
     return {
       tab: {

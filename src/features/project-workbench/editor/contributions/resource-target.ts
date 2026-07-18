@@ -35,11 +35,13 @@ export const resourceEditorContribution: WorkbenchEditorTargetContribution = {
     left.label === right.label &&
     (left as Extract<WorkbenchEditorTab, { kind: "resource" }>).resourceId ===
       (right as Extract<WorkbenchEditorTab, { kind: "resource" }>).resourceId,
-  resolveTarget: async (target, context) => {
+  resolveTarget: async (target, deps) => {
     const resourceTarget = target as Extract<WorkbenchEditorTarget, { kind: "resource" }>;
-    const node = context.snapshot?.resources.nodes[resourceTarget.resourceId];
+    const node = deps.snapshot?.resources.nodes[resourceTarget.resourceId];
     const label = node?.type === "file" ? node.name : "资源文件";
-    const content = await Promise.resolve(context.resources.readFile(resourceTarget.resourceId));
+    const content = await Promise.resolve(
+      deps.workspace.resources.readFile(resourceTarget.resourceId),
+    );
     const key = `resource:${resourceTarget.resourceId}`;
 
     return {

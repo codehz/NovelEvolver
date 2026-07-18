@@ -1,9 +1,7 @@
 import type { RpcPromise } from "capnweb";
 
-import type { HistoryHandle, HistoryTarget } from "#shared/rpc/worktree/index";
-import type { ManuscriptHandle } from "#shared/rpc/worktree/index";
-import type { ResourceLibraryHandle } from "#shared/rpc/worktree/index";
-import type { WorktreeChangesHandle } from "#shared/rpc/worktree/index";
+import type { BranchWorkspace } from "#shared/rpc/session/index";
+import type { HistoryTarget } from "#shared/rpc/worktree/index";
 import type { WorktreeTreeSnapshot } from "#shared/rpc/worktree/index";
 
 import type {
@@ -17,11 +15,12 @@ export type ResolvedWorkbenchEditorTarget = {
   document?: WorkbenchEditorDocument;
 };
 
-export type WorkbenchEditorTargetContributionContext = {
-  manuscript: RpcPromise<ManuscriptHandle>;
-  resources: RpcPromise<ResourceLibraryHandle>;
-  changes: RpcPromise<WorktreeChangesHandle>;
-  history: RpcPromise<HistoryHandle>;
+/**
+ * 打开目标时的会话依赖：只暴露 workspace 根 + 树快照。
+ * 各 contribution 自行取 manuscript/resources/changes/history，避免 actions 组装全量 handle 袋。
+ */
+export type WorkbenchEditorResolveDeps = {
+  workspace: RpcPromise<BranchWorkspace>;
   snapshot: WorktreeTreeSnapshot | null;
 };
 
@@ -41,6 +40,6 @@ export type WorkbenchEditorTargetContribution = {
   areTabsEqual: (left: WorkbenchEditorTab, right: WorkbenchEditorTab) => boolean;
   resolveTarget: (
     target: WorkbenchEditorTarget,
-    context: WorkbenchEditorTargetContributionContext,
+    deps: WorkbenchEditorResolveDeps,
   ) => Promise<ResolvedWorkbenchEditorTarget>;
 };

@@ -35,12 +35,12 @@ export const manuscriptEditorContribution: WorkbenchEditorTargetContribution = {
     left.label === right.label &&
     (left as Extract<WorkbenchEditorTab, { kind: "manuscript" }>).chapterId ===
       (right as Extract<WorkbenchEditorTab, { kind: "manuscript" }>).chapterId,
-  resolveTarget: async (target, context) => {
+  resolveTarget: async (target, deps) => {
     const manuscriptTarget = target as Extract<WorkbenchEditorTarget, { kind: "manuscript" }>;
-    const node = context.snapshot?.manuscript.nodes[manuscriptTarget.chapterId];
+    const node = deps.snapshot?.manuscript.nodes[manuscriptTarget.chapterId];
     const label = node?.type === "chapter" ? node.title : "章节";
     const content = await Promise.resolve(
-      context.manuscript.readChapter(manuscriptTarget.chapterId),
+      deps.workspace.manuscript.readChapter(manuscriptTarget.chapterId),
     );
     const key = `manuscript:${manuscriptTarget.chapterId}`;
 

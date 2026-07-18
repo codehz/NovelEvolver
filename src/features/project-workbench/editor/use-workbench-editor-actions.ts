@@ -4,12 +4,7 @@ import { useCallback, useRef } from "react";
 
 import { notificationApi } from "#app/shared/lib/notifications";
 import { useWorktreeTreeSnapshot } from "#workbench/session/changes-feed/use-worktree-tree-snapshot";
-import {
-  useHistory,
-  useManuscript,
-  useResourceLibrary,
-  useWorktreeChanges,
-} from "#workbench/session/workspace-handles";
+import { useBranchWorkspace } from "#workbench/session/workspace-handles";
 
 import {
   getWorkbenchEditorTargetKey,
@@ -37,10 +32,7 @@ export function useWorkbenchEditorActions() {
   const store = useStore();
   const tabs = useAtomValue(tabsAtom);
   const setEditorState = useSetAtom(editorStateAtom);
-  const manuscript = useManuscript();
-  const resources = useResourceLibrary();
-  const changes = useWorktreeChanges();
-  const history = useHistory();
+  const workspace = useBranchWorkspace();
   const snapshot = useWorktreeTreeSnapshot();
   const focusRequestIdRef = useRef(0);
 
@@ -68,10 +60,7 @@ export function useWorkbenchEditorActions() {
 
       try {
         const { document, tab } = await resolveWorkbenchEditorTarget(target, {
-          manuscript,
-          resources,
-          changes,
-          history,
+          workspace,
           snapshot,
         });
         if (intent === "focus" && requestId !== focusRequestIdRef.current) {
@@ -92,17 +81,7 @@ export function useWorkbenchEditorActions() {
         );
       }
     },
-    [
-      editorStateAtom,
-      manuscript,
-      changes,
-      requestNavigation,
-      resources,
-      setEditorState,
-      snapshot,
-      store,
-      history,
-    ],
+    [editorStateAtom, requestNavigation, setEditorState, snapshot, store, workspace],
   );
 
   const focusTarget = useCallback(
