@@ -34,10 +34,13 @@ export function getBranchNameValidationError(
   if (name === "") {
     return "分支名不能为空";
   }
+  if (name.startsWith("/") || name.startsWith(".")) {
+    return "分支名格式无效";
+  }
   if (invalidBranchNamePattern.test(name)) {
     return "分支名不能包含空格或 ~ ^ : ? * [ \\";
   }
-  if (name.endsWith("/") || name.endsWith(".") || name.includes("..")) {
+  if (name.endsWith("/") || name.endsWith(".") || name.includes("..") || name.includes("//")) {
     return "分支名格式无效";
   }
   const lower = name.toLowerCase();
