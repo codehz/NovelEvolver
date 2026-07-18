@@ -3,8 +3,8 @@ import { useAtomValue, useSetAtom } from "jotai";
 import { useCallback, useEffect, useRef } from "react";
 
 import { notificationApi } from "#app/shared/lib/notifications";
-import { useManuscript, useResourceLibrary } from "#workbench/branch/branch-scopes";
 import type { PlainTextEditorHandle } from "#workbench/editor/PlainTextEditor";
+import { useManuscript, useResourceLibrary } from "#workbench/session/workspace-handles";
 
 import {
   getWorkbenchEditorContentTabDocumentKey,

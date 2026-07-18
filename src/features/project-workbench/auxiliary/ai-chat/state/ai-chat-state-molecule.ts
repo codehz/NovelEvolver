@@ -3,7 +3,7 @@ import { atom } from "jotai";
 
 import { createInitialAiChatSnapshot } from "#shared/rpc/ai/index";
 import type { AiChatMessage, AiChatSnapshot } from "#shared/rpc/ai/index";
-import { projectIdScope } from "#workbench/state/molecules";
+import { projectIdScope } from "#workbench/session/project-scope";
 
 export type AiChatTransportState = {
   loading: boolean;

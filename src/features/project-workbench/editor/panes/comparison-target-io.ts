@@ -1,7 +1,6 @@
 import type { HistoryTarget } from "#shared/rpc/worktree/index";
 import { isMissingComparisonTargetError } from "#workbench/lib/comparison-errors";
-
-import { useManuscript, useResourceLibrary } from "../../branch/branch-scopes";
+import { useManuscript, useResourceLibrary } from "#workbench/session/workspace-handles";
 
 export function readComparisonTargetCurrentContent(
   target: HistoryTarget,

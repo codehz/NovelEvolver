@@ -4,9 +4,9 @@ import { useCallback } from "react";
 
 import { notificationApi } from "#app/shared/lib/notifications";
 import type { ManuscriptTreeNode } from "#shared/rpc/worktree/index";
+import { useWorkbenchEditorActions } from "#workbench/editor/use-workbench-editor-actions";
+import { useManuscript } from "#workbench/session/workspace-handles";
 
-import { useManuscript } from "../../../branch/branch-scopes";
-import { useWorkbenchEditorActions } from "../../../editor/use-workbench-editor-actions";
 import { findManuscriptChildIndex, findManuscriptParentId } from "../manuscript-tree";
 import { manuscriptTreeMolecule } from "./manuscript-tree-molecule";
 import type { ManuscriptEditingState, ManuscriptTreeState } from "./types";

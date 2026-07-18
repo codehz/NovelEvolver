@@ -5,12 +5,12 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { notificationApi } from "#app/shared/lib/notifications";
 import { cn } from "#app/shared/lib/ui/cn";
 import type { HistoryEntry, HistoryTarget } from "#shared/rpc/worktree/index";
-import { useHistory } from "#workbench/branch/branch-scopes";
 import { getWorkbenchEditorTabHistoryTarget } from "#workbench/editor/contributions/registry";
 import { workbenchEditorMolecule } from "#workbench/editor/state/molecules";
 import { useWorkbenchEditorActions } from "#workbench/editor/use-workbench-editor-actions";
 import { formatHistoryTime } from "#workbench/lib/format-history-time";
-import { useWorktreeChangesRevision } from "#workbench/worktree/use-worktree-changes-revision";
+import { useWorktreeChangesRevision } from "#workbench/session/changes-feed/use-worktree-changes-revision";
+import { useHistory } from "#workbench/session/workspace-handles";
 
 const historyRowClass = cn(
   "group flex w-full min-w-0 items-start gap-2 border-b border-titlebar-border p-2 text-left",

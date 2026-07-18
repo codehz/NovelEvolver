@@ -3,9 +3,8 @@ import { atomWithReducer } from "jotai/utils";
 import type { Reducer } from "react";
 
 import { createOneShotRequestChannel } from "#app/shared/lib/ui/one-shot-request";
-
-import { branchNameScope } from "../../branch/branch-scopes";
-import { projectIdScope } from "../../state/molecules";
+import { branchNameScope } from "#workbench/session/branch-scope";
+import { projectIdScope } from "#workbench/session/project-scope";
 
 export function createContentTreeMolecule<TState, TAction>(
   reducer: Reducer<TState, TAction>,

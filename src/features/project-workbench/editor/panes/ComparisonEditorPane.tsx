@@ -4,13 +4,13 @@ import { useCallback, useEffect, useRef } from "react";
 
 import { notificationApi } from "#app/shared/lib/notifications";
 import { isNoChangeTextDiffError } from "#workbench/lib/comparison-errors";
-
 import {
   useHistory,
   useManuscript,
   useResourceLibrary,
   useWorktreeChanges,
-} from "../../branch/branch-scopes";
+} from "#workbench/session/workspace-handles";
+
 import { workbenchEditorMolecule } from "../state/molecules";
 import type { ComparisonWorkbenchEditorTab, WorkbenchEditorTab } from "../state/types";
 import {

@@ -3,13 +3,13 @@ import { useAtomValue, useSetAtom, useStore } from "jotai";
 import { useCallback, useRef } from "react";
 
 import { notificationApi } from "#app/shared/lib/notifications";
+import { useWorktreeTreeSnapshot } from "#workbench/session/changes-feed/use-worktree-tree-snapshot";
 import {
   useHistory,
   useManuscript,
   useResourceLibrary,
   useWorktreeChanges,
-} from "#workbench/branch/branch-scopes";
-import { useWorktreeTreeSnapshot } from "#workbench/worktree/use-worktree-tree-snapshot";
+} from "#workbench/session/workspace-handles";
 
 import {
   getWorkbenchEditorTargetKey,

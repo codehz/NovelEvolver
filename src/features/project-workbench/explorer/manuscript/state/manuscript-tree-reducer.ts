@@ -3,9 +3,9 @@ import type {
   ManuscriptTreeNode,
   ManuscriptTreeSnapshot,
 } from "#shared/rpc/worktree/index";
+import { applyManuscriptTreeDelta } from "#workbench/session/changes-feed/worktree-tree-state";
+import type { TreeResolvedDrop } from "#workbench/tree/tree-drag";
 
-import type { TreeResolvedDrop } from "../../../tree/tree-drag";
-import { applyManuscriptTreeDelta } from "../../../worktree/worktree-tree-state";
 import { findManuscriptParentId } from "../manuscript-tree";
 import { isValidManuscriptMoveTarget } from "../manuscript-tree-placement-policy";
 import type { ManuscriptMoveTarget, ManuscriptTreeState } from "./types";

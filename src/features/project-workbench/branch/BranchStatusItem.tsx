@@ -2,9 +2,9 @@ import { useAtomValue } from "jotai";
 
 import { quickPickOpenAtom } from "#app/shared/lib/quick-pick";
 import { StatusBarItemButton } from "#workbench/chrome";
+import { useActiveBranchName } from "#workbench/session/branch-scope";
 
 import { useBranchQuickPick } from "./branch-quick-pick";
-import { useActiveBranchName } from "./branch-scopes";
 
 export function BranchStatusItem() {
   const branchName = useActiveBranchName();

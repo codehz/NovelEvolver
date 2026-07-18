@@ -5,9 +5,9 @@ import { useCallback, useRef } from "react";
 import { notificationApi } from "#app/shared/lib/notifications";
 import { normalizeResourceNameInput } from "#shared/resource-library-path";
 import type { ResourceTreeSnapshot } from "#shared/rpc/worktree/index";
+import { useWorkbenchEditorActions } from "#workbench/editor/use-workbench-editor-actions";
+import { useResourceLibrary } from "#workbench/session/workspace-handles";
 
-import { useResourceLibrary } from "../../../branch/branch-scopes";
-import { useWorkbenchEditorActions } from "../../../editor/use-workbench-editor-actions";
 import { findResourceParentId } from "../resource-tree";
 import { resourceLibraryTreeMolecule } from "./resource-tree-molecule";
 import type { ResourceTreeEditingState, ResourceTreeSelection } from "./types";

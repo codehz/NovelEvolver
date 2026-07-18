@@ -3,8 +3,8 @@ import { useAtomValue, useSetAtom } from "jotai";
 import { useCallback, useState } from "react";
 
 import type { ChangesSnapshot } from "#shared/rpc/worktree/index";
-import { useHistory, useWorktreeChanges } from "#workbench/branch/branch-scopes";
-import { worktreeChangesFeedMolecule } from "#workbench/worktree/worktree-changes-feed";
+import { worktreeChangesFeedMolecule } from "#workbench/session/changes-feed/worktree-changes-feed";
+import { useHistory, useWorktreeChanges } from "#workbench/session/workspace-handles";
 
 import { APP_COMMIT_AUTHOR } from "./constants";
 

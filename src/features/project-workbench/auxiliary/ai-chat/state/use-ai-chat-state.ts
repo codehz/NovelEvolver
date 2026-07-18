@@ -23,7 +23,7 @@ import type {
   AiConversationSummary,
 } from "#shared/rpc/ai/index";
 import type { AiReasoningLevel } from "#shared/rpc/services/index";
-import { useAiChat } from "#workbench/branch/branch-scopes";
+import { useAiChat } from "#workbench/session/workspace-handles";
 
 import { stripHiddenAiChatWarningsFromSnapshot } from "../ui/ai-chat-helpers";
 import { aiChatStateMolecule, initialAiChatTransportState } from "./ai-chat-state-molecule";

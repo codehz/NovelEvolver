@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 
 import type { CommitChangesSnapshot } from "#shared/rpc/worktree/index";
-import { useHistory } from "#workbench/branch/branch-scopes";
+import { useHistory } from "#workbench/session/workspace-handles";
 
 export type CommitChangesCacheEntry =
   | { status: "loading" }

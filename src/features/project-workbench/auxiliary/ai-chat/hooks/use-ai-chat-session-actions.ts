@@ -1,6 +1,6 @@
 import { useCallback } from "react";
 
-import { useProjectContext } from "#workbench/state/molecules";
+import { useProjectContext } from "#workbench/session/project-scope";
 
 import { pickMockAiScenario } from "../quick-pick/mock-scenario-quick-pick";
 import { useAiChatActions, useAiChatLoading, useAiChatPending } from "../state/use-ai-chat-state";

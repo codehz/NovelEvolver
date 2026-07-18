@@ -7,8 +7,8 @@ import type {
   WorktreeTreeSnapshot,
 } from "#shared/rpc/worktree/index";
 
-import { branchNameScope } from "../branch/branch-scopes";
-import { projectIdScope } from "../state/molecules";
+import { branchNameScope } from "../branch-scope";
+import { projectIdScope } from "../project-scope";
 import { applyCombinedWorktreeTreeFromChangesEvent } from "./worktree-tree-state";
 
 export type WorktreeChangesFeedStatus = "loading" | "ready" | "error";

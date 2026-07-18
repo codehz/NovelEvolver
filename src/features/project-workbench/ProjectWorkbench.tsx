@@ -10,13 +10,13 @@ import { useTitleBarTitle } from "#app/shared/lib/shell/titlebar-title";
 import { cn } from "#app/shared/lib/ui/cn";
 import { AiChatPanel } from "#workbench/auxiliary/ai-chat/AiChatPanel";
 import { AiChatStateProvider } from "#workbench/auxiliary/ai-chat/state/use-ai-chat-state";
-import { BranchScopeProvider } from "#workbench/branch/BranchScopeProvider";
 import { WorkbenchLayout, type WorkbenchPrimaryView } from "#workbench/chrome";
 import { EditorArea } from "#workbench/editor/EditorArea";
+import { BranchScopeProvider } from "#workbench/session/BranchScopeProvider";
+import { projectIdScope, projectMolecule } from "#workbench/session/project-scope";
 import { ChangesSidebarSection } from "#workbench/sidebar/ChangesSidebarSection";
 import { ExplorerSidebar } from "#workbench/sidebar/ExplorerSidebar";
 import { SearchSidebarSection } from "#workbench/sidebar/SearchSidebarSection";
-import { projectIdScope, projectMolecule } from "#workbench/state/molecules";
 import { WorkbenchStatusBar } from "#workbench/statusbar/WorkbenchStatusBar";
 
 export function ProjectWorkbench() {

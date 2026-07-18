@@ -3,7 +3,7 @@ import { useAtomValue, useSetAtom } from "jotai";
 import { useEffect, useRef } from "react";
 
 import { usePrimaryViewActive } from "#workbench/chrome";
-import { worktreeChangesFeedMolecule } from "#workbench/worktree/worktree-changes-feed";
+import { worktreeChangesFeedMolecule } from "#workbench/session/changes-feed/worktree-changes-feed";
 
 import { manuscriptTreeMolecule } from "./manuscript-tree-molecule";
 

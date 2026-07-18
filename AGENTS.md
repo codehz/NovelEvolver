@@ -23,7 +23,15 @@ Renderer layout (`src/`):
 - `shared/` — cross-feature UI primitives (`shared/ui/`) and utilities (`shared/lib/` grouped as `rpc/`, `shell/`, `ui/`, `notifications/`, `quick-pick/`)
 - `features/` — domain features (`project-list/`, `project-workbench/`)
 
-`features/project-workbench/` domains: `chrome/` (layout shell barrel), `branch/`, `worktree/`, `history/`, `tree/`, `editor/` (`state/`, `contributions/`, `panes/`), `explorer/` (`shared/`, `manuscript/`, `resource-library/`), `changes/`, `search/`, `sidebar/`, `statusbar/`, `auxiliary/`, `state/` (project scope only), `lib/` (workbench-local micro-utils).
+`features/project-workbench/` layers and domains:
+
+- **Session plane** (`session/`): project/branch scope, workspace handle graph, changes feed / tree snapshot. Domains read handles and feed here — do **not** put UI or domain actions in `session/`.
+- **Domain plane**: `editor/` (`state/`, `contributions/`, `panes/`), `explorer/` (`shared/`, `manuscript/`, `resource-library/`), `changes/`, `search/`, `history/`, `auxiliary/ai-chat/`, `branch/` (**UX only**: switcher, status item — not the RPC handle bus).
+- **View kernel**: `chrome/` (layout shell barrel only), `tree/` (list/drag primitives only — no feed/domain imports).
+- **Composition root**: `ProjectWorkbench.tsx` (and optional thin composition helpers) — only place that assembles primary views / editor / auxiliary / status contributions.
+- **Misc**: `sidebar/` / `statusbar/` are transitional composition hosts (being emptied into domain + composition); `lib/` is workbench-local micro-utils.
+
+**Dependency direction (non-negotiable):** composition → domain → session → view kernel / `#app/shared` / `#shared`. Domains must not import other domains' internals; cross-domain traffic uses narrow ports (`openEditorTarget`, `revealInTree`, status item exports). Do **not** add new RPC handles or molecules under `branch/` — that belongs in `session/`.
 
 `electron/` layout (high level):
 

@@ -5,10 +5,10 @@ import type {
   WorktreeSearchHit,
   WorktreeSearchResult,
 } from "#shared/rpc/worktree/index";
-import { useWorktreeSearch } from "#workbench/branch/branch-scopes";
 import { usePrimaryViewActive } from "#workbench/chrome";
 import type { WorkbenchEditorNavigationRequest } from "#workbench/editor/state/types";
 import { useWorkbenchEditorActions } from "#workbench/editor/use-workbench-editor-actions";
+import { useWorktreeSearch } from "#workbench/session/workspace-handles";
 import { contentDomainIconClass } from "#workbench/tree/content-tree-icons";
 import type { TreeBodyStatus } from "#workbench/tree/TreeBody";
 

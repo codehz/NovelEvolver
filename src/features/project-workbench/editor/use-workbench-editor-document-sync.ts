@@ -3,9 +3,9 @@ import { useAtom } from "jotai";
 import type { RefObject } from "react";
 import { useEffect, useRef } from "react";
 
-import { useManuscript, useResourceLibrary } from "#workbench/branch/branch-scopes";
 import type { PlainTextEditorHandle } from "#workbench/editor/PlainTextEditor";
-import { useWorktreeChangesRevision } from "#workbench/worktree/use-worktree-changes-revision";
+import { useWorktreeChangesRevision } from "#workbench/session/changes-feed/use-worktree-changes-revision";
+import { useManuscript, useResourceLibrary } from "#workbench/session/workspace-handles";
 
 import { syncWorkbenchEditorDocument } from "./editor-document-contributions";
 import { areWorkbenchEditorStatesEqual, normalizeWorkbenchEditorState } from "./editor-tab-manager";
