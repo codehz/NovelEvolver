@@ -1,13 +1,14 @@
 import { AskUserComposerPanel } from "../ask-user/AskUserComposerPanel";
 import type { AiChatComposerState } from "../hooks/use-ai-chat-composer";
 import { useAiChatSelectors } from "../hooks/use-ai-chat-selectors";
-import { useAiChatState } from "../state/use-ai-chat-state";
+import { useAiChatLoading, useAiChatSnapshot } from "../state/use-ai-chat-state";
 import { AiChatMessageComposer } from "./AiChatMessageComposer";
 
 type AiChatComposerFooterProps = { composer: AiChatComposerState };
 
 export function AiChatComposerFooter({ composer }: AiChatComposerFooterProps) {
-  const { snapshot, loading } = useAiChatState();
+  const snapshot = useAiChatSnapshot();
+  const loading = useAiChatLoading();
   const {
     composerRef,
     composerDisabled,

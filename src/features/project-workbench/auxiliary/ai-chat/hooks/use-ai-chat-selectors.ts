@@ -5,7 +5,7 @@ import type { AiReasoningLevel } from "#shared/rpc/services/index";
 import { AI_REASONING_LEVEL_LABELS, AI_REASONING_LEVELS } from "#shared/rpc/services/index";
 
 import { toAgentSelectorItems, toModelSelectorItems, type AiChatSelectorItem } from "../selectors";
-import { useAiChatState } from "../state/use-ai-chat-state";
+import { useAiChatActions, useAiChatLoading, useAiChatSnapshot } from "../state/use-ai-chat-state";
 
 function orderAvailableReasoningLevels(levels: readonly AiReasoningLevel[]): AiReasoningLevel[] {
   const selected = new Set(levels);
@@ -13,15 +13,15 @@ function orderAvailableReasoningLevels(levels: readonly AiReasoningLevel[]): AiR
 }
 
 export function useAiChatSelectors() {
+  const snapshot = useAiChatSnapshot();
+  const loading = useAiChatLoading();
   const {
-    snapshot,
-    loading,
     listSelectableModels,
     setSelectedModel,
     listSelectableAgents,
     setSelectedAgent,
     setSelectedReasoningLevel,
-  } = useAiChatState();
+  } = useAiChatActions();
 
   const [selectableModels, setSelectableModels] = useState<AiChatSelectableModel[]>([]);
   const [selectableAgents, setSelectableAgents] = useState<AiChatSelectableAgent[]>([]);

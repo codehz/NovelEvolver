@@ -3,11 +3,13 @@ import { useCallback } from "react";
 import { useProjectContext } from "#workbench/state/molecules";
 
 import { pickMockAiScenario } from "../quick-pick/mock-scenario-quick-pick";
-import { useAiChatState } from "../state/use-ai-chat-state";
+import { useAiChatActions, useAiChatLoading, useAiChatPending } from "../state/use-ai-chat-state";
 
 export function useAiChatSessionActions(onClearDraft: () => void) {
   const project = useProjectContext();
-  const { snapshot, loading, createConversation } = useAiChatState();
+  const loading = useAiChatLoading();
+  const pending = useAiChatPending();
+  const { createConversation } = useAiChatActions();
 
   const handleCreateConversation = useCallback(async () => {
     if (loading) {
@@ -39,7 +41,7 @@ export function useAiChatSessionActions(onClearDraft: () => void) {
 
   return {
     loading,
-    pending: snapshot.pending,
+    pending,
     handleCreateConversation,
     handleRunMockScenario,
   };

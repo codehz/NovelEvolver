@@ -1,21 +1,29 @@
+import { useCallback } from "react";
+
 import { AiChatComposerFooter } from "./conversation/AiChatComposerFooter";
 import { AiChatConversationRail } from "./conversation/AiChatConversationRail";
 import { AiChatHeaderActions } from "./conversation/AiChatHeaderActions";
 import { useAiChatComposer } from "./hooks/use-ai-chat-composer";
 import { useMockAiAvailable } from "./hooks/use-mock-ai-available";
-import { useAiChatState } from "./state/use-ai-chat-state";
+import {
+  useAiChatActions,
+  useAiChatLoading,
+  useAiChatSnapshot,
+  useAiChatSubscriptionError,
+} from "./state/use-ai-chat-state";
 
 export function AiChatPanel() {
-  const { snapshot, loading, subscriptionError, retryLastRequest } = useAiChatState();
+  const snapshot = useAiChatSnapshot();
+  const loading = useAiChatLoading();
+  const subscriptionError = useAiChatSubscriptionError();
+  const { retryLastRequest } = useAiChatActions();
   const mockAiAvailable = useMockAiAvailable();
   const composer = useAiChatComposer();
 
-  const handleRetry =
-    snapshot.canRetry && !subscriptionError
-      ? () => {
-          void retryLastRequest();
-        }
-      : undefined;
+  const retryTurn = useCallback(() => {
+    void retryLastRequest();
+  }, [retryLastRequest]);
+  const handleRetry = snapshot.canRetry && !subscriptionError ? retryTurn : undefined;
 
   return (
     <>

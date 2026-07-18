@@ -2,7 +2,10 @@ import { useEffect, useState } from "react";
 
 import { cn } from "#app/shared/lib/ui/cn";
 import type { AiChatSelectableModel } from "#shared/rpc/ai/index";
-import { useAiChatState } from "#workbench/auxiliary/ai-chat/state/use-ai-chat-state";
+import {
+  useAiChatActions,
+  useAiChatStatusMeta,
+} from "#workbench/auxiliary/ai-chat/state/use-ai-chat-state";
 import {
   describeContextUsageRatio,
   resolveLatestLastInputTokens,
@@ -10,7 +13,8 @@ import {
 import { StatusBarItemInfo } from "#workbench/chrome";
 
 export function AiContextStatusItem() {
-  const { snapshot, loading, subscriptionError, listSelectableModels } = useAiChatState();
+  const meta = useAiChatStatusMeta();
+  const { listSelectableModels } = useAiChatActions();
   const [models, setModels] = useState<AiChatSelectableModel[]>([]);
 
   useEffect(() => {
@@ -23,14 +27,14 @@ export function AiContextStatusItem() {
     return () => {
       active = false;
     };
-  }, [listSelectableModels, snapshot.selectedModelId]);
+  }, [listSelectableModels, meta.selectedModelId]);
 
-  const selectedModel = models.find((model) => model.id === snapshot.selectedModelId) ?? null;
+  const selectedModel = models.find((model) => model.id === meta.selectedModelId) ?? null;
   const usage = describeContextUsageRatio(
     selectedModel?.contextLength,
-    resolveLatestLastInputTokens(snapshot.messages),
+    resolveLatestLastInputTokens(meta.messages),
   );
-  const latestMessage = snapshot.messages.at(-1);
+  const latestMessage = meta.messages.at(-1);
   const pendingTool =
     latestMessage?.role === "assistant" &&
     latestMessage.parts.some(
@@ -38,29 +42,29 @@ export function AiContextStatusItem() {
         part.type === "tool_call" && (part.status === "running" || part.status === "awaiting_user"),
     );
 
-  const label = loading
+  const label = meta.loading
     ? "AI 连接中"
-    : subscriptionError || snapshot.errorMessage
+    : meta.subscriptionError || meta.errorMessage
       ? "AI 请求失败"
-      : snapshot.pendingUserInputs.length > 0
+      : meta.pendingUserInputCount > 0
         ? "AI 等待输入"
         : pendingTool
           ? "AI 执行工具"
-          : snapshot.pending
+          : meta.pending
             ? "AI 正在生成"
             : usage
               ? `AI ${usage.label}`
               : "AI 就绪";
   const title = usage
-    ? `${selectedModel?.name ?? snapshot.model} · 上下文 ${usage.used.toLocaleString()} / ${usage.limit.toLocaleString()} token（${usage.percent}%）`
-    : (selectedModel?.name ?? snapshot.model);
+    ? `${selectedModel?.name ?? meta.model} · 上下文 ${usage.used.toLocaleString()} / ${usage.limit.toLocaleString()} token（${usage.percent}%）`
+    : (selectedModel?.name ?? meta.model);
 
   return (
     <StatusBarItemInfo
       className={cn(
         "gap-1",
         usage?.toneClass,
-        (subscriptionError || snapshot.errorMessage) && "text-ctp-red",
+        (meta.subscriptionError || meta.errorMessage) && "text-ctp-red",
       )}
       numeric={usage !== null}
       title={title}

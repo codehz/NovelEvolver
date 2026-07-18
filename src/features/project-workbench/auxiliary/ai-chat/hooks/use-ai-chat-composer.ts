@@ -1,10 +1,12 @@
 import { useCallback, useEffect, useRef, useState, type SubmitEvent } from "react";
 
 import type { ComposerEditorHandle } from "../composer/ComposerEditor";
-import { useAiChatState } from "../state/use-ai-chat-state";
+import { useAiChatActions, useAiChatLoading, useAiChatSnapshot } from "../state/use-ai-chat-state";
 
 export function useAiChatComposer() {
-  const { snapshot, loading, sendMessage, stopGeneration } = useAiChatState();
+  const snapshot = useAiChatSnapshot();
+  const loading = useAiChatLoading();
+  const { sendMessage, stopGeneration } = useAiChatActions();
   const composerRef = useRef<ComposerEditorHandle | null>(null);
   const shouldRestoreComposerFocusRef = useRef(false);
   const [canSend, setCanSend] = useState(false);
@@ -78,6 +80,10 @@ export function useAiChatComposer() {
     setCanSend(false);
   }, []);
 
+  const handleDocChange = useCallback(() => {
+    syncCanSend();
+  }, [syncCanSend]);
+
   return {
     composerRef,
     composerDisabled,
@@ -88,7 +94,7 @@ export function useAiChatComposer() {
     handleSendClick,
     handleStopClick,
     handleComposerSubmitKey,
-    handleDocChange: syncCanSend,
+    handleDocChange,
     clearDraft,
   };
 }

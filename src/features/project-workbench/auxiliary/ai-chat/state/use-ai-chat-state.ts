@@ -1,10 +1,12 @@
+import { useMolecule } from "bunshi/react";
+import { useAtomValue, useSetAtom, useStore } from "jotai";
 import {
   createContext,
   createElement,
   useCallback,
   useContext,
   useEffect,
-  useState,
+  useMemo,
   type ReactNode,
 } from "react";
 
@@ -24,37 +26,40 @@ import type { AiReasoningLevel } from "#shared/rpc/services/index";
 import { useAiChat } from "#workbench/branch/branch-scopes";
 
 import { stripHiddenAiChatWarningsFromSnapshot } from "../ui/ai-chat-helpers";
+import { aiChatStateMolecule, initialAiChatTransportState } from "./ai-chat-state-molecule";
 
-function useAiChatStateValue() {
+type AiChatActions = {
+  sendMessage: (input: AiChatSendMessageInput) => Promise<boolean>;
+  stopGeneration: () => Promise<void>;
+  retryLastRequest: () => Promise<void>;
+  createConversation: () => Promise<void>;
+  listConversations: (options?: AiConversationListOptions) => Promise<AiConversationSummary[]>;
+  searchConversations: (
+    query: string,
+    options?: AiConversationSearchOptions,
+  ) => Promise<AiConversationSearchHit[]>;
+  switchConversation: (conversationId: string) => Promise<void>;
+  renameConversation: (conversationId: string, title: string) => Promise<void>;
+  archiveConversation: (conversationId: string) => Promise<void>;
+  unarchiveConversation: (conversationId: string) => Promise<void>;
+  deleteConversation: (conversationId: string) => Promise<void>;
+  listSelectableModels: () => Promise<AiChatSelectableModel[]>;
+  setSelectedModel: (modelId: string) => Promise<void>;
+  listSelectableAgents: () => Promise<AiChatSelectableAgent[]>;
+  setSelectedAgent: (agentId: string) => Promise<void>;
+  setSelectedReasoningLevel: (level: AiReasoningLevel | null) => Promise<void>;
+};
+
+const AiChatActionsContext = createContext<AiChatActions | null>(null);
+
+function useAiChatActionsValue(): AiChatActions {
   const aiChat = useAiChat();
-  const [snapshot, setSnapshot] = useState<AiChatSnapshot>(() => createInitialAiChatSnapshot());
-  const [loading, setLoading] = useState(true);
-  const [subscriptionError, setSubscriptionError] = useState<string | null>(null);
-
-  useEffect(() => {
-    setSnapshot(createInitialAiChatSnapshot());
-    setLoading(true);
-    setSubscriptionError(null);
-
-    return consumeRpcSubscription({
-      subscribe: () => aiChat.subscribeChat(),
-      onValue: (event) => {
-        setSnapshot((current) =>
-          stripHiddenAiChatWarningsFromSnapshot(applyAiChatEvent(current, event)),
-        );
-        setLoading(false);
-        setSubscriptionError(null);
-      },
-      onError: (error) => {
-        setLoading(false);
-        setSubscriptionError(error instanceof Error ? error.message : String(error));
-      },
-      cancelReason: "AI chat subscription disposed.",
-    });
-  }, [aiChat]);
+  const store = useStore();
+  const { snapshotAtom } = useMolecule(aiChatStateMolecule);
 
   const sendMessage = useCallback(
     async (input: AiChatSendMessageInput): Promise<boolean> => {
+      const snapshot = store.get(snapshotAtom);
       const hasSlash = input.slash != null;
       const hasMentions = (input.mentions?.length ?? 0) > 0;
       const normalizedText = input.text.trim();
@@ -75,15 +80,16 @@ function useAiChatStateValue() {
       );
       return true;
     },
-    [aiChat, snapshot.pendingUserInputs, snapshot.pending],
+    [aiChat, snapshotAtom, store],
   );
 
   const stopGeneration = useCallback(async (): Promise<void> => {
+    const snapshot = store.get(snapshotAtom);
     if (!snapshot.pending) {
       return;
     }
     await Promise.resolve(aiChat.stopGeneration());
-  }, [aiChat, snapshot.pending]);
+  }, [aiChat, snapshotAtom, store]);
 
   const createConversation = useCallback(async (): Promise<void> => {
     await Promise.resolve(aiChat.createConversation());
@@ -174,42 +180,140 @@ function useAiChatStateValue() {
     await Promise.resolve(aiChat.retryLastRequest());
   }, [aiChat]);
 
+  return useMemo(
+    () => ({
+      sendMessage,
+      stopGeneration,
+      retryLastRequest,
+      createConversation,
+      listConversations,
+      searchConversations,
+      switchConversation,
+      renameConversation,
+      archiveConversation,
+      unarchiveConversation,
+      deleteConversation,
+      listSelectableModels,
+      setSelectedModel,
+      listSelectableAgents,
+      setSelectedAgent,
+      setSelectedReasoningLevel,
+    }),
+    [
+      archiveConversation,
+      createConversation,
+      deleteConversation,
+      listConversations,
+      listSelectableAgents,
+      listSelectableModels,
+      renameConversation,
+      retryLastRequest,
+      searchConversations,
+      sendMessage,
+      setSelectedAgent,
+      setSelectedModel,
+      setSelectedReasoningLevel,
+      stopGeneration,
+      switchConversation,
+      unarchiveConversation,
+    ],
+  );
+}
+
+function AiChatFeedSync() {
+  const aiChat = useAiChat();
+  const { snapshotAtom, transportAtom } = useMolecule(aiChatStateMolecule);
+  const setSnapshot = useSetAtom(snapshotAtom);
+  const setTransport = useSetAtom(transportAtom);
+
+  useEffect(() => {
+    setSnapshot(createInitialAiChatSnapshot());
+    setTransport(initialAiChatTransportState);
+
+    return consumeRpcSubscription({
+      subscribe: () => aiChat.subscribeChat(),
+      onValue: (event) => {
+        setSnapshot((current) =>
+          stripHiddenAiChatWarningsFromSnapshot(applyAiChatEvent(current, event)),
+        );
+        setTransport({ loading: false, subscriptionError: null });
+      },
+      onError: (error) => {
+        setTransport({
+          loading: false,
+          subscriptionError: error instanceof Error ? error.message : String(error),
+        });
+      },
+      cancelReason: "AI chat subscription disposed.",
+    });
+  }, [aiChat, setSnapshot, setTransport]);
+
+  return null;
+}
+
+export function AiChatStateProvider({ children }: { children: ReactNode }) {
+  const actions = useAiChatActionsValue();
+  return createElement(
+    AiChatActionsContext.Provider,
+    { value: actions },
+    createElement(AiChatFeedSync),
+    children,
+  );
+}
+
+export function useAiChatActions(): AiChatActions {
+  const value = useContext(AiChatActionsContext);
+  if (!value) {
+    throw new Error("useAiChatActions must be used within AiChatStateProvider.");
+  }
+  return value;
+}
+
+export function useAiChatSnapshot(): AiChatSnapshot {
+  const { snapshotAtom } = useMolecule(aiChatStateMolecule);
+  return useAtomValue(snapshotAtom);
+}
+
+export function useAiChatLoading(): boolean {
+  const { loadingAtom } = useMolecule(aiChatStateMolecule);
+  return useAtomValue(loadingAtom);
+}
+
+export function useAiChatSubscriptionError(): string | null {
+  const { subscriptionErrorAtom } = useMolecule(aiChatStateMolecule);
+  return useAtomValue(subscriptionErrorAtom);
+}
+
+export function useAiChatMessages() {
+  const { messagesAtom } = useMolecule(aiChatStateMolecule);
+  return useAtomValue(messagesAtom);
+}
+
+export function useAiChatPending(): boolean {
+  const { pendingAtom } = useMolecule(aiChatStateMolecule);
+  return useAtomValue(pendingAtom);
+}
+
+export function useAiChatConversationId(): string {
+  const { conversationIdAtom } = useMolecule(aiChatStateMolecule);
+  return useAtomValue(conversationIdAtom);
+}
+
+export function useAiChatStatusMeta() {
+  const { statusMetaAtom } = useMolecule(aiChatStateMolecule);
+  return useAtomValue(statusMetaAtom);
+}
+
+/** 兼容聚合 API：同时订阅 snapshot + transport + actions。优先改用细粒度 hooks。 */
+export function useAiChatState() {
+  const actions = useAiChatActions();
+  const snapshot = useAiChatSnapshot();
+  const loading = useAiChatLoading();
+  const subscriptionError = useAiChatSubscriptionError();
   return {
     snapshot,
     loading,
     subscriptionError,
-    sendMessage,
-    stopGeneration,
-    retryLastRequest,
-    createConversation,
-    listConversations,
-    searchConversations,
-    switchConversation,
-    renameConversation,
-    archiveConversation,
-    unarchiveConversation,
-    deleteConversation,
-    listSelectableModels,
-    setSelectedModel,
-    listSelectableAgents,
-    setSelectedAgent,
-    setSelectedReasoningLevel,
+    ...actions,
   };
-}
-
-type AiChatStateValue = ReturnType<typeof useAiChatStateValue>;
-
-const AiChatStateContext = createContext<AiChatStateValue | null>(null);
-
-export function AiChatStateProvider({ children }: { children: ReactNode }) {
-  const value = useAiChatStateValue();
-  return createElement(AiChatStateContext, { value }, children);
-}
-
-export function useAiChatState(): AiChatStateValue {
-  const value = useContext(AiChatStateContext);
-  if (!value) {
-    throw new Error("useAiChatState must be used within AiChatStateProvider.");
-  }
-  return value;
 }

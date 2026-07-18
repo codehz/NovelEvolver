@@ -1,3 +1,5 @@
+import { memo } from "react";
+
 import type { AiChatMessage } from "#shared/rpc/ai/index";
 
 import { AiAssistantMessageBlock } from "./AiAssistantMessageBlock";
@@ -16,7 +18,7 @@ type AiMessageBlockProps = {
   footerAlwaysVisible?: boolean;
 };
 
-export function AiMessageBlock({
+export const AiMessageBlock = memo(function AiMessageBlock({
   message,
   onRetry,
   retryLabel,
@@ -34,4 +36,4 @@ export function AiMessageBlock({
       footerAlwaysVisible={footerAlwaysVisible}
     />
   );
-}
+});

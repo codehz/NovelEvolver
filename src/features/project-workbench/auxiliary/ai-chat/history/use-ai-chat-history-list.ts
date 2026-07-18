@@ -13,7 +13,7 @@ import { popupContextMenu } from "#app/shared/lib/shell/popup-context-menu";
 import type { AiConversationSearchHit, AiConversationSummary } from "#shared/rpc/ai/index";
 
 import { useSelectorListNavigation } from "../selectors/use-selector-list-navigation";
-import { useAiChatState } from "../state/use-ai-chat-state";
+import { useAiChatActions, useAiChatConversationId } from "../state/use-ai-chat-state";
 import {
   buildContextMenuItems,
   buildHistoryListEntries,
@@ -34,8 +34,8 @@ export function useAiChatHistoryList({
   onClose: () => void;
   onClearDraft: () => void;
 }) {
+  const activeConversationId = useAiChatConversationId();
   const {
-    snapshot,
     listConversations,
     searchConversations,
     switchConversation,
@@ -43,7 +43,7 @@ export function useAiChatHistoryList({
     archiveConversation,
     unarchiveConversation,
     deleteConversation,
-  } = useAiChatState();
+  } = useAiChatActions();
 
   const searchInputRef = useRef<HTMLInputElement>(null);
   const renameInputRef = useRef<HTMLInputElement>(null);
@@ -58,7 +58,6 @@ export function useAiChatHistoryList({
   const [renamingId, setRenamingId] = useState<string | null>(null);
   const [renameDraft, setRenameDraft] = useState("");
 
-  const activeConversationId = snapshot.conversationId;
   const isSearching = debouncedQuery.trim() !== "";
   const isRenaming = renamingId != null;
 
