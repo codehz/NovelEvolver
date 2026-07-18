@@ -377,37 +377,6 @@ export class AiConversationRuntime {
   }
 
   /**
-   * Truncate active path at messageId; emit path.replaced.
-   * No-op while pending / awaiting user, or when id is not on the active path.
-   */
-  forkFromMessage(messageId: string): void {
-    if (this.#disposed) {
-      return;
-    }
-    if (this.#state.pending || this.#state.pendingToolBatch !== null) {
-      return;
-    }
-    if (!this.#state.forkFromMessage(messageId)) {
-      return;
-    }
-    this.#state.setErrorMessage(null);
-    this.#emitDelta([
-      {
-        type: "path.replaced",
-        messages: this.#state.projectActivePathMessages(),
-      },
-      {
-        type: "state.updated",
-        patch: {
-          errorMessage: null,
-          canRetry: this.#state.canRetry,
-        },
-      },
-    ]);
-    this.#state.persistIfNeeded();
-  }
-
-  /**
    * Switch sibling branch for messageId to index; emit path.replaced.
    */
   selectMessageBranch(messageId: string, index: number): void {
@@ -418,37 +387,6 @@ export class AiConversationRuntime {
       return;
     }
     if (!this.#state.selectMessageBranch(messageId, index)) {
-      return;
-    }
-    this.#state.setErrorMessage(null);
-    this.#emitDelta([
-      {
-        type: "path.replaced",
-        messages: this.#state.projectActivePathMessages(),
-      },
-      {
-        type: "state.updated",
-        patch: {
-          errorMessage: null,
-          canRetry: this.#state.canRetry,
-        },
-      },
-    ]);
-    this.#state.persistIfNeeded();
-  }
-
-  /**
-   * Select direct-child continuation at index for messageId; emit path.replaced.
-   * Restores a truncated path after fork (or picks among multiple retained children).
-   */
-  selectMessageContinuation(messageId: string, index: number): void {
-    if (this.#disposed) {
-      return;
-    }
-    if (this.#state.pending || this.#state.pendingToolBatch !== null) {
-      return;
-    }
-    if (!this.#state.selectMessageContinuation(messageId, index)) {
       return;
     }
     this.#state.setErrorMessage(null);
@@ -521,8 +459,9 @@ export class AiConversationRuntime {
   }
 
   /**
-   * 从上一次 model request 边界重试（非整 turn）。
-   * 从 history 重建 request input；成功 / 失败 / stop 均可；不重放已完成工具。
+   * Regenerate last assistant as a new sibling under the same parent user.
+   * Previous assistant versions stay on the tree (‹n/m›). requestInput is rebuilt
+   * from history last-request boundary without rewriting old nodes.
    */
   retryLastRequest(): void {
     if (this.#disposed || !this.#state.canRetry) {
@@ -534,42 +473,30 @@ export class AiConversationRuntime {
       return;
     }
 
-    this.#state.replaceHistory(requestInput);
+    const previousAssistant = this.#state.lastAssistantMessage;
+    const assistantMessage = this.#state.appendAssistantMessage(this.#resolveSelectedModelName());
 
-    const modelName = this.#resolveSelectedModelName();
-    const ops: AiChatDeltaOp[] = [];
-    let assistantMessage = this.#state.lastAssistantMessage;
-    if (assistantMessage === null) {
-      assistantMessage = this.#state.appendAssistantMessage(modelName);
-      ops.push({
-        type: "message.added",
-        message: cloneAiChatMessage(assistantMessage),
-      });
-    } else {
-      const keepCount = countCommittedAssistantParts(assistantMessage.parts, requestInput);
-      ops.push(...this.#state.truncateAssistantParts(assistantMessage.id, keepCount));
-      ops.push(
-        ...this.#state.updateMessage(assistantMessage.id, {
-          status: "streaming",
-          modelName,
-        }),
-      );
+    // Clear warnings on the previous leaf if present (new sibling starts clean).
+    if (previousAssistant) {
+      this.#state.clearWarningsForMessage(previousAssistant.id);
     }
-
-    // Drop stale provider warnings (e.g. INCOMPLETE_STREAM) from the previous attempt.
-    ops.push(...this.#state.clearWarningsForMessage(assistantMessage.id));
 
     this.#state.setPending(true);
     this.#state.setErrorMessage(null);
-    ops.push({
-      type: "state.updated",
-      patch: {
-        pending: true,
-        errorMessage: null,
-        canRetry: false,
+    this.#emitDelta([
+      {
+        type: "path.replaced",
+        messages: this.#state.projectActivePathMessages(),
       },
-    });
-    this.#emitDelta(ops);
+      {
+        type: "state.updated",
+        patch: {
+          pending: true,
+          errorMessage: null,
+          canRetry: false,
+        },
+      },
+    ]);
 
     void this.#runRequest({
       assistantMessageId: assistantMessage.id,

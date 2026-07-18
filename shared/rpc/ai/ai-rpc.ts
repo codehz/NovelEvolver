@@ -168,20 +168,6 @@ export type AiChatMessageBranch = {
   count: number;
 };
 
-/**
- * Truncated-leaf continuation metadata: this node has children but none is selected
- * (e.g. after `forkFromMessage`). Distinct from sibling `branch`.
- */
-export type AiChatMessageContinuation = {
-  /** Direct child count under this node. */
-  count: number;
-  /**
-   * Best child index to restore (last selected child if still present, else 0).
-   * UI "恢复后续" should call `selectMessageContinuation(id, preferredIndex)`.
-   */
-  preferredIndex: number;
-};
-
 export type AiChatUserMessage = {
   id: string;
   role: "user";
@@ -198,8 +184,6 @@ export type AiChatUserMessage = {
   status: "complete";
   /** Present when this message has siblings on the conversation tree. */
   branch?: AiChatMessageBranch;
-  /** Present when path is truncated here but child continuations still exist. */
-  continuation?: AiChatMessageContinuation;
 };
 
 export type AiChatAssistantMessage = {
@@ -215,8 +199,6 @@ export type AiChatAssistantMessage = {
   parts: AiChatAssistantPart[];
   /** Present when this message has siblings on the conversation tree. */
   branch?: AiChatMessageBranch;
-  /** Present when path is truncated here but child continuations still exist. */
-  continuation?: AiChatMessageContinuation;
 };
 
 export type AiChatMessage = AiChatUserMessage | AiChatAssistantMessage;
@@ -284,8 +266,8 @@ export type AiChatSnapshot = {
    */
   errorMessage: string | null;
   /**
-   * Whether `retryLastRequest()` can re-issue the last model request from history.
-   * False while pending, awaiting user input, or when history cannot rebuild a request.
+   * Whether `retryLastRequest()` can regenerate a sibling assistant from history.
+   * False while pending, awaiting user input, path leaf is not assistant, or history cannot rebuild a request.
    */
   canRetry: boolean;
 };
@@ -417,27 +399,16 @@ export interface AiChatHandle extends RpcTarget {
   /** Abort the in-flight model stream / tool loop when `pending`. No-op otherwise. */
   stopGeneration(): void;
   /**
-   * 从上一次 model request 边界重试（非整 turn）。
-   * 从 history 剥掉末尾模型输出后重发；成功 / 失败 / stop / 历史会话均可，
-   * 仅当 `canRetry` 时生效，否则静默忽略。不重放已完成工具。
+   * 重新生成末条助手：在同一用户节点下新建 sibling assistant 并生成。
+   * 旧版本保留，可通过 ‹n/m› 切换。requestInput 从 history 的 last-request 边界重建。
+   * 仅当 `canRetry` 时生效，否则静默忽略。生成中 / 等待用户输入时忽略。
    */
   retryLastRequest(): void;
-  /**
-   * 将会话活跃路径截到指定消息（仅允许当前活跃路径上的节点）。
-   * 不删除子树；后续发送将从该点长出新支路。生成中 / 等待用户输入时忽略。
-   */
-  forkFromMessage(messageId: string): void;
   /**
    * 在指定消息的兄弟分支中切换到 `index`（0-based）。
    * 生成中 / 等待用户输入时忽略。
    */
   selectMessageBranch(messageId: string, index: number): void;
-  /**
-   * 恢复 / 选择截断节点的第 `index` 个直接子后续（continuation 轴）。
-   * 用于 fork 后路径截断、子树仍在时把活跃路径重新接到某条后续。
-   * 生成中 / 等待用户输入时忽略。
-   */
-  selectMessageContinuation(messageId: string, index: number): void;
   /**
    * 编辑历史用户消息：创建兄弟 user 节点并立即发起新生成；原支路保留。
    * 生成中 / 等待用户输入时忽略。

@@ -44,14 +44,13 @@ import {
   concatActiveHistory,
   createEmptyConversationTree,
   distributeHistoryToActivePath,
+  getPathLeaf,
   listAllMessages,
   parseConversationMessagesJson,
   projectActiveMessages,
   projectActivePath,
-  selectChildByIndex,
   selectSiblingByIndex,
   serializeConversationTree,
-  truncateSelectionAt,
   type ConversationTree,
 } from "./conversation-tree";
 import {
@@ -382,11 +381,15 @@ export class AiConversationState {
   }
 
   /**
-   * Idle + not awaiting user + history can rebuild a non-empty last request input.
-   * Computed from live state (no separate flag).
+   * Idle + not awaiting user + path leaf is assistant + history can rebuild last request.
+   * Used for sibling regenerate (retryLastRequest), not same-node overwrite.
    */
   get canRetry(): boolean {
     if (this.#pending || this.#pendingToolBatch !== null) {
+      return false;
+    }
+    const leaf = getPathLeaf(this.#tree);
+    if (!leaf || leaf.role !== "assistant") {
       return false;
     }
     return rebuildLastRequestInput(this.history).length > 0;
@@ -596,22 +599,6 @@ export class AiConversationState {
   }
 
   /**
-   * Truncate active path selection at `messageId` (must be on active path).
-   * Emits no deltas — caller projects via `path.replaced`.
-   */
-  forkFromMessage(messageId: string): boolean {
-    const normalized = messageId.trim();
-    if (normalized === "") {
-      return false;
-    }
-    if (!truncateSelectionAt(this.#tree, normalized)) {
-      return false;
-    }
-    this.#markDirty();
-    return true;
-  }
-
-  /**
    * Select sibling at `index` for the sibling group of `messageId`.
    * Returns false when id/index invalid.
    */
@@ -621,22 +608,6 @@ export class AiConversationState {
       return false;
     }
     if (!selectSiblingByIndex(this.#tree, normalized, index)) {
-      return false;
-    }
-    this.#markDirty();
-    return true;
-  }
-
-  /**
-   * Select the `index`-th direct child of `messageId` (continuation restore after fork).
-   * Returns false when id/index invalid.
-   */
-  selectMessageContinuation(messageId: string, index: number): boolean {
-    const normalized = messageId.trim();
-    if (normalized === "" || !Number.isInteger(index) || index < 0) {
-      return false;
-    }
-    if (!selectChildByIndex(this.#tree, normalized, index)) {
       return false;
     }
     this.#markDirty();
