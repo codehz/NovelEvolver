@@ -13,18 +13,16 @@ import {
 } from "../ui/ai-chat-chrome";
 import { describeAssistantStreamingMeta, describeAssistantUsageMeta } from "../ui/ai-chat-helpers";
 import { AiAssistantPartBlock } from "./AiAssistantPartBlock";
+import { AiMessageBranchSwitcher } from "./AiMessageBranchSwitcher";
 
 type AiAssistantMessageBlockProps = {
   message: AiChatAssistantMessage;
-  /** When set, show retry on the completed footer leading slot (last assistant turn only). */
   onRetry?: () => void;
-  /** Retry button label/aria when `onRetry` is set. */
   retryLabel?: string;
-  /**
-   * When true, completed footer stays visible.
-   * When false, only reveal on block hover / focus-within (historical turns).
-   */
   footerAlwaysVisible?: boolean;
+  actionsDisabled?: boolean;
+  onFork?: () => void;
+  onSelectBranch?: (index: number) => void;
 };
 
 export function AiAssistantMessageBlock({
@@ -32,6 +30,9 @@ export function AiAssistantMessageBlock({
   onRetry,
   retryLabel = "重新生成",
   footerAlwaysVisible = false,
+  actionsDisabled = false,
+  onFork,
+  onSelectBranch,
 }: AiAssistantMessageBlockProps) {
   if (message.status === "streaming") {
     const hasStreamingPart = message.parts.some((part) => part.status === "streaming");
@@ -52,6 +53,9 @@ export function AiAssistantMessageBlock({
 
   const modelLabel = message.modelName.trim() !== "" ? message.modelName : "未知模型";
   const usageMeta = describeAssistantUsageMeta(message);
+  const branch = message.branch;
+  const hasLeading =
+    onRetry != null || onFork != null || (branch != null && branch.count > 1 && onSelectBranch);
 
   return (
     <article className={assistantMessageBlockClass}>
@@ -64,19 +68,43 @@ export function AiAssistantMessageBlock({
           !footerAlwaysVisible && assistantMessageFooterHoverRevealClass,
         )}
       >
-        {onRetry ? (
-          <div className={assistantMessageFooterLeadingClass}>
-            <AppTooltip label={retryLabel} side="top">
-              <Button
-                variant="ghost"
-                size="icon-sm"
-                aria-label={retryLabel}
-                className="text-ctp-mauve"
-                onClick={onRetry}
-              >
-                <span aria-hidden="true" className="icon-[codicon--refresh] text-sm" />
-              </Button>
-            </AppTooltip>
+        {hasLeading ? (
+          <div className={cn(assistantMessageFooterLeadingClass, "gap-0.5")}>
+            {branch && branch.count > 1 && onSelectBranch ? (
+              <AiMessageBranchSwitcher
+                branch={branch}
+                disabled={actionsDisabled}
+                onSelect={onSelectBranch}
+              />
+            ) : null}
+            {onFork ? (
+              <AppTooltip label="从此处分叉" side="top">
+                <Button
+                  variant="ghost"
+                  size="icon-sm"
+                  aria-label="从此处分叉"
+                  disabled={actionsDisabled}
+                  className="text-ctp-subtext1"
+                  onClick={onFork}
+                >
+                  <span aria-hidden="true" className="icon-[codicon--git-branch] text-sm" />
+                </Button>
+              </AppTooltip>
+            ) : null}
+            {onRetry ? (
+              <AppTooltip label={retryLabel} side="top">
+                <Button
+                  variant="ghost"
+                  size="icon-sm"
+                  aria-label={retryLabel}
+                  disabled={actionsDisabled}
+                  className="text-ctp-mauve"
+                  onClick={onRetry}
+                >
+                  <span aria-hidden="true" className="icon-[codicon--refresh] text-sm" />
+                </Button>
+              </AppTooltip>
+            ) : null}
           </div>
         ) : null}
         <div className={assistantMessageFooterTrailingClass}>

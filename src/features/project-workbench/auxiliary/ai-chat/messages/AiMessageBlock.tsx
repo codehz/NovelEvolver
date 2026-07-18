@@ -7,15 +7,13 @@ import { AiUserMessageBlock } from "./AiUserMessageBlock";
 
 type AiMessageBlockProps = {
   message: AiChatMessage;
-  /** When set, show retry on the completed footer leading slot (last assistant turn only). */
   onRetry?: () => void;
-  /** Retry button label/aria when `onRetry` is set. */
   retryLabel?: string;
-  /**
-   * When true, completed footer stays visible.
-   * When false, only reveal on block hover / focus-within (historical turns).
-   */
   footerAlwaysVisible?: boolean;
+  actionsDisabled?: boolean;
+  onFork?: () => void;
+  onEditUser?: (text: string) => void;
+  onSelectBranch?: (index: number) => void;
 };
 
 export const AiMessageBlock = memo(function AiMessageBlock({
@@ -23,9 +21,21 @@ export const AiMessageBlock = memo(function AiMessageBlock({
   onRetry,
   retryLabel,
   footerAlwaysVisible,
+  actionsDisabled,
+  onFork,
+  onEditUser,
+  onSelectBranch,
 }: AiMessageBlockProps) {
   if (message.role === "user") {
-    return <AiUserMessageBlock message={message} />;
+    return (
+      <AiUserMessageBlock
+        message={message}
+        actionsDisabled={actionsDisabled}
+        onFork={onFork}
+        onEdit={onEditUser}
+        onSelectBranch={onSelectBranch}
+      />
+    );
   }
 
   return (
@@ -34,6 +44,9 @@ export const AiMessageBlock = memo(function AiMessageBlock({
       onRetry={onRetry}
       retryLabel={retryLabel}
       footerAlwaysVisible={footerAlwaysVisible}
+      actionsDisabled={actionsDisabled}
+      onFork={onFork}
+      onSelectBranch={onSelectBranch}
     />
   );
 });

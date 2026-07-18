@@ -79,10 +79,19 @@ export const reasoningBodyClass = cn(
   "**:data-[streamdown='code-block-body']:border-titlebar-border **:data-[streamdown='code-block-body']:bg-app-background",
   "**:data-[streamdown='heading-1']:text-sm **:data-[streamdown='heading-2']:text-sm **:data-[streamdown='heading-3']:text-sm",
 );
-export const userMessageRowClass = cn("flex justify-end");
+export const userMessageRowClass = cn("group/user-msg flex flex-col items-end gap-1");
 export const userMessageBubbleClass = cn(
   "max-w-[88%] rounded-lg bg-app-crust px-3 py-2 text-chat leading-5 text-app-foreground shadow-[inset_0_1px_0_0_color-mix(in_srgb,var(--color-ctp-surface0)_24%,transparent)]",
 );
+/** Hover-reveal actions under a user bubble (fork / edit). */
+export const userMessageActionsClass = cn(
+  "flex max-w-[88%] items-center justify-end gap-0.5",
+  "opacity-0 transition-opacity",
+  "pointer-events-none",
+  "group-hover/user-msg:pointer-events-auto group-hover/user-msg:opacity-100",
+  "group-focus-within/user-msg:pointer-events-auto group-focus-within/user-msg:opacity-100",
+);
+export const messageBranchSwitcherClass = cn("inline-flex items-center gap-0.5 text-ctp-subtext1");
 /** Slash chip inside a sent user bubble (matches composer prompt-chip semantics). */
 export const userSlashChipClass = cn(
   "mr-1 inline-flex max-w-full shrink-0 items-center rounded-sm border border-ctp-mauve/35",

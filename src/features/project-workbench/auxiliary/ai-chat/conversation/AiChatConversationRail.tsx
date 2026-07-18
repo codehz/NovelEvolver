@@ -46,6 +46,10 @@ type AiChatConversationRailProps = {
   /** Last model-request error; rendered under the last assistant turn. */
   turnError: string | null;
   onRetry?: () => void;
+  actionsDisabled?: boolean;
+  onFork?: (messageId: string) => void;
+  onSelectBranch?: (messageId: string, index: number) => void;
+  onEditUser?: (messageId: string, text: string) => void;
 };
 
 export function AiChatConversationRail({
@@ -54,6 +58,10 @@ export function AiChatConversationRail({
   subscriptionError,
   turnError,
   onRetry,
+  actionsDisabled = false,
+  onFork,
+  onSelectBranch,
+  onEditUser,
 }: AiChatConversationRailProps) {
   const { warningsByMessageId, orphanWarnings } = useMemo(
     () => groupChatWarnings(snapshot.messages, snapshot.warnings),
@@ -144,6 +152,18 @@ export function AiChatConversationRail({
                     onRetry={messageRetry}
                     retryLabel={messageRetry ? retryLabel : undefined}
                     footerAlwaysVisible={isLastAssistant}
+                    actionsDisabled={actionsDisabled}
+                    onFork={onFork ? () => onFork(message.id) : undefined}
+                    onSelectBranch={
+                      onSelectBranch
+                        ? (index: number) => onSelectBranch(message.id, index)
+                        : undefined
+                    }
+                    onEditUser={
+                      message.role === "user" && onEditUser
+                        ? (text: string) => onEditUser(message.id, text)
+                        : undefined
+                    }
                   />
                   {messageWarnings.map((warning) => (
                     <AiChatWarningBanner key={warning.id} warning={warning} />

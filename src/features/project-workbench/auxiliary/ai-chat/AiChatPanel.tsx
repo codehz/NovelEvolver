@@ -16,7 +16,8 @@ export function AiChatPanel() {
   const snapshot = useAiChatSnapshot();
   const loading = useAiChatLoading();
   const subscriptionError = useAiChatSubscriptionError();
-  const { retryLastRequest } = useAiChatActions();
+  const { retryLastRequest, forkFromMessage, selectMessageBranch, editUserMessage } =
+    useAiChatActions();
   const mockAiAvailable = useMockAiAvailable();
   const composer = useAiChatComposer();
 
@@ -24,6 +25,39 @@ export function AiChatPanel() {
     void retryLastRequest();
   }, [retryLastRequest]);
   const handleRetry = snapshot.canRetry && !subscriptionError ? retryTurn : undefined;
+
+  const branchActionsDisabled =
+    snapshot.pending || snapshot.pendingUserInputs.length > 0 || subscriptionError != null;
+
+  const handleFork = useCallback(
+    (messageId: string) => {
+      void forkFromMessage(messageId);
+    },
+    [forkFromMessage],
+  );
+
+  const handleSelectBranch = useCallback(
+    (messageId: string, index: number) => {
+      void selectMessageBranch(messageId, index);
+    },
+    [selectMessageBranch],
+  );
+
+  const handleEditUser = useCallback(
+    (messageId: string, text: string) => {
+      const target = snapshot.messages.find((message) => message.id === messageId);
+      if (!target || target.role !== "user") {
+        return;
+      }
+      // MVP: edit text only; keep insert-time slash/mentions snapshots.
+      void editUserMessage(messageId, {
+        text,
+        slash: target.slash,
+        mentions: target.mentions,
+      });
+    },
+    [editUserMessage, snapshot.messages],
+  );
 
   return (
     <>
@@ -34,6 +68,10 @@ export function AiChatPanel() {
         subscriptionError={subscriptionError}
         turnError={snapshot.errorMessage}
         onRetry={handleRetry}
+        actionsDisabled={branchActionsDisabled}
+        onFork={branchActionsDisabled ? undefined : handleFork}
+        onSelectBranch={branchActionsDisabled ? undefined : handleSelectBranch}
+        onEditUser={branchActionsDisabled ? undefined : handleEditUser}
       />
       <AiChatComposerFooter composer={composer} />
     </>
