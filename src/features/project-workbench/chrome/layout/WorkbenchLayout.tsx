@@ -120,7 +120,10 @@ export function WorkbenchLayout({
         >
           <PrimarySidebarViewStack activeViewId={activeViewId} views={primaryViews} />
         </SidebarDock>
-        <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">{editor}</div>
+        {/* Above sidebars (`z-0`) so collapse fade is covered by the expanding editor; below activity bar `z-30`. */}
+        <div className="relative z-10 flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
+          {editor}
+        </div>
         <SidebarDock
           panelWidth={auxiliaryChrome.panelWidth}
           resizeActive={activeResizeSide === "auxiliary"}

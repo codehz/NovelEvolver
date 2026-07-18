@@ -97,14 +97,7 @@ export const SidebarDock = memo(function SidebarDock({
   );
 
   return (
-    <div
-      className={cn(
-        "relative h-full min-h-0 shrink-0 overflow-visible",
-        // Primary sits before the editor in DOM; keep fade-out chrome above the editor.
-        // Below activity bar `z-30`. Auxiliary is after the editor so stacking is free.
-        isPrimary && "z-20",
-      )}
-    >
+    <div className="relative z-0 h-full min-h-0 shrink-0 overflow-visible">
       <div
         aria-hidden
         className={cn(sidebarDockSpacerClass, resizeTransitionDisabled && "transition-none")}
