@@ -5,7 +5,6 @@ import type {
   AiChatAssistantMessage,
   AiChatMessage,
   AiChatMessageBranch,
-  AiChatMessageContinuation,
   AiChatUserMessage,
 } from "#shared/rpc/ai/index";
 
@@ -13,13 +12,8 @@ import type {
 export type ConversationMessageNode = {
   id: string;
   parentId: string | null;
-  /** Selected child on the active path; null means this node is the path leaf. */
+  /** Selected child on the active path; null means this node is a leaf (no children). */
   selectedChildId: string | null;
-  /**
-   * Last selected child id (survives truncate). Used as preferred restore target
-   * for continuation after fork.
-   */
-  lastSelectedChildId: string | null;
   role: "user" | "assistant";
   message: AiChatMessage;
   /** Model history items introduced by this node (user item / assistant replay+tools). */
@@ -32,15 +26,13 @@ export type ConversationTree = {
   nodes: Map<string, ConversationMessageNode>;
 };
 
-export type ConversationTreeDocumentV2 = {
-  version: 2;
+export type ConversationTreeDocumentV3 = {
+  version: 3;
   rootSelectedId: string | null;
   nodes: Array<{
     id: string;
     parentId: string | null;
     selectedChildId: string | null;
-    /** Optional for older v2 docs; missing treated as selectedChildId. */
-    lastSelectedChildId?: string | null;
     role: "user" | "assistant";
     message: AiChatMessage;
     historyItems: InputItem[];
@@ -89,32 +81,6 @@ export function getSiblingMeta(tree: ConversationTree, nodeId: string): AiChatMe
   return { index, count: siblings.length };
 }
 
-/**
- * Continuation meta only when path is truncated at this node but children remain.
- * Sibling branch navigation is a separate axis (`getSiblingMeta`).
- */
-export function getContinuationMeta(
-  tree: ConversationTree,
-  nodeId: string,
-): AiChatMessageContinuation | null {
-  const node = tree.nodes.get(nodeId);
-  if (!node || node.selectedChildId != null) {
-    return null;
-  }
-  const children = getChildren(tree, nodeId);
-  if (children.length === 0) {
-    return null;
-  }
-  let preferredIndex = 0;
-  if (node.lastSelectedChildId != null) {
-    const preferred = children.findIndex((child) => child.id === node.lastSelectedChildId);
-    if (preferred >= 0) {
-      preferredIndex = preferred;
-    }
-  }
-  return { count: children.length, preferredIndex };
-}
-
 /** Active path from selected root to leaf following selectedChildId. */
 export function projectActivePath(tree: ConversationTree): ConversationMessageNode[] {
   const path: ConversationMessageNode[] = [];
@@ -155,16 +121,11 @@ export function getPathLeaf(tree: ConversationTree): ConversationMessageNode | n
 export function projectActiveMessages(tree: ConversationTree): AiChatMessage[] {
   return projectActivePath(tree).map((node) => {
     const branch = getSiblingMeta(tree, node.id);
-    const continuation = getContinuationMeta(tree, node.id);
     const cloned = cloneAiChatMessage(node.message);
-    let next: AiChatMessage = cloned;
     if (branch && branch.count > 1) {
-      next = { ...next, branch };
+      return { ...cloned, branch };
     }
-    if (continuation) {
-      next = { ...next, continuation };
-    }
-    return next;
+    return cloned;
   });
 }
 
@@ -200,7 +161,6 @@ export function addChildNode(
     id: message.id,
     parentId,
     selectedChildId: null,
-    lastSelectedChildId: null,
     role: message.role,
     message: cloneAiChatMessage(message),
     historyItems: cloneInputItems(options?.historyItems ?? []),
@@ -214,29 +174,9 @@ export function addChildNode(
   } else if (select) {
     const parent = tree.nodes.get(parentId)!;
     parent.selectedChildId = node.id;
-    parent.lastSelectedChildId = node.id;
   }
 
   return node;
-}
-
-/**
- * Truncate the active selection at `nodeId` (must be on active path).
- * Keeps descendant nodes; only clears the selectedChildId chain from this node.
- * Preserves lastSelectedChildId so continuation restore prefers the prior path.
- */
-export function truncateSelectionAt(tree: ConversationTree, nodeId: string): boolean {
-  const path = projectActivePath(tree);
-  const index = path.findIndex((node) => node.id === nodeId);
-  if (index < 0) {
-    return false;
-  }
-  const node = path[index]!;
-  if (node.selectedChildId != null) {
-    node.lastSelectedChildId = node.selectedChildId;
-  }
-  node.selectedChildId = null;
-  return true;
 }
 
 /**
@@ -265,27 +205,7 @@ export function selectSiblingByIndex(
       return false;
     }
     parent.selectedChildId = selected.id;
-    parent.lastSelectedChildId = selected.id;
   }
-  return true;
-}
-
-/**
- * Select the `index`-th direct child of `nodeId` as the active continuation.
- * Used after fork (selectedChildId cleared) to reattach a retained subtree.
- */
-export function selectChildByIndex(tree: ConversationTree, nodeId: string, index: number): boolean {
-  const node = tree.nodes.get(nodeId);
-  if (!node) {
-    return false;
-  }
-  const children = getChildren(tree, nodeId);
-  if (index < 0 || index >= children.length) {
-    return false;
-  }
-  const selected = children[index]!;
-  node.selectedChildId = selected.id;
-  node.lastSelectedChildId = selected.id;
   return true;
 }
 
@@ -339,31 +259,69 @@ export function distributeHistoryToActivePath(
 }
 
 /**
- * Build a single-path tree from a linear message list + flat history (v1 storage).
+ * Hard invariants for sibling-tree single-axis model.
+ * Throws when the tree is corrupt or violates "children ⇒ selectedChildId".
  */
-export function migrateLinearToTree(
-  messages: readonly AiChatMessage[],
-  history: readonly InputItem[],
-): ConversationTree {
-  const tree = createEmptyConversationTree();
-  let parentId: string | null = null;
-  for (const message of messages) {
-    const node = addChildNode(tree, parentId, message, { select: true });
-    parentId = node.id;
+export function assertTreeInvariants(tree: ConversationTree): void {
+  if (tree.rootSelectedId != null) {
+    const root = tree.nodes.get(tree.rootSelectedId);
+    if (!root) {
+      throw new Error("会话树根选择指向不存在的节点。");
+    }
+    if (root.parentId !== null) {
+      throw new Error("会话树根选择必须是根节点。");
+    }
+    if (root.role !== "user") {
+      throw new Error("会话树根节点必须是用户消息。");
+    }
   }
-  distributeHistoryToActivePath(tree, history);
-  return tree;
+
+  for (const node of tree.nodes.values()) {
+    if (node.role !== "user" && node.role !== "assistant") {
+      throw new Error(`会话树节点角色非法：${node.id}`);
+    }
+    if (node.parentId === null) {
+      if (node.role !== "user") {
+        throw new Error(`根节点必须是用户消息：${node.id}`);
+      }
+    } else {
+      const parent = tree.nodes.get(node.parentId);
+      if (!parent) {
+        throw new Error(`会话树节点父引用无效：${node.id}`);
+      }
+      if (parent.role === "user" && node.role !== "assistant") {
+        throw new Error(`用户消息的子节点必须是助手：${node.id}`);
+      }
+      if (parent.role === "assistant" && node.role !== "user") {
+        throw new Error(`助手消息的子节点必须是用户：${node.id}`);
+      }
+    }
+
+    const children = getChildren(tree, node.id);
+    if (children.length === 0) {
+      if (node.selectedChildId != null) {
+        throw new Error(`无子节点时 selectedChildId 必须为空：${node.id}`);
+      }
+    } else {
+      if (node.selectedChildId == null) {
+        throw new Error(`有子节点时必须选中其中一个：${node.id}`);
+      }
+      const selected = tree.nodes.get(node.selectedChildId);
+      if (!selected || selected.parentId !== node.id) {
+        throw new Error(`selectedChildId 必须指向直接子节点：${node.id}`);
+      }
+    }
+  }
 }
 
-export function serializeConversationTree(tree: ConversationTree): ConversationTreeDocumentV2 {
+export function serializeConversationTree(tree: ConversationTree): ConversationTreeDocumentV3 {
   return {
-    version: 2,
+    version: 3,
     rootSelectedId: tree.rootSelectedId,
     nodes: [...tree.nodes.values()].map((node) => ({
       id: node.id,
       parentId: node.parentId,
       selectedChildId: node.selectedChildId,
-      lastSelectedChildId: node.lastSelectedChildId,
       role: node.role,
       message: cloneAiChatMessage(node.message),
       historyItems: cloneInputItems(node.historyItems),
@@ -380,42 +338,32 @@ function isAssistantMessage(value: AiChatMessage): value is AiChatAssistantMessa
 }
 
 /**
- * Parse messages_json: v2 tree document or v1 linear array.
- * When v1, `historyJson` is used to segment history onto the path.
+ * Parse messages_json as v3 tree document only.
+ * v1 arrays / v2 docs / corrupt data throw (no silent migration).
+ * `historyJson` is ignored (kept for call-site stability).
  */
 export function parseConversationMessagesJson(
   messagesJson: string,
-  historyJson: string,
+  _historyJson: string,
   normalizeMessage: (entry: unknown) => AiChatMessage,
 ): ConversationTree {
   let parsed: unknown;
   try {
     parsed = JSON.parse(messagesJson) as unknown;
   } catch {
-    return createEmptyConversationTree();
+    throw new Error("会话消息 JSON 无法解析。");
   }
 
   if (Array.isArray(parsed)) {
-    const messages = parsed.map((entry) => normalizeMessage(entry));
-    let history: InputItem[] = [];
-    try {
-      const historyParsed = JSON.parse(historyJson) as unknown;
-      if (Array.isArray(historyParsed)) {
-        history = historyParsed as InputItem[];
-      }
-    } catch {
-      history = [];
-    }
-    return migrateLinearToTree(messages, history);
+    throw new Error("不支持的会话消息格式（线性 v1）。");
   }
-
   if (parsed == null || typeof parsed !== "object") {
-    return createEmptyConversationTree();
+    throw new Error("不支持的会话消息格式。");
   }
 
   const doc = parsed as Record<string, unknown>;
-  if (doc.version !== 2 || !Array.isArray(doc.nodes)) {
-    return createEmptyConversationTree();
+  if (doc.version !== 3 || !Array.isArray(doc.nodes)) {
+    throw new Error("不支持的会话消息格式（需要 version: 3）。");
   }
 
   const tree = createEmptyConversationTree();
@@ -423,36 +371,32 @@ export function parseConversationMessagesJson(
 
   for (const entry of doc.nodes) {
     if (entry == null || typeof entry !== "object") {
-      continue;
+      throw new Error("会话树节点条目非法。");
     }
     const raw = entry as Record<string, unknown>;
     if (typeof raw.id !== "string") {
-      continue;
+      throw new Error("会话树节点缺少 id。");
     }
     const message = normalizeMessage(raw.message ?? raw);
     if (message.id !== raw.id) {
-      // Prefer stored structural id.
       message.id = raw.id;
     }
     const role = message.role;
     if (role !== "user" && role !== "assistant") {
-      continue;
+      throw new Error(`会话树节点角色非法：${raw.id}`);
     }
     if (role === "user" && !isUserMessage(message)) {
-      continue;
+      throw new Error(`用户消息结构非法：${raw.id}`);
     }
     if (role === "assistant" && !isAssistantMessage(message)) {
-      continue;
+      throw new Error(`助手消息结构非法：${raw.id}`);
     }
     const historyItems = Array.isArray(raw.historyItems) ? (raw.historyItems as InputItem[]) : [];
     const selectedChildId = typeof raw.selectedChildId === "string" ? raw.selectedChildId : null;
-    const lastSelectedChildId =
-      typeof raw.lastSelectedChildId === "string" ? raw.lastSelectedChildId : selectedChildId;
     const node: ConversationMessageNode = {
       id: raw.id,
       parentId: typeof raw.parentId === "string" ? raw.parentId : null,
       selectedChildId,
-      lastSelectedChildId,
       role,
       message: cloneAiChatMessage(message),
       historyItems: cloneInputItems(historyItems),
@@ -460,20 +404,7 @@ export function parseConversationMessagesJson(
     tree.nodes.set(node.id, node);
   }
 
-  // Drop dangling root selection.
-  if (tree.rootSelectedId && !tree.nodes.has(tree.rootSelectedId)) {
-    tree.rootSelectedId = null;
-  }
-  // Prefer a root user if selection missing.
-  if (tree.rootSelectedId === null) {
-    for (const node of tree.nodes.values()) {
-      if (node.parentId === null && node.role === "user") {
-        tree.rootSelectedId = node.id;
-        break;
-      }
-    }
-  }
-
+  assertTreeInvariants(tree);
   return tree;
 }
 

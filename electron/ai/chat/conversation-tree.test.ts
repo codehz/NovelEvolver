@@ -6,19 +6,16 @@ import type { AiChatAssistantMessage, AiChatUserMessage } from "#shared/rpc/ai/i
 
 import {
   addChildNode,
+  assertTreeInvariants,
   concatActiveHistory,
   createEmptyConversationTree,
   distributeHistoryToActivePath,
-  getContinuationMeta,
   getSiblingMeta,
-  migrateLinearToTree,
   parseConversationMessagesJson,
   projectActiveMessages,
   projectActivePath,
-  selectChildByIndex,
   selectSiblingByIndex,
   serializeConversationTree,
-  truncateSelectionAt,
 } from "./conversation-tree";
 
 function userMessage(id: string, text: string): AiChatUserMessage {
@@ -59,47 +56,22 @@ function assistantItem(text: string): InputItem {
   };
 }
 
-describe("migrateLinearToTree", () => {
-  test("chains messages and segments history", () => {
-    const messages = [
-      userMessage("u1", "hi"),
-      assistantMessage("a1", "hello"),
-      userMessage("u2", "next"),
-      assistantMessage("a2", "ok"),
-    ];
-    const history: InputItem[] = [
-      userItem("hi"),
-      assistantItem("hello"),
-      userItem("next"),
-      assistantItem("ok"),
-    ];
-    const tree = migrateLinearToTree(messages, history);
-    const path = projectActivePath(tree);
-    expect(path.map((node) => node.id)).toEqual(["u1", "a1", "u2", "a2"]);
-    expect(path[0]!.historyItems).toEqual([userItem("hi")]);
-    expect(path[1]!.historyItems).toEqual([assistantItem("hello")]);
-    expect(path[2]!.historyItems).toEqual([userItem("next")]);
-    expect(path[3]!.historyItems).toEqual([assistantItem("ok")]);
-    expect(concatActiveHistory(tree)).toEqual(history);
+function buildLinearPath(): ReturnType<typeof createEmptyConversationTree> {
+  const tree = createEmptyConversationTree();
+  addChildNode(tree, null, userMessage("u1", "hi"), { historyItems: [userItem("hi")] });
+  addChildNode(tree, "u1", assistantMessage("a1", "hello"), {
+    historyItems: [assistantItem("hello")],
   });
-});
+  addChildNode(tree, "a1", userMessage("u2", "next"), { historyItems: [userItem("next")] });
+  addChildNode(tree, "u2", assistantMessage("a2", "ok"), { historyItems: [assistantItem("ok")] });
+  return tree;
+}
 
-describe("fork and branch navigation", () => {
-  test("truncateSelectionAt clears chain without deleting nodes", () => {
-    const tree = migrateLinearToTree(
-      [userMessage("u1", "hi"), assistantMessage("a1", "hello"), userMessage("u2", "next")],
-      [userItem("hi"), assistantItem("hello"), userItem("next")],
-    );
-    expect(truncateSelectionAt(tree, "a1")).toBe(true);
-    expect(projectActivePath(tree).map((node) => node.id)).toEqual(["u1", "a1"]);
-    expect(tree.nodes.has("u2")).toBe(true);
-  });
-
-  test("send-style sibling + selectSiblingByIndex switches path", () => {
+describe("sibling tree navigation", () => {
+  test("selectSiblingByIndex switches assistant versions", () => {
     const tree = createEmptyConversationTree();
     addChildNode(tree, null, userMessage("u1", "hi"));
     addChildNode(tree, "u1", assistantMessage("a1", "v1"));
-    // New sibling assistant under same user (regen-style).
     addChildNode(tree, "u1", assistantMessage("a1b", "v2"), { select: true });
     expect(projectActivePath(tree).map((node) => node.id)).toEqual(["u1", "a1b"]);
     expect(getSiblingMeta(tree, "a1b")).toEqual({ index: 1, count: 2 });
@@ -117,74 +89,42 @@ describe("fork and branch navigation", () => {
     const projected = projectActiveMessages(tree);
     expect(projected[0]?.branch).toBeUndefined();
     expect(projected[1]?.branch).toEqual({ index: 1, count: 2 });
+    expect((projected[1] as { continuation?: unknown }).continuation).toBeUndefined();
   });
 
-  test("fork projects continuation; selectChildByIndex restores preferred path", () => {
-    const tree = migrateLinearToTree(
-      [
-        userMessage("u1", "hi"),
-        assistantMessage("a1", "hello"),
-        userMessage("u2", "next"),
-        assistantMessage("a2", "ok"),
-      ],
-      [userItem("hi"), assistantItem("hello"), userItem("next"), assistantItem("ok")],
-    );
-    expect(truncateSelectionAt(tree, "a1")).toBe(true);
-    expect(projectActivePath(tree).map((node) => node.id)).toEqual(["u1", "a1"]);
-    expect(getContinuationMeta(tree, "a1")).toEqual({ count: 1, preferredIndex: 0 });
-    const afterFork = projectActiveMessages(tree);
-    expect(afterFork[1]?.continuation).toEqual({ count: 1, preferredIndex: 0 });
-    expect(afterFork[1]?.branch).toBeUndefined();
-
-    expect(selectChildByIndex(tree, "a1", 0)).toBe(true);
-    expect(projectActivePath(tree).map((node) => node.id)).toEqual(["u1", "a1", "u2", "a2"]);
-    expect(getContinuationMeta(tree, "a1")).toBeNull();
-    expect(projectActiveMessages(tree)[1]?.continuation).toBeUndefined();
-  });
-
-  test("multi continuation preferredIndex tracks lastSelectedChildId", () => {
+  test("user sibling edit path switches with selectSiblingByIndex", () => {
     const tree = createEmptyConversationTree();
     addChildNode(tree, null, userMessage("u1", "hi"));
     addChildNode(tree, "u1", assistantMessage("a1", "hello"));
     addChildNode(tree, "a1", userMessage("u2", "old"));
     addChildNode(tree, "u2", assistantMessage("a2", "old reply"));
-    // Fork at a1 then send alternate path.
-    expect(truncateSelectionAt(tree, "a1")).toBe(true);
     addChildNode(tree, "a1", userMessage("u3", "new"), { select: true });
     addChildNode(tree, "u3", assistantMessage("a3", "new reply"), { select: true });
     expect(projectActivePath(tree).map((node) => node.id)).toEqual(["u1", "a1", "u3", "a3"]);
-    // Fork again: preferred should be the last selected child u3 (index 1).
-    expect(truncateSelectionAt(tree, "a1")).toBe(true);
-    expect(getContinuationMeta(tree, "a1")).toEqual({ count: 2, preferredIndex: 1 });
-    expect(selectChildByIndex(tree, "a1", 1)).toBe(true);
-    expect(projectActivePath(tree).map((node) => node.id)).toEqual(["u1", "a1", "u3", "a3"]);
-    expect(selectChildByIndex(tree, "a1", 0)).toBe(true);
+    expect(getSiblingMeta(tree, "u3")).toEqual({ index: 1, count: 2 });
+    expect(selectSiblingByIndex(tree, "u3", 0)).toBe(true);
     expect(projectActivePath(tree).map((node) => node.id)).toEqual(["u1", "a1", "u2", "a2"]);
   });
 });
 
 describe("distributeHistoryToActivePath", () => {
   test("rewrites segments on replaceHistory semantics", () => {
-    const tree = migrateLinearToTree(
-      [userMessage("u1", "hi"), assistantMessage("a1", "old")],
-      [userItem("hi"), assistantItem("old")],
-    );
+    const tree = createEmptyConversationTree();
+    addChildNode(tree, null, userMessage("u1", "hi"), { historyItems: [userItem("hi")] });
+    addChildNode(tree, "u1", assistantMessage("a1", "old"), {
+      historyItems: [assistantItem("old")],
+    });
     distributeHistoryToActivePath(tree, [userItem("hi"), assistantItem("new")]);
     expect(concatActiveHistory(tree)).toEqual([userItem("hi"), assistantItem("new")]);
     expect(projectActivePath(tree)[1]!.historyItems).toEqual([assistantItem("new")]);
   });
 });
 
-describe("serialize / parse v2", () => {
+describe("serialize / parse v3", () => {
   test("round-trips tree document", () => {
-    const tree = createEmptyConversationTree();
-    addChildNode(tree, null, userMessage("u1", "hi"), {
-      historyItems: [userItem("hi")],
-    });
-    addChildNode(tree, "u1", assistantMessage("a1", "hello"), {
-      historyItems: [assistantItem("hello")],
-    });
+    const tree = buildLinearPath();
     const doc = serializeConversationTree(tree);
+    expect(doc.version).toBe(3);
     const json = JSON.stringify(doc);
     const restored = parseConversationMessagesJson(json, "[]", (entry) => {
       if (entry && typeof entry === "object" && "role" in entry) {
@@ -192,19 +132,53 @@ describe("serialize / parse v2", () => {
       }
       throw new Error("bad");
     });
-    expect(projectActivePath(restored).map((node) => node.id)).toEqual(["u1", "a1"]);
-    expect(concatActiveHistory(restored)).toEqual([userItem("hi"), assistantItem("hello")]);
+    expect(projectActivePath(restored).map((node) => node.id)).toEqual(["u1", "a1", "u2", "a2"]);
+    expect(concatActiveHistory(restored)).toEqual([
+      userItem("hi"),
+      assistantItem("hello"),
+      userItem("next"),
+      assistantItem("ok"),
+    ]);
   });
 
-  test("parses v1 linear array with history", () => {
-    const messages = [userMessage("u1", "hi"), assistantMessage("a1", "hello")];
-    const history = [userItem("hi"), assistantItem("hello")];
-    const tree = parseConversationMessagesJson(
-      JSON.stringify(messages),
-      JSON.stringify(history),
-      (entry) => entry as AiChatUserMessage | AiChatAssistantMessage,
-    );
-    expect(projectActivePath(tree).map((node) => node.id)).toEqual(["u1", "a1"]);
-    expect(concatActiveHistory(tree)).toEqual(history);
+  test("rejects v1 linear array", () => {
+    expect(() =>
+      parseConversationMessagesJson(
+        JSON.stringify([userMessage("u1", "hi")]),
+        "[]",
+        (entry) => entry as AiChatUserMessage,
+      ),
+    ).toThrow(/不支持的会话消息格式/);
+  });
+
+  test("rejects v2 document", () => {
+    const payload = {
+      version: 2,
+      rootSelectedId: "u1",
+      nodes: [
+        {
+          id: "u1",
+          parentId: null,
+          selectedChildId: null,
+          role: "user",
+          message: userMessage("u1", "hi"),
+          historyItems: [],
+        },
+      ],
+    };
+    expect(() =>
+      parseConversationMessagesJson(JSON.stringify(payload), "[]", (entry) => {
+        return (entry as { message?: AiChatUserMessage }).message ?? (entry as AiChatUserMessage);
+      }),
+    ).toThrow(/version: 3/);
+  });
+
+  test("rejects truncated selectedChildId invariant", () => {
+    const tree = createEmptyConversationTree();
+    addChildNode(tree, null, userMessage("u1", "hi"));
+    addChildNode(tree, "u1", assistantMessage("a1", "hello"));
+    // Force illegal truncate: has child but selectedChildId null.
+    tree.nodes.get("u1")!.selectedChildId = null;
+    expect(() => assertTreeInvariants(tree)).toThrow(/有子节点时必须选中/);
   });
 });
