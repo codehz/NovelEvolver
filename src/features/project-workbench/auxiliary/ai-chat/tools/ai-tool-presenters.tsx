@@ -636,8 +636,83 @@ const historyEntryPresenter: ToolPresenter = (toolCall) => {
   };
 };
 
+const runSubagentPresenter: ToolPresenter = (toolCall) => {
+  const args = parseObject(toolCall.argumentsText);
+  const result = toolCall.status === "complete" ? parseObject(toolCall.resultText) : null;
+  const agentId = getString(result, "agent_id") ?? getString(args, "agent_id") ?? "未知 Agent";
+  const agentName = getString(result, "agent_name");
+  const task = getString(args, "task") ?? "未指定任务";
+  const taskPreview = task.length > 48 ? `${task.slice(0, 48)}…` : task;
+  const status = getString(result, "status");
+  const summary = getString(result, "summary");
+  const error = getString(result, "error") ?? toolCall.errorMessage;
+  const artifacts = getObject(result?.artifacts);
+  const wrote = typeof artifacts?.wrote === "boolean" ? artifacts.wrote : null;
+  const touched = Array.isArray(artifacts?.touched_node_ids)
+    ? artifacts.touched_node_ids.filter((id): id is string => typeof id === "string")
+    : [];
+  const focus = Array.isArray(args?.focus) ? args.focus : [];
+  const constraints = getString(args, "constraints");
+  const agentLabel = agentName ? `${agentName}` : agentId;
+  const statusLabel =
+    status === "completed"
+      ? "完成"
+      : status === "failed"
+        ? "失败"
+        : status === "aborted"
+          ? "已中止"
+          : status === "needs_user"
+            ? "需用户"
+            : null;
+
+  return {
+    label: "委派子代理",
+    summary: `${agentLabel} · ${taskPreview}`,
+    indicator:
+      statusLabel ??
+      (toolCall.status === "running" ? "执行中" : toolCall.status === "error" ? "错误" : undefined),
+    detail: (
+      <DetailList>
+        <DetailField label="Agent">{agentLabel}</DetailField>
+        <DetailField label="Agent ID">{agentId}</DetailField>
+        <DetailField label="任务">{task}</DetailField>
+        {constraints ? <DetailField label="约束">{constraints}</DetailField> : null}
+        {focus.length > 0 ? (
+          <DetailField label="焦点节点">
+            <ul className="flex flex-col gap-1">
+              {focus.slice(0, 8).map((entry, index) => {
+                const item = getObject(entry);
+                const domain = getString(item, "domain") ?? "?";
+                const id = getString(item, "id") ?? "?";
+                return (
+                  <li key={`${domain}:${id}:${index}`}>
+                    {domainLabel(domain)} · {id}
+                  </li>
+                );
+              })}
+              {focus.length > 8 ? (
+                <li className="text-ctp-subtext0">另有 {focus.length - 8} 个</li>
+              ) : null}
+            </ul>
+          </DetailField>
+        ) : null}
+        {statusLabel ? <DetailField label="结果状态">{statusLabel}</DetailField> : null}
+        {wrote !== null ? (
+          <DetailField label="是否写回">{wrote ? "已写入工作区" : "只读"}</DetailField>
+        ) : null}
+        {touched.length > 0 ? (
+          <DetailField label="触及节点">{touched.join(", ")}</DetailField>
+        ) : null}
+        {summary ? <DetailField label="摘要">{summary}</DetailField> : null}
+        {error ? <DetailField label="错误">{error}</DetailField> : null}
+      </DetailList>
+    ),
+  };
+};
+
 const presenters: Partial<Record<string, ToolPresenter>> = {
   ask_user: askUserPresenter,
+  run_subagent: runSubagentPresenter,
   read_structure: structurePresenter,
   read_document: readPresenter,
   search_documents: searchPresenter,
