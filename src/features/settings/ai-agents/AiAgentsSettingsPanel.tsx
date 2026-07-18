@@ -28,8 +28,7 @@ import { AiAgentConfigForm } from "./AiAgentConfigForm";
 type AgentEditorMode =
   | { type: "closed" }
   | { type: "create" }
-  | { type: "edit"; agent: AiAgentConfigPublic }
-  | { type: "detail"; agent: AiAgentConfigPublic };
+  | { type: "edit"; agent: AiAgentConfigPublic };
 
 type AgentsSettingsData = {
   agents: Awaited<ReturnType<typeof settingsService.getAiAgents>>;
@@ -49,10 +48,7 @@ function resolveAgentSubpageTitle(editor: AgentEditorMode): string | null {
     return "添加 Agent";
   }
   if (editor.type === "edit") {
-    return `编辑：${editor.agent.name}`;
-  }
-  if (editor.type === "detail") {
-    return `详情：${editor.agent.name}`;
+    return editor.agent.builtin ? `配置：${editor.agent.name}` : `编辑：${editor.agent.name}`;
   }
   return null;
 }
@@ -228,13 +224,13 @@ export function AiAgentsSettingsPanel() {
                     <div className="flex shrink-0 items-center gap-0.5">
                       {agent.builtin ? (
                         <Button
-                          aria-label={`查看 ${agent.name} 详情`}
+                          aria-label={`配置 ${agent.name}`}
                           disabled={busy}
                           onClick={() => {
-                            handleOpenEditor({ type: "detail", agent });
+                            handleOpenEditor({ type: "edit", agent });
                           }}
                         >
-                          详情
+                          配置
                         </Button>
                       ) : (
                         <>
@@ -294,25 +290,12 @@ export function AiAgentsSettingsPanel() {
                 busy={busy}
                 error={actionError}
                 initial={editor.agent}
+                lockDefinitionFields={editor.agent.builtin}
                 models={models}
                 providers={providers}
                 tools={tools}
                 onCancel={closeEditor}
                 onSubmit={handleSubmit}
-              />
-            ) : null}
-
-            {editor.type === "detail" ? (
-              <AiAgentConfigForm
-                key={editor.agent.id}
-                busy={busy}
-                error={actionError}
-                initial={editor.agent}
-                models={models}
-                providers={providers}
-                readOnly
-                tools={tools}
-                onCancel={closeEditor}
               />
             ) : null}
           </div>

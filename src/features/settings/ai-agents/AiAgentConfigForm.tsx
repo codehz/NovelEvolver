@@ -38,7 +38,13 @@ type AiAgentConfigFormProps = {
   models: AiModelConfigPublic[];
   providers: AiProviderConfigPublic[];
   initial?: AiAgentConfigPublic | null;
+  /** Full form locked (view-only). */
   readOnly?: boolean;
+  /**
+   * Lock name / system prompt / tools but keep default model editable.
+   * Used for builtin agents (definition is code-owned).
+   */
+  lockDefinitionFields?: boolean;
   busy?: boolean;
   error?: string | null;
   onCancel: () => void;
@@ -60,12 +66,16 @@ export function AiAgentConfigForm({
   providers,
   initial = null,
   readOnly = false,
+  lockDefinitionFields = false,
   busy = false,
   error = null,
   onCancel,
   onSubmit,
 }: AiAgentConfigFormProps) {
   const isEdit = initial != null;
+  const definitionLocked = readOnly || lockDefinitionFields;
+  const canEditDefaultModel = !readOnly;
+  const canSubmit = !readOnly && onSubmit != null;
   const [form, setForm] = useState<FormState>(() => toFormState(initial));
 
   const providerNameById = new Map<string, string>();
@@ -75,6 +85,7 @@ export function AiAgentConfigForm({
 
   const update = <K extends keyof FormState>(key: K, value: FormState[K]) => {
     if (readOnly) return;
+    if (lockDefinitionFields && key !== "defaultModelId") return;
     setForm((prev) => ({ ...prev, [key]: value }));
   };
 
@@ -82,7 +93,7 @@ export function AiAgentConfigForm({
     <Form
       className={settingsFormClass}
       onFormSubmit={() => {
-        if (readOnly || !onSubmit) {
+        if (!canSubmit || !onSubmit) {
           return;
         }
 
@@ -98,21 +109,25 @@ export function AiAgentConfigForm({
       }}
     >
       <div className={settingsFormGridClass}>
-        <Field.Root className={settingsFieldRootClass} disabled={busy || readOnly} name="name">
+        <Field.Root
+          className={settingsFieldRootClass}
+          disabled={busy || definitionLocked}
+          name="name"
+        >
           <Field.Label className={settingsFieldLabelClass}>名称</Field.Label>
           <div className={settingsFieldControlCellClass}>
             <Field.Control
-              autoFocus={!readOnly}
+              autoFocus={!definitionLocked}
               className={settingsInputClass}
-              placeholder={readOnly ? undefined : "例如：写作助手"}
-              readOnly={readOnly}
-              required={!readOnly}
+              placeholder={definitionLocked ? undefined : "例如：写作助手"}
+              readOnly={definitionLocked}
+              required={!definitionLocked}
               value={form.name}
               onValueChange={(next) => {
                 update("name", next);
               }}
             />
-            {readOnly ? null : (
+            {definitionLocked ? null : (
               <Field.Error className={settingsFieldErrorClass} match="valueMissing">
                 请填写名称。
               </Field.Error>
@@ -122,23 +137,23 @@ export function AiAgentConfigForm({
 
         <Field.Root
           className={settingsFieldRootClass}
-          disabled={busy || readOnly}
+          disabled={busy || definitionLocked}
           name="systemPrompt"
         >
           <Field.Label className={settingsFieldLabelClass}>系统提示词</Field.Label>
           <div className={settingsFieldControlCellClass}>
             <Field.Control
               className={settingsTextareaClass}
-              placeholder={readOnly ? undefined : "设定 Agent 的行为、性格与限制…"}
-              readOnly={readOnly}
+              placeholder={definitionLocked ? undefined : "设定 Agent 的行为、性格与限制…"}
+              readOnly={definitionLocked}
               render={<textarea rows={5} />}
-              required={!readOnly}
+              required={!definitionLocked}
               value={form.systemPrompt}
               onValueChange={(next) => {
                 update("systemPrompt", next);
               }}
             />
-            {readOnly ? null : (
+            {definitionLocked ? null : (
               <Field.Error className={settingsFieldErrorClass} match="valueMissing">
                 请填写系统提示词。
               </Field.Error>
@@ -148,13 +163,13 @@ export function AiAgentConfigForm({
 
         <Field.Root
           className={settingsFieldRootClass}
-          disabled={busy || readOnly}
+          disabled={busy || !canEditDefaultModel}
           name="defaultModelId"
         >
           <Field.Label className={settingsFieldLabelClass}>默认模型</Field.Label>
           <div className={settingsFieldControlCellClass}>
             <SettingsSelect
-              readOnly={readOnly}
+              readOnly={!canEditDefaultModel}
               value={form.defaultModelId}
               options={[
                 { value: "", label: "继承对话默认模型" },
@@ -173,14 +188,14 @@ export function AiAgentConfigForm({
 
         <Field.Root
           className={settingsFieldRootClass}
-          disabled={busy || readOnly}
+          disabled={busy || definitionLocked}
           name="availableToolNames"
         >
           <Field.Label className={settingsFieldLabelClass}>可用工具</Field.Label>
           <div className={settingsFieldControlCellClass}>
             <AiAgentToolPicker
               disabled={busy}
-              readOnly={readOnly}
+              readOnly={definitionLocked}
               tools={tools}
               value={form.availableToolNames}
               onChange={(next) => {
@@ -197,11 +212,11 @@ export function AiAgentConfigForm({
         <Button disabled={busy} onClick={onCancel}>
           {readOnly ? "返回" : "取消"}
         </Button>
-        {readOnly ? null : (
+        {canSubmit ? (
           <Button disabled={busy} type="submit" variant="primary">
             {isEdit ? "保存" : "添加"}
           </Button>
-        )}
+        ) : null}
       </div>
     </Form>
   );
