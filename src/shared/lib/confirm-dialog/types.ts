@@ -1,5 +1,6 @@
 export type ConfirmDialogTone = "default" | "danger";
 
+/** Two-button confirm (existing). */
 export type ConfirmDialogOptions = {
   title: string;
   description?: string;
@@ -8,9 +9,27 @@ export type ConfirmDialogOptions = {
   tone?: ConfirmDialogTone;
 };
 
-export type ConfirmDialogSession = {
-  requestId: string;
-  options: ConfirmDialogOptions;
+/** Three-button unsaved-changes choice. */
+export type UnsavedChangesDialogOptions = {
+  title?: string;
+  description?: string;
+  saveLabel?: string;
+  discardLabel?: string;
+  cancelLabel?: string;
 };
+
+export type UnsavedChangesChoice = "save" | "discard" | "cancel";
+
+export type ConfirmDialogSession =
+  | {
+      requestId: string;
+      kind: "confirm";
+      options: ConfirmDialogOptions;
+    }
+  | {
+      requestId: string;
+      kind: "unsaved";
+      options: UnsavedChangesDialogOptions;
+    };
 
 export type ConfirmDialogQueueEntry = ConfirmDialogSession;

@@ -9,4 +9,6 @@ export type {
   ConfirmDialogQueueEntry,
   ConfirmDialogSession,
   ConfirmDialogTone,
+  UnsavedChangesChoice,
+  UnsavedChangesDialogOptions,
 } from "./types";
