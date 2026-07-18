@@ -1,6 +1,12 @@
 export type { WorkbenchPrimaryView } from "./types";
 export { WorkbenchLayout, type WorkbenchLayoutProps } from "./layout/WorkbenchLayout";
 export {
+  useAuxiliaryActive,
+  usePrimaryViewActive,
+  useWorkbenchChrome,
+  type WorkbenchChromeContextValue,
+} from "./layout/workbench-chrome-context";
+export {
   SidebarViewSection,
   SidebarSectionRowResizeHandle,
   SIDEBAR_SECTION_HEADER_HEIGHT_PX,

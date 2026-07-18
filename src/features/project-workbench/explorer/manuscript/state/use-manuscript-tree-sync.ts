@@ -2,11 +2,13 @@ import { useMolecule } from "bunshi/react";
 import { useAtomValue, useSetAtom } from "jotai";
 import { useEffect, useRef } from "react";
 
+import { usePrimaryViewActive } from "#workbench/chrome";
 import { worktreeChangesFeedMolecule } from "#workbench/worktree/worktree-changes-feed";
 
 import { manuscriptTreeMolecule } from "./manuscript-tree-molecule";
 
 export function useManuscriptTreeSync(): void {
+  const active = usePrimaryViewActive("explorer");
   const { treeAtom } = useMolecule(manuscriptTreeMolecule);
   const dispatch = useSetAtom(treeAtom);
   const { treeSnapshotAtom, lastEventAtom, statusAtom } = useMolecule(worktreeChangesFeedMolecule);
@@ -16,6 +18,11 @@ export function useManuscriptTreeSync(): void {
   const appliedRevisionRef = useRef<number | null>(null);
 
   useEffect(() => {
+    if (!active) {
+      // 暂停投影；恢复时用完整 treeSnapshot 对齐，避免丢 delta。
+      appliedRevisionRef.current = null;
+      return;
+    }
     if (status === "loading") {
       appliedRevisionRef.current = null;
       dispatch({ type: "loadStart" });
@@ -37,7 +44,12 @@ export function useManuscriptTreeSync(): void {
     appliedRevisionRef.current = treeSnapshot.revision;
 
     const patch = lastEvent?.kind === "delta" ? lastEvent.treeDelta?.manuscript : undefined;
-    if (previousRevision !== null && patch !== undefined && lastEvent?.kind === "delta") {
+    if (
+      previousRevision !== null &&
+      patch !== undefined &&
+      lastEvent?.kind === "delta" &&
+      lastEvent.delta.fromRevision === previousRevision
+    ) {
       dispatch({
         type: "applyDelta",
         delta: patch,
@@ -47,5 +59,5 @@ export function useManuscriptTreeSync(): void {
     }
 
     dispatch({ type: "loadSuccess", snapshot: treeSnapshot.manuscript });
-  }, [dispatch, lastEvent, status, treeSnapshot]);
+  }, [active, dispatch, lastEvent, status, treeSnapshot]);
 }

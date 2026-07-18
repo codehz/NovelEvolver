@@ -10,6 +10,7 @@ import { useMeasuredElementWidth } from "./use-measured-element-width";
 import { useWorkbenchActiveView } from "./use-workbench-active-view";
 import { useWorkbenchLayoutPreferences } from "./use-workbench-layout-preferences";
 import { useWorkbenchSidebarResize } from "./use-workbench-sidebar-resize";
+import { WorkbenchChromeProvider } from "./workbench-chrome-context";
 import {
   ACTIVITY_BAR_WIDTH,
   DEFAULT_AUXILIARY_WIDTH,
@@ -87,76 +88,86 @@ export function WorkbenchLayout({
     },
     [handleSelectView, primary.visible],
   );
+  const chromeContext = useMemo(
+    () => ({
+      activePrimaryViewId: activeViewId,
+      primaryVisible: primary.visible,
+      auxiliaryVisible: auxiliaryChrome.visible,
+    }),
+    [activeViewId, auxiliaryChrome.visible, primary.visible],
+  );
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
-      <TitleBarPrimarySidebarToggle
-        visible={primary.visible}
-        onToggle={() => {
-          togglePrimarySidebar(primary.visible);
-        }}
-      />
-      <TitleBarAuxiliaryToggle
-        visible={auxiliaryChrome.visible}
-        onToggle={() => {
-          toggleAuxiliarySidebar(auxiliaryChrome.visible);
-        }}
-      />
-      <div ref={containerRef} className="flex min-h-0 flex-1 overflow-hidden">
-        <WorkbenchActivityBar
-          items={activityItems}
-          activeView={activeViewId}
-          primarySidebarVisible={primary.visible}
-          onSelectView={handleActivitySelectView}
-        />
-        <SidebarDock
-          panelWidth={primary.panelWidth}
-          resizeActive={activeResizeSide === "primary"}
-          resizeAriaLabel="调整主侧边栏宽度"
-          resizeTransitionDisabled={activeResizeSide === "primary"}
-          side="primary"
-          spacerWidth={primary.spacerWidth}
-          title={activePrimaryView.title}
+    <WorkbenchChromeProvider value={chromeContext}>
+      <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+        <TitleBarPrimarySidebarToggle
           visible={primary.visible}
-          onResizePointerDown={(event) => {
-            startResizeDrag("primary", event);
+          onToggle={() => {
+            togglePrimarySidebar(primary.visible);
           }}
-        >
-          <PrimarySidebarViewStack activeViewId={activeViewId} views={primaryViews} />
-        </SidebarDock>
-        {/* Above sidebars (`z-0`) so collapse fade is covered by the expanding editor; below activity bar `z-30`. */}
-        <div className="relative z-10 flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
-          {editor}
-        </div>
-        <SidebarDock
-          panelWidth={auxiliaryChrome.panelWidth}
-          resizeActive={activeResizeSide === "auxiliary"}
-          resizeAriaLabel="调整辅助侧边栏宽度"
-          resizeTransitionDisabled={activeResizeSide === "auxiliary"}
-          side="auxiliary"
-          spacerWidth={auxiliaryChrome.spacerWidth}
-          title="AI 助手"
-          visible={auxiliaryChrome.visible}
-          onResizePointerDown={(event) => {
-            startResizeDrag("auxiliary", event);
-          }}
-        >
-          <SidebarFrame
-            aria-hidden={!auxiliaryChrome.visible}
-            className="h-full min-h-0"
-            title="AI 助手"
-            titleMode="ghost"
-          >
-            {auxiliary}
-          </SidebarFrame>
-        </SidebarDock>
-        {/* Always reserve right edge breath room — independent of auxiliary visibility. */}
-        <div
-          aria-hidden
-          className="pointer-events-none h-full shrink-0"
-          style={{ width: WORKBENCH_EDGE_INSET }}
         />
+        <TitleBarAuxiliaryToggle
+          visible={auxiliaryChrome.visible}
+          onToggle={() => {
+            toggleAuxiliarySidebar(auxiliaryChrome.visible);
+          }}
+        />
+        <div ref={containerRef} className="flex min-h-0 flex-1 overflow-hidden">
+          <WorkbenchActivityBar
+            items={activityItems}
+            activeView={activeViewId}
+            primarySidebarVisible={primary.visible}
+            onSelectView={handleActivitySelectView}
+          />
+          <SidebarDock
+            panelWidth={primary.panelWidth}
+            resizeActive={activeResizeSide === "primary"}
+            resizeAriaLabel="调整主侧边栏宽度"
+            resizeTransitionDisabled={activeResizeSide === "primary"}
+            side="primary"
+            spacerWidth={primary.spacerWidth}
+            title={activePrimaryView.title}
+            visible={primary.visible}
+            onResizePointerDown={(event) => {
+              startResizeDrag("primary", event);
+            }}
+          >
+            <PrimarySidebarViewStack activeViewId={activeViewId} views={primaryViews} />
+          </SidebarDock>
+          {/* Above sidebars (`z-0`) so collapse fade is covered by the expanding editor; below activity bar `z-30`. */}
+          <div className="relative z-10 flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
+            {editor}
+          </div>
+          <SidebarDock
+            panelWidth={auxiliaryChrome.panelWidth}
+            resizeActive={activeResizeSide === "auxiliary"}
+            resizeAriaLabel="调整辅助侧边栏宽度"
+            resizeTransitionDisabled={activeResizeSide === "auxiliary"}
+            side="auxiliary"
+            spacerWidth={auxiliaryChrome.spacerWidth}
+            title="AI 助手"
+            visible={auxiliaryChrome.visible}
+            onResizePointerDown={(event) => {
+              startResizeDrag("auxiliary", event);
+            }}
+          >
+            <SidebarFrame
+              aria-hidden={!auxiliaryChrome.visible}
+              className="h-full min-h-0"
+              title="AI 助手"
+              titleMode="ghost"
+            >
+              {auxiliary}
+            </SidebarFrame>
+          </SidebarDock>
+          {/* Always reserve right edge breath room — independent of auxiliary visibility. */}
+          <div
+            aria-hidden
+            className="pointer-events-none h-full shrink-0"
+            style={{ width: WORKBENCH_EDGE_INSET }}
+          />
+        </div>
       </div>
-    </div>
+    </WorkbenchChromeProvider>
   );
 }

@@ -2,11 +2,13 @@ import { useMolecule } from "bunshi/react";
 import { useAtomValue, useSetAtom } from "jotai";
 import { useEffect, useRef } from "react";
 
+import { usePrimaryViewActive } from "#workbench/chrome";
 import { worktreeChangesFeedMolecule } from "#workbench/worktree/worktree-changes-feed";
 
 import { resourceLibraryTreeMolecule } from "./resource-tree-molecule";
 
 export function useResourceTreeSync(): void {
+  const active = usePrimaryViewActive("explorer");
   const { treeAtom } = useMolecule(resourceLibraryTreeMolecule);
   const dispatch = useSetAtom(treeAtom);
   const { treeSnapshotAtom, lastEventAtom, statusAtom } = useMolecule(worktreeChangesFeedMolecule);
@@ -16,6 +18,10 @@ export function useResourceTreeSync(): void {
   const appliedRevisionRef = useRef<number | null>(null);
 
   useEffect(() => {
+    if (!active) {
+      appliedRevisionRef.current = null;
+      return;
+    }
     if (status === "loading") {
       appliedRevisionRef.current = null;
       dispatch({ type: "loadStart" });
@@ -37,7 +43,12 @@ export function useResourceTreeSync(): void {
     appliedRevisionRef.current = treeSnapshot.revision;
 
     const patch = lastEvent?.kind === "delta" ? lastEvent.treeDelta?.resources : undefined;
-    if (previousRevision !== null && patch !== undefined && lastEvent?.kind === "delta") {
+    if (
+      previousRevision !== null &&
+      patch !== undefined &&
+      lastEvent?.kind === "delta" &&
+      lastEvent.delta.fromRevision === previousRevision
+    ) {
       dispatch({
         type: "applyDelta",
         delta: patch,
@@ -47,5 +58,5 @@ export function useResourceTreeSync(): void {
     }
 
     dispatch({ type: "loadSuccess", snapshot: treeSnapshot.resources });
-  }, [dispatch, lastEvent, status, treeSnapshot]);
+  }, [active, dispatch, lastEvent, status, treeSnapshot]);
 }

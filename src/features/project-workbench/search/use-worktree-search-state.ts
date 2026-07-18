@@ -6,6 +6,7 @@ import type {
   WorktreeSearchResult,
 } from "#shared/rpc/worktree/index";
 import { useWorktreeSearch } from "#workbench/branch/branch-scopes";
+import { usePrimaryViewActive } from "#workbench/chrome";
 import type { WorkbenchEditorNavigationRequest } from "#workbench/editor/state/types";
 import { useWorkbenchEditorActions } from "#workbench/editor/use-workbench-editor-actions";
 import { contentDomainIconClass } from "#workbench/tree/content-tree-icons";
@@ -51,6 +52,7 @@ function formatReplaceError(error: unknown): string {
 }
 
 export function useWorktreeSearchState() {
+  const searchActive = usePrimaryViewActive("search");
   const searchHandle = useWorktreeSearch();
   const { focusTarget, openTarget } = useWorkbenchEditorActions();
 
@@ -66,6 +68,9 @@ export function useWorktreeSearchState() {
   const [replaceStatusLine, setReplaceStatusLine] = useState<string | null>(null);
 
   useEffect(() => {
+    if (!searchActive) {
+      return;
+    }
     const trimmed = query.trim();
     if (trimmed === "") {
       setDebouncedQuery("");
@@ -77,9 +82,12 @@ export function useWorktreeSearchState() {
     return () => {
       window.clearTimeout(timer);
     };
-  }, [query]);
+  }, [query, searchActive]);
 
   useEffect(() => {
+    if (!searchActive) {
+      return;
+    }
     if (debouncedQuery === "") {
       setResult(null);
       setStatus("idle");
@@ -116,7 +124,7 @@ export function useWorktreeSearchState() {
     return () => {
       cancelled = true;
     };
-  }, [debouncedQuery, isRegex, retryKey, searchHandle]);
+  }, [debouncedQuery, isRegex, retryKey, searchActive, searchHandle]);
 
   const refreshSearch = useCallback(() => {
     const trimmed = query.trim();
