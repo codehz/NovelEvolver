@@ -30,6 +30,19 @@ export interface ProjectSession extends RpcTarget {
   getMockAiControl(): MockAiControlHandle | null;
   checkoutBranch(name: string): void;
   /**
+   * Creates a branch ref at the current HEAD tip. Does **not** checkout — callers
+   * should call {@link checkoutBranch} afterwards when switching is desired.
+   *
+   * Requires HEAD to resolve to a commit (empty repository must commit first).
+   * Rejects empty names and existing branch names.
+   */
+  createBranch(name: string): BranchSummary;
+  /**
+   * Deletes a branch ref and discards that branch's draft worktree (including
+   * uncommitted manuscript/resource changes). Rejects the current branch.
+   */
+  deleteBranch(name: string): void;
+  /**
    * Opens the draft workspace for `name` (branch name). Persisted under key
    * `<project-id>:<branch-name>`. Creates on first use from the branch tip tree,
    * or from an empty tree when the branch has no commits yet; later calls reopen
