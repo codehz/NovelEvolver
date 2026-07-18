@@ -2,7 +2,7 @@ import type { ReactNode } from "react";
 
 import type { ChangesSnapshot } from "#shared/rpc/worktree/index";
 import type { Change } from "#shared/rpc/worktree/index";
-import { ErrorRetryView } from "#workbench/chrome";
+import { ErrorRetryView, SidebarHeaderActionButton, SidebarHeaderActions } from "#workbench/chrome";
 
 import { ChangesCommitForm } from "./ChangesCommitForm";
 import { ChangesList } from "./ChangesList";
@@ -59,6 +59,7 @@ function resolveChangesPanelContent({
 }
 
 type ChangesBodyProps = {
+  canRevertAll: boolean;
   commitMessage: string;
   committing: boolean;
   loading: boolean;
@@ -68,10 +69,12 @@ type ChangesBodyProps = {
   onCommit: () => void;
   onRetry: () => void;
   onRevert: (changeId: string) => void;
+  onRevertAll: () => void;
   onOpenChange: (change: Change) => void;
 };
 
 export function ChangesBody({
+  canRevertAll,
   commitMessage,
   committing,
   loading,
@@ -81,10 +84,19 @@ export function ChangesBody({
   onCommit,
   onRetry,
   onRevert,
+  onRevertAll,
   onOpenChange,
 }: ChangesBodyProps) {
   return (
     <div className="flex min-h-0 flex-col">
+      <SidebarHeaderActions>
+        <SidebarHeaderActionButton
+          label="还原所有更改"
+          icon="icon-[codicon--discard]"
+          disabled={!canRevertAll}
+          onClick={onRevertAll}
+        />
+      </SidebarHeaderActions>
       <ChangesCommitForm
         commitMessage={commitMessage}
         committing={committing}

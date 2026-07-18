@@ -15,6 +15,7 @@ import { useCommitHistoryState } from "#workbench/history/use-commit-history-sta
 
 export function ChangesSidebarSection() {
   const {
+    canRevertAll,
     commit,
     commitMessage,
     committing,
@@ -23,6 +24,7 @@ export function ChangesSidebarSection() {
     loading,
     result,
     retry,
+    revertAll,
     revertChange,
     setCommitMessage,
   } = useChangesState();
@@ -43,6 +45,7 @@ export function ChangesSidebarSection() {
         defaultBodyHeight: CHANGES_PANEL_DEFAULT_BODY_HEIGHT,
         body: (
           <ChangesBody
+            canRevertAll={canRevertAll}
             commitMessage={commitMessage}
             committing={committing}
             error={error}
@@ -65,6 +68,7 @@ export function ChangesSidebarSection() {
             }
             onRetry={retry}
             onRevert={revertChange}
+            onRevertAll={revertAll}
           />
         ),
         onToggleExpanded: () => setChangesExpanded((value) => !value),
@@ -107,6 +111,7 @@ export function ChangesSidebarSection() {
       },
     ],
     [
+      canRevertAll,
       changesExpanded,
       commit,
       commitMessage,
@@ -125,6 +130,7 @@ export function ChangesSidebarSection() {
       focusTarget,
       result,
       retry,
+      revertAll,
       revertChange,
       setCommitMessage,
     ],
