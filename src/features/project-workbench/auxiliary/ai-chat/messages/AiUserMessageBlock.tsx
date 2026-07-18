@@ -4,6 +4,7 @@ import { AppTooltip, Button } from "#app/shared/ui";
 import type { AiChatUserMessage } from "#shared/rpc/ai/index";
 
 import {
+  messageActionButtonClass,
   userMessageActionsClass,
   userMessageBubbleClass,
   userMessageRowClass,
@@ -127,6 +128,7 @@ export function AiUserMessageBlock({
                 variant="ghost"
                 size="icon-sm"
                 aria-label="编辑"
+                className={messageActionButtonClass}
                 disabled={actionsDisabled}
                 onClick={() => {
                   setDraft(message.text);

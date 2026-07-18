@@ -9,6 +9,7 @@ import {
   assistantMessageFooterLeadingClass,
   assistantMessageFooterTrailingClass,
   assistantMessageModelLabelClass,
+  messageActionButtonClass,
   reasoningMetaClass,
 } from "../ui/ai-chat-chrome";
 import { describeAssistantStreamingMeta, describeAssistantUsageMeta } from "../ui/ai-chat-helpers";
@@ -85,7 +86,7 @@ export function AiAssistantMessageBlock({
                   size="icon-sm"
                   aria-label={retryLabel}
                   disabled={actionsDisabled}
-                  className="text-ctp-mauve"
+                  className={messageActionButtonClass}
                   onClick={onRetry}
                 >
                   <span aria-hidden="true" className="icon-[codicon--refresh] text-sm" />

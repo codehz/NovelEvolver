@@ -1,8 +1,11 @@
-import { cn } from "#app/shared/lib/ui/cn";
 import { AppTooltip, Button } from "#app/shared/ui";
 import type { AiChatMessageBranch } from "#shared/rpc/ai/index";
 
-import { messageBranchSwitcherClass } from "../ui/ai-chat-chrome";
+import {
+  messageActionButtonClass,
+  messageBranchLabelClass,
+  messageBranchSwitcherClass,
+} from "../ui/ai-chat-chrome";
 
 type AiMessageBranchSwitcherProps = {
   branch: AiChatMessageBranch;
@@ -30,6 +33,7 @@ export function AiMessageBranchSwitcher({
           variant="ghost"
           size="icon-sm"
           aria-label="上一个分支"
+          className={messageActionButtonClass}
           disabled={disabled || !canPrev}
           onClick={() => {
             if (canPrev) {
@@ -40,14 +44,13 @@ export function AiMessageBranchSwitcher({
           <span aria-hidden="true" className="icon-[codicon--chevron-left] text-sm" />
         </Button>
       </AppTooltip>
-      <span className={cn("min-w-7 text-center text-2xs text-ctp-subtext1 tabular-nums")}>
-        {label}
-      </span>
+      <span className={messageBranchLabelClass}>{label}</span>
       <AppTooltip label="下一个分支" side="top">
         <Button
           variant="ghost"
           size="icon-sm"
           aria-label="下一个分支"
+          className={messageActionButtonClass}
           disabled={disabled || !canNext}
           onClick={() => {
             if (canNext) {

@@ -107,7 +107,12 @@ export const userMessageActionsClass = cn(
   "group-hover/user-msg:pointer-events-auto group-hover/user-msg:opacity-100",
   "group-focus-within/user-msg:pointer-events-auto group-focus-within/user-msg:opacity-100",
 );
-export const messageBranchSwitcherClass = cn("inline-flex items-center gap-0.5 text-ctp-subtext1");
+export const messageBranchSwitcherClass = cn("inline-flex items-center gap-0.5 text-ctp-mauve");
+export const messageBranchLabelClass = cn(
+  "min-w-7 text-center text-2xs text-ctp-mauve tabular-nums",
+);
+/** Ghost icon actions on message rows (branch arrows, edit, retry) — mauve accent. */
+export const messageActionButtonClass = cn("text-ctp-mauve");
 /** Slash chip inside a sent user bubble (matches composer prompt-chip semantics). */
 export const userSlashChipClass = cn(
   "mr-1 inline-flex max-w-full shrink-0 items-center rounded-sm border border-ctp-mauve/35",
