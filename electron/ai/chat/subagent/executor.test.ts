@@ -1,7 +1,7 @@
 import { describe, expect, test } from "bun:test";
 
 import type { ToolCallItem } from "@codehz/ai";
-import { createAIClient, MockAdapter } from "@codehz/ai";
+import { createAIClient, MockAdapter, toolResultItem } from "@codehz/ai";
 
 import type { AiAgentRuntimeConfig } from "../../../settings/ai-agents-store";
 import type { AiBackendSession } from "../../backend/ai-backend-session";
@@ -95,6 +95,7 @@ describe("executeSubagentToolCall", () => {
   });
 
   test("strips spawn tools and completes with summary", async () => {
+    const phases: string[] = [];
     const result = await executeSubagentToolCall({
       call: toolCall({
         agent_id: reviewer.id,
@@ -115,6 +116,9 @@ describe("executeSubagentToolCall", () => {
         parentAdapterKind: "mock",
         createBackend: () => createMockBackend("未发现设定冲突。"),
       },
+      onProgress: (progress) => {
+        phases.push(progress.phase);
+      },
     });
 
     expect(result.errorMessage).toBeNull();
@@ -126,6 +130,78 @@ describe("executeSubagentToolCall", () => {
     expect(json.status).toBe("completed");
     expect(json.summary).toContain("未发现设定冲突");
     expect(json.agent_name).toBe("一致性审查");
+    expect(phases[0]).toBe("starting");
+    expect(phases).toContain("thinking");
+    expect(phases.at(-1)).toBe("finalizing");
+  });
+
+  test("reports tool milestones when child calls tools", async () => {
+    const phases: string[] = [];
+    const currentTools: Array<string | null> = [];
+
+    const adapter = new MockAdapter({
+      handler: async function* (request) {
+        const hasToolResult = request.input.some((item) => item.type === "tool_result");
+        if (!hasToolResult) {
+          yield { type: "message", content: "先读文档" };
+          yield {
+            type: "tool_call",
+            id: "child-read-1",
+            name: "read_document",
+            argumentsText: JSON.stringify({ id: "ch-1" }),
+          };
+          yield { type: "complete", usage: { inputTokens: 1, outputTokens: 1, totalTokens: 2 } };
+          return;
+        }
+        yield { type: "message", content: "审查完成：无冲突。" };
+        yield { type: "complete", usage: { inputTokens: 1, outputTokens: 2, totalTokens: 3 } };
+      },
+    });
+
+    const result = await executeSubagentToolCall({
+      call: toolCall({ agent_id: reviewer.id, task: "审查" }),
+      depth: 0,
+      signal: new AbortController().signal,
+      deps: {
+        resolveAgentConfig: (id) => (id === reviewer.id ? reviewer : null),
+        resolveModelConfig: () => null,
+        resolveWorktree: () => {
+          throw new Error("no worktree");
+        },
+        clientLabel: "test",
+        parentSelectedModelId: "mock",
+        parentSelectedReasoningLevel: null,
+        parentAdapterKind: "mock",
+        createBackend: () => ({
+          adapterKind: "mock",
+          model: "mock",
+          instructions: "test",
+          client: createAIClient({ adapter, model: "mock" }),
+          scenarioId: null,
+        }),
+        toolRunner: {
+          execute: async (call) => ({
+            toolResult: toolResultItem(call.id, call.name, "success", [
+              { type: "json", json: { ok: true } },
+            ]),
+            resultText: '{"ok":true}',
+            errorMessage: null,
+          }),
+        },
+      },
+      onProgress: (progress) => {
+        phases.push(progress.phase);
+        currentTools.push(progress.current_tool?.name ?? null);
+      },
+    });
+
+    const json = JSON.parse(result.resultText!) as { status: string; summary: string };
+    expect(json.status).toBe("completed");
+    expect(json.summary).toContain("审查完成");
+    expect(phases).toContain("tool");
+    expect(currentTools).toContain("read_document");
+    expect(phases[0]).toBe("starting");
+    expect(phases.at(-1)).toBe("finalizing");
   });
 
   test("rejects nested depth", async () => {

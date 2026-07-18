@@ -13,7 +13,12 @@ import type { AiReasoningLevel } from "#shared/rpc/services/index";
 
 import type { AiAgentRuntimeConfig } from "../../../settings/ai-agents-store";
 import type { AiModelRuntimeConfig } from "../../../settings/ai-models-store";
-import { addMessageUsage, readResponseText, toErrorMessage } from "../../ai-utils";
+import {
+  addMessageUsage,
+  contentBlockToDisplayText,
+  readResponseText,
+  toErrorMessage,
+} from "../../ai-utils";
 import type { AiBackendSession } from "../../backend/ai-backend-session";
 import { createAiBackendSession } from "../../backend/create-ai-backend";
 import { toInputItem } from "../../mock-adapter";
@@ -33,6 +38,13 @@ import {
   RUN_SUBAGENT_TOOL_NAME,
   stripSubagentTools,
 } from "./policy";
+import {
+  buildSubagentProgress,
+  createProgressThrottle,
+  type SubagentProgress,
+  type SubagentProgressPhase,
+  type SubagentProgressTool,
+} from "./progress";
 import {
   abortedSubagentResult,
   collectArtifactsFromToolCall,
@@ -71,20 +83,6 @@ function toToolExecution(call: ToolCallItem, result: SubagentRunResult): ToolExe
   return okJson(call, result);
 }
 
-async function consumeStream(
-  stream: AsyncIterable<AIStreamEvent>,
-  signal: AbortSignal,
-): Promise<AIResponse> {
-  const events: AIStreamEvent[] = [];
-  for await (const event of stream) {
-    if (signal.aborted) {
-      throw new DOMException("AI generation stopped by user.", "AbortError");
-    }
-    events.push(event);
-  }
-  return aggregateEvents(events);
-}
-
 function resolveBackend(
   deps: SubagentExecutorDeps,
   agent: AiAgentRuntimeConfig,
@@ -113,22 +111,133 @@ function resolveBackend(
   });
 }
 
+type ProgressReporter = {
+  emit: (
+    phase: SubagentProgressPhase,
+    overrides?: {
+      currentTool?: SubagentProgressTool | null;
+    },
+  ) => void;
+  setPartialSummary: (text: string) => void;
+  pushRecentTool: (tool: SubagentProgressTool) => void;
+  setArtifacts: (artifacts: SubagentArtifacts) => void;
+  forceFlush: () => void;
+  cancel: () => void;
+  bumpRound: () => number;
+};
+
+function createProgressReporter(options: {
+  agentId: string;
+  agentName: string;
+  onProgress?: (progress: SubagentProgress) => void;
+}): ProgressReporter {
+  let round = 0;
+  let partialSummary = "";
+  let currentTool: SubagentProgressTool | null = null;
+  let recentTools: SubagentProgressTool[] = [];
+  let artifacts = emptyArtifacts();
+  let phase: SubagentProgressPhase = "starting";
+
+  const build = (nextPhase: SubagentProgressPhase): SubagentProgress =>
+    buildSubagentProgress({
+      agentId: options.agentId,
+      agentName: options.agentName,
+      phase: nextPhase,
+      round,
+      maxRounds: MAX_SUBAGENT_TOOL_ROUNDS,
+      currentTool,
+      recentTools,
+      partialSummary,
+      wrote: artifacts.wrote,
+      touchedCount: artifacts.touched_node_ids.length,
+    });
+
+  const emitRaw = (progress: SubagentProgress) => {
+    options.onProgress?.(progress);
+  };
+
+  const throttle = createProgressThrottle({
+    onEmit: emitRaw,
+  });
+
+  return {
+    emit(nextPhase, overrides) {
+      phase = nextPhase;
+      if (overrides && "currentTool" in overrides) {
+        currentTool = overrides.currentTool ?? null;
+      }
+      throttle.forceFlush();
+      emitRaw(build(phase));
+    },
+    setPartialSummary(text) {
+      partialSummary = text;
+      throttle.schedule(build(phase === "starting" ? "thinking" : phase));
+    },
+    pushRecentTool(tool) {
+      recentTools = [...recentTools, tool];
+      currentTool = null;
+    },
+    setArtifacts(next) {
+      artifacts = next;
+    },
+    forceFlush() {
+      throttle.forceFlush();
+    },
+    cancel() {
+      throttle.cancel();
+    },
+    bumpRound() {
+      round += 1;
+      return round;
+    },
+  };
+}
+
+async function consumeStreamWithProgress(
+  stream: AsyncIterable<AIStreamEvent>,
+  signal: AbortSignal,
+  onMessageDelta: (fullText: string) => void,
+): Promise<AIResponse> {
+  const events: AIStreamEvent[] = [];
+  let partialText = "";
+
+  for await (const event of stream) {
+    if (signal.aborted) {
+      throw new DOMException("AI generation stopped by user.", "AbortError");
+    }
+    events.push(event);
+
+    if (event.type === "message.delta") {
+      const chunk = contentBlockToDisplayText(event.delta);
+      if (chunk !== "") {
+        partialText += chunk;
+        onMessageDelta(partialText);
+      }
+    }
+  }
+
+  return aggregateEvents(events);
+}
+
 /**
  * Run an isolated specialist agent for a single `run_subagent` tool call.
- * Does not emit parent conversation UI events for intermediate child turns.
+ * Intermediate UI progress is delivered only via `onProgress` (not parent history parts).
  */
 export async function executeSubagentToolCall(options: {
   call: ToolCallItem;
   depth: number;
   signal: AbortSignal;
   deps: SubagentExecutorDeps;
+  /** Optional UI progress sink (serialized by the runtime into `progressText`). */
+  onProgress?: (progress: SubagentProgress) => void;
 }): Promise<ToolExecutionResult> {
-  const { call, depth, signal, deps } = options;
+  const { call, depth, signal, deps, onProgress } = options;
 
   let agentId = "";
   let agentName = "";
   let artifacts = emptyArtifacts();
   let usage: AiChatMessageUsage | null = null;
+  let reporter: ProgressReporter | null = null;
 
   try {
     assertSubagentDepth(depth);
@@ -148,6 +257,12 @@ export async function executeSubagentToolCall(options: {
       );
     }
     agentName = agent.name;
+    reporter = createProgressReporter({
+      agentId: agent.id,
+      agentName: agent.name,
+      onProgress,
+    });
+    reporter.emit("starting");
 
     const childToolNames = stripSubagentTools(agent.availableToolNames);
     const tools: ToolDefinition[] = selectAiTools(childToolNames);
@@ -189,7 +304,10 @@ export async function executeSubagentToolCall(options: {
         );
       }
 
-      const response = await consumeStream(
+      reporter.bumpRound();
+      reporter.emit("thinking", { currentTool: null });
+
+      const response = await consumeStreamWithProgress(
         backend.client.stream({
           instructions: backend.instructions,
           input,
@@ -203,12 +321,18 @@ export async function executeSubagentToolCall(options: {
             : {}),
         }),
         signal,
+        (fullText) => {
+          reporter?.setPartialSummary(fullText);
+        },
       );
+      reporter.forceFlush();
 
       usage = addMessageUsage(usage, response.usage);
       const responseText = readResponseText(response).trim();
       if (responseText !== "") {
         lastSummary = responseText;
+        reporter.setPartialSummary(responseText);
+        reporter.forceFlush();
       }
 
       if (response.toolCalls.length === 0) {
@@ -217,6 +341,7 @@ export async function executeSubagentToolCall(options: {
 
       toolRoundCount += 1;
       if (toolRoundCount > MAX_SUBAGENT_TOOL_ROUNDS) {
+        reporter.emit("finalizing");
         return toToolExecution(
           call,
           failedSubagentResult({
@@ -250,6 +375,7 @@ export async function executeSubagentToolCall(options: {
           toolCall.name === "ask_user" ||
           !childToolNames.includes(toolCall.name)
         ) {
+          reporter.emit("finalizing");
           return toToolExecution(
             call,
             failedSubagentResult({
@@ -263,8 +389,15 @@ export async function executeSubagentToolCall(options: {
           );
         }
 
+        reporter.emit("tool", {
+          currentTool: { name: toolCall.name, status: "running" },
+        });
+
         const execution = await toolRunner.execute(toolCall);
         if (execution.userInputRequest) {
+          reporter.pushRecentTool({ name: toolCall.name, status: "error" });
+          reporter.setArtifacts(artifacts);
+          reporter.emit("finalizing");
           return toToolExecution(
             call,
             failedSubagentResult({
@@ -278,10 +411,17 @@ export async function executeSubagentToolCall(options: {
           );
         }
 
+        const toolStatus = execution.errorMessage === null ? "complete" : "error";
         artifacts = collectArtifactsFromToolCall(toolCall, execution.resultText, artifacts);
+        reporter.setArtifacts(artifacts);
+        reporter.pushRecentTool({ name: toolCall.name, status: toolStatus });
+        reporter.emit("tool", { currentTool: null });
+
         input.push(execution.toolResult);
       }
     }
+
+    reporter.emit("finalizing");
 
     if (lastSummary.trim() === "") {
       return toToolExecution(
@@ -329,5 +469,7 @@ export async function executeSubagentToolCall(options: {
         usage,
       }),
     );
+  } finally {
+    reporter?.cancel();
   }
 }
