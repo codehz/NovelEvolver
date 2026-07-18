@@ -32,6 +32,9 @@ type AiChatActions = {
   sendMessage: (input: AiChatSendMessageInput) => Promise<boolean>;
   stopGeneration: () => Promise<void>;
   retryLastRequest: () => Promise<void>;
+  forkFromMessage: (messageId: string) => Promise<void>;
+  selectMessageBranch: (messageId: string, index: number) => Promise<void>;
+  editUserMessage: (messageId: string, input: AiChatSendMessageInput) => Promise<void>;
   createConversation: () => Promise<void>;
   listConversations: (options?: AiConversationListOptions) => Promise<AiConversationSummary[]>;
   searchConversations: (
@@ -180,11 +183,35 @@ function useAiChatActionsValue(): AiChatActions {
     await Promise.resolve(aiChat.retryLastRequest());
   }, [aiChat]);
 
+  const forkFromMessage = useCallback(
+    async (messageId: string): Promise<void> => {
+      await Promise.resolve(aiChat.forkFromMessage(messageId));
+    },
+    [aiChat],
+  );
+
+  const selectMessageBranch = useCallback(
+    async (messageId: string, index: number): Promise<void> => {
+      await Promise.resolve(aiChat.selectMessageBranch(messageId, index));
+    },
+    [aiChat],
+  );
+
+  const editUserMessage = useCallback(
+    async (messageId: string, input: AiChatSendMessageInput): Promise<void> => {
+      await Promise.resolve(aiChat.editUserMessage(messageId, input));
+    },
+    [aiChat],
+  );
+
   return useMemo(
     () => ({
       sendMessage,
       stopGeneration,
       retryLastRequest,
+      forkFromMessage,
+      selectMessageBranch,
+      editUserMessage,
       createConversation,
       listConversations,
       searchConversations,
@@ -203,12 +230,15 @@ function useAiChatActionsValue(): AiChatActions {
       archiveConversation,
       createConversation,
       deleteConversation,
+      editUserMessage,
+      forkFromMessage,
       listConversations,
       listSelectableAgents,
       listSelectableModels,
       renameConversation,
       retryLastRequest,
       searchConversations,
+      selectMessageBranch,
       sendMessage,
       setSelectedAgent,
       setSelectedModel,

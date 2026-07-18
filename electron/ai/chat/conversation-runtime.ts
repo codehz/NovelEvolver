@@ -377,6 +377,119 @@ export class AiConversationRuntime {
   }
 
   /**
+   * Truncate active path at messageId; emit path.replaced.
+   * No-op while pending / awaiting user, or when id is not on the active path.
+   */
+  forkFromMessage(messageId: string): void {
+    if (this.#disposed) {
+      return;
+    }
+    if (this.#state.pending || this.#state.pendingToolBatch !== null) {
+      return;
+    }
+    if (!this.#state.forkFromMessage(messageId)) {
+      return;
+    }
+    this.#state.setErrorMessage(null);
+    this.#emitDelta([
+      {
+        type: "path.replaced",
+        messages: this.#state.projectActivePathMessages(),
+      },
+      {
+        type: "state.updated",
+        patch: {
+          errorMessage: null,
+          canRetry: this.#state.canRetry,
+        },
+      },
+    ]);
+    this.#state.persistIfNeeded();
+  }
+
+  /**
+   * Switch sibling branch for messageId to index; emit path.replaced.
+   */
+  selectMessageBranch(messageId: string, index: number): void {
+    if (this.#disposed) {
+      return;
+    }
+    if (this.#state.pending || this.#state.pendingToolBatch !== null) {
+      return;
+    }
+    if (!this.#state.selectMessageBranch(messageId, index)) {
+      return;
+    }
+    this.#state.setErrorMessage(null);
+    this.#emitDelta([
+      {
+        type: "path.replaced",
+        messages: this.#state.projectActivePathMessages(),
+      },
+      {
+        type: "state.updated",
+        patch: {
+          errorMessage: null,
+          canRetry: this.#state.canRetry,
+        },
+      },
+    ]);
+    this.#state.persistIfNeeded();
+  }
+
+  /**
+   * Edit a historical user message: sibling user + new assistant turn generation.
+   * Original branch retained.
+   */
+  editUserMessage(messageId: string, input: AiChatSendMessageInput): void {
+    if (this.#disposed) {
+      return;
+    }
+    if (this.#state.pending || this.#state.pendingToolBatch !== null) {
+      return;
+    }
+
+    const slash = input.slash ?? null;
+    const text = typeof input.text === "string" ? input.text : "";
+    const mentions = input.mentions ?? [];
+    const modelText = expandMentionsForModel(expandSlashForModel(slash, text), mentions);
+    if (modelText === "") {
+      throw new Error("AI 消息不能为空。");
+    }
+
+    const userMessage = this.#state.editUserMessage(messageId, { text, slash, mentions });
+    if (!userMessage) {
+      throw new Error("只能编辑用户消息。");
+    }
+
+    const assistantMessage = this.#state.appendAssistantMessage(this.#resolveSelectedModelName());
+    // History for the new path: prior nodes + new user item (user node history filled on complete).
+    const requestInput = [...this.#state.history, toInputItem(modelText)];
+
+    this.#state.setPending(true);
+    this.#state.setErrorMessage(null);
+    this.#emitDelta([
+      {
+        type: "path.replaced",
+        messages: this.#state.projectActivePathMessages(),
+      },
+      {
+        type: "state.updated",
+        patch: {
+          pending: true,
+          errorMessage: null,
+          canRetry: false,
+        },
+      },
+    ]);
+
+    void this.#runRequest({
+      assistantMessageId: assistantMessage.id,
+      requestInput,
+    });
+  }
+
+  /**
    * 从上一次 model request 边界重试（非整 turn）。
    * 从 history 重建 request input；成功 / 失败 / stop 均可；不重放已完成工具。
    */

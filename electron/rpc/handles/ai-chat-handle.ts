@@ -39,6 +39,18 @@ export class AiChatHandleImpl extends RpcTarget implements AiChatHandle {
     this.#chat.retryLastRequest();
   }
 
+  forkFromMessage(messageId: string): void {
+    this.#chat.forkFromMessage(messageId);
+  }
+
+  selectMessageBranch(messageId: string, index: number): void {
+    this.#chat.selectMessageBranch(messageId, index);
+  }
+
+  editUserMessage(messageId: string, input: AiChatSendMessageInput): void {
+    this.#chat.editUserMessage(messageId, input);
+  }
+
   createConversation(): void {
     this.#chat.createConversation();
   }

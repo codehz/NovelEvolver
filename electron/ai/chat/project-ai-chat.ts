@@ -194,6 +194,18 @@ export class ProjectAiChatController {
     this.#getActiveRuntime().retryLastRequest();
   }
 
+  forkFromMessage(messageId: string): void {
+    this.#getActiveRuntime().forkFromMessage(messageId);
+  }
+
+  selectMessageBranch(messageId: string, index: number): void {
+    this.#getActiveRuntime().selectMessageBranch(messageId, index);
+  }
+
+  editUserMessage(messageId: string, input: AiChatSendMessageInput): void {
+    this.#getActiveRuntime().editUserMessage(messageId, input);
+  }
+
   createConversation(): void {
     const activeRuntime = this.#getActiveRuntime();
     if (activeRuntime.isPureDraft) {

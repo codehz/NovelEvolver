@@ -371,6 +371,14 @@ export type AiChatDeltaOp =
   | {
       type: "state.updated";
       patch: AiChatStatePatch;
+    }
+  | {
+      /**
+       * Replace the active-path message projection after fork / branch switch / edit.
+       * Does not reset conversationId or other session fields.
+       */
+      type: "path.replaced";
+      messages: AiChatMessage[];
     };
 
 export type AiChatSnapshotEvent = {
@@ -396,6 +404,21 @@ export interface AiChatHandle extends RpcTarget {
    * 仅当 `canRetry` 时生效，否则静默忽略。不重放已完成工具。
    */
   retryLastRequest(): void;
+  /**
+   * 将会话活跃路径截到指定消息（仅允许当前活跃路径上的节点）。
+   * 不删除子树；后续发送将从该点长出新支路。生成中 / 等待用户输入时忽略。
+   */
+  forkFromMessage(messageId: string): void;
+  /**
+   * 在指定消息的兄弟分支中切换到 `index`（0-based）。
+   * 生成中 / 等待用户输入时忽略。
+   */
+  selectMessageBranch(messageId: string, index: number): void;
+  /**
+   * 编辑历史用户消息：创建兄弟 user 节点并立即发起新生成；原支路保留。
+   * 生成中 / 等待用户输入时忽略。
+   */
+  editUserMessage(messageId: string, input: AiChatSendMessageInput): void;
   createConversation(): void;
   listConversations(options?: AiConversationListOptions): AiConversationSummary[];
   searchConversations(

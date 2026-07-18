@@ -275,6 +275,12 @@ export function applyAiChatEvent(snapshot: AiChatSnapshot, event: AiChatEvent): 
           ...op.patch,
         };
         break;
+      case "path.replaced":
+        next = {
+          ...next,
+          messages: op.messages.map(cloneAiChatMessage),
+        };
+        break;
     }
   }
 

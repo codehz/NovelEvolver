@@ -48,7 +48,9 @@ import {
   parseConversationMessagesJson,
   projectActiveMessages,
   projectActivePath,
+  selectSiblingByIndex,
   serializeConversationTree,
+  truncateSelectionAt,
   type ConversationTree,
 } from "./conversation-tree";
 import {
@@ -590,6 +592,67 @@ export class AiConversationState {
   replaceHistory(history: readonly InputItem[]): void {
     distributeHistoryToActivePath(this.#tree, history);
     this.#markDirty();
+  }
+
+  /**
+   * Truncate active path selection at `messageId` (must be on active path).
+   * Emits no deltas — caller projects via `path.replaced`.
+   */
+  forkFromMessage(messageId: string): boolean {
+    const normalized = messageId.trim();
+    if (normalized === "") {
+      return false;
+    }
+    if (!truncateSelectionAt(this.#tree, normalized)) {
+      return false;
+    }
+    this.#markDirty();
+    return true;
+  }
+
+  /**
+   * Select sibling at `index` for the sibling group of `messageId`.
+   * Returns false when id/index invalid.
+   */
+  selectMessageBranch(messageId: string, index: number): boolean {
+    const normalized = messageId.trim();
+    if (normalized === "" || !Number.isInteger(index) || index < 0) {
+      return false;
+    }
+    if (!selectSiblingByIndex(this.#tree, normalized, index)) {
+      return false;
+    }
+    this.#markDirty();
+    return true;
+  }
+
+  /**
+   * Create a sibling user node under the same parent as `messageId` with new content,
+   * select it, and leave path leaf on that user (caller appends assistant + runs request).
+   */
+  editUserMessage(messageId: string, input: AiChatSendMessageInput): AiChatUserMessage | null {
+    const node = this.#tree.nodes.get(messageId.trim());
+    if (!node || node.role !== "user") {
+      return null;
+    }
+    const mentions = (input.mentions ?? []).map((mention) => ({ ...mention }));
+    const message: AiChatUserMessage = {
+      id: `ai-chat-${this.#messageCounter++}`,
+      role: "user",
+      text: typeof input.text === "string" ? input.text : "",
+      slash: input.slash ?? null,
+      mentions,
+      status: "complete",
+    };
+    // Sibling of the edited user (same parent); select the new branch.
+    addChildNode(this.#tree, node.parentId, message, { select: true });
+    this.#markDirty();
+    return message;
+  }
+
+  /** Active-path projection for path.replaced deltas. */
+  projectActivePathMessages(): AiChatMessage[] {
+    return projectActiveMessages(this.#tree);
   }
 
   /**
