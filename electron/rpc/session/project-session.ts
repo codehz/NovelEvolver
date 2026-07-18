@@ -1,4 +1,5 @@
 import { RpcTarget } from "capnweb";
+import type { SHA1 } from "nano-git";
 import { createSqliteRepository } from "nano-git/repository/sqlite";
 
 import type { ProjectMetadata } from "#shared/project";
@@ -100,7 +101,7 @@ export class ProjectSessionImpl extends RpcTarget implements ProjectSession {
     this.#repo.refs.write("HEAD", `ref: refs/heads/${name}`);
   }
 
-  createBranch(name: string): BranchSummary {
+  createBranch(name: string, startCommit?: string): BranchSummary {
     this.#assertNotDisposed();
     const branchName = name.trim();
     if (branchName === "") {
@@ -109,11 +110,14 @@ export class ProjectSessionImpl extends RpcTarget implements ProjectSession {
     if (this.#repo.readBranch(branchName) !== null) {
       throw new Error(`分支已存在：${branchName}`);
     }
-    if (this.currentBranch.commit === null) {
+    const tipFromStart =
+      startCommit !== undefined && startCommit.trim() !== "" ? startCommit.trim() : null;
+    const tip = tipFromStart ?? this.currentBranch.commit;
+    if (tip === null) {
       throw new Error("当前分支尚无提交，无法创建新分支；请先完成首次提交。");
     }
     try {
-      this.#repo.createBranch(branchName);
+      this.#repo.createBranch(branchName, tip as SHA1);
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
       if (/already exists/i.test(message)) {
