@@ -45,6 +45,10 @@ export function cloneAiChatAssistantPartPatch(
 }
 
 export function cloneAiChatMessage(message: AiChatMessage): AiChatMessage {
+  const branch =
+    message.branch && message.branch.count > 0
+      ? { index: message.branch.index, count: message.branch.count }
+      : undefined;
   if (message.role === "user") {
     // Legacy rows / partial wire payloads may omit `slash` / `mentions`.
     const slash = message.slash ? { ...message.slash } : null;
@@ -53,6 +57,7 @@ export function cloneAiChatMessage(message: AiChatMessage): AiChatMessage {
       ...message,
       slash,
       mentions,
+      ...(branch ? { branch } : {}),
     };
   }
 
@@ -61,6 +66,7 @@ export function cloneAiChatMessage(message: AiChatMessage): AiChatMessage {
     modelName: message.modelName ?? "",
     usage: message.usage ? { ...message.usage } : null,
     parts: message.parts.map(cloneAiChatAssistantPart),
+    ...(branch ? { branch } : {}),
   };
 }
 

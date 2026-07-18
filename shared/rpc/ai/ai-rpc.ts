@@ -160,6 +160,14 @@ export type AiChatSendMessageInput = {
   mentions?: readonly AiChatMentionRef[] | null;
 };
 
+/** Sibling branch position on the conversation message tree (UI navigation). */
+export type AiChatMessageBranch = {
+  /** 0-based index among siblings (including self). */
+  index: number;
+  /** Sibling count under the same parent (including self). */
+  count: number;
+};
+
 export type AiChatUserMessage = {
   id: string;
   role: "user";
@@ -174,6 +182,8 @@ export type AiChatUserMessage = {
   /** Menu-confirmed mentions; empty array for plain / legacy rows. */
   mentions: readonly AiChatMentionRef[];
   status: "complete";
+  /** Present when this message has siblings on the conversation tree. */
+  branch?: AiChatMessageBranch;
 };
 
 export type AiChatAssistantMessage = {
@@ -187,6 +197,8 @@ export type AiChatAssistantMessage = {
   modelName: string;
   usage: AiChatMessageUsage | null;
   parts: AiChatAssistantPart[];
+  /** Present when this message has siblings on the conversation tree. */
+  branch?: AiChatMessageBranch;
 };
 
 export type AiChatMessage = AiChatUserMessage | AiChatAssistantMessage;

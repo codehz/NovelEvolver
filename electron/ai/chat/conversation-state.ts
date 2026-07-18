@@ -6,7 +6,6 @@ import {
   applyAiChatMessagePatch,
   cloneAiChatAssistantPart,
   cloneAiChatAssistantPartPatch,
-  cloneAiChatMessage,
   cloneAiChatMessagePatch,
 } from "#shared/rpc/ai/index";
 import type {
@@ -40,6 +39,18 @@ import type {
   AiConversationSummaryRecord,
 } from "../../db/repositories/ai-chat-repo";
 import { contentBlockToDisplayText, joinContentBlocksText } from "../ai-utils";
+import {
+  addChildNode,
+  concatActiveHistory,
+  createEmptyConversationTree,
+  distributeHistoryToActivePath,
+  listAllMessages,
+  parseConversationMessagesJson,
+  projectActiveMessages,
+  projectActivePath,
+  serializeConversationTree,
+  type ConversationTree,
+} from "./conversation-tree";
 import {
   parsePendingToolBatch,
   serializePendingToolBatch,
@@ -243,9 +254,8 @@ export class AiConversationState {
   #model: string;
   readonly #scenarioId: string | null;
   readonly #persistence: "persistent" | "ephemeral";
-  readonly #messages: AiChatMessage[] = [];
-  readonly #messageIndexById = new Map<string, number>();
-  readonly #history: InputItem[] = [];
+  /** Authoritative in-conversation message tree (active path is a projection). */
+  #tree: ConversationTree = createEmptyConversationTree();
   readonly #warnings: AiChatWarning[] = [];
   #conversationId = "";
   #title = EMPTY_TITLE;
@@ -306,7 +316,12 @@ export class AiConversationState {
   }
 
   get history(): readonly InputItem[] {
-    return this.#history;
+    return concatActiveHistory(this.#tree);
+  }
+
+  /** Authoritative conversation tree (mutation via state methods only). */
+  get tree(): ConversationTree {
+    return this.#tree;
   }
 
   get errorMessage(): string | null {
@@ -315,14 +330,15 @@ export class AiConversationState {
 
   get isPureDraft(): boolean {
     return (
-      this.#messages.length === 0 && this.#pendingToolBatch === null && this.#errorMessage === null
+      this.#tree.nodes.size === 0 && this.#pendingToolBatch === null && this.#errorMessage === null
     );
   }
 
-  /** Last assistant message in the transcript, if any. */
+  /** Last assistant message on the active path, if any. */
   get lastAssistantMessage(): AiChatAssistantMessage | null {
-    for (let index = this.#messages.length - 1; index >= 0; index--) {
-      const message = this.#messages[index]!;
+    const path = projectActivePath(this.#tree);
+    for (let index = path.length - 1; index >= 0; index--) {
+      const message = path[index]!.message;
       if (message.role === "assistant") {
         return message;
       }
@@ -352,7 +368,7 @@ export class AiConversationState {
       selectedReasoningLevel: this.#selectedReasoningLevel,
       scenarioId: this.#scenarioId,
       warnings: this.#warnings.map((warning) => ({ ...warning })),
-      messages: this.#messages.map(cloneAiChatMessage),
+      messages: projectActiveMessages(this.#tree),
       pending: this.#pending,
       pendingUserInputs: this.#pendingToolBatch
         ? this.#pendingToolBatch.pendingInputs.map((input) => input.pending)
@@ -370,7 +386,7 @@ export class AiConversationState {
     if (this.#pending || this.#pendingToolBatch !== null) {
       return false;
     }
-    return rebuildLastRequestInput(this.#history).length > 0;
+    return rebuildLastRequestInput(this.history).length > 0;
   }
 
   get status(): AiConversationStatus {
@@ -394,10 +410,10 @@ export class AiConversationState {
     };
   }
 
-  /** Collect plain-text message bodies for in-memory search / snippet extraction. */
+  /** Collect plain-text message bodies for in-memory search / snippet extraction (full tree). */
   collectSearchableTexts(): string[] {
     const texts: string[] = [];
-    for (const message of this.#messages) {
+    for (const message of listAllMessages(this.#tree)) {
       if (message.role === "user") {
         const text = formatUserMessageDisplay(message.slash, message.text).trim();
         if (text !== "") {
@@ -490,8 +506,9 @@ export class AiConversationState {
       selectedAgentId: this.#selectedAgentId,
       selectedReasoningLevel: this.#selectedReasoningLevel,
       scenarioId: this.#scenarioId,
-      messagesJson: JSON.stringify(this.#messages.map(cloneAiChatMessage)),
-      historyJson: JSON.stringify(this.#history),
+      // v2 tree document is authoritative; history_json mirrors active-path concat for debug/fallback.
+      messagesJson: JSON.stringify(serializeConversationTree(this.#tree)),
+      historyJson: JSON.stringify(concatActiveHistory(this.#tree)),
       pendingToolBatchJson: serializePendingToolBatch(this.#pendingToolBatch),
       warningsJson: JSON.stringify(this.#warnings),
       errorMessage: this.#errorMessage,
@@ -566,12 +583,19 @@ export class AiConversationState {
     this.#markDirty();
   }
 
+  /**
+   * Rewrite active-path historyItems so their concat equals `history`.
+   * Used by send/retry completion paths (same external semantics as linear replace).
+   */
   replaceHistory(history: readonly InputItem[]): void {
-    this.#history.length = 0;
-    this.#history.push(...history);
+    distributeHistoryToActivePath(this.#tree, history);
     this.#markDirty();
   }
 
+  /**
+   * Append a user message as a child of the current path leaf (or as a new root).
+   * When the leaf already has children, this creates a sibling branch and selects it.
+   */
   appendUserMessage(input: AiChatSendMessageInput): AiChatUserMessage {
     const mentions = (input.mentions ?? []).map((mention) => ({ ...mention }));
     const message: AiChatUserMessage = {
@@ -582,12 +606,19 @@ export class AiConversationState {
       mentions,
       status: "complete",
     };
-    this.#messages.push(message);
-    this.#messageIndexById.set(message.id, this.#messages.length - 1);
+    const path = projectActivePath(this.#tree);
+    const leaf = path.length > 0 ? path[path.length - 1]! : null;
+    // Normal: parent = assistant leaf. If path ends on user (fork/edit edge), create a sibling user.
+    const parentId = leaf == null ? null : leaf.role === "assistant" ? leaf.id : leaf.parentId;
+    addChildNode(this.#tree, parentId, message, { select: true });
     this.#markDirty();
     return message;
   }
 
+  /**
+   * Append an assistant message under the path leaf user (or create under last user on path).
+   * When that user already has children, creates a sibling and selects it.
+   */
   appendAssistantMessage(modelName: string): AiChatAssistantMessage {
     const message: AiChatAssistantMessage = {
       id: `ai-chat-${this.#messageCounter++}`,
@@ -597,8 +628,18 @@ export class AiConversationState {
       usage: null,
       parts: [],
     };
-    this.#messages.push(message);
-    this.#messageIndexById.set(message.id, this.#messages.length - 1);
+    const path = projectActivePath(this.#tree);
+    let parentId: string | null = null;
+    for (let index = path.length - 1; index >= 0; index--) {
+      if (path[index]!.role === "user") {
+        parentId = path[index]!.id;
+        break;
+      }
+    }
+    if (parentId === null) {
+      throw new Error("无法在没有用户消息的情况下添加助手消息。");
+    }
+    addChildNode(this.#tree, parentId, message, { select: true });
     this.#markDirty();
     return message;
   }
@@ -847,9 +888,7 @@ export class AiConversationState {
     this.#createdAt = now;
     this.#updatedAt = now;
     this.#status = "active";
-    this.#messages.length = 0;
-    this.#messageIndexById.clear();
-    this.#history.length = 0;
+    this.#tree = createEmptyConversationTree();
     this.#warnings.length = 0;
     this.#pendingToolBatch = null;
     this.#pending = false;
@@ -878,17 +917,12 @@ export class AiConversationState {
     this.#persisted = true;
     this.#discarded = false;
 
-    this.#messages.length = 0;
-    this.#messageIndexById.clear();
-    const messages = this.#parseMessages(record.messagesJson);
-    for (const message of messages) {
-      this.#messages.push(message);
-      this.#messageIndexById.set(message.id, this.#messages.length - 1);
-    }
-    this.#messageCounter = this.#nextMessageCounter(messages);
-
-    this.#history.length = 0;
-    this.#history.push(...this.#parseHistory(record.historyJson));
+    this.#tree = parseConversationMessagesJson(
+      record.messagesJson,
+      record.historyJson,
+      normalizeStoredMessage,
+    );
+    this.#messageCounter = this.#nextMessageCounterFromTree();
     this.#warnings.length = 0;
     this.#warnings.push(...this.#parseWarnings(record.warningsJson));
     this.#pendingToolBatch = parsePendingToolBatch(record.pendingToolBatchJson);
@@ -902,30 +936,6 @@ export class AiConversationState {
       return "streaming";
     }
     return "idle";
-  }
-
-  #parseMessages(json: string): AiChatMessage[] {
-    try {
-      const parsed = JSON.parse(json) as unknown;
-      if (!Array.isArray(parsed)) {
-        return [];
-      }
-      return parsed.map((entry) => normalizeStoredMessage(entry));
-    } catch {
-      return [];
-    }
-  }
-
-  #parseHistory(json: string): InputItem[] {
-    try {
-      const parsed = JSON.parse(json) as unknown;
-      if (!Array.isArray(parsed)) {
-        return [];
-      }
-      return parsed as InputItem[];
-    } catch {
-      return [];
-    }
   }
 
   #parseWarnings(json: string): AiChatWarning[] {
@@ -953,7 +963,11 @@ export class AiConversationState {
     if (this.#titleCustomized) {
       return this.#title || EMPTY_TITLE;
     }
-    const firstUser = this.#messages.find((message) => message.role === "user");
+    // Prefer first user on active path; fall back to any root user.
+    const path = projectActivePath(this.#tree);
+    const firstUser =
+      path.find((node) => node.role === "user")?.message ??
+      [...this.#tree.nodes.values()].find((node) => node.role === "user")?.message;
     if (!firstUser || firstUser.role !== "user") {
       return this.#title || EMPTY_TITLE;
     }
@@ -966,10 +980,10 @@ export class AiConversationState {
     return text.length > TITLE_MAX_LENGTH ? `${text.slice(0, TITLE_MAX_LENGTH)}…` : text;
   }
 
-  #nextMessageCounter(messages: readonly AiChatMessage[]): number {
+  #nextMessageCounterFromTree(): number {
     let max = -1;
-    for (const message of messages) {
-      const match = /^ai-chat-(\d+)$/.exec(message.id);
+    for (const node of this.#tree.nodes.values()) {
+      const match = /^ai-chat-(\d+)$/.exec(node.id);
       if (match) {
         max = Math.max(max, Number(match[1]));
       }
@@ -977,13 +991,8 @@ export class AiConversationState {
     return max + 1;
   }
 
-  #getMessageIndex(id: string): number | null {
-    return this.#messageIndexById.get(id) ?? null;
-  }
-
   #getMessage(id: string): AiChatMessage | null {
-    const index = this.#getMessageIndex(id);
-    return index === null ? null : (this.#messages[index] ?? null);
+    return this.#tree.nodes.get(id)?.message ?? null;
   }
 
   #getAssistantMessage(id: string): AiChatAssistantMessage | null {
@@ -1006,28 +1015,40 @@ export class AiConversationState {
   }
 
   #patchMessage(id: string, patch: AiChatMessagePatch): AiChatMessage | null {
-    const index = this.#getMessageIndex(id);
-    if (index === null) {
+    const node = this.#tree.nodes.get(id);
+    if (!node) {
       return null;
     }
 
-    const next = applyAiChatMessagePatch(this.#messages[index]!, patch);
-    this.#messages[index] = next;
+    const next = applyAiChatMessagePatch(node.message, patch);
+    node.message = next;
     this.#markDirty();
     return next;
   }
 
+  /**
+   * Remove a node from the tree. If it was selected, clear parent selection.
+   * Does not cascade-delete descendants (orphans remain unreachable until GC — prototype OK).
+   */
   #removeMessage(id: string): boolean {
-    const index = this.#getMessageIndex(id);
-    if (index === null) {
+    const node = this.#tree.nodes.get(id);
+    if (!node) {
       return false;
     }
-
-    this.#messages.splice(index, 1);
-    this.#messageIndexById.delete(id);
-    for (let i = index; i < this.#messages.length; i++) {
-      this.#messageIndexById.set(this.#messages[i]!.id, i);
+    if (node.parentId === null) {
+      if (this.#tree.rootSelectedId === id) {
+        const roots = [...this.#tree.nodes.values()].filter(
+          (candidate) => candidate.parentId === null && candidate.id !== id,
+        );
+        this.#tree.rootSelectedId = roots[0]?.id ?? null;
+      }
+    } else {
+      const parent = this.#tree.nodes.get(node.parentId);
+      if (parent?.selectedChildId === id) {
+        parent.selectedChildId = null;
+      }
     }
+    this.#tree.nodes.delete(id);
     this.#markDirty();
     return true;
   }
