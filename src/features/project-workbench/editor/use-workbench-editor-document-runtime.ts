@@ -25,11 +25,7 @@ const AUTOSAVE_DEBOUNCE_MS = 600;
 export type WorkbenchEditorDocumentRuntime = {
   getDocument: (tab: ContentWorkbenchEditorTab) => WorkbenchEditorDocument | undefined;
   registerEditor: (tab: ContentWorkbenchEditorTab, handle: PlainTextEditorHandle | null) => void;
-  handleContentChange: (
-    tab: ContentWorkbenchEditorTab,
-    content: string,
-    transient: boolean,
-  ) => void;
+  handleContentChange: (tab: ContentWorkbenchEditorTab, transient: boolean) => void;
 };
 
 function cancelStaleAutosaves(
@@ -100,7 +96,7 @@ export function useWorkbenchEditorDocumentRuntime(): WorkbenchEditorDocumentRunt
   );
 
   const handleContentChange = useCallback(
-    (tab: ContentWorkbenchEditorTab, content: string, transient: boolean) => {
+    (tab: ContentWorkbenchEditorTab, transient: boolean) => {
       if (transient) {
         setEditorState((state) => pinWorkbenchEditorTab(state, tab.id));
       }
@@ -115,9 +111,11 @@ export function useWorkbenchEditorDocumentRuntime(): WorkbenchEditorDocumentRunt
         key,
         setTimeout(() => {
           autosaveTimersRef.current.delete(key);
-          // Re-read the live buffer so a closed-over pre-sync snapshot cannot
-          // overwrite search-replace / revision-driven content after debounce.
-          const liveContent = editorHandlesRef.current.get(key)?.getValue() ?? content;
+          // Debounce 到期再 toString，避免每个 keystroke 全量拷贝。
+          const liveContent = editorHandlesRef.current.get(key)?.getValue();
+          if (liveContent === undefined) {
+            return;
+          }
           const write = Promise.resolve(
             writeWorkbenchEditorContentTab(tab, liveContent, {
               manuscript: manuscriptRef.current,

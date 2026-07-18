@@ -36,12 +36,9 @@ export function TextDocumentEditorPane({
     },
     [documentRuntime, tab],
   );
-  const handleChange = useCallback(
-    (next: string) => {
-      documentRuntime.handleContentChange(tab, next, transient);
-    },
-    [documentRuntime, tab, transient],
-  );
+  const handleChange = useCallback(() => {
+    documentRuntime.handleContentChange(tab, transient);
+  }, [documentRuntime, tab, transient]);
 
   useOneShotRequestConsumer({
     subscribe: onNavigationRequest,

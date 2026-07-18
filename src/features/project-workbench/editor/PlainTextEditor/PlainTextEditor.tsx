@@ -47,8 +47,11 @@ export type PlainTextEditorProps = {
   ref?: React.Ref<PlainTextEditorHandle>;
   /** 仅用于初次挂载；之后由组件内部 DOM 持有文稿。 */
   defaultValue?: string;
-  /** 可选；父组件若不需要同步文稿，请勿传入以避免额外更新。 */
-  onChange?: (next: string) => void;
+  /**
+   * 可选；用户编辑导致 doc 变化时回调。
+   * 不传当前全文，避免 keystroke 全量 toString；需要内容时请用 handle.getValue()。
+   */
+  onChange?: () => void;
   active?: boolean;
   selectionSnapshot?: PlainTextEditorSelectionSnapshot | null;
   onSelectionSnapshotChange?: (snapshot: PlainTextEditorSelectionSnapshot | null) => void;
@@ -156,7 +159,7 @@ export function PlainTextEditor({
           const shouldNotify = !suppressOnChangeRef.current;
           suppressOnChangeRef.current = false;
           if (shouldNotify) {
-            onChangeRef.current?.(update.state.doc.toString());
+            onChangeRef.current?.();
           }
         }
         if (update.docChanged || update.selectionSet || update.focusChanged) {
