@@ -1,24 +1,28 @@
-import { useEffect, useRef, useState } from "react";
+import { useLayoutEffect, useRef, useState } from "react";
 
 export function useMeasuredElementWidth<TElement extends HTMLElement>(initialWidth: number) {
   const elementRef = useRef<TElement | null>(null);
   const [width, setWidth] = useState(initialWidth);
 
-  useEffect(() => {
+  // Measure before paint so the first frame already uses the real container width.
+  // useEffect would paint the initial estimate first, then animate sidebar spacers.
+  useLayoutEffect(() => {
     const element = elementRef.current;
     if (!element) {
       return;
     }
 
-    setWidth(element.clientWidth);
+    const applyWidth = (nextWidth: number) => {
+      setWidth((current) => (current === nextWidth ? current : nextWidth));
+    };
 
-    const observer = new ResizeObserver((entries) => {
-      const entry = entries[0];
-      if (!entry) {
-        return;
-      }
+    // clientWidth is already an integer content+padding width; keep RO on the same basis.
+    applyWidth(element.clientWidth);
 
-      setWidth(Math.round(entry.contentRect.width));
+    const observer = new ResizeObserver(() => {
+      // Prefer clientWidth over contentRect so padding/border box stays consistent
+      // with the initial layout-effect read (avoids a 1px post-paint correction).
+      applyWidth(element.clientWidth);
     });
 
     observer.observe(element);

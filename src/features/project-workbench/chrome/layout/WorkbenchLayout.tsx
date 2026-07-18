@@ -17,8 +17,17 @@ import {
   MIN_EDITOR_WIDTH,
   WORKBENCH_EDGE_INSET,
   deriveWorkbenchChromeLayout,
+  sidebarChromeOuterSize,
 } from "./workbench-layout-resolver";
 import { WorkbenchActivityBar } from "./WorkbenchActivityBar";
+
+/** Fallback before the container is measured — must reserve both sidebar sashes. */
+const INITIAL_WORKBENCH_WIDTH =
+  ACTIVITY_BAR_WIDTH +
+  sidebarChromeOuterSize(DEFAULT_PRIMARY_WIDTH) +
+  sidebarChromeOuterSize(DEFAULT_AUXILIARY_WIDTH) +
+  MIN_EDITOR_WIDTH +
+  WORKBENCH_EDGE_INSET;
 
 export type WorkbenchLayoutProps = {
   primaryViews: readonly WorkbenchPrimaryView[];
@@ -44,13 +53,8 @@ export function WorkbenchLayout({
     primaryViews,
     setLayoutPreferences,
   });
-  const { ref: containerRef, width: containerWidth } = useMeasuredElementWidth<HTMLDivElement>(
-    ACTIVITY_BAR_WIDTH +
-      DEFAULT_PRIMARY_WIDTH +
-      DEFAULT_AUXILIARY_WIDTH +
-      MIN_EDITOR_WIDTH +
-      WORKBENCH_EDGE_INSET,
-  );
+  const { ref: containerRef, width: containerWidth } =
+    useMeasuredElementWidth<HTMLDivElement>(INITIAL_WORKBENCH_WIDTH);
   const {
     resolved: resolvedLayout,
     primary,
