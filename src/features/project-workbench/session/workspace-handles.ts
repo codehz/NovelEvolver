@@ -1,7 +1,6 @@
 import { molecule, use, useMolecule } from "bunshi/react";
 import type { RpcPromise } from "capnweb";
 
-import { wrapDisposable } from "#app/shared/lib/rpc/rpc-utils";
 import type { AiChatHandle } from "#shared/rpc/ai/index";
 import type { BranchWorkspace } from "#shared/rpc/session/index";
 import type { HistoryHandle } from "#shared/rpc/worktree/index";
@@ -13,11 +12,17 @@ import type { WorktreeSearchHandle } from "#shared/rpc/worktree/index";
 import { branchNameScope } from "./branch-scope";
 import { projectMolecule } from "./project-scope";
 
-/** 当前分支对应的草稿工作区 RPC 引用（随 project × branchName scope 重建）。 */
+/**
+ * 当前分支对应的草稿工作区 RPC 引用（随 project × branchName scope 重建）。
+ *
+ * 生命周期由服务端 `ProjectSession` 缓存拥有（deleteBranch / project dispose 时回收），
+ * 不要在 branch scope unmount 时 dispose —— 否则缓存会返回已 dispose 的 zombie，
+ * `subscribeChanges` 空流结束，Changes 永久停在 loading。
+ */
 export const branchWorkspaceMolecule = molecule(() => {
   const project = use(projectMolecule);
   const branchName = use(branchNameScope);
-  return wrapDisposable(project.openBranchWorkspace(branchName));
+  return project.openBranchWorkspace(branchName);
 });
 
 /** 当前分支资源库根（`openBranchWorkspace(...).resources` 级联，不在此 await）。 */

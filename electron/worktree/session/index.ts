@@ -129,6 +129,7 @@ type StructureCandidate = {
 
 export class WorktreeSession {
   readonly #state: WorktreeSessionState;
+  #disposed = false;
 
   constructor(
     store: WorktreeRepository,
@@ -139,6 +140,10 @@ export class WorktreeSession {
   ) {
     this.#state = createWorktreeSessionState(store, objects, repo, projectId, branchName);
     loadOrSeed(this.#state);
+  }
+
+  get disposed(): boolean {
+    return this.#disposed;
   }
 
   get baseTree(): string {
@@ -473,6 +478,10 @@ export class WorktreeSession {
   }
 
   [Symbol.dispose](): void {
+    if (this.#disposed) {
+      return;
+    }
+    this.#disposed = true;
     this.#state.changesPublisher[Symbol.dispose]();
   }
 }

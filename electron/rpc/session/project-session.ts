@@ -174,7 +174,12 @@ export class ProjectSessionImpl extends RpcTarget implements ProjectSession {
 
     const existing = this.#branchWorkspaces.get(name);
     if (existing !== undefined) {
-      return existing;
+      // Client-side scope unmount used to dispose workspaces while this map retained
+      // the entry; never hand out a zombie with a closed changesPublisher.
+      if (!existing.session.disposed) {
+        return existing;
+      }
+      this.#branchWorkspaces.delete(name);
     }
 
     const session = new WorktreeSession(

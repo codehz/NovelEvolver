@@ -36,6 +36,12 @@ export function useWorktreeChangesFeedSync(): void {
           lastEvent: null,
         }));
       },
+      onComplete: () => {
+        // Unexpected clean close with no snapshot must not leave UI spinning forever.
+        setFeed((current) =>
+          current.status === "loading" ? { ...current, status: "error", lastEvent: null } : current,
+        );
+      },
       cancelReason: "Worktree changes feed subscription disposed.",
     });
   }, [changesHandle, retryKey, setFeed]);

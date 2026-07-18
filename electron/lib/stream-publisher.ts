@@ -17,7 +17,9 @@ export class RpcStreamPublisher<T> {
     return new ReadableStream<T>({
       start: (controller) => {
         if (this.#disposed) {
-          controller.close();
+          // Prefer error over silent empty close so clients leave "loading"
+          // instead of hanging forever when a disposed publisher is reused.
+          controller.error(new Error("RpcStreamPublisher has been disposed."));
           return;
         }
 

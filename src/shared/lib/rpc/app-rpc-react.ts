@@ -11,6 +11,8 @@ type RpcSubscriptionOptions<T> = {
   subscribe: RpcSubscribeFn<T>;
   onValue: (value: T) => void;
   onError?: (error: unknown) => void;
+  /** Fired when the stream ends cleanly without being canceled by the consumer. */
+  onComplete?: () => void;
   cancelReason?: string;
 };
 
@@ -18,6 +20,7 @@ export function consumeRpcSubscription<T>({
   subscribe,
   onValue,
   onError,
+  onComplete,
   cancelReason = "RPC stream subscription disposed.",
 }: RpcSubscriptionOptions<T>): () => void {
   let canceled = false;
@@ -44,6 +47,11 @@ export function consumeRpcSubscription<T>({
           }),
           { signal: abortController.signal },
         )
+        .then(() => {
+          if (!canceled) {
+            onComplete?.();
+          }
+        })
         .catch((error) => {
           if (!canceled && !isAbortError(error)) {
             onError?.(error);
