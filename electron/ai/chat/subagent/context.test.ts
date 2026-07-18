@@ -88,4 +88,35 @@ describe("buildSubagentUserMessage", () => {
     expect(text).toContain("背景一句");
     expect(text).toContain("不要假设父对话历史");
   });
+
+  test("injects preloaded focus content when snapshots provided", () => {
+    const text = buildSubagentUserMessage(
+      {
+        agentId: "r",
+        task: "审查",
+        constraints: null,
+        focus: [{ domain: "manuscript", id: "ch-1" }],
+        parentSummary: null,
+      },
+      "一致性审查",
+      [
+        {
+          domain: "manuscript",
+          id: "ch-1",
+          kind: "chapter",
+          label: "第一章",
+          displayPath: "卷一/第一章",
+          status: "ok",
+          content: "主角走进了酒馆。",
+          originalCharCount: 8,
+          stats: { char_count: 8, line_count: 1, word_count: 1 },
+          revision: 3,
+        },
+      ],
+    );
+    expect(text).toContain("焦点预载");
+    expect(text).toContain("主角走进了酒馆。");
+    expect(text).toContain("revision: 3");
+    expect(text).not.toContain("manuscript id=ch-1");
+  });
 });

@@ -1,6 +1,7 @@
 import type { ToolCallItem } from "@codehz/ai";
 
 import { parseDocumentDomain, parseNonEmptyString, parseToolArgs } from "../../tools/parse";
+import { formatFocusSnapshotsForPrompt, type FocusSnapshot } from "./focus-inject";
 import { truncateParentSummary } from "./policy";
 
 export type SubagentFocusTarget = {
@@ -71,11 +72,17 @@ export function parseRunSubagentArgs(call: ToolCallItem): RunSubagentArgs {
 /**
  * Build the isolated user message for a subagent run.
  * Does not include parent conversation history.
+ * When `focusSnapshots` is provided, injects resolved node content/structure
+ * so the child need not spend a tool round re-reading focus targets.
  */
-export function buildSubagentUserMessage(args: RunSubagentArgs, agentName: string): string {
+export function buildSubagentUserMessage(
+  args: RunSubagentArgs,
+  agentName: string,
+  focusSnapshots: readonly FocusSnapshot[] = [],
+): string {
   const lines: string[] = [
     `你是子代理「${agentName}」，正在执行一次独立委派任务。`,
-    "不要假设父对话历史；仅依据下列任务说明与你通过工具读取的项目内容作答。",
+    "不要假设父对话历史；仅依据下列任务说明、系统预载的焦点内容，以及你通过工具另行读取的项目内容作答。",
     "完成后用简洁中文给出结论、发现与（如有）已做改动摘要。",
     "",
     "## 任务",
@@ -86,7 +93,10 @@ export function buildSubagentUserMessage(args: RunSubagentArgs, agentName: strin
     lines.push("", "## 约束", args.constraints);
   }
 
-  if (args.focus.length > 0) {
+  if (focusSnapshots.length > 0) {
+    lines.push("", formatFocusSnapshotsForPrompt(focusSnapshots));
+  } else if (args.focus.length > 0) {
+    // Fallback when worktree resolution was skipped (e.g. unit tests without session).
     lines.push("", "## 焦点节点");
     for (const target of args.focus) {
       lines.push(`- ${target.domain} id=${target.id}`);

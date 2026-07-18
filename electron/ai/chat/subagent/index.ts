@@ -6,6 +6,14 @@ export {
 } from "./context";
 export { executeSubagentToolCall, type SubagentExecutorDeps } from "./executor";
 export {
+  formatFocusSnapshotsForPrompt,
+  resolveFocusSnapshots,
+  type FocusErrorSnapshot,
+  type FocusFolderSnapshot,
+  type FocusSnapshot,
+  type FocusTextSnapshot,
+} from "./focus-inject";
+export {
   abortedSubagentResult,
   buildSubagentResult,
   collectArtifactsFromToolCall,
@@ -17,6 +25,8 @@ export {
 } from "./result";
 export {
   assertSubagentDepth,
+  MAX_FOCUS_CONTENT_CHARS,
+  MAX_FOCUS_TARGETS,
   MAX_PARENT_SUMMARY_CHARS,
   MAX_SUBAGENT_DEPTH,
   MAX_SUBAGENT_TOOL_ROUNDS,

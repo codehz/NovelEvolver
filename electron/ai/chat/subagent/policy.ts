@@ -10,6 +10,15 @@ export const MAX_SUBAGENT_TOOL_ROUNDS = 8;
 /** Hard cap on parent_summary forwarded into the child context. */
 export const MAX_PARENT_SUMMARY_CHARS = 2000;
 
+/** Max focus targets whose content is auto-injected into a subagent prompt. */
+export const MAX_FOCUS_TARGETS = 8;
+
+/**
+ * Per text-node char budget when injecting focus content.
+ * Longer bodies are truncated with a note to call read_document.
+ */
+export const MAX_FOCUS_CONTENT_CHARS = 40_000;
+
 /** Tools that must never appear on a subagent tool list (MVP). */
 export const SUBAGENT_STRIPPED_TOOLS = new Set<string>([RUN_SUBAGENT_TOOL_NAME, "ask_user"]);
 

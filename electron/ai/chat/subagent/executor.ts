@@ -31,6 +31,7 @@ import {
 } from "../../tools";
 import { okJson } from "../../tools/result";
 import { buildSubagentUserMessage, parseRunSubagentArgs } from "./context";
+import { resolveFocusSnapshots } from "./focus-inject";
 import {
   assertSubagentDepth,
   MAX_SUBAGENT_TOOL_ROUNDS,
@@ -285,7 +286,16 @@ export async function executeSubagentToolCall(options: {
 
     const backend = resolveBackend(deps, agent, modelId);
     const toolRunner = deps.toolRunner ?? createToolRunner(deps.resolveWorktree);
-    const userMessage = buildSubagentUserMessage(args, agent.name);
+    let focusSnapshots: ReturnType<typeof resolveFocusSnapshots> = [];
+    if (args.focus.length > 0) {
+      try {
+        focusSnapshots = resolveFocusSnapshots(deps.resolveWorktree(), args.focus);
+      } catch {
+        // Soft-fallback: child still receives bare focus ids via buildSubagentUserMessage.
+        focusSnapshots = [];
+      }
+    }
+    const userMessage = buildSubagentUserMessage(args, agent.name, focusSnapshots);
 
     let input: InputItem[] = [toInputItem(userMessage)];
     let toolRoundCount = 0;

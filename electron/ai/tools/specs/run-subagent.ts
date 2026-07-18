@@ -8,7 +8,7 @@ export const runSubagentSpec: ToolSpec<"run_subagent"> = {
   name: "run_subagent",
   definition: {
     description:
-      "将一个独立子任务委派给指定专家 Agent（隔离上下文，不继承本会话完整历史）。适用于一致性审查、章节续写、设定检索等可拆分工作。子代理按自身工具白名单运行（不会再嵌套委派，也不能 ask_user）；完成后返回 summary 与 artifacts。需要用户澄清时先自行 ask_user，再委派。",
+      "将一个独立子任务委派给指定专家 Agent（隔离上下文，不继承本会话完整历史）。适用于一致性审查、章节续写、设定检索等可拆分工作。子代理按自身工具白名单运行（不会再嵌套委派，也不能 ask_user）；完成后返回 summary 与 artifacts。需要用户澄清时先自行 ask_user，再委派。focus 只需节点 id：服务端会自动预载 chapter/file 正文（含 revision）或 folder 子节点摘要注入子代理，无需粘贴正文。",
     inputSchema: {
       type: "object",
       properties: {
@@ -27,7 +27,8 @@ export const runSubagentSpec: ToolSpec<"run_subagent"> = {
         },
         focus: {
           type: "array",
-          description: "可选焦点节点列表，帮助子代理优先定位。",
+          description:
+            "可选焦点节点列表（最多 8 个）。只需 domain+id；服务端自动注入正文/结构，不要粘贴全文。",
           items: {
             type: "object",
             properties: {
