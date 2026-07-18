@@ -4,6 +4,7 @@ export {
   type RunSubagentArgs,
   type SubagentFocusTarget,
 } from "./context";
+export { executeSubagentToolCall, type SubagentExecutorDeps } from "./executor";
 export {
   abortedSubagentResult,
   buildSubagentResult,

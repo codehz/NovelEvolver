@@ -15,6 +15,7 @@ import { readHistoryEntrySpec } from "./specs/read-history-entry";
 import { readStructureSpec } from "./specs/read-structure";
 import { renameNodeSpec } from "./specs/rename-node";
 import { replaceDocumentTextSpec } from "./specs/replace-document-text";
+import { runSubagentSpec } from "./specs/run-subagent";
 import { searchDocumentsSpec } from "./specs/search-documents";
 import { writeDocumentSpec } from "./specs/write-document";
 import type {
@@ -28,6 +29,7 @@ import type {
 /** 全部 tool 规格；加 tool = 新增 specs/* + 在此挂一行。 */
 export const TOOL_SPECS = [
   askUserSpec,
+  runSubagentSpec,
   readStructureSpec,
   readDocumentSpec,
   searchDocumentsSpec,

@@ -36,6 +36,7 @@ import {
   AI_TOOLS_MAP,
   createToolRunner,
   type ResolveWorktree,
+  type ToolExecutionResult,
   type ToolRunner,
 } from "../tools";
 import { AiConversationState } from "./conversation-state";
@@ -44,6 +45,7 @@ import { createPendingUserInputFromRequest, type PendingToolBatch } from "./pend
 import { countCommittedAssistantParts, rebuildLastRequestInput } from "./request-history";
 import { resolveReasoningLevelForModel } from "./selectable-models";
 import { expandSlashForModel } from "./slash-expand";
+import { executeSubagentToolCall, RUN_SUBAGENT_TOOL_NAME } from "./subagent";
 
 type RuntimeEventListener = (event: AiChatEvent) => void;
 
@@ -86,6 +88,7 @@ function isAbortError(error: unknown): boolean {
 
 export class AiConversationRuntime {
   readonly #toolRunner: ToolRunner;
+  readonly #resolveWorktree: ResolveWorktree;
   readonly #publisher = new RpcStreamPublisher<AiChatEvent>();
   readonly #eventListeners = new Set<RuntimeEventListener>();
   readonly #state: AiConversationState;
@@ -102,6 +105,7 @@ export class AiConversationRuntime {
     this.#clientLabel = options.clientLabel ?? `project-${options.projectId}`;
     this.#resolveModelConfig = options.resolveModelConfig;
     this.#resolveAgentConfig = options.resolveAgentConfig;
+    this.#resolveWorktree = options.resolveWorktree;
     this.#scenarioBackend = scenarioId
       ? createAiBackendSession({
           clientLabel: this.#clientLabel,
@@ -640,7 +644,10 @@ export class AiConversationRuntime {
         }),
       );
 
-      const execution = await this.#toolRunner.execute(call);
+      const execution =
+        call.name === RUN_SUBAGENT_TOOL_NAME
+          ? await this.#executeSubagent(call)
+          : await this.#toolRunner.execute(call);
       if (execution.userInputRequest) {
         const pending = createPendingUserInputFromRequest(call, execution.userInputRequest);
         this.#emitDelta(
@@ -701,6 +708,24 @@ export class AiConversationRuntime {
     }
 
     return "continue";
+  }
+
+  async #executeSubagent(call: ToolCallItem): Promise<ToolExecutionResult> {
+    const signal = this.#generationAbort?.signal ?? new AbortController().signal;
+    return executeSubagentToolCall({
+      call,
+      depth: 0,
+      signal,
+      deps: {
+        resolveAgentConfig: (agentId) => this.#resolveAgentConfig(agentId),
+        resolveModelConfig: (modelId) => this.#resolveModelConfig(modelId),
+        resolveWorktree: this.#resolveWorktree,
+        clientLabel: this.#clientLabel,
+        parentSelectedModelId: this.#state.selectedModelId,
+        parentSelectedReasoningLevel: this.#state.selectedReasoningLevel,
+        parentAdapterKind: this.#state.getSnapshot().adapterKind,
+      },
+    });
   }
 
   async #awaitPendingInputs(
