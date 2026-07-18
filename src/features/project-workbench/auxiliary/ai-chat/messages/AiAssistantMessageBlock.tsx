@@ -52,7 +52,7 @@ export function AiAssistantMessageBlock({
   const modelLabel = message.modelName.trim() !== "" ? message.modelName : "未知模型";
   const usageMeta = describeAssistantUsageMeta(message);
   const branch = message.branch;
-  const showBranch = branch != null && branch.count > 1 && onSelectBranch != null;
+  const showBranch = branch != null && branch.count > 1;
   const hasLeading = onRetry != null || showBranch;
   const alwaysVisible = footerAlwaysVisible || showBranch;
 
@@ -72,8 +72,10 @@ export function AiAssistantMessageBlock({
             {showBranch ? (
               <AiMessageBranchSwitcher
                 branch={branch}
-                disabled={actionsDisabled}
-                onSelect={onSelectBranch}
+                disabled={actionsDisabled || onSelectBranch == null}
+                onSelect={(index) => {
+                  onSelectBranch?.(index);
+                }}
               />
             ) : null}
             {onRetry ? (
