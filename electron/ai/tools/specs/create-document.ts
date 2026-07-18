@@ -12,7 +12,7 @@ export const createDocumentSpec: ToolSpec<"create_document"> = {
   name: "create_document",
   definition: {
     description:
-      "在现有文件夹下创建带完整初始正文的文本节点。先用 read_structure 摘要或按 target 展开获取 parent_id；manuscript 创建 chapter 且可指定 index，resource 创建 file 且不得传 index。content 必须提供，本次调用应直接写入最终正文，不要先创建空节点再读取或编辑。成功时返回新节点信息、stats / previous_stats / delta 与更新后的 worktree revision。",
+      "在现有文件夹下创建带完整初始正文的文本节点。先用 read_structure 摘要或按 target 展开获取 parent_id；manuscript 创建 chapter 且可指定 index，resource 创建 file 且不得传 index。content 必须提供，本次调用应直接写入最终正文，不要先创建空节点再读取或编辑。成功时返回新节点信息、stats / previous_stats / delta 与该文档 content revision。",
     inputSchema: {
       type: "object",
       properties: {
@@ -68,7 +68,7 @@ export const createDocumentSpec: ToolSpec<"create_document"> = {
         name,
         display_path: findCreatedNodePath(worktree, domain, parentId, created.nodeId),
         ...writeStats,
-        revision: worktree.getChangesSnapshot().revision,
+        revision: worktree.getDocumentContentRevision(domain, created.nodeId),
       };
     }
 
@@ -85,7 +85,7 @@ export const createDocumentSpec: ToolSpec<"create_document"> = {
       name,
       display_path: findCreatedNodePath(worktree, domain, parentId, created.nodeId),
       ...writeStats,
-      revision: worktree.getChangesSnapshot().revision,
+      revision: worktree.getDocumentContentRevision(domain, created.nodeId),
     };
   },
 };

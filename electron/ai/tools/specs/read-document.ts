@@ -6,7 +6,7 @@ export const readDocumentSpec: ToolSpec<"read_document"> = {
   name: "read_document",
   definition: {
     description:
-      "读取一个可编辑文本节点的当前全文与 worktree revision。manuscript 仅支持 chapter，resource 仅支持 file；id 必须使用 read_structure 摘要或逐层展开返回的节点 ID。写回前应使用返回的 revision 作为 expected_revision。结果含 stats（char_count / line_count / word_count）。",
+      "读取一个可编辑文本节点的当前全文与该文档 content revision。manuscript 仅支持 chapter，resource 仅支持 file；id 必须使用 read_structure 摘要或逐层展开返回的节点 ID。写回 write_document 时必须把返回的 revision 作为 expected_revision（按文档独立，写其他文档不会使其失效）。结果含 stats（char_count / line_count / word_count）。",
     inputSchema: {
       type: "object",
       properties: {
@@ -48,7 +48,7 @@ export const readDocumentSpec: ToolSpec<"read_document"> = {
       },
       content,
       stats: computeTextStats(content),
-      revision: worktree.getChangesSnapshot().revision,
+      revision: worktree.getDocumentContentRevision(target.domain, target.id),
     };
   },
 };

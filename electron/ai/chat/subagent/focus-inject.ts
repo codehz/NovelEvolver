@@ -85,7 +85,7 @@ function resolveTextSnapshot(
     content: text,
     originalCharCount: content.length,
     stats: computeTextStats(content),
-    revision: worktree.getChangesSnapshot().revision,
+    revision: worktree.getDocumentContentRevision(domain, id),
   };
 }
 
@@ -229,7 +229,7 @@ export function formatFocusSnapshotsForPrompt(snapshots: readonly FocusSnapshot[
     "## 焦点预载（系统注入）",
     "下列内容已按 focus id 自动读入；优先直接使用，无需再 read_document 获取同一版本。",
     "若条目标记为截断/错误，或写回后 revision 冲突，再调用工具补读。",
-    "写回时可将下方 revision 用作 expected_revision（仅在本次委派开始时的工作区版本）。",
+    "写回时可将下方 revision 用作 expected_revision：每条 revision 仅对该文档有效，写其他文档不会使其失效；可跨会话沿用直至该文档正文再次变更。",
   ];
 
   snapshots.forEach((snapshot, index) => {

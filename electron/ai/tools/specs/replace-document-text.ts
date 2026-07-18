@@ -6,7 +6,7 @@ export const replaceDocumentTextSpec: ToolSpec<"replace_document_text"> = {
   name: "replace_document_text",
   definition: {
     description:
-      "精确替换章节或资源文件中的一段文字，适合局部修订且无需回传完整全文。必须先读取当前正文；expected_text 必须在正文中恰好出现一次，否则失败且不修改。可用空 replacement_text 删除该段。多个互不依赖的替换应逐次调用。成功时返回 stats / previous_stats / delta 与更新后的 worktree revision。",
+      "精确替换章节或资源文件中的一段文字，适合局部修订且无需回传完整全文。必须先读取当前正文；expected_text 必须在正文中恰好出现一次，否则失败且不修改。可用空 replacement_text 删除该段。多个互不依赖的替换应逐次调用。成功时返回 stats / previous_stats / delta 与更新后的该文档 content revision。",
     inputSchema: {
       type: "object",
       properties: {
@@ -80,7 +80,7 @@ export const replaceDocumentTextSpec: ToolSpec<"replace_document_text"> = {
       replacements: 1,
       updated: true,
       ...withWriteStats(currentContent, nextContent),
-      revision: worktree.getChangesSnapshot().revision,
+      revision: worktree.getDocumentContentRevision(target.domain, target.id),
     };
   },
 };

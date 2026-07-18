@@ -10,7 +10,7 @@ export const moveNodeSpec: ToolSpec<"move_node"> = {
   name: "move_node",
   definition: {
     description:
-      "将现有节点移动到现有文件夹下。先用 read_structure 摘要或按 target 展开获取 id 和 target_parent_id；不能移动根节点或移入自身后代。仅 manuscript 支持 index，resource 不得传 index。成功时返回更新后的 worktree revision。",
+      "将现有节点移动到现有文件夹下。先用 read_structure 摘要或按 target 展开获取 id 和 target_parent_id；不能移动根节点或移入自身后代。仅 manuscript 支持 index，resource 不得传 index。成功时返回移动后路径信息。",
     inputSchema: {
       type: "object",
       properties: {
@@ -63,7 +63,6 @@ export const moveNodeSpec: ToolSpec<"move_node"> = {
       display_path: current.displayPath,
       target_parent_id: targetParentId,
       moved: true,
-      revision: worktree.getChangesSnapshot().revision,
     };
   },
 };

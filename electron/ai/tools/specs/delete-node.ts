@@ -5,7 +5,7 @@ export const deleteNodeSpec: ToolSpec<"delete_node"> = {
   name: "delete_node",
   definition: {
     description:
-      "永久删除一个现有节点，文件夹会递归删除后代。先用 read_structure 获取并核对节点 id 及其后代后再删除。成功时返回更新后的 worktree revision。",
+      "永久删除一个现有节点，文件夹会递归删除后代。先用 read_structure 获取并核对节点 id 及其后代后再删除。成功时返回被删节点信息。",
     inputSchema: {
       type: "object",
       properties: {
@@ -41,7 +41,6 @@ export const deleteNodeSpec: ToolSpec<"delete_node"> = {
       label: deleted.label,
       display_path: deleted.displayPath,
       deleted: true,
-      revision: worktree.getChangesSnapshot().revision,
     };
   },
 };

@@ -11,7 +11,7 @@ export const createFolderSpec: ToolSpec<"create_folder"> = {
   name: "create_folder",
   definition: {
     description:
-      "在现有文件夹下创建文件夹。先用 read_structure 摘要或按 target 展开获取 parent_id；manuscript 可指定 index，resource 不得传 index。成功时返回新节点信息与更新后的 worktree revision。",
+      "在现有文件夹下创建文件夹。先用 read_structure 摘要或按 target 展开获取 parent_id；manuscript 可指定 index，resource 不得传 index。成功时返回新节点信息。",
     inputSchema: {
       type: "object",
       properties: {
@@ -56,7 +56,6 @@ export const createFolderSpec: ToolSpec<"create_folder"> = {
         parent_id: parentId,
         name,
         display_path: findCreatedNodePath(worktree, domain, parentId, created.nodeId),
-        revision: worktree.getChangesSnapshot().revision,
       };
     }
 
@@ -72,7 +71,6 @@ export const createFolderSpec: ToolSpec<"create_folder"> = {
       parent_id: parentId,
       name,
       display_path: findCreatedNodePath(worktree, domain, parentId, created.nodeId),
-      revision: worktree.getChangesSnapshot().revision,
     };
   },
 };

@@ -5,7 +5,7 @@ export const renameNodeSpec: ToolSpec<"rename_node"> = {
   name: "rename_node",
   definition: {
     description:
-      "重命名一个现有节点，不修改正文。先用 read_structure 获取节点 id；name 传新标题或新名称，而不是路径。成功时返回更新后的 worktree revision。",
+      "重命名一个现有节点，不修改正文。先用 read_structure 获取节点 id；name 传新标题或新名称，而不是路径。成功时返回重命名后的路径信息。",
     inputSchema: {
       type: "object",
       properties: {
@@ -48,7 +48,6 @@ export const renameNodeSpec: ToolSpec<"rename_node"> = {
       display_path: current.displayPath,
       name,
       renamed: true,
-      revision: worktree.getChangesSnapshot().revision,
     };
   },
 };
