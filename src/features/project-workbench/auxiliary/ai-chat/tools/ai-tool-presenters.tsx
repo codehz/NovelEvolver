@@ -1,182 +1,27 @@
-import { parse as parsePartialJson } from "partial-json";
-import type { ReactNode } from "react";
-
 import type { AiChatToolCall } from "#shared/rpc/ai/index";
 
 import { parseAskUserToolArguments } from "./ask-user-prompt";
+import { DetailField, DetailList } from "./presenter-detail";
+import {
+  domainLabel,
+  formatStatsObject,
+  generationStats,
+  kindLabel,
+  preview,
+  resultTargetFields,
+  resultTextStats,
+  resultWriteStats,
+  targetFields,
+  textStats,
+  writeIndicator,
+} from "./presenter-format";
+import { getNumber, getObject, getString, parseObject } from "./presenter-parse";
+import type { ToolPresentation, ToolPresenter } from "./presenter-types";
 import {
   describeSubagentProgressIndicator,
   parseSubagentProgressUi,
   subagentPhaseLabel,
 } from "./subagent-progress-ui";
-
-type JsonObject = Record<string, unknown>;
-
-type ToolPresentation = {
-  label: string;
-  summary: string;
-  indicator?: string;
-  detail: ReactNode;
-};
-
-type ToolPresenter = (toolCall: AiChatToolCall) => ToolPresentation;
-
-function parseObject(text: string | null): JsonObject | null {
-  if (text === null || text.trim() === "") {
-    return null;
-  }
-  try {
-    const value: unknown = parsePartialJson(text);
-    return typeof value === "object" && value !== null && !Array.isArray(value)
-      ? (value as JsonObject)
-      : null;
-  } catch {
-    return null;
-  }
-}
-
-function getObject(value: unknown): JsonObject | null {
-  return typeof value === "object" && value !== null && !Array.isArray(value)
-    ? (value as JsonObject)
-    : null;
-}
-
-function getString(object: JsonObject | null, key: string): string | null {
-  const value = object?.[key];
-  return typeof value === "string" ? value : null;
-}
-
-function getNumber(object: JsonObject | null, key: string): number | null {
-  const value = object?.[key];
-  return typeof value === "number" ? value : null;
-}
-
-function generationStats(text: string | null, status: AiChatToolCall["status"]): string {
-  if (text === null) return "等待正文";
-  return status === "pending" ? `正在生成 · ${text.length} 字符` : textStats(text);
-}
-
-function writeIndicator(text: string | null, status: AiChatToolCall["status"]): string {
-  if (text === null) {
-    return status === "pending" ? "等待正文" : "0 字符";
-  }
-  return `${text.length} 字符`;
-}
-
-function domainLabel(domain: string | null): string {
-  return domain === "manuscript" ? "手稿" : domain === "resource" ? "资源库" : "全部内容";
-}
-
-function kindLabel(kind: string | null): string {
-  switch (kind) {
-    case "chapter":
-      return "章节";
-    case "file":
-      return "文件";
-    case "folder":
-      return "文件夹";
-    default:
-      return "节点";
-  }
-}
-
-function textStats(text: string | null): string {
-  if (text === null) {
-    return "不可用";
-  }
-  const lines = text === "" ? 0 : text.split(/\r?\n/u).length;
-  return `${text.length} 字符 · ${lines} 行`;
-}
-
-function formatStatsObject(stats: JsonObject | null): string | null {
-  if (stats === null) {
-    return null;
-  }
-  const charCount = getNumber(stats, "char_count");
-  if (charCount === null) {
-    return null;
-  }
-  const lineCount = getNumber(stats, "line_count");
-  return lineCount === null ? `${charCount} 字符` : `${charCount} 字符 · ${lineCount} 行`;
-}
-
-function formatDeltaObject(delta: JsonObject | null): string | null {
-  if (delta === null) {
-    return null;
-  }
-  const charDelta = getNumber(delta, "char_delta");
-  if (charDelta === null) {
-    return null;
-  }
-  const signed = charDelta > 0 ? `+${charDelta}` : `${charDelta}`;
-  const lineDelta = getNumber(delta, "line_delta");
-  if (lineDelta === null) {
-    return `${signed} 字符`;
-  }
-  const signedLines = lineDelta > 0 ? `+${lineDelta}` : `${lineDelta}`;
-  return `${signed} 字符 · ${signedLines} 行`;
-}
-
-function resultTextStats(result: JsonObject | null, contentKey = "content"): string | null {
-  const fromStats = formatStatsObject(getObject(result?.stats));
-  if (fromStats !== null) {
-    return fromStats;
-  }
-  return result === null ? null : textStats(getString(result, contentKey));
-}
-
-function resultWriteStats(result: JsonObject | null): {
-  stats: string | null;
-  previous: string | null;
-  delta: string | null;
-} {
-  return {
-    stats: formatStatsObject(getObject(result?.stats)),
-    previous: formatStatsObject(getObject(result?.previous_stats)),
-    delta: formatDeltaObject(getObject(result?.delta)),
-  };
-}
-
-function preview(text: string | null): string | null {
-  if (!text) {
-    return null;
-  }
-  const compact = text.replace(/\s+/gu, " ").trim();
-  return compact.length > 100 ? `${compact.slice(0, 100)}…` : compact;
-}
-
-function DetailField({ label, children }: { label: string; children: ReactNode }) {
-  return (
-    <div className="grid grid-cols-[4.5rem_minmax(0,1fr)] gap-2">
-      <dt className="text-ctp-subtext0">{label}</dt>
-      <dd className="min-w-0 wrap-break-word text-app-foreground">{children}</dd>
-    </div>
-  );
-}
-
-function DetailList({ children }: { children: ReactNode }) {
-  return <dl className="flex flex-col gap-1.5">{children}</dl>;
-}
-
-function targetFields(args: JsonObject | null): { domain: string | null; id: string | null } {
-  const target = getObject(args?.target);
-  return { domain: getString(target, "domain"), id: getString(target, "id") };
-}
-
-function resultTargetFields(result: JsonObject | null): {
-  domain: string | null;
-  id: string | null;
-  label: string | null;
-  displayPath: string | null;
-} {
-  const target = getObject(result?.target);
-  return {
-    domain: getString(target, "domain"),
-    id: getString(target, "id"),
-    label: getString(target, "label"),
-    displayPath: getString(target, "display_path"),
-  };
-}
 
 const askUserPresenter: ToolPresenter = (toolCall) => {
   const args = parseAskUserToolArguments(toolCall.argumentsText);
