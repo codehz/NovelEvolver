@@ -297,6 +297,22 @@ export class WorktreeRepository {
       );
   }
 
+  /**
+   * Deletes one branch worktree row. Child manuscript/resource/journal rows are
+   * removed via ON DELETE CASCADE on `(project_id, branch_name)`.
+   */
+  deleteWorktree(projectId: number, branchName: string): boolean {
+    const result = this.#db
+      .prepare(
+        `
+          DELETE FROM worktree
+          WHERE project_id = ? AND branch_name = ?
+        `,
+      )
+      .run(projectId, branchName);
+    return result.changes > 0;
+  }
+
   readManuscriptCurrentRows(projectId: number, branchName: string): ManuscriptNodeCurrentRow[] {
     const rows = this.#db
       .prepare(

@@ -100,14 +100,77 @@ export class ProjectSessionImpl extends RpcTarget implements ProjectSession {
     this.#repo.refs.write("HEAD", `ref: refs/heads/${name}`);
   }
 
+  createBranch(name: string): BranchSummary {
+    this.#assertNotDisposed();
+    const branchName = name.trim();
+    if (branchName === "") {
+      throw new Error("分支名不能为空");
+    }
+    if (this.#repo.readBranch(branchName) !== null) {
+      throw new Error(`分支已存在：${branchName}`);
+    }
+    if (this.currentBranch.commit === null) {
+      throw new Error("当前分支尚无提交，无法创建新分支；请先完成首次提交。");
+    }
+    try {
+      this.#repo.createBranch(branchName);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      if (/already exists/i.test(message)) {
+        throw new Error(`分支已存在：${branchName}`);
+      }
+      throw new Error(`创建分支失败：${message}`);
+    }
+    return {
+      name: branchName,
+      commit: this.#repo.readBranch(branchName),
+    };
+  }
+
+  deleteBranch(name: string): void {
+    this.#assertNotDisposed();
+    const branchName = name.trim();
+    if (branchName === "") {
+      throw new Error("分支名不能为空");
+    }
+    if (this.#repo.getCurrentBranch() === branchName) {
+      throw new Error(`无法删除当前分支：${branchName}`);
+    }
+    if (this.#repo.readBranch(branchName) === null) {
+      throw new Error(`分支不存在：${branchName}`);
+    }
+
+    const openWorkspace = this.#branchWorkspaces.get(branchName);
+    if (openWorkspace !== undefined) {
+      openWorkspace.workspace[Symbol.dispose]();
+      this.#branchWorkspaces.delete(branchName);
+    }
+
+    this.#worktrees.deleteWorktree(this.#projectId, branchName);
+
+    try {
+      this.#repo.deleteBranch(branchName);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      if (/Cannot delete current branch/i.test(message)) {
+        throw new Error(`无法删除当前分支：${branchName}`);
+      }
+      throw new Error(`删除分支失败：${message}`);
+    }
+  }
+
   openBranchWorkspace(name: string): BranchWorkspace {
     return this.#getOrCreateBranchWorkspace(name).workspace;
   }
 
-  #getOrCreateBranchWorkspace(name: string): BranchWorkspaceEntry {
+  #assertNotDisposed(): void {
     if (this.#disposed) {
       throw new Error("Project session has been disposed.");
     }
+  }
+
+  #getOrCreateBranchWorkspace(name: string): BranchWorkspaceEntry {
+    this.#assertNotDisposed();
 
     const existing = this.#branchWorkspaces.get(name);
     if (existing !== undefined) {
@@ -128,9 +191,7 @@ export class ProjectSessionImpl extends RpcTarget implements ProjectSession {
   }
 
   #resolveCurrentWorktree(): WorktreeSession {
-    if (this.#disposed) {
-      throw new Error("Project session has been disposed.");
-    }
+    this.#assertNotDisposed();
 
     const branchName = this.#repo.getCurrentBranch();
     if (branchName === null || branchName === "") {
