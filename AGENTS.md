@@ -40,6 +40,12 @@ Renderer layout (`src/`):
 
 **Dependency direction (non-negotiable):** composition → domain → session → view kernel / `#app/shared` / `#shared`. Domains must not import other domains' internals; cross-domain traffic uses narrow ports (`openEditorTarget`, `revealInTree`, status item exports) or `lib/` shared helpers. Do **not** add new RPC handles or molecules under `branch/` — that belongs in `session/`. Primary view sections and status items live in their domain (or thin composition assembly); chrome only provides shell primitives.
 
+**Lint guards (`.oxlintrc.json`, renderer):**
+
+- Deleted hosts banned: `#workbench/worktree/**`, `#workbench/sidebar/**`, `#workbench/statusbar/**`, `#workbench/state/**`, `#workbench/branch/branch-scopes`.
+- Layer bans: `chrome/**` must not import session/tree/domains; `tree/**` must not import session/chrome/domains; `session/**` must not import tree/chrome/domains.
+- Chrome internals still import via `#workbench/chrome` barrel only (not `chrome/layout|sidebar|statusbar|titlebar` subpaths).
+
 `electron/` layout (high level):
 
 - `main.ts`, `preload.ts` — bootstrap entrypoints
