@@ -68,7 +68,9 @@ export function ChangesSidebarSection() {
             }
             onRetry={retry}
             onRevert={revertChange}
-            onRevertAll={revertAll}
+            onRevertAll={() => {
+              void revertAll();
+            }}
           />
         ),
         onToggleExpanded: () => setChangesExpanded((value) => !value),
