@@ -1,41 +1,51 @@
 import { useMolecule } from "bunshi/react";
-import { useSetAtom } from "jotai";
-import { useEffect } from "react";
+import { useAtomValue, useSetAtom } from "jotai";
+import { useEffect, useRef } from "react";
 
-import { consumeRpcSubscription } from "#app/shared/lib/rpc/app-rpc-react";
-import type { ChangesEvent } from "#shared/rpc/worktree/index";
+import { worktreeChangesFeedMolecule } from "#workbench/worktree/worktree-changes-feed";
 
-import { useWorktreeChanges } from "../../../branch/branch-scopes";
 import { manuscriptTreeMolecule } from "./manuscript-tree-molecule";
 
 export function useManuscriptTreeSync(): void {
-  const changesHandle = useWorktreeChanges();
   const { treeAtom } = useMolecule(manuscriptTreeMolecule);
   const dispatch = useSetAtom(treeAtom);
+  const { treeSnapshotAtom, lastEventAtom, statusAtom } = useMolecule(worktreeChangesFeedMolecule);
+  const treeSnapshot = useAtomValue(treeSnapshotAtom);
+  const lastEvent = useAtomValue(lastEventAtom);
+  const status = useAtomValue(statusAtom);
+  const appliedRevisionRef = useRef<number | null>(null);
 
   useEffect(() => {
-    dispatch({ type: "loadStart" });
-    return consumeRpcSubscription<ChangesEvent>({
-      subscribe: () => changesHandle.subscribeChanges(),
-      onValue: (event) => {
-        if (event.kind === "snapshot") {
-          dispatch({ type: "loadSuccess", snapshot: event.treeSnapshot.manuscript });
-          return;
-        }
-        const patch = event.treeDelta?.manuscript;
-        if (patch === undefined) {
-          return;
-        }
-        dispatch({
-          type: "applyDelta",
-          delta: patch,
-          revision: event.delta.toRevision,
-        });
-      },
-      onError: () => {
-        dispatch({ type: "loadError", message: "加载正文失败" });
-      },
-      cancelReason: "Manuscript tree subscription disposed.",
-    });
-  }, [dispatch, changesHandle]);
+    if (status === "loading") {
+      appliedRevisionRef.current = null;
+      dispatch({ type: "loadStart" });
+      return;
+    }
+    if (status === "error") {
+      appliedRevisionRef.current = null;
+      dispatch({ type: "loadError", message: "加载正文失败" });
+      return;
+    }
+    if (treeSnapshot === null) {
+      return;
+    }
+    if (appliedRevisionRef.current === treeSnapshot.revision) {
+      return;
+    }
+
+    const previousRevision = appliedRevisionRef.current;
+    appliedRevisionRef.current = treeSnapshot.revision;
+
+    const patch = lastEvent?.kind === "delta" ? lastEvent.treeDelta?.manuscript : undefined;
+    if (previousRevision !== null && patch !== undefined && lastEvent?.kind === "delta") {
+      dispatch({
+        type: "applyDelta",
+        delta: patch,
+        revision: lastEvent.delta.toRevision,
+      });
+      return;
+    }
+
+    dispatch({ type: "loadSuccess", snapshot: treeSnapshot.manuscript });
+  }, [dispatch, lastEvent, status, treeSnapshot]);
 }

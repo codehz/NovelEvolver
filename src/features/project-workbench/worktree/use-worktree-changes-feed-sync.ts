@@ -1,0 +1,42 @@
+import { useMolecule } from "bunshi/react";
+import { useAtomValue, useSetAtom } from "jotai";
+import { useEffect } from "react";
+
+import { consumeRpcSubscription } from "#app/shared/lib/rpc/app-rpc-react";
+import type { ChangesEvent } from "#shared/rpc/worktree/index";
+import { useWorktreeChanges } from "#workbench/branch/branch-scopes";
+
+import {
+  initialWorktreeChangesFeedState,
+  reduceWorktreeChangesFeed,
+  worktreeChangesFeedMolecule,
+} from "./worktree-changes-feed";
+
+/**
+ * 在 branch scope 内挂载唯一的 `subscribeChanges` 订阅，写入 feed atom。
+ * 应只在 BranchScopeProvider 下调用一次。
+ */
+export function useWorktreeChangesFeedSync(): void {
+  const changesHandle = useWorktreeChanges();
+  const { feedAtom, retryKeyAtom } = useMolecule(worktreeChangesFeedMolecule);
+  const setFeed = useSetAtom(feedAtom);
+  const retryKey = useAtomValue(retryKeyAtom);
+
+  useEffect(() => {
+    setFeed(initialWorktreeChangesFeedState);
+    return consumeRpcSubscription<ChangesEvent>({
+      subscribe: () => changesHandle.subscribeChanges(),
+      onValue: (event) => {
+        setFeed((current) => reduceWorktreeChangesFeed(current, event));
+      },
+      onError: () => {
+        setFeed((current) => ({
+          ...current,
+          status: "error",
+          lastEvent: null,
+        }));
+      },
+      cancelReason: "Worktree changes feed subscription disposed.",
+    });
+  }, [changesHandle, retryKey, setFeed]);
+}

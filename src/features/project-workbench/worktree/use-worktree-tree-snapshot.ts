@@ -1,28 +1,11 @@
-import { useEffect, useState } from "react";
+import { useMolecule } from "bunshi/react";
+import { useAtomValue } from "jotai";
 
-import { consumeRpcSubscription } from "#app/shared/lib/rpc/app-rpc-react";
-import type { ChangesEvent } from "#shared/rpc/worktree/index";
 import type { WorktreeTreeSnapshot } from "#shared/rpc/worktree/index";
-import { useWorktreeChanges } from "#workbench/branch/branch-scopes";
 
-import { applyCombinedWorktreeTreeFromChangesEvent } from "./worktree-tree-state";
+import { worktreeChangesFeedMolecule } from "./worktree-changes-feed";
 
 export function useWorktreeTreeSnapshot(): WorktreeTreeSnapshot | null {
-  const changesHandle = useWorktreeChanges();
-  const [snapshot, setSnapshot] = useState<WorktreeTreeSnapshot | null>(null);
-
-  useEffect(() => {
-    return consumeRpcSubscription<ChangesEvent>({
-      subscribe: () => changesHandle.subscribeChanges(),
-      onValue: (event) => {
-        setSnapshot((current) => applyCombinedWorktreeTreeFromChangesEvent(current, event));
-      },
-      onError: () => {
-        setSnapshot(null);
-      },
-      cancelReason: "Worktree tree subscription disposed.",
-    });
-  }, [changesHandle]);
-
-  return snapshot;
+  const { treeSnapshotAtom } = useMolecule(worktreeChangesFeedMolecule);
+  return useAtomValue(treeSnapshotAtom);
 }
