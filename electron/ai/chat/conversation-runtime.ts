@@ -45,7 +45,11 @@ import { createPendingUserInputFromRequest, type PendingToolBatch } from "./pend
 import { countCommittedAssistantParts, rebuildLastRequestInput } from "./request-history";
 import { resolveReasoningLevelForModel } from "./selectable-models";
 import { expandSlashForModel } from "./slash-expand";
-import { executeSubagentToolCall, RUN_SUBAGENT_TOOL_NAME } from "./subagent";
+import {
+  executeSubagentToolCall,
+  RUN_SUBAGENT_TOOL_NAME,
+  serializeSubagentProgress,
+} from "./subagent";
 
 type RuntimeEventListener = (event: AiChatEvent) => void;
 
@@ -646,7 +650,7 @@ export class AiConversationRuntime {
 
       const execution =
         call.name === RUN_SUBAGENT_TOOL_NAME
-          ? await this.#executeSubagent(call)
+          ? await this.#executeSubagent(assistantMessageId, call)
           : await this.#toolRunner.execute(call);
       if (execution.userInputRequest) {
         const pending = createPendingUserInputFromRequest(call, execution.userInputRequest);
@@ -655,6 +659,7 @@ export class AiConversationRuntime {
             status: "awaiting_user",
             resultText: null,
             errorMessage: null,
+            progressText: null,
           }),
         );
         pendingInputs.push(pending);
@@ -666,6 +671,7 @@ export class AiConversationRuntime {
           status: execution.errorMessage === null ? "complete" : "error",
           resultText: execution.resultText,
           errorMessage: execution.errorMessage,
+          progressText: null,
         }),
       );
       resolvedResultsByCallId.set(call.id, execution.toolResult);
@@ -710,7 +716,10 @@ export class AiConversationRuntime {
     return "continue";
   }
 
-  async #executeSubagent(call: ToolCallItem): Promise<ToolExecutionResult> {
+  async #executeSubagent(
+    assistantMessageId: string,
+    call: ToolCallItem,
+  ): Promise<ToolExecutionResult> {
     const signal = this.#generationAbort?.signal ?? new AbortController().signal;
     return executeSubagentToolCall({
       call,
@@ -724,6 +733,17 @@ export class AiConversationRuntime {
         parentSelectedModelId: this.#state.selectedModelId,
         parentSelectedReasoningLevel: this.#state.selectedReasoningLevel,
         parentAdapterKind: this.#state.getSnapshot().adapterKind,
+      },
+      onProgress: (progress) => {
+        if (this.#disposed || signal.aborted) {
+          return;
+        }
+        // UI-only live progress; never persist every tick.
+        this.#emitDelta(
+          this.#state.updateAssistantPart(assistantMessageId, call.id, {
+            progressText: serializeSubagentProgress(progress),
+          }),
+        );
       },
     });
   }
