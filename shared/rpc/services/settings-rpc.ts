@@ -142,6 +142,20 @@ export type AiModelsSettingsSnapshot = {
 };
 
 export const BUILTIN_AI_AGENT_ID = "builtin-writing-assistant" as const;
+export const BUILTIN_CONSISTENCY_REVIEWER_ID = "builtin-consistency-reviewer" as const;
+export const BUILTIN_CHAPTER_WRITER_ID = "builtin-chapter-writer" as const;
+
+export const BUILTIN_AI_AGENT_IDS = [
+  BUILTIN_AI_AGENT_ID,
+  BUILTIN_CONSISTENCY_REVIEWER_ID,
+  BUILTIN_CHAPTER_WRITER_ID,
+] as const;
+
+export type BuiltinAiAgentId = (typeof BUILTIN_AI_AGENT_IDS)[number];
+
+export function isBuiltinAiAgentId(id: string): id is BuiltinAiAgentId {
+  return (BUILTIN_AI_AGENT_IDS as readonly string[]).includes(id);
+}
 
 export type AiAgentTool = {
   name: string;

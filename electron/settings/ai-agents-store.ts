@@ -8,9 +8,18 @@ import type {
   AiAgentConfigWrite,
   AiAgentsSettingsSnapshot,
 } from "#shared/rpc/services/index";
-import { BUILTIN_AI_AGENT_ID } from "#shared/rpc/services/index";
+import {
+  BUILTIN_AI_AGENT_ID,
+  BUILTIN_CHAPTER_WRITER_ID,
+  BUILTIN_CONSISTENCY_REVIEWER_ID,
+  isBuiltinAiAgentId,
+} from "#shared/rpc/services/index";
 
 import { DEFAULT_AI_SYSTEM_PROMPT } from "../ai/default-system-prompt";
+import {
+  CHAPTER_WRITER_SYSTEM_PROMPT,
+  CONSISTENCY_REVIEWER_SYSTEM_PROMPT,
+} from "../ai/specialist-system-prompts";
 import { AI_TOOL_CATALOG, AI_TOOL_NAMES } from "../ai/tools";
 import type { AiModelsStore } from "./ai-models-store";
 
@@ -29,6 +38,63 @@ type StoredFile = {
 
 const EMPTY_FILE: StoredFile = { version: FILE_VERSION, agents: [] };
 
+const ALL_TOOL_NAMES = Object.keys(AI_TOOL_NAMES);
+
+const READ_TOOL_NAMES = [
+  "read_structure",
+  "read_document",
+  "search_documents",
+  "read_changes",
+  "read_change",
+  "read_history",
+  "read_history_entry",
+] as const;
+
+const CHAPTER_WRITER_TOOL_NAMES = [
+  ...READ_TOOL_NAMES,
+  "write_document",
+  "replace_document_text",
+  "create_document",
+  "create_folder",
+] as const;
+
+function builtinWritingAssistant(): AiAgentConfigPublic {
+  return {
+    id: BUILTIN_AI_AGENT_ID,
+    name: "写作助手",
+    systemPrompt: BUILTIN_AI_AGENT_SYSTEM_PROMPT,
+    defaultModelId: null,
+    availableToolNames: [...ALL_TOOL_NAMES],
+    builtin: true,
+  };
+}
+
+function builtinConsistencyReviewer(): AiAgentConfigPublic {
+  return {
+    id: BUILTIN_CONSISTENCY_REVIEWER_ID,
+    name: "一致性审查",
+    systemPrompt: CONSISTENCY_REVIEWER_SYSTEM_PROMPT,
+    defaultModelId: null,
+    availableToolNames: [...READ_TOOL_NAMES],
+    builtin: true,
+  };
+}
+
+function builtinChapterWriter(): AiAgentConfigPublic {
+  return {
+    id: BUILTIN_CHAPTER_WRITER_ID,
+    name: "章节续写",
+    systemPrompt: CHAPTER_WRITER_SYSTEM_PROMPT,
+    defaultModelId: null,
+    availableToolNames: [...CHAPTER_WRITER_TOOL_NAMES],
+    builtin: true,
+  };
+}
+
+function builtinAgents(): AiAgentConfigPublic[] {
+  return [builtinWritingAssistant(), builtinConsistencyReviewer(), builtinChapterWriter()];
+}
+
 export class AiAgentsStore {
   readonly #filePath: string;
   readonly #getAiModelsStore: () => AiModelsStore;
@@ -43,15 +109,20 @@ export class AiAgentsStore {
   getSnapshot(): AiAgentsSettingsSnapshot {
     return {
       agents: [
-        this.#builtinAgent(),
-        ...this.#data.agents.map((agent) => ({ ...agent, builtin: false })),
+        ...builtinAgents(),
+        ...this.#data.agents.map((agent) => ({ ...agent, builtin: false as const })),
       ],
       tools: AI_TOOL_CATALOG.map((tool) => ({ ...tool })),
     };
   }
 
   getRuntimeConfig(id: string): AiAgentRuntimeConfig {
-    return this.getSnapshot().agents.find((agent) => agent.id === id) ?? this.#builtinAgent();
+    return this.getSnapshot().agents.find((agent) => agent.id === id) ?? builtinWritingAssistant();
+  }
+
+  /** Exact lookup without falling back to the default writing assistant. */
+  findRuntimeConfig(id: string): AiAgentRuntimeConfig | null {
+    return this.getSnapshot().agents.find((agent) => agent.id === id) ?? null;
   }
 
   upsert(input: AiAgentConfigWrite): AiAgentsSettingsSnapshot {
@@ -63,7 +134,7 @@ export class AiAgentsStore {
     if (systemPrompt === "") {
       throw new Error("系统提示词不能为空。");
     }
-    if (input.id === BUILTIN_AI_AGENT_ID) {
+    if (input.id !== undefined && isBuiltinAiAgentId(input.id)) {
       throw new Error("内置 Agent 无法修改。");
     }
     if (
@@ -76,7 +147,7 @@ export class AiAgentsStore {
     }
 
     const availableToolNames = [...new Set(input.availableToolNames)];
-    if (availableToolNames.some((name) => !(name in AI_TOOL_NAMES))) {
+    if (availableToolNames.some((toolName) => !(toolName in AI_TOOL_NAMES))) {
       throw new Error("包含未知工具。");
     }
 
@@ -101,7 +172,7 @@ export class AiAgentsStore {
   }
 
   remove(id: string): AiAgentsSettingsSnapshot {
-    if (id === BUILTIN_AI_AGENT_ID) {
+    if (isBuiltinAiAgentId(id)) {
       throw new Error("内置 Agent 无法删除。");
     }
     const next = this.#data.agents.filter((agent) => agent.id !== id);
@@ -111,17 +182,6 @@ export class AiAgentsStore {
     this.#data.agents = next;
     this.#persist();
     return this.getSnapshot();
-  }
-
-  #builtinAgent(): AiAgentConfigPublic {
-    return {
-      id: BUILTIN_AI_AGENT_ID,
-      name: "写作助手",
-      systemPrompt: BUILTIN_AI_AGENT_SYSTEM_PROMPT,
-      defaultModelId: null,
-      availableToolNames: Object.keys(AI_TOOL_NAMES),
-      builtin: true,
-    };
   }
 
   #load(): StoredFile {
