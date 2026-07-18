@@ -259,6 +259,50 @@ export function revertChange(state: WorktreeSessionState, changeId: string): Cha
   return currentChangesOnlySnapshot(state);
 }
 
+/**
+ * Atomically restore the full working tree to base.
+ * Prefer this over looping `revertChange` — parent/child create/delete order is unsafe.
+ */
+export function revertAllChanges(state: WorktreeSessionState): ChangesSnapshot {
+  const snapshot = currentChangesOnlySnapshot(state);
+  if (!snapshot.hasChanges) {
+    return snapshot;
+  }
+
+  const changes = [...snapshot.manuscriptChanges, ...snapshot.resourceChanges];
+  const beforeByChangeId = new Map(
+    changes.map((change) => [change.id, currentJournalEntitySnapshot(state, change)] as const),
+  );
+
+  state.manuscriptTree = cloneManuscriptTreeSnapshot(state.baseManuscriptTree);
+  state.resourceTree = cloneResourceTreeSnapshot(state.baseResourceTree);
+  state.currentManuscript = cloneManuscriptSnapshotState(state.baseManuscript);
+  state.currentResources = cloneResourceSnapshotState(state.baseResources);
+  state.changeTracker.clearCache();
+
+  persistAndEmit(state, false, {
+    source: "restore",
+    title: "还原所有更改",
+    groupKey: "restore:all",
+    operations: changes.map((change) => {
+      const beforeRestore = beforeByChangeId.get(change.id) ?? null;
+      const afterRestore = currentJournalEntitySnapshot(state, change);
+      return {
+        kind: "restore" as const,
+        domain: change.domain,
+        entityId: change.entityId,
+        entityKind: change.entityKind,
+        label: afterRestore?.label ?? beforeRestore?.label ?? change.label,
+        displayPath: afterRestore?.displayPath ?? beforeRestore?.displayPath ?? change.displayPath,
+        previousPath: beforeRestore?.displayPath ?? null,
+        beforeContent: beforeRestore?.content ?? null,
+        afterContent: afterRestore?.content ?? null,
+      };
+    }),
+  });
+  return currentChangesOnlySnapshot(state);
+}
+
 export function readChangeTextComparison(
   state: WorktreeSessionState,
   changeId: string,

@@ -26,6 +26,10 @@ export class WorktreeChangesHandleImpl extends RpcTarget implements WorktreeChan
     return this.#session.revertChange(changeId);
   }
 
+  revertAllChanges(): ChangesSnapshot {
+    return this.#session.revertAllChanges();
+  }
+
   readChangeTextComparison(changeId: string): ChangeTextComparison {
     return this.#session.readChangeTextComparison(changeId);
   }

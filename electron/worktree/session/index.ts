@@ -226,6 +226,10 @@ export class WorktreeSession {
     return changesOps.revertChange(this.#state, changeId);
   }
 
+  revertAllChanges(): ChangesSnapshot {
+    return changesOps.revertAllChanges(this.#state);
+  }
+
   readChangeTextComparison(changeId: string): ChangeTextComparison {
     return changesOps.readChangeTextComparison(this.#state, changeId);
   }
