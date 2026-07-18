@@ -47,6 +47,10 @@ export class AiChatHandleImpl extends RpcTarget implements AiChatHandle {
     this.#chat.selectMessageBranch(messageId, index);
   }
 
+  selectMessageContinuation(messageId: string, index: number): void {
+    this.#chat.selectMessageContinuation(messageId, index);
+  }
+
   editUserMessage(messageId: string, input: AiChatSendMessageInput): void {
     this.#chat.editUserMessage(messageId, input);
   }

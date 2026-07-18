@@ -14,6 +14,7 @@ type AiMessageBlockProps = {
   onFork?: () => void;
   onEditUser?: (text: string) => void;
   onSelectBranch?: (index: number) => void;
+  onSelectContinuation?: (index: number) => void;
 };
 
 export const AiMessageBlock = memo(function AiMessageBlock({
@@ -25,6 +26,7 @@ export const AiMessageBlock = memo(function AiMessageBlock({
   onFork,
   onEditUser,
   onSelectBranch,
+  onSelectContinuation,
 }: AiMessageBlockProps) {
   if (message.role === "user") {
     return (
@@ -34,6 +36,7 @@ export const AiMessageBlock = memo(function AiMessageBlock({
         onFork={onFork}
         onEdit={onEditUser}
         onSelectBranch={onSelectBranch}
+        onSelectContinuation={onSelectContinuation}
       />
     );
   }
@@ -47,6 +50,7 @@ export const AiMessageBlock = memo(function AiMessageBlock({
       actionsDisabled={actionsDisabled}
       onFork={onFork}
       onSelectBranch={onSelectBranch}
+      onSelectContinuation={onSelectContinuation}
     />
   );
 });

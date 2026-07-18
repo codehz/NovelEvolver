@@ -438,6 +438,37 @@ export class AiConversationRuntime {
   }
 
   /**
+   * Select direct-child continuation at index for messageId; emit path.replaced.
+   * Restores a truncated path after fork (or picks among multiple retained children).
+   */
+  selectMessageContinuation(messageId: string, index: number): void {
+    if (this.#disposed) {
+      return;
+    }
+    if (this.#state.pending || this.#state.pendingToolBatch !== null) {
+      return;
+    }
+    if (!this.#state.selectMessageContinuation(messageId, index)) {
+      return;
+    }
+    this.#state.setErrorMessage(null);
+    this.#emitDelta([
+      {
+        type: "path.replaced",
+        messages: this.#state.projectActivePathMessages(),
+      },
+      {
+        type: "state.updated",
+        patch: {
+          errorMessage: null,
+          canRetry: this.#state.canRetry,
+        },
+      },
+    ]);
+    this.#state.persistIfNeeded();
+  }
+
+  /**
    * Edit a historical user message: sibling user + new assistant turn generation.
    * Original branch retained.
    */

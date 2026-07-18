@@ -16,8 +16,13 @@ export function AiChatPanel() {
   const snapshot = useAiChatSnapshot();
   const loading = useAiChatLoading();
   const subscriptionError = useAiChatSubscriptionError();
-  const { retryLastRequest, forkFromMessage, selectMessageBranch, editUserMessage } =
-    useAiChatActions();
+  const {
+    retryLastRequest,
+    forkFromMessage,
+    selectMessageBranch,
+    selectMessageContinuation,
+    editUserMessage,
+  } = useAiChatActions();
   const mockAiAvailable = useMockAiAvailable();
   const composer = useAiChatComposer();
 
@@ -41,6 +46,13 @@ export function AiChatPanel() {
       void selectMessageBranch(messageId, index);
     },
     [selectMessageBranch],
+  );
+
+  const handleSelectContinuation = useCallback(
+    (messageId: string, index: number) => {
+      void selectMessageContinuation(messageId, index);
+    },
+    [selectMessageContinuation],
   );
 
   const handleEditUser = useCallback(
@@ -71,6 +83,7 @@ export function AiChatPanel() {
         actionsDisabled={branchActionsDisabled}
         onFork={branchActionsDisabled ? undefined : handleFork}
         onSelectBranch={branchActionsDisabled ? undefined : handleSelectBranch}
+        onSelectContinuation={branchActionsDisabled ? undefined : handleSelectContinuation}
         onEditUser={branchActionsDisabled ? undefined : handleEditUser}
       />
       <AiChatComposerFooter composer={composer} />

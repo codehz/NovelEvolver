@@ -49,6 +49,13 @@ export function cloneAiChatMessage(message: AiChatMessage): AiChatMessage {
     message.branch && message.branch.count > 0
       ? { index: message.branch.index, count: message.branch.count }
       : undefined;
+  const continuation =
+    message.continuation && message.continuation.count > 0
+      ? {
+          count: message.continuation.count,
+          preferredIndex: message.continuation.preferredIndex,
+        }
+      : undefined;
   if (message.role === "user") {
     // Legacy rows / partial wire payloads may omit `slash` / `mentions`.
     const slash = message.slash ? { ...message.slash } : null;
@@ -58,6 +65,7 @@ export function cloneAiChatMessage(message: AiChatMessage): AiChatMessage {
       slash,
       mentions,
       ...(branch ? { branch } : {}),
+      ...(continuation ? { continuation } : {}),
     };
   }
 
@@ -67,6 +75,7 @@ export function cloneAiChatMessage(message: AiChatMessage): AiChatMessage {
     usage: message.usage ? { ...message.usage } : null,
     parts: message.parts.map(cloneAiChatAssistantPart),
     ...(branch ? { branch } : {}),
+    ...(continuation ? { continuation } : {}),
   };
 }
 

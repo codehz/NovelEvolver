@@ -10,6 +10,7 @@ import {
   userSlashChipClass,
 } from "../ui/ai-chat-chrome";
 import { AiMessageBranchSwitcher } from "./AiMessageBranchSwitcher";
+import { AiMessageContinuationControl } from "./AiMessageContinuationControl";
 import { renderTextWithMentions } from "./render-text-with-mentions";
 
 type AiUserMessageBlockProps = {
@@ -18,6 +19,7 @@ type AiUserMessageBlockProps = {
   onFork?: () => void;
   onEdit?: (text: string) => void;
   onSelectBranch?: (index: number) => void;
+  onSelectContinuation?: (index: number) => void;
 };
 
 export function AiUserMessageBlock({
@@ -26,6 +28,7 @@ export function AiUserMessageBlock({
   onFork,
   onEdit,
   onSelectBranch,
+  onSelectContinuation,
 }: AiUserMessageBlockProps) {
   const slash = message.slash;
   const mentions = message.mentions ?? [];
@@ -34,6 +37,9 @@ export function AiUserMessageBlock({
   const [draft, setDraft] = useState(message.text);
   const showActions = !editing && (onFork != null || onEdit != null);
   const branch = message.branch;
+  const continuation = message.continuation;
+  const showContinuation =
+    continuation != null && continuation.count > 0 && onSelectContinuation != null;
 
   function commitEdit(): void {
     const next = draft;
@@ -118,6 +124,13 @@ export function AiUserMessageBlock({
             branch={branch}
             disabled={actionsDisabled}
             onSelect={onSelectBranch}
+          />
+        ) : null}
+        {showContinuation ? (
+          <AiMessageContinuationControl
+            continuation={continuation}
+            disabled={actionsDisabled}
+            onSelect={onSelectContinuation}
           />
         ) : null}
         {showActions ? (

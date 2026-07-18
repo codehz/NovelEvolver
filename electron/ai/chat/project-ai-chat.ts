@@ -202,6 +202,10 @@ export class ProjectAiChatController {
     this.#getActiveRuntime().selectMessageBranch(messageId, index);
   }
 
+  selectMessageContinuation(messageId: string, index: number): void {
+    this.#getActiveRuntime().selectMessageContinuation(messageId, index);
+  }
+
   editUserMessage(messageId: string, input: AiChatSendMessageInput): void {
     this.#getActiveRuntime().editUserMessage(messageId, input);
   }

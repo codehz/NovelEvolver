@@ -34,6 +34,7 @@ type AiChatActions = {
   retryLastRequest: () => Promise<void>;
   forkFromMessage: (messageId: string) => Promise<void>;
   selectMessageBranch: (messageId: string, index: number) => Promise<void>;
+  selectMessageContinuation: (messageId: string, index: number) => Promise<void>;
   editUserMessage: (messageId: string, input: AiChatSendMessageInput) => Promise<void>;
   createConversation: () => Promise<void>;
   listConversations: (options?: AiConversationListOptions) => Promise<AiConversationSummary[]>;
@@ -197,6 +198,13 @@ function useAiChatActionsValue(): AiChatActions {
     [aiChat],
   );
 
+  const selectMessageContinuation = useCallback(
+    async (messageId: string, index: number): Promise<void> => {
+      await Promise.resolve(aiChat.selectMessageContinuation(messageId, index));
+    },
+    [aiChat],
+  );
+
   const editUserMessage = useCallback(
     async (messageId: string, input: AiChatSendMessageInput): Promise<void> => {
       await Promise.resolve(aiChat.editUserMessage(messageId, input));
@@ -211,6 +219,7 @@ function useAiChatActionsValue(): AiChatActions {
       retryLastRequest,
       forkFromMessage,
       selectMessageBranch,
+      selectMessageContinuation,
       editUserMessage,
       createConversation,
       listConversations,
@@ -239,6 +248,7 @@ function useAiChatActionsValue(): AiChatActions {
       retryLastRequest,
       searchConversations,
       selectMessageBranch,
+      selectMessageContinuation,
       sendMessage,
       setSelectedAgent,
       setSelectedModel,

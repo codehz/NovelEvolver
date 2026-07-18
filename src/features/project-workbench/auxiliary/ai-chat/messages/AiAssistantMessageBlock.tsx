@@ -14,6 +14,7 @@ import {
 import { describeAssistantStreamingMeta, describeAssistantUsageMeta } from "../ui/ai-chat-helpers";
 import { AiAssistantPartBlock } from "./AiAssistantPartBlock";
 import { AiMessageBranchSwitcher } from "./AiMessageBranchSwitcher";
+import { AiMessageContinuationControl } from "./AiMessageContinuationControl";
 
 type AiAssistantMessageBlockProps = {
   message: AiChatAssistantMessage;
@@ -23,6 +24,7 @@ type AiAssistantMessageBlockProps = {
   actionsDisabled?: boolean;
   onFork?: () => void;
   onSelectBranch?: (index: number) => void;
+  onSelectContinuation?: (index: number) => void;
 };
 
 export function AiAssistantMessageBlock({
@@ -33,6 +35,7 @@ export function AiAssistantMessageBlock({
   actionsDisabled = false,
   onFork,
   onSelectBranch,
+  onSelectContinuation,
 }: AiAssistantMessageBlockProps) {
   if (message.status === "streaming") {
     const hasStreamingPart = message.parts.some((part) => part.status === "streaming");
@@ -54,8 +57,14 @@ export function AiAssistantMessageBlock({
   const modelLabel = message.modelName.trim() !== "" ? message.modelName : "未知模型";
   const usageMeta = describeAssistantUsageMeta(message);
   const branch = message.branch;
+  const continuation = message.continuation;
+  const showContinuation =
+    continuation != null && continuation.count > 0 && onSelectContinuation != null;
   const hasLeading =
-    onRetry != null || onFork != null || (branch != null && branch.count > 1 && onSelectBranch);
+    onRetry != null ||
+    onFork != null ||
+    (branch != null && branch.count > 1 && onSelectBranch) ||
+    showContinuation;
 
   return (
     <article className={assistantMessageBlockClass}>
@@ -65,7 +74,8 @@ export function AiAssistantMessageBlock({
       <div
         className={cn(
           assistantMessageFooterClass,
-          !footerAlwaysVisible && assistantMessageFooterHoverRevealClass,
+          // Truncated leaves with continuations should stay actionable without hover.
+          !(footerAlwaysVisible || showContinuation) && assistantMessageFooterHoverRevealClass,
         )}
       >
         {hasLeading ? (
@@ -75,6 +85,13 @@ export function AiAssistantMessageBlock({
                 branch={branch}
                 disabled={actionsDisabled}
                 onSelect={onSelectBranch}
+              />
+            ) : null}
+            {showContinuation ? (
+              <AiMessageContinuationControl
+                continuation={continuation}
+                disabled={actionsDisabled}
+                onSelect={onSelectContinuation}
               />
             ) : null}
             {onFork ? (

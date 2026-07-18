@@ -168,6 +168,20 @@ export type AiChatMessageBranch = {
   count: number;
 };
 
+/**
+ * Truncated-leaf continuation metadata: this node has children but none is selected
+ * (e.g. after `forkFromMessage`). Distinct from sibling `branch`.
+ */
+export type AiChatMessageContinuation = {
+  /** Direct child count under this node. */
+  count: number;
+  /**
+   * Best child index to restore (last selected child if still present, else 0).
+   * UI "恢复后续" should call `selectMessageContinuation(id, preferredIndex)`.
+   */
+  preferredIndex: number;
+};
+
 export type AiChatUserMessage = {
   id: string;
   role: "user";
@@ -184,6 +198,8 @@ export type AiChatUserMessage = {
   status: "complete";
   /** Present when this message has siblings on the conversation tree. */
   branch?: AiChatMessageBranch;
+  /** Present when path is truncated here but child continuations still exist. */
+  continuation?: AiChatMessageContinuation;
 };
 
 export type AiChatAssistantMessage = {
@@ -199,6 +215,8 @@ export type AiChatAssistantMessage = {
   parts: AiChatAssistantPart[];
   /** Present when this message has siblings on the conversation tree. */
   branch?: AiChatMessageBranch;
+  /** Present when path is truncated here but child continuations still exist. */
+  continuation?: AiChatMessageContinuation;
 };
 
 export type AiChatMessage = AiChatUserMessage | AiChatAssistantMessage;
@@ -414,6 +432,12 @@ export interface AiChatHandle extends RpcTarget {
    * 生成中 / 等待用户输入时忽略。
    */
   selectMessageBranch(messageId: string, index: number): void;
+  /**
+   * 恢复 / 选择截断节点的第 `index` 个直接子后续（continuation 轴）。
+   * 用于 fork 后路径截断、子树仍在时把活跃路径重新接到某条后续。
+   * 生成中 / 等待用户输入时忽略。
+   */
+  selectMessageContinuation(messageId: string, index: number): void;
   /**
    * 编辑历史用户消息：创建兄弟 user 节点并立即发起新生成；原支路保留。
    * 生成中 / 等待用户输入时忽略。

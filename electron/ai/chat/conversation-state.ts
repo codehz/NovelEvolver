@@ -48,6 +48,7 @@ import {
   parseConversationMessagesJson,
   projectActiveMessages,
   projectActivePath,
+  selectChildByIndex,
   selectSiblingByIndex,
   serializeConversationTree,
   truncateSelectionAt,
@@ -620,6 +621,22 @@ export class AiConversationState {
       return false;
     }
     if (!selectSiblingByIndex(this.#tree, normalized, index)) {
+      return false;
+    }
+    this.#markDirty();
+    return true;
+  }
+
+  /**
+   * Select the `index`-th direct child of `messageId` (continuation restore after fork).
+   * Returns false when id/index invalid.
+   */
+  selectMessageContinuation(messageId: string, index: number): boolean {
+    const normalized = messageId.trim();
+    if (normalized === "" || !Number.isInteger(index) || index < 0) {
+      return false;
+    }
+    if (!selectChildByIndex(this.#tree, normalized, index)) {
       return false;
     }
     this.#markDirty();

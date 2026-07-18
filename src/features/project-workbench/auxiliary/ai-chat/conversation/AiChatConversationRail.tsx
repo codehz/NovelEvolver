@@ -49,6 +49,7 @@ type AiChatConversationRailProps = {
   actionsDisabled?: boolean;
   onFork?: (messageId: string) => void;
   onSelectBranch?: (messageId: string, index: number) => void;
+  onSelectContinuation?: (messageId: string, index: number) => void;
   onEditUser?: (messageId: string, text: string) => void;
 };
 
@@ -61,6 +62,7 @@ export function AiChatConversationRail({
   actionsDisabled = false,
   onFork,
   onSelectBranch,
+  onSelectContinuation,
   onEditUser,
 }: AiChatConversationRailProps) {
   const { warningsByMessageId, orphanWarnings } = useMemo(
@@ -157,6 +159,11 @@ export function AiChatConversationRail({
                     onSelectBranch={
                       onSelectBranch
                         ? (index: number) => onSelectBranch(message.id, index)
+                        : undefined
+                    }
+                    onSelectContinuation={
+                      onSelectContinuation
+                        ? (index: number) => onSelectContinuation(message.id, index)
                         : undefined
                     }
                     onEditUser={

@@ -5,6 +5,7 @@ import type {
   AiChatAssistantMessage,
   AiChatMessage,
   AiChatMessageBranch,
+  AiChatMessageContinuation,
   AiChatUserMessage,
 } from "#shared/rpc/ai/index";
 
@@ -14,6 +15,11 @@ export type ConversationMessageNode = {
   parentId: string | null;
   /** Selected child on the active path; null means this node is the path leaf. */
   selectedChildId: string | null;
+  /**
+   * Last selected child id (survives truncate). Used as preferred restore target
+   * for continuation after fork.
+   */
+  lastSelectedChildId: string | null;
   role: "user" | "assistant";
   message: AiChatMessage;
   /** Model history items introduced by this node (user item / assistant replay+tools). */
@@ -33,6 +39,8 @@ export type ConversationTreeDocumentV2 = {
     id: string;
     parentId: string | null;
     selectedChildId: string | null;
+    /** Optional for older v2 docs; missing treated as selectedChildId. */
+    lastSelectedChildId?: string | null;
     role: "user" | "assistant";
     message: AiChatMessage;
     historyItems: InputItem[];
@@ -81,6 +89,32 @@ export function getSiblingMeta(tree: ConversationTree, nodeId: string): AiChatMe
   return { index, count: siblings.length };
 }
 
+/**
+ * Continuation meta only when path is truncated at this node but children remain.
+ * Sibling branch navigation is a separate axis (`getSiblingMeta`).
+ */
+export function getContinuationMeta(
+  tree: ConversationTree,
+  nodeId: string,
+): AiChatMessageContinuation | null {
+  const node = tree.nodes.get(nodeId);
+  if (!node || node.selectedChildId != null) {
+    return null;
+  }
+  const children = getChildren(tree, nodeId);
+  if (children.length === 0) {
+    return null;
+  }
+  let preferredIndex = 0;
+  if (node.lastSelectedChildId != null) {
+    const preferred = children.findIndex((child) => child.id === node.lastSelectedChildId);
+    if (preferred >= 0) {
+      preferredIndex = preferred;
+    }
+  }
+  return { count: children.length, preferredIndex };
+}
+
 /** Active path from selected root to leaf following selectedChildId. */
 export function projectActivePath(tree: ConversationTree): ConversationMessageNode[] {
   const path: ConversationMessageNode[] = [];
@@ -121,12 +155,16 @@ export function getPathLeaf(tree: ConversationTree): ConversationMessageNode | n
 export function projectActiveMessages(tree: ConversationTree): AiChatMessage[] {
   return projectActivePath(tree).map((node) => {
     const branch = getSiblingMeta(tree, node.id);
+    const continuation = getContinuationMeta(tree, node.id);
     const cloned = cloneAiChatMessage(node.message);
+    let next: AiChatMessage = cloned;
     if (branch && branch.count > 1) {
-      return { ...cloned, branch };
+      next = { ...next, branch };
     }
-    // Always attach count=1 branch for a stable wire shape once UI lands; omit when alone.
-    return cloned;
+    if (continuation) {
+      next = { ...next, continuation };
+    }
+    return next;
   });
 }
 
@@ -162,6 +200,7 @@ export function addChildNode(
     id: message.id,
     parentId,
     selectedChildId: null,
+    lastSelectedChildId: null,
     role: message.role,
     message: cloneAiChatMessage(message),
     historyItems: cloneInputItems(options?.historyItems ?? []),
@@ -175,6 +214,7 @@ export function addChildNode(
   } else if (select) {
     const parent = tree.nodes.get(parentId)!;
     parent.selectedChildId = node.id;
+    parent.lastSelectedChildId = node.id;
   }
 
   return node;
@@ -183,6 +223,7 @@ export function addChildNode(
 /**
  * Truncate the active selection at `nodeId` (must be on active path).
  * Keeps descendant nodes; only clears the selectedChildId chain from this node.
+ * Preserves lastSelectedChildId so continuation restore prefers the prior path.
  */
 export function truncateSelectionAt(tree: ConversationTree, nodeId: string): boolean {
   const path = projectActivePath(tree);
@@ -191,6 +232,9 @@ export function truncateSelectionAt(tree: ConversationTree, nodeId: string): boo
     return false;
   }
   const node = path[index]!;
+  if (node.selectedChildId != null) {
+    node.lastSelectedChildId = node.selectedChildId;
+  }
   node.selectedChildId = null;
   return true;
 }
@@ -221,7 +265,27 @@ export function selectSiblingByIndex(
       return false;
     }
     parent.selectedChildId = selected.id;
+    parent.lastSelectedChildId = selected.id;
   }
+  return true;
+}
+
+/**
+ * Select the `index`-th direct child of `nodeId` as the active continuation.
+ * Used after fork (selectedChildId cleared) to reattach a retained subtree.
+ */
+export function selectChildByIndex(tree: ConversationTree, nodeId: string, index: number): boolean {
+  const node = tree.nodes.get(nodeId);
+  if (!node) {
+    return false;
+  }
+  const children = getChildren(tree, nodeId);
+  if (index < 0 || index >= children.length) {
+    return false;
+  }
+  const selected = children[index]!;
+  node.selectedChildId = selected.id;
+  node.lastSelectedChildId = selected.id;
   return true;
 }
 
@@ -299,6 +363,7 @@ export function serializeConversationTree(tree: ConversationTree): ConversationT
       id: node.id,
       parentId: node.parentId,
       selectedChildId: node.selectedChildId,
+      lastSelectedChildId: node.lastSelectedChildId,
       role: node.role,
       message: cloneAiChatMessage(node.message),
       historyItems: cloneInputItems(node.historyItems),
@@ -380,10 +445,14 @@ export function parseConversationMessagesJson(
       continue;
     }
     const historyItems = Array.isArray(raw.historyItems) ? (raw.historyItems as InputItem[]) : [];
+    const selectedChildId = typeof raw.selectedChildId === "string" ? raw.selectedChildId : null;
+    const lastSelectedChildId =
+      typeof raw.lastSelectedChildId === "string" ? raw.lastSelectedChildId : selectedChildId;
     const node: ConversationMessageNode = {
       id: raw.id,
       parentId: typeof raw.parentId === "string" ? raw.parentId : null,
-      selectedChildId: typeof raw.selectedChildId === "string" ? raw.selectedChildId : null,
+      selectedChildId,
+      lastSelectedChildId,
       role,
       message: cloneAiChatMessage(message),
       historyItems: cloneInputItems(historyItems),
