@@ -1,11 +1,10 @@
 import { useState, type FormEvent, type KeyboardEvent } from "react";
 
-import { AppTooltip, Button } from "#app/shared/ui";
+import { cn } from "#app/shared/lib/ui/cn";
+import { Button } from "#app/shared/ui";
 import type { AiChatUserMessage } from "#shared/rpc/ai/index";
 
 import {
-  messageActionButtonClass,
-  userMessageActionsClass,
   userMessageBubbleClass,
   userMessageRowClass,
   userSlashChipClass,
@@ -31,8 +30,14 @@ export function AiUserMessageBlock({
   const remainder = renderTextWithMentions(message.text, mentions);
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(message.text);
-  const showActions = !editing && onEdit != null;
+  const canEdit = onEdit != null && !actionsDisabled;
   const branch = message.branch;
+
+  function beginEdit(): void {
+    if (!canEdit) return;
+    setDraft(message.text);
+    setEditing(true);
+  }
 
   function commitEdit(): void {
     const next = draft;
@@ -61,6 +66,24 @@ export function AiUserMessageBlock({
     if (event.key === "Enter" && !event.shiftKey) {
       event.preventDefault();
       commitEdit();
+    }
+  }
+
+  function handleBubbleClick(): void {
+    if (!canEdit) return;
+    // Preserve text selection / copy — only enter edit on a plain click.
+    const selection = window.getSelection();
+    if (selection != null && !selection.isCollapsed && selection.toString().length > 0) {
+      return;
+    }
+    beginEdit();
+  }
+
+  function handleBubbleKeyDown(event: KeyboardEvent<HTMLDivElement>): void {
+    if (!canEdit) return;
+    if (event.key === "Enter" || event.key === " ") {
+      event.preventDefault();
+      beginEdit();
     }
   }
 
@@ -94,7 +117,14 @@ export function AiUserMessageBlock({
           </div>
         </form>
       ) : (
-        <div className={userMessageBubbleClass}>
+        <div
+          className={cn(userMessageBubbleClass, canEdit && "cursor-pointer")}
+          role={canEdit ? "button" : undefined}
+          tabIndex={canEdit ? 0 : undefined}
+          aria-label={canEdit ? "编辑消息" : undefined}
+          onClick={canEdit ? handleBubbleClick : undefined}
+          onKeyDown={canEdit ? handleBubbleKeyDown : undefined}
+        >
           {slash ? (
             <p className="whitespace-pre-wrap">
               <span
@@ -111,8 +141,8 @@ export function AiUserMessageBlock({
         </div>
       )}
 
-      <div className="flex max-w-[88%] items-center justify-end gap-1">
-        {branch != null && branch.count > 1 ? (
+      {branch != null && branch.count > 1 ? (
+        <div className="flex max-w-[88%] items-center justify-end gap-1">
           <AiMessageBranchSwitcher
             branch={branch}
             disabled={actionsDisabled || onSelectBranch == null}
@@ -120,27 +150,8 @@ export function AiUserMessageBlock({
               onSelectBranch?.(index);
             }}
           />
-        ) : null}
-        {showActions ? (
-          <div className={userMessageActionsClass}>
-            <AppTooltip label="编辑" side="top">
-              <Button
-                variant="ghost"
-                size="icon-sm"
-                aria-label="编辑"
-                className={messageActionButtonClass}
-                disabled={actionsDisabled}
-                onClick={() => {
-                  setDraft(message.text);
-                  setEditing(true);
-                }}
-              >
-                <span aria-hidden="true" className="icon-[codicon--edit] text-sm" />
-              </Button>
-            </AppTooltip>
-          </div>
-        ) : null}
-      </div>
+        </div>
+      ) : null}
     </div>
   );
 }
