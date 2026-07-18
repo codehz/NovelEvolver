@@ -61,8 +61,8 @@ export function AiChatPanel() {
         turnError={snapshot.errorMessage}
         onRetry={handleRetry}
         actionsDisabled={branchActionsDisabled}
-        onSelectBranch={branchActionsDisabled ? undefined : handleSelectBranch}
-        onEditUser={branchActionsDisabled ? undefined : handleEditUser}
+        onSelectBranch={handleSelectBranch}
+        onEditUser={handleEditUser}
       />
       <AiChatComposerFooter composer={composer} />
     </>
