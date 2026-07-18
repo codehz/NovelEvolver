@@ -8,13 +8,20 @@ import {
 
 export const panelSectionClass = cn("mx-auto flex w-full max-w-3xl flex-col");
 export const conversationRailClass = cn("gap-4 px-3 py-2.5 select-text");
-/** MessageScroller frame: definite-height flex child that fills remaining rail height. */
+/** ChatScroller frame: definite-height flex child that fills remaining rail height. */
 export const conversationScrollerRootClass = cn(
   "relative flex h-0 min-h-0 flex-1 flex-col overflow-hidden",
 );
 export const conversationScrollerViewportClass = cn(
   "min-h-0 flex-1 overflow-x-hidden overflow-y-auto",
 );
+/**
+ * Last user turn + reply zone. CSS pad only (100cqh of the scroller viewport size
+ * container) — never JS-measured message heights. 4rem ≈ previousPeek (64px).
+ * After open / new turn the controller scrolls to end: bottom of this zone sits on
+ * the viewport bottom, so ~4rem of previous content peeks above — no placeTurn math.
+ */
+export const conversationLastTurnClass = cn("flex min-h-[calc(100cqh-4rem)] flex-col gap-4");
 export const conversationScrollerJumpButtonClass = cn(
   "absolute bottom-2 left-1/2 z-10 inline-flex -translate-x-1/2 items-center gap-1",
   "rounded-full border border-titlebar-border bg-app-surface/95 px-2.5 py-1",
@@ -23,6 +30,15 @@ export const conversationScrollerJumpButtonClass = cn(
   panelHoverClass,
   controlFocusVisibleClass,
   "inert:pointer-events-none inert:opacity-0",
+);
+/**
+ * Branch-switch suffix enter: opacity only (no height/margin — ChatScroller contract).
+ * Starts at opacity-0; host sets `data-entered` next frame to fade in.
+ */
+export const branchSuffixEnterClass = cn(
+  "opacity-0 transition-opacity duration-220 ease-[cubic-bezier(0.33,1,0.68,1)]",
+  "data-entered:opacity-100",
+  "motion-reduce:opacity-100 motion-reduce:transition-none",
 );
 export const assistantMessageBlockClass = cn("group/assistant-msg flex w-full flex-col gap-1");
 export const assistantMessageFooterClass = cn("flex w-full min-w-0 items-center gap-2 pt-0.5");
