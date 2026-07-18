@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 
 import type { Change, CommitSummary } from "#shared/rpc/worktree/index";
+import { useCreateBranchFromCommit } from "#workbench/branch/use-create-branch-from-commit";
 import { ChangesBody } from "#workbench/changes/ChangesBody";
 import {
   CHANGES_PANEL_DEFAULT_BODY_HEIGHT,
@@ -31,6 +32,7 @@ export function ChangesSidebarSection() {
   const history = useCommitHistoryState(commitsRefreshKey);
   const commitChanges = useCommitChangesState(commitsRefreshKey);
   const { focusTarget } = useWorkbenchEditorActions();
+  const createBranchFromCommit = useCreateBranchFromCommit();
   const [changesExpanded, setChangesExpanded] = useState(true);
   const [historyExpanded, setHistoryExpanded] = useState(true);
 
@@ -107,6 +109,9 @@ export function ChangesSidebarSection() {
                 displayPath: change.displayPath,
               })
             }
+            onCreateBranchFromCommit={(commitSummary) => {
+              void createBranchFromCommit(commitSummary);
+            }}
           />
         ),
         onToggleExpanded: () => setHistoryExpanded((value) => !value),
@@ -122,6 +127,7 @@ export function ChangesSidebarSection() {
       commitChanges.expandedHashes,
       commitChanges.retry,
       commitChanges.toggleExpanded,
+      createBranchFromCommit,
       error,
       history.commits,
       history.error,

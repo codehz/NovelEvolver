@@ -1,3 +1,5 @@
+import type { MouseEvent as ReactMouseEvent } from "react";
+
 import { cn } from "#app/shared/lib/ui/cn";
 import { rowHoverClass } from "#app/shared/lib/ui/interaction-chrome";
 import { AppTooltip, DisclosureChevron } from "#app/shared/ui";
@@ -21,6 +23,7 @@ type HistoryCommitRowProps = {
   expanded: boolean;
   layout: TreeRowLayout;
   onToggle: () => void;
+  onContextMenu?: (event: ReactMouseEvent) => void;
 };
 
 function commitMetaLabel(commit: CommitSummary): string {
@@ -33,6 +36,7 @@ export function HistoryCommitRow({
   expanded,
   layout,
   onToggle,
+  onContextMenu,
 }: HistoryCommitRowProps) {
   return (
     <TreeMotionRow
@@ -44,6 +48,15 @@ export function HistoryCommitRow({
       tabIndex={0}
       onClick={onToggle}
       onKeyDown={activateOnEnterSpace(onToggle)}
+      onContextMenu={
+        onContextMenu === undefined
+          ? undefined
+          : (event) => {
+              event.preventDefault();
+              event.stopPropagation();
+              onContextMenu(event);
+            }
+      }
     >
       <DisclosureChevron expanded={expanded} />
       {isHead ? <span aria-hidden="true" className={headDotClass} /> : null}

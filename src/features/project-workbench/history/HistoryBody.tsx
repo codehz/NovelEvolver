@@ -5,9 +5,11 @@ import {
   useRef,
   useState,
   type KeyboardEvent,
+  type MouseEvent as ReactMouseEvent,
   type ReactNode,
 } from "react";
 
+import { popupContextMenu } from "#app/shared/lib/shell/popup-context-menu";
 import { cn } from "#app/shared/lib/ui/cn";
 import { rowHoverClass } from "#app/shared/lib/ui/interaction-chrome";
 import { Button, DisclosureChevron } from "#app/shared/ui";
@@ -25,6 +27,7 @@ import {
 } from "#workbench/tree/tree-row-motion";
 import { TreeMotionRow } from "#workbench/tree/TreeMotionRow";
 
+import { buildHistoryCommitContextMenuItems } from "./history-commit-context-menu";
 import {
   collectCommitExpansionSeedKeys,
   flattenHistoryTree,
@@ -276,6 +279,7 @@ type HistoryListProps = {
   onToggleCommit: (commitHash: string) => void;
   onRetryCommit: (commitHash: string) => void;
   onOpenChange: (commit: CommitSummary, change: Change) => void;
+  onCreateBranchFromCommit: (commit: CommitSummary) => void;
 };
 
 function HistoryList({
@@ -285,6 +289,7 @@ function HistoryList({
   onToggleCommit,
   onRetryCommit,
   onOpenChange,
+  onCreateBranchFromCommit,
 }: HistoryListProps) {
   const [expandedDomainKeys, setExpandedDomainKeys] = useState<Set<string>>(() => new Set());
   const [expandedFolderKeys, setExpandedFolderKeys] = useState<Set<string>>(() => new Set());
@@ -386,6 +391,21 @@ function HistoryList({
     [commitByHash, onOpenChange],
   );
 
+  const handleCommitContextMenu = useCallback(
+    (event: ReactMouseEvent, commit: CommitSummary) => {
+      void (async () => {
+        const actionId = await popupContextMenu(buildHistoryCommitContextMenuItems(), {
+          x: event.clientX,
+          y: event.clientY,
+        });
+        if (actionId === "create-branch") {
+          onCreateBranchFromCommit(commit);
+        }
+      })();
+    },
+    [onCreateBranchFromCommit],
+  );
+
   const getItemKey = useCallback((row: HistoryFlatRow) => row.key, []);
 
   return (
@@ -404,6 +424,7 @@ function HistoryList({
                 expanded={row.expanded}
                 layout={layout}
                 onToggle={() => onToggleCommit(row.commit.hash)}
+                onContextMenu={(event) => handleCommitContextMenu(event, row.commit)}
               />
             );
           }
@@ -467,6 +488,7 @@ type HistoryBodyProps = {
   onToggleCommit: (commitHash: string) => void;
   onRetryCommit: (commitHash: string) => void;
   onOpenChange: (commit: CommitSummary, change: Change) => void;
+  onCreateBranchFromCommit: (commit: CommitSummary) => void;
 };
 
 export function HistoryBody({
@@ -479,6 +501,7 @@ export function HistoryBody({
   onToggleCommit,
   onRetryCommit,
   onOpenChange,
+  onCreateBranchFromCommit,
 }: HistoryBodyProps) {
   if (loading) {
     return <HistoryLoading />;
@@ -497,6 +520,7 @@ export function HistoryBody({
       onToggleCommit={onToggleCommit}
       onRetryCommit={onRetryCommit}
       onOpenChange={onOpenChange}
+      onCreateBranchFromCommit={onCreateBranchFromCommit}
     />
   );
 }
