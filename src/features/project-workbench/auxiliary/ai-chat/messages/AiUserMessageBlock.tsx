@@ -111,11 +111,13 @@ export function AiUserMessageBlock({
       )}
 
       <div className="flex max-w-[88%] items-center justify-end gap-1">
-        {branch && branch.count > 1 && onSelectBranch ? (
+        {branch != null && branch.count > 1 ? (
           <AiMessageBranchSwitcher
             branch={branch}
-            disabled={actionsDisabled}
-            onSelect={onSelectBranch}
+            disabled={actionsDisabled || onSelectBranch == null}
+            onSelect={(index) => {
+              onSelectBranch?.(index);
+            }}
           />
         ) : null}
         {showActions ? (
