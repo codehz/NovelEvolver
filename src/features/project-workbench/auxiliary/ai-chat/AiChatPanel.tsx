@@ -16,13 +16,7 @@ export function AiChatPanel() {
   const snapshot = useAiChatSnapshot();
   const loading = useAiChatLoading();
   const subscriptionError = useAiChatSubscriptionError();
-  const {
-    retryLastRequest,
-    forkFromMessage,
-    selectMessageBranch,
-    selectMessageContinuation,
-    editUserMessage,
-  } = useAiChatActions();
+  const { retryLastRequest, selectMessageBranch, editUserMessage } = useAiChatActions();
   const mockAiAvailable = useMockAiAvailable();
   const composer = useAiChatComposer();
 
@@ -34,25 +28,11 @@ export function AiChatPanel() {
   const branchActionsDisabled =
     snapshot.pending || snapshot.pendingUserInputs.length > 0 || subscriptionError != null;
 
-  const handleFork = useCallback(
-    (messageId: string) => {
-      void forkFromMessage(messageId);
-    },
-    [forkFromMessage],
-  );
-
   const handleSelectBranch = useCallback(
     (messageId: string, index: number) => {
       void selectMessageBranch(messageId, index);
     },
     [selectMessageBranch],
-  );
-
-  const handleSelectContinuation = useCallback(
-    (messageId: string, index: number) => {
-      void selectMessageContinuation(messageId, index);
-    },
-    [selectMessageContinuation],
   );
 
   const handleEditUser = useCallback(
@@ -81,9 +61,7 @@ export function AiChatPanel() {
         turnError={snapshot.errorMessage}
         onRetry={handleRetry}
         actionsDisabled={branchActionsDisabled}
-        onFork={branchActionsDisabled ? undefined : handleFork}
         onSelectBranch={branchActionsDisabled ? undefined : handleSelectBranch}
-        onSelectContinuation={branchActionsDisabled ? undefined : handleSelectContinuation}
         onEditUser={branchActionsDisabled ? undefined : handleEditUser}
       />
       <AiChatComposerFooter composer={composer} />

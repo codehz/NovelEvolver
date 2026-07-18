@@ -47,9 +47,7 @@ type AiChatConversationRailProps = {
   turnError: string | null;
   onRetry?: () => void;
   actionsDisabled?: boolean;
-  onFork?: (messageId: string) => void;
   onSelectBranch?: (messageId: string, index: number) => void;
-  onSelectContinuation?: (messageId: string, index: number) => void;
   onEditUser?: (messageId: string, text: string) => void;
 };
 
@@ -60,9 +58,7 @@ export function AiChatConversationRail({
   turnError,
   onRetry,
   actionsDisabled = false,
-  onFork,
   onSelectBranch,
-  onSelectContinuation,
   onEditUser,
 }: AiChatConversationRailProps) {
   const { warningsByMessageId, orphanWarnings } = useMemo(
@@ -153,17 +149,13 @@ export function AiChatConversationRail({
                     message={message}
                     onRetry={messageRetry}
                     retryLabel={messageRetry ? retryLabel : undefined}
-                    footerAlwaysVisible={isLastAssistant}
+                    footerAlwaysVisible={
+                      isLastAssistant || (message.branch != null && message.branch.count > 1)
+                    }
                     actionsDisabled={actionsDisabled}
-                    onFork={onFork ? () => onFork(message.id) : undefined}
                     onSelectBranch={
                       onSelectBranch
                         ? (index: number) => onSelectBranch(message.id, index)
-                        : undefined
-                    }
-                    onSelectContinuation={
-                      onSelectContinuation
-                        ? (index: number) => onSelectContinuation(message.id, index)
                         : undefined
                     }
                     onEditUser={

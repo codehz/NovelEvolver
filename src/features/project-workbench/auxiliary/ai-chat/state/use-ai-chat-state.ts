@@ -32,9 +32,7 @@ type AiChatActions = {
   sendMessage: (input: AiChatSendMessageInput) => Promise<boolean>;
   stopGeneration: () => Promise<void>;
   retryLastRequest: () => Promise<void>;
-  forkFromMessage: (messageId: string) => Promise<void>;
   selectMessageBranch: (messageId: string, index: number) => Promise<void>;
-  selectMessageContinuation: (messageId: string, index: number) => Promise<void>;
   editUserMessage: (messageId: string, input: AiChatSendMessageInput) => Promise<void>;
   createConversation: () => Promise<void>;
   listConversations: (options?: AiConversationListOptions) => Promise<AiConversationSummary[]>;
@@ -184,23 +182,9 @@ function useAiChatActionsValue(): AiChatActions {
     await Promise.resolve(aiChat.retryLastRequest());
   }, [aiChat]);
 
-  const forkFromMessage = useCallback(
-    async (messageId: string): Promise<void> => {
-      await Promise.resolve(aiChat.forkFromMessage(messageId));
-    },
-    [aiChat],
-  );
-
   const selectMessageBranch = useCallback(
     async (messageId: string, index: number): Promise<void> => {
       await Promise.resolve(aiChat.selectMessageBranch(messageId, index));
-    },
-    [aiChat],
-  );
-
-  const selectMessageContinuation = useCallback(
-    async (messageId: string, index: number): Promise<void> => {
-      await Promise.resolve(aiChat.selectMessageContinuation(messageId, index));
     },
     [aiChat],
   );
@@ -217,9 +201,7 @@ function useAiChatActionsValue(): AiChatActions {
       sendMessage,
       stopGeneration,
       retryLastRequest,
-      forkFromMessage,
       selectMessageBranch,
-      selectMessageContinuation,
       editUserMessage,
       createConversation,
       listConversations,
@@ -240,7 +222,6 @@ function useAiChatActionsValue(): AiChatActions {
       createConversation,
       deleteConversation,
       editUserMessage,
-      forkFromMessage,
       listConversations,
       listSelectableAgents,
       listSelectableModels,
@@ -248,7 +229,6 @@ function useAiChatActionsValue(): AiChatActions {
       retryLastRequest,
       searchConversations,
       selectMessageBranch,
-      selectMessageContinuation,
       sendMessage,
       setSelectedAgent,
       setSelectedModel,

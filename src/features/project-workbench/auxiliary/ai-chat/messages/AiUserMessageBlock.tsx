@@ -10,36 +10,28 @@ import {
   userSlashChipClass,
 } from "../ui/ai-chat-chrome";
 import { AiMessageBranchSwitcher } from "./AiMessageBranchSwitcher";
-import { AiMessageContinuationControl } from "./AiMessageContinuationControl";
 import { renderTextWithMentions } from "./render-text-with-mentions";
 
 type AiUserMessageBlockProps = {
   message: AiChatUserMessage;
   actionsDisabled?: boolean;
-  onFork?: () => void;
   onEdit?: (text: string) => void;
   onSelectBranch?: (index: number) => void;
-  onSelectContinuation?: (index: number) => void;
 };
 
 export function AiUserMessageBlock({
   message,
   actionsDisabled = false,
-  onFork,
   onEdit,
   onSelectBranch,
-  onSelectContinuation,
 }: AiUserMessageBlockProps) {
   const slash = message.slash;
   const mentions = message.mentions ?? [];
   const remainder = renderTextWithMentions(message.text, mentions);
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(message.text);
-  const showActions = !editing && (onFork != null || onEdit != null);
+  const showActions = !editing && onEdit != null;
   const branch = message.branch;
-  const continuation = message.continuation;
-  const showContinuation =
-    continuation != null && continuation.count > 0 && onSelectContinuation != null;
 
   function commitEdit(): void {
     const next = draft;
@@ -126,44 +118,22 @@ export function AiUserMessageBlock({
             onSelect={onSelectBranch}
           />
         ) : null}
-        {showContinuation ? (
-          <AiMessageContinuationControl
-            continuation={continuation}
-            disabled={actionsDisabled}
-            onSelect={onSelectContinuation}
-          />
-        ) : null}
         {showActions ? (
           <div className={userMessageActionsClass}>
-            {onEdit ? (
-              <AppTooltip label="编辑" side="top">
-                <Button
-                  variant="ghost"
-                  size="icon-sm"
-                  aria-label="编辑"
-                  disabled={actionsDisabled}
-                  onClick={() => {
-                    setDraft(message.text);
-                    setEditing(true);
-                  }}
-                >
-                  <span aria-hidden="true" className="icon-[codicon--edit] text-sm" />
-                </Button>
-              </AppTooltip>
-            ) : null}
-            {onFork ? (
-              <AppTooltip label="从此处分叉" side="top">
-                <Button
-                  variant="ghost"
-                  size="icon-sm"
-                  aria-label="从此处分叉"
-                  disabled={actionsDisabled}
-                  onClick={onFork}
-                >
-                  <span aria-hidden="true" className="icon-[codicon--git-branch] text-sm" />
-                </Button>
-              </AppTooltip>
-            ) : null}
+            <AppTooltip label="编辑" side="top">
+              <Button
+                variant="ghost"
+                size="icon-sm"
+                aria-label="编辑"
+                disabled={actionsDisabled}
+                onClick={() => {
+                  setDraft(message.text);
+                  setEditing(true);
+                }}
+              >
+                <span aria-hidden="true" className="icon-[codicon--edit] text-sm" />
+              </Button>
+            </AppTooltip>
           </div>
         ) : null}
       </div>

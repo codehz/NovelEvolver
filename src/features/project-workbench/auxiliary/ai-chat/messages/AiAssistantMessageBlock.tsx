@@ -14,7 +14,6 @@ import {
 import { describeAssistantStreamingMeta, describeAssistantUsageMeta } from "../ui/ai-chat-helpers";
 import { AiAssistantPartBlock } from "./AiAssistantPartBlock";
 import { AiMessageBranchSwitcher } from "./AiMessageBranchSwitcher";
-import { AiMessageContinuationControl } from "./AiMessageContinuationControl";
 
 type AiAssistantMessageBlockProps = {
   message: AiChatAssistantMessage;
@@ -22,9 +21,7 @@ type AiAssistantMessageBlockProps = {
   retryLabel?: string;
   footerAlwaysVisible?: boolean;
   actionsDisabled?: boolean;
-  onFork?: () => void;
   onSelectBranch?: (index: number) => void;
-  onSelectContinuation?: (index: number) => void;
 };
 
 export function AiAssistantMessageBlock({
@@ -33,9 +30,7 @@ export function AiAssistantMessageBlock({
   retryLabel = "重新生成",
   footerAlwaysVisible = false,
   actionsDisabled = false,
-  onFork,
   onSelectBranch,
-  onSelectContinuation,
 }: AiAssistantMessageBlockProps) {
   if (message.status === "streaming") {
     const hasStreamingPart = message.parts.some((part) => part.status === "streaming");
@@ -57,14 +52,9 @@ export function AiAssistantMessageBlock({
   const modelLabel = message.modelName.trim() !== "" ? message.modelName : "未知模型";
   const usageMeta = describeAssistantUsageMeta(message);
   const branch = message.branch;
-  const continuation = message.continuation;
-  const showContinuation =
-    continuation != null && continuation.count > 0 && onSelectContinuation != null;
-  const hasLeading =
-    onRetry != null ||
-    onFork != null ||
-    (branch != null && branch.count > 1 && onSelectBranch) ||
-    showContinuation;
+  const showBranch = branch != null && branch.count > 1 && onSelectBranch != null;
+  const hasLeading = onRetry != null || showBranch;
+  const alwaysVisible = footerAlwaysVisible || showBranch;
 
   return (
     <article className={assistantMessageBlockClass}>
@@ -74,39 +64,17 @@ export function AiAssistantMessageBlock({
       <div
         className={cn(
           assistantMessageFooterClass,
-          // Truncated leaves with continuations should stay actionable without hover.
-          !(footerAlwaysVisible || showContinuation) && assistantMessageFooterHoverRevealClass,
+          !alwaysVisible && assistantMessageFooterHoverRevealClass,
         )}
       >
         {hasLeading ? (
           <div className={cn(assistantMessageFooterLeadingClass, "gap-0.5")}>
-            {branch && branch.count > 1 && onSelectBranch ? (
+            {showBranch ? (
               <AiMessageBranchSwitcher
                 branch={branch}
                 disabled={actionsDisabled}
                 onSelect={onSelectBranch}
               />
-            ) : null}
-            {showContinuation ? (
-              <AiMessageContinuationControl
-                continuation={continuation}
-                disabled={actionsDisabled}
-                onSelect={onSelectContinuation}
-              />
-            ) : null}
-            {onFork ? (
-              <AppTooltip label="从此处分叉" side="top">
-                <Button
-                  variant="ghost"
-                  size="icon-sm"
-                  aria-label="从此处分叉"
-                  disabled={actionsDisabled}
-                  className="text-ctp-subtext1"
-                  onClick={onFork}
-                >
-                  <span aria-hidden="true" className="icon-[codicon--git-branch] text-sm" />
-                </Button>
-              </AppTooltip>
             ) : null}
             {onRetry ? (
               <AppTooltip label={retryLabel} side="top">

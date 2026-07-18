@@ -11,10 +11,8 @@ type AiMessageBlockProps = {
   retryLabel?: string;
   footerAlwaysVisible?: boolean;
   actionsDisabled?: boolean;
-  onFork?: () => void;
   onEditUser?: (text: string) => void;
   onSelectBranch?: (index: number) => void;
-  onSelectContinuation?: (index: number) => void;
 };
 
 export const AiMessageBlock = memo(function AiMessageBlock({
@@ -23,20 +21,16 @@ export const AiMessageBlock = memo(function AiMessageBlock({
   retryLabel,
   footerAlwaysVisible,
   actionsDisabled,
-  onFork,
   onEditUser,
   onSelectBranch,
-  onSelectContinuation,
 }: AiMessageBlockProps) {
   if (message.role === "user") {
     return (
       <AiUserMessageBlock
         message={message}
         actionsDisabled={actionsDisabled}
-        onFork={onFork}
         onEdit={onEditUser}
         onSelectBranch={onSelectBranch}
-        onSelectContinuation={onSelectContinuation}
       />
     );
   }
@@ -48,9 +42,7 @@ export const AiMessageBlock = memo(function AiMessageBlock({
       retryLabel={retryLabel}
       footerAlwaysVisible={footerAlwaysVisible}
       actionsDisabled={actionsDisabled}
-      onFork={onFork}
       onSelectBranch={onSelectBranch}
-      onSelectContinuation={onSelectContinuation}
     />
   );
 });
