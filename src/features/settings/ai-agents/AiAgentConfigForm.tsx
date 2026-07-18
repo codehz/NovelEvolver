@@ -1,6 +1,6 @@
 import { Field } from "@base-ui/react/field";
 import { Form } from "@base-ui/react/form";
-import { useState } from "react";
+import { useEffect, useImperativeHandle, useMemo, useRef, useState, type Ref } from "react";
 
 import { Button } from "#app/shared/ui";
 import type {
@@ -23,6 +23,7 @@ import {
   settingsInputClass,
   settingsTextareaClass,
 } from "../settings-chrome";
+import type { SettingsFormHandle } from "../settings-leave-guard";
 import { SettingsSelect } from "../SettingsSelect";
 import { AiAgentToolPicker } from "./AiAgentToolPicker";
 
@@ -47,8 +48,10 @@ type AiAgentConfigFormProps = {
   lockDefinitionFields?: boolean;
   busy?: boolean;
   error?: string | null;
+  formRef?: Ref<SettingsFormHandle | null>;
+  onDirtyChange?: (dirty: boolean) => void;
   onCancel: () => void;
-  onSubmit?: (input: AiAgentConfigWrite) => void | Promise<void>;
+  onSubmit?: (input: AiAgentConfigWrite) => boolean | void | Promise<boolean | void>;
 };
 
 function toFormState(initial?: AiAgentConfigPublic | null): FormState {
@@ -60,6 +63,33 @@ function toFormState(initial?: AiAgentConfigPublic | null): FormState {
   };
 }
 
+function sameToolNames(a: readonly string[], b: readonly string[]): boolean {
+  if (a.length !== b.length) {
+    return false;
+  }
+  const left = [...a].sort();
+  const right = [...b].sort();
+  return left.every((value, index) => value === right[index]);
+}
+
+function isAgentFormDirty(
+  form: FormState,
+  baseline: FormState,
+  lockDefinitionFields: boolean,
+): boolean {
+  if (form.defaultModelId !== baseline.defaultModelId) {
+    return true;
+  }
+  if (lockDefinitionFields) {
+    return false;
+  }
+  return (
+    form.name !== baseline.name ||
+    form.systemPrompt !== baseline.systemPrompt ||
+    !sameToolNames(form.availableToolNames, baseline.availableToolNames)
+  );
+}
+
 export function AiAgentConfigForm({
   tools,
   models,
@@ -69,6 +99,8 @@ export function AiAgentConfigForm({
   lockDefinitionFields = false,
   busy = false,
   error = null,
+  formRef = null,
+  onDirtyChange,
   onCancel,
   onSubmit,
 }: AiAgentConfigFormProps) {
@@ -76,7 +108,61 @@ export function AiAgentConfigForm({
   const definitionLocked = readOnly || lockDefinitionFields;
   const canEditDefaultModel = !readOnly;
   const canSubmit = !readOnly && onSubmit != null;
+  const baselineRef = useRef(toFormState(initial));
   const [form, setForm] = useState<FormState>(() => toFormState(initial));
+
+  const dirty = useMemo(() => {
+    if (readOnly) {
+      return false;
+    }
+    return isAgentFormDirty(form, baselineRef.current, lockDefinitionFields);
+  }, [form, lockDefinitionFields, readOnly]);
+
+  useEffect(() => {
+    onDirtyChange?.(dirty);
+  }, [dirty, onDirtyChange]);
+
+  const buildPayload = (): AiAgentConfigWrite | null => {
+    if (!canSubmit || !onSubmit) {
+      return null;
+    }
+    const name = form.name.trim();
+    const systemPrompt = form.systemPrompt.trim();
+    if (!definitionLocked) {
+      if (name === "" || systemPrompt === "") {
+        return null;
+      }
+    }
+    return {
+      ...(isEdit ? { id: initial.id } : {}),
+      name,
+      systemPrompt,
+      defaultModelId: form.defaultModelId === "" ? null : form.defaultModelId,
+      availableToolNames: form.availableToolNames,
+    };
+  };
+
+  const submitPayload = async (payload: AiAgentConfigWrite): Promise<boolean> => {
+    if (!onSubmit) {
+      return false;
+    }
+    const result = await onSubmit(payload);
+    return result !== false;
+  };
+
+  useImperativeHandle(
+    formRef,
+    () => ({
+      save: async () => {
+        const payload = buildPayload();
+        if (payload == null) {
+          return false;
+        }
+        return submitPayload(payload);
+      },
+    }),
+    [form, canSubmit, definitionLocked, isEdit, initial, onSubmit],
+  );
 
   const providerNameById = new Map<string, string>();
   for (const p of providers) {
@@ -93,19 +179,11 @@ export function AiAgentConfigForm({
     <Form
       className={settingsFormClass}
       onFormSubmit={() => {
-        if (!canSubmit || !onSubmit) {
+        const payload = buildPayload();
+        if (payload == null) {
           return;
         }
-
-        const payload: AiAgentConfigWrite = {
-          ...(isEdit ? { id: initial.id } : {}),
-          name: form.name.trim(),
-          systemPrompt: form.systemPrompt.trim(),
-          defaultModelId: form.defaultModelId === "" ? null : form.defaultModelId,
-          availableToolNames: form.availableToolNames,
-        };
-
-        void onSubmit(payload);
+        void submitPayload(payload);
       }}
     >
       <div className={settingsFormGridClass}>

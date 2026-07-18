@@ -18,7 +18,8 @@ export function AiModelsSettingsPanel() {
   const {
     actionError,
     busy,
-    closeEditor,
+    formRef,
+    requestClose,
     defaultModelId,
     editor,
     handleModelSubmit,
@@ -30,6 +31,7 @@ export function AiModelsSettingsPanel() {
     loadError,
     modelsByProvider,
     openEditor,
+    onDirtyChange,
     providers,
     refresh,
     snapshot,
@@ -70,7 +72,12 @@ export function AiModelsSettingsPanel() {
   return (
     <div className={settingsPanelRootClass}>
       {isSubpageOpen && subpageTitle ? (
-        <SettingsSubpageHeader title={subpageTitle} onBack={closeEditor} />
+        <SettingsSubpageHeader
+          title={subpageTitle}
+          onBack={() => {
+            void requestClose();
+          }}
+        />
       ) : null}
 
       {/* Keep-alive list layer: dual-column owns its own column scrollports. */}
@@ -105,8 +112,12 @@ export function AiModelsSettingsPanel() {
             actionError={actionError}
             busy={busy}
             editor={editor}
+            formRef={formRef}
             providers={providers}
-            onCancel={closeEditor}
+            onCancel={() => {
+              void requestClose();
+            }}
+            onDirtyChange={onDirtyChange}
             onModelSubmit={handleModelSubmit}
             onProviderSubmit={handleProviderSubmit}
           />

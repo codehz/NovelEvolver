@@ -1,3 +1,5 @@
+import type { Ref } from "react";
+
 import type {
   AiModelConfigWrite,
   AiProviderConfigPublic,
@@ -5,6 +7,7 @@ import type {
 } from "#shared/rpc/services/index";
 
 import { settingsPanelSectionClass } from "../settings-chrome";
+import type { SettingsFormHandle } from "../settings-leave-guard";
 import { AiModelConfigForm } from "./AiModelConfigForm";
 import { AiProviderConfigForm } from "./AiProviderConfigForm";
 import type { EditorMode } from "./editor-mode";
@@ -14,9 +17,11 @@ type AiModelsEditorLayerProps = {
   providers: readonly AiProviderConfigPublic[];
   busy: boolean;
   actionError: string | null;
+  formRef: Ref<SettingsFormHandle | null>;
+  onDirtyChange: (dirty: boolean) => void;
   onCancel: () => void;
-  onProviderSubmit: (input: AiProviderConfigWrite) => Promise<void>;
-  onModelSubmit: (input: AiModelConfigWrite) => Promise<void>;
+  onProviderSubmit: (input: AiProviderConfigWrite) => Promise<boolean>;
+  onModelSubmit: (input: AiModelConfigWrite) => Promise<boolean>;
 };
 
 export function AiModelsEditorLayer({
@@ -24,6 +29,8 @@ export function AiModelsEditorLayer({
   providers,
   busy,
   actionError,
+  formRef,
+  onDirtyChange,
   onCancel,
   onProviderSubmit,
   onModelSubmit,
@@ -34,7 +41,9 @@ export function AiModelsEditorLayer({
         <AiProviderConfigForm
           busy={busy}
           error={actionError}
+          formRef={formRef}
           onCancel={onCancel}
+          onDirtyChange={onDirtyChange}
           onSubmit={onProviderSubmit}
         />
       ) : null}
@@ -44,8 +53,10 @@ export function AiModelsEditorLayer({
           key={editor.provider.id}
           busy={busy}
           error={actionError}
+          formRef={formRef}
           initial={editor.provider}
           onCancel={onCancel}
+          onDirtyChange={onDirtyChange}
           onSubmit={onProviderSubmit}
         />
       ) : null}
@@ -55,8 +66,10 @@ export function AiModelsEditorLayer({
           busy={busy}
           defaultProviderId={editor.providerId}
           error={actionError}
+          formRef={formRef}
           providers={providers}
           onCancel={onCancel}
+          onDirtyChange={onDirtyChange}
           onSubmit={onModelSubmit}
         />
       ) : null}
@@ -66,9 +79,11 @@ export function AiModelsEditorLayer({
           key={editor.model.id}
           busy={busy}
           error={actionError}
+          formRef={formRef}
           initial={editor.model}
           providers={providers}
           onCancel={onCancel}
+          onDirtyChange={onDirtyChange}
           onSubmit={onModelSubmit}
         />
       ) : null}

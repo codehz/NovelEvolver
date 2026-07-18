@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 import { settingsService } from "#app/shared/lib/rpc/app-rpc";
 import { createAsyncLoader, useAsyncLoader } from "#app/shared/lib/ui/async-loader";
@@ -21,7 +21,9 @@ import {
   settingsStatusBadgeClass,
 } from "../settings-chrome";
 import { settingsErrorMessage } from "../settings-error";
+import type { SettingsFormHandle } from "../settings-leave-guard";
 import { SettingsSubpageHeader } from "../SettingsSubpageHeader";
+import { useSettingsEditorLeave } from "../use-settings-editor-leave";
 import { useSettingsMutation } from "../use-settings-mutation";
 import { AiAgentConfigForm } from "./AiAgentConfigForm";
 
@@ -57,6 +59,8 @@ export function AiAgentsSettingsPanel() {
   const { data, error: loadErrorRaw, isLoading, refresh } = useAsyncLoader(agentsSettingsLoader);
   const { actionError, busy, clearActionError, runMutation } = useSettingsMutation(refresh);
   const [editor, setEditor] = useState<AgentEditorMode>({ type: "closed" });
+  const [editorDirty, setEditorDirty] = useState(false);
+  const formRef = useRef<SettingsFormHandle | null>(null);
 
   useEffect(() => {
     void refresh();
@@ -82,8 +86,17 @@ export function AiAgentsSettingsPanel() {
 
   const closeEditor = () => {
     clearActionError();
+    setEditorDirty(false);
     setEditor({ type: "closed" });
   };
+
+  const { requestClose } = useSettingsEditorLeave({
+    editorOpen: editor.type !== "closed",
+    busy,
+    dirty: editorDirty,
+    formRef,
+    closeEditor,
+  });
 
   const handleSubmit = async (input: AiAgentConfigWrite) => {
     const ok = await runMutation(
@@ -91,8 +104,10 @@ export function AiAgentsSettingsPanel() {
       input.id ? "保存 Agent 失败" : "添加 Agent 失败",
     );
     if (ok) {
+      setEditorDirty(false);
       setEditor({ type: "closed" });
     }
+    return ok;
   };
 
   const handleRemove = async (id: string) => {
@@ -101,12 +116,13 @@ export function AiAgentsSettingsPanel() {
     }
     const ok = await runMutation(() => settingsService.removeAiAgent(id), "删除 Agent 失败");
     if (ok && editor.type !== "closed" && "agent" in editor && editor.agent.id === id) {
-      setEditor({ type: "closed" });
+      closeEditor();
     }
   };
 
   const handleOpenEditor = (next: AgentEditorMode) => {
     clearActionError();
+    setEditorDirty(false);
     setEditor(next);
   };
 
@@ -147,7 +163,12 @@ export function AiAgentsSettingsPanel() {
   return (
     <div className={settingsPanelRootClass}>
       {isSubpageOpen && subpageTitle ? (
-        <SettingsSubpageHeader title={subpageTitle} onBack={closeEditor} />
+        <SettingsSubpageHeader
+          title={subpageTitle}
+          onBack={() => {
+            void requestClose();
+          }}
+        />
       ) : null}
 
       {/* Keep-alive list layer: own scrollport so form scroll cannot clobber list position. */}
@@ -276,10 +297,14 @@ export function AiAgentsSettingsPanel() {
               <AiAgentConfigForm
                 busy={busy}
                 error={actionError}
+                formRef={formRef}
                 models={models}
                 providers={providers}
                 tools={tools}
-                onCancel={closeEditor}
+                onCancel={() => {
+                  void requestClose();
+                }}
+                onDirtyChange={setEditorDirty}
                 onSubmit={handleSubmit}
               />
             ) : null}
@@ -289,12 +314,16 @@ export function AiAgentsSettingsPanel() {
                 key={editor.agent.id}
                 busy={busy}
                 error={actionError}
+                formRef={formRef}
                 initial={editor.agent}
                 lockDefinitionFields={editor.agent.builtin}
                 models={models}
                 providers={providers}
                 tools={tools}
-                onCancel={closeEditor}
+                onCancel={() => {
+                  void requestClose();
+                }}
+                onDirtyChange={setEditorDirty}
                 onSubmit={handleSubmit}
               />
             ) : null}

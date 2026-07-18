@@ -1,7 +1,7 @@
 import { Field } from "@base-ui/react/field";
 import { Form } from "@base-ui/react/form";
 import { NumberField } from "@base-ui/react/number-field";
-import { useState } from "react";
+import { useEffect, useImperativeHandle, useMemo, useRef, useState, type Ref } from "react";
 
 import { cn } from "#app/shared/lib/ui/cn";
 import { Button } from "#app/shared/ui";
@@ -30,6 +30,7 @@ import {
   settingsFormGridClass,
   settingsInputClass,
 } from "../settings-chrome";
+import type { SettingsFormHandle } from "../settings-leave-guard";
 import { SettingsJsonEditor } from "../SettingsJsonEditor";
 import { SettingsSelect } from "../SettingsSelect";
 import { ReasoningLevelChipList } from "./ReasoningLevelChipList";
@@ -57,8 +58,10 @@ type AiModelConfigFormProps = {
   defaultProviderId?: string;
   busy?: boolean;
   error?: string | null;
+  formRef?: Ref<SettingsFormHandle | null>;
+  onDirtyChange?: (dirty: boolean) => void;
   onCancel: () => void;
-  onSubmit: (input: AiModelConfigWrite) => void | Promise<void>;
+  onSubmit: (input: AiModelConfigWrite) => boolean | void | Promise<boolean | void>;
 };
 
 function recordToEditorText(value: Record<string, unknown> | undefined | null): string {
@@ -174,19 +177,51 @@ const maxOutputTokensWarningClass = cn(
   "rounded-md bg-ctp-yellow/10 px-2 py-1.5 text-2xs text-ctp-yellow",
 );
 
+function sameReasoningLevels(
+  a: readonly AiReasoningLevel[],
+  b: readonly AiReasoningLevel[],
+): boolean {
+  if (a.length !== b.length) {
+    return false;
+  }
+  return a.every((value, index) => value === b[index]);
+}
+
+function isModelFormDirty(form: FormState, baseline: FormState): boolean {
+  return (
+    form.providerId !== baseline.providerId ||
+    form.name !== baseline.name ||
+    form.model !== baseline.model ||
+    form.maxOutputTokens !== baseline.maxOutputTokens ||
+    form.contextLength !== baseline.contextLength ||
+    form.defaultReasoningLevel !== baseline.defaultReasoningLevel ||
+    form.headersText !== baseline.headersText ||
+    form.extraBodyText !== baseline.extraBodyText ||
+    !sameReasoningLevels(form.availableReasoningLevels, baseline.availableReasoningLevels)
+  );
+}
+
 export function AiModelConfigForm({
   providers,
   initial = null,
   defaultProviderId = "",
   busy = false,
   error = null,
+  formRef = null,
+  onDirtyChange,
   onCancel,
   onSubmit,
 }: AiModelConfigFormProps) {
   const isEdit = initial != null;
-  const [form, setForm] = useState<FormState>(() =>
-    toFormState(initial, defaultProviderId || providers[0]?.id || ""),
-  );
+  const initialProviderId = defaultProviderId || providers[0]?.id || "";
+  const baselineRef = useRef(toFormState(initial, initialProviderId));
+  const [form, setForm] = useState<FormState>(() => toFormState(initial, initialProviderId));
+
+  const dirty = useMemo(() => isModelFormDirty(form, baselineRef.current), [form]);
+
+  useEffect(() => {
+    onDirtyChange?.(dirty);
+  }, [dirty, onDirtyChange]);
 
   const showLowMaxOutputTokensWarning =
     form.maxOutputTokens !== null && isLowMaxOutputTokensForNovelAgent(form.maxOutputTokens);
@@ -194,6 +229,65 @@ export function AiModelConfigForm({
   const update = <K extends keyof FormState>(key: K, value: FormState[K]) => {
     setForm((prev) => ({ ...prev, [key]: value }));
   };
+
+  const buildPayload = (): AiModelConfigWrite | null => {
+    if (!isPositiveInteger(form.maxOutputTokens)) {
+      return null;
+    }
+    if (form.contextLength !== null && !isPositiveInteger(form.contextLength)) {
+      return null;
+    }
+    if (form.name.trim() === "" || form.model.trim() === "" || form.providerId === "") {
+      return null;
+    }
+
+    const headersResult = parseHeadersText(form.headersText);
+    if (!headersResult.ok) {
+      return null;
+    }
+    const extraBodyResult = parseExtraBodyText(form.extraBodyText);
+    if (!extraBodyResult.ok) {
+      return null;
+    }
+
+    const availableReasoningLevels = orderReasoningLevels(form.availableReasoningLevels);
+    const defaultReasoningLevel = resolveDefaultReasoningLevel(
+      availableReasoningLevels,
+      form.defaultReasoningLevel,
+    );
+
+    return {
+      ...(isEdit ? { id: initial.id } : {}),
+      providerId: form.providerId,
+      name: form.name,
+      model: form.model,
+      maxOutputTokens: form.maxOutputTokens,
+      contextLength: form.contextLength,
+      availableReasoningLevels,
+      defaultReasoningLevel,
+      headers: headersResult.value,
+      extraBody: extraBodyResult.value,
+    };
+  };
+
+  const submitPayload = async (payload: AiModelConfigWrite): Promise<boolean> => {
+    const result = await onSubmit(payload);
+    return result !== false;
+  };
+
+  useImperativeHandle(
+    formRef,
+    () => ({
+      save: async () => {
+        const payload = buildPayload();
+        if (payload == null) {
+          return false;
+        }
+        return submitPayload(payload);
+      },
+    }),
+    [form, isEdit, initial, onSubmit],
+  );
 
   if (providers.length === 0) {
     return <p className="text-xs text-app-muted">请先添加至少一个 API 供应商，再配置模型。</p>;
@@ -203,42 +297,11 @@ export function AiModelConfigForm({
     <Form
       className={settingsFormClass}
       onFormSubmit={() => {
-        if (!isPositiveInteger(form.maxOutputTokens)) {
+        const payload = buildPayload();
+        if (payload == null) {
           return;
         }
-        if (form.contextLength !== null && !isPositiveInteger(form.contextLength)) {
-          return;
-        }
-
-        const headersResult = parseHeadersText(form.headersText);
-        if (!headersResult.ok) {
-          return;
-        }
-        const extraBodyResult = parseExtraBodyText(form.extraBodyText);
-        if (!extraBodyResult.ok) {
-          return;
-        }
-
-        const availableReasoningLevels = orderReasoningLevels(form.availableReasoningLevels);
-        const defaultReasoningLevel = resolveDefaultReasoningLevel(
-          availableReasoningLevels,
-          form.defaultReasoningLevel,
-        );
-
-        const payload: AiModelConfigWrite = {
-          ...(isEdit ? { id: initial.id } : {}),
-          providerId: form.providerId,
-          name: form.name,
-          model: form.model,
-          maxOutputTokens: form.maxOutputTokens,
-          contextLength: form.contextLength,
-          availableReasoningLevels,
-          defaultReasoningLevel,
-          headers: headersResult.value,
-          extraBody: extraBodyResult.value,
-        };
-
-        void onSubmit(payload);
+        void submitPayload(payload);
       }}
     >
       <div className={settingsFormGridClass}>

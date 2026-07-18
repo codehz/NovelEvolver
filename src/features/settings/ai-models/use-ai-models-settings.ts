@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 import { confirmDialogApi } from "#app/shared/lib/confirm-dialog";
 import { settingsService } from "#app/shared/lib/rpc/app-rpc";
@@ -10,6 +10,8 @@ import type {
 } from "#shared/rpc/services/index";
 
 import { settingsErrorMessage } from "../settings-error";
+import type { SettingsFormHandle } from "../settings-leave-guard";
+import { useSettingsEditorLeave } from "../use-settings-editor-leave";
 import { useSettingsMutation } from "../use-settings-mutation";
 import { type EditorMode, isEditorTiedToProvider } from "./editor-mode";
 
@@ -24,6 +26,8 @@ export function useAiModelsSettings() {
   } = useAsyncLoader(modelsSettingsLoader);
   const { actionError, busy, clearActionError, runMutation } = useSettingsMutation(refresh);
   const [editor, setEditor] = useState<EditorMode>({ type: "closed" });
+  const [editorDirty, setEditorDirty] = useState(false);
+  const formRef = useRef<SettingsFormHandle | null>(null);
 
   useEffect(() => {
     void refresh();
@@ -52,11 +56,21 @@ export function useAiModelsSettings() {
 
   const closeEditor = () => {
     clearActionError();
+    setEditorDirty(false);
     setEditor({ type: "closed" });
   };
 
+  const { requestClose } = useSettingsEditorLeave({
+    editorOpen: editor.type !== "closed",
+    busy,
+    dirty: editorDirty,
+    formRef,
+    closeEditor,
+  });
+
   const openEditor = (next: EditorMode) => {
     clearActionError();
+    setEditorDirty(false);
     setEditor(next);
   };
 
@@ -66,8 +80,10 @@ export function useAiModelsSettings() {
       input.id ? "保存供应商失败" : "添加供应商失败",
     );
     if (ok) {
+      setEditorDirty(false);
       setEditor({ type: "closed" });
     }
+    return ok;
   };
 
   const handleRemoveProvider = async (id: string) => {
@@ -82,7 +98,7 @@ export function useAiModelsSettings() {
     }
     const ok = await runMutation(() => settingsService.removeAiProvider(id), "删除供应商失败");
     if (ok && isEditorTiedToProvider(editor, id)) {
-      setEditor({ type: "closed" });
+      closeEditor();
     }
   };
 
@@ -92,8 +108,10 @@ export function useAiModelsSettings() {
       input.id ? "保存模型配置失败" : "添加模型配置失败",
     );
     if (ok) {
+      setEditorDirty(false);
       setEditor({ type: "closed" });
     }
+    return ok;
   };
 
   const handleRemoveModel = async (id: string) => {
@@ -108,7 +126,7 @@ export function useAiModelsSettings() {
     }
     const ok = await runMutation(() => settingsService.removeAiModel(id), "删除模型配置失败");
     if (ok && editor.type === "edit-model" && editor.model.id === id) {
-      setEditor({ type: "closed" });
+      closeEditor();
     }
   };
 
@@ -119,7 +137,8 @@ export function useAiModelsSettings() {
   return {
     actionError,
     busy,
-    closeEditor,
+    formRef,
+    requestClose,
     defaultModelId,
     editor,
     handleModelSubmit,
@@ -131,6 +150,7 @@ export function useAiModelsSettings() {
     loadError,
     modelsByProvider,
     openEditor,
+    onDirtyChange: setEditorDirty,
     providers,
     refresh,
     snapshot,

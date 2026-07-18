@@ -1,6 +1,6 @@
 import { Field } from "@base-ui/react/field";
 import { Form } from "@base-ui/react/form";
-import { useState } from "react";
+import { useEffect, useImperativeHandle, useMemo, useRef, useState, type Ref } from "react";
 
 import { cn } from "#app/shared/lib/ui/cn";
 import { Button } from "#app/shared/ui";
@@ -22,6 +22,7 @@ import {
   settingsFormGridClass,
   settingsInputClass,
 } from "../settings-chrome";
+import type { SettingsFormHandle } from "../settings-leave-guard";
 import { SettingsCheckbox } from "../SettingsCheckbox";
 import { SettingsSelect } from "../SettingsSelect";
 import { AI_ADAPTER_OPTIONS, aiAdapterEndpointPlaceholder } from "./ai-adapter-labels";
@@ -38,8 +39,10 @@ type AiProviderConfigFormProps = {
   initial?: AiProviderConfigPublic | null;
   busy?: boolean;
   error?: string | null;
+  formRef?: Ref<SettingsFormHandle | null>;
+  onDirtyChange?: (dirty: boolean) => void;
   onCancel: () => void;
-  onSubmit: (input: AiProviderConfigWrite) => void | Promise<void>;
+  onSubmit: (input: AiProviderConfigWrite) => boolean | void | Promise<boolean | void>;
 };
 
 function toFormState(initial?: AiProviderConfigPublic | null): FormState {
@@ -52,15 +55,78 @@ function toFormState(initial?: AiProviderConfigPublic | null): FormState {
   };
 }
 
+function isProviderFormDirty(form: FormState, baseline: FormState): boolean {
+  return (
+    form.name !== baseline.name ||
+    form.kind !== baseline.kind ||
+    form.baseUrl !== baseline.baseUrl ||
+    form.apiKey !== baseline.apiKey ||
+    form.clearApiKey !== baseline.clearApiKey
+  );
+}
+
 export function AiProviderConfigForm({
   initial = null,
   busy = false,
   error = null,
+  formRef = null,
+  onDirtyChange,
   onCancel,
   onSubmit,
 }: AiProviderConfigFormProps) {
   const isEdit = initial != null;
+  const baselineRef = useRef(toFormState(initial));
   const [form, setForm] = useState<FormState>(() => toFormState(initial));
+
+  const dirty = useMemo(() => isProviderFormDirty(form, baselineRef.current), [form]);
+
+  useEffect(() => {
+    onDirtyChange?.(dirty);
+  }, [dirty, onDirtyChange]);
+
+  const buildPayload = (): AiProviderConfigWrite | null => {
+    const name = form.name.trim();
+    if (name === "") {
+      return null;
+    }
+    const payload: AiProviderConfigWrite = {
+      ...(isEdit ? { id: initial.id } : {}),
+      name: form.name,
+      kind: form.kind,
+      baseUrl: form.baseUrl,
+    };
+
+    if (isEdit) {
+      if (form.clearApiKey) {
+        payload.apiKey = "";
+      } else if (form.apiKey !== "") {
+        payload.apiKey = form.apiKey;
+      }
+    } else if (form.apiKey !== "") {
+      payload.apiKey = form.apiKey;
+    }
+
+    return payload;
+  };
+
+  const submitPayload = async (payload: AiProviderConfigWrite): Promise<boolean> => {
+    const result = await onSubmit(payload);
+    return result !== false;
+  };
+
+  useImperativeHandle(
+    formRef,
+    () => ({
+      save: async () => {
+        const payload = buildPayload();
+        if (payload == null) {
+          return false;
+        }
+        return submitPayload(payload);
+      },
+    }),
+    [form, isEdit, initial, onSubmit],
+  );
 
   const update = <K extends keyof FormState>(key: K, value: FormState[K]) => {
     setForm((prev) => ({ ...prev, [key]: value }));
@@ -77,24 +143,11 @@ export function AiProviderConfigForm({
     <Form
       className={settingsFormClass}
       onFormSubmit={() => {
-        const payload: AiProviderConfigWrite = {
-          ...(isEdit ? { id: initial.id } : {}),
-          name: form.name,
-          kind: form.kind,
-          baseUrl: form.baseUrl,
-        };
-
-        if (isEdit) {
-          if (form.clearApiKey) {
-            payload.apiKey = "";
-          } else if (form.apiKey !== "") {
-            payload.apiKey = form.apiKey;
-          }
-        } else if (form.apiKey !== "") {
-          payload.apiKey = form.apiKey;
+        const payload = buildPayload();
+        if (payload == null) {
+          return;
         }
-
-        void onSubmit(payload);
+        void submitPayload(payload);
       }}
     >
       <div className={settingsFormGridClass}>

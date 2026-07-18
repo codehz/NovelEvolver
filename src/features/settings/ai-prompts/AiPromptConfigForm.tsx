@@ -1,6 +1,6 @@
 import { Field } from "@base-ui/react/field";
 import { Form } from "@base-ui/react/form";
-import { useState } from "react";
+import { useEffect, useImperativeHandle, useMemo, useRef, useState, type Ref } from "react";
 
 import { Button } from "#app/shared/ui";
 import type { AiPromptConfigPublic, AiPromptConfigWrite } from "#shared/rpc/services/index";
@@ -18,6 +18,7 @@ import {
   settingsInputClass,
   settingsTextareaClass,
 } from "../settings-chrome";
+import type { SettingsFormHandle } from "../settings-leave-guard";
 
 type FormState = {
   title: string;
@@ -30,8 +31,10 @@ type AiPromptConfigFormProps = {
   readOnly?: boolean;
   busy?: boolean;
   error?: string | null;
+  formRef?: Ref<SettingsFormHandle | null>;
+  onDirtyChange?: (dirty: boolean) => void;
   onCancel: () => void;
-  onSubmit?: (input: AiPromptConfigWrite) => void | Promise<void>;
+  onSubmit?: (input: AiPromptConfigWrite) => boolean | void | Promise<boolean | void>;
 };
 
 function toFormState(initial?: AiPromptConfigPublic | null): FormState {
@@ -42,16 +45,79 @@ function toFormState(initial?: AiPromptConfigPublic | null): FormState {
   };
 }
 
+function isPromptFormDirty(form: FormState, baseline: FormState): boolean {
+  return (
+    form.title !== baseline.title || form.slug !== baseline.slug || form.prompt !== baseline.prompt
+  );
+}
+
 export function AiPromptConfigForm({
   initial = null,
   readOnly = false,
   busy = false,
   error = null,
+  formRef = null,
+  onDirtyChange,
   onCancel,
   onSubmit,
 }: AiPromptConfigFormProps) {
   const isEdit = initial != null;
+  const baselineRef = useRef(toFormState(initial));
   const [form, setForm] = useState<FormState>(() => toFormState(initial));
+
+  const dirty = useMemo(() => {
+    if (readOnly) {
+      return false;
+    }
+    return isPromptFormDirty(form, baselineRef.current);
+  }, [form, readOnly]);
+
+  useEffect(() => {
+    onDirtyChange?.(dirty);
+  }, [dirty, onDirtyChange]);
+
+  const buildPayload = (): AiPromptConfigWrite | null => {
+    if (readOnly || !onSubmit) {
+      return null;
+    }
+    const title = form.title.trim();
+    const slug = form.slug.trim();
+    const prompt = form.prompt.trim();
+    if (title === "" || slug === "" || prompt === "") {
+      return null;
+    }
+    if (!AI_PROMPT_SLUG_PATTERN.test(slug)) {
+      return null;
+    }
+    return {
+      ...(isEdit ? { id: initial.id } : {}),
+      title,
+      slug,
+      prompt,
+    };
+  };
+
+  const submitPayload = async (payload: AiPromptConfigWrite): Promise<boolean> => {
+    if (!onSubmit) {
+      return false;
+    }
+    const result = await onSubmit(payload);
+    return result !== false;
+  };
+
+  useImperativeHandle(
+    formRef,
+    () => ({
+      save: async () => {
+        const payload = buildPayload();
+        if (payload == null) {
+          return false;
+        }
+        return submitPayload(payload);
+      },
+    }),
+    [form, readOnly, isEdit, initial, onSubmit],
+  );
 
   const update = <K extends keyof FormState>(key: K, value: FormState[K]) => {
     if (readOnly) return;
@@ -62,18 +128,11 @@ export function AiPromptConfigForm({
     <Form
       className={settingsFormClass}
       onFormSubmit={() => {
-        if (readOnly || !onSubmit) {
+        const payload = buildPayload();
+        if (payload == null) {
           return;
         }
-
-        const payload: AiPromptConfigWrite = {
-          ...(isEdit ? { id: initial.id } : {}),
-          title: form.title.trim(),
-          slug: form.slug.trim(),
-          prompt: form.prompt.trim(),
-        };
-
-        void onSubmit(payload);
+        void submitPayload(payload);
       }}
     >
       <div className={settingsFormGridClass}>

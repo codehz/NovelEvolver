@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import { settingsService } from "#app/shared/lib/rpc/app-rpc";
 import { createAsyncLoader, useAsyncLoader } from "#app/shared/lib/ui/async-loader";
@@ -20,7 +20,9 @@ import {
   settingsPanelSectionClass,
 } from "../settings-chrome";
 import { settingsErrorMessage } from "../settings-error";
+import type { SettingsFormHandle } from "../settings-leave-guard";
 import { SettingsSubpageHeader } from "../SettingsSubpageHeader";
+import { useSettingsEditorLeave } from "../use-settings-editor-leave";
 import { useSettingsMutation } from "../use-settings-mutation";
 import { AiPromptConfigForm } from "./AiPromptConfigForm";
 
@@ -62,6 +64,8 @@ export function AiPromptsSettingsPanel() {
   } = useAsyncLoader(promptsSettingsLoader);
   const { actionError, busy, clearActionError, runMutation } = useSettingsMutation(refresh);
   const [editor, setEditor] = useState<PromptEditorMode>({ type: "closed" });
+  const [editorDirty, setEditorDirty] = useState(false);
+  const formRef = useRef<SettingsFormHandle | null>(null);
 
   useEffect(() => {
     void refresh();
@@ -76,8 +80,17 @@ export function AiPromptsSettingsPanel() {
 
   const closeEditor = () => {
     clearActionError();
+    setEditorDirty(false);
     setEditor({ type: "closed" });
   };
+
+  const { requestClose } = useSettingsEditorLeave({
+    editorOpen: editor.type === "create" || editor.type === "edit",
+    busy,
+    dirty: editorDirty,
+    formRef,
+    closeEditor,
+  });
 
   const handleSubmit = async (input: AiPromptConfigWrite) => {
     const ok = await runMutation(
@@ -85,8 +98,10 @@ export function AiPromptsSettingsPanel() {
       input.id ? "保存提示词失败" : "添加提示词失败",
     );
     if (ok) {
+      setEditorDirty(false);
       setEditor({ type: "closed" });
     }
+    return ok;
   };
 
   const handleRemove = async (id: string) => {
@@ -95,12 +110,13 @@ export function AiPromptsSettingsPanel() {
     }
     const ok = await runMutation(() => settingsService.removeAiPrompt(id), "删除提示词失败");
     if (ok && editor.type !== "closed" && "prompt" in editor && editor.prompt.id === id) {
-      setEditor({ type: "closed" });
+      closeEditor();
     }
   };
 
   const handleOpenEditor = (next: PromptEditorMode) => {
     clearActionError();
+    setEditorDirty(false);
     setEditor(next);
   };
 
@@ -141,7 +157,16 @@ export function AiPromptsSettingsPanel() {
   return (
     <div className={settingsPanelRootClass}>
       {isSubpageOpen && subpageTitle ? (
-        <SettingsSubpageHeader title={subpageTitle} onBack={closeEditor} />
+        <SettingsSubpageHeader
+          title={subpageTitle}
+          onBack={() => {
+            if (editor.type === "detail") {
+              closeEditor();
+              return;
+            }
+            void requestClose();
+          }}
+        />
       ) : null}
 
       {/* Keep-alive list layer: own scrollport so form scroll cannot clobber list position. */}
@@ -240,7 +265,11 @@ export function AiPromptsSettingsPanel() {
               <AiPromptConfigForm
                 busy={busy}
                 error={actionError}
-                onCancel={closeEditor}
+                formRef={formRef}
+                onCancel={() => {
+                  void requestClose();
+                }}
+                onDirtyChange={setEditorDirty}
                 onSubmit={handleSubmit}
               />
             ) : null}
@@ -250,8 +279,12 @@ export function AiPromptsSettingsPanel() {
                 key={editor.prompt.id}
                 busy={busy}
                 error={actionError}
+                formRef={formRef}
                 initial={editor.prompt}
-                onCancel={closeEditor}
+                onCancel={() => {
+                  void requestClose();
+                }}
+                onDirtyChange={setEditorDirty}
                 onSubmit={handleSubmit}
               />
             ) : null}
