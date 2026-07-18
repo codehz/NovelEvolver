@@ -26,12 +26,12 @@ Renderer layout (`src/`):
 `features/project-workbench/` layers and domains:
 
 - **Session plane** (`session/`): project/branch scope, workspace handle graph, changes feed / tree snapshot. Domains read handles and feed here — do **not** put UI or domain actions in `session/`.
-- **Domain plane**: `editor/` (`state/`, `contributions/`, `panes/`), `explorer/` (`shared/`, `manuscript/`, `resource-library/`), `changes/`, `search/`, `history/`, `auxiliary/ai-chat/`, `branch/` (**UX only**: switcher, status item — not the RPC handle bus).
-- **View kernel**: `chrome/` (layout shell barrel only), `tree/` (list/drag primitives only — no feed/domain imports).
-- **Composition root**: `ProjectWorkbench.tsx` (and optional thin composition helpers) — only place that assembles primary views / editor / auxiliary / status contributions.
-- **Misc**: `sidebar/` / `statusbar/` are transitional composition hosts (being emptied into domain + composition); `lib/` is workbench-local micro-utils.
+- **Domain plane**: `editor/` (`state/`, `contributions/`, `panes/`, status contribution e.g. caret), `explorer/` (`ExplorerSidebar` + `shared/` / `manuscript/` / `resource-library/`), `changes/` (`ChangesSidebarSection` + list UI), `search/` (`SearchSidebarSection` + query/results), `history/`, `auxiliary/ai-chat/` (panel + AI status contribution), `branch/` (**UX only**: switcher, status item — not the RPC handle bus).
+- **View kernel**: `chrome/` (layout shell barrel only — includes chrome sidebar/statusbar primitives under `chrome/sidebar` / `chrome/statusbar`), `tree/` (list/drag primitives only — no feed/domain imports).
+- **Composition root**: `ProjectWorkbench.tsx` + `composition/` (e.g. `WorkbenchStatusBar`) — only place that assembles primary views / editor / auxiliary / status contributions from domain public entries.
+- **Misc**: `lib/` is workbench-local micro-utils. Do **not** reintroduce top-level `sidebar/` or `statusbar/` business host folders.
 
-**Dependency direction (non-negotiable):** composition → domain → session → view kernel / `#app/shared` / `#shared`. Domains must not import other domains' internals; cross-domain traffic uses narrow ports (`openEditorTarget`, `revealInTree`, status item exports). Do **not** add new RPC handles or molecules under `branch/` — that belongs in `session/`.
+**Dependency direction (non-negotiable):** composition → domain → session → view kernel / `#app/shared` / `#shared`. Domains must not import other domains' internals; cross-domain traffic uses narrow ports (`openEditorTarget`, `revealInTree`, status item exports). Do **not** add new RPC handles or molecules under `branch/` — that belongs in `session/`. Primary view sections and status items live in their domain (or thin composition assembly); chrome only provides shell primitives.
 
 `electron/` layout (high level):
 

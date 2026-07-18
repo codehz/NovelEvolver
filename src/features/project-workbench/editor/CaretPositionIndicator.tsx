@@ -1,6 +1,7 @@
 import { StatusBarItemInfo } from "#workbench/chrome";
-import { formatEditorCaretPosition } from "#workbench/editor/state/editor-caret";
-import { useActiveTabCaretPosition } from "#workbench/editor/use-active-tab-caret";
+
+import { formatEditorCaretPosition } from "./state/editor-caret";
+import { useActiveTabCaretPosition } from "./use-active-tab-caret";
 
 export function CaretPositionIndicator() {
   const caret = useActiveTabCaretPosition();

@@ -2,15 +2,10 @@ import { useEffect, useState } from "react";
 
 import { cn } from "#app/shared/lib/ui/cn";
 import type { AiChatSelectableModel } from "#shared/rpc/ai/index";
-import {
-  useAiChatActions,
-  useAiChatStatusMeta,
-} from "#workbench/auxiliary/ai-chat/state/use-ai-chat-state";
-import {
-  describeContextUsageRatio,
-  resolveLatestLastInputTokens,
-} from "#workbench/auxiliary/ai-chat/ui/ai-chat-helpers";
 import { StatusBarItemInfo } from "#workbench/chrome";
+
+import { useAiChatActions, useAiChatStatusMeta } from "./state/use-ai-chat-state";
+import { describeContextUsageRatio, resolveLatestLastInputTokens } from "./ui/ai-chat-helpers";
 
 export function AiContextStatusItem() {
   const meta = useAiChatStatusMeta();
