@@ -12,11 +12,8 @@ import { useActiveBranchName, useSetActiveBranchAtom } from "#workbench/session/
 import { useProjectContext } from "#workbench/session/project-scope";
 
 import { createBranchAndSwitch, deleteBranchByName, switchToBranch } from "./branch-actions";
-import {
-  getBranchNameValidationError,
-  normalizeBranchNameInput,
-  useBranchPickerSnapshot,
-} from "./branch-data";
+import { useBranchPickerSnapshot } from "./branch-data";
+import { promptNewBranchName } from "./branch-name-prompt";
 
 function branchToListItem(branch: BranchSummary, activeBranchName: string): QuickPickListItem {
   const name = branch.name ?? "";
@@ -75,18 +72,10 @@ export function useBranchQuickPick() {
         const existing = namedBranches(
           (await Promise.resolve(project.branches)) as BranchSummary[],
         );
-        const name = normalizeBranchNameInput(
-          await quickPickApi.showInput({
-            title: "创建分支",
-            inputLabel: "分支名",
-            placeholder: "输入新分支名称…",
-            initialValue: normalizeBranchNameInput(listResult.searchQuery),
-            hint: "将从当前分支 tip 创建，并自动切换到新分支",
-            dismissAriaLabel: "取消创建分支",
-            validate: (raw) =>
-              getBranchNameValidationError(normalizeBranchNameInput(raw), existing),
-          }),
-        );
+        const name = await promptNewBranchName({
+          existing,
+          initialValue: listResult.searchQuery,
+        });
         await createBranchAndSwitch({
           name,
           activeBranchName,

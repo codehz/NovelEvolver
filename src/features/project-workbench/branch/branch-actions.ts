@@ -4,7 +4,7 @@ import type { BranchSummary } from "#shared/rpc/session/index";
 /** RpcPromise 兼容的分支操作面：方法返回值经 Promise.resolve 解包。 */
 export type BranchProjectClient = {
   checkoutBranch(name: string): unknown;
-  createBranch(name: string): unknown;
+  createBranch(name: string, startCommit?: string): unknown;
   deleteBranch(name: string): unknown;
 };
 
@@ -51,10 +51,12 @@ export async function createBranchAndSwitch(params: {
   setActiveBranchName: (name: string) => void;
   clearAllTabs: () => void;
   refresh?: () => void | Promise<void>;
+  /** 完整 commit SHA；未传则从当前 HEAD tip 创建。 */
+  startCommit?: string;
 }): Promise<BranchSummary | null> {
   try {
     const created = (await Promise.resolve(
-      params.project.createBranch(params.name),
+      params.project.createBranch(params.name, params.startCommit),
     )) as BranchSummary;
     const switched = await switchToBranch({
       name: params.name,
