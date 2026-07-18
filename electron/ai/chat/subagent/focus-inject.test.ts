@@ -29,10 +29,13 @@ type FakeNode = {
 
 function createFakeWorktree(options?: {
   nodes?: Record<string, FakeNode>;
+  /** Default document content revision when a node does not set its own. */
   revision?: number;
+  revisions?: Record<string, number>;
 }): WorktreeSession {
   const nodes = options?.nodes ?? {};
-  const revision = options?.revision ?? 7;
+  const defaultRevision = options?.revision ?? 7;
+  const revisions = options?.revisions ?? {};
 
   return {
     getProjectNodeInfo(domain: AiProjectStructureDomain, id: string) {
@@ -62,8 +65,8 @@ function createFakeWorktree(options?: {
       }
       return node.content ?? "";
     },
-    getChangesSnapshot() {
-      return { revision } as ReturnType<WorktreeSession["getChangesSnapshot"]>;
+    getDocumentContentRevision(domain: AiProjectStructureDomain, id: string) {
+      return revisions[`${domain}:${id}`] ?? defaultRevision;
     },
     getProjectStructure(target?: AiProjectStructureTarget) {
       if (!target) {
