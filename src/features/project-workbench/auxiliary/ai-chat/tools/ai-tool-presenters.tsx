@@ -4,6 +4,11 @@ import type { ReactNode } from "react";
 import type { AiChatToolCall } from "#shared/rpc/ai/index";
 
 import { parseAskUserToolArguments } from "./ask-user-prompt";
+import {
+  describeSubagentProgressIndicator,
+  parseSubagentProgressUi,
+  subagentPhaseLabel,
+} from "./subagent-progress-ui";
 
 type JsonObject = Record<string, unknown>;
 
@@ -638,16 +643,27 @@ const historyEntryPresenter: ToolPresenter = (toolCall) => {
 
 const runSubagentPresenter: ToolPresenter = (toolCall) => {
   const args = parseObject(toolCall.argumentsText);
-  const result = toolCall.status === "complete" ? parseObject(toolCall.resultText) : null;
-  const agentId = getString(result, "agent_id") ?? getString(args, "agent_id") ?? "未知 Agent";
-  const agentName = getString(result, "agent_name");
+  const result =
+    toolCall.status === "complete" || toolCall.status === "error"
+      ? parseObject(toolCall.resultText)
+      : null;
+  // Live progress is only meaningful while running; ignore stale payloads after completion.
+  const progress =
+    toolCall.status === "running" ? parseSubagentProgressUi(toolCall.progressText) : null;
+  const agentId =
+    getString(result, "agent_id") ??
+    progress?.agentId ??
+    getString(args, "agent_id") ??
+    "未知 Agent";
+  const agentName = getString(result, "agent_name") ?? progress?.agentName ?? null;
   const task = getString(args, "task") ?? "未指定任务";
   const taskPreview = task.length > 48 ? `${task.slice(0, 48)}…` : task;
   const status = getString(result, "status");
   const summary = getString(result, "summary");
   const error = getString(result, "error") ?? toolCall.errorMessage;
   const artifacts = getObject(result?.artifacts);
-  const wrote = typeof artifacts?.wrote === "boolean" ? artifacts.wrote : null;
+  const wrote =
+    typeof artifacts?.wrote === "boolean" ? artifacts.wrote : progress ? progress.wrote : null;
   const touched = Array.isArray(artifacts?.touched_node_ids)
     ? artifacts.touched_node_ids.filter((id): id is string => typeof id === "string")
     : [];
@@ -664,13 +680,19 @@ const runSubagentPresenter: ToolPresenter = (toolCall) => {
           : status === "needs_user"
             ? "需用户"
             : null;
+  const liveIndicator =
+    progress != null
+      ? describeSubagentProgressIndicator(progress)
+      : toolCall.status === "running"
+        ? "执行中"
+        : toolCall.status === "error"
+          ? "错误"
+          : undefined;
 
   return {
     label: "委派子代理",
     summary: `${agentLabel} · ${taskPreview}`,
-    indicator:
-      statusLabel ??
-      (toolCall.status === "running" ? "执行中" : toolCall.status === "error" ? "错误" : undefined),
+    indicator: statusLabel ?? liveIndicator,
     detail: (
       <DetailList>
         <DetailField label="Agent">{agentLabel}</DetailField>
@@ -696,12 +718,49 @@ const runSubagentPresenter: ToolPresenter = (toolCall) => {
             </ul>
           </DetailField>
         ) : null}
+        {progress ? (
+          <>
+            <DetailField label="阶段">{subagentPhaseLabel(progress.phase)}</DetailField>
+            {progress.round > 0 ? (
+              <DetailField label="模型轮次">
+                第 {progress.round} / {progress.maxRounds} 轮
+              </DetailField>
+            ) : null}
+            {progress.currentTool ? (
+              <DetailField label="当前工具">
+                {progress.currentTool.name}
+                {progress.currentTool.status === "running" ? " · 执行中" : null}
+              </DetailField>
+            ) : null}
+            {progress.recentTools.length > 0 ? (
+              <DetailField label="最近工具">
+                <ul className="flex flex-col gap-1">
+                  {progress.recentTools.map((tool, index) => (
+                    <li key={`${tool.name}:${index}`}>
+                      {tool.name}
+                      {tool.status === "error"
+                        ? " · 失败"
+                        : tool.status === "complete"
+                          ? " · 完成"
+                          : ""}
+                    </li>
+                  ))}
+                </ul>
+              </DetailField>
+            ) : null}
+            {progress.partialSummary ? (
+              <DetailField label="进行中摘要">{progress.partialSummary}</DetailField>
+            ) : null}
+          </>
+        ) : null}
         {statusLabel ? <DetailField label="结果状态">{statusLabel}</DetailField> : null}
         {wrote !== null ? (
           <DetailField label="是否写回">{wrote ? "已写入工作区" : "只读"}</DetailField>
         ) : null}
         {touched.length > 0 ? (
           <DetailField label="触及节点">{touched.join(", ")}</DetailField>
+        ) : progress && progress.touchedCount > 0 ? (
+          <DetailField label="触及节点">{`${progress.touchedCount} 个`}</DetailField>
         ) : null}
         {summary ? <DetailField label="摘要">{summary}</DetailField> : null}
         {error ? <DetailField label="错误">{error}</DetailField> : null}

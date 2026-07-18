@@ -5,7 +5,15 @@ import type { AiChatSelectableModel } from "#shared/rpc/ai/index";
 import { StatusBarItemInfo } from "#workbench/chrome";
 
 import { useAiChatActions, useAiChatStatusMeta } from "./state/use-ai-chat-state";
-import { describeContextUsageRatio, resolveLatestLastInputTokens } from "./ui/ai-chat-helpers";
+import {
+  describeRunningSubagentStatus,
+  parseSubagentProgressUi,
+} from "./tools/subagent-progress-ui";
+import {
+  describeContextUsageRatio,
+  findRunningSubagentToolCall,
+  resolveLatestLastInputTokens,
+} from "./ui/ai-chat-helpers";
 
 export function AiContextStatusItem() {
   const meta = useAiChatStatusMeta();
@@ -30,6 +38,11 @@ export function AiContextStatusItem() {
     resolveLatestLastInputTokens(meta.messages),
   );
   const latestMessage = meta.messages.at(-1);
+  const runningSubagent =
+    latestMessage?.role === "assistant" ? findRunningSubagentToolCall(latestMessage) : null;
+  const runningSubagentProgress = runningSubagent
+    ? parseSubagentProgressUi(runningSubagent.progressText)
+    : null;
   const pendingTool =
     latestMessage?.role === "assistant" &&
     latestMessage.parts.some(
@@ -43,13 +56,17 @@ export function AiContextStatusItem() {
       ? "AI 请求失败"
       : meta.pendingUserInputCount > 0
         ? "AI 等待输入"
-        : pendingTool
-          ? "AI 执行工具"
-          : meta.pending
-            ? "AI 正在生成"
-            : usage
-              ? `AI ${usage.label}`
-              : "AI 就绪";
+        : runningSubagent
+          ? runningSubagentProgress
+            ? describeRunningSubagentStatus(runningSubagentProgress)
+            : "子代理执行中"
+          : pendingTool
+            ? "AI 执行工具"
+            : meta.pending
+              ? "AI 正在生成"
+              : usage
+                ? `AI ${usage.label}`
+                : "AI 就绪";
   const title = usage
     ? `${selectedModel?.name ?? meta.model} · 上下文 ${usage.used.toLocaleString()} / ${usage.limit.toLocaleString()} token（${usage.percent}%）`
     : (selectedModel?.name ?? meta.model);

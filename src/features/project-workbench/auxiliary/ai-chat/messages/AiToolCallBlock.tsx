@@ -1,5 +1,5 @@
 import { Collapsible } from "@base-ui/react/collapsible";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import { DisclosureChevron } from "#app/shared/ui";
 import type { AiChatToolCall } from "#shared/rpc/ai/index";
@@ -24,11 +24,36 @@ type AiToolCallBlockProps = { toolCall: AiChatToolCall };
 
 export function AiToolCallBlock({ toolCall }: AiToolCallBlockProps) {
   const [open, setOpen] = useState(false);
+  const userCollapsedRef = useRef(false);
+  const autoOpenCallIdRef = useRef<string | null>(null);
   const presentation = presentToolCall(toolCall);
   const indicator = presentation.indicator ?? describeToolCallStatus(toolCall.status);
+  const isRunningSubagent = toolCall.name === "run_subagent" && toolCall.status === "running";
+
+  useEffect(() => {
+    if (!isRunningSubagent) {
+      return;
+    }
+    if (autoOpenCallIdRef.current !== toolCall.id) {
+      autoOpenCallIdRef.current = toolCall.id;
+      userCollapsedRef.current = false;
+    }
+    if (!userCollapsedRef.current) {
+      setOpen(true);
+    }
+  }, [isRunningSubagent, toolCall.id]);
 
   return (
-    <Collapsible.Root className={toolCallPanelClass} open={open} onOpenChange={setOpen}>
+    <Collapsible.Root
+      className={toolCallPanelClass}
+      open={open}
+      onOpenChange={(next) => {
+        setOpen(next);
+        if (!next && isRunningSubagent) {
+          userCollapsedRef.current = true;
+        }
+      }}
+    >
       <Collapsible.Trigger
         className={toolCallToggleClass}
         title={open ? "收起工具调用" : "展开工具调用"}
@@ -43,7 +68,7 @@ export function AiToolCallBlock({ toolCall }: AiToolCallBlockProps) {
         <div className={toolCallBodyClass}>
           {presentation.detail}
 
-          {toolCall.status === "running" ? (
+          {toolCall.status === "running" && toolCall.name !== "run_subagent" ? (
             <p className="text-ctp-subtext0">执行工具中...</p>
           ) : null}
 

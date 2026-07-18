@@ -6,6 +6,11 @@ import type {
   AiChatSnapshot,
 } from "#shared/rpc/ai/index";
 
+import {
+  describeRunningSubagentStatus,
+  parseSubagentProgressUi,
+} from "../tools/subagent-progress-ui";
+
 /** Provider auxiliary warnings from `@codehz/ai` that are not actionable in the chat UI. */
 const HIDDEN_AI_PROVIDER_WARNING_CODES = new Set<string>([
   "BILLING_MISSING",
@@ -44,15 +49,40 @@ export function describeToolCallStatus(status: AiChatToolCall["status"]): string
   }
 }
 
+export function findRunningSubagentToolCall(
+  message: AiChatAssistantMessage,
+): AiChatToolCall | null {
+  for (let index = message.parts.length - 1; index >= 0; index -= 1) {
+    const part = message.parts[index];
+    if (part?.type === "tool_call" && part.name === "run_subagent" && part.status === "running") {
+      return part;
+    }
+  }
+  return null;
+}
+
 /** Streaming process label for the assistant message footer (left-aligned). */
 export function describeAssistantStreamingMeta(message: AiChatAssistantMessage): string {
-  const hasRunningTool = message.parts.some(
-    (part) => part.type === "tool_call" && part.status === "running",
-  );
   const hasStreamingReasoning = message.parts.some(
     (part) => part.type === "reasoning" && part.status === "streaming",
   );
-  return hasStreamingReasoning ? "思考中" : hasRunningTool ? "执行工具中" : "正在工作";
+  if (hasStreamingReasoning) {
+    return "思考中";
+  }
+
+  const runningSubagent = findRunningSubagentToolCall(message);
+  if (runningSubagent) {
+    const progress = parseSubagentProgressUi(runningSubagent.progressText);
+    if (progress) {
+      return describeRunningSubagentStatus(progress);
+    }
+    return "子代理执行中";
+  }
+
+  const hasRunningTool = message.parts.some(
+    (part) => part.type === "tool_call" && part.status === "running",
+  );
+  return hasRunningTool ? "执行工具中" : "正在工作";
 }
 
 /** Completed-turn usage summary for hover on the model label. */
