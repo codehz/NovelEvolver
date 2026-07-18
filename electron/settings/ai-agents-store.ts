@@ -7,9 +7,11 @@ import type {
   AiAgentConfigPublic,
   AiAgentConfigWrite,
   AiAgentsSettingsSnapshot,
+  BuiltinAiAgentId,
 } from "#shared/rpc/services/index";
 import {
   BUILTIN_AI_AGENT_ID,
+  BUILTIN_AI_AGENT_IDS,
   BUILTIN_CHAPTER_WRITER_ID,
   BUILTIN_CONSISTENCY_REVIEWER_ID,
   isBuiltinAiAgentId,
@@ -31,12 +33,20 @@ export type AiAgentRuntimeConfig = AiAgentConfigPublic;
 
 type StoredAgentRecord = Omit<AiAgentConfigPublic, "builtin">;
 
+/** Per-builtin override: null clears to “inherit chat default”. Missing key = no override. */
+type BuiltinDefaultModelIds = Partial<Record<BuiltinAiAgentId, string | null>>;
+
 type StoredFile = {
   version: typeof FILE_VERSION;
   agents: StoredAgentRecord[];
+  builtinDefaultModelIds: BuiltinDefaultModelIds;
 };
 
-const EMPTY_FILE: StoredFile = { version: FILE_VERSION, agents: [] };
+const EMPTY_FILE: StoredFile = {
+  version: FILE_VERSION,
+  agents: [],
+  builtinDefaultModelIds: {},
+};
 
 const ALL_TOOL_NAMES = Object.keys(AI_TOOL_NAMES);
 
@@ -95,6 +105,23 @@ function builtinAgents(): AiAgentConfigPublic[] {
   return [builtinWritingAssistant(), builtinConsistencyReviewer(), builtinChapterWriter()];
 }
 
+function parseBuiltinDefaultModelIds(raw: unknown): BuiltinDefaultModelIds {
+  if (raw == null || typeof raw !== "object" || Array.isArray(raw)) {
+    return {};
+  }
+  const result: BuiltinDefaultModelIds = {};
+  for (const id of BUILTIN_AI_AGENT_IDS) {
+    if (!Object.prototype.hasOwnProperty.call(raw, id)) {
+      continue;
+    }
+    const value = (raw as Record<string, unknown>)[id];
+    if (value === null || typeof value === "string") {
+      result[id] = value;
+    }
+  }
+  return result;
+}
+
 export class AiAgentsStore {
   readonly #filePath: string;
   readonly #getAiModelsStore: () => AiModelsStore;
@@ -109,7 +136,7 @@ export class AiAgentsStore {
   getSnapshot(): AiAgentsSettingsSnapshot {
     return {
       agents: [
-        ...builtinAgents(),
+        ...this.#mergedBuiltinAgents(),
         ...this.#data.agents.map((agent) => ({ ...agent, builtin: false as const })),
       ],
       tools: AI_TOOL_CATALOG.map((tool) => ({ ...tool })),
@@ -117,7 +144,10 @@ export class AiAgentsStore {
   }
 
   getRuntimeConfig(id: string): AiAgentRuntimeConfig {
-    return this.getSnapshot().agents.find((agent) => agent.id === id) ?? builtinWritingAssistant();
+    return (
+      this.getSnapshot().agents.find((agent) => agent.id === id) ??
+      this.#mergedBuiltin(builtinWritingAssistant())
+    );
   }
 
   /** Exact lookup without falling back to the default writing assistant. */
@@ -126,6 +156,10 @@ export class AiAgentsStore {
   }
 
   upsert(input: AiAgentConfigWrite): AiAgentsSettingsSnapshot {
+    if (input.id !== undefined && isBuiltinAiAgentId(input.id)) {
+      return this.#upsertBuiltinDefaultModel(input.id, input.defaultModelId);
+    }
+
     const name = input.name.trim();
     const systemPrompt = input.systemPrompt.trim();
     if (name === "") {
@@ -134,17 +168,7 @@ export class AiAgentsStore {
     if (systemPrompt === "") {
       throw new Error("系统提示词不能为空。");
     }
-    if (input.id !== undefined && isBuiltinAiAgentId(input.id)) {
-      throw new Error("内置 Agent 无法修改。");
-    }
-    if (
-      input.defaultModelId !== null &&
-      !this.#getAiModelsStore()
-        .getSnapshot()
-        .models.some((model) => model.id === input.defaultModelId)
-    ) {
-      throw new Error("默认模型不存在。");
-    }
+    this.#assertDefaultModelId(input.defaultModelId);
 
     const availableToolNames = [...new Set(input.availableToolNames)];
     if (availableToolNames.some((toolName) => !(toolName in AI_TOOL_NAMES))) {
@@ -184,18 +208,64 @@ export class AiAgentsStore {
     return this.getSnapshot();
   }
 
+  #upsertBuiltinDefaultModel(
+    id: BuiltinAiAgentId,
+    defaultModelId: string | null,
+  ): AiAgentsSettingsSnapshot {
+    this.#assertDefaultModelId(defaultModelId);
+    // Only defaultModelId is user-configurable for builtins; name/prompt/tools stay code-defined.
+    if (defaultModelId === null) {
+      const { [id]: _removed, ...rest } = this.#data.builtinDefaultModelIds;
+      this.#data.builtinDefaultModelIds = rest;
+    } else {
+      this.#data.builtinDefaultModelIds = {
+        ...this.#data.builtinDefaultModelIds,
+        [id]: defaultModelId,
+      };
+    }
+    this.#persist();
+    return this.getSnapshot();
+  }
+
+  #assertDefaultModelId(defaultModelId: string | null): void {
+    if (
+      defaultModelId !== null &&
+      !this.#getAiModelsStore()
+        .getSnapshot()
+        .models.some((model) => model.id === defaultModelId)
+    ) {
+      throw new Error("默认模型不存在。");
+    }
+  }
+
+  #mergedBuiltinAgents(): AiAgentConfigPublic[] {
+    return builtinAgents().map((agent) => this.#mergedBuiltin(agent));
+  }
+
+  #mergedBuiltin(agent: AiAgentConfigPublic): AiAgentConfigPublic {
+    if (!isBuiltinAiAgentId(agent.id)) {
+      return agent;
+    }
+    const override = this.#data.builtinDefaultModelIds[agent.id];
+    return {
+      ...agent,
+      defaultModelId: override === undefined ? null : override,
+    };
+  }
+
   #load(): StoredFile {
     if (!existsSync(this.#filePath)) {
-      return { ...EMPTY_FILE, agents: [] };
+      return { ...EMPTY_FILE, agents: [], builtinDefaultModelIds: {} };
     }
     try {
       const parsed = JSON.parse(readFileSync(this.#filePath, "utf8")) as Partial<StoredFile>;
       return {
         version: FILE_VERSION,
         agents: Array.isArray(parsed.agents) ? parsed.agents : [],
+        builtinDefaultModelIds: parseBuiltinDefaultModelIds(parsed.builtinDefaultModelIds),
       };
     } catch {
-      return { ...EMPTY_FILE, agents: [] };
+      return { ...EMPTY_FILE, agents: [], builtinDefaultModelIds: {} };
     }
   }
 

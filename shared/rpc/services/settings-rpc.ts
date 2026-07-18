@@ -171,6 +171,11 @@ export type AiAgentConfigPublic = {
   builtin: boolean;
 };
 
+/**
+ * Create/update payload for `upsertAiAgent`.
+ * When `id` is a builtin agent id, only `defaultModelId` is applied;
+ * name / systemPrompt / availableToolNames are ignored.
+ */
 export type AiAgentConfigWrite = {
   id?: string;
   name: string;
