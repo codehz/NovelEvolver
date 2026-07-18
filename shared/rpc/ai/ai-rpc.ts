@@ -58,6 +58,11 @@ export type AiChatToolCall = {
   status: AiChatToolCallStatus;
   resultText: string | null;
   errorMessage: string | null;
+  /**
+   * UI-only live progress payload (JSON string). Not forwarded to the model.
+   * Cleared when the tool call reaches a terminal status.
+   */
+  progressText: string | null;
 };
 
 export type AskUserChoice = {
@@ -112,6 +117,8 @@ export type AiChatAssistantPartPatch = {
   argumentsText?: string;
   resultText?: string | null;
   errorMessage?: string | null;
+  /** UI-only; omitted means leave unchanged. */
+  progressText?: string | null;
 };
 
 /**

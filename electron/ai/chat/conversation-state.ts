@@ -821,6 +821,7 @@ export class AiConversationState {
         status: "pending",
         resultText: null,
         errorMessage: null,
+        progressText: null,
       });
     }
 
@@ -1157,6 +1158,7 @@ export class AiConversationState {
           status: fallback?.type === "tool_call" ? fallback.status : "pending",
           resultText: fallback?.type === "tool_call" ? fallback.resultText : null,
           errorMessage: fallback?.type === "tool_call" ? fallback.errorMessage : null,
+          progressText: fallback?.type === "tool_call" ? (fallback.progressText ?? null) : null,
         };
       case "opaque":
         return null;
@@ -1231,6 +1233,11 @@ export class AiConversationState {
         }
         if (current.errorMessage !== canonical.errorMessage) {
           patch.errorMessage = canonical.errorMessage;
+        }
+        const currentProgress = current.progressText ?? null;
+        const canonicalProgress = canonical.progressText ?? null;
+        if (currentProgress !== canonicalProgress) {
+          patch.progressText = canonicalProgress;
         }
         return Object.keys(patch).length > 0 ? patch : null;
       }

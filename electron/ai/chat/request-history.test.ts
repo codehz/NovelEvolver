@@ -52,6 +52,7 @@ describe("countCommittedAssistantParts", () => {
         status: "complete",
         resultText: "ok",
         errorMessage: null,
+        progressText: null,
       },
       { id: "m2", type: "message", text: "final", status: "complete" },
     ];

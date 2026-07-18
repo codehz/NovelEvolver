@@ -28,6 +28,13 @@ export function createInitialAiChatSnapshot(model = "mock-assistant"): AiChatSna
 }
 
 export function cloneAiChatAssistantPart(part: AiChatAssistantPart): AiChatAssistantPart {
+  if (part.type === "tool_call") {
+    return {
+      ...part,
+      // Legacy persisted rows may omit progressText.
+      progressText: part.progressText ?? null,
+    };
+  }
   return { ...part };
 }
 
@@ -126,6 +133,8 @@ export function applyAiChatAssistantPartPatch(
             : part.status,
         resultText: patch.resultText !== undefined ? patch.resultText : part.resultText,
         errorMessage: patch.errorMessage !== undefined ? patch.errorMessage : part.errorMessage,
+        progressText:
+          patch.progressText !== undefined ? patch.progressText : (part.progressText ?? null),
       };
   }
 }
