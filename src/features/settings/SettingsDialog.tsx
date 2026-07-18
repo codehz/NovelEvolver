@@ -18,6 +18,7 @@ import {
   settingsTabsRootClass,
   settingsTitleClass,
 } from "./settings-chrome";
+import { requestSettingsLeave } from "./settings-leave-guard";
 
 const SETTINGS_CATEGORIES = [
   { id: "ai-models", label: "AI 模型" },
@@ -44,7 +45,11 @@ export function SettingsDialog({ open, onDismiss }: SettingsDialogProps) {
       open={open}
       onOpenChange={(nextOpen) => {
         if (!nextOpen) {
-          onDismiss();
+          void requestSettingsLeave().then((ok) => {
+            if (ok) {
+              onDismiss();
+            }
+          });
         }
       }}
     >
