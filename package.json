@@ -35,7 +35,6 @@
     "@iconify/json": "^2.2.500",
     "@iconify/utils": "^3.1.4",
     "@mogeko/maple-mono-cn": "^7.9.0",
-    "@shadcn/react": "^0.2.1",
     "@streamdown/cjk": "^1.0.3",
     "bunshi": "^2.2.0",
     "capnweb": "npm:@codehz/capnweb@0.10.0",
