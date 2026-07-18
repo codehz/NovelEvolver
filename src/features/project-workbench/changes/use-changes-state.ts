@@ -2,6 +2,7 @@ import { useMolecule } from "bunshi/react";
 import { useAtomValue, useSetAtom } from "jotai";
 import { useCallback, useState } from "react";
 
+import { confirmDialogApi } from "#app/shared/lib/confirm-dialog";
 import type { ChangesSnapshot } from "#shared/rpc/worktree/index";
 import { worktreeChangesFeedMolecule } from "#workbench/session/changes-feed/worktree-changes-feed";
 import { useHistory, useWorktreeChanges } from "#workbench/session/workspace-handles";
@@ -20,7 +21,11 @@ export function useChangesState() {
   const setRetryKey = useSetAtom(retryKeyAtom);
   const [commitMessage, setCommitMessage] = useState("");
   const [committing, setCommitting] = useState(false);
+  const [revertingAll, setRevertingAll] = useState(false);
   const [commitsRefreshKey, setCommitsRefreshKey] = useState(0);
+
+  const loading = status === "loading";
+  const canRevertAll = result?.hasChanges === true && !loading && !revertingAll;
 
   const applyLocalSnapshot = useCallback(
     (updated: ChangesSnapshot) => {
@@ -55,6 +60,35 @@ export function useChangesState() {
     [applyLocalSnapshot, changesHandle, setFeed],
   );
 
+  const revertAll = useCallback(async () => {
+    if (!canRevertAll) {
+      return;
+    }
+
+    const confirmed = await confirmDialogApi.confirm({
+      title: "还原所有更改",
+      description: "将丢弃当前工作区全部未提交修改，恢复到上次提交状态。此操作不可撤销。",
+      confirmLabel: "还原全部",
+      tone: "danger",
+    });
+    if (!confirmed) {
+      return;
+    }
+
+    setRevertingAll(true);
+    try {
+      const updated = await changesHandle.revertAllChanges();
+      applyLocalSnapshot(updated);
+    } catch {
+      setFeed((current) => ({
+        ...current,
+        status: "error",
+      }));
+    } finally {
+      setRevertingAll(false);
+    }
+  }, [applyLocalSnapshot, canRevertAll, changesHandle, setFeed]);
+
   const commit = useCallback(() => {
     const message = commitMessage.trim();
     if (message === "" || committing) return;
@@ -80,15 +114,18 @@ export function useChangesState() {
   const listCommits = useCallback((maxCount?: number) => history.listCommits(maxCount), [history]);
 
   return {
+    canRevertAll,
     commit,
     commitMessage,
     committing,
     commitsRefreshKey,
     error: status === "error",
-    loading: status === "loading",
+    loading,
     result,
     retry,
+    revertAll,
     revertChange,
+    revertingAll,
     setCommitMessage,
     listCommits,
   };
