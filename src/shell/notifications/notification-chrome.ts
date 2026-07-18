@@ -9,7 +9,7 @@ import {
 
 const notificationAccentTextClass = cn("text-ctp-mauve");
 
-export const notificationBellAnchorClass = cn("relative flex shrink-0 items-stretch self-stretch");
+export const notificationBellAnchorClass = cn("relative flex h-full shrink-0 items-center");
 
 export const notificationPanelClass = cn(
   "flex min-h-0 w-notification-panel flex-col shadow-lg",

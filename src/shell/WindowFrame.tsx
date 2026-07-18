@@ -146,12 +146,15 @@ function TitleBar() {
 
 function StatusBar() {
   return (
-    <footer className="relative flex h-5.5 shrink-0 items-stretch text-xs text-app-foreground">
+    <footer className="relative flex h-7 shrink-0 items-center gap-0.5 px-2 py-1 text-xs text-app-foreground">
       <StatusBarLeftPortalTarget
         as={Animatable}
-        className="flex min-w-0 flex-1 items-stretch overflow-hidden"
+        className="flex h-full min-w-0 flex-1 items-center gap-0.5 overflow-hidden"
       />
-      <StatusBarRightPortalTarget as={Animatable} className="flex shrink-0 items-stretch" />
+      <StatusBarRightPortalTarget
+        as={Animatable}
+        className="flex h-full shrink-0 items-center gap-0.5"
+      />
       <NotificationBellButton />
     </footer>
   );
