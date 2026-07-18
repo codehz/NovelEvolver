@@ -4,7 +4,7 @@ import {
   collectChangeTreeFolderKeys,
   flattenChangeTree,
   type ChangeTreeFolderNode,
-} from "#workbench/changes/change-tree-projector";
+} from "#workbench/lib/change-tree-projector";
 import { contentDomainIconClass } from "#workbench/tree/content-tree-icons";
 
 import type { CommitChangesCacheEntry } from "./use-commit-changes-state";

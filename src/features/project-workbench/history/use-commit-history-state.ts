@@ -1,8 +1,9 @@
 import { useCallback, useEffect, useState } from "react";
 
 import type { CommitSummary } from "#shared/rpc/worktree/index";
-import { HISTORY_MAX_COMMITS } from "#workbench/changes/constants";
 import { useHistory } from "#workbench/session/workspace-handles";
+
+import { HISTORY_MAX_COMMITS } from "./constants";
 
 export function useCommitHistoryState(commitsRefreshKey: number) {
   const history = useHistory();

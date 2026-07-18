@@ -4,12 +4,11 @@ import { cn } from "#app/shared/lib/ui/cn";
 import { rowHoverClass } from "#app/shared/lib/ui/interaction-chrome";
 import { Button, AppTooltip } from "#app/shared/ui";
 import type { Change } from "#shared/rpc/worktree/index";
+import { ChangeStatsBadge } from "#workbench/lib/ChangeStatsBadge";
 import { contentEntityIconClass } from "#workbench/tree/content-tree-icons";
 import type { TreeRowLayout } from "#workbench/tree/tree-row-layout";
 import { treeRowDisclosureSpacerClass } from "#workbench/tree/tree-row-motion";
 import { TreeMotionRow } from "#workbench/tree/TreeMotionRow";
-
-import { ChangeStatsBadge } from "./ChangeStatsBadge";
 
 function changeKindIconClass(kind: Change["kind"]): string {
   return cn(

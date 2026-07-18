@@ -4,6 +4,14 @@ import { cn } from "#app/shared/lib/ui/cn";
 import { DisclosureChevron } from "#app/shared/ui";
 import type { Change } from "#shared/rpc/worktree/index";
 import { activateOnEnterSpace } from "#workbench/lib/activate-on-enter-space";
+import {
+  buildChangeRoots,
+  collectChangeTreeFolderKeys,
+  flattenChangeTree,
+  type ChangeFlatRow,
+  type ChangeTreeFolderNode,
+} from "#workbench/lib/change-tree-projector";
+import { ChangesDomainRow } from "#workbench/lib/ChangesDomainRow";
 import { contentDomainIconClass, contentFolderIconClass } from "#workbench/tree/content-tree-icons";
 import { FlatTreeList } from "#workbench/tree/FlatTreeList";
 import type { TreeRowLayout } from "#workbench/tree/tree-row-layout";
@@ -14,15 +22,8 @@ import {
 } from "#workbench/tree/tree-row-motion";
 import { TreeMotionRow } from "#workbench/tree/TreeMotionRow";
 
-import {
-  buildChangeRoots,
-  collectChangeTreeFolderKeys,
-  flattenChangeTree,
-  type ChangeFlatRow,
-  type ChangeTreeFolderNode,
-} from "./change-tree-projector";
 import { ChangeItemRow } from "./ChangeItemRow";
-import { ChangesDomainRow } from "./ChangesDomainRow";
+
 const changeFolderRowClass = cn(
   "cursor-pointer text-xs text-ctp-subtext1 hover:bg-ctp-surface0/50",
 );

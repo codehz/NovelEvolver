@@ -29,9 +29,16 @@ Renderer layout (`src/`):
 - **Domain plane**: `editor/` (`state/`, `contributions/`, `panes/`, status contribution e.g. caret), `explorer/` (`ExplorerSidebar` + `shared/` / `manuscript/` / `resource-library/`), `changes/` (`ChangesSidebarSection` + list UI), `search/` (`SearchSidebarSection` + query/results), `history/`, `auxiliary/ai-chat/` (panel + AI status contribution), `branch/` (**UX only**: switcher, status item — not the RPC handle bus).
 - **View kernel**: `chrome/` (layout shell barrel only — includes chrome sidebar/statusbar primitives under `chrome/sidebar` / `chrome/statusbar`), `tree/` (list/drag primitives only — no feed/domain imports).
 - **Composition root**: `ProjectWorkbench.tsx` + `composition/` (e.g. `WorkbenchStatusBar`) — only place that assembles primary views / editor / auxiliary / status contributions from domain public entries.
-- **Misc**: `lib/` is workbench-local micro-utils. Do **not** reintroduce top-level `sidebar/` or `statusbar/` business host folders.
+- **Misc**: `lib/` is workbench-local micro-utils and **shared cross-domain helpers** that are not owned by a single domain (e.g. change-tree projector, shared change-list row chrome). Do **not** reintroduce top-level `sidebar/` or `statusbar/` business host folders. Do **not** reintroduce a renderer `worktree/` domain — feed/snapshot live under `session/changes-feed/`; `#shared/rpc/worktree` and `electron/worktree/` are RPC/backend names only.
 
-**Dependency direction (non-negotiable):** composition → domain → session → view kernel / `#app/shared` / `#shared`. Domains must not import other domains' internals; cross-domain traffic uses narrow ports (`openEditorTarget`, `revealInTree`, status item exports). Do **not** add new RPC handles or molecules under `branch/` — that belongs in `session/`. Primary view sections and status items live in their domain (or thin composition assembly); chrome only provides shell primitives.
+**Boundary freeze (tree vs session data plane):**
+
+- `tree/` = pure view kernel (rows, drag, motion, icons). May depend on `#app/shared` and `#shared` DTO types only. **Must not** import `session/` or any domain.
+- `session/changes-feed/` = data plane (changes feed molecule, tree snapshot/revision, delta apply). May depend on session scopes/handles and `#shared` only. **Must not** import `tree/` or domain UI.
+- Domains may import both `tree` (UI) and `session` (data). Shared pure helpers used by multiple domains belong in `lib/`, not inside one domain's folder.
+- Explorer `createContentTreeMolecule` stays a domain factory over session scopes; do not push feed logic into `tree/`.
+
+**Dependency direction (non-negotiable):** composition → domain → session → view kernel / `#app/shared` / `#shared`. Domains must not import other domains' internals; cross-domain traffic uses narrow ports (`openEditorTarget`, `revealInTree`, status item exports) or `lib/` shared helpers. Do **not** add new RPC handles or molecules under `branch/` — that belongs in `session/`. Primary view sections and status items live in their domain (or thin composition assembly); chrome only provides shell primitives.
 
 `electron/` layout (high level):
 
