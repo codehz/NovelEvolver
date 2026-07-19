@@ -179,6 +179,40 @@ export const toolCallBodyClass = cn(
 );
 export const toolCallErrorMessageClass = cn("text-chat-meta leading-5 text-ctp-red");
 export const toolCallQuestionClass = cn("text-chat-meta leading-5 text-app-foreground");
+
+/** Work / elevated card collapsible root — no flex gap (see reasoningPanelClass). */
+export const workBlockPanelClass = cn("group/disclosure-row flex flex-col");
+/** Summary row: label/meta left, hover chevron right. */
+export const workBlockToggleClass = cn(
+  "flex w-full min-w-0 items-center gap-1.5 text-left text-2xs text-ctp-subtext1 outline-none",
+  controlFocusVisibleClass,
+);
+export const workBlockSummaryClass = cn("min-w-0 flex-1 truncate text-ctp-subtext0");
+export const workBlockLabelClass = cn(
+  "shrink-0 font-medium tracking-[0.02em] whitespace-nowrap text-ctp-subtext1",
+);
+export const workBlockBodyClass = cn("pt-1 text-chat-meta leading-5 text-app-muted");
+/**
+ * Live activity window: clamp height and fade the bottom edge so long
+ * timelines do not dominate the rail while tools are running.
+ */
+export const liveClipPanelClass = cn(
+  "max-h-44 overflow-x-hidden overflow-y-auto",
+  "mask-[linear-gradient(to_bottom,black_0%,black_calc(100%-1.75rem),transparent_100%)]",
+);
+
+/** Elevated card shell (subagent / ask_user) — light surface, no heavy chrome. */
+export const elevatedCardPanelClass = cn(
+  "group/disclosure-row flex flex-col rounded-sm border border-titlebar-border/60 bg-app-surface/40",
+);
+export const elevatedCardHeaderClass = cn(
+  "flex w-full min-w-0 items-center gap-1.5 px-2 py-1 text-left text-2xs text-ctp-subtext1 outline-none",
+  controlFocusVisibleClass,
+);
+export const elevatedCardBodyClass = cn(
+  "flex flex-col gap-1.5 px-2 pb-2 text-chat-meta leading-5 text-app-muted",
+);
+
 export const warningBannerClass = cn(
   "rounded-sm border border-ctp-yellow/40 bg-ctp-yellow/10 px-3 py-2 text-xs break-all whitespace-pre-wrap text-ctp-yellow select-text",
 );
