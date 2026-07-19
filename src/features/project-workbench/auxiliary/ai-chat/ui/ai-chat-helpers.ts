@@ -54,7 +54,8 @@ export function describeToolCallStatus(status: AiChatToolCall["status"]): string
 
 /**
  * Work segment collapsed summary. Step counts only — never durations.
- * Live: current action / 进行中 · 第 k/N 步. Done: 思考 · N 个工具 / N 步.
+ * Live: current action / 进行中 · 第 k/N 步. Done: 已完成 N 个步骤.
+ * Reasoning and tool calls both count as one step; no type-split labels.
  */
 export function describeWorkSummary(steps: readonly AssistantWorkStep[]): string {
   const total = steps.length;
@@ -62,17 +63,16 @@ export function describeWorkSummary(steps: readonly AssistantWorkStep[]): string
     return "无步骤";
   }
 
-  const reasoningCount = steps.filter((step) => step.type === "reasoning").length;
-  const toolSteps = steps.filter((step) => step.type === "tool_call");
-  const toolCount = toolSteps.length;
-  const errorCount = toolSteps.filter((step) => step.status === "error").length;
+  const errorCount = steps.filter(
+    (step) => step.type === "tool_call" && step.status === "error",
+  ).length;
 
   if (isWorkSegmentLive(steps)) {
     const streamingReasoning = steps.find(
       (step) => step.type === "reasoning" && step.status === "streaming",
     );
     if (streamingReasoning) {
-      return `思考中 · ${total} 步`;
+      return `进行中 · ${total} 步`;
     }
 
     let runningIndex = -1;
@@ -91,20 +91,10 @@ export function describeWorkSummary(steps: readonly AssistantWorkStep[]): string
     return `进行中 · ${total} 步`;
   }
 
-  const chunks: string[] = [];
-  if (reasoningCount > 0 && toolCount > 0) {
-    chunks.push("思考", `${toolCount} 个工具`, `共 ${total} 步`);
-  } else if (reasoningCount > 0) {
-    chunks.push(reasoningCount === 1 ? "思考" : `思考 · ${reasoningCount} 步`);
-  } else if (toolCount > 0) {
-    chunks.push(`${toolCount} 个工具`);
-  } else {
-    chunks.push(`${total} 步`);
-  }
   if (errorCount > 0) {
-    chunks.push(`${errorCount} 失败`);
+    return `已完成 ${total} 个步骤 · ${errorCount} 失败`;
   }
-  return chunks.join(" · ");
+  return `已完成 ${total} 个步骤`;
 }
 
 export function findRunningSubagentToolCall(
