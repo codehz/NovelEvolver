@@ -88,12 +88,10 @@ export const settingsPanelScrollClass = cn("min-h-0 flex-1 overflow-x-hidden ove
 
 /**
  * Fixed subpage navigation bar above the panel scrollport.
- * Elevated surface strip on the body canvas — no hairline divider.
+ * Transparent over the body canvas — no hairline divider / elevated fill.
  * `h-10` leaves room for a primary header action (save) without feeling tight.
  */
-export const settingsSubpageHeaderClass = cn(
-  "flex h-10 shrink-0 items-center gap-1.5 bg-app-surface px-2.5",
-);
+export const settingsSubpageHeaderClass = cn("flex h-10 shrink-0 items-center gap-1.5 px-2.5");
 
 export const settingsSubpageTitleClass = cn(
   "min-w-0 flex-1 truncate text-sm font-medium text-app-foreground",
@@ -108,11 +106,11 @@ export const settingsPanelHeaderClass = cn("flex items-start justify-between gap
 
 /**
  * Dual-pane shell (provider rail + detail).
- * Rail reuses dialog-surface elevation; detail is an editor-style inset card on the body canvas.
+ * Rail is transparent over the body canvas; detail is a border-only inset card.
  */
 export const settingsDualPaneClass = cn("flex min-h-0 flex-1");
 
-export const settingsDualPaneRailClass = cn("flex w-44 shrink-0 flex-col bg-app-surface");
+export const settingsDualPaneRailClass = cn("flex w-44 shrink-0 flex-col");
 
 export const settingsDualPaneRailLabelClass = cn(
   "shrink-0 px-2.5 py-1.5 text-2xs font-medium text-app-muted",
@@ -132,11 +130,11 @@ export const settingsDualPaneDetailClass = cn("flex min-h-0 min-w-0 flex-1 flex-
 export const settingsDetailInsetClass = cn("flex min-h-0 min-w-0 flex-1 flex-col p-2");
 
 /**
- * Card shell for settings detail content: border, radius, clip (matches editor panel).
- * Sits on the body canvas; form surface islands stay elevated inside.
+ * Card shell for settings detail content: border, radius, clip only (no fill).
+ * Transparent over the body canvas; form surface islands stay elevated inside.
  */
 export const settingsDetailSurfaceClass = cn(
-  "overflow-hidden rounded-lg border border-titlebar-border bg-app-background",
+  "overflow-hidden rounded-lg border border-titlebar-border",
 );
 
 /** Detail header strip inside the card — spacing only, no border-b. */
