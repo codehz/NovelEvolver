@@ -15,6 +15,7 @@ import {
 import { describeAssistantStreamingMeta, describeAssistantUsageMeta } from "../ui/ai-chat-helpers";
 import { AiAssistantPartBlock } from "./AiAssistantPartBlock";
 import { AiMessageBranchSwitcher } from "./AiMessageBranchSwitcher";
+import { projectAssistantSegments, type AssistantSegment } from "./project-assistant-segments";
 
 type AiAssistantMessageBlockProps = {
   message: AiChatAssistantMessage;
@@ -25,6 +26,28 @@ type AiAssistantMessageBlockProps = {
   onSelectBranch?: (index: number) => void;
 };
 
+/**
+ * Phase 1 interim: render segments via existing part blocks.
+ * Work steps still map 1:1 to old reasoning/tool shells until Phase 3.
+ */
+function renderAssistantSegment(segment: AssistantSegment) {
+  switch (segment.kind) {
+    case "prose":
+      return <AiAssistantPartBlock key={segment.id} part={segment.part} />;
+    case "work":
+      return (
+        <div key={segment.id} className="flex flex-col gap-1" data-assistant-segment="work">
+          {segment.steps.map((step) => (
+            <AiAssistantPartBlock key={step.id} part={step} />
+          ))}
+        </div>
+      );
+    case "subagent":
+    case "ask_user":
+      return <AiAssistantPartBlock key={segment.id} part={segment.part} />;
+  }
+}
+
 export function AiAssistantMessageBlock({
   message,
   onRetry,
@@ -33,14 +56,14 @@ export function AiAssistantMessageBlock({
   actionsDisabled = false,
   onSelectBranch,
 }: AiAssistantMessageBlockProps) {
+  const segments = projectAssistantSegments(message.parts);
+
   if (message.status === "streaming") {
     const hasStreamingPart = message.parts.some((part) => part.status === "streaming");
     const streamingMeta = describeAssistantStreamingMeta(message);
     return (
       <article className={assistantMessageBlockClass}>
-        {message.parts.map((part) => (
-          <AiAssistantPartBlock key={part.id} part={part} />
-        ))}
+        {segments.map(renderAssistantSegment)}
         {!hasStreamingPart ? (
           <p className={reasoningMetaClass} title={streamingMeta}>
             {streamingMeta}
@@ -59,9 +82,7 @@ export function AiAssistantMessageBlock({
 
   return (
     <article className={assistantMessageBlockClass}>
-      {message.parts.map((part) => (
-        <AiAssistantPartBlock key={part.id} part={part} />
-      ))}
+      {segments.map(renderAssistantSegment)}
       <div
         className={cn(
           assistantMessageFooterClass,
