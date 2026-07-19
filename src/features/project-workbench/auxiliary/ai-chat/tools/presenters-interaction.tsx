@@ -98,41 +98,54 @@ function SubagentTimeline({ view }: { view: AiSubagentToolView }) {
     );
   }
 
+  // Rail column keeps the vertical line + dots *inside* the box so
+  // Collapsible.Panel's overflow-hidden cannot clip them (negative-left dots did).
   return (
-    <ol className="flex flex-col gap-1.5 border-l border-titlebar-border/70 pl-2.5">
-      {view.steps.map((step) => {
+    <ol className="flex flex-col">
+      {view.steps.map((step, index) => {
         const running = step.status === "running";
         const failed = step.status === "error";
+        const isLast = index === view.steps.length - 1;
         return (
-          <li key={step.id} className="relative min-w-0">
-            <span
-              aria-hidden="true"
-              className={
-                failed
-                  ? "absolute top-1.5 left-[-0.95rem] size-1.5 rounded-full bg-ctp-red"
-                  : running
-                    ? "absolute top-1.5 left-[-0.95rem] size-1.5 animate-pulse rounded-full bg-badge-background"
-                    : "absolute top-1.5 left-[-0.95rem] size-1.5 rounded-full bg-ctp-overlay0"
-              }
-            />
-            <div className="flex min-w-0 flex-wrap items-baseline gap-x-1.5 gap-y-0.5">
-              <span className={failed ? "text-ctp-red" : "text-app-foreground"}>
-                {toolActionLabel(step.name)}
-              </span>
-              {step.subject ? (
-                <span className="min-w-0 wrap-break-word text-ctp-subtext0">{step.subject}</span>
-              ) : null}
-              {step.outcome ? (
-                <span className={failed ? "text-ctp-red" : "text-ctp-overlay0"}>
-                  {step.outcome}
+          <li key={step.id} className="grid min-w-0 grid-cols-[0.75rem_minmax(0,1fr)] gap-x-2">
+            <span className="relative flex justify-center" aria-hidden="true">
+              <span
+                className={
+                  isLast
+                    ? "absolute top-0 left-1/2 h-2 w-px -translate-x-1/2 bg-titlebar-border/70"
+                    : "absolute inset-y-0 left-1/2 w-px -translate-x-1/2 bg-titlebar-border/70"
+                }
+              />
+              <span
+                className={
+                  failed
+                    ? "relative z-10 mt-1.5 size-1.5 rounded-full bg-ctp-red"
+                    : running
+                      ? "relative z-10 mt-1.5 size-1.5 animate-pulse rounded-full bg-badge-background"
+                      : "relative z-10 mt-1.5 size-1.5 rounded-full bg-ctp-overlay0"
+                }
+              />
+            </span>
+            <div className={isLast ? "min-w-0" : "min-w-0 pb-1.5"}>
+              <div className="flex min-w-0 flex-wrap items-baseline gap-x-1.5 gap-y-0.5">
+                <span className={failed ? "text-ctp-red" : "text-app-foreground"}>
+                  {toolActionLabel(step.name)}
                 </span>
-              ) : running ? (
-                <span className="text-ctp-overlay0">进行中</span>
+                {step.subject ? (
+                  <span className="min-w-0 wrap-break-word text-ctp-subtext0">{step.subject}</span>
+                ) : null}
+                {step.outcome ? (
+                  <span className={failed ? "text-ctp-red" : "text-ctp-overlay0"}>
+                    {step.outcome}
+                  </span>
+                ) : running ? (
+                  <span className="text-ctp-overlay0">进行中</span>
+                ) : null}
+              </div>
+              {step.errorMessage ? (
+                <p className="mt-0.5 text-2xs text-ctp-red">{step.errorMessage}</p>
               ) : null}
             </div>
-            {step.errorMessage ? (
-              <p className="mt-0.5 text-2xs text-ctp-red">{step.errorMessage}</p>
-            ) : null}
           </li>
         );
       })}
