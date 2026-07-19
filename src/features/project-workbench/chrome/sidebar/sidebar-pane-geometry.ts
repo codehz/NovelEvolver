@@ -1,4 +1,9 @@
-/** Layout flow height at the section seam (handle is overlaid, not counted in flex). */
+/**
+ * Reserved flex-flow height for the section seam between stacked panes.
+ * Currently 0 because the resize handle is overlaid (absolute) and does not
+ * consume layout space; keep the constant so a future non-zero seam stays one
+ * place to update in `resolveAvailableBodyHeight`.
+ */
 export const SIDEBAR_SECTION_RESIZE_STRIP_HEIGHT = 0;
 export const SIDEBAR_SECTION_HEADER_HEIGHT_PX = 24;
 export const MIN_SIDEBAR_SECTION_BODY_HEIGHT = 72;

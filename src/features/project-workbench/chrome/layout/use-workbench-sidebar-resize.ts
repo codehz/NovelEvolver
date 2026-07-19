@@ -8,6 +8,7 @@ import {
   type SetStateAction,
 } from "react";
 
+import { beginPointerDragSession } from "../pointer-drag-session";
 import {
   CLOSE_SIDEBAR_THRESHOLD,
   MIN_AUXILIARY_WIDTH,
@@ -107,38 +108,28 @@ export function useWorkbenchSidebarResize({
       };
 
       setActiveResizeSide(side);
-      document.body.style.cursor = "col-resize";
-      document.body.style.userSelect = "none";
 
-      const handlePointerMove = (moveEvent: PointerEvent) => {
-        pendingDeltaX = moveEvent.clientX - startX;
+      dragCleanupRef.current = beginPointerDragSession({
+        cursor: "col-resize",
+        onMove: (moveEvent) => {
+          pendingDeltaX = moveEvent.clientX - startX;
 
-        if (animationFrameId !== null) {
-          return;
-        }
+          if (animationFrameId !== null) {
+            return;
+          }
 
-        animationFrameId = window.requestAnimationFrame(applyPendingResize);
-      };
+          animationFrameId = window.requestAnimationFrame(applyPendingResize);
+        },
+        onEnd: () => {
+          if (animationFrameId !== null) {
+            window.cancelAnimationFrame(animationFrameId);
+            applyPendingResize();
+          }
 
-      const cleanup = () => {
-        if (animationFrameId !== null) {
-          window.cancelAnimationFrame(animationFrameId);
-          applyPendingResize();
-        }
-
-        window.removeEventListener("pointermove", handlePointerMove);
-        window.removeEventListener("pointerup", cleanup);
-        window.removeEventListener("pointercancel", cleanup);
-        document.body.style.cursor = "";
-        document.body.style.userSelect = "";
-        setActiveResizeSide(null);
-        dragCleanupRef.current = null;
-      };
-
-      dragCleanupRef.current = cleanup;
-      window.addEventListener("pointermove", handlePointerMove);
-      window.addEventListener("pointerup", cleanup, { once: true });
-      window.addEventListener("pointercancel", cleanup, { once: true });
+          setActiveResizeSide(null);
+          dragCleanupRef.current = null;
+        },
+      });
     },
     [layoutPreferences, resolvedLayout, setLayoutPreferences],
   );
