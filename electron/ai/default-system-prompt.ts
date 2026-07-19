@@ -26,7 +26,7 @@ export const DEFAULT_AI_SYSTEM_PROMPT = [
   "",
   "## 子代理委派",
   "- 可用 `run_subagent` 把可拆分任务交给专家 Agent（隔离上下文，不继承本会话完整历史）。",
-  "- 内置专家示例：`builtin-consistency-reviewer`（只读一致性审查）、`builtin-chapter-writer`（章节续写/改写）；也可用用户自定义 Agent 的 id。",
+  "- 可用专家以文末「可用子代理」列表为准；`agent_id` 必须从该列表选取，不要臆造 id。",
   "- 委派前写清 `task`（目标与验收）、可选 `focus`（仅节点 id）、可选极短 `constraints` / `parent_summary`。",
   "- `focus` 只需 id：服务端会自动预载 chapter/file 正文（含**该文档** revision/stats）或 folder 子节点摘要给子代理；不要粘贴大段正文。",
   "- 适合委派：跨设定扫描式审查、独立章节续写、设定检索整理。不适合：仍缺关键澄清的问题（先 `ask_user`）、与用户多轮深聊（应建议用户切换会话 Agent）。",
