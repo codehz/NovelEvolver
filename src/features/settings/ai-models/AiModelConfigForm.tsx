@@ -29,10 +29,12 @@ import {
   settingsInputClass,
 } from "../settings-chrome";
 import type { SettingsFormHandle } from "../settings-leave-guard";
-import { SettingsFormActions } from "../SettingsFormActions";
 import { SettingsJsonEditor } from "../SettingsJsonEditor";
 import { SettingsSelect } from "../SettingsSelect";
 import { ReasoningLevelChipList } from "./ReasoningLevelChipList";
+
+/** Stable form id for header submit association. */
+export const AI_MODEL_CONFIG_FORM_ID = "settings-ai-model-form";
 
 type FormState = {
   providerId: string;
@@ -292,6 +294,7 @@ export function AiModelConfigForm({
 
   return (
     <Form
+      id={AI_MODEL_CONFIG_FORM_ID}
       className={settingsFormClass}
       onFormSubmit={() => {
         const payload = buildPayload();
@@ -530,8 +533,6 @@ export function AiModelConfigForm({
       </div>
 
       {error ? <p className={settingsFormErrorClass}>{error}</p> : null}
-
-      <SettingsFormActions busy={busy} submitLabel={isEdit ? "保存" : "添加"} />
     </Form>
   );
 }

@@ -17,7 +17,9 @@ import {
   settingsTextareaClass,
 } from "../settings-chrome";
 import type { SettingsFormHandle } from "../settings-leave-guard";
-import { SettingsFormActions } from "../SettingsFormActions";
+
+/** Stable form id for header submit association. */
+export const AI_PROMPT_CONFIG_FORM_ID = "settings-ai-prompt-form";
 
 type FormState = {
   title: string;
@@ -123,6 +125,7 @@ export function AiPromptConfigForm({
 
   return (
     <Form
+      id={AI_PROMPT_CONFIG_FORM_ID}
       className={settingsFormClass}
       onFormSubmit={() => {
         const payload = buildPayload();
@@ -210,8 +213,6 @@ export function AiPromptConfigForm({
       </div>
 
       {error ? <p className={settingsFormErrorClass}>{error}</p> : null}
-
-      {readOnly ? null : <SettingsFormActions busy={busy} submitLabel={isEdit ? "保存" : "添加"} />}
     </Form>
   );
 }

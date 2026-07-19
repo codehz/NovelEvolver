@@ -25,9 +25,11 @@ import {
 } from "../settings-chrome";
 import type { SettingsFormHandle } from "../settings-leave-guard";
 import { SettingsCheckbox } from "../SettingsCheckbox";
-import { SettingsFormActions } from "../SettingsFormActions";
 import { SettingsSelect } from "../SettingsSelect";
 import { AiAgentToolPicker } from "./AiAgentToolPicker";
+
+/** Stable form id for header submit association. */
+export const AI_AGENT_CONFIG_FORM_ID = "settings-ai-agent-form";
 
 type FormState = {
   name: string;
@@ -186,6 +188,7 @@ export function AiAgentConfigForm({
 
   return (
     <Form
+      id={AI_AGENT_CONFIG_FORM_ID}
       className={settingsFormClass}
       onFormSubmit={() => {
         const payload = buildPayload();
@@ -355,10 +358,6 @@ export function AiAgentConfigForm({
       </div>
 
       {error ? <p className={settingsFormErrorClass}>{error}</p> : null}
-
-      {canSubmit ? (
-        <SettingsFormActions busy={busy} submitLabel={isEdit ? "保存" : "添加"} />
-      ) : null}
     </Form>
   );
 }
