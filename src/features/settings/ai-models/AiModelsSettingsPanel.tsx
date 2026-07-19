@@ -1,9 +1,10 @@
 import { cn } from "#app/shared/lib/ui/cn";
 
 import {
+  settingsDetailInsetClass,
+  settingsDetailSurfaceClass,
   settingsLayerHiddenClass,
   settingsPanelRootClass,
-  settingsPanelScrollClass,
 } from "../settings-chrome";
 import { SettingsFormActions } from "../SettingsFormActions";
 import { SettingsPanelLoadError, SettingsPanelLoading } from "../SettingsPanelStatus";
@@ -127,18 +128,25 @@ export function AiModelsSettingsPanel({ active = true }: AiModelsSettingsPanelPr
       </div>
 
       {isSubpageOpen ? (
-        <div className={settingsPanelScrollClass}>
-          <AiModelsEditorLayer
-            key={formKey}
-            actionError={actionError}
-            busy={busy}
-            editor={editor}
-            formRef={formRef}
-            providers={providers}
-            onDirtyChange={onDirtyChange}
-            onModelSubmit={handleModelSubmit}
-            onProviderSubmit={handleProviderSubmit}
-          />
+        <div className={settingsDetailInsetClass}>
+          <div
+            className={cn(
+              settingsDetailSurfaceClass,
+              "min-h-0 flex-1 overflow-x-hidden overflow-y-auto",
+            )}
+          >
+            <AiModelsEditorLayer
+              key={formKey}
+              actionError={actionError}
+              busy={busy}
+              editor={editor}
+              formRef={formRef}
+              providers={providers}
+              onDirtyChange={onDirtyChange}
+              onModelSubmit={handleModelSubmit}
+              onProviderSubmit={handleProviderSubmit}
+            />
+          </div>
         </div>
       ) : null}
     </div>
