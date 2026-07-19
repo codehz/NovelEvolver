@@ -1,27 +1,26 @@
 import { animate } from "motion/react";
 import { useLayoutEffect, useMemo, useRef, useState } from "react";
 
+import {
+  planWorkbenchLayoutFrame,
+  type AnimatingSides,
+  type LayoutVisibilityIntent,
+} from "./plan-workbench-layout-frame";
 import type { ResizeSide } from "./use-workbench-sidebar-resize";
 import {
   displayedEqual,
-  holdClosedPanelWidth,
   lerpDisplayed,
   lerpSidebar,
   mergeSide,
-  oppositeSide,
   sidebarMetricsEqual,
-  stabilizeCloseTargets,
   stabilizeMotionPair,
   targetsFromChromeLayout,
   WORKBENCH_LAYOUT_MOTION,
   type DisplayedSidebarMetrics,
   type DisplayedWorkbenchChrome,
   type WorkbenchLayoutPhase,
-  type WorkbenchLayoutSide,
 } from "./workbench-layout-motion";
 import type { WorkbenchChromeLayout } from "./workbench-layout-resolver";
-
-type AnimatingSides = "both" | WorkbenchLayoutSide;
 
 type AnimationHandle = ReturnType<typeof animate>;
 
@@ -51,7 +50,7 @@ export function useWorkbenchLayoutMotion({
   const animationRef = useRef<AnimationHandle | null>(null);
   const animatingSidesRef = useRef<AnimatingSides | null>(null);
   const animTargetRef = useRef<DisplayedWorkbenchChrome | null>(null);
-  const visibilityIntentRef = useRef({
+  const visibilityIntentRef = useRef<LayoutVisibilityIntent>({
     primary: targets.primary.open,
     auxiliary: targets.auxiliary.open,
   });
@@ -213,155 +212,111 @@ export function useWorkbenchLayoutMotion({
       });
     };
 
-    const targetsNow = targetsRef.current;
-    const wasDragging = prevActiveResizeSideRef.current != null;
-    const isDragging = activeResizeSide != null;
-    const containerChanged = prevContainerWidthRef.current !== containerWidth;
-
     const markPrev = () => {
       prevContainerWidthRef.current = containerWidth;
       prevActiveResizeSideRef.current = activeResizeSide;
     };
 
-    if (!motionReadyRef.current || reducedMotionRef.current) {
-      snapAll(targetsNow, isDragging ? "dragging" : "idle");
-      markPrev();
-      return;
-    }
+    const plan = planWorkbenchLayoutFrame({
+      displayed: displayedRef.current,
+      targets: targetsRef.current,
+      activeResizeSide,
+      prevActiveResizeSide: prevActiveResizeSideRef.current,
+      prevContainerWidth: prevContainerWidthRef.current,
+      containerWidth,
+      animatingSides: animatingSidesRef.current,
+      animTarget: animTargetRef.current,
+      visibilityIntent: visibilityIntentRef.current,
+      motionReady: motionReadyRef.current,
+      reducedMotion: reducedMotionRef.current,
+      phase: phaseRef.current,
+    });
 
-    if (isDragging) {
-      const activeSide = activeResizeSide;
-      const passiveSide = oppositeSide(activeSide);
-      const activeMetrics = targetsNow[activeSide];
-      const passiveTarget = targetsNow[passiveSide];
-      const passiveIntent = visibilityIntentRef.current[passiveSide];
-      const passiveAnimating =
-        animatingSidesRef.current === passiveSide || animatingSidesRef.current === "both";
-      const animPassiveTarget = animTargetRef.current?.[passiveSide] ?? null;
-
-      // Entering drag cancels a global toggle lockstep; passive may retarget below.
-      if (!wasDragging && animatingSidesRef.current === "both") {
-        stopAnimation();
-      }
-
-      // Active side always snaps (including self-close via threshold). Hold the
-      // current panelWidth when closed so preferred does not jump into displayed.
-      const activeDisplayed = holdClosedPanelWidth(displayedRef.current[activeSide], activeMetrics);
-      let next = mergeSide(displayedRef.current, activeSide, activeDisplayed);
-      visibilityIntentRef.current[activeSide] = activeMetrics.open;
-
-      if (passiveTarget.open !== passiveIntent) {
-        applyDisplayed(next);
-        startLerp(
-          displayedRef.current,
-          mergeSide(displayedRef.current, passiveSide, passiveTarget),
-          passiveSide,
-          "dragging",
-        );
+    switch (plan.type) {
+      case "snap-all": {
+        snapAll(plan.next, plan.phase);
         markPrev();
         return;
       }
-
-      if (
-        passiveAnimating &&
-        animPassiveTarget != null &&
-        animPassiveTarget.open === passiveTarget.open
-      ) {
-        // Keep passive tween; retarget if open resolved/constrained metrics drifted.
-        if (passiveTarget.open && !sidebarMetricsEqual(animPassiveTarget, passiveTarget)) {
-          applyDisplayed(next);
-          startLerp(
-            displayedRef.current,
-            mergeSide(displayedRef.current, passiveSide, passiveTarget),
-            passiveSide,
-            "dragging",
-          );
-          markPrev();
-          return;
+      case "lerp-both": {
+        startLerp(plan.from, plan.to, "both", plan.phase);
+        markPrev();
+        return;
+      }
+      case "settle-idle": {
+        setPhaseNow("idle");
+        markPrev();
+        return;
+      }
+      case "noop": {
+        markPrev();
+        return;
+      }
+      case "drag": {
+        if (plan.stopBothAnimation) {
+          stopAnimation();
         }
 
-        applyDisplayed(next);
-        setPhaseNow("dragging");
-        markPrev();
+        visibilityIntentRef.current[plan.activeSide] = plan.activeOpen;
+
+        switch (plan.outcome.type) {
+          case "passive-lerp": {
+            applyDisplayed(plan.afterActive);
+            startLerp(
+              displayedRef.current,
+              plan.outcome.to,
+              plan.outcome.passiveSide,
+              plan.outcome.phase,
+            );
+            markPrev();
+            return;
+          }
+          case "keep-passive-tween": {
+            applyDisplayed(plan.afterActive);
+            setPhaseNow(plan.outcome.phase);
+            markPrev();
+            return;
+          }
+          case "snap-active-and-passive": {
+            if (plan.outcome.stopPassiveAnimation) {
+              stopAnimation();
+            }
+            visibilityIntentRef.current[plan.activeSide === "primary" ? "auxiliary" : "primary"] =
+              plan.outcome.passiveOpen;
+            // active already committed above; also write passive intent
+            applyDisplayed(plan.outcome.next);
+            setPhaseNow(plan.outcome.phase);
+            markPrev();
+            return;
+          }
+        }
         return;
       }
+      case "drag-end": {
+        visibilityIntentRef.current[plan.activeWas] = plan.activeOpen;
 
-      if (passiveAnimating) {
-        stopAnimation();
-      }
-
-      // Closed passive must not snap to resolver preferred every drag frame.
-      next = mergeSide(
-        next,
-        passiveSide,
-        holdClosedPanelWidth(displayedRef.current[passiveSide], passiveTarget),
-      );
-
-      visibilityIntentRef.current[passiveSide] = passiveTarget.open;
-      applyDisplayed(next);
-      setPhaseNow("dragging");
-      markPrev();
-      return;
-    }
-
-    // Drag ended this frame.
-    if (wasDragging) {
-      const activeWas = prevActiveResizeSideRef.current!;
-      const activeEnd = holdClosedPanelWidth(
-        displayedRef.current[activeWas],
-        targetsNow[activeWas],
-      );
-      let next = mergeSide(displayedRef.current, activeWas, activeEnd);
-      visibilityIntentRef.current[activeWas] = targetsNow[activeWas].open;
-
-      if (animatingSidesRef.current != null) {
-        // Passive open/close may still be playing — do not cut it short.
-        applyDisplayed(next);
-        setPhaseNow("animating");
-        markPrev();
+        switch (plan.outcome.type) {
+          case "keep-passive-animating": {
+            applyDisplayed(plan.afterActive);
+            setPhaseNow(plan.outcome.phase);
+            markPrev();
+            return;
+          }
+          case "snap-all": {
+            snapAll(plan.outcome.next, plan.outcome.phase);
+            markPrev();
+            return;
+          }
+          case "apply-active": {
+            applyDisplayed(plan.afterActive);
+            setPhaseNow(plan.outcome.phase);
+            markPrev();
+            return;
+          }
+        }
         return;
       }
-
-      if (!displayedEqual(next, targetsNow)) {
-        // Residual mismatch after drag: snap (drag path does not tween the active side).
-        snapAll(targetsNow, "idle");
-        markPrev();
-        return;
-      }
-
-      applyDisplayed(next);
-      setPhaseNow("idle");
-      markPrev();
-      return;
     }
-
-    if (containerChanged) {
-      snapAll(targetsNow, "idle");
-      markPrev();
-      return;
-    }
-
-    // Non-drag target change (toggle / preference) → lockstep both sides.
-    // Compare against close-stabilized targets so preferred panelWidth while
-    // hidden does not look like a real layout change.
-    const stabilizedTargets = stabilizeCloseTargets(displayedRef.current, targetsNow);
-
-    if (animTargetRef.current != null && displayedEqual(animTargetRef.current, stabilizedTargets)) {
-      markPrev();
-      return;
-    }
-
-    if (!displayedEqual(displayedRef.current, stabilizedTargets)) {
-      startLerp(displayedRef.current, targetsNow, "both", "animating");
-      markPrev();
-      return;
-    }
-
-    if (phaseRef.current !== "idle" && animatingSidesRef.current == null) {
-      setPhaseNow("idle");
-    }
-
-    markPrev();
   }, [activeResizeSide, chromeLayout, containerWidth, targets]);
 
   return { displayed, phase };
