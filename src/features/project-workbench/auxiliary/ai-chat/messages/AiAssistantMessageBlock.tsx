@@ -18,7 +18,11 @@ import { AiAssistantPartBlock } from "./AiAssistantPartBlock";
 import { AiMessageBranchSwitcher } from "./AiMessageBranchSwitcher";
 import { AiSubagentCard } from "./AiSubagentCard";
 import { AiWorkBlock } from "./AiWorkBlock";
-import { projectAssistantSegments, type AssistantSegment } from "./project-assistant-segments";
+import {
+  isWorkSegmentLive,
+  projectAssistantSegments,
+  type AssistantSegment,
+} from "./project-assistant-segments";
 
 type AiAssistantMessageBlockProps = {
   message: AiChatAssistantMessage;
@@ -42,6 +46,23 @@ function renderAssistantSegment(segment: AssistantSegment) {
   }
 }
 
+/** True when Work / elevated cards already show live process chrome. */
+function hasVisibleLiveProcess(segments: readonly AssistantSegment[]): boolean {
+  return segments.some((segment) => {
+    if (segment.kind === "work") {
+      return isWorkSegmentLive(segment.steps);
+    }
+    if (segment.kind === "subagent" || segment.kind === "ask_user") {
+      return (
+        segment.part.status === "pending" ||
+        segment.part.status === "running" ||
+        segment.part.status === "awaiting_user"
+      );
+    }
+    return false;
+  });
+}
+
 export function AiAssistantMessageBlock({
   message,
   onRetry,
@@ -55,10 +76,11 @@ export function AiAssistantMessageBlock({
   if (message.status === "streaming") {
     const hasStreamingPart = message.parts.some((part) => part.status === "streaming");
     const streamingMeta = describeAssistantStreamingMeta(message);
+    const showStreamingMeta = !hasStreamingPart && !hasVisibleLiveProcess(segments);
     return (
       <article className={assistantMessageBlockClass}>
         {segments.map(renderAssistantSegment)}
-        {!hasStreamingPart ? (
+        {showStreamingMeta ? (
           <p className={reasoningMetaClass} title={streamingMeta}>
             {streamingMeta}
           </p>

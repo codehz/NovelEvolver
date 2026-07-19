@@ -7,7 +7,7 @@ import {
 } from "#app/shared/lib/ui/interaction-chrome";
 
 export const panelSectionClass = cn("mx-auto flex w-full max-w-3xl flex-col");
-export const conversationRailClass = cn("gap-4 px-3 py-2.5 select-text");
+export const conversationRailClass = cn("gap-3 px-3 py-2.5 select-text");
 /** ChatScroller frame: definite-height flex child that fills remaining rail height. */
 export const conversationScrollerRootClass = cn(
   "relative flex h-0 min-h-0 flex-1 flex-col overflow-hidden",
@@ -21,7 +21,7 @@ export const conversationScrollerViewportClass = cn(
  * After open / new turn the controller scrolls to end: bottom of this zone sits on
  * the viewport bottom, so ~4rem of previous content peeks above — no placeTurn math.
  */
-export const conversationLastTurnClass = cn("flex min-h-[calc(100cqh-4rem)] flex-col gap-4");
+export const conversationLastTurnClass = cn("flex min-h-[calc(100cqh-4rem)] flex-col gap-3");
 export const conversationScrollerJumpButtonClass = cn(
   "absolute bottom-2 left-1/2 z-10 inline-flex -translate-x-1/2 items-center gap-1",
   "rounded-full border border-titlebar-border bg-app-surface/95 px-2.5 py-1",
@@ -40,7 +40,7 @@ export const branchSuffixEnterClass = cn(
   "data-entered:opacity-100",
   "motion-reduce:opacity-100 motion-reduce:transition-none",
 );
-export const assistantMessageBlockClass = cn("group/assistant-msg flex w-full flex-col gap-1");
+export const assistantMessageBlockClass = cn("group/assistant-msg flex w-full flex-col gap-2");
 export const assistantMessageFooterClass = cn("flex w-full min-w-0 items-center gap-2 pt-0.5");
 /** Hide completed footer until the block is hovered or focus moves into it. */
 export const assistantMessageFooterHoverRevealClass = cn(
@@ -97,7 +97,7 @@ export const reasoningBodyClass = cn(
 );
 export const userMessageRowClass = cn("flex flex-col items-end gap-1");
 export const userMessageBubbleClass = cn(
-  "max-w-[88%] rounded-lg bg-app-crust px-3 py-2 text-chat leading-5 text-app-foreground shadow-[inset_0_1px_0_0_color-mix(in_srgb,var(--color-ctp-surface0)_24%,transparent)]",
+  "max-w-[88%] rounded-lg bg-ctp-surface0/55 px-3 py-2 text-chat leading-5 text-app-foreground",
 );
 export const messageBranchSwitcherClass = cn("inline-flex items-center gap-0.5 text-ctp-mauve");
 export const messageBranchLabelClass = cn(

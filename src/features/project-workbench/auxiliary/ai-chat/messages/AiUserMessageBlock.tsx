@@ -92,7 +92,7 @@ export function AiUserMessageBlock({
       {editing ? (
         <form className="flex w-full max-w-[88%] flex-col gap-1" onSubmit={handleEditSubmit}>
           <textarea
-            className="field-sizing-content min-h-16 w-full resize-none rounded-lg border border-badge-background bg-app-crust px-3 py-2 text-chat leading-5 text-app-foreground outline-none"
+            className="field-sizing-content min-h-16 w-full resize-none rounded-lg border border-badge-background bg-ctp-surface0/55 px-3 py-2 text-chat leading-5 text-app-foreground outline-none"
             value={draft}
             disabled={actionsDisabled}
             onChange={(event) => {
