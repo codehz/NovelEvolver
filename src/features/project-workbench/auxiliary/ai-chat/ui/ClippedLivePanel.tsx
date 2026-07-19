@@ -1,6 +1,10 @@
 import { useLayoutEffect, useRef, type ReactNode } from "react";
 
 import { cn } from "#app/shared/lib/ui/cn";
+import {
+  bindScrollEdgeMask,
+  DEFAULT_SCROLL_EDGE_EPSILON_PX,
+} from "#app/shared/lib/ui/scroll-edge-mask";
 
 import { liveClipPanelClass } from "./ai-chat-chrome";
 
@@ -11,45 +15,12 @@ type ClippedLivePanelProps = {
   className?: string;
 };
 
-/** Soft edge fade height; keep in sync with liveClipPanelClass mask stops. */
-const LIVE_EDGE_EPSILON_PX = 0.5;
-
-type LiveEdgeMask = "none" | "top" | "bottom" | "both";
-
-function liveEdgeMask(host: HTMLElement): LiveEdgeMask {
-  const maxScroll = Math.max(0, host.scrollHeight - host.clientHeight);
-  if (maxScroll <= 0) {
-    return "none";
-  }
-  const atStart = host.scrollTop <= LIVE_EDGE_EPSILON_PX;
-  const atEnd = host.scrollTop >= maxScroll - LIVE_EDGE_EPSILON_PX;
-  if (!atStart && !atEnd) {
-    return "both";
-  }
-  if (!atStart) {
-    return "top";
-  }
-  if (!atEnd) {
-    return "bottom";
-  }
-  return "none";
-}
-
-function syncLiveEdgeMask(host: HTMLElement): void {
-  const edge = liveEdgeMask(host);
-  if (edge === "none") {
-    delete host.dataset.edge;
-    return;
-  }
-  host.dataset.edge = edge;
-}
-
 function isAtLiveBottom(host: HTMLElement): boolean {
   const maxScroll = Math.max(0, host.scrollHeight - host.clientHeight);
   if (maxScroll <= 0) {
     return true;
   }
-  return host.scrollTop >= maxScroll - LIVE_EDGE_EPSILON_PX;
+  return host.scrollTop >= maxScroll - DEFAULT_SCROLL_EDGE_EPSILON_PX;
 }
 
 function scrollLiveToBottom(host: HTMLElement): void {
@@ -84,11 +55,14 @@ export function ClippedLivePanel({ live, children, className }: ClippedLivePanel
 
     stickToBottomRef.current = true;
     scrollLiveToBottom(host);
-    syncLiveEdgeMask(host);
+
+    const disposeEdgeMask = bindScrollEdgeMask(host, {
+      axis: "y",
+      observe: content,
+    });
 
     const onScroll = () => {
       stickToBottomRef.current = isAtLiveBottom(host);
-      syncLiveEdgeMask(host);
     };
     host.addEventListener("scroll", onScroll, { passive: true });
 
@@ -96,7 +70,6 @@ export function ClippedLivePanel({ live, children, className }: ClippedLivePanel
       if (stickToBottomRef.current) {
         scrollLiveToBottom(host);
       }
-      syncLiveEdgeMask(host);
     };
 
     let resizeObserver: ResizeObserver | null = null;
@@ -109,7 +82,7 @@ export function ClippedLivePanel({ live, children, className }: ClippedLivePanel
     return () => {
       host.removeEventListener("scroll", onScroll);
       resizeObserver?.disconnect();
-      delete host.dataset.edge;
+      disposeEdgeMask();
     };
   }, [live]);
 

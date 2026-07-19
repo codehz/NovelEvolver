@@ -197,14 +197,11 @@ export const workBlockLabelClass = cn(
 export const workBlockBodyClass = cn("pt-1 text-chat-meta leading-5 text-app-muted");
 /**
  * Live activity window: clamp height while tools are running.
- * Edge fades are toggled via `data-edge` from scroll position (see ClippedLivePanel)
- * so short content and stick-to-bottom / stick-to-top edges are not faded.
+ * Edge fades via `data-edge` from `bindScrollEdgeMask` (see ClippedLivePanel).
  */
 export const liveClipPanelClass = cn(
   "max-h-44 overflow-x-hidden overflow-y-auto",
-  "data-[edge=bottom]:mask-[linear-gradient(to_bottom,black_0%,black_calc(100%-1.75rem),transparent_100%)]",
-  "data-[edge=top]:mask-[linear-gradient(to_bottom,transparent_0%,black_1.75rem,black_100%)]",
-  "data-[edge=both]:mask-[linear-gradient(to_bottom,transparent_0%,black_1.75rem,black_calc(100%-1.75rem),transparent_100%)]",
+  scrollEdgeMaskClass({ axis: "y", fade: "1.75rem" }),
 );
 
 /** Elevated card shell (subagent / ask_user) — light surface, no heavy chrome. */
