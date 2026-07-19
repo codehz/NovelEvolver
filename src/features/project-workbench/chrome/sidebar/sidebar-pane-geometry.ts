@@ -221,3 +221,13 @@ export function applyResizeDelta(
 export function expandedSignature(panes: readonly { id: string; expanded: boolean }[]) {
   return panes.map((pane) => `${pane.id}:${pane.expanded ? "1" : "0"}`).join("|");
 }
+
+export function displayHeightsEqual(left: Record<string, number>, right: Record<string, number>) {
+  const keys = new Set([...Object.keys(left), ...Object.keys(right)]);
+  for (const key of keys) {
+    if ((left[key] ?? 0) !== (right[key] ?? 0)) {
+      return false;
+    }
+  }
+  return true;
+}

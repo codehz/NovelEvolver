@@ -2,6 +2,7 @@ import { describe, expect, test } from "bun:test";
 
 import {
   applyResizeDelta,
+  displayHeightsEqual,
   MIN_SIDEBAR_SECTION_BODY_HEIGHT,
   resolveAvailableBodyHeight,
   resolveDisplayHeights,
@@ -135,5 +136,12 @@ describe("applyResizeDelta", () => {
   test("zero delta returns same array reference", () => {
     const heights = [100, 100];
     expect(applyResizeDelta(heights, [40, 40], 0, 0)).toBe(heights);
+  });
+});
+
+describe("displayHeightsEqual", () => {
+  test("treats missing keys as 0", () => {
+    expect(displayHeightsEqual({ a: 1 }, { a: 1, b: 0 })).toBe(true);
+    expect(displayHeightsEqual({ a: 1 }, { a: 1, b: 2 })).toBe(false);
   });
 });

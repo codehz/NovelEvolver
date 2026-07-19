@@ -1,11 +1,10 @@
 import type { CSSProperties, PointerEvent as ReactPointerEvent, ReactNode } from "react";
 
 import { cn } from "#app/shared/lib/ui/cn";
-import { Button } from "#app/shared/ui";
+import { Button, DisclosureChevron } from "#app/shared/ui";
 
 import {
   sidebarSectionHeaderButtonClass,
-  sidebarSectionHeaderChevronClass,
   sidebarSectionResizeHandleClass,
   sidebarSectionResizeRailClass,
   sidebarSectionResizeSeamClass,
@@ -62,13 +61,7 @@ export function SidebarViewSection({
             className={sidebarSectionHeaderButtonClass}
             onClick={onToggleExpanded}
           >
-            <span
-              aria-hidden="true"
-              className={cn(
-                sidebarSectionHeaderChevronClass,
-                expanded ? "icon-[codicon--chevron-down]" : "icon-[codicon--chevron-right]",
-              )}
-            />
+            <DisclosureChevron expanded={expanded} />
             <span className="truncate">{title}</span>
           </Button>
           <SidebarHeaderActionsPortalTarget as="div" className="flex shrink-0 items-center" />
