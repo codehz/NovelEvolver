@@ -46,6 +46,9 @@ import { resolveFocusSnapshots } from "./focus-inject";
 import {
   assertSubagentDepth,
   assertSubagentEligible,
+  MAX_FOCUS_CONTENT_CHARS,
+  MAX_FOCUS_TARGETS,
+  MAX_PARENT_SUMMARY_CHARS,
   MAX_SUBAGENT_TOOL_ROUNDS,
   resolveSubagentModelId,
   RUN_SUBAGENT_TOOL_NAME,
@@ -64,6 +67,14 @@ import {
   createSubagentViewReporter,
   type SubagentViewReporter,
 } from "./view-reporter";
+
+/** Budgets for one nested subagent run (defaults keep unit tests lean). */
+export type SubagentRuntimePolicy = {
+  maxSubagentToolRounds: number;
+  maxParentSummaryChars: number;
+  maxFocusTargets: number;
+  maxFocusContentChars: number;
+};
 
 export type SubagentExecutorDeps = {
   resolveAgentConfig: (agentId: string) => AiAgentRuntimeConfig | null;
@@ -84,7 +95,41 @@ export type SubagentExecutorDeps = {
   toolRunner?: ToolRunner;
   /** Optional override for tests. */
   createBackend?: (options: { agent: AiAgentRuntimeConfig; modelId: string }) => AiBackendSession;
+  /**
+   * Runtime budgets for this run. Omitted fields fall back to historical defaults
+   * so tests need not construct a full policy.
+   */
+  policy?: Partial<SubagentRuntimePolicy>;
 };
+
+function resolveSubagentPolicy(partial?: Partial<SubagentRuntimePolicy>): SubagentRuntimePolicy {
+  return {
+    maxSubagentToolRounds:
+      typeof partial?.maxSubagentToolRounds === "number" &&
+      Number.isFinite(partial.maxSubagentToolRounds) &&
+      partial.maxSubagentToolRounds > 0
+        ? Math.floor(partial.maxSubagentToolRounds)
+        : MAX_SUBAGENT_TOOL_ROUNDS,
+    maxParentSummaryChars:
+      typeof partial?.maxParentSummaryChars === "number" &&
+      Number.isFinite(partial.maxParentSummaryChars) &&
+      partial.maxParentSummaryChars > 0
+        ? Math.floor(partial.maxParentSummaryChars)
+        : MAX_PARENT_SUMMARY_CHARS,
+    maxFocusTargets:
+      typeof partial?.maxFocusTargets === "number" &&
+      Number.isFinite(partial.maxFocusTargets) &&
+      partial.maxFocusTargets > 0
+        ? Math.floor(partial.maxFocusTargets)
+        : MAX_FOCUS_TARGETS,
+    maxFocusContentChars:
+      typeof partial?.maxFocusContentChars === "number" &&
+      Number.isFinite(partial.maxFocusContentChars) &&
+      partial.maxFocusContentChars > 0
+        ? Math.floor(partial.maxFocusContentChars)
+        : MAX_FOCUS_CONTENT_CHARS,
+  };
+}
 
 function isAbortError(error: unknown): boolean {
   if (error instanceof DOMException && error.name === "AbortError") {
@@ -226,11 +271,14 @@ export async function executeSubagentToolCall(options: {
   let artifacts = emptyArtifacts();
   let usage: AiChatMessageUsage | null = null;
   let reporter: SubagentViewReporter | null = null;
+  const policy = resolveSubagentPolicy(deps.policy);
 
   try {
     assertSubagentDepth(depth);
 
-    const args = parseRunSubagentArgs(call);
+    const args = parseRunSubagentArgs(call, {
+      maxParentSummaryChars: policy.maxParentSummaryChars,
+    });
     agentId = args.agentId;
 
     const agent = deps.resolveAgentConfig(args.agentId);
@@ -270,6 +318,7 @@ export async function executeSubagentToolCall(options: {
       task: args.task,
       constraints: args.constraints,
       focus,
+      maxRounds: policy.maxSubagentToolRounds,
       onView,
     });
     reporter.emit("starting");
@@ -299,12 +348,17 @@ export async function executeSubagentToolCall(options: {
     let focusSnapshots: ReturnType<typeof resolveFocusSnapshots> = [];
     if (args.focus.length > 0) {
       try {
-        focusSnapshots = resolveFocusSnapshots(deps.resolveWorktree(), args.focus);
+        focusSnapshots = resolveFocusSnapshots(deps.resolveWorktree(), args.focus, {
+          maxFocusTargets: policy.maxFocusTargets,
+          maxFocusContentChars: policy.maxFocusContentChars,
+        });
       } catch {
         focusSnapshots = [];
       }
     }
-    const userMessage = buildSubagentUserMessage(args, agent.name, focusSnapshots);
+    const userMessage = buildSubagentUserMessage(args, agent.name, focusSnapshots, {
+      maxFocusContentChars: policy.maxFocusContentChars,
+    });
 
     let input: InputItem[] = [toInputItem(userMessage)];
     let toolRoundCount = 0;
@@ -361,14 +415,14 @@ export async function executeSubagentToolCall(options: {
       }
 
       toolRoundCount += 1;
-      if (toolRoundCount > MAX_SUBAGENT_TOOL_ROUNDS) {
+      if (toolRoundCount > policy.maxSubagentToolRounds) {
         reporter.emit("finalizing");
         return finishWith(
           call,
           failedSubagentResult({
             agentId: agent.id,
             agentName: agent.name,
-            error: `子代理工具循环超过 ${MAX_SUBAGENT_TOOL_ROUNDS} 轮。`,
+            error: `子代理工具循环超过 ${policy.maxSubagentToolRounds} 轮。`,
             report: lastReport,
             artifacts,
             usage,

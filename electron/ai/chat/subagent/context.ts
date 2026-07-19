@@ -49,8 +49,16 @@ function parseOptionalTrimmedString(value: unknown, fieldName: string): string |
   return trimmed === "" ? null : trimmed;
 }
 
+export type ParseRunSubagentArgsOptions = {
+  /** Override parent_summary char budget (defaults to policy constant). */
+  maxParentSummaryChars?: number;
+};
+
 /** Parse and normalize `run_subagent` tool arguments from a tool call. */
-export function parseRunSubagentArgs(call: ToolCallItem): RunSubagentArgs {
+export function parseRunSubagentArgs(
+  call: ToolCallItem,
+  options?: ParseRunSubagentArgsOptions,
+): RunSubagentArgs {
   const args = parseToolArgs(call);
   const agentId = parseNonEmptyString(args.agent_id, "agent_id").trim();
   const task = parseNonEmptyString(args.task, "task").trim();
@@ -58,6 +66,7 @@ export function parseRunSubagentArgs(call: ToolCallItem): RunSubagentArgs {
   const focus = parseFocus(args.focus);
   const parentSummary = truncateParentSummary(
     parseOptionalTrimmedString(args.parent_summary, "parent_summary"),
+    options?.maxParentSummaryChars,
   );
 
   return {
@@ -69,6 +78,11 @@ export function parseRunSubagentArgs(call: ToolCallItem): RunSubagentArgs {
   };
 }
 
+export type BuildSubagentUserMessageOptions = {
+  /** Char budget used when formatting truncated focus notes. */
+  maxFocusContentChars?: number;
+};
+
 /**
  * Build the isolated user message for a subagent run.
  * Does not include parent conversation history.
@@ -79,6 +93,7 @@ export function buildSubagentUserMessage(
   args: RunSubagentArgs,
   agentName: string,
   focusSnapshots: readonly FocusSnapshot[] = [],
+  options?: BuildSubagentUserMessageOptions,
 ): string {
   const lines: string[] = [
     `你是子代理「${agentName}」，正在执行一次独立委派任务。`,
@@ -94,7 +109,12 @@ export function buildSubagentUserMessage(
   }
 
   if (focusSnapshots.length > 0) {
-    lines.push("", formatFocusSnapshotsForPrompt(focusSnapshots));
+    lines.push(
+      "",
+      formatFocusSnapshotsForPrompt(focusSnapshots, {
+        maxFocusContentChars: options?.maxFocusContentChars,
+      }),
+    );
   } else if (args.focus.length > 0) {
     // Fallback when worktree resolution was skipped (e.g. unit tests without session).
     lines.push("", "## 焦点节点");

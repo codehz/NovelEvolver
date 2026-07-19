@@ -56,8 +56,12 @@ export function assertSubagentDepth(depth: number): void {
 /**
  * Truncate optional parent_summary for child context.
  * Empty / whitespace-only becomes null.
+ * `maxChars` defaults to the historical hard-coded budget so unit tests stay lean.
  */
-export function truncateParentSummary(text: string | null | undefined): string | null {
+export function truncateParentSummary(
+  text: string | null | undefined,
+  maxChars: number = MAX_PARENT_SUMMARY_CHARS,
+): string | null {
   if (typeof text !== "string") {
     return null;
   }
@@ -65,10 +69,12 @@ export function truncateParentSummary(text: string | null | undefined): string |
   if (trimmed === "") {
     return null;
   }
-  if (trimmed.length <= MAX_PARENT_SUMMARY_CHARS) {
+  const limit =
+    Number.isFinite(maxChars) && maxChars > 0 ? Math.floor(maxChars) : MAX_PARENT_SUMMARY_CHARS;
+  if (trimmed.length <= limit) {
     return trimmed;
   }
-  return `${trimmed.slice(0, MAX_PARENT_SUMMARY_CHARS)}…`;
+  return `${trimmed.slice(0, limit)}…`;
 }
 
 /**

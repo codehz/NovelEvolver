@@ -21,6 +21,7 @@ describe("createSubagentViewReporter", () => {
   test("records full step timeline", () => {
     const views: string[] = [];
     const reporter = createSubagentViewReporter({
+      maxRounds: 8,
       agentId: "a",
       agentName: "审查",
       task: "检查人设",

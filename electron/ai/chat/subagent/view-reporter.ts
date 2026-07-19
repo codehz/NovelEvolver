@@ -1,6 +1,5 @@
 import type { AiSubagentToolView, AiSubagentViewStep, AiToolViewFocus } from "#shared/rpc/ai/index";
 
-import { MAX_SUBAGENT_TOOL_ROUNDS } from "./policy";
 import type { SubagentArtifacts, SubagentRunStatus } from "./result";
 import {
   createViewThrottle,
@@ -36,6 +35,8 @@ export type CreateSubagentViewReporterOptions = {
   task: string;
   constraints: string | null;
   focus: AiToolViewFocus[];
+  /** Independent tool-loop budget for this subagent run (shown in UI). */
+  maxRounds: number;
   onView?: (view: AiSubagentToolView) => void;
 };
 
@@ -77,6 +78,8 @@ export function createSubagentViewReporter(
   let artifacts = emptyArtifacts();
   let stepSeq = 0;
 
+  const maxRounds = Math.max(1, Math.floor(options.maxRounds));
+
   const build = (nextPhase: SubagentViewPhase = phase): AiSubagentToolView => ({
     kind: "subagent",
     agentId: options.agentId,
@@ -86,7 +89,7 @@ export function createSubagentViewReporter(
     focus: options.focus.map((entry) => ({ ...entry })),
     phase: nextPhase,
     round,
-    maxRounds: MAX_SUBAGENT_TOOL_ROUNDS,
+    maxRounds,
     steps: steps.map((step) => ({ ...step })),
     report: report !== "" ? report : null,
     runStatus,

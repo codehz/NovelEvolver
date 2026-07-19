@@ -17,6 +17,7 @@ import type { AiChatRepository, AiConversationRecord } from "../../db/repositori
 import { RpcStreamPublisher } from "../../lib/stream-publisher";
 import type { AiAgentsStore } from "../../settings/ai-agents-store";
 import type { AiModelsStore } from "../../settings/ai-models-store";
+import type { AiRuntimePolicyStore } from "../../settings/ai-runtime-policy-store";
 import { getMockScenario } from "../mock/scenario-registry";
 import type { MockScenarioPacing, MockScenarioPersistence } from "../mock/scenario-types";
 import { type ResolveWorktree } from "../tools";
@@ -134,6 +135,7 @@ export type ProjectAiChatControllerOptions = {
   mockAiEnabled: boolean;
   getAiModelsStore: () => AiModelsStore;
   getAiAgentsStore: () => AiAgentsStore;
+  getAiRuntimePolicyStore: () => AiRuntimePolicyStore;
 };
 
 export class ProjectAiChatController {
@@ -145,6 +147,7 @@ export class ProjectAiChatController {
   readonly #mockAiEnabled: boolean;
   readonly #getAiModelsStore: () => AiModelsStore;
   readonly #getAiAgentsStore: () => AiAgentsStore;
+  readonly #getAiRuntimePolicyStore: () => AiRuntimePolicyStore;
   readonly #publisher = new RpcStreamPublisher<AiChatEvent>();
   readonly #directoryPublisher = new RpcStreamPublisher<AiConversationDirectoryEvent>();
   readonly #runtimes = new Map<string, AiConversationRuntime>();
@@ -157,6 +160,7 @@ export class ProjectAiChatController {
     this.#mockAiEnabled = options.mockAiEnabled;
     this.#getAiModelsStore = options.getAiModelsStore;
     this.#getAiAgentsStore = options.getAiAgentsStore;
+    this.#getAiRuntimePolicyStore = options.getAiRuntimePolicyStore;
     this.#runtimeOptions = {
       projectId: options.projectId,
       repository: options.repository,
@@ -165,6 +169,7 @@ export class ProjectAiChatController {
       resolveModelConfig: (modelId) => this.#getAiModelsStore().getRuntimeConfig(modelId),
       resolveAgentConfig: (agentId) => this.#getAiAgentsStore().getRuntimeConfig(agentId),
       listAgentConfigs: () => this.#getAiAgentsStore().getSnapshot().agents,
+      getRuntimePolicy: () => this.#getAiRuntimePolicyStore().getSnapshot(),
     };
 
     const latest = this.#repository.getLatestByProject(options.projectId);

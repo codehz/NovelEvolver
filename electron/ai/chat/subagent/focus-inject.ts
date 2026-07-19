@@ -12,6 +12,28 @@ export type FocusTargetRef = {
   id: string;
 };
 
+/** Optional budgets when resolving / formatting focus for a subagent run. */
+export type FocusInjectLimits = {
+  maxFocusTargets?: number;
+  maxFocusContentChars?: number;
+};
+
+function resolveMaxFocusTargets(limits?: FocusInjectLimits): number {
+  const value = limits?.maxFocusTargets;
+  if (typeof value === "number" && Number.isFinite(value) && value > 0) {
+    return Math.floor(value);
+  }
+  return MAX_FOCUS_TARGETS;
+}
+
+function resolveMaxFocusContentChars(limits?: FocusInjectLimits): number {
+  const value = limits?.maxFocusContentChars;
+  if (typeof value === "number" && Number.isFinite(value) && value > 0) {
+    return Math.floor(value);
+  }
+  return MAX_FOCUS_CONTENT_CHARS;
+}
+
 export type FocusTextSnapshot = {
   domain: "manuscript" | "resource";
   id: string;
@@ -54,12 +76,15 @@ export type FocusErrorSnapshot = {
 
 export type FocusSnapshot = FocusTextSnapshot | FocusFolderSnapshot | FocusErrorSnapshot;
 
-function truncateContent(content: string): { text: string; status: "ok" | "truncated" } {
-  if (content.length <= MAX_FOCUS_CONTENT_CHARS) {
+function truncateContent(
+  content: string,
+  maxChars: number,
+): { text: string; status: "ok" | "truncated" } {
+  if (content.length <= maxChars) {
     return { text: content, status: "ok" };
   }
   return {
-    text: `${content.slice(0, MAX_FOCUS_CONTENT_CHARS)}\n…[已截断，完整正文请 read_document]`,
+    text: `${content.slice(0, maxChars)}\n…[已截断，完整正文请 read_document]`,
     status: "truncated",
   };
 }
@@ -71,10 +96,11 @@ function resolveTextSnapshot(
   kind: "chapter" | "file",
   label: string,
   displayPath: string,
+  maxContentChars: number,
 ): FocusTextSnapshot {
   const content =
     domain === "manuscript" ? worktree.readChapter(id) : worktree.readResourceFile(id);
-  const { text, status } = truncateContent(content);
+  const { text, status } = truncateContent(content, maxContentChars);
   return {
     domain,
     id,
@@ -166,8 +192,11 @@ function errorSnapshot(
 export function resolveFocusSnapshots(
   worktree: WorktreeSession,
   focus: readonly FocusTargetRef[],
+  limits?: FocusInjectLimits,
 ): FocusSnapshot[] {
-  const limited = focus.slice(0, MAX_FOCUS_TARGETS);
+  const maxFocusTargets = resolveMaxFocusTargets(limits);
+  const maxContentChars = resolveMaxFocusContentChars(limits);
+  const limited = focus.slice(0, maxFocusTargets);
   const snapshots: FocusSnapshot[] = [];
 
   for (const target of limited) {
@@ -182,6 +211,7 @@ export function resolveFocusSnapshots(
             info.kind,
             info.label,
             info.displayPath,
+            maxContentChars,
           ),
         );
         continue;
@@ -206,12 +236,12 @@ export function resolveFocusSnapshots(
     }
   }
 
-  if (focus.length > MAX_FOCUS_TARGETS) {
+  if (focus.length > maxFocusTargets) {
     snapshots.push(
       errorSnapshot(
-        focus[MAX_FOCUS_TARGETS]!.domain,
-        focus[MAX_FOCUS_TARGETS]!.id,
-        `focus 超过上限 ${MAX_FOCUS_TARGETS}，其余 ${focus.length - MAX_FOCUS_TARGETS} 个未预载。`,
+        focus[maxFocusTargets]!.domain,
+        focus[maxFocusTargets]!.id,
+        `focus 超过上限 ${maxFocusTargets}，其余 ${focus.length - maxFocusTargets} 个未预载。`,
       ),
     );
   }
@@ -220,11 +250,15 @@ export function resolveFocusSnapshots(
 }
 
 /** Format resolved focus snapshots into a prompt section for the subagent user message. */
-export function formatFocusSnapshotsForPrompt(snapshots: readonly FocusSnapshot[]): string {
+export function formatFocusSnapshotsForPrompt(
+  snapshots: readonly FocusSnapshot[],
+  limits?: Pick<FocusInjectLimits, "maxFocusContentChars">,
+): string {
   if (snapshots.length === 0) {
     return "";
   }
 
+  const maxContentChars = resolveMaxFocusContentChars(limits);
   const lines: string[] = [
     "## 焦点预载（系统注入）",
     "下列内容已按 focus id 自动读入；优先直接使用，无需再 read_document 获取同一版本。",
@@ -264,7 +298,7 @@ export function formatFocusSnapshotsForPrompt(snapshots: readonly FocusSnapshot[
     );
     if (snapshot.status === "truncated") {
       lines.push(
-        `- 注意: 原文 ${snapshot.originalCharCount} 字，已截断至 ${MAX_FOCUS_CONTENT_CHARS} 字；完整正文请 read_document。`,
+        `- 注意: 原文 ${snapshot.originalCharCount} 字，已截断至 ${maxContentChars} 字；完整正文请 read_document。`,
       );
     }
     lines.push("");

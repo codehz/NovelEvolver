@@ -19,7 +19,12 @@ import type {
   AiConversationStatus,
   AiConversationSummary,
 } from "#shared/rpc/ai/index";
-import { isAiReasoningLevel, type AiReasoningLevel } from "#shared/rpc/services/index";
+import {
+  DEFAULT_AI_RUNTIME_POLICY,
+  isAiReasoningLevel,
+  type AiReasoningLevel,
+  type AiRuntimePolicySnapshot,
+} from "#shared/rpc/services/index";
 
 import type { AiChatRepository, AiConversationRecord } from "../../db/repositories/ai-chat-repo";
 import { RpcStreamPublisher } from "../../lib/stream-publisher";
@@ -90,9 +95,13 @@ export type AiConversationRuntimeOptions = {
    * Re-read on each request so settings changes apply without restarting the conversation.
    */
   listAgentConfigs: () => readonly SubagentCatalogAgent[];
+  /**
+   * Live runtime budgets (tool loops + subagent focus injection).
+   * Re-read at request / subagent start so settings apply without restarting the conversation.
+   * Mid-flight runs keep the values captured at their start.
+   */
+  getRuntimePolicy: () => AiRuntimePolicySnapshot;
 };
-
-const MAX_TOOL_ROUNDS = 16;
 
 export function shouldProcessToolCalls(response: Pick<AIResponse, "toolCalls">): boolean {
   return response.toolCalls.length > 0;
@@ -115,6 +124,7 @@ export class AiConversationRuntime {
   readonly #resolveModelConfig: AiConversationRuntimeOptions["resolveModelConfig"];
   readonly #resolveAgentConfig: AiConversationRuntimeOptions["resolveAgentConfig"];
   readonly #listAgentConfigs: AiConversationRuntimeOptions["listAgentConfigs"];
+  readonly #getRuntimePolicy: AiConversationRuntimeOptions["getRuntimePolicy"];
   readonly #scenarioBackend: AiBackendSession | null;
   readonly #scenarioPacing: MockScenarioPacing | undefined;
   #activeBackend: AiBackendSession | null = null;
@@ -127,6 +137,7 @@ export class AiConversationRuntime {
     this.#resolveModelConfig = options.resolveModelConfig;
     this.#resolveAgentConfig = options.resolveAgentConfig;
     this.#listAgentConfigs = options.listAgentConfigs;
+    this.#getRuntimePolicy = options.getRuntimePolicy;
     this.#resolveWorktree = options.resolveWorktree;
     this.#scenarioPacing = options.pacing;
     this.#scenarioBackend = scenarioId
@@ -618,6 +629,9 @@ export class AiConversationRuntime {
     const abortController = new AbortController();
     this.#generationAbort = abortController;
     const { signal } = abortController;
+    // Capture once per request so mid-flight settings edits do not change this run's budget.
+    const maxToolRounds =
+      this.#getRuntimePolicy().maxToolRounds ?? DEFAULT_AI_RUNTIME_POLICY.maxToolRounds;
 
     try {
       const backend = context.backend ?? this.#resolveBackend();
@@ -687,8 +701,8 @@ export class AiConversationRuntime {
         }
 
         toolRoundCount += 1;
-        if (toolRoundCount > MAX_TOOL_ROUNDS) {
-          throw new Error(`AI 工具循环超过 ${MAX_TOOL_ROUNDS} 轮。`);
+        if (toolRoundCount > maxToolRounds) {
+          throw new Error(`AI 工具循环超过 ${maxToolRounds} 轮。`);
         }
 
         input = [...input, ...completedResponse.replay];
@@ -864,6 +878,7 @@ export class AiConversationRuntime {
   ): Promise<ToolExecutionResult> {
     const signal = this.#generationAbort?.signal ?? new AbortController().signal;
     const scenarioId = this.#scenarioBackend?.scenarioId ?? null;
+    const policy = this.#getRuntimePolicy();
     return executeSubagentToolCall({
       call,
       depth: 0,
@@ -880,6 +895,12 @@ export class AiConversationRuntime {
         scenarioPacing: this.#scenarioPacing,
         // Share the parent scenario tool runner so simulated child tool results apply.
         toolRunner: this.#toolRunner,
+        policy: {
+          maxSubagentToolRounds: policy.maxSubagentToolRounds,
+          maxParentSummaryChars: policy.maxParentSummaryChars,
+          maxFocusTargets: policy.maxFocusTargets,
+          maxFocusContentChars: policy.maxFocusContentChars,
+        },
       },
       onView: (view) => {
         if (this.#disposed || signal.aborted) {

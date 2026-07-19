@@ -4,12 +4,17 @@ export {
   type RunSubagentArgs,
   type SubagentFocusTarget,
 } from "./context";
-export { executeSubagentToolCall, type SubagentExecutorDeps } from "./executor";
+export {
+  executeSubagentToolCall,
+  type SubagentExecutorDeps,
+  type SubagentRuntimePolicy,
+} from "./executor";
 export {
   formatFocusSnapshotsForPrompt,
   resolveFocusSnapshots,
   type FocusErrorSnapshot,
   type FocusFolderSnapshot,
+  type FocusInjectLimits,
   type FocusSnapshot,
   type FocusTextSnapshot,
 } from "./focus-inject";
