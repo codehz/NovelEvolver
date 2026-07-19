@@ -222,10 +222,11 @@ export const settingsStatusBadgeClass = cn(
 export const settingsStatusBadgeDefaultClass = cn("bg-badge-background/20 text-badge-background");
 
 /**
- * Form surface elevated on the body canvas (workbench sidebar-on-chrome language inverted:
- * surface island on background, no card stroke).
+ * Form stack inside a detail island / subpage card.
+ * No fill or radius — the outer detail surface is the only card; avoid nested islands.
+ * Outer padding comes from `settingsPanelSectionClass` or the detail scrollport.
  */
-export const settingsFormClass = cn("flex flex-col gap-3 rounded-md bg-app-surface p-3");
+export const settingsFormClass = cn("flex flex-col gap-3");
 
 export const settingsFormGridClass = cn(
   "grid grid-cols-[6.5rem_minmax(0,1fr)] items-start gap-x-3 gap-y-2",
