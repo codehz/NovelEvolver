@@ -13,6 +13,7 @@ import {
   reasoningMetaClass,
 } from "../ui/ai-chat-chrome";
 import { describeAssistantStreamingMeta, describeAssistantUsageMeta } from "../ui/ai-chat-helpers";
+import { AiAskUserCard } from "./AiAskUserCard";
 import { AiAssistantPartBlock } from "./AiAssistantPartBlock";
 import { AiMessageBranchSwitcher } from "./AiMessageBranchSwitcher";
 import { AiSubagentCard } from "./AiSubagentCard";
@@ -37,8 +38,7 @@ function renderAssistantSegment(segment: AssistantSegment) {
     case "subagent":
       return <AiSubagentCard key={segment.id} toolCall={segment.part} />;
     case "ask_user":
-      // Phase 5: elevated ask_user card.
-      return <AiAssistantPartBlock key={segment.id} part={segment.part} />;
+      return <AiAskUserCard key={segment.id} toolCall={segment.part} />;
   }
 }
 
