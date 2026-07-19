@@ -1,8 +1,8 @@
-/* Full local fonts from vendor/fonts (populated by scripts/ensure-fonts.mjs). */
+/* Full local fonts from vendor/fonts (populated by scripts/ensure-fonts.mjs as WOFF2). */
 
 @font-face {
   font-family: "MiSans";
-  src: url("../../vendor/fonts/misans/MiSansVF.ttf") format("truetype");
+  src: url("../../vendor/fonts/misans/MiSansVF.woff2") format("woff2");
   font-weight: 100 900;
   font-style: normal;
   font-display: block;
@@ -10,7 +10,7 @@
 
 @font-face {
   font-family: "Maple Mono CN";
-  src: url("../../vendor/fonts/maple-mono/MapleMono-CN-Regular.ttf") format("truetype");
+  src: url("../../vendor/fonts/maple-mono/MapleMono-CN-Regular.woff2") format("woff2");
   font-weight: 400;
   font-style: normal;
   font-display: block;
@@ -18,7 +18,7 @@
 
 @font-face {
   font-family: "Maple Mono CN";
-  src: url("../../vendor/fonts/maple-mono/MapleMono-CN-Bold.ttf") format("truetype");
+  src: url("../../vendor/fonts/maple-mono/MapleMono-CN-Bold.woff2") format("woff2");
   font-weight: 700;
   font-style: normal;
   font-display: block;

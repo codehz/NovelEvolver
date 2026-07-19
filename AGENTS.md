@@ -202,7 +202,8 @@ Use native overflow utilities directly — **do not** reintroduce a shared `Scro
 UI and mono fonts are **full local files**, not npm subset packages (subsetting drops OpenType features such as `tnum` / `tabular-nums`).
 
 - Source of truth: [scripts/fonts.manifest.json](scripts/fonts.manifest.json) + [scripts/ensure-fonts.mjs](scripts/ensure-fonts.mjs)
-- Output (gitignored): `vendor/fonts/` — MiSans VF + Maple Mono CN static faces
+- Pipeline: download official TTF zips → verify `sourceSha256` → convert with `wawoff2` (full font, **no subset**) → write WOFF2 and pin `sha256`
+- Output (gitignored): `vendor/fonts/` — MiSans VF + Maple Mono CN static faces as `.woff2` only
 - CSS: [src/fonts/faces.css](src/fonts/faces.css), imported from [src/index.css](src/index.css)
 - Commands: `bun run fonts:ensure` (also runs in `prepare`). Offline: `SKIP_FONTS=1`. Force refresh: `FONTS_FORCE=1`.
 - **Attribution**: This application uses the **MiSans** typeface (Xiaomi). Maple Mono CN is SIL OFL 1.1.

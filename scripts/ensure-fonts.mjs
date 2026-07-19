@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * Download full local fonts into vendor/fonts (gitignored).
+ * Download full local fonts into vendor/fonts (gitignored), convert TTF → WOFF2.
  *
  * Env:
  *   SKIP_FONTS=1     skip entirely
@@ -11,7 +11,6 @@
 import { spawnSync } from "node:child_process";
 import { createHash } from "node:crypto";
 import {
-  copyFileSync,
   createWriteStream,
   existsSync,
   mkdirSync,
@@ -19,12 +18,15 @@ import {
   readFileSync,
   rmSync,
   unlinkSync,
+  writeFileSync,
 } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { Readable } from "node:stream";
 import { pipeline } from "node:stream/promises";
 import { fileURLToPath } from "node:url";
+
+import { compress } from "wawoff2";
 
 const projectRoot = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
 const manifestPath = path.join(projectRoot, "scripts/fonts.manifest.json");
@@ -89,24 +91,47 @@ function resolveUrl(url, mirrorEnv) {
 }
 
 /**
+ * Extract one zip entry into workDir (flat basename) and return its absolute path.
  * @param {string} zipPath
  * @param {string} entry
- * @param {string} dest
  * @param {string} workDir
  */
-function extractOne(zipPath, entry, dest, workDir) {
-  mkdirSync(path.dirname(dest), { recursive: true });
+function extractTo(zipPath, entry, workDir) {
+  mkdirSync(workDir, { recursive: true });
   const result = spawnSync("unzip", ["-jo", zipPath, entry, "-d", workDir], { encoding: "utf8" });
   if (result.status !== 0) {
     throw new Error(`unzip failed for "${entry}"\n${result.stderr || result.stdout || ""}`.trim());
   }
-  const extractedName = path.basename(entry);
-  const extractedPath = path.join(workDir, extractedName);
+  const extractedPath = path.join(workDir, path.basename(entry));
   if (!existsSync(extractedPath)) {
     throw new Error(`unzip produced no file for entry: ${entry}`);
   }
-  copyFileSync(extractedPath, dest);
-  unlinkSync(extractedPath);
+  return extractedPath;
+}
+
+/**
+ * Remove a leftover TTF next to a WOFF2 target (same stem).
+ * @param {string} woff2Abs
+ */
+function removeLegacyTtf(woff2Abs) {
+  const legacyTtf = woff2Abs.replace(/\.woff2$/i, ".ttf");
+  if (legacyTtf !== woff2Abs && existsSync(legacyTtf)) {
+    unlinkSync(legacyTtf);
+    console.log(`[fonts] removed legacy ${path.relative(projectRoot, legacyTtf)}`);
+  }
+}
+
+/**
+ * @param {number} bytes
+ */
+function formatBytes(bytes) {
+  if (bytes < 1024) {
+    return `${bytes} B`;
+  }
+  if (bytes < 1024 * 1024) {
+    return `${(bytes / 1024).toFixed(1)} KiB`;
+  }
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MiB`;
 }
 
 /**
@@ -116,7 +141,7 @@ function extractOne(zipPath, entry, dest, workDir) {
  *   url: string;
  *   zipSha256: string;
  *   githubMirrorEnv?: string;
- *   extracts: Array<{ from: string; to: string; sha256: string }>;
+ *   extracts: Array<{ from: string; to: string; sourceSha256: string; sha256: string }>;
  * }} pkg
  * @param {string} outputDir
  */
@@ -128,6 +153,9 @@ async function ensurePackage(pkg, outputDir) {
 
   if (!force) {
     const ready = targets.every((item) => {
+      if (!item.sha256) {
+        return false;
+      }
       if (!existsSync(item.abs)) {
         return false;
       }
@@ -152,9 +180,26 @@ async function ensurePackage(pkg, outputDir) {
     assertSha256(sha256File(zipPath), pkg.zipSha256, `${pkg.name} zip`);
 
     for (const item of targets) {
-      extractOne(zipPath, item.from, item.abs, workDir);
-      assertSha256(sha256File(item.abs), item.sha256, item.to);
-      console.log(`[fonts] ${pkg.name}: wrote ${item.to}`);
+      const extractDir = path.join(workDir, "extract");
+      const tempTtf = extractTo(zipPath, item.from, extractDir);
+      assertSha256(sha256File(tempTtf), item.sourceSha256, `${item.from} (source ttf)`);
+
+      const ttfBytes = readFileSync(tempTtf);
+      const woff2Bytes = Buffer.from(await compress(ttfBytes));
+      mkdirSync(path.dirname(item.abs), { recursive: true });
+      writeFileSync(item.abs, woff2Bytes);
+
+      const actualWoff2 = sha256File(item.abs);
+      if (item.sha256) {
+        assertSha256(actualWoff2, item.sha256, item.to);
+      } else {
+        console.log(`[fonts] ${item.to}: pin sha256 → ${actualWoff2}`);
+      }
+
+      removeLegacyTtf(item.abs);
+      console.log(
+        `[fonts] ${pkg.name}: wrote ${item.to} (${formatBytes(ttfBytes.length)} → ${formatBytes(woff2Bytes.length)})`,
+      );
     }
   } finally {
     rmSync(workDir, { recursive: true, force: true });
