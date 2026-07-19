@@ -145,14 +145,36 @@ describe("projectAssistantSegments", () => {
 });
 
 describe("describeWorkSummary", () => {
-  test("counts steps without duration", () => {
+  test("done mixed steps use unified step count", () => {
     expect(
       describeWorkSummary([
         reasoning("r1"),
         tool("t1", "read_document"),
         tool("t2", "search_documents"),
       ]),
-    ).toBe("思考 · 2 个工具 · 共 3 步");
+    ).toBe("已完成 3 个步骤");
+  });
+
+  test("done reasoning-only uses unified step count", () => {
+    expect(describeWorkSummary([reasoning("r1")])).toBe("已完成 1 个步骤");
+  });
+
+  test("done tools with errors append failure count", () => {
+    expect(
+      describeWorkSummary([
+        reasoning("r1"),
+        tool("t1", "read_document", "error"),
+        tool("t2", "search_documents"),
+      ]),
+    ).toBe("已完成 3 个步骤 · 1 失败");
+  });
+
+  test("empty steps", () => {
+    expect(describeWorkSummary([])).toBe("无步骤");
+  });
+
+  test("live streaming reasoning is type-agnostic", () => {
+    expect(describeWorkSummary([reasoning("r1", "streaming")])).toBe("进行中 · 1 步");
   });
 
   test("live running tool shows step index", () => {
