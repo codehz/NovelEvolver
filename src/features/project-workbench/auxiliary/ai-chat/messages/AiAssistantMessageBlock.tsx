@@ -15,6 +15,7 @@ import {
 import { describeAssistantStreamingMeta, describeAssistantUsageMeta } from "../ui/ai-chat-helpers";
 import { AiAssistantPartBlock } from "./AiAssistantPartBlock";
 import { AiMessageBranchSwitcher } from "./AiMessageBranchSwitcher";
+import { AiSubagentCard } from "./AiSubagentCard";
 import { AiWorkBlock } from "./AiWorkBlock";
 import { projectAssistantSegments, type AssistantSegment } from "./project-assistant-segments";
 
@@ -34,8 +35,9 @@ function renderAssistantSegment(segment: AssistantSegment) {
     case "work":
       return <AiWorkBlock key={segment.id} segmentId={segment.id} steps={segment.steps} />;
     case "subagent":
+      return <AiSubagentCard key={segment.id} toolCall={segment.part} />;
     case "ask_user":
-      // Elevated cards land in Phase 4/5; keep legacy tool shell until then.
+      // Phase 5: elevated ask_user card.
       return <AiAssistantPartBlock key={segment.id} part={segment.part} />;
   }
 }
