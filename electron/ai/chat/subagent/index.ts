@@ -44,6 +44,15 @@ export {
   truncateParentSummary,
 } from "./policy";
 export {
+  composeSystemPromptWithSubagents,
+  formatAvailableSubagentsSection,
+  listSubagentCatalog,
+  summarizeSubagentCapability,
+  type SubagentCapability,
+  type SubagentCatalogAgent,
+  type SubagentCatalogEntry,
+} from "./prompt-visibility";
+export {
   createViewThrottle,
   PARTIAL_SUMMARY_MAX_CHARS,
   PARTIAL_SUMMARY_THROTTLE_MS,
