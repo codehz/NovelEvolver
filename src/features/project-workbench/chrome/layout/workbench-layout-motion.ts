@@ -44,13 +44,15 @@ export function targetsFromChromeLayout(chrome: WorkbenchChromeLayout): Displaye
 
 /**
  * When a sidebar is closed, chrome metrics fall back to *preferred* panel width
- * (so reopen knows the nominal size). That preferred can be larger than the
- * currently displayed width if the dock was squeezed — lerping panelWidth
- * toward preferred would expand the panel while fading out (or grow under the
- * editor after opacity hits 0).
+ * (so reopen knows the nominal size). That preferred belongs to the resolver /
+ * preference layer only — it must not become the displayed closed width.
+ * Preferred can be larger than the currently displayed width if the dock was
+ * squeezed; lerping panelWidth toward preferred would expand the panel while
+ * fading out (or grow under the editor after opacity hits 0).
  *
- * Hold the current panelWidth whenever the destination is closed. Reopen still
- * uses the real open target (preferred / resolved) when `to.open` is true.
+ * Hold the current panelWidth whenever the destination is closed. Pair with
+ * `stabilizeOpenSources` (or `stabilizeMotionPair`) so reopen does not animate
+ * from preferred down to the constrained open target.
  */
 export function stabilizeCloseTargets(
   from: DisplayedWorkbenchChrome,
@@ -60,6 +62,53 @@ export function stabilizeCloseTargets(
     primary: stabilizeCloseSide(from.primary, to.primary),
     auxiliary: stabilizeCloseSide(from.auxiliary, to.auxiliary),
   };
+}
+
+/**
+ * When reopening, snap the lerp *source* panelWidth to the open target so only
+ * spacer/opacity animate. Avoids preferred → constrained shrink on reopen.
+ * Spacer/opacity still start from the closed values (typically 0).
+ */
+export function stabilizeOpenSources(
+  from: DisplayedWorkbenchChrome,
+  to: DisplayedWorkbenchChrome,
+): DisplayedWorkbenchChrome {
+  return {
+    primary: stabilizeOpenSourceSide(from.primary, to.primary),
+    auxiliary: stabilizeOpenSourceSide(from.auxiliary, to.auxiliary),
+  };
+}
+
+/**
+ * Destination close-hold + open-source panel snap for a full motion pair.
+ * Prefer this at animation entry points so neither end is forgotten.
+ */
+export function stabilizeMotionPair(
+  from: DisplayedWorkbenchChrome,
+  to: DisplayedWorkbenchChrome,
+): { from: DisplayedWorkbenchChrome; to: DisplayedWorkbenchChrome } {
+  const stabilizedTo = stabilizeCloseTargets(from, to);
+  return {
+    from: stabilizeOpenSources(from, stabilizedTo),
+    to: stabilizedTo,
+  };
+}
+
+/**
+ * Drag-snap helper: when the target is closed, keep `base.panelWidth` instead of
+ * writing the resolver's preferred closed width into displayed metrics.
+ */
+export function holdClosedPanelWidth(
+  base: DisplayedSidebarMetrics,
+  target: DisplayedSidebarMetrics,
+): DisplayedSidebarMetrics {
+  if (!target.open) {
+    return {
+      ...target,
+      panelWidth: base.panelWidth,
+    };
+  }
+  return target;
 }
 
 function stabilizeCloseSide(
@@ -73,6 +122,19 @@ function stabilizeCloseSide(
     };
   }
   return to;
+}
+
+function stabilizeOpenSourceSide(
+  from: DisplayedSidebarMetrics,
+  to: DisplayedSidebarMetrics,
+): DisplayedSidebarMetrics {
+  if (!from.open && to.open) {
+    return {
+      ...from,
+      panelWidth: to.panelWidth,
+    };
+  }
+  return from;
 }
 
 function lerp(from: number, to: number, t: number): number {
