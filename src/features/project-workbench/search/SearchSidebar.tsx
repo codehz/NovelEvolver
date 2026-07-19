@@ -5,7 +5,7 @@ import { SearchQueryBar } from "#workbench/search/SearchQueryBar";
 import { SearchResultTree } from "#workbench/search/SearchResultTree";
 import { useWorktreeSearchState } from "#workbench/search/use-worktree-search-state";
 
-export function SearchSidebarSection() {
+export function SearchSidebar() {
   const {
     query,
     setQuery,

@@ -14,7 +14,7 @@ import { HistoryBody } from "#workbench/history/HistoryBody";
 import { useCommitChangesState } from "#workbench/history/use-commit-changes-state";
 import { useCommitHistoryState } from "#workbench/history/use-commit-history-state";
 
-export function ChangesSidebarSection() {
+export function ChangesSidebar() {
   const {
     canRevertAll,
     commit,

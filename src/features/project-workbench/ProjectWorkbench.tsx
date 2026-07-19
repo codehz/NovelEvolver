@@ -10,12 +10,12 @@ import { useTitleBarTitle } from "#app/shared/lib/shell/titlebar-title";
 import { cn } from "#app/shared/lib/ui/cn";
 import { AiChatPanel } from "#workbench/auxiliary/ai-chat/AiChatPanel";
 import { AiChatStateProvider } from "#workbench/auxiliary/ai-chat/state/use-ai-chat-state";
-import { ChangesSidebarSection } from "#workbench/changes/ChangesSidebarSection";
+import { ChangesSidebar } from "#workbench/changes/ChangesSidebar";
 import { WorkbenchLayout, type WorkbenchPrimaryView } from "#workbench/chrome";
 import { WorkbenchStatusBar } from "#workbench/composition/WorkbenchStatusBar";
 import { EditorArea } from "#workbench/editor/EditorArea";
 import { ExplorerSidebar } from "#workbench/explorer/ExplorerSidebar";
-import { SearchSidebarSection } from "#workbench/search/SearchSidebarSection";
+import { SearchSidebar } from "#workbench/search/SearchSidebar";
 import { BranchScopeProvider } from "#workbench/session/BranchScopeProvider";
 import { projectIdScope, projectMolecule } from "#workbench/session/project-scope";
 
@@ -83,13 +83,13 @@ function ProjectWorkbenchInner() {
         id: "search",
         title: "搜索",
         iconClass: cn("icon-[codicon--search]"),
-        content: <SearchSidebarSection />,
+        content: <SearchSidebar />,
       },
       {
         id: "changes",
         title: "更改",
         iconClass: cn("icon-[codicon--source-control]"),
-        content: <ChangesSidebarSection />,
+        content: <ChangesSidebar />,
       },
     ],
     [displayName],
