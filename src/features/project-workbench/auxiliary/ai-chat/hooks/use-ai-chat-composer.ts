@@ -11,7 +11,7 @@ export function useAiChatComposer() {
   const shouldRestoreComposerFocusRef = useRef(false);
   const [canSend, setCanSend] = useState(false);
 
-  const hasPendingUserInputs = snapshot.pendingUserInputs.length > 0;
+  const hasOpenInteractions = snapshot.openInteractions.length > 0;
   const composerDisabled = loading || snapshot.pending;
   const canStop = !loading && snapshot.pending;
 
@@ -25,13 +25,13 @@ export function useAiChatComposer() {
   }, [syncCanSend]);
 
   useEffect(() => {
-    if (composerDisabled || hasPendingUserInputs || !shouldRestoreComposerFocusRef.current) {
+    if (composerDisabled || hasOpenInteractions || !shouldRestoreComposerFocusRef.current) {
       return;
     }
 
     composerRef.current?.focus();
     shouldRestoreComposerFocusRef.current = false;
-  }, [composerDisabled, hasPendingUserInputs]);
+  }, [composerDisabled, hasOpenInteractions]);
 
   const submitDraft = useCallback(async (): Promise<void> => {
     const payload = composerRef.current?.getSendPayload() ?? {
@@ -87,7 +87,7 @@ export function useAiChatComposer() {
   return {
     composerRef,
     composerDisabled,
-    hasPendingUserInputs,
+    hasOpenInteractions,
     canSend,
     canStop,
     handleSubmit,

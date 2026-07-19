@@ -27,7 +27,7 @@ export const aiChatStateMolecule = molecule(() => {
 
   const messagesAtom = atom((get) => get(snapshotAtom).messages);
   const pendingAtom = atom((get) => get(snapshotAtom).pending);
-  const pendingUserInputsAtom = atom((get) => get(snapshotAtom).pendingUserInputs);
+  const openInteractionsAtom = atom((get) => get(snapshotAtom).openInteractions);
   const conversationIdAtom = atom((get) => get(snapshotAtom).conversationId);
   const canRetryAtom = atom((get) => get(snapshotAtom).canRetry);
   const errorMessageAtom = atom((get) => get(snapshotAtom).errorMessage);
@@ -48,7 +48,7 @@ export const aiChatStateMolecule = molecule(() => {
       loading: transport.loading,
       subscriptionError: transport.subscriptionError,
       pending: snapshot.pending,
-      pendingUserInputCount: snapshot.pendingUserInputs.length,
+      openInteractionCount: snapshot.openInteractions.length,
       errorMessage: snapshot.errorMessage,
       selectedModelId: snapshot.selectedModelId,
       model: snapshot.model,
@@ -61,7 +61,7 @@ export const aiChatStateMolecule = molecule(() => {
     transportAtom,
     messagesAtom,
     pendingAtom,
-    pendingUserInputsAtom,
+    openInteractionsAtom,
     conversationIdAtom,
     canRetryAtom,
     errorMessageAtom,

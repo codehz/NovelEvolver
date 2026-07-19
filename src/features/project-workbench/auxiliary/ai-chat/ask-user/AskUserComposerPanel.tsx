@@ -1,76 +1,179 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 
-import type { AiChatPendingUserInput } from "#shared/rpc/ai/index";
+import { cn } from "#app/shared/lib/ui/cn";
+import { Button, AppTooltip } from "#app/shared/ui";
+import type { AiChatOpenInteraction } from "#shared/rpc/ai/index";
 
+import { useAiChatActions } from "../state/use-ai-chat-state";
+import { sendButtonClass, stopButtonClass } from "../ui/ai-chat-chrome";
 import { AskUserQuestionTabs } from "./AskUserQuestionTabs";
-import { pendingInputKey, summarizePendingInput } from "./handle-keys";
-import { PendingInputComposer } from "./pending-input-contributions";
+import {
+  InteractionBody,
+  isInteractionDraftReady,
+  summarizeInteraction,
+} from "./interaction-contributions";
 
 /**
- * 当 AI 请求需要用户回答时，底部 composer 区域按 pending.kind 分派渲染对应的输入 UI。
- *
- * 展示数据来自按值推送的 DTO；回传通过条目上的瘦 handle（submitAnswer/cancel）。
- * 当前仅支持 `ask_user`；新增工具只需在此 switch 增加一个 case 与对应 composer。
+ * 开放交互 shell：多题本地草稿 + 一键提交/取消。
+ * 回传走稳定 `AiChatHandle.submitInteraction` / `cancelInteraction`，不碰 stream stub。
  */
 type AskUserComposerPanelProps = {
   loading: boolean;
-  pendingInputs: AiChatPendingUserInput[];
+  openInteractions: AiChatOpenInteraction[];
 };
 
-export function AskUserComposerPanel({ loading, pendingInputs }: AskUserComposerPanelProps) {
-  const [activeKey, setActiveKey] = useState<string | null>(null);
-  const [draftsByKey, setDraftsByKey] = useState<Record<string, string>>({});
+export function AskUserComposerPanel({ loading, openInteractions }: AskUserComposerPanelProps) {
+  const { submitInteraction, cancelInteraction } = useAiChatActions();
+  const [activeId, setActiveId] = useState<string | null>(null);
+  const [draftsById, setDraftsById] = useState<Record<string, string>>({});
+  const [committing, setCommitting] = useState(false);
 
-  const pendingKeys = useMemo(() => pendingInputs.map(pendingInputKey), [pendingInputs]);
+  const interactionIds = useMemo(
+    () => openInteractions.map((input) => input.id),
+    [openInteractions],
+  );
 
   useEffect(() => {
-    if (pendingInputs.length === 0) {
+    if (openInteractions.length === 0) {
+      setActiveId(null);
+      setDraftsById({});
+      setCommitting(false);
       return;
     }
-    if (activeKey === null || !pendingKeys.includes(activeKey)) {
-      setActiveKey(pendingKeys[0] ?? null);
+    if (activeId === null || !interactionIds.includes(activeId)) {
+      setActiveId(interactionIds[0] ?? null);
     }
-  }, [activeKey, pendingInputs, pendingKeys]);
+  }, [activeId, interactionIds, openInteractions]);
 
   const activeInput =
-    activeKey === null
-      ? null
-      : (pendingInputs.find((input) => pendingInputKey(input) === activeKey) ?? null);
+    activeId === null ? null : (openInteractions.find((input) => input.id === activeId) ?? null);
 
-  const handleDraftChange = useCallback((key: string, draft: string) => {
-    setDraftsByKey((current) => ({ ...current, [key]: draft }));
+  const disabled = loading || committing;
+  const allReady =
+    openInteractions.length > 0 &&
+    openInteractions.every((input) => isInteractionDraftReady(input, draftsById[input.id] ?? ""));
+
+  const handleDraftChange = useCallback((id: string, draft: string) => {
+    setDraftsById((current) => ({ ...current, [id]: draft }));
   }, []);
 
-  if (pendingInputs.length === 0 || activeInput === null || activeKey === null) {
+  const focusNextIncomplete = useCallback(() => {
+    if (openInteractions.length === 0) {
+      return;
+    }
+    const currentIndex = activeId
+      ? openInteractions.findIndex((input) => input.id === activeId)
+      : -1;
+    for (let offset = 1; offset <= openInteractions.length; offset++) {
+      const index = (Math.max(currentIndex, 0) + offset) % openInteractions.length;
+      const candidate = openInteractions[index]!;
+      if (!isInteractionDraftReady(candidate, draftsById[candidate.id] ?? "")) {
+        setActiveId(candidate.id);
+        return;
+      }
+    }
+  }, [activeId, draftsById, openInteractions]);
+
+  const handleSubmitAll = useCallback(async () => {
+    if (disabled || !allReady) {
+      return;
+    }
+    setCommitting(true);
+    try {
+      for (const input of openInteractions) {
+        const draft = (draftsById[input.id] ?? "").trim();
+        if (input.kind === "ask_user") {
+          await Promise.resolve(submitInteraction(input.id, { kind: "ask_user", text: draft }));
+        }
+      }
+    } finally {
+      // openInteractions 清空后由 effect 复位；若仍残留则解锁便于重试。
+      setCommitting(false);
+    }
+  }, [allReady, disabled, draftsById, openInteractions, submitInteraction]);
+
+  const handleCancelAll = useCallback(async () => {
+    if (disabled || openInteractions.length === 0) {
+      return;
+    }
+    setCommitting(true);
+    try {
+      for (const input of openInteractions) {
+        await Promise.resolve(cancelInteraction(input.id));
+      }
+    } finally {
+      setCommitting(false);
+    }
+  }, [cancelInteraction, disabled, openInteractions]);
+
+  const handleRequestCommit = useCallback(() => {
+    if (allReady) {
+      void handleSubmitAll();
+      return;
+    }
+    focusNextIncomplete();
+  }, [allReady, focusNextIncomplete, handleSubmitAll]);
+
+  if (openInteractions.length === 0 || activeInput === null || activeId === null) {
     return null;
   }
 
-  const activeKeyStr = activeKey;
-  const activeDraft = draftsByKey[activeKeyStr] ?? "";
+  const activeDraft = draftsById[activeId] ?? "";
 
   return (
     <div className="mx-auto flex w-full max-w-3xl flex-col gap-1">
       <AskUserQuestionTabs
-        activeKey={activeKeyStr}
-        keys={pendingKeys}
-        summaries={pendingInputs.map((input, index) => summarizePendingInput(input, index))}
-        onSelectKey={setActiveKey}
+        activeKey={activeId}
+        keys={interactionIds}
+        summaries={openInteractions.map((input, index) => summarizeInteraction(input, index))}
+        onSelectKey={setActiveId}
       />
-      <PendingInputComposer
+      <InteractionBody
         draft={activeDraft}
+        disabled={disabled}
         input={activeInput}
-        loading={loading}
         onDraftChange={(draft) => {
-          handleDraftChange(activeKeyStr, draft);
+          handleDraftChange(activeId, draft);
         }}
-        onSubmitted={() => {
-          setDraftsByKey((current) => {
-            const next = { ...current };
-            delete next[activeKeyStr];
-            return next;
-          });
-        }}
+        onRequestCommit={handleRequestCommit}
       />
+      <div className="flex min-w-0 items-center justify-end gap-1 px-1">
+        <AppTooltip label="取消全部" side="top" disabled={disabled}>
+          <Button
+            variant="ghost"
+            size="icon-sm"
+            aria-label="取消全部"
+            className={cn(
+              stopButtonClass,
+              "disabled:pointer-events-none disabled:text-ctp-overlay0",
+            )}
+            disabled={disabled}
+            onClick={() => {
+              void handleCancelAll();
+            }}
+          >
+            <span aria-hidden="true" className="icon-[codicon--close] text-sm" />
+          </Button>
+        </AppTooltip>
+        <AppTooltip
+          label={allReady ? "提交全部" : "请先填完所有问题"}
+          side="top"
+          disabled={disabled || !allReady}
+        >
+          <Button
+            variant="ghost"
+            size="icon-sm"
+            aria-label="提交全部"
+            className={sendButtonClass}
+            disabled={disabled || !allReady}
+            onClick={() => {
+              void handleSubmitAll();
+            }}
+          >
+            <span aria-hidden="true" className="icon-[codicon--newline] text-sm" />
+          </Button>
+        </AppTooltip>
+      </div>
     </div>
   );
 }

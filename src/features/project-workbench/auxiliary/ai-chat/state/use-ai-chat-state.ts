@@ -13,6 +13,7 @@ import {
 import { consumeRpcSubscription } from "#app/shared/lib/rpc/app-rpc-react";
 import { applyAiChatEvent, createInitialAiChatSnapshot } from "#shared/rpc/ai/index";
 import type {
+  AiChatInteractionAnswer,
   AiChatSelectableAgent,
   AiChatSelectableModel,
   AiChatSendMessageInput,
@@ -31,6 +32,8 @@ import { aiChatStateMolecule, initialAiChatTransportState } from "./ai-chat-stat
 type AiChatActions = {
   sendMessage: (input: AiChatSendMessageInput) => Promise<boolean>;
   stopGeneration: () => Promise<void>;
+  submitInteraction: (id: string, answer: AiChatInteractionAnswer) => Promise<void>;
+  cancelInteraction: (id: string) => Promise<void>;
   retryLastRequest: () => Promise<void>;
   selectMessageBranch: (messageId: string, index: number) => Promise<void>;
   editUserMessage: (messageId: string, input: AiChatSendMessageInput) => Promise<void>;
@@ -68,7 +71,7 @@ function useAiChatActionsValue(): AiChatActions {
       if (
         (!hasSlash && !hasMentions && normalizedText === "") ||
         snapshot.pending ||
-        snapshot.pendingUserInputs.length > 0
+        snapshot.openInteractions.length > 0
       ) {
         return false;
       }
@@ -92,6 +95,20 @@ function useAiChatActionsValue(): AiChatActions {
     }
     await Promise.resolve(aiChat.stopGeneration());
   }, [aiChat, snapshotAtom, store]);
+
+  const submitInteraction = useCallback(
+    async (id: string, answer: AiChatInteractionAnswer): Promise<void> => {
+      await Promise.resolve(aiChat.submitInteraction(id, answer));
+    },
+    [aiChat],
+  );
+
+  const cancelInteraction = useCallback(
+    async (id: string): Promise<void> => {
+      await Promise.resolve(aiChat.cancelInteraction(id));
+    },
+    [aiChat],
+  );
 
   const createConversation = useCallback(async (): Promise<void> => {
     await Promise.resolve(aiChat.createConversation());
@@ -200,6 +217,8 @@ function useAiChatActionsValue(): AiChatActions {
     () => ({
       sendMessage,
       stopGeneration,
+      submitInteraction,
+      cancelInteraction,
       retryLastRequest,
       selectMessageBranch,
       editUserMessage,
@@ -219,6 +238,7 @@ function useAiChatActionsValue(): AiChatActions {
     }),
     [
       archiveConversation,
+      cancelInteraction,
       createConversation,
       deleteConversation,
       editUserMessage,
@@ -234,6 +254,7 @@ function useAiChatActionsValue(): AiChatActions {
       setSelectedModel,
       setSelectedReasoningLevel,
       stopGeneration,
+      submitInteraction,
       switchConversation,
       unarchiveConversation,
     ],

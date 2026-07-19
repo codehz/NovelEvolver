@@ -24,7 +24,7 @@ type AiAskUserCardProps = {
 
 /**
  * Elevated ask_user card — never aggregated into Work.
- * Interaction stays in the bottom AskUserComposerPanel via pendingUserInputs.
+ * Interaction stays in the bottom AskUserComposerPanel via openInteractions.
  */
 export function AiAskUserCard({ toolCall }: AiAskUserCardProps): ReactNode {
   const args = parseAskUserToolArguments(toolCall.argumentsText);

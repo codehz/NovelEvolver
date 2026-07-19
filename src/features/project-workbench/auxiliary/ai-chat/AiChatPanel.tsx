@@ -26,7 +26,7 @@ export function AiChatPanel() {
   const handleRetry = snapshot.canRetry && !subscriptionError ? retryTurn : undefined;
 
   const branchActionsDisabled =
-    snapshot.pending || snapshot.pendingUserInputs.length > 0 || subscriptionError != null;
+    snapshot.pending || snapshot.openInteractions.length > 0 || subscriptionError != null;
 
   const handleSelectBranch = useCallback(
     (messageId: string, index: number) => {

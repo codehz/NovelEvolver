@@ -1,11 +1,4 @@
-import {
-  useCallback,
-  useEffect,
-  useRef,
-  useState,
-  type KeyboardEvent,
-  type SubmitEvent,
-} from "react";
+import { useEffect, useRef, type KeyboardEvent } from "react";
 
 import { cn } from "#app/shared/lib/ui/cn";
 import {
@@ -13,14 +6,12 @@ import {
   controlFocusVisibleClass,
   rowHoverClass,
 } from "#app/shared/lib/ui/interaction-chrome";
-import { Button, AppTooltip } from "#app/shared/ui";
-import type { AskUserPendingInput } from "#shared/rpc/ai/index";
+import { Button } from "#app/shared/ui";
+import type { AskUserOpenInteraction } from "#shared/rpc/ai/index";
 
 import {
   composerShellClass,
   composerTextareaClass,
-  sendButtonClass,
-  stopButtonClass,
   toolCallLabelClass,
 } from "../ui/ai-chat-chrome";
 
@@ -43,78 +34,49 @@ const loadingClass = cn(
 );
 
 /**
- * `ask_user` 工具的输入 UI。展示字段来自 DTO；提交时调用 `input.handle.submitAnswer(text)`。
+ * `ask_user` 单题草稿 UI。展示字段来自纯 DTO；提交/取消由外层 shell 统一处理。
  */
 type AskUserComposerProps = {
-  input: AskUserPendingInput;
-  loading: boolean;
+  input: AskUserOpenInteraction;
+  disabled: boolean;
   draft: string;
   onDraftChange: (draft: string) => void;
-  onSubmitted: () => void;
+  /** 单题编辑时 Enter 可跳到「下一题 / 提交全部」的入口，由 shell 决定。 */
+  onRequestCommit?: () => void;
 };
 
 export function AskUserComposer({
   input,
-  loading,
+  disabled,
   draft,
   onDraftChange,
-  onSubmitted,
+  onRequestCommit,
 }: AskUserComposerProps) {
-  const [submitting, setSubmitting] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
   const choices = input.choices ?? [];
   const hasChoices = choices.length > 0;
-  const inputDisabled = loading || submitting;
 
   useEffect(() => {
+    if (disabled) {
+      return;
+    }
     textareaRef.current?.focus();
-  }, [input.handle]);
+  }, [disabled, input.id]);
 
-  const submitDraft = useCallback(async (): Promise<void> => {
-    if (inputDisabled || draft.trim() === "") {
+  const handleKeyDown = (event: KeyboardEvent<HTMLTextAreaElement>) => {
+    if (event.key !== "Enter" || event.shiftKey) {
       return;
     }
-
-    setSubmitting(true);
-    input.handle.submitAnswer(draft.trim());
-    setSubmitting(false);
-    onSubmitted();
-  }, [draft, input.handle, inputDisabled, onSubmitted]);
-
-  const handleSubmit = useCallback(
-    (event: SubmitEvent<HTMLFormElement>) => {
-      event.preventDefault();
-      void submitDraft();
-    },
-    [submitDraft],
-  );
-
-  const handleKeyDown = useCallback(
-    (event: KeyboardEvent<HTMLTextAreaElement>) => {
-      if (event.key !== "Enter" || event.shiftKey) {
-        return;
-      }
-
-      event.preventDefault();
-      void submitDraft();
-    },
-    [submitDraft],
-  );
-
-  const handleCancel = useCallback(() => {
-    if (inputDisabled) {
-      return;
-    }
-    input.handle.cancel();
-    onSubmitted();
-  }, [input.handle, inputDisabled, onSubmitted]);
+    event.preventDefault();
+    onRequestCommit?.();
+  };
 
   if (!input.question) {
     return <div className={loadingClass}>正在加载问题…</div>;
   }
 
   return (
-    <form className={composerShellClass} onSubmit={handleSubmit}>
+    <div className={composerShellClass}>
       <div className={headerClass}>
         <span className={toolCallLabelClass}>需要你回答</span>
         <span className={headerToolNameClass}>{input.toolName}</span>
@@ -131,7 +93,7 @@ export function AskUserComposer({
               key={choice.title}
               variant="ghost"
               className={choiceButtonClass}
-              disabled={inputDisabled}
+              disabled={disabled}
               onClick={() => {
                 onDraftChange(choice.title);
                 textareaRef.current?.focus();
@@ -149,7 +111,7 @@ export function AskUserComposer({
       <textarea
         aria-label={input.question}
         className={composerTextareaClass}
-        disabled={inputDisabled}
+        disabled={disabled}
         placeholder={input.placeholder ?? "输入你的回答…"}
         ref={textareaRef}
         rows={4}
@@ -159,37 +121,6 @@ export function AskUserComposer({
         }}
         onKeyDown={handleKeyDown}
       />
-
-      <div className="flex min-w-0 items-center justify-end gap-1">
-        <AppTooltip label="取消回答" side="top" disabled={inputDisabled}>
-          <Button
-            variant="ghost"
-            size="icon-sm"
-            aria-label="取消回答"
-            className={cn(
-              stopButtonClass,
-              // Match sendButtonClass mute: icon-color, not opacity.
-              "disabled:pointer-events-none disabled:text-ctp-overlay0",
-            )}
-            disabled={inputDisabled}
-            onClick={handleCancel}
-          >
-            <span aria-hidden="true" className="icon-[codicon--close] text-sm" />
-          </Button>
-        </AppTooltip>
-        <AppTooltip label="提交回答" side="top" disabled={inputDisabled || draft.trim() === ""}>
-          <Button
-            variant="ghost"
-            size="icon-sm"
-            aria-label="提交回答"
-            className={sendButtonClass}
-            disabled={inputDisabled || draft.trim() === ""}
-            type="submit"
-          >
-            <span aria-hidden="true" className="icon-[codicon--newline] text-sm" />
-          </Button>
-        </AppTooltip>
-      </div>
-    </form>
+    </div>
   );
 }

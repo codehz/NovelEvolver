@@ -12,7 +12,7 @@ export function AiChatComposerFooter({ composer }: AiChatComposerFooterProps) {
   const {
     composerRef,
     composerDisabled,
-    hasPendingUserInputs,
+    hasOpenInteractions,
     canSend,
     canStop,
     handleSubmit,
@@ -40,10 +40,10 @@ export function AiChatComposerFooter({ composer }: AiChatComposerFooterProps) {
     handleSelectReasoningLevel,
   } = useAiChatSelectors();
 
-  if (hasPendingUserInputs) {
+  if (hasOpenInteractions) {
     return (
       <footer className="shrink-0 p-3">
-        <AskUserComposerPanel loading={loading} pendingInputs={snapshot.pendingUserInputs} />
+        <AskUserComposerPanel loading={loading} openInteractions={snapshot.openInteractions} />
       </footer>
     );
   }

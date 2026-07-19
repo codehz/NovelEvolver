@@ -26,7 +26,7 @@ export function useAiChatSelectors() {
   const [selectableModels, setSelectableModels] = useState<AiChatSelectableModel[]>([]);
   const [selectableAgents, setSelectableAgents] = useState<AiChatSelectableAgent[]>([]);
 
-  const hasPendingUserInputs = snapshot.pendingUserInputs.length > 0;
+  const hasOpenInteractions = snapshot.openInteractions.length > 0;
 
   const refreshModels = useCallback(async () => {
     const models = await listSelectableModels();
@@ -121,7 +121,7 @@ export function useAiChatSelectors() {
 
   const handleSelectAgent = useCallback(
     (agentId: string) => {
-      if (loading || snapshot.pending || hasPendingUserInputs) {
+      if (loading || snapshot.pending || hasOpenInteractions) {
         return;
       }
       if (agentId === snapshot.selectedAgentId) {
@@ -129,7 +129,7 @@ export function useAiChatSelectors() {
       }
       void setSelectedAgent(agentId);
     },
-    [hasPendingUserInputs, loading, setSelectedAgent, snapshot.pending, snapshot.selectedAgentId],
+    [hasOpenInteractions, loading, setSelectedAgent, snapshot.pending, snapshot.selectedAgentId],
   );
 
   const handleSelectReasoningLevel = useCallback(
@@ -143,8 +143,8 @@ export function useAiChatSelectors() {
   );
 
   const selectorDisabled = useMemo(
-    () => loading || snapshot.pending || hasPendingUserInputs,
-    [hasPendingUserInputs, loading, snapshot.pending],
+    () => loading || snapshot.pending || hasOpenInteractions,
+    [hasOpenInteractions, loading, snapshot.pending],
   );
 
   const modelSelectorDisabled = useMemo(

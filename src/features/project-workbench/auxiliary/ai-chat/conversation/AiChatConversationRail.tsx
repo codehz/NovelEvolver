@@ -129,7 +129,7 @@ function AiChatConversationRailBody({
   const showTurnRetry =
     onRetry !== undefined &&
     !snapshot.pending &&
-    snapshot.pendingUserInputs.length === 0 &&
+    snapshot.openInteractions.length === 0 &&
     snapshot.canRetry;
 
   const lastAssistantMessageId = useMemo(() => {

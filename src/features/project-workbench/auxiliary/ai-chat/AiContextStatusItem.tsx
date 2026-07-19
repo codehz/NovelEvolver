@@ -54,7 +54,7 @@ export function AiContextStatusItem() {
     ? "AI 连接中"
     : meta.subscriptionError || meta.errorMessage
       ? "AI 请求失败"
-      : meta.pendingUserInputCount > 0
+      : meta.openInteractionCount > 0
         ? "AI 等待输入"
         : runningSubagent
           ? runningSubagentProgress
