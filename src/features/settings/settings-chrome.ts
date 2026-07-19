@@ -82,21 +82,22 @@ export const settingsContentClass = cn(
 /** Panel root: optional fixed subpage header + independent scroll layers. */
 export const settingsPanelRootClass = cn("flex h-full min-h-0 flex-col");
 
-/** Scrollport inside a settings panel (list or subpage form). */
-export const settingsPanelScrollClass = cn("min-h-0 flex-1 overflow-x-hidden overflow-y-auto");
-
 /**
- * Fixed subpage navigation bar above the panel scrollport.
- * Transparent over the body canvas — no hairline divider / elevated fill.
+ * Fixed subpage navigation bar above the content island.
+ * No horizontal pad — parent `settingsSubpageShellClass` owns `p-2` inset.
  * `h-10` leaves room for a primary header action (save) without feeling tight.
  */
-export const settingsSubpageHeaderClass = cn("flex h-10 shrink-0 items-center gap-1.5 px-2.5");
-
+export const settingsSubpageHeaderClass = cn("flex h-7 shrink-0 items-center gap-2");
 export const settingsSubpageTitleClass = cn(
   "min-w-0 flex-1 truncate text-sm font-medium text-app-foreground",
 );
 
-export const settingsPanelSectionClass = cn("flex flex-col gap-2.5 px-3 py-2.5");
+/**
+ * Content stack pad inside a detail/subpage surface (or bare canvas when no shell).
+ * Matches `settingsDualPaneDetailScrollClass` inset so form fields align across views.
+ * Do not nest under another `px-*` / `p-*` owner.
+ */
+export const settingsPanelSectionClass = cn("flex flex-col gap-2 px-3 py-2");
 
 export const settingsPanelHeaderClass = cn("flex items-start justify-between gap-2");
 
@@ -106,6 +107,13 @@ export const settingsPanelHeaderClass = cn("flex items-start justify-between gap
  * Children must not re-apply horizontal rail/detail padding that would double the gap.
  */
 export const settingsDualPaneClass = cn("flex min-h-0 flex-1 gap-2 p-2");
+
+/**
+ * Column shell for subpages / solo content (header + body island).
+ * Same spacing contract as dual-pane: `p-2` outer inset + `gap-2` between children.
+ * Header and surface must not re-apply outer pad.
+ */
+export const settingsSubpageShellClass = cn("flex min-h-0 flex-1 flex-col gap-2 p-2");
 
 /** Left master column — no outer pad; shell owns inset/gap. */
 export const settingsDualPaneRailClass = cn("flex w-44 shrink-0 flex-col gap-1");
@@ -123,12 +131,6 @@ export const settingsDualPaneRailFooterClass = cn("shrink-0");
 
 /** Right detail column — surface fill only; shell owns outer inset/gap. */
 export const settingsDualPaneDetailClass = cn("flex min-h-0 min-w-0 flex-1 flex-col");
-
-/**
- * Solo inset wrapper when there is no dual-pane shell (e.g. model subpage form).
- * Do not combine with `settingsDualPaneClass` — that shell already applies `p-2`.
- */
-export const settingsDetailInsetClass = cn("flex min-h-0 min-w-0 flex-1 flex-col p-2");
 
 /**
  * Right detail island: border, radius, clip + original body canvas fill (`app-background`).

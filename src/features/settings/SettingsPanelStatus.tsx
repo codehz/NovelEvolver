@@ -3,8 +3,7 @@ import { Button } from "#app/shared/ui";
 import {
   settingsEmptyStateClass,
   settingsPanelRootClass,
-  settingsPanelScrollClass,
-  settingsPanelSectionClass,
+  settingsSubpageShellClass,
 } from "./settings-chrome";
 
 type SettingsPanelLoadingProps = {
@@ -14,7 +13,7 @@ type SettingsPanelLoadingProps = {
 export function SettingsPanelLoading({ label = "加载中…" }: SettingsPanelLoadingProps) {
   return (
     <div className={settingsPanelRootClass}>
-      <div className={settingsPanelScrollClass}>
+      <div className={settingsSubpageShellClass}>
         <div className={settingsEmptyStateClass}>{label}</div>
       </div>
     </div>
@@ -29,11 +28,9 @@ type SettingsPanelLoadErrorProps = {
 export function SettingsPanelLoadError({ message, onRetry }: SettingsPanelLoadErrorProps) {
   return (
     <div className={settingsPanelRootClass}>
-      <div className={settingsPanelScrollClass}>
-        <div className={settingsPanelSectionClass}>
-          <p className="text-xs text-ctp-red">{message}</p>
-          <Button onClick={onRetry}>重试</Button>
-        </div>
+      <div className={settingsSubpageShellClass}>
+        <p className="text-xs text-ctp-red">{message}</p>
+        <Button onClick={onRetry}>重试</Button>
       </div>
     </div>
   );

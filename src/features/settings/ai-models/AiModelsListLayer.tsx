@@ -13,6 +13,7 @@ import {
   settingsPanelHeaderClass,
   settingsPanelSectionClass,
   settingsStatusBadgeClass,
+  settingsSubpageShellClass,
 } from "../settings-chrome";
 import { SettingsDetailPane } from "../SettingsDetailPane";
 import { SettingsMasterDetailShell } from "../SettingsMasterDetailShell";
@@ -70,30 +71,28 @@ export function AiModelsListLayer({
 
   if (providers.length === 0) {
     return (
-      <div className="flex h-full min-h-0 flex-col">
-        <div className={settingsPanelSectionClass}>
-          <div className={settingsPanelHeaderClass}>
-            <div className="min-w-0 flex-1">
-              <h3 className="text-sm font-medium text-app-foreground">供应商与模型</h3>
-              <p className="mt-0.5 text-2xs text-app-muted">
-                左侧选择供应商，右侧管理其下模型。密钥经系统加密后写入本地{" "}
-                <span className="font-mono">ai-settings.json</span>。
-              </p>
-            </div>
-            <Button
-              disabled={busy}
-              variant="primary"
-              onClick={() => {
-                onOpenEditor({ type: "create-provider" });
-              }}
-            >
-              <span aria-hidden="true" className="icon-[codicon--add] text-sm" />
-              添加供应商
-            </Button>
+      <div className={settingsSubpageShellClass}>
+        <div className={settingsPanelHeaderClass}>
+          <div className="min-w-0 flex-1">
+            <h3 className="text-sm font-medium text-app-foreground">供应商与模型</h3>
+            <p className="mt-0.5 text-2xs text-app-muted">
+              左侧选择供应商，右侧管理其下模型。密钥经系统加密后写入本地{" "}
+              <span className="font-mono">ai-settings.json</span>。
+            </p>
           </div>
-          {actionError ? <p className="text-xs text-ctp-red">{actionError}</p> : null}
-          <SettingsPanelEmpty>还没有 API 供应商，点击「添加供应商」开始。</SettingsPanelEmpty>
+          <Button
+            disabled={busy}
+            variant="primary"
+            onClick={() => {
+              onOpenEditor({ type: "create-provider" });
+            }}
+          >
+            <span aria-hidden="true" className="icon-[codicon--add] text-sm" />
+            添加供应商
+          </Button>
         </div>
+        {actionError ? <p className="text-xs text-ctp-red">{actionError}</p> : null}
+        <SettingsPanelEmpty>还没有 API 供应商，点击「添加供应商」开始。</SettingsPanelEmpty>
       </div>
     );
   }

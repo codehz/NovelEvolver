@@ -3,9 +3,9 @@ import { AutoTransition } from "@codehz/auto-transition";
 import { cn } from "#app/shared/lib/ui/cn";
 
 import {
-  settingsDetailInsetClass,
   settingsDetailSurfaceClass,
   settingsPanelRootClass,
+  settingsSubpageShellClass,
 } from "../settings-chrome";
 import {
   settingsPageFadeTransition,
@@ -95,7 +95,7 @@ export function AiModelsSettingsPanel({ active = true }: AiModelsSettingsPanelPr
         transition={settingsPageFadeTransition}
       >
         {isSubpageOpen ? (
-          <div key="subpage" className="flex min-h-0 flex-1 flex-col overflow-hidden">
+          <div key="subpage" className={settingsSubpageShellClass}>
             {subpageTitle ? (
               <SettingsSubpageHeader
                 title={subpageTitle}
@@ -114,25 +114,23 @@ export function AiModelsSettingsPanel({ active = true }: AiModelsSettingsPanelPr
               />
             ) : null}
 
-            <div className={settingsDetailInsetClass}>
-              <div
-                className={cn(
-                  settingsDetailSurfaceClass,
-                  "min-h-0 flex-1 overflow-x-hidden overflow-y-auto",
-                )}
-              >
-                <AiModelsEditorLayer
-                  key={formKey}
-                  actionError={actionError}
-                  busy={busy}
-                  editor={editor}
-                  formRef={formRef}
-                  providers={providers}
-                  onDirtyChange={onDirtyChange}
-                  onModelSubmit={handleModelSubmit}
-                  onProviderSubmit={handleProviderSubmit}
-                />
-              </div>
+            <div
+              className={cn(
+                settingsDetailSurfaceClass,
+                "min-h-0 flex-1 overflow-x-hidden overflow-y-auto",
+              )}
+            >
+              <AiModelsEditorLayer
+                key={formKey}
+                actionError={actionError}
+                busy={busy}
+                editor={editor}
+                formRef={formRef}
+                providers={providers}
+                onDirtyChange={onDirtyChange}
+                onModelSubmit={handleModelSubmit}
+                onProviderSubmit={handleProviderSubmit}
+              />
             </div>
           </div>
         ) : (
