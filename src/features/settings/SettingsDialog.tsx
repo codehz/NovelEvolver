@@ -6,6 +6,7 @@ import { useState } from "react";
 import { AiAgentsSettingsPanel } from "./ai-agents/AiAgentsSettingsPanel";
 import { AiModelsSettingsPanel } from "./ai-models/AiModelsSettingsPanel";
 import { AiPromptsSettingsPanel } from "./ai-prompts/AiPromptsSettingsPanel";
+import { AiRuntimePolicySettingsPanel } from "./ai-runtime-policy/AiRuntimePolicySettingsPanel";
 import {
   settingsBackdropClass,
   settingsBodyClass,
@@ -29,6 +30,7 @@ const SETTINGS_CATEGORIES = [
   { id: "ai-models", label: "AI 模型" },
   { id: "ai-agents", label: "AI Agent" },
   { id: "ai-prompts", label: "AI 提示词" },
+  { id: "ai-runtime-policy", label: "AI 运行策略" },
 ] as const;
 
 type SettingsCategoryId = (typeof SETTINGS_CATEGORIES)[number]["id"];
@@ -115,6 +117,9 @@ export function SettingsDialog({ open, onDismiss }: SettingsDialogProps) {
                   {activeCategoryId === "ai-models" ? <AiModelsSettingsPanel /> : null}
                   {activeCategoryId === "ai-agents" ? <AiAgentsSettingsPanel /> : null}
                   {activeCategoryId === "ai-prompts" ? <AiPromptsSettingsPanel /> : null}
+                  {activeCategoryId === "ai-runtime-policy" ? (
+                    <AiRuntimePolicySettingsPanel />
+                  ) : null}
                 </div>
               </AutoTransition>
             </div>
