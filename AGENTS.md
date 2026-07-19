@@ -197,6 +197,16 @@ Use native overflow utilities directly — **do not** reintroduce a shared `Scro
 - Electron enables Blink `OverlayScrollbars` (`enableBlinkFeatures` in `electron/main.ts`) so the bar overlays content when supported. App-wide scrollbar **colors** live in `src/index.css`.
 - Ad-hoc scrollports (CodeMirror `.cm-scroller`, horizontal tab rails) stay native overflow only.
 
+## Fonts
+
+UI and mono fonts are **full local files**, not npm subset packages (subsetting drops OpenType features such as `tnum` / `tabular-nums`).
+
+- Source of truth: [scripts/fonts.manifest.json](scripts/fonts.manifest.json) + [scripts/ensure-fonts.mjs](scripts/ensure-fonts.mjs)
+- Output (gitignored): `vendor/fonts/` — MiSans VF + Maple Mono CN static faces
+- CSS: [src/fonts/faces.css](src/fonts/faces.css), imported from [src/index.css](src/index.css)
+- Commands: `bun run fonts:ensure` (also runs in `prepare`). Offline: `SKIP_FONTS=1`. Force refresh: `FONTS_FORCE=1`.
+- **Attribution**: This application uses the **MiSans** typeface (Xiaomi). Maple Mono CN is SIL OFL 1.1.
+
 ## Configuration Notes
 
 The renderer dev server is fixed to `http://localhost:5173`, and Electron startup waits for that port plus `dist-electron/main.js`. Keep those assumptions aligned when changing build or startup configuration.

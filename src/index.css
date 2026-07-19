@@ -1,8 +1,6 @@
 @import "tailwindcss";
 @import "@catppuccin/tailwindcss/mocha.css";
-@import "misans/lib/Normal/MiSans-Regular.min.css";
-@import "misans/lib/Normal/MiSans-Bold.min.css";
-@import "@mogeko/maple-mono-cn/dist/font/result.css";
+@import "./fonts/faces.css";
 @import "slot-text/style.css";
 @import "streamdown/styles.css";
 
@@ -19,6 +17,8 @@
   --overflow-anchor-none: none;
 
   --font-display: "MiSans", sans-serif;
+  --font-sans: var(--font-display);
+  --font-app: var(--font-display);
   --font-mono: "Maple Mono CN", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
   --text-2xs: 0.6875rem;
   --text-chat: 0.8125rem;
