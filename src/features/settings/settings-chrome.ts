@@ -89,9 +89,10 @@ export const settingsPanelScrollClass = cn("min-h-0 flex-1 overflow-x-hidden ove
 /**
  * Fixed subpage navigation bar above the panel scrollport.
  * Elevated surface strip on the body canvas — no hairline divider.
+ * `h-10` leaves room for a primary header action (save) without feeling tight.
  */
 export const settingsSubpageHeaderClass = cn(
-  "flex h-8 shrink-0 items-center gap-1 bg-app-surface px-2.5",
+  "flex h-10 shrink-0 items-center gap-1.5 bg-app-surface px-2.5",
 );
 
 export const settingsSubpageTitleClass = cn(
