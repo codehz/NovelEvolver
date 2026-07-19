@@ -45,7 +45,7 @@ import { createPendingUserInputFromRequest, type PendingToolBatch } from "./pend
 import { countCommittedAssistantParts, rebuildLastRequestInput } from "./request-history";
 import { resolveReasoningLevelForModel } from "./selectable-models";
 import { expandSlashForModel } from "./slash-expand";
-import { executeSubagentToolCall, RUN_SUBAGENT_TOOL_NAME, toSubagentToolView } from "./subagent";
+import { executeSubagentToolCall, RUN_SUBAGENT_TOOL_NAME } from "./subagent";
 
 type RuntimeEventListener = (event: AiChatEvent) => void;
 
@@ -808,14 +808,14 @@ export class AiConversationRuntime {
         // Share the parent scenario tool runner so simulated child tool results apply.
         toolRunner: this.#toolRunner,
       },
-      onProgress: (progress) => {
+      onView: (view) => {
         if (this.#disposed || signal.aborted) {
           return;
         }
         // UI-only live view; never forwarded to the model.
         this.#emitDelta(
           this.#state.updateAssistantPart(assistantMessageId, call.id, {
-            view: toSubagentToolView(progress),
+            view,
           }),
         );
       },

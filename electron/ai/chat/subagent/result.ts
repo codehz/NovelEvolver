@@ -13,8 +13,10 @@ export type SubagentRunResult = {
   status: SubagentRunStatus;
   agent_id: string;
   agent_name: string;
-  summary: string;
-  findings: unknown[];
+  /** Optional prose report for the parent model; may be empty. */
+  report: string;
+  /** Compressed timeline digest for the parent model (not a UI field). */
+  steps_digest: string;
   artifacts: SubagentArtifacts;
   usage: AiChatMessageUsage | null;
   error: string | null;
@@ -109,19 +111,18 @@ export function buildSubagentResult(input: {
   status: SubagentRunStatus;
   agentId: string;
   agentName: string;
-  summary: string;
+  report?: string;
+  stepsDigest?: string;
   artifacts?: SubagentArtifacts;
   usage?: AiChatMessageUsage | null;
   error?: string | null;
-  findings?: unknown[];
 }): SubagentRunResult {
-  const summary = input.summary.trim();
   return {
     status: input.status,
     agent_id: input.agentId,
     agent_name: input.agentName,
-    summary: summary !== "" ? summary : input.status === "completed" ? "（子代理未返回摘要）" : "",
-    findings: input.findings ?? [],
+    report: (input.report ?? "").trim(),
+    steps_digest: (input.stepsDigest ?? "").trim(),
     artifacts: input.artifacts ?? emptyArtifacts(),
     usage: input.usage ?? null,
     error: input.error ?? null,
@@ -131,7 +132,8 @@ export function buildSubagentResult(input: {
 export function completedSubagentResult(input: {
   agentId: string;
   agentName: string;
-  summary: string;
+  report?: string;
+  stepsDigest?: string;
   artifacts?: SubagentArtifacts;
   usage?: AiChatMessageUsage | null;
 }): SubagentRunResult {
@@ -139,7 +141,8 @@ export function completedSubagentResult(input: {
     status: "completed",
     agentId: input.agentId,
     agentName: input.agentName,
-    summary: input.summary,
+    report: input.report,
+    stepsDigest: input.stepsDigest,
     artifacts: input.artifacts,
     usage: input.usage,
   });
@@ -149,7 +152,8 @@ export function failedSubagentResult(input: {
   agentId: string;
   agentName: string;
   error: string;
-  summary?: string;
+  report?: string;
+  stepsDigest?: string;
   artifacts?: SubagentArtifacts;
   usage?: AiChatMessageUsage | null;
 }): SubagentRunResult {
@@ -157,7 +161,8 @@ export function failedSubagentResult(input: {
     status: "failed",
     agentId: input.agentId,
     agentName: input.agentName,
-    summary: input.summary ?? input.error,
+    report: input.report ?? input.error,
+    stepsDigest: input.stepsDigest,
     artifacts: input.artifacts,
     usage: input.usage,
     error: input.error,
@@ -167,7 +172,8 @@ export function failedSubagentResult(input: {
 export function abortedSubagentResult(input: {
   agentId: string;
   agentName: string;
-  summary?: string;
+  report?: string;
+  stepsDigest?: string;
   artifacts?: SubagentArtifacts;
   usage?: AiChatMessageUsage | null;
 }): SubagentRunResult {
@@ -175,7 +181,8 @@ export function abortedSubagentResult(input: {
     status: "aborted",
     agentId: input.agentId,
     agentName: input.agentName,
-    summary: input.summary ?? "子代理运行已被用户中止。",
+    report: input.report ?? "子代理运行已被用户中止。",
+    stepsDigest: input.stepsDigest,
     artifacts: input.artifacts,
     usage: input.usage,
     error: "aborted",

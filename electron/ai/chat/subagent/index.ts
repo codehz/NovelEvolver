@@ -24,6 +24,13 @@ export {
   type SubagentRunStatus,
 } from "./result";
 export {
+  buildStepsDigest,
+  createSubagentViewReporter,
+  type CreateSubagentViewReporterOptions,
+  type SubagentViewPhase,
+  type SubagentViewReporter,
+} from "./view-reporter";
+export {
   assertSubagentDepth,
   MAX_FOCUS_CONTENT_CHARS,
   MAX_FOCUS_TARGETS,

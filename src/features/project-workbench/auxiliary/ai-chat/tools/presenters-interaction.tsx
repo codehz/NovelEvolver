@@ -1,11 +1,14 @@
+import type { AiSubagentToolView } from "#shared/rpc/ai/index";
+
 import { parseAskUserToolArguments } from "./ask-user-prompt";
 import { DetailField, DetailList, maybeErrorTechnicalFields } from "./presenter-detail";
-import { domainLabel, toolActionLabel, toolIcon, truncateText } from "./presenter-format";
-import { getObject, getString, parseObject } from "./presenter-parse";
+import { toolActionLabel, toolIcon, truncateText } from "./presenter-format";
+import { getString, parseObject } from "./presenter-parse";
 import type { ToolPresenter } from "./presenter-types";
 import {
   describeSubagentProgressIndicator,
   progressUiFromToolView,
+  readSubagentView,
   subagentPhaseLabel,
 } from "./subagent-progress-ui";
 
@@ -71,67 +74,113 @@ export const askUserPresenter: ToolPresenter = (toolCall) => {
   };
 };
 
+function runStatusLabel(status: AiSubagentToolView["runStatus"]): string | null {
+  switch (status) {
+    case "completed":
+      return "完成";
+    case "failed":
+      return "失败";
+    case "aborted":
+      return "已中止";
+    case "needs_user":
+      return "需用户";
+    default:
+      return null;
+  }
+}
+
+function SubagentTimeline({ view }: { view: AiSubagentToolView }) {
+  if (view.steps.length === 0) {
+    return (
+      <p className="text-ctp-subtext0">
+        {view.phase === "done" ? "未调用子工具" : `${subagentPhaseLabel(view.phase)}…`}
+      </p>
+    );
+  }
+
+  return (
+    <ol className="flex flex-col gap-1.5 border-l border-titlebar-border/70 pl-2.5">
+      {view.steps.map((step) => {
+        const running = step.status === "running";
+        const failed = step.status === "error";
+        return (
+          <li key={step.id} className="relative min-w-0">
+            <span
+              aria-hidden="true"
+              className={
+                failed
+                  ? "absolute top-1.5 left-[-0.95rem] size-1.5 rounded-full bg-ctp-red"
+                  : running
+                    ? "absolute top-1.5 left-[-0.95rem] size-1.5 animate-pulse rounded-full bg-badge-background"
+                    : "absolute top-1.5 left-[-0.95rem] size-1.5 rounded-full bg-ctp-overlay0"
+              }
+            />
+            <div className="flex min-w-0 flex-wrap items-baseline gap-x-1.5 gap-y-0.5">
+              <span className={failed ? "text-ctp-red" : "text-app-foreground"}>
+                {toolActionLabel(step.name)}
+              </span>
+              {step.subject ? (
+                <span className="min-w-0 wrap-break-word text-ctp-subtext0">{step.subject}</span>
+              ) : null}
+              {step.outcome ? (
+                <span className={failed ? "text-ctp-red" : "text-ctp-overlay0"}>
+                  {step.outcome}
+                </span>
+              ) : running ? (
+                <span className="text-ctp-overlay0">进行中</span>
+              ) : null}
+            </div>
+            {step.errorMessage ? (
+              <p className="mt-0.5 text-2xs text-ctp-red">{step.errorMessage}</p>
+            ) : null}
+          </li>
+        );
+      })}
+    </ol>
+  );
+}
+
 export const runSubagentPresenter: ToolPresenter = (toolCall) => {
   const args = parseObject(toolCall.argumentsText);
+  const view = readSubagentView(toolCall.view);
+  const progress = progressUiFromToolView(toolCall.view);
   const result =
     toolCall.status === "complete" || toolCall.status === "error"
       ? parseObject(toolCall.resultText)
       : null;
-  const progress = progressUiFromToolView(toolCall.view);
+
   const agentId =
-    getString(result, "agent_id") ??
-    progress?.agentId ??
-    getString(args, "agent_id") ??
-    "未知 Agent";
-  const agentName = getString(result, "agent_name") ?? progress?.agentName ?? null;
+    view?.agentId ?? getString(result, "agent_id") ?? getString(args, "agent_id") ?? "未知 Agent";
+  const agentName = view?.agentName ?? getString(result, "agent_name") ?? null;
   const task =
-    (progress?.task && progress.task !== "" ? progress.task : null) ??
-    getString(args, "task") ??
-    "未指定任务";
+    (view?.task && view.task !== "" ? view.task : null) ?? getString(args, "task") ?? "未指定任务";
   const taskPreview = truncateText(task, 48);
-  const status = getString(result, "status") ?? progress?.runStatus ?? null;
-  const summary = getString(result, "summary") ?? progress?.report ?? null;
+  const constraints = view?.constraints ?? getString(args, "constraints");
+  const report =
+    view?.report ?? getString(result, "report") ?? getString(result, "summary") ?? null;
+  const runStatus =
+    view?.runStatus ??
+    (getString(result, "status") as AiSubagentToolView["runStatus"] | null) ??
+    null;
+  const statusLabel = runStatusLabel(runStatus);
   const error = getString(result, "error") ?? toolCall.errorMessage;
-  const artifacts = getObject(result?.artifacts);
-  const wrote =
-    typeof artifacts?.wrote === "boolean" ? artifacts.wrote : progress ? progress.wrote : null;
-  const touched = Array.isArray(artifacts?.touched_node_ids)
-    ? artifacts.touched_node_ids.filter((id): id is string => typeof id === "string")
-    : progress
-      ? progress.steps.length > 0 && progress.touchedCount > 0
-        ? Array.from({ length: progress.touchedCount }, (_, index) => `节点 ${index + 1}`)
-        : []
-      : [];
-  const focus = Array.isArray(args?.focus) ? args.focus : [];
-  const constraints = getString(args, "constraints");
+  const wrote = view?.artifacts.wrote ?? null;
+  const touchedCount = view?.artifacts.touched.length ?? 0;
   const agentLabel = agentName ?? agentId;
-  const statusLabel =
-    status === "completed"
-      ? "完成"
-      : status === "failed"
-        ? "失败"
-        : status === "aborted"
-          ? "已中止"
-          : status === "needs_user"
-            ? "需用户"
-            : null;
+  const isError = toolCall.status === "error" || runStatus === "failed";
+
   const liveIndicator =
-    progress != null
+    progress != null && toolCall.status === "running"
       ? describeSubagentProgressIndicator(progress)
       : toolCall.status === "running"
         ? "进行中"
-        : toolCall.status === "error"
-          ? "失败"
-          : undefined;
-  const isError = toolCall.status === "error" || status === "failed";
-  const hasExpandBody =
+        : undefined;
+
+  const hasBody =
+    Boolean(view) ||
     Boolean(task) ||
     Boolean(constraints) ||
-    Boolean(progress) ||
-    Boolean(statusLabel) ||
-    wrote !== null ||
-    touched.length > 0 ||
-    Boolean(summary) ||
+    Boolean(report) ||
     Boolean(error) ||
     isError;
 
@@ -140,85 +189,52 @@ export const runSubagentPresenter: ToolPresenter = (toolCall) => {
     label: toolActionLabel("run_subagent"),
     summary: `${agentLabel} · ${taskPreview}`,
     indicator: statusLabel ?? liveIndicator,
-    detail: hasExpandBody ? (
-      <>
-        <DetailList>
-          <DetailField label="Agent">{agentLabel}</DetailField>
-          <DetailField label="任务">{task}</DetailField>
-          {constraints ? <DetailField label="约束">{constraints}</DetailField> : null}
-          {focus.length > 0 && toolCall.status === "running" ? (
-            <DetailField label="焦点">
-              <ul className="flex flex-col gap-1">
-                {focus.slice(0, 8).map((entry, index) => {
-                  const item = getObject(entry);
-                  const domain = getString(item, "domain") ?? "?";
-                  const id = getString(item, "id") ?? "?";
-                  return (
-                    <li key={`${domain}:${id}:${index}`}>
-                      {domainLabel(domain)} · {id}
-                    </li>
-                  );
-                })}
-                {focus.length > 8 ? (
-                  <li className="text-ctp-subtext0">另有 {focus.length - 8} 个</li>
-                ) : null}
-              </ul>
-            </DetailField>
+    detail: hasBody ? (
+      <div className="flex flex-col gap-2">
+        <div className="flex flex-col gap-0.5">
+          <p className="text-app-foreground">{agentLabel}</p>
+          <p className="min-w-0 wrap-break-word text-ctp-subtext0">{task}</p>
+          {constraints ? (
+            <p className="min-w-0 text-2xs wrap-break-word text-ctp-overlay0">
+              约束：{constraints}
+            </p>
           ) : null}
-          {progress ? (
-            <>
-              <DetailField label="阶段">{subagentPhaseLabel(progress.phase)}</DetailField>
-              {progress.round > 0 ? (
-                <DetailField label="模型轮次">
-                  第 {progress.round} / {progress.maxRounds} 轮
-                </DetailField>
+        </div>
+
+        {view ? (
+          <div className="flex flex-col gap-1">
+            <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-2xs text-ctp-overlay0">
+              <span>{subagentPhaseLabel(view.phase)}</span>
+              {view.round > 0 ? (
+                <span>
+                  第 {view.round}/{view.maxRounds} 轮
+                </span>
               ) : null}
-              {progress.currentTool ? (
-                <DetailField label="当前工具">
-                  {toolActionLabel(progress.currentTool.name)}
-                  {progress.currentTool.status === "running" ? " · 进行中" : null}
-                </DetailField>
-              ) : null}
-              {progress.recentTools.length > 0 ? (
-                <DetailField label="最近工具">
-                  <ul className="flex flex-col gap-1">
-                    {progress.recentTools.map((tool, index) => (
-                      <li key={`${tool.name}:${index}`}>
-                        {toolActionLabel(tool.name)}
-                        {tool.status === "error"
-                          ? " · 失败"
-                          : tool.status === "complete"
-                            ? " · 完成"
-                            : ""}
-                      </li>
-                    ))}
-                  </ul>
-                </DetailField>
-              ) : null}
-              {progress.partialSummary ? (
-                <DetailField label="进行中摘要">{progress.partialSummary}</DetailField>
-              ) : null}
-            </>
-          ) : null}
-          {statusLabel ? <DetailField label="结果">{statusLabel}</DetailField> : null}
-          {wrote !== null ? (
-            <DetailField label="写回">{wrote ? "已写入工作区" : "只读"}</DetailField>
-          ) : null}
-          {touched.length > 0 ? (
-            <DetailField label="触及节点">{`${touched.length} 个`}</DetailField>
-          ) : progress && progress.touchedCount > 0 ? (
-            <DetailField label="触及节点">{`${progress.touchedCount} 个`}</DetailField>
-          ) : null}
-          {summary ? <DetailField label="摘要">{summary}</DetailField> : null}
-          {error && toolCall.status !== "error" ? (
-            <DetailField label="错误">{error}</DetailField>
-          ) : null}
-        </DetailList>
-        {maybeErrorTechnicalFields(toolCall.status, [
-          agentId ? { label: "Agent ID", value: agentId } : null,
-          status ? { label: "状态码", value: status } : null,
-        ])}
-      </>
+              {wrote !== null ? <span>{wrote ? "已写回" : "只读"}</span> : null}
+              {touchedCount > 0 ? <span>触及 {touchedCount} 个节点</span> : null}
+            </div>
+            <SubagentTimeline view={view} />
+          </div>
+        ) : null}
+
+        {report ? (
+          <div className="flex flex-col gap-0.5">
+            <span className="text-2xs text-ctp-overlay0">报告</span>
+            <p className="min-w-0 wrap-break-word whitespace-pre-wrap text-app-foreground">
+              {report}
+            </p>
+          </div>
+        ) : null}
+
+        {error && toolCall.status !== "error" ? <p className="text-ctp-red">{error}</p> : null}
+
+        {isError
+          ? maybeErrorTechnicalFields(toolCall.status, [
+              agentId ? { label: "Agent ID", value: agentId } : null,
+              runStatus ? { label: "状态码", value: runStatus } : null,
+            ])
+          : null}
+      </div>
     ) : null,
   };
 };

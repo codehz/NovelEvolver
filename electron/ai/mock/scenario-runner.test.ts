@@ -212,7 +212,8 @@ describe("subagent mock scenarios", () => {
         type: "json",
         json: {
           status: "completed",
-          summary: child.text,
+          report: child.text,
+          steps_digest: "",
           agent_id: reviewer.id,
           agent_name: reviewer.name,
         },
@@ -289,12 +290,13 @@ describe("subagent mock scenarios", () => {
     expect(result.errorMessage).toBeNull();
     const json = JSON.parse(result.resultText!) as {
       status: string;
-      summary: string;
+      report: string;
       agent_name: string;
     };
     expect(json.status).toBe("completed");
-    expect(json.summary).toContain("未发现明显人设冲突");
+    expect(json.report).toContain("未发现明显人设冲突");
     expect(json.agent_name).toBe("一致性审查");
+    expect(result.view?.kind).toBe("subagent");
     expect(phases[0]).toBe("starting");
     expect(phases).toContain("thinking");
     expect(phases.at(-1)).toBe("finalizing");
@@ -339,19 +341,23 @@ describe("subagent mock scenarios", () => {
       },
     });
 
-    const json = JSON.parse(result.resultText!) as { status: string; summary: string };
+    const json = JSON.parse(result.resultText!) as { status: string; report: string };
     expect(json.status).toBe("completed");
-    expect(json.summary).toContain("雨夜开场");
+    expect(json.report).toContain("雨夜开场");
     expect(phases).toContain("tool");
     expect(currentTools).toContain("read_document");
+    expect(result.view?.kind).toBe("subagent");
+    if (result.view?.kind === "subagent") {
+      expect(result.view.steps.some((step) => step.name === "read_document")).toBe(true);
+    }
   });
 
-  it("executeSubagentToolCall reports failed when child yields no summary", async () => {
+  it("executeSubagentToolCall completes when child yields empty report", async () => {
     const scenario = getMockScenario("subagent.failed");
     const result = await executeSubagentToolCall({
       call: runSubagentCall("scenario-subagent-failed", {
         agent_id: reviewer.id,
-        task: "故意不返回摘要以触发失败路径。",
+        task: "允许无最终报告。",
       }),
       depth: 0,
       signal: new AbortController().signal,
@@ -370,8 +376,9 @@ describe("subagent mock scenarios", () => {
       },
     });
 
-    const json = JSON.parse(result.resultText!) as { status: string; error: string };
-    expect(json.status).toBe("failed");
-    expect(json.error).toContain("未返回可用摘要");
+    const json = JSON.parse(result.resultText!) as { status: string; report: string };
+    expect(json.status).toBe("completed");
+    expect(json.report).toBe("");
+    expect(result.view?.kind).toBe("subagent");
   });
 });

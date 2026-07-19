@@ -7,7 +7,12 @@ import type {
 } from "@codehz/ai";
 import { aggregateEvents } from "@codehz/ai";
 
-import type { AiChatMessageUsage, AiChatSelectableModelKind } from "#shared/rpc/ai/index";
+import type {
+  AiChatMessageUsage,
+  AiChatSelectableModelKind,
+  AiSubagentToolView,
+  AiToolViewFocus,
+} from "#shared/rpc/ai/index";
 import { MOCK_AI_MODEL_ID } from "#shared/rpc/ai/index";
 import type { AiReasoningLevel } from "#shared/rpc/services/index";
 
@@ -30,6 +35,11 @@ import {
   type ToolExecutionResult,
   type ToolRunner,
 } from "../../tools";
+import {
+  projectToolOutcome,
+  projectToolSubject,
+  projectToolSubjectFromResult,
+} from "../../tools/project-subject";
 import { okJson } from "../../tools/result";
 import { buildSubagentUserMessage, parseRunSubagentArgs } from "./context";
 import { resolveFocusSnapshots } from "./focus-inject";
@@ -41,13 +51,6 @@ import {
   stripSubagentTools,
 } from "./policy";
 import {
-  buildSubagentProgress,
-  createProgressThrottle,
-  type SubagentProgress,
-  type SubagentProgressPhase,
-  type SubagentProgressTool,
-} from "./progress";
-import {
   abortedSubagentResult,
   collectArtifactsFromToolCall,
   completedSubagentResult,
@@ -55,6 +58,11 @@ import {
   type SubagentArtifacts,
   type SubagentRunResult,
 } from "./result";
+import {
+  buildStepsDigest,
+  createSubagentViewReporter,
+  type SubagentViewReporter,
+} from "./view-reporter";
 
 export type SubagentExecutorDeps = {
   resolveAgentConfig: (agentId: string) => AiAgentRuntimeConfig | null;
@@ -91,7 +99,7 @@ function emptyArtifacts(): SubagentArtifacts {
 function toToolExecution(
   call: ToolCallItem,
   result: SubagentRunResult,
-  view: ToolExecutionResult["view"] = null,
+  view: AiSubagentToolView | null = null,
 ): ToolExecutionResult {
   return okJson(call, result, view);
 }
@@ -107,7 +115,6 @@ function resolveBackend(
 
   const childLabel = `${deps.clientLabel}/subagent/${agent.id}`;
 
-  // Parent mock AI scenarios must share their scenario client with nested subagents.
   if (deps.scenarioId) {
     return createAiBackendSession({
       clientLabel: childLabel,
@@ -136,88 +143,6 @@ function resolveBackend(
   });
 }
 
-type ProgressReporter = {
-  emit: (
-    phase: SubagentProgressPhase,
-    overrides?: {
-      currentTool?: SubagentProgressTool | null;
-    },
-  ) => void;
-  setPartialSummary: (text: string) => void;
-  pushRecentTool: (tool: SubagentProgressTool) => void;
-  setArtifacts: (artifacts: SubagentArtifacts) => void;
-  forceFlush: () => void;
-  cancel: () => void;
-  bumpRound: () => number;
-};
-
-function createProgressReporter(options: {
-  agentId: string;
-  agentName: string;
-  onProgress?: (progress: SubagentProgress) => void;
-}): ProgressReporter {
-  let round = 0;
-  let partialSummary = "";
-  let currentTool: SubagentProgressTool | null = null;
-  let recentTools: SubagentProgressTool[] = [];
-  let artifacts = emptyArtifacts();
-  let phase: SubagentProgressPhase = "starting";
-
-  const build = (nextPhase: SubagentProgressPhase): SubagentProgress =>
-    buildSubagentProgress({
-      agentId: options.agentId,
-      agentName: options.agentName,
-      phase: nextPhase,
-      round,
-      maxRounds: MAX_SUBAGENT_TOOL_ROUNDS,
-      currentTool,
-      recentTools,
-      partialSummary,
-      wrote: artifacts.wrote,
-      touchedCount: artifacts.touched_node_ids.length,
-    });
-
-  const emitRaw = (progress: SubagentProgress) => {
-    options.onProgress?.(progress);
-  };
-
-  const throttle = createProgressThrottle({
-    onEmit: emitRaw,
-  });
-
-  return {
-    emit(nextPhase, overrides) {
-      phase = nextPhase;
-      if (overrides && "currentTool" in overrides) {
-        currentTool = overrides.currentTool ?? null;
-      }
-      throttle.forceFlush();
-      emitRaw(build(phase));
-    },
-    setPartialSummary(text) {
-      partialSummary = text;
-      throttle.schedule(build(phase === "starting" ? "thinking" : phase));
-    },
-    pushRecentTool(tool) {
-      recentTools = [...recentTools, tool];
-      currentTool = null;
-    },
-    setArtifacts(next) {
-      artifacts = next;
-    },
-    forceFlush() {
-      throttle.forceFlush();
-    },
-    cancel() {
-      throttle.cancel();
-    },
-    bumpRound() {
-      round += 1;
-      return round;
-    },
-  };
-}
-
 async function consumeStreamWithProgress(
   stream: AsyncIterable<AIStreamEvent>,
   signal: AbortSignal,
@@ -244,25 +169,62 @@ async function consumeStreamWithProgress(
   return aggregateEvents(events);
 }
 
+function finishWith(
+  call: ToolCallItem,
+  result: SubagentRunResult,
+  reporter: SubagentViewReporter | null,
+): ToolExecutionResult {
+  const view = reporter?.finalize(result.status) ?? null;
+  if (view && result.steps_digest === "") {
+    // Ensure model digest is present when steps exist but builder left it empty.
+  }
+  const withDigest =
+    result.steps_digest === "" && view
+      ? { ...result, steps_digest: buildStepsDigest(view.steps) }
+      : result;
+  return toToolExecution(
+    call,
+    withDigest,
+    view ? { ...view, report: withDigest.report || view.report } : null,
+  );
+}
+
 /**
  * Run an isolated specialist agent for a single `run_subagent` tool call.
- * Intermediate UI progress is delivered only via `onProgress` (not parent history parts).
+ * Intermediate UI progress is delivered only via `onView` (not parent history parts).
  */
 export async function executeSubagentToolCall(options: {
   call: ToolCallItem;
   depth: number;
   signal: AbortSignal;
   deps: SubagentExecutorDeps;
-  /** Optional UI progress sink (mapped to `AiChatToolCall.view` by the runtime). */
-  onProgress?: (progress: SubagentProgress) => void;
+  /** Optional UI view sink (live + terminal). */
+  onView?: (view: AiSubagentToolView) => void;
+  /**
+   * @deprecated Use `onView`. Kept temporarily for tests that listen to phase names
+   * via the old progress shape — maps through view.phase.
+   */
+  onProgress?: (progress: { phase: string; current_tool?: { name: string } | null }) => void;
 }): Promise<ToolExecutionResult> {
-  const { call, depth, signal, deps, onProgress } = options;
+  const { call, depth, signal, deps } = options;
+  const onView = (view: AiSubagentToolView) => {
+    options.onView?.(view);
+    options.onProgress?.({
+      phase: view.phase === "done" ? "finalizing" : view.phase,
+      current_tool:
+        [...view.steps].reverse().find((step) => step.status === "running") != null
+          ? {
+              name: [...view.steps].reverse().find((step) => step.status === "running")!.name,
+            }
+          : null,
+    });
+  };
 
   let agentId = "";
   let agentName = "";
   let artifacts = emptyArtifacts();
   let usage: AiChatMessageUsage | null = null;
-  let reporter: ProgressReporter | null = null;
+  let reporter: SubagentViewReporter | null = null;
 
   try {
     assertSubagentDepth(depth);
@@ -282,23 +244,33 @@ export async function executeSubagentToolCall(options: {
       );
     }
     agentName = agent.name;
-    reporter = createProgressReporter({
+
+    const focus: AiToolViewFocus[] = args.focus.map((entry) => ({
+      domain: entry.domain,
+      id: entry.id,
+    }));
+
+    reporter = createSubagentViewReporter({
       agentId: agent.id,
       agentName: agent.name,
-      onProgress,
+      task: args.task,
+      constraints: args.constraints,
+      focus,
+      onView,
     });
     reporter.emit("starting");
 
     const childToolNames = stripSubagentTools(agent.availableToolNames);
     const tools: ToolDefinition[] = selectAiTools(childToolNames);
     if (tools.length === 0) {
-      return toToolExecution(
+      return finishWith(
         call,
         failedSubagentResult({
           agentId: agent.id,
           agentName: agent.name,
           error: `Agent「${agent.name}」没有可用于子运行的工具。`,
         }),
+        reporter,
       );
     }
 
@@ -315,7 +287,6 @@ export async function executeSubagentToolCall(options: {
       try {
         focusSnapshots = resolveFocusSnapshots(deps.resolveWorktree(), args.focus);
       } catch {
-        // Soft-fallback: child still receives bare focus ids via buildSubagentUserMessage.
         focusSnapshots = [];
       }
     }
@@ -323,23 +294,25 @@ export async function executeSubagentToolCall(options: {
 
     let input: InputItem[] = [toInputItem(userMessage)];
     let toolRoundCount = 0;
-    let lastSummary = "";
+    let lastReport = "";
 
     while (true) {
       if (signal.aborted) {
-        return toToolExecution(
+        return finishWith(
           call,
           abortedSubagentResult({
             agentId: agent.id,
             agentName: agent.name,
             artifacts,
             usage,
+            stepsDigest: buildStepsDigest(reporter.snapshot().steps),
           }),
+          reporter,
         );
       }
 
       reporter.bumpRound();
-      reporter.emit("thinking", { currentTool: null });
+      reporter.emit("thinking");
 
       const response = await consumeStreamWithProgress(
         backend.client.stream({
@@ -356,7 +329,7 @@ export async function executeSubagentToolCall(options: {
         }),
         signal,
         (fullText) => {
-          reporter?.setPartialSummary(fullText);
+          reporter?.setReport(fullText);
         },
       );
       reporter.forceFlush();
@@ -364,8 +337,8 @@ export async function executeSubagentToolCall(options: {
       usage = addMessageUsage(usage, response.usage);
       const responseText = readResponseText(response).trim();
       if (responseText !== "") {
-        lastSummary = responseText;
-        reporter.setPartialSummary(responseText);
+        lastReport = responseText;
+        reporter.setReport(responseText);
         reporter.forceFlush();
       }
 
@@ -376,16 +349,18 @@ export async function executeSubagentToolCall(options: {
       toolRoundCount += 1;
       if (toolRoundCount > MAX_SUBAGENT_TOOL_ROUNDS) {
         reporter.emit("finalizing");
-        return toToolExecution(
+        return finishWith(
           call,
           failedSubagentResult({
             agentId: agent.id,
             agentName: agent.name,
             error: `子代理工具循环超过 ${MAX_SUBAGENT_TOOL_ROUNDS} 轮。`,
-            summary: lastSummary,
+            report: lastReport,
             artifacts,
             usage,
+            stepsDigest: buildStepsDigest(reporter.snapshot().steps),
           }),
+          reporter,
         );
       }
 
@@ -393,14 +368,17 @@ export async function executeSubagentToolCall(options: {
 
       for (const toolCall of response.toolCalls) {
         if (signal.aborted) {
-          return toToolExecution(
+          return finishWith(
             call,
             abortedSubagentResult({
               agentId: agent.id,
               agentName: agent.name,
               artifacts,
               usage,
+              report: lastReport,
+              stepsDigest: buildStepsDigest(reporter.snapshot().steps),
             }),
+            reporter,
           );
         }
 
@@ -410,46 +388,63 @@ export async function executeSubagentToolCall(options: {
           !childToolNames.includes(toolCall.name)
         ) {
           reporter.emit("finalizing");
-          return toToolExecution(
+          return finishWith(
             call,
             failedSubagentResult({
               agentId: agent.id,
               agentName: agent.name,
               error: `子代理尝试调用不允许的工具「${toolCall.name}」。`,
-              summary: lastSummary,
+              report: lastReport,
               artifacts,
               usage,
+              stepsDigest: buildStepsDigest(reporter.snapshot().steps),
             }),
+            reporter,
           );
         }
 
-        reporter.emit("tool", {
-          currentTool: { name: toolCall.name, status: "running" },
-        });
+        const subject = projectToolSubject(toolCall.name, toolCall.argumentsText);
+        const stepId = reporter.beginStep({ name: toolCall.name, subject });
 
         const execution = await toolRunner.execute(toolCall);
         if (execution.userInputRequest) {
-          reporter.pushRecentTool({ name: toolCall.name, status: "error" });
+          reporter.completeStep({
+            id: stepId,
+            status: "error",
+            outcome: "不支持",
+            errorMessage: "子代理不支持 ask_user",
+          });
           reporter.setArtifacts(artifacts);
           reporter.emit("finalizing");
-          return toToolExecution(
+          return finishWith(
             call,
             failedSubagentResult({
               agentId: agent.id,
               agentName: agent.name,
               error: "子代理不支持 ask_user；请由编排者先向用户澄清后再委派。",
-              summary: lastSummary,
+              report: lastReport,
               artifacts,
               usage,
+              stepsDigest: buildStepsDigest(reporter.snapshot().steps),
             }),
+            reporter,
           );
         }
 
         const toolStatus = execution.errorMessage === null ? "complete" : "error";
         artifacts = collectArtifactsFromToolCall(toolCall, execution.resultText, artifacts);
         reporter.setArtifacts(artifacts);
-        reporter.pushRecentTool({ name: toolCall.name, status: toolStatus });
-        reporter.emit("tool", { currentTool: null });
+        reporter.completeStep({
+          id: stepId,
+          status: toolStatus,
+          subject: projectToolSubjectFromResult(
+            toolCall.name,
+            toolCall.argumentsText,
+            execution.resultText,
+          ),
+          outcome: projectToolOutcome(toolCall.name, execution.resultText, execution.errorMessage),
+          errorMessage: execution.errorMessage,
+        });
 
         input.push(execution.toolResult);
       }
@@ -457,43 +452,35 @@ export async function executeSubagentToolCall(options: {
 
     reporter.emit("finalizing");
 
-    if (lastSummary.trim() === "") {
-      return toToolExecution(
-        call,
-        failedSubagentResult({
-          agentId: agent.id,
-          agentName: agent.name,
-          error: "子代理未返回可用摘要。",
-          artifacts,
-          usage,
-        }),
-      );
-    }
-
-    return toToolExecution(
+    // Timeline-first: empty report is allowed when work completed without prose.
+    return finishWith(
       call,
       completedSubagentResult({
         agentId: agent.id,
         agentName: agent.name,
-        summary: lastSummary,
+        report: lastReport,
         artifacts,
         usage,
+        stepsDigest: buildStepsDigest(reporter.snapshot().steps),
       }),
+      reporter,
     );
   } catch (error) {
     if (isAbortError(error) || signal.aborted) {
-      return toToolExecution(
+      return finishWith(
         call,
         abortedSubagentResult({
           agentId: agentId || "unknown",
           agentName: agentName || agentId || "unknown",
           artifacts,
           usage,
+          stepsDigest: reporter ? buildStepsDigest(reporter.snapshot().steps) : "",
         }),
+        reporter,
       );
     }
 
-    return toToolExecution(
+    return finishWith(
       call,
       failedSubagentResult({
         agentId: agentId || "unknown",
@@ -501,7 +488,9 @@ export async function executeSubagentToolCall(options: {
         error: toErrorMessage(error),
         artifacts,
         usage,
+        stepsDigest: reporter ? buildStepsDigest(reporter.snapshot().steps) : "",
       }),
+      reporter,
     );
   } finally {
     reporter?.cancel();

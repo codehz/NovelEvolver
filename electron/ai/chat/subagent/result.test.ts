@@ -55,15 +55,26 @@ describe("collectArtifactsFromToolCall", () => {
 });
 
 describe("result builders", () => {
-  test("completed uses summary", () => {
+  test("completed uses report", () => {
     const result = completedSubagentResult({
       agentId: "a",
       agentName: "审查",
-      summary: "  没有问题  ",
+      report: "  没有问题  ",
+      stepsDigest: "read_document → 完成",
     });
     expect(result.status).toBe("completed");
-    expect(result.summary).toBe("没有问题");
+    expect(result.report).toBe("没有问题");
+    expect(result.steps_digest).toBe("read_document → 完成");
     expect(result.error).toBeNull();
+  });
+
+  test("completed allows empty report", () => {
+    const result = completedSubagentResult({
+      agentId: "a",
+      agentName: "审查",
+    });
+    expect(result.status).toBe("completed");
+    expect(result.report).toBe("");
   });
 
   test("failed carries error", () => {
@@ -74,13 +85,13 @@ describe("result builders", () => {
     });
     expect(result.status).toBe("failed");
     expect(result.error).toBe("未知 agent");
-    expect(result.summary).toBe("未知 agent");
+    expect(result.report).toBe("未知 agent");
   });
 
-  test("aborted default summary", () => {
+  test("aborted default report", () => {
     const result = abortedSubagentResult({ agentId: "a", agentName: "审查" });
     expect(result.status).toBe("aborted");
     expect(result.error).toBe("aborted");
-    expect(result.summary).toContain("中止");
+    expect(result.report).toContain("中止");
   });
 });

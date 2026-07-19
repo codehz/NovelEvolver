@@ -94,7 +94,7 @@ describe("executeSubagentToolCall", () => {
     expect(["aborted", "failed"]).toContain(json.status);
   });
 
-  test("strips spawn tools and completes with summary", async () => {
+  test("strips spawn tools and completes with report", async () => {
     const phases: string[] = [];
     const result = await executeSubagentToolCall({
       call: toolCall({
@@ -124,15 +124,46 @@ describe("executeSubagentToolCall", () => {
     expect(result.errorMessage).toBeNull();
     const json = JSON.parse(result.resultText!) as {
       status: string;
-      summary: string;
+      report: string;
       agent_name: string;
     };
     expect(json.status).toBe("completed");
-    expect(json.summary).toContain("未发现设定冲突");
+    expect(json.report).toContain("未发现设定冲突");
     expect(json.agent_name).toBe("一致性审查");
+    expect(result.view?.kind).toBe("subagent");
+    if (result.view?.kind === "subagent") {
+      expect(result.view.task).toContain("审查第三章");
+      expect(result.view.phase).toBe("done");
+      expect(result.view.runStatus).toBe("completed");
+      expect(result.view.report).toContain("未发现设定冲突");
+    }
     expect(phases[0]).toBe("starting");
     expect(phases).toContain("thinking");
     expect(phases.at(-1)).toBe("finalizing");
+  });
+
+  test("completes with empty report when no final text", async () => {
+    const result = await executeSubagentToolCall({
+      call: toolCall({ agent_id: reviewer.id, task: "只读扫描" }),
+      depth: 0,
+      signal: new AbortController().signal,
+      deps: {
+        resolveAgentConfig: (id) => (id === reviewer.id ? reviewer : null),
+        resolveModelConfig: () => null,
+        resolveWorktree: () => {
+          throw new Error("no worktree");
+        },
+        clientLabel: "test",
+        parentSelectedModelId: "mock",
+        parentSelectedReasoningLevel: null,
+        parentAdapterKind: "mock",
+        createBackend: () => createMockBackend(""),
+      },
+    });
+
+    const json = JSON.parse(result.resultText!) as { status: string; report: string };
+    expect(json.status).toBe("completed");
+    expect(json.report).toBe("");
   });
 
   test("reports tool milestones when child calls tools", async () => {
@@ -148,7 +179,9 @@ describe("executeSubagentToolCall", () => {
             type: "tool_call",
             id: "child-read-1",
             name: "read_document",
-            argumentsText: JSON.stringify({ id: "ch-1" }),
+            argumentsText: JSON.stringify({
+              target: { domain: "manuscript", id: "ch-1" },
+            }),
           };
           yield { type: "complete", usage: { inputTokens: 1, outputTokens: 1, totalTokens: 2 } };
           return;
@@ -182,9 +215,28 @@ describe("executeSubagentToolCall", () => {
         toolRunner: {
           execute: async (call) => ({
             toolResult: toolResultItem(call.id, call.name, "success", [
-              { type: "json", json: { ok: true } },
+              {
+                type: "json",
+                json: {
+                  target: {
+                    domain: "manuscript",
+                    id: "ch-1",
+                    label: "第一章",
+                    display_path: "卷一/第一章",
+                  },
+                  stats: { char_count: 12, line_count: 2 },
+                },
+              },
             ]),
-            resultText: '{"ok":true}',
+            resultText: JSON.stringify({
+              target: {
+                domain: "manuscript",
+                id: "ch-1",
+                label: "第一章",
+                display_path: "卷一/第一章",
+              },
+              stats: { char_count: 12, line_count: 2 },
+            }),
             errorMessage: null,
             view: null,
           }),
@@ -196,13 +248,27 @@ describe("executeSubagentToolCall", () => {
       },
     });
 
-    const json = JSON.parse(result.resultText!) as { status: string; summary: string };
+    const json = JSON.parse(result.resultText!) as {
+      status: string;
+      report: string;
+      steps_digest: string;
+    };
     expect(json.status).toBe("completed");
-    expect(json.summary).toContain("审查完成");
+    expect(json.report).toContain("审查完成");
+    expect(json.steps_digest).toContain("read_document");
     expect(phases).toContain("tool");
     expect(currentTools).toContain("read_document");
     expect(phases[0]).toBe("starting");
     expect(phases.at(-1)).toBe("finalizing");
+    expect(result.view?.kind).toBe("subagent");
+    if (result.view?.kind === "subagent") {
+      expect(result.view.steps.length).toBe(1);
+      expect(result.view.steps[0]?.name).toBe("read_document");
+      expect(result.view.steps[0]?.status).toBe("complete");
+      expect(result.view.steps[0]?.subject).toContain("第一章");
+      expect(result.view.steps[0]?.outcome).toContain("字符");
+      expect(result.view.phase).toBe("done");
+    }
   });
 
   test("rejects nested depth", async () => {
