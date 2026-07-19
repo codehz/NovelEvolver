@@ -107,8 +107,8 @@ export const settingsPanelSectionClass = cn("flex flex-col gap-2.5 px-3 py-2.5")
 export const settingsPanelHeaderClass = cn("flex items-start justify-between gap-2");
 
 /**
- * Dual-pane shell (provider rail + detail): split by background, not hairlines.
- * Rail reuses dialog-surface elevation; detail sits on the body canvas.
+ * Dual-pane shell (provider rail + detail).
+ * Rail reuses dialog-surface elevation; detail is an editor-style inset card on the body canvas.
  */
 export const settingsDualPaneClass = cn("flex min-h-0 flex-1");
 
@@ -122,9 +122,24 @@ export const settingsDualPaneRailScrollClass = cn("min-h-0 flex-1 overflow-y-aut
 
 export const settingsDualPaneRailListClass = cn("flex flex-col gap-0.5");
 
+/** Right detail column container (outer; inset + surface applied by SettingsDetailPane). */
 export const settingsDualPaneDetailClass = cn("flex min-h-0 min-w-0 flex-1 flex-col");
 
-/** Detail header strip — same canvas as the list body; spacing only, no border-b. */
+/**
+ * 8px outer inset around the detail card — matches workbench `WORKBENCH_SIDEBAR_INSET`.
+ * Used by SettingsDetailPane and model subpage form area.
+ */
+export const settingsDetailInsetClass = cn("flex min-h-0 min-w-0 flex-1 flex-col p-2");
+
+/**
+ * Card shell for settings detail content: border, radius, clip (matches editor panel).
+ * Sits on the body canvas; form surface islands stay elevated inside.
+ */
+export const settingsDetailSurfaceClass = cn(
+  "overflow-hidden rounded-lg border border-titlebar-border bg-app-background",
+);
+
+/** Detail header strip inside the card — spacing only, no border-b. */
 export const settingsDualPaneDetailHeaderClass = cn(
   "flex shrink-0 items-start justify-between gap-2 px-3 py-2",
 );
