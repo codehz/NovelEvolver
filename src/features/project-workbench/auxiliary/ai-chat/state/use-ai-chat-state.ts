@@ -90,7 +90,8 @@ function useAiChatActionsValue(): AiChatActions {
 
   const stopGeneration = useCallback(async (): Promise<void> => {
     const snapshot = store.get(snapshotAtom);
-    if (!snapshot.pending) {
+    // pending 流式中，或 openInteractions 等待用户时均可中断。
+    if (!snapshot.pending && snapshot.openInteractions.length === 0) {
       return;
     }
     await Promise.resolve(aiChat.stopGeneration());

@@ -14,8 +14,8 @@ import {
 } from "./interaction-contributions";
 
 /**
- * 开放交互 shell：多题本地草稿 + 一键提交/取消。
- * 回传走稳定 `AiChatHandle.submitInteraction` / `cancelInteraction`，不碰 stream stub。
+ * 开放交互 shell：多题本地草稿 + 一键提交。
+ * 提交走 `submitInteraction`；取消按钮复用中断语义（`stopGeneration`），不继续工具环。
  */
 type AskUserComposerPanelProps = {
   loading: boolean;
@@ -23,7 +23,7 @@ type AskUserComposerPanelProps = {
 };
 
 export function AskUserComposerPanel({ loading, openInteractions }: AskUserComposerPanelProps) {
-  const { submitInteraction, cancelInteraction } = useAiChatActions();
+  const { submitInteraction, stopGeneration } = useAiChatActions();
   const [activeId, setActiveId] = useState<string | null>(null);
   const [draftsById, setDraftsById] = useState<Record<string, string>>({});
   const [committing, setCommitting] = useState(false);
@@ -92,19 +92,18 @@ export function AskUserComposerPanel({ loading, openInteractions }: AskUserCompo
     }
   }, [allReady, disabled, draftsById, openInteractions, submitInteraction]);
 
+  /** 中断整轮输出：settle 取消结果并停止，不再继续生成。 */
   const handleCancelAll = useCallback(async () => {
     if (disabled || openInteractions.length === 0) {
       return;
     }
     setCommitting(true);
     try {
-      for (const input of openInteractions) {
-        await Promise.resolve(cancelInteraction(input.id));
-      }
+      await stopGeneration();
     } finally {
       setCommitting(false);
     }
-  }, [cancelInteraction, disabled, openInteractions]);
+  }, [disabled, openInteractions.length, stopGeneration]);
 
   const handleRequestCommit = useCallback(() => {
     if (allReady) {
@@ -138,11 +137,11 @@ export function AskUserComposerPanel({ loading, openInteractions }: AskUserCompo
         onRequestCommit={handleRequestCommit}
       />
       <div className="flex min-w-0 items-center justify-end gap-1 px-1">
-        <AppTooltip label="取消全部" side="top" disabled={disabled}>
+        <AppTooltip label="中断" side="top" disabled={disabled}>
           <Button
             variant="ghost"
             size="icon-sm"
-            aria-label="取消全部"
+            aria-label="中断"
             className={cn(
               stopButtonClass,
               "disabled:pointer-events-none disabled:text-ctp-overlay0",
@@ -152,7 +151,7 @@ export function AskUserComposerPanel({ loading, openInteractions }: AskUserCompo
               void handleCancelAll();
             }}
           >
-            <span aria-hidden="true" className="icon-[codicon--close] text-sm" />
+            <span aria-hidden="true" className="icon-[codicon--debug-stop] text-sm" />
           </Button>
         </AppTooltip>
         <AppTooltip

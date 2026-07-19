@@ -29,7 +29,14 @@ type AiAskUserCardProps = {
 export function AiAskUserCard({ toolCall }: AiAskUserCardProps): ReactNode {
   const args = parseAskUserToolArguments(toolCall.argumentsText);
   const question = args?.question ?? "等待补充信息";
-  const answer = getString(parseObject(toolCall.resultText), "answer");
+  const answerFromResult = getString(parseObject(toolCall.resultText), "answer");
+  const answerFromView = toolCall.view?.kind === "ask_user" ? (toolCall.view.answer ?? null) : null;
+  const answer = answerFromResult ?? answerFromView;
+  const isCancelled =
+    toolCall.status === "complete" &&
+    answer == null &&
+    toolCall.resultText != null &&
+    toolCall.resultText !== "";
   const selectedChoice = args?.choices?.find((choice) => choice.title === answer);
   const isError = toolCall.status === "error";
   const isAwaiting = toolCall.status === "awaiting_user";
@@ -37,7 +44,7 @@ export function AiAskUserCard({ toolCall }: AiAskUserCardProps): ReactNode {
     toolCall.status === "pending" ||
     toolCall.status === "running" ||
     toolCall.status === "awaiting_user";
-  const showChoices = !answer && (args?.choices?.length ?? 0) > 0;
+  const showChoices = !answer && !isCancelled && (args?.choices?.length ?? 0) > 0;
 
   const iconClass = cn(
     isError ? toolCallIconErrorClass : isLive ? toolCallIconRunningClass : toolCallIconClass,
@@ -46,7 +53,9 @@ export function AiAskUserCard({ toolCall }: AiAskUserCardProps): ReactNode {
 
   const statusLabel =
     toolCall.status === "complete"
-      ? "已回答"
+      ? isCancelled
+        ? "已取消"
+        : "已回答"
       : isAwaiting
         ? "等待回答"
         : isError
@@ -116,6 +125,12 @@ export function AiAskUserCard({ toolCall }: AiAskUserCardProps): ReactNode {
                 )}
               </p>
             </div>
+          ) : null}
+
+          {isCancelled ? (
+            <p className={toolCallQuestionClass}>
+              {toolCall.resultText?.trim() || "用户取消了回答。"}
+            </p>
           ) : null}
 
           {isAwaiting ? <p className={toolCallQuestionClass}>请在底部输入框回答。</p> : null}
