@@ -3,7 +3,7 @@ import type { SHA1 } from "nano-git";
 import { createSqliteRepository } from "nano-git/repository/sqlite";
 
 import type { ProjectMetadata } from "#shared/project";
-import type { AiChatHandle, MockAiControlHandle } from "#shared/rpc/ai/index";
+import type { MockAiControlHandle, ProjectAi } from "#shared/rpc/ai/index";
 import type { BranchWorkspace } from "#shared/rpc/session/index";
 import type { BranchSummary, ProjectSession } from "#shared/rpc/session/index";
 
@@ -15,8 +15,8 @@ import { toProjectMetadata } from "../../projects/home-path";
 import type { AiAgentsStore } from "../../settings/ai-agents-store";
 import type { AiModelsStore } from "../../settings/ai-models-store";
 import { WorktreeSession } from "../../worktree/session";
-import { AiChatHandleImpl } from "../handles/ai-chat-handle";
 import { MockAiControlHandleImpl } from "../handles/mock-ai-control-handle";
+import { ProjectAiHandleImpl } from "../handles/project-ai-handle";
 import { BranchWorkspaceImpl } from "./branch-workspace";
 
 type BranchWorkspaceEntry = {
@@ -39,7 +39,7 @@ export class ProjectSessionImpl extends RpcTarget implements ProjectSession {
   readonly #branchWorkspaces = new Map<string, BranchWorkspaceEntry>();
   readonly #metadata: ProjectMetadata;
   readonly #aiChat: ProjectAiChatController;
-  readonly #ai: AiChatHandle;
+  readonly #ai: ProjectAi;
   readonly #mockAi: MockAiControlHandle | null;
   #disposed = false;
 
@@ -67,7 +67,7 @@ export class ProjectSessionImpl extends RpcTarget implements ProjectSession {
       getAiModelsStore,
       getAiAgentsStore,
     });
-    this.#ai = new AiChatHandleImpl(this.#aiChat);
+    this.#ai = new ProjectAiHandleImpl(this.#aiChat);
     this.#mockAi = mockAiEnabled ? new MockAiControlHandleImpl(this.#aiChat) : null;
   }
 
@@ -89,7 +89,7 @@ export class ProjectSessionImpl extends RpcTarget implements ProjectSession {
     }));
   }
 
-  get ai(): AiChatHandle {
+  get ai(): ProjectAi {
     return this.#ai;
   }
 

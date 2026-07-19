@@ -4,7 +4,7 @@ import type {
   AiChatSelectableAgent,
   AiChatSelectableModel,
   AiChatSendMessageInput,
-  AiConversationListOptions,
+  AiConversationDirectoryEvent,
   AiConversationSearchHit,
   AiConversationSearchOptions,
   AiConversationStatus,
@@ -146,6 +146,7 @@ export class ProjectAiChatController {
   readonly #getAiModelsStore: () => AiModelsStore;
   readonly #getAiAgentsStore: () => AiAgentsStore;
   readonly #publisher = new RpcStreamPublisher<AiChatEvent>();
+  readonly #directoryPublisher = new RpcStreamPublisher<AiConversationDirectoryEvent>();
   readonly #runtimes = new Map<string, AiConversationRuntime>();
   #activeConversationId = "";
   #activeRuntimeListenerCleanup: (() => void) | null = null;
@@ -180,6 +181,13 @@ export class ProjectAiChatController {
         kind: "snapshot",
         snapshot: this.#getActiveRuntime().getSnapshot(),
       }),
+    });
+  }
+
+  /** Directory feed: always active + archived, snapshot-only full replace. */
+  subscribeDirectory(): ReadableStream<AiConversationDirectoryEvent> {
+    return this.#directoryPublisher.subscribe({
+      getInitialValue: () => this.#currentDirectoryEvent(),
     });
   }
 
@@ -225,6 +233,7 @@ export class ProjectAiChatController {
       }),
       true,
     );
+    this.#emitDirectory();
   }
 
   listSelectableModels(): AiChatSelectableModel[] {
@@ -331,7 +340,12 @@ export class ProjectAiChatController {
     });
   }
 
-  listConversations(options?: AiConversationListOptions): AiConversationSummary[] {
+  /**
+   * In-memory + repo merge for conversation directory.
+   * When `includeArchived` is true, returns active + archived (directory feed).
+   * Ephemeral mock runtimes are always excluded.
+   */
+  listConversations(options?: { includeArchived?: boolean }): AiConversationSummary[] {
     const includeArchived = options?.includeArchived === true;
     const summaries = new Map<string, AiConversationSummary>();
 
@@ -433,6 +447,7 @@ export class ProjectAiChatController {
     }
     const runtime = this.#getOrLoadRuntime(normalized);
     runtime.rename(title);
+    this.#emitDirectory();
   }
 
   archiveConversation(conversationId: string): void {
@@ -456,6 +471,7 @@ export class ProjectAiChatController {
     if (wasActive) {
       this.#activateNextOrCreate(normalized);
     }
+    this.#emitDirectory();
   }
 
   [Symbol.dispose](): void {
@@ -474,6 +490,7 @@ export class ProjectAiChatController {
     } finally {
       this.#runtimes.clear();
       this.#publisher[Symbol.dispose]();
+      this.#directoryPublisher[Symbol.dispose]();
     }
   }
 
@@ -575,6 +592,7 @@ export class ProjectAiChatController {
     if (wasActive && status === "archived") {
       this.#activateNextOrCreate(normalized);
     }
+    this.#emitDirectory();
   }
 
   #disposeRuntime(conversationId: string, options: { persist: boolean }): void {
@@ -620,6 +638,9 @@ export class ProjectAiChatController {
         return;
       }
       this.#publisher.emit(event);
+      if (directoryRelevantActiveEvent(event)) {
+        this.#emitDirectory();
+      }
     });
 
     if (emitSnapshot) {
@@ -629,4 +650,33 @@ export class ProjectAiChatController {
       });
     }
   }
+
+  #currentDirectoryEvent(): AiConversationDirectoryEvent {
+    return {
+      kind: "snapshot",
+      snapshot: {
+        conversations: this.listConversations({ includeArchived: true }),
+      },
+    };
+  }
+
+  #emitDirectory(): void {
+    this.#directoryPublisher.emit(this.#currentDirectoryEvent());
+  }
+}
+
+/** Skip high-frequency text deltas; refresh directory on activity / title / structure signals. */
+function directoryRelevantActiveEvent(event: AiChatEvent): boolean {
+  if (event.kind === "snapshot") {
+    return true;
+  }
+  return event.ops.some(
+    (op) =>
+      op.type === "state.updated" ||
+      op.type === "message.added" ||
+      op.type === "message.removed" ||
+      op.type === "message.updated" ||
+      op.type === "path.replaced" ||
+      op.type === "conversation.reset",
+  );
 }
