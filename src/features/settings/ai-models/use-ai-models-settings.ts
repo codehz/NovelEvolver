@@ -87,15 +87,16 @@ export function useAiModelsSettings({ active = true }: UseAiModelsSettingsOption
   };
 
   const handleProviderSubmit = async (input: AiProviderConfigWrite) => {
-    const ok = await runMutation(
+    const result = await runMutation(
       () => settingsService.upsertAiProvider(input),
       input.id ? "保存供应商失败" : "添加供应商失败",
     );
-    if (ok) {
+    if (result != null) {
       setEditorDirty(false);
       setEditor({ type: "closed" });
+      return true;
     }
-    return ok;
+    return false;
   };
 
   const handleRemoveProvider = async (id: string) => {
@@ -115,15 +116,16 @@ export function useAiModelsSettings({ active = true }: UseAiModelsSettingsOption
   };
 
   const handleModelSubmit = async (input: AiModelConfigWrite) => {
-    const ok = await runMutation(
+    const result = await runMutation(
       () => settingsService.upsertAiModel(input),
       input.id ? "保存模型配置失败" : "添加模型配置失败",
     );
-    if (ok) {
+    if (result != null) {
       setEditorDirty(false);
       setEditor({ type: "closed" });
+      return true;
     }
-    return ok;
+    return false;
   };
 
   const handleRemoveModel = async (id: string) => {

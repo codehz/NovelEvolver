@@ -108,7 +108,7 @@ export function AiProviderConfigForm({
 
   const submitPayload = async (payload: AiProviderConfigWrite): Promise<boolean> => {
     const result = await onSubmit(payload);
-    return result !== false;
+    return result !== false && result !== null;
   };
 
   useImperativeHandle(

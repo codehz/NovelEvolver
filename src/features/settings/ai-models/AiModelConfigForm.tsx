@@ -269,7 +269,7 @@ export function AiModelConfigForm({
 
   const submitPayload = async (payload: AiModelConfigWrite): Promise<boolean> => {
     const result = await onSubmit(payload);
-    return result !== false;
+    return result !== false && result !== null;
   };
 
   useImperativeHandle(

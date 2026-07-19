@@ -10,16 +10,19 @@ export function useSettingsMutation(refresh: () => Promise<void>) {
     setActionError(null);
   };
 
-  const runMutation = async (action: () => PromiseLike<unknown>, fallback: string) => {
+  const runMutation = async <T>(
+    action: () => PromiseLike<T>,
+    fallback: string,
+  ): Promise<T | null> => {
     setBusy(true);
     setActionError(null);
     try {
-      await action();
+      const result = await action();
       await refresh();
-      return true;
+      return result;
     } catch (error) {
       setActionError(settingsErrorMessage(error, fallback));
-      return false;
+      return null;
     } finally {
       setBusy(false);
     }

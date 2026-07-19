@@ -156,7 +156,7 @@ export function AiAgentConfigForm({
       return false;
     }
     const result = await onSubmit(payload);
-    return result !== false;
+    return result !== false && result !== null;
   };
 
   useImperativeHandle(

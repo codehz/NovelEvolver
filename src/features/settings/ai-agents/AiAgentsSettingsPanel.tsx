@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 
+import { confirmDialogApi } from "#app/shared/lib/confirm-dialog";
 import { settingsService } from "#app/shared/lib/rpc/app-rpc";
 import { createAsyncLoader, useAsyncLoader } from "#app/shared/lib/ui/async-loader";
 import { cn } from "#app/shared/lib/ui/cn";
@@ -7,30 +8,28 @@ import { Button } from "#app/shared/ui";
 import type { AiAgentConfigPublic, AiAgentConfigWrite } from "#shared/rpc/services/index";
 
 import {
-  settingsEmptyStateClass,
   settingsGhostActionClass,
-  settingsLayerHiddenClass,
-  settingsListClass,
-  settingsListItemClass,
   settingsListItemMetaClass,
   settingsListItemTitleClass,
-  settingsPanelHeaderClass,
   settingsPanelRootClass,
-  settingsPanelScrollClass,
-  settingsPanelSectionClass,
   settingsStatusBadgeClass,
 } from "../settings-chrome";
 import { settingsErrorMessage } from "../settings-error";
 import type { SettingsFormHandle } from "../settings-leave-guard";
-import { SettingsSubpageHeader } from "../SettingsSubpageHeader";
+import { SettingsDetailPane } from "../SettingsDetailPane";
+import { SettingsMasterDetailShell } from "../SettingsMasterDetailShell";
+import {
+  SettingsPanelEmpty,
+  SettingsPanelLoadError,
+  SettingsPanelLoading,
+} from "../SettingsPanelStatus";
+import { SettingsRail } from "../SettingsRail";
+import { SettingsRailItem, settingsRailItemMetaLineClass } from "../SettingsRailItem";
 import { useSettingsEditorLeave } from "../use-settings-editor-leave";
 import { useSettingsMutation } from "../use-settings-mutation";
 import { AiAgentConfigForm } from "./AiAgentConfigForm";
 
-type AgentEditorMode =
-  | { type: "closed" }
-  | { type: "create" }
-  | { type: "edit"; agent: AiAgentConfigPublic };
+type AgentSelection = { type: "create" } | { type: "edit"; id: string };
 
 type AgentsSettingsData = {
   agents: Awaited<ReturnType<typeof settingsService.getAiAgents>>;
@@ -45,14 +44,36 @@ const agentsSettingsLoader = createAsyncLoader(async (): Promise<AgentsSettingsD
   return { agents, models };
 });
 
-function resolveAgentSubpageTitle(editor: AgentEditorMode): string | null {
-  if (editor.type === "create") {
-    return "添加 Agent";
+function sameSelection(a: AgentSelection | null, b: AgentSelection | null): boolean {
+  if (a == null || b == null) {
+    return a === b;
   }
-  if (editor.type === "edit") {
-    return editor.agent.builtin ? `配置：${editor.agent.name}` : `编辑：${editor.agent.name}`;
+  if (a.type === "create" && b.type === "create") {
+    return true;
   }
-  return null;
+  if (a.type === "edit" && b.type === "edit") {
+    return a.id === b.id;
+  }
+  return false;
+}
+
+function agentMetaLine(agent: AiAgentConfigPublic, modelNameById: Map<string, string>): string {
+  const parts: string[] = [`${agent.availableToolNames.length} 个工具`];
+  if (agent.defaultModelId) {
+    parts.push(modelNameById.get(agent.defaultModelId) ?? agent.defaultModelId);
+  } else {
+    parts.push("继承默认模型");
+  }
+  if (agent.userSelectable) {
+    parts.push("对话可选");
+  }
+  if (agent.subagentEligible) {
+    parts.push("子代理");
+  }
+  if (!agent.userSelectable && !agent.subagentEligible) {
+    parts.push("未启用");
+  }
+  return parts.join(" · ");
 }
 
 type AiAgentsSettingsPanelProps = {
@@ -63,7 +84,7 @@ type AiAgentsSettingsPanelProps = {
 export function AiAgentsSettingsPanel({ active = true }: AiAgentsSettingsPanelProps) {
   const { data, error: loadErrorRaw, isLoading, refresh } = useAsyncLoader(agentsSettingsLoader);
   const { actionError, busy, clearActionError, runMutation } = useSettingsMutation(refresh);
-  const [editor, setEditor] = useState<AgentEditorMode>({ type: "closed" });
+  const [selection, setSelection] = useState<AgentSelection | null>(null);
   const [editorDirty, setEditorDirty] = useState(false);
   const [formKey, setFormKey] = useState(0);
   const formRef = useRef<SettingsFormHandle | null>(null);
@@ -90,272 +111,277 @@ export function AiAgentsSettingsPanel({ active = true }: AiAgentsSettingsPanelPr
     return map;
   }, [models]);
 
-  const closeEditor = () => {
-    clearActionError();
-    setEditorDirty(false);
-    setEditor({ type: "closed" });
-  };
+  // Default / heal selection after load or deletions.
+  useEffect(() => {
+    if (agents.length === 0) {
+      if (selection?.type === "edit") {
+        setSelection(null);
+      }
+      return;
+    }
+    if (selection == null) {
+      setSelection({ type: "edit", id: agents[0]!.id });
+      return;
+    }
+    if (selection.type === "edit" && !agents.some((agent) => agent.id === selection.id)) {
+      setSelection({ type: "edit", id: agents[0]!.id });
+    }
+  }, [agents, selection]);
 
-  const { requestClose } = useSettingsEditorLeave({
+  const selectedAgent =
+    selection?.type === "edit" ? (agents.find((agent) => agent.id === selection.id) ?? null) : null;
+
+  const { requestLeave } = useSettingsEditorLeave({
     active,
-    editorOpen: editor.type !== "closed",
+    editorOpen: selection != null,
     busy,
     dirty: editorDirty,
     formRef,
-    closeEditor,
-    onDiscard: () => {
+    closeEditor: () => {
+      // Master-detail keeps a selection; discard/remount is handled via onDiscard + select.
+      clearActionError();
       setEditorDirty(false);
       setFormKey((key) => key + 1);
     },
+    onDiscard: () => {
+      setEditorDirty(false);
+      setFormKey((key) => key + 1);
+      if (selection?.type === "create") {
+        setSelection(agents[0] ? { type: "edit", id: agents[0].id } : null);
+      }
+    },
   });
 
-  const handleSubmit = async (input: AiAgentConfigWrite) => {
-    const ok = await runMutation(
-      () => settingsService.upsertAiAgent(input),
-      input.id ? "保存 Agent 失败" : "添加 Agent 失败",
-    );
-    if (ok) {
-      setEditorDirty(false);
-      setEditor({ type: "closed" });
-    }
-    return ok;
-  };
-
-  const handleRemove = async (id: string) => {
-    if (!window.confirm("确定删除该 Agent？")) {
+  const select = async (next: AgentSelection | null) => {
+    if (sameSelection(selection, next)) {
       return;
     }
-    const ok = await runMutation(() => settingsService.removeAiAgent(id), "删除 Agent 失败");
-    if (ok && editor.type !== "closed" && "agent" in editor && editor.agent.id === id) {
-      closeEditor();
+    const ok = await requestLeave();
+    if (!ok) {
+      return;
     }
-  };
-
-  const handleOpenEditor = (next: AgentEditorMode) => {
     clearActionError();
     setEditorDirty(false);
     setFormKey((key) => key + 1);
-    setEditor(next);
+    setSelection(next);
+  };
+
+  const handleSubmit = async (input: AiAgentConfigWrite) => {
+    const previousIds = new Set(agents.map((agent) => agent.id));
+    const snapshot = await runMutation(
+      () => settingsService.upsertAiAgent(input),
+      input.id ? "保存 Agent 失败" : "添加 Agent 失败",
+    );
+    if (snapshot == null) {
+      return false;
+    }
+    setEditorDirty(false);
+    if (input.id) {
+      setSelection({ type: "edit", id: input.id });
+    } else {
+      const created = snapshot.agents.find((agent) => !previousIds.has(agent.id));
+      if (created) {
+        setSelection({ type: "edit", id: created.id });
+      }
+    }
+    setFormKey((key) => key + 1);
+    return true;
+  };
+
+  const handleRemove = async (id: string) => {
+    const agent = agents.find((item) => item.id === id);
+    const confirmed = await confirmDialogApi.confirm({
+      title: "删除 Agent",
+      description: agent
+        ? `确定删除「${agent.name}」？此操作不可恢复。`
+        : "确定删除该 Agent？此操作不可恢复。",
+      confirmLabel: "删除",
+      tone: "danger",
+    });
+    if (!confirmed) {
+      return;
+    }
+    const snapshot = await runMutation(() => settingsService.removeAiAgent(id), "删除 Agent 失败");
+    if (snapshot == null) {
+      return;
+    }
+    if (selection?.type === "edit" && selection.id === id) {
+      const remaining = snapshot.agents;
+      clearActionError();
+      setEditorDirty(false);
+      setFormKey((key) => key + 1);
+      setSelection(remaining[0] ? { type: "edit", id: remaining[0].id } : null);
+    }
   };
 
   if (isLoading && data === undefined) {
-    return (
-      <div className={settingsPanelRootClass}>
-        <div className={settingsPanelScrollClass}>
-          <div className={settingsPanelSectionClass}>
-            <div className={settingsEmptyStateClass}>加载中…</div>
-          </div>
-        </div>
-      </div>
-    );
+    return <SettingsPanelLoading />;
   }
 
   if (loadError && data === undefined) {
     return (
-      <div className={settingsPanelRootClass}>
-        <div className={settingsPanelScrollClass}>
-          <div className={settingsPanelSectionClass}>
-            <p className="text-xs text-ctp-red">{loadError}</p>
-            <Button
-              onClick={() => {
-                void refresh();
-              }}
-            >
-              重试
-            </Button>
-          </div>
-        </div>
-      </div>
+      <SettingsPanelLoadError
+        message={loadError}
+        onRetry={() => {
+          void refresh();
+        }}
+      />
     );
   }
 
-  const isSubpageOpen = editor.type !== "closed";
-  const subpageTitle = resolveAgentSubpageTitle(editor);
+  const detailTitle =
+    selection?.type === "create"
+      ? "添加 Agent"
+      : selectedAgent
+        ? selectedAgent.builtin
+          ? `配置：${selectedAgent.name}`
+          : selectedAgent.name
+        : "Agent";
 
   return (
     <div className={settingsPanelRootClass}>
-      {isSubpageOpen && subpageTitle ? (
-        <SettingsSubpageHeader
-          title={subpageTitle}
-          onBack={() => {
-            void requestClose();
+      <SettingsMasterDetailShell>
+        <SettingsRail
+          label="Agent"
+          listAriaLabel="Agent 列表"
+          addLabel="添加 Agent"
+          addDisabled={busy}
+          onAdd={() => {
+            void select({ type: "create" });
           }}
-        />
-      ) : null}
-
-      {/* Keep-alive list layer: own scrollport so form scroll cannot clobber list position. */}
-      <div className={cn(settingsPanelScrollClass, isSubpageOpen && settingsLayerHiddenClass)}>
-        <div className={settingsPanelSectionClass}>
-          <div className={settingsPanelHeaderClass}>
-            <div className="min-w-0 flex-1">
-              <h3 className="text-sm font-medium text-app-foreground">AI Agent</h3>
-              <p className="mt-0.5 text-2xs text-app-muted">
-                定义拥有独立系统提示词和工具权限的 AI 角色。自定义 Agent
-                可配置是否在对话中可选、是否可作为子代理；内置资格固定。
-              </p>
-            </div>
-            <Button
-              disabled={busy}
-              variant="primary"
-              onClick={() => {
-                handleOpenEditor({ type: "create" });
-              }}
-            >
-              <span aria-hidden="true" className="icon-[codicon--add] text-sm" />
-              添加 Agent
-            </Button>
-          </div>
-
-          {actionError ? <p className="text-xs text-ctp-red">{actionError}</p> : null}
-
-          {agents.length === 0 ? (
-            <div className={settingsEmptyStateClass}>
-              还没有自定义 Agent，点击「添加 Agent」开始。
-            </div>
-          ) : null}
-
-          {agents.length > 0 ? (
-            <ul className={settingsListClass}>
-              {agents.map((agent) => {
-                const defaultModelName = agent.defaultModelId
-                  ? (modelNameById.get(agent.defaultModelId) ?? agent.defaultModelId)
-                  : null;
-
-                return (
-                  <li key={agent.id} className={settingsListItemClass}>
-                    <div className="min-w-0 flex-1">
-                      <div className="flex min-w-0 flex-wrap items-center gap-1.5">
-                        <span className={settingsListItemTitleClass}>{agent.name}</span>
-                        {agent.builtin ? (
-                          <span
-                            className={cn(
-                              settingsStatusBadgeClass,
-                              "bg-badge-background/20 text-badge-background",
-                            )}
-                          >
-                            内置
-                          </span>
-                        ) : (
-                          <span className={settingsStatusBadgeClass}>自定义</span>
-                        )}
-                      </div>
-                      <div className={settingsListItemMetaClass}>
-                        <span>{agent.availableToolNames.length} 个工具</span>
-                        {defaultModelName ? (
-                          <>
-                            <span aria-hidden="true">·</span>
-                            <span>默认模型：{defaultModelName}</span>
-                          </>
-                        ) : (
-                          <>
-                            <span aria-hidden="true">·</span>
-                            <span>继承对话默认模型</span>
-                          </>
-                        )}
-                        {agent.userSelectable ? (
-                          <>
-                            <span aria-hidden="true">·</span>
-                            <span>对话可选</span>
-                          </>
-                        ) : null}
-                        {agent.subagentEligible ? (
-                          <>
-                            <span aria-hidden="true">·</span>
-                            <span>子代理</span>
-                          </>
-                        ) : null}
-                        {!agent.userSelectable && !agent.subagentEligible ? (
-                          <>
-                            <span aria-hidden="true">·</span>
-                            <span>未启用</span>
-                          </>
-                        ) : null}
-                      </div>
+        >
+          {agents.map((agent) => {
+            const meta = agentMetaLine(agent, modelNameById);
+            return (
+              <li key={agent.id}>
+                <SettingsRailItem
+                  title={agent.name}
+                  selected={selection?.type === "edit" && selection.id === agent.id}
+                  badge={
+                    <span
+                      className={cn(
+                        settingsStatusBadgeClass,
+                        agent.builtin && "bg-badge-background/20 text-badge-background",
+                      )}
+                    >
+                      {agent.builtin ? "内置" : "自定义"}
+                    </span>
+                  }
+                  meta={
+                    <div className={settingsRailItemMetaLineClass} title={meta}>
+                      {meta}
                     </div>
+                  }
+                  onSelect={() => {
+                    void select({ type: "edit", id: agent.id });
+                  }}
+                />
+              </li>
+            );
+          })}
+        </SettingsRail>
 
-                    <div className="flex shrink-0 items-center gap-0.5">
-                      {agent.builtin ? (
-                        <Button
-                          aria-label={`配置 ${agent.name}`}
-                          disabled={busy}
-                          onClick={() => {
-                            handleOpenEditor({ type: "edit", agent });
-                          }}
-                        >
-                          配置
-                        </Button>
+        <SettingsDetailPane
+          banner={
+            actionError ? (
+              <p className="shrink-0 px-3 pt-2 text-xs text-ctp-red">{actionError}</p>
+            ) : null
+          }
+          header={
+            selection != null ? (
+              <>
+                <div className="min-w-0">
+                  <div className="flex min-w-0 flex-wrap items-center gap-1.5">
+                    <h4 className={settingsListItemTitleClass}>{detailTitle}</h4>
+                    {selectedAgent?.builtin ? (
+                      <span
+                        className={cn(
+                          settingsStatusBadgeClass,
+                          "bg-badge-background/20 text-badge-background",
+                        )}
+                      >
+                        内置
+                      </span>
+                    ) : null}
+                  </div>
+                  {selectedAgent ? (
+                    <div className={settingsListItemMetaClass}>
+                      <span>{selectedAgent.availableToolNames.length} 个工具</span>
+                      {selectedAgent.defaultModelId ? (
+                        <>
+                          <span aria-hidden="true">·</span>
+                          <span>
+                            默认模型：
+                            {modelNameById.get(selectedAgent.defaultModelId) ??
+                              selectedAgent.defaultModelId}
+                          </span>
+                        </>
                       ) : (
                         <>
-                          <Button
-                            aria-label={`编辑 Agent ${agent.name}`}
-                            className={settingsGhostActionClass}
-                            disabled={busy}
-                            variant="ghost"
-                            size="icon-md"
-                            onClick={() => {
-                              handleOpenEditor({ type: "edit", agent });
-                            }}
-                          >
-                            <span aria-hidden="true" className="icon-[codicon--edit] text-base" />
-                          </Button>
-                          <Button
-                            aria-label={`删除 Agent ${agent.name}`}
-                            className={settingsGhostActionClass}
-                            disabled={busy}
-                            variant="ghost"
-                            size="icon-md"
-                            onClick={() => {
-                              void handleRemove(agent.id);
-                            }}
-                          >
-                            <span aria-hidden="true" className="icon-[codicon--trash] text-base" />
-                          </Button>
+                          <span aria-hidden="true">·</span>
+                          <span>继承对话默认模型</span>
                         </>
                       )}
                     </div>
-                  </li>
-                );
-              })}
-            </ul>
-          ) : null}
-        </div>
-      </div>
-
-      {isSubpageOpen ? (
-        <div className={settingsPanelScrollClass}>
-          <div className={settingsPanelSectionClass}>
-            {editor.type === "create" ? (
-              <AiAgentConfigForm
-                key={`create-${formKey}`}
-                busy={busy}
-                error={actionError}
-                formRef={formRef}
-                models={models}
-                providers={providers}
-                tools={tools}
-                onDirtyChange={setEditorDirty}
-                onSubmit={handleSubmit}
-              />
-            ) : null}
-
-            {editor.type === "edit" ? (
-              <AiAgentConfigForm
-                key={`${editor.agent.id}-${formKey}`}
-                busy={busy}
-                error={actionError}
-                formRef={formRef}
-                initial={editor.agent}
-                lockDefinitionFields={editor.agent.builtin}
-                models={models}
-                providers={providers}
-                tools={tools}
-                onDirtyChange={setEditorDirty}
-                onSubmit={handleSubmit}
-              />
-            ) : null}
-          </div>
-        </div>
-      ) : null}
+                  ) : (
+                    <div className={settingsListItemMetaClass}>
+                      <span>定义独立系统提示词与工具权限的自定义角色</span>
+                    </div>
+                  )}
+                </div>
+                {selectedAgent && !selectedAgent.builtin ? (
+                  <div className="flex shrink-0 items-center gap-0.5">
+                    <Button
+                      aria-label={`删除 Agent ${selectedAgent.name}`}
+                      className={settingsGhostActionClass}
+                      disabled={busy}
+                      variant="ghost"
+                      size="icon-md"
+                      onClick={() => {
+                        void handleRemove(selectedAgent.id);
+                      }}
+                    >
+                      <span aria-hidden="true" className="icon-[codicon--trash] text-base" />
+                    </Button>
+                  </div>
+                ) : null}
+              </>
+            ) : undefined
+          }
+        >
+          {selection == null ? (
+            <SettingsPanelEmpty>还没有 Agent，点击「添加 Agent」开始。</SettingsPanelEmpty>
+          ) : selection.type === "create" ? (
+            <AiAgentConfigForm
+              key={`create-${formKey}`}
+              busy={busy}
+              error={actionError}
+              formRef={formRef}
+              models={models}
+              providers={providers}
+              tools={tools}
+              onDirtyChange={setEditorDirty}
+              onSubmit={handleSubmit}
+            />
+          ) : selectedAgent ? (
+            <AiAgentConfigForm
+              key={`${selectedAgent.id}-${formKey}`}
+              busy={busy}
+              error={actionError}
+              formRef={formRef}
+              initial={selectedAgent}
+              lockDefinitionFields={selectedAgent.builtin}
+              models={models}
+              providers={providers}
+              tools={tools}
+              onDirtyChange={setEditorDirty}
+              onSubmit={handleSubmit}
+            />
+          ) : (
+            <SettingsPanelEmpty>请选择一个 Agent。</SettingsPanelEmpty>
+          )}
+        </SettingsDetailPane>
+      </SettingsMasterDetailShell>
     </div>
   );
 }

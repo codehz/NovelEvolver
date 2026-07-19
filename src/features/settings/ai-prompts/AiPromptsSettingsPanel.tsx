@@ -104,15 +104,16 @@ export function AiPromptsSettingsPanel({ active = true }: AiPromptsSettingsPanel
   });
 
   const handleSubmit = async (input: AiPromptConfigWrite) => {
-    const ok = await runMutation(
+    const result = await runMutation(
       () => settingsService.upsertAiPrompt(input),
       input.id ? "保存提示词失败" : "添加提示词失败",
     );
-    if (ok) {
+    if (result != null) {
       setEditorDirty(false);
       setEditor({ type: "closed" });
+      return true;
     }
-    return ok;
+    return false;
   };
 
   const handleRemove = async (id: string) => {
