@@ -1,50 +1,47 @@
 import { useEffect, useRef, useState } from "react";
 
+import { confirmDialogApi } from "#app/shared/lib/confirm-dialog";
 import { settingsService } from "#app/shared/lib/rpc/app-rpc";
 import { createAsyncLoader, useAsyncLoader } from "#app/shared/lib/ui/async-loader";
-import { cn } from "#app/shared/lib/ui/cn";
 import { Button } from "#app/shared/ui";
-import type { AiPromptConfigPublic, AiPromptConfigWrite } from "#shared/rpc/services/index";
+import type { AiPromptConfigWrite } from "#shared/rpc/services/index";
 
 import {
-  settingsEmptyStateClass,
   settingsGhostActionClass,
-  settingsLayerHiddenClass,
-  settingsListClass,
-  settingsListItemClass,
   settingsListItemMetaClass,
   settingsListItemTitleClass,
-  settingsPanelHeaderClass,
   settingsPanelRootClass,
-  settingsPanelScrollClass,
-  settingsPanelSectionClass,
 } from "../settings-chrome";
 import { settingsErrorMessage } from "../settings-error";
 import type { SettingsFormHandle } from "../settings-leave-guard";
-import { SettingsSubpageHeader } from "../SettingsSubpageHeader";
+import { SettingsDetailPane } from "../SettingsDetailPane";
+import { SettingsMasterDetailShell } from "../SettingsMasterDetailShell";
+import {
+  SettingsPanelEmpty,
+  SettingsPanelLoadError,
+  SettingsPanelLoading,
+} from "../SettingsPanelStatus";
+import { SettingsRail } from "../SettingsRail";
+import { SettingsRailItem, settingsRailItemMetaLineClass } from "../SettingsRailItem";
 import { useSettingsEditorLeave } from "../use-settings-editor-leave";
 import { useSettingsMutation } from "../use-settings-mutation";
 import { AiPromptConfigForm } from "./AiPromptConfigForm";
 
-type PromptEditorMode =
-  | { type: "closed" }
-  | { type: "create" }
-  | { type: "edit"; prompt: AiPromptConfigPublic }
-  | { type: "detail"; prompt: AiPromptConfigPublic };
+type PromptSelection = { type: "create" } | { type: "edit"; id: string };
 
 const promptsSettingsLoader = createAsyncLoader(() => settingsService.getAiPrompts());
 
-function resolvePromptSubpageTitle(editor: PromptEditorMode): string | null {
-  if (editor.type === "create") {
-    return "添加提示词";
+function sameSelection(a: PromptSelection | null, b: PromptSelection | null): boolean {
+  if (a == null || b == null) {
+    return a === b;
   }
-  if (editor.type === "edit") {
-    return `编辑：${editor.prompt.title}`;
+  if (a.type === "create" && b.type === "create") {
+    return true;
   }
-  if (editor.type === "detail") {
-    return `详情：${editor.prompt.title}`;
+  if (a.type === "edit" && b.type === "edit") {
+    return a.id === b.id;
   }
-  return null;
+  return false;
 }
 
 function summarizePrompt(text: string): string {
@@ -68,7 +65,7 @@ export function AiPromptsSettingsPanel({ active = true }: AiPromptsSettingsPanel
     refresh,
   } = useAsyncLoader(promptsSettingsLoader);
   const { actionError, busy, clearActionError, runMutation } = useSettingsMutation(refresh);
-  const [editor, setEditor] = useState<PromptEditorMode>({ type: "closed" });
+  const [selection, setSelection] = useState<PromptSelection | null>(null);
   const [editorDirty, setEditorDirty] = useState(false);
   const [formKey, setFormKey] = useState(0);
   const formRef = useRef<SettingsFormHandle | null>(null);
@@ -84,231 +81,233 @@ export function AiPromptsSettingsPanel({ active = true }: AiPromptsSettingsPanel
 
   const prompts = snapshot?.prompts ?? [];
 
-  const closeEditor = () => {
-    clearActionError();
-    setEditorDirty(false);
-    setEditor({ type: "closed" });
-  };
+  useEffect(() => {
+    if (prompts.length === 0) {
+      if (selection?.type === "edit") {
+        setSelection(null);
+      }
+      return;
+    }
+    if (selection == null) {
+      setSelection({ type: "edit", id: prompts[0]!.id });
+      return;
+    }
+    if (selection.type === "edit" && !prompts.some((prompt) => prompt.id === selection.id)) {
+      setSelection({ type: "edit", id: prompts[0]!.id });
+    }
+  }, [prompts, selection]);
 
-  const { requestClose } = useSettingsEditorLeave({
+  const selectedPrompt =
+    selection?.type === "edit"
+      ? (prompts.find((prompt) => prompt.id === selection.id) ?? null)
+      : null;
+
+  const { requestLeave } = useSettingsEditorLeave({
     active,
-    editorOpen: editor.type === "create" || editor.type === "edit",
+    editorOpen: selection != null,
     busy,
     dirty: editorDirty,
     formRef,
-    closeEditor,
-    onDiscard: () => {
+    closeEditor: () => {
+      clearActionError();
       setEditorDirty(false);
       setFormKey((key) => key + 1);
     },
+    onDiscard: () => {
+      setEditorDirty(false);
+      setFormKey((key) => key + 1);
+      if (selection?.type === "create") {
+        setSelection(prompts[0] ? { type: "edit", id: prompts[0].id } : null);
+      }
+    },
   });
 
+  const select = async (next: PromptSelection | null) => {
+    if (sameSelection(selection, next)) {
+      return;
+    }
+    const ok = await requestLeave();
+    if (!ok) {
+      return;
+    }
+    clearActionError();
+    setEditorDirty(false);
+    setFormKey((key) => key + 1);
+    setSelection(next);
+  };
+
   const handleSubmit = async (input: AiPromptConfigWrite) => {
+    const previousIds = new Set(prompts.map((prompt) => prompt.id));
     const result = await runMutation(
       () => settingsService.upsertAiPrompt(input),
       input.id ? "保存提示词失败" : "添加提示词失败",
     );
-    if (result != null) {
-      setEditorDirty(false);
-      setEditor({ type: "closed" });
-      return true;
+    if (result == null) {
+      return false;
     }
-    return false;
+    setEditorDirty(false);
+    if (input.id) {
+      setSelection({ type: "edit", id: input.id });
+    } else {
+      const created = result.prompts.find((prompt) => !previousIds.has(prompt.id));
+      if (created) {
+        setSelection({ type: "edit", id: created.id });
+      }
+    }
+    setFormKey((key) => key + 1);
+    return true;
   };
 
   const handleRemove = async (id: string) => {
-    if (!window.confirm("确定删除该提示词？")) {
+    const prompt = prompts.find((item) => item.id === id);
+    const confirmed = await confirmDialogApi.confirm({
+      title: "删除提示词",
+      description: prompt
+        ? `确定删除「${prompt.title}」？此操作不可恢复。`
+        : "确定删除该提示词？此操作不可恢复。",
+      confirmLabel: "删除",
+      tone: "danger",
+    });
+    if (!confirmed) {
       return;
     }
-    const ok = await runMutation(() => settingsService.removeAiPrompt(id), "删除提示词失败");
-    if (ok && editor.type !== "closed" && "prompt" in editor && editor.prompt.id === id) {
-      closeEditor();
+    const result = await runMutation(() => settingsService.removeAiPrompt(id), "删除提示词失败");
+    if (result == null) {
+      return;
     }
-  };
-
-  const handleOpenEditor = (next: PromptEditorMode) => {
-    clearActionError();
-    setEditorDirty(false);
-    setFormKey((key) => key + 1);
-    setEditor(next);
+    if (selection?.type === "edit" && selection.id === id) {
+      const remaining = result.prompts;
+      clearActionError();
+      setEditorDirty(false);
+      setFormKey((key) => key + 1);
+      setSelection(remaining[0] ? { type: "edit", id: remaining[0].id } : null);
+    }
   };
 
   if (isLoading && snapshot === undefined) {
-    return (
-      <div className={settingsPanelRootClass}>
-        <div className={settingsPanelScrollClass}>
-          <div className={settingsPanelSectionClass}>
-            <div className={settingsEmptyStateClass}>加载中…</div>
-          </div>
-        </div>
-      </div>
-    );
+    return <SettingsPanelLoading />;
   }
 
   if (loadError && snapshot === undefined) {
     return (
-      <div className={settingsPanelRootClass}>
-        <div className={settingsPanelScrollClass}>
-          <div className={settingsPanelSectionClass}>
-            <p className="text-xs text-ctp-red">{loadError}</p>
-            <Button
-              onClick={() => {
-                void refresh();
-              }}
-            >
-              重试
-            </Button>
-          </div>
-        </div>
-      </div>
+      <SettingsPanelLoadError
+        message={loadError}
+        onRetry={() => {
+          void refresh();
+        }}
+      />
     );
   }
 
-  const isSubpageOpen = editor.type !== "closed";
-  const subpageTitle = resolvePromptSubpageTitle(editor);
+  const detailTitle =
+    selection?.type === "create" ? "添加提示词" : selectedPrompt ? selectedPrompt.title : "提示词";
 
   return (
     <div className={settingsPanelRootClass}>
-      {isSubpageOpen && subpageTitle ? (
-        <SettingsSubpageHeader
-          title={subpageTitle}
-          onBack={() => {
-            if (editor.type === "detail") {
-              closeEditor();
-              return;
-            }
-            void requestClose();
+      <SettingsMasterDetailShell>
+        <SettingsRail
+          label="提示词"
+          listAriaLabel="提示词列表"
+          addLabel="添加提示词"
+          addDisabled={busy}
+          onAdd={() => {
+            void select({ type: "create" });
           }}
-        />
-      ) : null}
-
-      {/* Keep-alive list layer: own scrollport so form scroll cannot clobber list position. */}
-      <div className={cn(settingsPanelScrollClass, isSubpageOpen && settingsLayerHiddenClass)}>
-        <div className={settingsPanelSectionClass}>
-          <div className={settingsPanelHeaderClass}>
-            <div className="min-w-0 flex-1">
-              <h3 className="text-sm font-medium text-app-foreground">AI 提示词</h3>
-              <p className="mt-0.5 text-2xs text-app-muted">
-                配置可复用提示词模板，后续可在侧栏通过 /调用名 使用。
-              </p>
-            </div>
-            <Button
-              disabled={busy}
-              variant="primary"
-              onClick={() => {
-                handleOpenEditor({ type: "create" });
-              }}
-            >
-              <span aria-hidden="true" className="icon-[codicon--add] text-sm" />
-              添加提示词
-            </Button>
-          </div>
-
-          {actionError ? <p className="text-xs text-ctp-red">{actionError}</p> : null}
-
-          {prompts.length === 0 ? (
-            <div className={settingsEmptyStateClass}>
-              还没有自定义提示词，点击「添加提示词」开始。
-            </div>
-          ) : null}
-
-          {prompts.length > 0 ? (
-            <ul className={settingsListClass}>
-              {prompts.map((item) => (
-                <li key={item.id} className={settingsListItemClass}>
-                  <div className="min-w-0 flex-1">
-                    <div className="flex min-w-0 flex-wrap items-center gap-1.5">
-                      <span className={settingsListItemTitleClass}>{item.title}</span>
-                      <span className="font-mono text-2xs text-app-muted">/{item.slug}</span>
+        >
+          {prompts.map((item) => {
+            const summary = summarizePrompt(item.prompt);
+            return (
+              <li key={item.id}>
+                <SettingsRailItem
+                  title={item.title}
+                  selected={selection?.type === "edit" && selection.id === item.id}
+                  badge={<span className="font-mono text-2xs text-app-muted">/{item.slug}</span>}
+                  meta={
+                    <div className={settingsRailItemMetaLineClass} title={summary}>
+                      {summary}
                     </div>
-                    <div className={settingsListItemMetaClass}>
-                      <span className="truncate">{summarizePrompt(item.prompt)}</span>
-                    </div>
+                  }
+                  onSelect={() => {
+                    void select({ type: "edit", id: item.id });
+                  }}
+                />
+              </li>
+            );
+          })}
+        </SettingsRail>
+
+        <SettingsDetailPane
+          banner={
+            actionError ? (
+              <p className="shrink-0 px-3 pt-2 text-xs text-ctp-red">{actionError}</p>
+            ) : null
+          }
+          header={
+            selection != null ? (
+              <>
+                <div className="min-w-0">
+                  <div className="flex min-w-0 flex-wrap items-center gap-1.5">
+                    <h4 className={settingsListItemTitleClass}>{detailTitle}</h4>
+                    {selectedPrompt ? (
+                      <span className="font-mono text-2xs text-app-muted">
+                        /{selectedPrompt.slug}
+                      </span>
+                    ) : null}
                   </div>
-
+                  <div className={settingsListItemMetaClass}>
+                    {selectedPrompt ? (
+                      <span className="truncate">{summarizePrompt(selectedPrompt.prompt)}</span>
+                    ) : (
+                      <span>配置可复用模板，侧栏通过 /调用名 使用</span>
+                    )}
+                  </div>
+                </div>
+                {selectedPrompt ? (
                   <div className="flex shrink-0 items-center gap-0.5">
                     <Button
-                      aria-label={`查看提示词 ${item.title} 详情`}
+                      aria-label={`删除提示词 ${selectedPrompt.title}`}
                       className={settingsGhostActionClass}
                       disabled={busy}
                       variant="ghost"
                       size="icon-md"
                       onClick={() => {
-                        handleOpenEditor({ type: "detail", prompt: item });
-                      }}
-                    >
-                      <span aria-hidden="true" className="icon-[codicon--info] text-base" />
-                    </Button>
-                    <Button
-                      aria-label={`编辑提示词 ${item.title}`}
-                      className={settingsGhostActionClass}
-                      disabled={busy}
-                      variant="ghost"
-                      size="icon-md"
-                      onClick={() => {
-                        handleOpenEditor({ type: "edit", prompt: item });
-                      }}
-                    >
-                      <span aria-hidden="true" className="icon-[codicon--edit] text-base" />
-                    </Button>
-                    <Button
-                      aria-label={`删除提示词 ${item.title}`}
-                      className={settingsGhostActionClass}
-                      disabled={busy}
-                      variant="ghost"
-                      size="icon-md"
-                      onClick={() => {
-                        void handleRemove(item.id);
+                        void handleRemove(selectedPrompt.id);
                       }}
                     >
                       <span aria-hidden="true" className="icon-[codicon--trash] text-base" />
                     </Button>
                   </div>
-                </li>
-              ))}
-            </ul>
-          ) : null}
-        </div>
-      </div>
-
-      {isSubpageOpen ? (
-        <div className={settingsPanelScrollClass}>
-          <div className={settingsPanelSectionClass}>
-            {editor.type === "create" ? (
-              <AiPromptConfigForm
-                key={`create-${formKey}`}
-                busy={busy}
-                error={actionError}
-                formRef={formRef}
-                onDirtyChange={setEditorDirty}
-                onSubmit={handleSubmit}
-              />
-            ) : null}
-
-            {editor.type === "edit" ? (
-              <AiPromptConfigForm
-                key={`${editor.prompt.id}-${formKey}`}
-                busy={busy}
-                error={actionError}
-                formRef={formRef}
-                initial={editor.prompt}
-                onDirtyChange={setEditorDirty}
-                onSubmit={handleSubmit}
-              />
-            ) : null}
-
-            {editor.type === "detail" ? (
-              <AiPromptConfigForm
-                key={`detail-${editor.prompt.id}-${formKey}`}
-                busy={busy}
-                error={actionError}
-                initial={editor.prompt}
-                readOnly
-              />
-            ) : null}
-          </div>
-        </div>
-      ) : null}
+                ) : null}
+              </>
+            ) : undefined
+          }
+        >
+          {selection == null ? (
+            <SettingsPanelEmpty>还没有自定义提示词，点击「添加提示词」开始。</SettingsPanelEmpty>
+          ) : selection.type === "create" ? (
+            <AiPromptConfigForm
+              key={`create-${formKey}`}
+              busy={busy}
+              error={actionError}
+              formRef={formRef}
+              onDirtyChange={setEditorDirty}
+              onSubmit={handleSubmit}
+            />
+          ) : selectedPrompt ? (
+            <AiPromptConfigForm
+              key={`${selectedPrompt.id}-${formKey}`}
+              busy={busy}
+              error={actionError}
+              formRef={formRef}
+              initial={selectedPrompt}
+              onDirtyChange={setEditorDirty}
+              onSubmit={handleSubmit}
+            />
+          ) : (
+            <SettingsPanelEmpty>请选择一条提示词。</SettingsPanelEmpty>
+          )}
+        </SettingsDetailPane>
+      </SettingsMasterDetailShell>
     </div>
   );
 }
