@@ -3,6 +3,8 @@ import { Form } from "@base-ui/react/form";
 import { NumberField } from "@base-ui/react/number-field";
 import { useEffect, useImperativeHandle, useMemo, useRef, useState, type Ref } from "react";
 
+import { cn } from "#app/shared/lib/ui/cn";
+import { AppTooltip, Button } from "#app/shared/ui";
 import type { AiRuntimePolicySnapshot, AiRuntimePolicyWrite } from "#shared/rpc/services/index";
 import { AI_RUNTIME_POLICY_LIMITS, DEFAULT_AI_RUNTIME_POLICY } from "#shared/rpc/services/index";
 
@@ -21,6 +23,9 @@ import {
   settingsPanelSectionClass,
 } from "../settings-chrome";
 import type { SettingsFormHandle } from "../settings-leave-guard";
+
+const policyFieldControlRowClass = cn("flex min-w-0 items-center gap-1");
+const policyFieldNumberRootClass = cn("min-w-0 flex-1");
 
 /** Stable form id for header submit association. */
 export const AI_RUNTIME_POLICY_FORM_ID = "settings-ai-runtime-policy-form";
@@ -162,6 +167,9 @@ export function AiRuntimePolicyForm({
 
   const renderField = (spec: FieldSpec) => {
     const limit = AI_RUNTIME_POLICY_LIMITS[spec.key];
+    const defaultValue = DEFAULT_AI_RUNTIME_POLICY[spec.key];
+    const canReset = form[spec.key] !== defaultValue;
+    const resetLabel = `恢复「${spec.label}」为默认值 ${defaultValue}`;
     return (
       <Field.Root
         key={spec.key}
@@ -180,22 +188,41 @@ export function AiRuntimePolicyForm({
       >
         <Field.Label className={settingsFieldLabelClass}>{spec.label}</Field.Label>
         <div className={settingsFieldControlCellClass}>
-          <NumberField.Root
-            allowOutOfRange
-            min={limit.min}
-            max={limit.max}
-            required
-            step={1}
-            value={form[spec.key]}
-            onValueChange={(next) => {
-              update(spec.key, next);
-            }}
-          >
-            <NumberField.Input
-              className={settingsInputClass}
-              placeholder={String(DEFAULT_AI_RUNTIME_POLICY[spec.key])}
-            />
-          </NumberField.Root>
+          <div className={policyFieldControlRowClass}>
+            <NumberField.Root
+              allowOutOfRange
+              className={policyFieldNumberRootClass}
+              min={limit.min}
+              max={limit.max}
+              required
+              step={1}
+              value={form[spec.key]}
+              onValueChange={(next) => {
+                update(spec.key, next);
+              }}
+            >
+              <NumberField.Input
+                className={settingsInputClass}
+                placeholder={String(defaultValue)}
+              />
+            </NumberField.Root>
+            {canReset ? (
+              <AppTooltip label={`恢复默认（${defaultValue}）`} side="left">
+                <Button
+                  aria-label={resetLabel}
+                  disabled={busy}
+                  size="icon-sm"
+                  type="button"
+                  variant="ghost"
+                  onClick={() => {
+                    update(spec.key, defaultValue);
+                  }}
+                >
+                  <span aria-hidden="true" className="icon-[codicon--discard] text-sm" />
+                </Button>
+              </AppTooltip>
+            ) : null}
+          </div>
           <Field.Description className={settingsFieldDescriptionClass}>
             {spec.description} 允许范围 {limit.min}–{limit.max}。
           </Field.Description>
