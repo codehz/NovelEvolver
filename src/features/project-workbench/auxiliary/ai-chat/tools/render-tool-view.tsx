@@ -7,7 +7,15 @@ import {
   maybeErrorTechnicalFields,
   SnippetPreview,
 } from "./presenter-detail";
-import { toolActionLabel, toolIcon } from "./presenter-format";
+import {
+  contentWriteBodyFromArgs,
+  contentWriteSubjectFromArgs,
+  generationStats,
+  isContentWriteToolName,
+  toolActionLabel,
+  toolIcon,
+} from "./presenter-format";
+import { parseObject } from "./presenter-parse";
 import type { ToolPresentation } from "./presenter-types";
 import { runSubagentPresenter } from "./presenters-interaction";
 
@@ -373,6 +381,19 @@ function presentFromView(toolCall: AiChatToolCall, view: AiToolView): ToolPresen
   }
 }
 
+function presentContentWriteProgress(toolCall: AiChatToolCall): ToolPresentation {
+  const args = parseObject(toolCall.argumentsText);
+  const body = contentWriteBodyFromArgs(toolCall.name, args);
+  const subject = contentWriteSubjectFromArgs(toolCall.name, args);
+  return {
+    icon: toolIcon(toolCall.name),
+    label: toolActionLabel(toolCall.name),
+    subject: subject ?? "…",
+    indicator: generationStats(body, toolCall.status),
+    detail: null,
+  };
+}
+
 export function presentToolCall(toolCall: AiChatToolCall): ResolvedToolPresentation {
   if (toolCall.view) {
     const presentation = presentFromView(toolCall, toolCall.view);
@@ -391,10 +412,18 @@ export function presentToolCall(toolCall: AiChatToolCall): ResolvedToolPresentat
     };
   }
 
+  if (isContentWriteToolName(toolCall.name)) {
+    const presentation = presentContentWriteProgress(toolCall);
+    return {
+      ...presentation,
+      icon: presentation.icon ?? toolIcon(toolCall.name),
+    };
+  }
+
   return {
     icon: toolIcon(toolCall.name),
     label: toolActionLabel(toolCall.name),
-    subject: "已执行",
+    subject: toolCall.status === "complete" ? "已执行" : "…",
     detail:
       toolCall.status === "error" ? (
         <p className="text-ctp-subtext0">工具标识：{toolCall.name}</p>

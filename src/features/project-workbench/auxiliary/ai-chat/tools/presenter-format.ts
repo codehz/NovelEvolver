@@ -112,6 +112,66 @@ export function isWriteToolName(name: string): boolean {
   }
 }
 
+/** Tools whose arguments stream a long body field and benefit from live char counts. */
+export function isContentWriteToolName(name: string): boolean {
+  switch (name) {
+    case "create_document":
+    case "write_document":
+    case "replace_document_text":
+      return true;
+    default:
+      return false;
+  }
+}
+
+/**
+ * Body text currently present in partial tool args (may be incomplete while streaming).
+ * `null` means the body field has not appeared yet.
+ */
+export function contentWriteBodyFromArgs(name: string, args: JsonObject | null): string | null {
+  if (args === null) {
+    return null;
+  }
+  switch (name) {
+    case "create_document":
+      return getString(args, "content");
+    case "write_document":
+      return getString(args, "new_content");
+    case "replace_document_text":
+      return getString(args, "replacement_text");
+    default:
+      return null;
+  }
+}
+
+/**
+ * Progressive subject while a content-write tool is still streaming args.
+ * Never surfaces bare UUIDs from `target.id`.
+ */
+export function contentWriteSubjectFromArgs(name: string, args: JsonObject | null): string | null {
+  if (args === null) {
+    return null;
+  }
+  switch (name) {
+    case "create_document": {
+      const domain = domainLabel(getString(args, "domain"));
+      const docName = getString(args, "name");
+      if (docName) {
+        return domain !== "全部内容" ? `${domain} · ${docName}` : docName;
+      }
+      return domain !== "全部内容" ? domain : null;
+    }
+    case "write_document":
+    case "replace_document_text": {
+      const target = getObject(args.target);
+      const domain = domainLabel(getString(target, "domain"));
+      return domain !== "全部内容" ? domain : null;
+    }
+    default:
+      return null;
+  }
+}
+
 /** Prefer a readable path/name; never surface bare UUIDs as the primary summary. */
 export function displayTargetName(options: {
   displayPath?: string | null;
