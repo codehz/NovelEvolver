@@ -55,7 +55,12 @@ function summarizePrompt(text: string): string {
   return `${singleLine.slice(0, 48)}…`;
 }
 
-export function AiPromptsSettingsPanel() {
+type AiPromptsSettingsPanelProps = {
+  /** Whether the prompts tab is currently active. */
+  active?: boolean;
+};
+
+export function AiPromptsSettingsPanel({ active = true }: AiPromptsSettingsPanelProps) {
   const {
     data: snapshot,
     error: loadErrorRaw,
@@ -65,6 +70,7 @@ export function AiPromptsSettingsPanel() {
   const { actionError, busy, clearActionError, runMutation } = useSettingsMutation(refresh);
   const [editor, setEditor] = useState<PromptEditorMode>({ type: "closed" });
   const [editorDirty, setEditorDirty] = useState(false);
+  const [formKey, setFormKey] = useState(0);
   const formRef = useRef<SettingsFormHandle | null>(null);
 
   useEffect(() => {
@@ -85,11 +91,16 @@ export function AiPromptsSettingsPanel() {
   };
 
   const { requestClose } = useSettingsEditorLeave({
+    active,
     editorOpen: editor.type === "create" || editor.type === "edit",
     busy,
     dirty: editorDirty,
     formRef,
     closeEditor,
+    onDiscard: () => {
+      setEditorDirty(false);
+      setFormKey((key) => key + 1);
+    },
   });
 
   const handleSubmit = async (input: AiPromptConfigWrite) => {
@@ -117,6 +128,7 @@ export function AiPromptsSettingsPanel() {
   const handleOpenEditor = (next: PromptEditorMode) => {
     clearActionError();
     setEditorDirty(false);
+    setFormKey((key) => key + 1);
     setEditor(next);
   };
 
@@ -263,6 +275,7 @@ export function AiPromptsSettingsPanel() {
           <div className={settingsPanelSectionClass}>
             {editor.type === "create" ? (
               <AiPromptConfigForm
+                key={`create-${formKey}`}
                 busy={busy}
                 error={actionError}
                 formRef={formRef}
@@ -276,7 +289,7 @@ export function AiPromptsSettingsPanel() {
 
             {editor.type === "edit" ? (
               <AiPromptConfigForm
-                key={editor.prompt.id}
+                key={`${editor.prompt.id}-${formKey}`}
                 busy={busy}
                 error={actionError}
                 formRef={formRef}
@@ -291,7 +304,7 @@ export function AiPromptsSettingsPanel() {
 
             {editor.type === "detail" ? (
               <AiPromptConfigForm
-                key={editor.prompt.id}
+                key={`detail-${editor.prompt.id}-${formKey}`}
                 busy={busy}
                 error={actionError}
                 initial={editor.prompt}

@@ -55,11 +55,17 @@ function resolveAgentSubpageTitle(editor: AgentEditorMode): string | null {
   return null;
 }
 
-export function AiAgentsSettingsPanel() {
+type AiAgentsSettingsPanelProps = {
+  /** Whether the agents tab is currently active. */
+  active?: boolean;
+};
+
+export function AiAgentsSettingsPanel({ active = true }: AiAgentsSettingsPanelProps) {
   const { data, error: loadErrorRaw, isLoading, refresh } = useAsyncLoader(agentsSettingsLoader);
   const { actionError, busy, clearActionError, runMutation } = useSettingsMutation(refresh);
   const [editor, setEditor] = useState<AgentEditorMode>({ type: "closed" });
   const [editorDirty, setEditorDirty] = useState(false);
+  const [formKey, setFormKey] = useState(0);
   const formRef = useRef<SettingsFormHandle | null>(null);
 
   useEffect(() => {
@@ -91,11 +97,16 @@ export function AiAgentsSettingsPanel() {
   };
 
   const { requestClose } = useSettingsEditorLeave({
+    active,
     editorOpen: editor.type !== "closed",
     busy,
     dirty: editorDirty,
     formRef,
     closeEditor,
+    onDiscard: () => {
+      setEditorDirty(false);
+      setFormKey((key) => key + 1);
+    },
   });
 
   const handleSubmit = async (input: AiAgentConfigWrite) => {
@@ -123,6 +134,7 @@ export function AiAgentsSettingsPanel() {
   const handleOpenEditor = (next: AgentEditorMode) => {
     clearActionError();
     setEditorDirty(false);
+    setFormKey((key) => key + 1);
     setEditor(next);
   };
 
@@ -314,6 +326,7 @@ export function AiAgentsSettingsPanel() {
           <div className={settingsPanelSectionClass}>
             {editor.type === "create" ? (
               <AiAgentConfigForm
+                key={`create-${formKey}`}
                 busy={busy}
                 error={actionError}
                 formRef={formRef}
@@ -330,7 +343,7 @@ export function AiAgentsSettingsPanel() {
 
             {editor.type === "edit" ? (
               <AiAgentConfigForm
-                key={editor.agent.id}
+                key={`${editor.agent.id}-${formKey}`}
                 busy={busy}
                 error={actionError}
                 formRef={formRef}

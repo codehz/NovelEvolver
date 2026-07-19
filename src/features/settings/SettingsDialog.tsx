@@ -60,9 +60,14 @@ export function SettingsDialog({ open, onDismiss }: SettingsDialogProps) {
             className={settingsTabsRootClass}
             value={activeCategoryId}
             onValueChange={(next) => {
-              if (isSettingsCategoryId(next)) {
-                setActiveCategoryId(next);
+              if (!isSettingsCategoryId(next) || next === activeCategoryId) {
+                return;
               }
+              void requestSettingsLeave().then((ok) => {
+                if (ok) {
+                  setActiveCategoryId(next);
+                }
+              });
             }}
           >
             <header className={settingsHeaderClass}>
@@ -87,13 +92,13 @@ export function SettingsDialog({ open, onDismiss }: SettingsDialogProps) {
 
             <div className={settingsBodyClass}>
               <Tabs.Panel className={settingsContentClass} value="ai-models">
-                <AiModelsSettingsPanel />
+                <AiModelsSettingsPanel active={activeCategoryId === "ai-models"} />
               </Tabs.Panel>
               <Tabs.Panel className={settingsContentClass} value="ai-agents">
-                <AiAgentsSettingsPanel />
+                <AiAgentsSettingsPanel active={activeCategoryId === "ai-agents"} />
               </Tabs.Panel>
               <Tabs.Panel className={settingsContentClass} value="ai-prompts">
-                <AiPromptsSettingsPanel />
+                <AiPromptsSettingsPanel active={activeCategoryId === "ai-prompts"} />
               </Tabs.Panel>
             </div>
           </Tabs.Root>

@@ -17,7 +17,12 @@ import { type EditorMode, isEditorTiedToProvider } from "./editor-mode";
 
 const modelsSettingsLoader = createAsyncLoader(() => settingsService.getAiModels());
 
-export function useAiModelsSettings() {
+type UseAiModelsSettingsOptions = {
+  /** Whether the models tab is the active settings category. */
+  active?: boolean;
+};
+
+export function useAiModelsSettings({ active = true }: UseAiModelsSettingsOptions = {}) {
   const {
     data: snapshot,
     error: loadErrorRaw,
@@ -27,6 +32,7 @@ export function useAiModelsSettings() {
   const { actionError, busy, clearActionError, runMutation } = useSettingsMutation(refresh);
   const [editor, setEditor] = useState<EditorMode>({ type: "closed" });
   const [editorDirty, setEditorDirty] = useState(false);
+  const [formKey, setFormKey] = useState(0);
   const formRef = useRef<SettingsFormHandle | null>(null);
 
   useEffect(() => {
@@ -61,16 +67,22 @@ export function useAiModelsSettings() {
   };
 
   const { requestClose } = useSettingsEditorLeave({
+    active,
     editorOpen: editor.type !== "closed",
     busy,
     dirty: editorDirty,
     formRef,
     closeEditor,
+    onDiscard: () => {
+      setEditorDirty(false);
+      setFormKey((key) => key + 1);
+    },
   });
 
   const openEditor = (next: EditorMode) => {
     clearActionError();
     setEditorDirty(false);
+    setFormKey((key) => key + 1);
     setEditor(next);
   };
 
@@ -137,6 +149,7 @@ export function useAiModelsSettings() {
   return {
     actionError,
     busy,
+    formKey,
     formRef,
     requestClose,
     defaultModelId,

@@ -14,10 +14,16 @@ import { AiModelsListLayer } from "./AiModelsListLayer";
 import { resolveModelsSubpageTitle } from "./editor-mode";
 import { useAiModelsSettings } from "./use-ai-models-settings";
 
-export function AiModelsSettingsPanel() {
+type AiModelsSettingsPanelProps = {
+  /** Whether the models tab is currently active. */
+  active?: boolean;
+};
+
+export function AiModelsSettingsPanel({ active = true }: AiModelsSettingsPanelProps) {
   const {
     actionError,
     busy,
+    formKey,
     formRef,
     requestClose,
     defaultModelId,
@@ -35,7 +41,7 @@ export function AiModelsSettingsPanel() {
     providers,
     refresh,
     snapshot,
-  } = useAiModelsSettings();
+  } = useAiModelsSettings({ active });
 
   if (isLoading && snapshot === undefined) {
     return (
@@ -109,6 +115,7 @@ export function AiModelsSettingsPanel() {
       {isSubpageOpen ? (
         <div className={settingsPanelScrollClass}>
           <AiModelsEditorLayer
+            key={formKey}
             actionError={actionError}
             busy={busy}
             editor={editor}

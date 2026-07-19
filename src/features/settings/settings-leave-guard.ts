@@ -29,10 +29,12 @@ type CreateSettingsLeaveGuardOptions = {
   isDirty: () => boolean;
   isBusy?: () => boolean;
   save: () => Promise<boolean>;
+  /** Called when the user chooses "don't save"; reset dirty baseline / remount form. */
+  onDiscard?: () => void;
 };
 
 /**
- * Build a leave guard for a settings subpage editor.
+ * Build a leave guard for a settings editor (subpage or master-detail form).
  * clean → allow; dirty → save / discard / cancel dialog.
  */
 export function createSettingsLeaveGuard(
@@ -50,6 +52,7 @@ export function createSettingsLeaveGuard(
       return false;
     }
     if (choice === "discard") {
+      options.onDiscard?.();
       return true;
     }
     return options.save();
