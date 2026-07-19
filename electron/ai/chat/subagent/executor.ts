@@ -22,6 +22,7 @@ import {
 import type { AiBackendSession } from "../../backend/ai-backend-session";
 import { createAiBackendSession } from "../../backend/create-ai-backend";
 import { toInputItem } from "../../mock-adapter";
+import type { MockScenarioPacing } from "../../mock/scenario-types";
 import {
   createToolRunner,
   selectAiTools,
@@ -63,7 +64,14 @@ export type SubagentExecutorDeps = {
   parentSelectedModelId: string;
   parentSelectedReasoningLevel: AiReasoningLevel | null;
   parentAdapterKind: AiChatSelectableModelKind;
-  /** Optional override for tests. */
+  /**
+   * When the parent conversation is a mock AI scenario, pass the same scenario id
+   * so nested child streams can match parent/child turns via `isSubagentRequest`.
+   */
+  scenarioId?: string | null;
+  /** Pacing for nested scenario clients (defaults to preview in createAiBackendSession). */
+  scenarioPacing?: MockScenarioPacing;
+  /** Optional override for tests / scenario simulated tool results. */
   toolRunner?: ToolRunner;
   /** Optional override for tests. */
   createBackend?: (options: { agent: AiAgentRuntimeConfig; modelId: string }) => AiBackendSession;
@@ -93,9 +101,21 @@ function resolveBackend(
     return deps.createBackend({ agent, modelId });
   }
 
+  const childLabel = `${deps.clientLabel}/subagent/${agent.id}`;
+
+  // Parent mock AI scenarios must share their scenario client with nested subagents.
+  if (deps.scenarioId) {
+    return createAiBackendSession({
+      clientLabel: childLabel,
+      scenarioId: deps.scenarioId,
+      pacing: deps.scenarioPacing,
+      instructionsOverride: agent.systemPrompt,
+    });
+  }
+
   if (modelId === "" || modelId === MOCK_AI_MODEL_ID || deps.parentAdapterKind === "mock") {
     return createAiBackendSession({
-      clientLabel: `${deps.clientLabel}/subagent/${agent.id}`,
+      clientLabel: childLabel,
       instructionsOverride: agent.systemPrompt,
     });
   }
@@ -106,7 +126,7 @@ function resolveBackend(
   }
 
   return createAiBackendSession({
-    clientLabel: `${deps.clientLabel}/subagent/${agent.id}`,
+    clientLabel: childLabel,
     modelConfig,
     instructionsOverride: agent.systemPrompt,
   });

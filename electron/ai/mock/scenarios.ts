@@ -1,5 +1,10 @@
 import type { MockScenarioDefinition } from "./scenario-types";
-import { getToolResult, hasToolResult, readToolResultText } from "./scenario-types";
+import {
+  getToolResult,
+  hasToolResult,
+  isSubagentRequest,
+  readToolResultText,
+} from "./scenario-types";
 
 const basicStream: MockScenarioDefinition = {
   id: "stream.basic",
@@ -381,6 +386,224 @@ const simulatedToolError: MockScenarioDefinition = {
   ],
 };
 
+const SUBAGENT_BASIC_CALL_ID = "scenario-subagent-basic";
+
+const subagentBasic: MockScenarioDefinition = {
+  id: "subagent.basic",
+  title: "子代理基础委派",
+  description: "编排者调用 run_subagent，子代理直接返回摘要，编排者整理结论。",
+  initialPrompt: "委托一致性审查子代理检查人设。",
+  toolMode: "simulated",
+  mutatesWorkspace: false,
+  turns: [
+    {
+      id: "parent-delegate",
+      matches: (request) =>
+        !isSubagentRequest(request) && !hasToolResult(request, SUBAGENT_BASIC_CALL_ID),
+      run: function* () {
+        yield {
+          type: "reasoning",
+          id: "scenario-subagent-basic-reasoning",
+          visibility: "summary",
+          content: "任务可拆分，委派给一致性审查子代理。",
+        };
+        yield {
+          type: "tool_call",
+          id: SUBAGENT_BASIC_CALL_ID,
+          name: "run_subagent",
+          argumentsText: JSON.stringify({
+            agent_id: "builtin-consistency-reviewer",
+            task: "审查主角人设是否前后一致，给出简短结论。",
+            constraints: "只读，不要改写文档。",
+            focus: [{ domain: "manuscript", id: "chapter-1" }],
+            parent_summary: "用户要求检查人设一致性。",
+          }),
+        };
+      },
+    },
+    {
+      id: "child-complete",
+      matches: (request) => isSubagentRequest(request),
+      run: function* () {
+        yield {
+          type: "reasoning",
+          id: "scenario-subagent-child-reasoning",
+          visibility: "summary",
+          content: "根据任务与焦点节点整理审查结论。",
+        };
+        yield {
+          type: "message",
+          id: "scenario-subagent-child-message",
+          content: "审查完成：未发现明显人设冲突。主角动机与前文章节一致。",
+        };
+        yield {
+          type: "complete",
+          usage: { inputTokens: 40, outputTokens: 28, totalTokens: 68 },
+        };
+      },
+    },
+    {
+      id: "parent-summarize",
+      matches: (request) =>
+        !isSubagentRequest(request) && hasToolResult(request, SUBAGENT_BASIC_CALL_ID),
+      run: function* ({ request }) {
+        const result = readToolResultText(getToolResult(request, SUBAGENT_BASIC_CALL_ID));
+        yield {
+          type: "message",
+          id: "scenario-subagent-parent-message",
+          content: `子代理已返回：\n\n\`\`\`json\n${result}\n\`\`\``,
+        };
+      },
+    },
+  ],
+};
+
+const SUBAGENT_TOOL_CALL_ID = "scenario-subagent-with-tool";
+const SUBAGENT_CHILD_READ_ID = "scenario-subagent-child-read";
+
+const subagentWithTool: MockScenarioDefinition = {
+  id: "subagent.with-tool",
+  title: "子代理带工具回合",
+  description: "子代理先调用 read_document（模拟结果），再汇总；用于验证进度 phase 与续跑。",
+  initialPrompt: "委托子代理读取章节后给出审查结论。",
+  toolMode: "simulated",
+  mutatesWorkspace: false,
+  simulatedResults: {
+    [SUBAGENT_CHILD_READ_ID]: {
+      outcome: "success",
+      content: [
+        {
+          type: "json",
+          json: {
+            id: "chapter-1",
+            title: "第一章",
+            content: "主角走进雨夜，外套被风吹起。",
+          },
+        },
+      ],
+    },
+  },
+  turns: [
+    {
+      id: "parent-delegate",
+      matches: (request) =>
+        !isSubagentRequest(request) && !hasToolResult(request, SUBAGENT_TOOL_CALL_ID),
+      run: function* () {
+        yield {
+          type: "tool_call",
+          id: SUBAGENT_TOOL_CALL_ID,
+          name: "run_subagent",
+          argumentsText: JSON.stringify({
+            agent_id: "builtin-consistency-reviewer",
+            task: "读取第一章并判断开场是否自洽。",
+            focus: [{ domain: "manuscript", id: "chapter-1" }],
+          }),
+        };
+      },
+    },
+    {
+      id: "child-call-tool",
+      matches: (request) =>
+        isSubagentRequest(request) && !hasToolResult(request, SUBAGENT_CHILD_READ_ID),
+      run: function* () {
+        yield {
+          type: "message",
+          id: "scenario-subagent-tool-thinking",
+          content: "先读取焦点章节。",
+        };
+        yield {
+          type: "tool_call",
+          id: SUBAGENT_CHILD_READ_ID,
+          name: "read_document",
+          argumentsText: JSON.stringify({ domain: "manuscript", id: "chapter-1" }),
+        };
+      },
+    },
+    {
+      id: "child-after-tool",
+      matches: (request) =>
+        isSubagentRequest(request) && hasToolResult(request, SUBAGENT_CHILD_READ_ID),
+      run: function* () {
+        yield {
+          type: "message",
+          id: "scenario-subagent-tool-summary",
+          content: "已读取章节。结论：雨夜开场与人设描述一致，暂无冲突。",
+        };
+        yield {
+          type: "complete",
+          usage: { inputTokens: 52, outputTokens: 34, totalTokens: 86 },
+        };
+      },
+    },
+    {
+      id: "parent-summarize",
+      matches: (request) =>
+        !isSubagentRequest(request) && hasToolResult(request, SUBAGENT_TOOL_CALL_ID),
+      run: function* ({ request }) {
+        const result = readToolResultText(getToolResult(request, SUBAGENT_TOOL_CALL_ID));
+        yield {
+          type: "message",
+          id: "scenario-subagent-with-tool-parent-message",
+          content: `子代理工具回合已完成：\n\n\`\`\`json\n${result}\n\`\`\``,
+        };
+      },
+    },
+  ],
+};
+
+const SUBAGENT_FAIL_CALL_ID = "scenario-subagent-failed";
+
+const subagentFailed: MockScenarioDefinition = {
+  id: "subagent.failed",
+  title: "子代理失败路径",
+  description: "子代理未产出可用摘要，编排者收到 failed 结果并整理。",
+  initialPrompt: "委托一个会失败的子代理任务。",
+  toolMode: "simulated",
+  mutatesWorkspace: false,
+  turns: [
+    {
+      id: "parent-delegate",
+      matches: (request) =>
+        !isSubagentRequest(request) && !hasToolResult(request, SUBAGENT_FAIL_CALL_ID),
+      run: function* () {
+        yield {
+          type: "tool_call",
+          id: SUBAGENT_FAIL_CALL_ID,
+          name: "run_subagent",
+          argumentsText: JSON.stringify({
+            agent_id: "builtin-consistency-reviewer",
+            task: "故意不返回摘要以触发失败路径。",
+          }),
+        };
+      },
+    },
+    {
+      id: "child-empty",
+      matches: (request) => isSubagentRequest(request),
+      run: function* () {
+        // No message text → executor reports "子代理未返回可用摘要。"
+        yield {
+          type: "complete",
+          usage: { inputTokens: 10, outputTokens: 0, totalTokens: 10 },
+        };
+      },
+    },
+    {
+      id: "parent-summarize",
+      matches: (request) =>
+        !isSubagentRequest(request) && hasToolResult(request, SUBAGENT_FAIL_CALL_ID),
+      run: function* ({ request }) {
+        const result = readToolResultText(getToolResult(request, SUBAGENT_FAIL_CALL_ID));
+        yield {
+          type: "message",
+          id: "scenario-subagent-failed-parent-message",
+          content: `子代理失败路径已完成：\n\n\`\`\`json\n${result}\n\`\`\``,
+        };
+      },
+    },
+  ],
+};
+
 export const MOCK_SCENARIOS = [
   basicStream,
   simulatedTool,
@@ -388,6 +611,9 @@ export const MOCK_SCENARIOS = [
   askUser,
   parallelAskUser,
   simulatedToolError,
+  subagentBasic,
+  subagentWithTool,
+  subagentFailed,
   providerWarning,
   contentFilter,
   interruptedStream,

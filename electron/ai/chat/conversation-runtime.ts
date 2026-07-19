@@ -100,6 +100,7 @@ export class AiConversationRuntime {
   readonly #resolveModelConfig: AiConversationRuntimeOptions["resolveModelConfig"];
   readonly #resolveAgentConfig: AiConversationRuntimeOptions["resolveAgentConfig"];
   readonly #scenarioBackend: AiBackendSession | null;
+  readonly #scenarioPacing: MockScenarioPacing | undefined;
   #activeBackend: AiBackendSession | null = null;
   #generationAbort: AbortController | null = null;
   #disposed = false;
@@ -110,6 +111,7 @@ export class AiConversationRuntime {
     this.#resolveModelConfig = options.resolveModelConfig;
     this.#resolveAgentConfig = options.resolveAgentConfig;
     this.#resolveWorktree = options.resolveWorktree;
+    this.#scenarioPacing = options.pacing;
     this.#scenarioBackend = scenarioId
       ? createAiBackendSession({
           clientLabel: this.#clientLabel,
@@ -792,6 +794,7 @@ export class AiConversationRuntime {
     call: ToolCallItem,
   ): Promise<ToolExecutionResult> {
     const signal = this.#generationAbort?.signal ?? new AbortController().signal;
+    const scenarioId = this.#scenarioBackend?.scenarioId ?? null;
     return executeSubagentToolCall({
       call,
       depth: 0,
@@ -804,6 +807,10 @@ export class AiConversationRuntime {
         parentSelectedModelId: this.#state.selectedModelId,
         parentSelectedReasoningLevel: this.#state.selectedReasoningLevel,
         parentAdapterKind: this.#state.getSnapshot().adapterKind,
+        scenarioId,
+        scenarioPacing: this.#scenarioPacing,
+        // Share the parent scenario tool runner so simulated child tool results apply.
+        toolRunner: this.#toolRunner,
       },
       onProgress: (progress) => {
         if (this.#disposed || signal.aborted) {

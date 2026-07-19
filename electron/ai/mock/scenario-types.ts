@@ -60,3 +60,20 @@ export function readToolResultText(result: ToolResultItem | null): string {
     })
     .join("\n");
 }
+
+/**
+ * Detect whether the request is a nested subagent stream (isolated user message),
+ * as opposed to the parent orchestrator transcript of the same mock scenario.
+ * Stable marker comes from `buildSubagentUserMessage`.
+ */
+export function isSubagentRequest(request: Pick<NormalizedRequest, "input">): boolean {
+  for (let index = request.input.length - 1; index >= 0; index--) {
+    const item = request.input[index]!;
+    if (item.type !== "message" || item.role !== "user") {
+      continue;
+    }
+    const text = item.content.map((block) => (block.type === "text" ? block.text : "")).join("");
+    return text.includes("正在执行一次独立委派任务");
+  }
+  return false;
+}
