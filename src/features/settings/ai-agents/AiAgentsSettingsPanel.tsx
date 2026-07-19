@@ -178,7 +178,8 @@ export function AiAgentsSettingsPanel() {
             <div className="min-w-0 flex-1">
               <h3 className="text-sm font-medium text-app-foreground">AI Agent</h3>
               <p className="mt-0.5 text-2xs text-app-muted">
-                定义拥有独立系统提示词和工具权限的 AI 角色，可在对话中切换。
+                定义拥有独立系统提示词和工具权限的 AI 角色。自定义 Agent
+                可配置是否在对话中可选、是否可作为子代理；内置资格固定。
               </p>
             </div>
             <Button
@@ -239,6 +240,24 @@ export function AiAgentsSettingsPanel() {
                             <span>继承对话默认模型</span>
                           </>
                         )}
+                        {agent.userSelectable ? (
+                          <>
+                            <span aria-hidden="true">·</span>
+                            <span>对话可选</span>
+                          </>
+                        ) : null}
+                        {agent.subagentEligible ? (
+                          <>
+                            <span aria-hidden="true">·</span>
+                            <span>子代理</span>
+                          </>
+                        ) : null}
+                        {!agent.userSelectable && !agent.subagentEligible ? (
+                          <>
+                            <span aria-hidden="true">·</span>
+                            <span>未启用</span>
+                          </>
+                        ) : null}
                       </div>
                     </div>
 

@@ -2,6 +2,7 @@ import { Field } from "@base-ui/react/field";
 import { Form } from "@base-ui/react/form";
 import { useEffect, useImperativeHandle, useMemo, useRef, useState, type Ref } from "react";
 
+import { cn } from "#app/shared/lib/ui/cn";
 import { Button } from "#app/shared/ui";
 import type {
   AiAgentConfigPublic,
@@ -12,6 +13,7 @@ import type {
 } from "#shared/rpc/services/index";
 
 import {
+  settingsCheckboxLabelClass,
   settingsFieldControlCellClass,
   settingsFieldErrorClass,
   settingsFieldLabelClass,
@@ -24,6 +26,7 @@ import {
   settingsTextareaClass,
 } from "../settings-chrome";
 import type { SettingsFormHandle } from "../settings-leave-guard";
+import { SettingsCheckbox } from "../SettingsCheckbox";
 import { SettingsSelect } from "../SettingsSelect";
 import { AiAgentToolPicker } from "./AiAgentToolPicker";
 
@@ -32,6 +35,8 @@ type FormState = {
   systemPrompt: string;
   defaultModelId: string;
   availableToolNames: string[];
+  userSelectable: boolean;
+  subagentEligible: boolean;
 };
 
 type AiAgentConfigFormProps = {
@@ -60,6 +65,9 @@ function toFormState(initial?: AiAgentConfigPublic | null): FormState {
     systemPrompt: initial?.systemPrompt ?? "",
     defaultModelId: initial?.defaultModelId ?? "",
     availableToolNames: initial ? [...initial.availableToolNames] : [],
+    // New custom agents default to both channels enabled.
+    userSelectable: initial?.userSelectable ?? true,
+    subagentEligible: initial?.subagentEligible ?? true,
   };
 }
 
@@ -86,7 +94,9 @@ function isAgentFormDirty(
   return (
     form.name !== baseline.name ||
     form.systemPrompt !== baseline.systemPrompt ||
-    !sameToolNames(form.availableToolNames, baseline.availableToolNames)
+    !sameToolNames(form.availableToolNames, baseline.availableToolNames) ||
+    form.userSelectable !== baseline.userSelectable ||
+    form.subagentEligible !== baseline.subagentEligible
   );
 }
 
@@ -139,6 +149,8 @@ export function AiAgentConfigForm({
       systemPrompt,
       defaultModelId: form.defaultModelId === "" ? null : form.defaultModelId,
       availableToolNames: form.availableToolNames,
+      userSelectable: form.userSelectable,
+      subagentEligible: form.subagentEligible,
     };
   };
 
@@ -280,6 +292,67 @@ export function AiAgentConfigForm({
                 update("availableToolNames", next);
               }}
             />
+          </div>
+        </Field.Root>
+
+        <Field.Root
+          className={settingsFieldRootClass}
+          disabled={busy || definitionLocked}
+          name="userSelectable"
+        >
+          <Field.Label className={settingsFieldLabelClass}>可见性</Field.Label>
+          <div className={settingsFieldControlCellClass}>
+            <div className="flex flex-col gap-2">
+              <label
+                className={cn(
+                  settingsCheckboxLabelClass,
+                  "items-center",
+                  definitionLocked && "cursor-default text-app-muted",
+                )}
+              >
+                <SettingsCheckbox
+                  checked={form.userSelectable}
+                  disabled={busy || definitionLocked}
+                  readOnly={definitionLocked}
+                  onCheckedChange={(checked) => {
+                    update("userSelectable", checked);
+                  }}
+                />
+                <span className="min-w-0">
+                  <span className="block text-app-foreground">在对话中可选</span>
+                  <span className="mt-0.5 block text-2xs text-app-muted">
+                    关闭后不会出现在聊天 Agent 选择器中
+                  </span>
+                </span>
+              </label>
+              <label
+                className={cn(
+                  settingsCheckboxLabelClass,
+                  "items-center",
+                  definitionLocked && "cursor-default text-app-muted",
+                )}
+              >
+                <SettingsCheckbox
+                  checked={form.subagentEligible}
+                  disabled={busy || definitionLocked}
+                  readOnly={definitionLocked}
+                  onCheckedChange={(checked) => {
+                    update("subagentEligible", checked);
+                  }}
+                />
+                <span className="min-w-0">
+                  <span className="block text-app-foreground">可用作子代理</span>
+                  <span className="mt-0.5 block text-2xs text-app-muted">
+                    关闭后无法被 run_subagent 委派
+                  </span>
+                </span>
+              </label>
+              {definitionLocked ? (
+                <p className="text-2xs text-app-muted">
+                  内置 Agent 的可见性与子代理资格由代码固定。
+                </p>
+              ) : null}
+            </div>
           </div>
         </Field.Root>
       </div>
