@@ -31,7 +31,7 @@ export const settingsPanelClass = cn(
 
 /**
  * Merged chrome row: title + category tabs + close.
- * Sits on the dialog surface; hierarchy vs body is body `bg-app-background`, not a hairline.
+ * Shares the dialog surface; no separate fill — hierarchy is the detail island, not a hairline.
  */
 export const settingsHeaderClass = cn("flex h-9 shrink-0 items-center gap-2 px-2.5");
 
@@ -69,12 +69,10 @@ export const settingsTabIndicatorClass = cn(
 );
 
 /**
- * Column body under the merged header — content canvas (`app-background`) inset into the
- * dialog surface shell, matching workbench editor-vs-chrome layering.
+ * Column body under the merged header — transparent over the dialog surface shell.
+ * Visual lift lives on the right detail island (`app-background`), not this canvas.
  */
-export const settingsBodyClass = cn(
-  "flex min-h-0 flex-1 flex-col overflow-hidden bg-app-background",
-);
+export const settingsBodyClass = cn("flex min-h-0 flex-1 flex-col overflow-hidden");
 
 /** Settings main pane shell: fills body; child panels manage header + scroll. */
 export const settingsContentClass = cn(
@@ -107,7 +105,7 @@ export const settingsPanelHeaderClass = cn("flex items-start justify-between gap
 
 /**
  * Dual-pane shell (provider rail + detail).
- * Rail is transparent over the body canvas; detail is a border-only inset card.
+ * Rail is transparent over the dark dialog shell; detail is the elevated inset island.
  */
 export const settingsDualPaneClass = cn("flex min-h-0 flex-1");
 
@@ -131,11 +129,11 @@ export const settingsDualPaneDetailClass = cn("flex min-h-0 min-w-0 flex-1 flex-
 export const settingsDetailInsetClass = cn("flex min-h-0 min-w-0 flex-1 flex-col p-2");
 
 /**
- * Card shell for settings detail content: border, radius, clip only (no fill).
- * Transparent over the body canvas; form surface islands stay elevated inside.
+ * Right detail island: border, radius, clip + original body canvas fill (`app-background`).
+ * Sits elevated on the dark dialog shell; form surface islands stay elevated inside.
  */
 export const settingsDetailSurfaceClass = cn(
-  "overflow-hidden rounded-lg border border-titlebar-border",
+  "overflow-hidden rounded-lg border border-titlebar-border bg-app-background",
 );
 
 /** Detail header strip inside the card — spacing only, no border-b. */
