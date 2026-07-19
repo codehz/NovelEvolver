@@ -6,6 +6,7 @@ import {
   controlFocusVisibleClass,
   iconButtonHoverClass,
 } from "#app/shared/lib/ui/interaction-chrome";
+import { bindScrollEdgeMask, scrollEdgeMaskClass } from "#app/shared/lib/ui/scroll-edge-mask";
 import { AppTooltip, Button, DisclosureChevron } from "#app/shared/ui";
 import type { WorktreeSearchHit } from "#shared/rpc/worktree/index";
 import { activateOnEnterSpace } from "#workbench/lib/activate-on-enter-space";
@@ -63,7 +64,7 @@ const SNIPPET_EDGE_FADE_PX = 12;
 
 /**
  * Horizontal snippet window: clip overflow, no scrollbar, rows share the same text origin
- * (no negative-margin gutter). Edge masks are toggled via `data-edge` from scroll position
+ * (no negative-margin gutter). Edge masks via `data-edge` from `bindScrollEdgeMask`
  * so the start of a line is not faded when `scrollLeft === 0`.
  *
  * Note: CSS `scroll-state` container queries cannot style the query container itself, and
@@ -72,40 +73,8 @@ const SNIPPET_EDGE_FADE_PX = 12;
  */
 const searchSnippetViewportClass = cn(
   "min-w-0 flex-1 scrollbar-none overflow-x-auto font-mono whitespace-nowrap text-ctp-text",
-  "data-[edge=right]:mask-[linear-gradient(to_right,black,black_calc(100%-0.75rem),transparent)]",
-  "data-[edge=left]:mask-[linear-gradient(to_right,transparent,black_0.75rem,black)]",
-  "data-[edge=both]:mask-[linear-gradient(to_right,transparent,black_0.75rem,black_calc(100%-0.75rem),transparent)]",
+  scrollEdgeMaskClass({ axis: "x", fade: "0.75rem" }),
 );
-
-type SnippetEdgeMask = "none" | "left" | "right" | "both";
-
-function snippetEdgeMask(host: HTMLElement): SnippetEdgeMask {
-  const maxScroll = Math.max(0, host.scrollWidth - host.clientWidth);
-  if (maxScroll <= 0) {
-    return "none";
-  }
-  const atStart = host.scrollLeft <= 0.5;
-  const atEnd = host.scrollLeft >= maxScroll - 0.5;
-  if (!atStart && !atEnd) {
-    return "both";
-  }
-  if (!atStart) {
-    return "left";
-  }
-  if (!atEnd) {
-    return "right";
-  }
-  return "none";
-}
-
-function syncSnippetEdgeMask(host: HTMLElement): void {
-  const edge = snippetEdgeMask(host);
-  if (edge === "none") {
-    delete host.dataset.edge;
-    return;
-  }
-  host.dataset.edge = edge;
-}
 
 /**
  * Center (or pin-start) a match element inside a horizontal overflow host.
@@ -181,22 +150,8 @@ function SearchSnippetView({
     } else {
       centerMatchInSnippetHost(host, match);
     }
-    syncSnippetEdgeMask(host);
 
-    const onScroll = () => {
-      syncSnippetEdgeMask(host);
-    };
-    host.addEventListener("scroll", onScroll, { passive: true });
-
-    const resizeObserver = new ResizeObserver(() => {
-      syncSnippetEdgeMask(host);
-    });
-    resizeObserver.observe(host);
-
-    return () => {
-      host.removeEventListener("scroll", onScroll);
-      resizeObserver.disconnect();
-    };
+    return bindScrollEdgeMask(host, { axis: "x" });
   }, [hit.snippetBefore, hit.matchText, hit.snippetAfter, replacePreviewText, showReplacePreview]);
 
   // Replace preview is consecutive match-old / match-new; wrap so the pair stays in view.
