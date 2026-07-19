@@ -141,10 +141,16 @@ export const settingsDetailSurfaceClass = cn(
   "overflow-hidden rounded-lg border border-titlebar-border bg-app-background",
 );
 
-/** Detail header strip inside the card — spacing only, no border-b. */
+/**
+ * Detail header strip inside the card — fixed height so title+chip / title-only
+ * rows do not change the island chrome (two-line title + meta, actions centered).
+ */
 export const settingsDualPaneDetailHeaderClass = cn(
-  "flex shrink-0 items-start justify-between gap-2 px-3 py-2",
+  "flex h-14 shrink-0 items-center justify-between gap-2 px-3",
 );
+
+/** Title row next to optional status chip — single line, no wrap height jump. */
+export const settingsDualPaneDetailTitleRowClass = cn("flex min-w-0 items-center gap-1.5");
 
 export const settingsDualPaneDetailScrollClass = cn("min-h-0 flex-1 overflow-y-auto px-3 py-2");
 
@@ -216,7 +222,7 @@ export const settingsToolCardTitleClass = cn(
 export const settingsToolCardDescriptionClass = cn("mt-0.5 text-2xs leading-snug text-app-muted");
 
 export const settingsStatusBadgeClass = cn(
-  "inline-flex shrink-0 items-center rounded-sm bg-ctp-surface0/70 px-1.5 py-0.5 text-2xs text-app-muted",
+  "inline-flex h-4 shrink-0 items-center rounded-sm bg-ctp-surface0/70 px-1.5 text-2xs leading-none text-app-muted",
 );
 
 export const settingsStatusBadgeDefaultClass = cn("bg-badge-background/20 text-badge-background");

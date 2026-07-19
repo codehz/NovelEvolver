@@ -7,6 +7,7 @@ import { Button } from "#app/shared/ui";
 import type { AiPromptConfigWrite } from "#shared/rpc/services/index";
 
 import {
+  settingsDualPaneDetailTitleRowClass,
   settingsGhostActionClass,
   settingsHeaderActionsClass,
   settingsListItemMetaClass,
@@ -248,10 +249,10 @@ export function AiPromptsSettingsPanel({ active = true }: AiPromptsSettingsPanel
             selection != null ? (
               <>
                 <div className="min-w-0">
-                  <div className="flex min-w-0 flex-wrap items-center gap-1.5">
+                  <div className={settingsDualPaneDetailTitleRowClass}>
                     <h4 className={settingsListItemTitleClass}>{detailTitle}</h4>
                     {selectedPrompt ? (
-                      <span className="font-mono text-2xs text-app-muted">
+                      <span className="truncate font-mono text-2xs text-app-muted">
                         /{selectedPrompt.slug}
                       </span>
                     ) : null}

@@ -5,6 +5,7 @@ import { Button } from "#app/shared/ui";
 import type { AiModelConfigPublic, AiProviderConfigPublic } from "#shared/rpc/services/index";
 
 import {
+  settingsDualPaneDetailTitleRowClass,
   settingsGhostActionClass,
   settingsListClass,
   settingsListItemMetaClass,
@@ -130,7 +131,7 @@ export function AiModelsListLayer({
           selectedProvider ? (
             <>
               <div className="min-w-0">
-                <div className="flex min-w-0 flex-wrap items-center gap-1.5">
+                <div className={settingsDualPaneDetailTitleRowClass}>
                   <h4 className={settingsListItemTitleClass}>{selectedProvider.name}</h4>
                   {selectedProvider.hasApiKey ? (
                     <span className={settingsStatusBadgeClass}>已配置密钥</span>

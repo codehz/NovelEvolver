@@ -8,6 +8,7 @@ import { Button } from "#app/shared/ui";
 import type { AiAgentConfigPublic, AiAgentConfigWrite } from "#shared/rpc/services/index";
 
 import {
+  settingsDualPaneDetailTitleRowClass,
   settingsGhostActionClass,
   settingsHeaderActionsClass,
   settingsListItemMetaClass,
@@ -293,7 +294,7 @@ export function AiAgentsSettingsPanel({ active = true }: AiAgentsSettingsPanelPr
             selection != null ? (
               <>
                 <div className="min-w-0">
-                  <div className="flex min-w-0 flex-wrap items-center gap-1.5">
+                  <div className={settingsDualPaneDetailTitleRowClass}>
                     <h4 className={settingsListItemTitleClass}>{detailTitle}</h4>
                     {selectedAgent?.builtin ? (
                       <span
