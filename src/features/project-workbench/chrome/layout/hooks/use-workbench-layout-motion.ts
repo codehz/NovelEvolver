@@ -5,8 +5,7 @@ import {
   planWorkbenchLayoutFrame,
   type AnimatingSides,
   type LayoutVisibilityIntent,
-} from "./plan-workbench-layout-frame";
-import type { ResizeSide } from "./use-workbench-sidebar-resize";
+} from "../motion/plan-workbench-layout-frame";
 import {
   displayedEqual,
   lerpDisplayed,
@@ -19,8 +18,9 @@ import {
   type DisplayedSidebarMetrics,
   type DisplayedWorkbenchChrome,
   type WorkbenchLayoutPhase,
-} from "./workbench-layout-motion";
-import type { WorkbenchChromeLayout } from "./workbench-layout-resolver";
+} from "../motion/workbench-layout-motion";
+import type { WorkbenchChromeLayout } from "../resolve/workbench-layout-resolver";
+import type { ResizeSide } from "./use-workbench-sidebar-resize";
 
 type AnimationHandle = ReturnType<typeof animate>;
 

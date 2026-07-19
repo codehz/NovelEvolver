@@ -8,7 +8,7 @@ import {
   type PointerEvent as ReactPointerEvent,
 } from "react";
 
-import { beginPointerDragSession } from "../pointer-drag-session";
+import { beginPointerDragSession } from "../../pointer-drag-session";
 import {
   applyResizeDelta,
   displayHeightsEqual,

@@ -1,7 +1,7 @@
 import { cn } from "#app/shared/lib/ui/cn";
 import { Button, AppTooltip } from "#app/shared/ui";
 
-import { sidebarHeaderActionClass, sidebarHeaderIconClass } from "./sidebar-chrome";
+import { sidebarHeaderActionClass, sidebarHeaderIconClass } from "../sidebar-chrome";
 
 export type SidebarHeaderActionButtonProps = {
   /** Accessible label (also used as tooltip). */

@@ -1,4 +1,7 @@
-import type { SidebarChromeMetrics, WorkbenchChromeLayout } from "./workbench-layout-resolver";
+import type {
+  SidebarChromeMetrics,
+  WorkbenchChromeLayout,
+} from "../resolve/workbench-layout-resolver";
 
 export type WorkbenchLayoutPhase = "idle" | "dragging" | "animating";
 

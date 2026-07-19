@@ -8,7 +8,7 @@ import {
   type SetStateAction,
 } from "react";
 
-import { beginPointerDragSession } from "../pointer-drag-session";
+import { beginPointerDragSession } from "../../pointer-drag-session";
 import {
   CLOSE_SIDEBAR_THRESHOLD,
   MIN_AUXILIARY_WIDTH,
@@ -18,7 +18,7 @@ import {
   type LayoutPreferences,
   type ResizePriority,
   type ResolvedWorkbenchLayout,
-} from "./workbench-layout-resolver";
+} from "../resolve/workbench-layout-resolver";
 
 export type ResizeSide = ResizePriority;
 

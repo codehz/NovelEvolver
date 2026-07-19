@@ -8,9 +8,12 @@ import {
 import { cn } from "#app/shared/lib/ui/cn";
 import { SlotText } from "#app/shared/ui";
 
-import { sidebarChromeTitleTextClass } from "../sidebar/sidebar-chrome";
+import { sidebarChromeTitleTextClass } from "../../sidebar/sidebar-chrome";
+import {
+  WORKBENCH_SIDEBAR_INSET,
+  sidebarChromeOuterSize,
+} from "../resolve/workbench-layout-resolver";
 import { SidebarResizeSash } from "./SidebarResizeSash";
-import { WORKBENCH_SIDEBAR_INSET, sidebarChromeOuterSize } from "./workbench-layout-resolver";
 
 const sidebarDockSpacerClass = cn("pointer-events-none h-full min-h-0 shrink-0");
 

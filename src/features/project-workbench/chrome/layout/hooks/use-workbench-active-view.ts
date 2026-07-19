@@ -7,8 +7,8 @@ import {
   type SetStateAction,
 } from "react";
 
-import type { WorkbenchPrimaryView } from "../types";
-import type { LayoutPreferences } from "./workbench-layout-resolver";
+import type { WorkbenchPrimaryView } from "../../types";
+import type { LayoutPreferences } from "../resolve/workbench-layout-resolver";
 
 function requirePrimaryViews(primaryViews: readonly WorkbenchPrimaryView[]) {
   if (primaryViews.length === 0) {

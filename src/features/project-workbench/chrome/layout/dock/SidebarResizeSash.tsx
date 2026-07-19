@@ -2,7 +2,7 @@ import { memo, type PointerEvent as ReactPointerEvent } from "react";
 
 import { cn } from "#app/shared/lib/ui/cn";
 
-import { WORKBENCH_SIDEBAR_INSET } from "./workbench-layout-resolver";
+import { WORKBENCH_SIDEBAR_INSET } from "../resolve/workbench-layout-resolver";
 
 const sashHostClass = cn(
   "group relative flex h-full shrink-0 cursor-col-resize touch-none items-center justify-center select-none",

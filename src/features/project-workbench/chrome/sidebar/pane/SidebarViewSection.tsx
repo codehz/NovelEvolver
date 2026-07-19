@@ -4,15 +4,15 @@ import { cn } from "#app/shared/lib/ui/cn";
 import { Button, DisclosureChevron } from "#app/shared/ui";
 
 import {
+  SidebarHeaderActionsPortalProvider,
+  SidebarHeaderActionsPortalTarget,
+} from "../header/sidebar-header-actions-portal";
+import {
   sidebarSectionHeaderButtonClass,
   sidebarSectionResizeHandleClass,
   sidebarSectionResizeRailClass,
   sidebarSectionResizeSeamClass,
-} from "./sidebar-chrome";
-import {
-  SidebarHeaderActionsPortalProvider,
-  SidebarHeaderActionsPortalTarget,
-} from "./sidebar-header-actions-portal";
+} from "../sidebar-chrome";
 
 export {
   SIDEBAR_SECTION_HEADER_HEIGHT_PX,

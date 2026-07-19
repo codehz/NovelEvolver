@@ -2,7 +2,7 @@ import { memo } from "react";
 
 import { cn } from "#app/shared/lib/ui/cn";
 
-import type { WorkbenchPrimaryView } from "../types";
+import type { WorkbenchPrimaryView } from "../../types";
 import { SidebarFrame } from "./SidebarFrame";
 
 const primarySidebarViewPaneClass = cn(

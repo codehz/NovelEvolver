@@ -3,15 +3,15 @@ import { useCallback, useMemo, type ReactNode } from "react";
 import { TitleBarAuxiliaryToggle } from "../titlebar/TitleBarAuxiliaryToggle";
 import { TitleBarPrimarySidebarToggle } from "../titlebar/TitleBarPrimarySidebarToggle";
 import type { WorkbenchPrimaryView } from "../types";
-import { PrimarySidebarViewStack } from "./PrimarySidebarViewStack";
-import { SidebarDock } from "./SidebarDock";
-import { SidebarFrame } from "./SidebarFrame";
-import { useMeasuredElementWidth } from "./use-measured-element-width";
-import { useWorkbenchActiveView } from "./use-workbench-active-view";
-import { useWorkbenchLayoutMotion } from "./use-workbench-layout-motion";
-import { useWorkbenchLayoutPreferences } from "./use-workbench-layout-preferences";
-import { useWorkbenchSidebarResize } from "./use-workbench-sidebar-resize";
-import { WorkbenchChromeProvider } from "./workbench-chrome-context";
+import { WorkbenchActivityBar } from "./activity/WorkbenchActivityBar";
+import { PrimarySidebarViewStack } from "./dock/PrimarySidebarViewStack";
+import { SidebarDock } from "./dock/SidebarDock";
+import { SidebarFrame } from "./dock/SidebarFrame";
+import { useMeasuredElementWidth } from "./hooks/use-measured-element-width";
+import { useWorkbenchActiveView } from "./hooks/use-workbench-active-view";
+import { useWorkbenchLayoutMotion } from "./hooks/use-workbench-layout-motion";
+import { useWorkbenchLayoutPreferences } from "./hooks/use-workbench-layout-preferences";
+import { useWorkbenchSidebarResize } from "./hooks/use-workbench-sidebar-resize";
 import {
   ACTIVITY_BAR_WIDTH,
   DEFAULT_AUXILIARY_WIDTH,
@@ -20,8 +20,8 @@ import {
   WORKBENCH_EDGE_INSET,
   deriveWorkbenchChromeLayout,
   sidebarChromeOuterSize,
-} from "./workbench-layout-resolver";
-import { WorkbenchActivityBar } from "./WorkbenchActivityBar";
+} from "./resolve/workbench-layout-resolver";
+import { WorkbenchChromeProvider } from "./workbench-chrome-context";
 
 /** Fallback before the container is measured — must reserve both sidebar sashes. */
 const INITIAL_WORKBENCH_WIDTH =

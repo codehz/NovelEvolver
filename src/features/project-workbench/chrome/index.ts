@@ -7,27 +7,15 @@ export {
   type WorkbenchChromeContextValue,
 } from "./layout/workbench-chrome-context";
 export {
-  SidebarViewSection,
-  SidebarSectionRowResizeHandle,
-  SIDEBAR_SECTION_HEADER_HEIGHT_PX,
-  SIDEBAR_SECTION_RESIZE_STRIP_HEIGHT,
-} from "./sidebar/SidebarViewSection";
-export {
   SidebarPaneStack,
   type SidebarPaneStackItem,
   type SidebarPaneStackProps,
-} from "./sidebar/SidebarPaneStack";
-export {
-  SidebarHeaderActionsPortalContent,
-  SidebarHeaderActionsPortalProvider,
-  SidebarHeaderActionsPortalTarget,
-} from "./sidebar/sidebar-header-actions-portal";
-export { SidebarHeaderActions } from "./sidebar/SidebarHeaderActions";
-export { sidebarHeaderActionClass, sidebarHeaderIconClass } from "./sidebar/sidebar-chrome";
+} from "./sidebar/pane/SidebarPaneStack";
+export { SidebarHeaderActions } from "./sidebar/header/SidebarHeaderActions";
 export {
   SidebarHeaderActionButton,
   type SidebarHeaderActionButtonProps,
-} from "./sidebar/SidebarHeaderActionButton";
+} from "./sidebar/header/SidebarHeaderActionButton";
 export { ErrorRetryView } from "./sidebar/ErrorRetryView";
 export {
   statusBarIconOnlyButtonClass,

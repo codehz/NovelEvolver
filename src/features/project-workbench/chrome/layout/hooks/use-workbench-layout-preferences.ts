@@ -4,7 +4,7 @@ import {
   DEFAULT_AUXILIARY_WIDTH,
   DEFAULT_PRIMARY_WIDTH,
   type LayoutPreferences,
-} from "./workbench-layout-resolver";
+} from "../resolve/workbench-layout-resolver";
 
 export function useWorkbenchLayoutPreferences() {
   const [layoutPreferences, setLayoutPreferences] = useState<LayoutPreferences>({

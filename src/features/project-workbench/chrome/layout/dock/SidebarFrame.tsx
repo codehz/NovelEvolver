@@ -2,11 +2,14 @@ import { memo, type ReactNode } from "react";
 
 import { cn } from "#app/shared/lib/ui/cn";
 
-import { sidebarChromeTitleTextClass, sidebarPanelSurfaceClass } from "../sidebar/sidebar-chrome";
 import {
   SidebarHeaderActionsPortalProvider,
   SidebarHeaderActionsPortalTarget,
-} from "../sidebar/sidebar-header-actions-portal";
+} from "../../sidebar/header/sidebar-header-actions-portal";
+import {
+  sidebarChromeTitleTextClass,
+  sidebarPanelSurfaceClass,
+} from "../../sidebar/sidebar-chrome";
 
 const sidebarFrameClass = cn("flex min-h-0 w-full shrink-0 flex-col", sidebarPanelSurfaceClass);
 
