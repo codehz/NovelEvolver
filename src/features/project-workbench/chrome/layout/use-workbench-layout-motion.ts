@@ -10,6 +10,7 @@ import {
   oppositeSide,
   sidebarMetricsEqual,
   stabilizeCloseTargets,
+  stabilizeMotionPair,
   targetsFromChromeLayout,
   WORKBENCH_LAYOUT_MOTION,
   type DisplayedSidebarMetrics,
@@ -160,13 +161,13 @@ export function useWorkbenchLayoutMotion({
       sides: AnimatingSides,
       nextPhase: WorkbenchLayoutPhase,
     ) => {
-      // Hidden chrome falls back to preferred panel width; hold current width on close
-      // so a squeezed dock does not expand while fading out.
-      const stabilizedTo = stabilizeCloseTargets(from, to);
+      // Close: hold current panelWidth (resolver preferred must not expand while fading).
+      // Open: snap source panelWidth to the open target so only spacer/opacity animate.
+      const { from: stabilizedFrom, to: stabilizedTo } = stabilizeMotionPair(from, to);
       const unchanged =
         sides === "both"
-          ? displayedEqual(from, stabilizedTo)
-          : sidebarMetricsEqual(from[sides], stabilizedTo[sides]);
+          ? displayedEqual(stabilizedFrom, stabilizedTo)
+          : sidebarMetricsEqual(stabilizedFrom[sides], stabilizedTo[sides]);
 
       if (reducedMotionRef.current || !motionReadyRef.current || unchanged) {
         snapSides(stabilizedTo, sides);
@@ -178,8 +179,8 @@ export function useWorkbenchLayoutMotion({
         sides === "both"
           ? stabilizedTo
           : sides === "primary"
-            ? { primary: stabilizedTo.primary, auxiliary: from.auxiliary }
-            : { primary: from.primary, auxiliary: stabilizedTo.auxiliary };
+            ? { primary: stabilizedTo.primary, auxiliary: stabilizedFrom.auxiliary }
+            : { primary: stabilizedFrom.primary, auxiliary: stabilizedTo.auxiliary };
 
       stopAnimation();
       animatingSidesRef.current = sides;
@@ -188,8 +189,8 @@ export function useWorkbenchLayoutMotion({
       setPhaseNow(nextPhase);
 
       const fromSnapshot: DisplayedWorkbenchChrome = {
-        primary: from.primary,
-        auxiliary: from.auxiliary,
+        primary: stabilizedFrom.primary,
+        auxiliary: stabilizedFrom.auxiliary,
       };
 
       animationRef.current = animate(0, 1, {
