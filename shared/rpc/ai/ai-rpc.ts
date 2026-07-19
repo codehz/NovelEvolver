@@ -73,29 +73,14 @@ export type AskUserChoice = {
 };
 
 /**
- * 用户输入请求 handle：仅暴露回传方法。
+ * 需要用户介入的交互会话（纯 DTO，stream 按值推送）。
  *
- * Cap'n Web 的 `RpcTarget` 按引用传递，客户端拿到的是 stub；属性读取是异步
- * `RpcPromise`，不能当作同步字段做 UI 分派。展示数据放在旁路纯 DTO
- *（`AiChatPendingUserInput`）里随 snapshot/delta 按值推送。
+ * - `id` 稳定且可序列化（通常 = tool call id），供 UI 切题/草稿 key 与命令回传。
+ * - **禁止**嵌入 `RpcTarget`/stub；回传走 `AiChatHandle.submitInteraction` / `cancelInteraction`。
+ * - 按 `kind` 扩展新交互时只加联合成员，不绑死 `ask_user`。
  */
-export interface UserInputRequestHandle extends RpcTarget {
-  /** 提交回答；幂等：重复调用会被忽略。 */
-  submitAnswer(text: string): void;
-  /** 取消回答，工具将以 rejected 结果返回给 AI。 */
-  cancel(): void;
-}
-
-/**
- * `ask_user` 工具的 typed handle：期望一段文本回答。
- */
-export interface AskUserRequestHandle extends UserInputRequestHandle {}
-
-/**
- * 需要用户回答的请求视图（按值）+ 提交 handle（按引用）。
- * 客户端按 `kind` 分派 UI，只读 DTO 字段；回传调用 `handle` 方法。
- */
-export type AskUserPendingInput = {
+export type AskUserOpenInteraction = {
+  id: string;
   kind: "ask_user";
   toolName: "ask_user";
   /** 展示用简短提示（如问题标题）。 */
@@ -104,11 +89,21 @@ export type AskUserPendingInput = {
   context: string | null;
   placeholder: string | null;
   choices: AskUserChoice[] | null;
-  handle: AskUserRequestHandle;
 };
 
-/** 当前所有可能的用户输入请求联合类型。 */
-export type AiChatPendingUserInput = AskUserPendingInput;
+/** 当前所有可能的开放交互联合类型。 */
+export type AiChatOpenInteraction = AskUserOpenInteraction;
+
+/**
+ * 交互回答 payload（按 kind 联合）。
+ * 首发仅 `ask_user`；未知 id / 已 settle 时服务端幂等忽略。
+ */
+export type AskUserInteractionAnswer = {
+  kind: "ask_user";
+  text: string;
+};
+
+export type AiChatInteractionAnswer = AskUserInteractionAnswer;
 
 export type AiChatAssistantPart = AiChatMessagePart | AiChatReasoningPart | AiChatToolCall;
 
@@ -261,7 +256,8 @@ export type AiChatSnapshot = {
   warnings: AiChatWarning[];
   messages: AiChatMessage[];
   pending: boolean;
-  pendingUserInputs: AiChatPendingUserInput[];
+  /** 当前等待用户介入的交互会话（纯 DTO，无 stub）。 */
+  openInteractions: AiChatOpenInteraction[];
   /**
    * Turn-scoped error from the last model request (shown under the last assistant turn).
    * Transport/subscription errors are client-local and not stored here.
@@ -314,7 +310,7 @@ export type AiChatStatePatch = {
   adapterKind?: AiChatSelectableModelKind;
   model?: string;
   pending?: boolean;
-  pendingUserInputs?: AiChatPendingUserInput[];
+  openInteractions?: AiChatOpenInteraction[];
   errorMessage?: string | null;
   canRetry?: boolean;
   selectedModelId?: string;
@@ -400,6 +396,16 @@ export interface AiChatHandle extends RpcTarget {
   sendMessage(input: AiChatSendMessageInput): void;
   /** Abort the in-flight model stream / tool loop when `pending`. No-op otherwise. */
   stopGeneration(): void;
+  /**
+   * 提交开放交互的回答（按 `openInteractions[].id`）。
+   * 未知 id / 已 settle / kind 不匹配时幂等忽略。
+   */
+  submitInteraction(id: string, answer: AiChatInteractionAnswer): void;
+  /**
+   * 取消开放交互（工具侧以 rejected 结果继续）。
+   * 未知 id / 已 settle 时幂等忽略。
+   */
+  cancelInteraction(id: string): void;
   /**
    * 重新生成末条助手：在同一用户节点下新建 sibling assistant 并生成。
    * 旧版本保留，可通过 ‹n/m› 切换。requestInput 从 history 的 last-request 边界重建。

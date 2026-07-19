@@ -22,7 +22,7 @@ export function createInitialAiChatSnapshot(model = "mock-assistant"): AiChatSna
     warnings: [],
     messages: [],
     pending: false,
-    pendingUserInputs: [],
+    openInteractions: [],
     errorMessage: null,
     canRetry: false,
   };
@@ -187,7 +187,7 @@ export function applyAiChatEvent(snapshot: AiChatSnapshot, event: AiChatEvent): 
           conversationId: "",
           messages: [],
           pending: false,
-          pendingUserInputs: [],
+          openInteractions: [],
           errorMessage: null,
           canRetry: false,
           warnings: [],
