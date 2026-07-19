@@ -4,7 +4,6 @@ import { NumberField } from "@base-ui/react/number-field";
 import { useEffect, useImperativeHandle, useMemo, useRef, useState, type Ref } from "react";
 
 import { cn } from "#app/shared/lib/ui/cn";
-import { Button } from "#app/shared/ui";
 import type {
   AiModelConfigPublic,
   AiModelConfigWrite,
@@ -24,13 +23,13 @@ import {
   settingsFieldHiddenControlClass,
   settingsFieldLabelClass,
   settingsFieldRootClass,
-  settingsFormActionsClass,
   settingsFormClass,
   settingsFormErrorClass,
   settingsFormGridClass,
   settingsInputClass,
 } from "../settings-chrome";
 import type { SettingsFormHandle } from "../settings-leave-guard";
+import { SettingsFormActions } from "../SettingsFormActions";
 import { SettingsJsonEditor } from "../SettingsJsonEditor";
 import { SettingsSelect } from "../SettingsSelect";
 import { ReasoningLevelChipList } from "./ReasoningLevelChipList";
@@ -60,7 +59,6 @@ type AiModelConfigFormProps = {
   error?: string | null;
   formRef?: Ref<SettingsFormHandle | null>;
   onDirtyChange?: (dirty: boolean) => void;
-  onCancel: () => void;
   onSubmit: (input: AiModelConfigWrite) => boolean | void | Promise<boolean | void>;
 };
 
@@ -209,7 +207,6 @@ export function AiModelConfigForm({
   error = null,
   formRef = null,
   onDirtyChange,
-  onCancel,
   onSubmit,
 }: AiModelConfigFormProps) {
   const isEdit = initial != null;
@@ -534,14 +531,7 @@ export function AiModelConfigForm({
 
       {error ? <p className={settingsFormErrorClass}>{error}</p> : null}
 
-      <div className={settingsFormActionsClass}>
-        <Button disabled={busy} onClick={onCancel}>
-          取消
-        </Button>
-        <Button disabled={busy} type="submit" variant="primary">
-          {busy ? "保存中…" : isEdit ? "保存" : "添加"}
-        </Button>
-      </div>
+      <SettingsFormActions busy={busy} submitLabel={isEdit ? "保存" : "添加"} />
     </Form>
   );
 }

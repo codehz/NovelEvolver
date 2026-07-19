@@ -2,7 +2,6 @@ import { Field } from "@base-ui/react/field";
 import { Form } from "@base-ui/react/form";
 import { useEffect, useImperativeHandle, useMemo, useRef, useState, type Ref } from "react";
 
-import { Button } from "#app/shared/ui";
 import type { AiPromptConfigPublic, AiPromptConfigWrite } from "#shared/rpc/services/index";
 import { AI_PROMPT_SLUG_PATTERN } from "#shared/rpc/services/index";
 
@@ -11,7 +10,6 @@ import {
   settingsFieldErrorClass,
   settingsFieldLabelClass,
   settingsFieldRootClass,
-  settingsFormActionsClass,
   settingsFormClass,
   settingsFormErrorClass,
   settingsFormGridClass,
@@ -19,6 +17,7 @@ import {
   settingsTextareaClass,
 } from "../settings-chrome";
 import type { SettingsFormHandle } from "../settings-leave-guard";
+import { SettingsFormActions } from "../SettingsFormActions";
 
 type FormState = {
   title: string;
@@ -33,7 +32,6 @@ type AiPromptConfigFormProps = {
   error?: string | null;
   formRef?: Ref<SettingsFormHandle | null>;
   onDirtyChange?: (dirty: boolean) => void;
-  onCancel: () => void;
   onSubmit?: (input: AiPromptConfigWrite) => boolean | void | Promise<boolean | void>;
 };
 
@@ -58,7 +56,6 @@ export function AiPromptConfigForm({
   error = null,
   formRef = null,
   onDirtyChange,
-  onCancel,
   onSubmit,
 }: AiPromptConfigFormProps) {
   const isEdit = initial != null;
@@ -214,16 +211,7 @@ export function AiPromptConfigForm({
 
       {error ? <p className={settingsFormErrorClass}>{error}</p> : null}
 
-      <div className={settingsFormActionsClass}>
-        <Button disabled={busy} onClick={onCancel}>
-          {readOnly ? "返回" : "取消"}
-        </Button>
-        {readOnly ? null : (
-          <Button disabled={busy} type="submit" variant="primary">
-            {isEdit ? "保存" : "添加"}
-          </Button>
-        )}
-      </div>
+      {readOnly ? null : <SettingsFormActions busy={busy} submitLabel={isEdit ? "保存" : "添加"} />}
     </Form>
   );
 }

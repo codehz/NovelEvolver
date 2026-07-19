@@ -19,7 +19,6 @@ type AiModelsEditorLayerProps = {
   actionError: string | null;
   formRef: Ref<SettingsFormHandle | null>;
   onDirtyChange: (dirty: boolean) => void;
-  onCancel: () => void;
   onProviderSubmit: (input: AiProviderConfigWrite) => Promise<boolean>;
   onModelSubmit: (input: AiModelConfigWrite) => Promise<boolean>;
 };
@@ -31,7 +30,6 @@ export function AiModelsEditorLayer({
   actionError,
   formRef,
   onDirtyChange,
-  onCancel,
   onProviderSubmit,
   onModelSubmit,
 }: AiModelsEditorLayerProps) {
@@ -42,7 +40,6 @@ export function AiModelsEditorLayer({
           busy={busy}
           error={actionError}
           formRef={formRef}
-          onCancel={onCancel}
           onDirtyChange={onDirtyChange}
           onSubmit={onProviderSubmit}
         />
@@ -55,7 +52,6 @@ export function AiModelsEditorLayer({
           error={actionError}
           formRef={formRef}
           initial={editor.provider}
-          onCancel={onCancel}
           onDirtyChange={onDirtyChange}
           onSubmit={onProviderSubmit}
         />
@@ -68,7 +64,6 @@ export function AiModelsEditorLayer({
           error={actionError}
           formRef={formRef}
           providers={providers}
-          onCancel={onCancel}
           onDirtyChange={onDirtyChange}
           onSubmit={onModelSubmit}
         />
@@ -82,7 +77,6 @@ export function AiModelsEditorLayer({
           formRef={formRef}
           initial={editor.model}
           providers={providers}
-          onCancel={onCancel}
           onDirtyChange={onDirtyChange}
           onSubmit={onModelSubmit}
         />

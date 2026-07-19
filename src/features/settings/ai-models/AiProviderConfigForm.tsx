@@ -3,7 +3,6 @@ import { Form } from "@base-ui/react/form";
 import { useEffect, useImperativeHandle, useMemo, useRef, useState, type Ref } from "react";
 
 import { cn } from "#app/shared/lib/ui/cn";
-import { Button } from "#app/shared/ui";
 import type {
   AiAdapterKind,
   AiProviderConfigPublic,
@@ -16,7 +15,6 @@ import {
   settingsFieldErrorClass,
   settingsFieldLabelClass,
   settingsFieldRootClass,
-  settingsFormActionsClass,
   settingsFormClass,
   settingsFormErrorClass,
   settingsFormGridClass,
@@ -24,6 +22,7 @@ import {
 } from "../settings-chrome";
 import type { SettingsFormHandle } from "../settings-leave-guard";
 import { SettingsCheckbox } from "../SettingsCheckbox";
+import { SettingsFormActions } from "../SettingsFormActions";
 import { SettingsSelect } from "../SettingsSelect";
 import { AI_ADAPTER_OPTIONS, aiAdapterEndpointPlaceholder } from "./ai-adapter-labels";
 
@@ -41,7 +40,6 @@ type AiProviderConfigFormProps = {
   error?: string | null;
   formRef?: Ref<SettingsFormHandle | null>;
   onDirtyChange?: (dirty: boolean) => void;
-  onCancel: () => void;
   onSubmit: (input: AiProviderConfigWrite) => boolean | void | Promise<boolean | void>;
 };
 
@@ -71,7 +69,6 @@ export function AiProviderConfigForm({
   error = null,
   formRef = null,
   onDirtyChange,
-  onCancel,
   onSubmit,
 }: AiProviderConfigFormProps) {
   const isEdit = initial != null;
@@ -247,14 +244,7 @@ export function AiProviderConfigForm({
 
       {error ? <p className={settingsFormErrorClass}>{error}</p> : null}
 
-      <div className={settingsFormActionsClass}>
-        <Button disabled={busy} onClick={onCancel}>
-          取消
-        </Button>
-        <Button disabled={busy} type="submit" variant="primary">
-          {busy ? "保存中…" : isEdit ? "保存" : "添加"}
-        </Button>
-      </div>
+      <SettingsFormActions busy={busy} submitLabel={isEdit ? "保存" : "添加"} />
     </Form>
   );
 }

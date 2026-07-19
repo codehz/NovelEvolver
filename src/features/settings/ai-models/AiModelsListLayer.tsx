@@ -5,15 +5,6 @@ import { Button } from "#app/shared/ui";
 import type { AiModelConfigPublic, AiProviderConfigPublic } from "#shared/rpc/services/index";
 
 import {
-  settingsDualPaneClass,
-  settingsDualPaneDetailClass,
-  settingsDualPaneDetailHeaderClass,
-  settingsDualPaneDetailScrollClass,
-  settingsDualPaneRailClass,
-  settingsDualPaneRailLabelClass,
-  settingsDualPaneRailListClass,
-  settingsDualPaneRailScrollClass,
-  settingsEmptyStateClass,
   settingsGhostActionClass,
   settingsListClass,
   settingsListItemMetaClass,
@@ -22,6 +13,10 @@ import {
   settingsPanelSectionClass,
   settingsStatusBadgeClass,
 } from "../settings-chrome";
+import { SettingsDetailPane } from "../SettingsDetailPane";
+import { SettingsMasterDetailShell } from "../SettingsMasterDetailShell";
+import { SettingsPanelEmpty } from "../SettingsPanelStatus";
+import { SettingsRail } from "../SettingsRail";
 import { aiAdapterLabel } from "./ai-adapter-labels";
 import type { EditorMode } from "./editor-mode";
 import { ModelListItem } from "./ModelListItem";
@@ -96,53 +91,44 @@ export function AiModelsListLayer({
             </Button>
           </div>
           {actionError ? <p className="text-xs text-ctp-red">{actionError}</p> : null}
-          <div className={settingsEmptyStateClass}>还没有 API 供应商，点击「添加供应商」开始。</div>
+          <SettingsPanelEmpty>还没有 API 供应商，点击「添加供应商」开始。</SettingsPanelEmpty>
         </div>
       </div>
     );
   }
 
   return (
-    <div className={settingsDualPaneClass}>
-      <aside className={settingsDualPaneRailClass}>
-        <div className={settingsDualPaneRailLabelClass}>供应商</div>
-        <div className={settingsDualPaneRailScrollClass}>
-          <ul className={settingsDualPaneRailListClass} aria-label="供应商列表">
-            {providers.map((provider) => (
-              <li key={provider.id}>
-                <ProviderRailItem
-                  provider={provider}
-                  modelCount={modelsByProvider.get(provider.id)?.length ?? 0}
-                  selected={provider.id === selectedProviderId}
-                  onSelect={setSelectedProviderId}
-                />
-              </li>
-            ))}
-          </ul>
-        </div>
-        <div className="shrink-0 p-2">
-          <Button
-            className="w-full"
-            disabled={busy}
-            variant="primary"
-            onClick={() => {
-              onOpenEditor({ type: "create-provider" });
-            }}
-          >
-            <span aria-hidden="true" className="icon-[codicon--add] text-sm" />
-            添加供应商
-          </Button>
-        </div>
-      </aside>
+    <SettingsMasterDetailShell>
+      <SettingsRail
+        label="供应商"
+        listAriaLabel="供应商列表"
+        addLabel="添加供应商"
+        addDisabled={busy}
+        onAdd={() => {
+          onOpenEditor({ type: "create-provider" });
+        }}
+      >
+        {providers.map((provider) => (
+          <li key={provider.id}>
+            <ProviderRailItem
+              provider={provider}
+              modelCount={modelsByProvider.get(provider.id)?.length ?? 0}
+              selected={provider.id === selectedProviderId}
+              onSelect={setSelectedProviderId}
+            />
+          </li>
+        ))}
+      </SettingsRail>
 
-      <section className={settingsDualPaneDetailClass}>
-        {actionError ? (
-          <p className="shrink-0 px-3 pt-2 text-xs text-ctp-red">{actionError}</p>
-        ) : null}
-
-        {selectedProvider ? (
-          <>
-            <div className={settingsDualPaneDetailHeaderClass}>
+      <SettingsDetailPane
+        banner={
+          actionError ? (
+            <p className="shrink-0 px-3 pt-2 text-xs text-ctp-red">{actionError}</p>
+          ) : null
+        }
+        header={
+          selectedProvider ? (
+            <>
               <div className="min-w-0">
                 <div className="flex min-w-0 flex-wrap items-center gap-1.5">
                   <h4 className={settingsListItemTitleClass}>{selectedProvider.name}</h4>
@@ -202,38 +188,37 @@ export function AiModelsListLayer({
                   <span aria-hidden="true" className="icon-[codicon--trash] text-base" />
                 </Button>
               </div>
-            </div>
-
-            <div className={settingsDualPaneDetailScrollClass}>
-              {selectedModels.length === 0 ? (
-                <div className={settingsEmptyStateClass}>
-                  该供应商下还没有模型，点击「添加模型」开始。
-                </div>
-              ) : (
-                <ul className={settingsListClass}>
-                  {selectedModels.map((model) => (
-                    <ModelListItem
-                      key={model.id}
-                      model={model}
-                      isDefault={model.id === defaultModelId}
-                      busy={busy}
-                      onSetDefault={onSetDefault}
-                      onEdit={(next) => {
-                        onOpenEditor({ type: "edit-model", model: next });
-                      }}
-                      onRemove={onRemoveModel}
-                    />
-                  ))}
-                </ul>
-              )}
-            </div>
-          </>
+            </>
+          ) : undefined
+        }
+        scrollBody={selectedProvider != null}
+      >
+        {selectedProvider ? (
+          selectedModels.length === 0 ? (
+            <SettingsPanelEmpty>该供应商下还没有模型，点击「添加模型」开始。</SettingsPanelEmpty>
+          ) : (
+            <ul className={settingsListClass}>
+              {selectedModels.map((model) => (
+                <ModelListItem
+                  key={model.id}
+                  model={model}
+                  isDefault={model.id === defaultModelId}
+                  busy={busy}
+                  onSetDefault={onSetDefault}
+                  onEdit={(next) => {
+                    onOpenEditor({ type: "edit-model", model: next });
+                  }}
+                  onRemove={onRemoveModel}
+                />
+              ))}
+            </ul>
+          )
         ) : (
           <div className={cn(settingsPanelSectionClass, "flex-1")}>
-            <div className={settingsEmptyStateClass}>请选择一个供应商。</div>
+            <SettingsPanelEmpty>请选择一个供应商。</SettingsPanelEmpty>
           </div>
         )}
-      </section>
-    </div>
+      </SettingsDetailPane>
+    </SettingsMasterDetailShell>
   );
 }

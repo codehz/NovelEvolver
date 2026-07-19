@@ -121,9 +121,6 @@ export function AiModelsSettingsPanel({ active = true }: AiModelsSettingsPanelPr
             editor={editor}
             formRef={formRef}
             providers={providers}
-            onCancel={() => {
-              void requestClose();
-            }}
             onDirtyChange={onDirtyChange}
             onModelSubmit={handleModelSubmit}
             onProviderSubmit={handleProviderSubmit}

@@ -333,9 +333,6 @@ export function AiAgentsSettingsPanel({ active = true }: AiAgentsSettingsPanelPr
                 models={models}
                 providers={providers}
                 tools={tools}
-                onCancel={() => {
-                  void requestClose();
-                }}
                 onDirtyChange={setEditorDirty}
                 onSubmit={handleSubmit}
               />
@@ -352,9 +349,6 @@ export function AiAgentsSettingsPanel({ active = true }: AiAgentsSettingsPanelPr
                 models={models}
                 providers={providers}
                 tools={tools}
-                onCancel={() => {
-                  void requestClose();
-                }}
                 onDirtyChange={setEditorDirty}
                 onSubmit={handleSubmit}
               />

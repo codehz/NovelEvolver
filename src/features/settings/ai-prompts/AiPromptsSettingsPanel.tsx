@@ -279,9 +279,6 @@ export function AiPromptsSettingsPanel({ active = true }: AiPromptsSettingsPanel
                 busy={busy}
                 error={actionError}
                 formRef={formRef}
-                onCancel={() => {
-                  void requestClose();
-                }}
                 onDirtyChange={setEditorDirty}
                 onSubmit={handleSubmit}
               />
@@ -294,9 +291,6 @@ export function AiPromptsSettingsPanel({ active = true }: AiPromptsSettingsPanel
                 error={actionError}
                 formRef={formRef}
                 initial={editor.prompt}
-                onCancel={() => {
-                  void requestClose();
-                }}
                 onDirtyChange={setEditorDirty}
                 onSubmit={handleSubmit}
               />
@@ -309,7 +303,6 @@ export function AiPromptsSettingsPanel({ active = true }: AiPromptsSettingsPanel
                 error={actionError}
                 initial={editor.prompt}
                 readOnly
-                onCancel={closeEditor}
               />
             ) : null}
           </div>
