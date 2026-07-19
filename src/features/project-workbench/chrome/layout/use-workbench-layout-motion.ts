@@ -9,6 +9,7 @@ import {
   mergeSide,
   oppositeSide,
   sidebarMetricsEqual,
+  stabilizeCloseTargets,
   targetsFromChromeLayout,
   WORKBENCH_LAYOUT_MOTION,
   type DisplayedSidebarMetrics,
@@ -159,26 +160,31 @@ export function useWorkbenchLayoutMotion({
       sides: AnimatingSides,
       nextPhase: WorkbenchLayoutPhase,
     ) => {
+      // Hidden chrome falls back to preferred panel width; hold current width on close
+      // so a squeezed dock does not expand while fading out.
+      const stabilizedTo = stabilizeCloseTargets(from, to);
       const unchanged =
-        sides === "both" ? displayedEqual(from, to) : sidebarMetricsEqual(from[sides], to[sides]);
+        sides === "both"
+          ? displayedEqual(from, stabilizedTo)
+          : sidebarMetricsEqual(from[sides], stabilizedTo[sides]);
 
       if (reducedMotionRef.current || !motionReadyRef.current || unchanged) {
-        snapSides(to, sides);
+        snapSides(stabilizedTo, sides);
         setPhaseNow(prevActiveResizeSideRef.current != null ? "dragging" : "idle");
         return;
       }
 
       const animTarget =
         sides === "both"
-          ? to
+          ? stabilizedTo
           : sides === "primary"
-            ? { primary: to.primary, auxiliary: from.auxiliary }
-            : { primary: from.primary, auxiliary: to.auxiliary };
+            ? { primary: stabilizedTo.primary, auxiliary: from.auxiliary }
+            : { primary: from.primary, auxiliary: stabilizedTo.auxiliary };
 
       stopAnimation();
       animatingSidesRef.current = sides;
       animTargetRef.current = animTarget;
-      commitVisibilityIntent(to, sides);
+      commitVisibilityIntent(stabilizedTo, sides);
       setPhaseNow(nextPhase);
 
       const fromSnapshot: DisplayedWorkbenchChrome = {
@@ -192,15 +198,15 @@ export function useWorkbenchLayoutMotion({
         onUpdate: (progress) => {
           const current = displayedRef.current;
           if (sides === "both") {
-            applyDisplayed(lerpDisplayed(fromSnapshot, to, progress));
+            applyDisplayed(lerpDisplayed(fromSnapshot, stabilizedTo, progress));
             return;
           }
 
-          const lerped = lerpSidebar(fromSnapshot[sides], to[sides], progress);
+          const lerped = lerpSidebar(fromSnapshot[sides], stabilizedTo[sides], progress);
           applyDisplayed(mergeSide(current, sides, lerped));
         },
         onComplete: () => {
-          finishAnimationTo(to, sides);
+          finishAnimationTo(stabilizedTo, sides);
         },
       });
     };
@@ -324,12 +330,16 @@ export function useWorkbenchLayoutMotion({
     }
 
     // Non-drag target change (toggle / preference) → lockstep both sides.
-    if (animTargetRef.current != null && displayedEqual(animTargetRef.current, targetsNow)) {
+    // Compare against close-stabilized targets so preferred panelWidth while
+    // hidden does not look like a real layout change.
+    const stabilizedTargets = stabilizeCloseTargets(displayedRef.current, targetsNow);
+
+    if (animTargetRef.current != null && displayedEqual(animTargetRef.current, stabilizedTargets)) {
       markPrev();
       return;
     }
 
-    if (!displayedEqual(displayedRef.current, targetsNow)) {
+    if (!displayedEqual(displayedRef.current, stabilizedTargets)) {
       startLerp(displayedRef.current, targetsNow, "both", "animating");
       markPrev();
       return;

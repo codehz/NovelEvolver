@@ -42,6 +42,39 @@ export function targetsFromChromeLayout(chrome: WorkbenchChromeLayout): Displaye
   };
 }
 
+/**
+ * When a sidebar is closed, chrome metrics fall back to *preferred* panel width
+ * (so reopen knows the nominal size). That preferred can be larger than the
+ * currently displayed width if the dock was squeezed — lerping panelWidth
+ * toward preferred would expand the panel while fading out (or grow under the
+ * editor after opacity hits 0).
+ *
+ * Hold the current panelWidth whenever the destination is closed. Reopen still
+ * uses the real open target (preferred / resolved) when `to.open` is true.
+ */
+export function stabilizeCloseTargets(
+  from: DisplayedWorkbenchChrome,
+  to: DisplayedWorkbenchChrome,
+): DisplayedWorkbenchChrome {
+  return {
+    primary: stabilizeCloseSide(from.primary, to.primary),
+    auxiliary: stabilizeCloseSide(from.auxiliary, to.auxiliary),
+  };
+}
+
+function stabilizeCloseSide(
+  from: DisplayedSidebarMetrics,
+  to: DisplayedSidebarMetrics,
+): DisplayedSidebarMetrics {
+  if (!to.open) {
+    return {
+      ...to,
+      panelWidth: from.panelWidth,
+    };
+  }
+  return to;
+}
+
 function lerp(from: number, to: number, t: number): number {
   return from + (to - from) * t;
 }
