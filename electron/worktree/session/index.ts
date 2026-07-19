@@ -290,6 +290,18 @@ export class WorktreeSession {
     historyOps.restoreHistoryEntryContentHunk(this.#state, entryId, expectedContent, nextContent);
   }
 
+  restoreWorkingTreeFromCommit(commitHash: string): ChangesSnapshot {
+    return historyOps.restoreWorkingTreeFromCommit(this.#state, commitHash);
+  }
+
+  restoreEntityFromCommit(commitHash: string, target: HistoryTarget): ChangesSnapshot {
+    return historyOps.restoreEntityFromCommit(this.#state, commitHash, target);
+  }
+
+  restoreEntityFromHistoryEntry(entryId: string): ChangesSnapshot {
+    return historyOps.restoreEntityFromHistoryEntry(this.#state, entryId);
+  }
+
   searchWorktree(options: WorktreeSearchQuery): WorktreeSearchResult {
     return searchWorktree(this.#state, options);
   }

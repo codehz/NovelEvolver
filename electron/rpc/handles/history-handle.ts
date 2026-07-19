@@ -2,6 +2,7 @@ import { RpcTarget } from "capnweb";
 
 import type {
   ChangeTextComparisonTarget,
+  ChangesSnapshot,
   CommitChangeTextComparison,
   CommitChangesSnapshot,
   CommitSummary,
@@ -50,5 +51,17 @@ export class HistoryHandleImpl extends RpcTarget implements HistoryHandle {
     nextContent: string,
   ): void {
     this.#session.restoreHistoryEntryContentHunk(entryId, expectedContent, nextContent);
+  }
+
+  restoreWorkingTreeFromCommit(commitHash: string): ChangesSnapshot {
+    return this.#session.restoreWorkingTreeFromCommit(commitHash);
+  }
+
+  restoreEntityFromCommit(commitHash: string, target: HistoryTarget): ChangesSnapshot {
+    return this.#session.restoreEntityFromCommit(commitHash, target);
+  }
+
+  restoreEntityFromHistoryEntry(entryId: string): ChangesSnapshot {
+    return this.#session.restoreEntityFromHistoryEntry(entryId);
   }
 }

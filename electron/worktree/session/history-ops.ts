@@ -4,24 +4,47 @@ import { walkLogEntries } from "nano-git/log";
 import type {
   Change,
   ChangeTextComparisonTarget,
+  ChangesSnapshot,
   CommitChangeTextComparison,
   CommitChangesSnapshot,
   CommitSummary,
   HistoryEntry,
   HistoryEntryContent,
   HistoryTarget,
+  ManuscriptTreeSnapshot,
+  ResourceTreeSnapshot,
 } from "#shared/rpc/worktree/index";
 
 import type { WorktreeJournalEntryRecord } from "../../db/repositories/worktree-repo";
 import { readTextFromTree } from "../git/diff-utils";
 import { buildJournalChangesSnapshot } from "../journal/journal-pending-projector";
+import type { JournalOperationCapture } from "../journal/journal-types";
 import { journalHistoryEntryId, parseJournalHistoryEntryId } from "../journal/journal-types";
+import { clampChildIndex, MANUSCRIPT_ROOT_ID } from "../manuscript/outline";
 import { chapterBodyPath } from "../manuscript/paths";
+import { RESOURCE_ROOT_ID } from "../resources/index";
 import { buildBaseManuscriptSnapshot } from "../snapshots/manuscript";
-import type { ResourceSnapshotState } from "../snapshots/resource";
-import { buildResourceSnapshotFromTree } from "../trees/worktree-tree-bridge";
-import { readResourceTreeFromTree } from "./helpers";
+import type { ManuscriptSnapshotState } from "../snapshots/manuscript";
+import { cloneResourceSnapshotState, type ResourceSnapshotState } from "../snapshots/resource";
+import {
+  cloneManuscriptSnapshotState,
+  cloneManuscriptTreeNode,
+  cloneManuscriptTreeSnapshot,
+  cloneResourceTreeNode,
+  cloneResourceTreeSnapshot,
+} from "../trees/tree-clone";
+import {
+  buildResourceSnapshotFromTree,
+  manuscriptTreeFromOutline,
+} from "../trees/worktree-tree-bridge";
+import { currentChangesOnlySnapshot } from "./changes-snapshot";
+import {
+  readResourceTreeFromTree,
+  requireManuscriptFolder,
+  requireResourceFolder,
+} from "./helpers";
 import { persistAndEmit } from "./persistence";
+import { rebuildCurrentManuscriptFromTree, rebuildCurrentResourcesFromTree } from "./rebuild";
 import { RESOURCES_FILES_DIR, type WorktreeSessionState } from "./state";
 
 function buildResourceSnapshotAtTree(
@@ -364,4 +387,483 @@ export function restoreHistoryEntryContentHunk(
       },
     ],
   });
+}
+
+type LeafEntitySnapshot = {
+  domain: "manuscript" | "resource";
+  entityId: string;
+  entityKind: "chapter" | "file";
+  label: string;
+  displayPath: string;
+  content: string;
+};
+
+function leafKey(domain: LeafEntitySnapshot["domain"], entityId: string): string {
+  return `${domain}:${entityId}`;
+}
+
+function collectLeafEntitySnapshots(state: WorktreeSessionState): Map<string, LeafEntitySnapshot> {
+  const leaves = new Map<string, LeafEntitySnapshot>();
+  for (const entry of state.currentManuscript.entries.values()) {
+    if (entry.type !== "chapter") {
+      continue;
+    }
+    leaves.set(leafKey("manuscript", entry.id), {
+      domain: "manuscript",
+      entityId: entry.id,
+      entityKind: "chapter",
+      label: entry.title,
+      displayPath: entry.displayPath,
+      content: entry.content,
+    });
+  }
+  for (const entry of state.currentResources.entries.values()) {
+    if (entry.type !== "file") {
+      continue;
+    }
+    leaves.set(leafKey("resource", entry.id), {
+      domain: "resource",
+      entityId: entry.id,
+      entityKind: "file",
+      label: entry.name,
+      displayPath: entry.displayPath,
+      content: entry.content,
+    });
+  }
+  return leaves;
+}
+
+function buildRestoreOperationsFromLeaves(
+  beforeLeaves: ReadonlyMap<string, LeafEntitySnapshot>,
+  afterLeaves: ReadonlyMap<string, LeafEntitySnapshot>,
+): JournalOperationCapture[] {
+  const operations: JournalOperationCapture[] = [];
+  const keys = new Set([...beforeLeaves.keys(), ...afterLeaves.keys()]);
+  for (const key of keys) {
+    const before = beforeLeaves.get(key);
+    const after = afterLeaves.get(key);
+    if (before !== undefined && after !== undefined && before.content === after.content) {
+      continue;
+    }
+    if (before === undefined && after === undefined) {
+      continue;
+    }
+    const domain = after?.domain ?? before!.domain;
+    const entityId = after?.entityId ?? before!.entityId;
+    const entityKind = after?.entityKind ?? before!.entityKind;
+    operations.push({
+      kind: "restore",
+      domain,
+      entityId,
+      entityKind,
+      label: after?.label ?? before!.label,
+      displayPath: after?.displayPath ?? before!.displayPath,
+      previousPath: before?.displayPath ?? null,
+      beforeContent: before?.content ?? null,
+      afterContent: after?.content ?? null,
+    });
+  }
+  return operations;
+}
+
+function applyResourceSnapshotToState(
+  state: WorktreeSessionState,
+  tree: ResourceTreeSnapshot,
+  snapshot: ResourceSnapshotState,
+  pathById: ReadonlyMap<string, string>,
+  idByPath: ReadonlyMap<string, string>,
+): void {
+  state.resourceTree = cloneResourceTreeSnapshot(tree);
+  state.currentResources = cloneResourceSnapshotState(snapshot);
+  state.resourcePathById.clear();
+  state.resourceIdByPath.clear();
+  for (const [id, path] of pathById.entries()) {
+    state.resourcePathById.set(id, path);
+  }
+  for (const [path, id] of idByPath.entries()) {
+    state.resourceIdByPath.set(path, id);
+  }
+}
+
+function loadManuscriptAtTree(
+  state: WorktreeSessionState,
+  treeHash: SHA1,
+): {
+  tree: ManuscriptTreeSnapshot;
+  snapshot: ManuscriptSnapshotState;
+} {
+  const snapshot = buildBaseManuscriptSnapshot(state.objects, treeHash);
+  return {
+    tree: manuscriptTreeFromOutline(snapshot.outline),
+    snapshot,
+  };
+}
+
+function loadResourcesAtTree(
+  state: WorktreeSessionState,
+  treeHash: SHA1,
+): {
+  tree: ResourceTreeSnapshot;
+  snapshot: ResourceSnapshotState;
+  pathById: Map<string, string>;
+  idByPath: Map<string, string>;
+} {
+  const tree = readResourceTreeFromTree(state, treeHash);
+  const rebuilt = buildResourceSnapshotFromTree(
+    tree,
+    (id) => readTextFromTree(state.objects, treeHash, `${RESOURCES_FILES_DIR}/${id}.txt`) ?? "",
+  );
+  return {
+    tree,
+    snapshot: rebuilt.snapshot,
+    pathById: rebuilt.pathById,
+    idByPath: rebuilt.idByPath,
+  };
+}
+
+/**
+ * Restore the full draft working tree from a commit without moving tip/base.
+ */
+export function restoreWorkingTreeFromCommit(
+  state: WorktreeSessionState,
+  commitHash: string,
+): ChangesSnapshot {
+  const commit = requireCommitObject(state, commitHash);
+  const commitTree = commit.tree;
+  const shortHash = commitHash.slice(0, 7);
+  const beforeLeaves = collectLeafEntitySnapshots(state);
+
+  const manuscript = loadManuscriptAtTree(state, commitTree);
+  const resources = loadResourcesAtTree(state, commitTree);
+
+  state.manuscriptTree = cloneManuscriptTreeSnapshot(manuscript.tree);
+  state.currentManuscript = cloneManuscriptSnapshotState(manuscript.snapshot);
+  applyResourceSnapshotToState(
+    state,
+    resources.tree,
+    resources.snapshot,
+    resources.pathById,
+    resources.idByPath,
+  );
+  state.changeTracker.clearCache();
+
+  const afterLeaves = collectLeafEntitySnapshots(state);
+  const operations = buildRestoreOperationsFromLeaves(beforeLeaves, afterLeaves);
+  persistAndEmit(
+    state,
+    false,
+    operations.length === 0
+      ? undefined
+      : {
+          source: "restore",
+          title: `恢复到提交 ${shortHash}`,
+          groupKey: `restore:commit:${commitHash}`,
+          operations,
+        },
+  );
+  return currentChangesOnlySnapshot(state);
+}
+
+function ensureManuscriptAncestorsFromSource(
+  state: WorktreeSessionState,
+  parentId: string,
+  sourceTree: ManuscriptTreeSnapshot,
+  sourceManuscript: ManuscriptSnapshotState,
+): void {
+  if (parentId === MANUSCRIPT_ROOT_ID || parentId === "") {
+    return;
+  }
+  if (state.manuscriptTree.nodes[parentId] !== undefined) {
+    return;
+  }
+
+  const sourceEntry = sourceManuscript.entries.get(parentId);
+  if (sourceEntry === undefined) {
+    throw new Error(`提交中缺少祖先节点：${parentId}`);
+  }
+  ensureManuscriptAncestorsFromSource(state, sourceEntry.parentId, sourceTree, sourceManuscript);
+
+  const sourceNode = sourceTree.nodes[parentId];
+  if (sourceNode === undefined || sourceNode.type !== "folder") {
+    throw new Error(`提交中缺少文件夹节点：${parentId}`);
+  }
+  state.manuscriptTree.nodes[parentId] = cloneManuscriptTreeNode({
+    ...sourceNode,
+    childIds: [],
+  });
+  const parent = requireManuscriptFolder(state, sourceEntry.parentId);
+  if (!parent.childIds.includes(parentId)) {
+    parent.childIds.splice(clampChildIndex(sourceEntry.index, parent.childIds.length), 0, parentId);
+  }
+  rebuildCurrentManuscriptFromTree(state);
+}
+
+function ensureResourceAncestorsFromSource(
+  state: WorktreeSessionState,
+  parentId: string,
+  sourceTree: ResourceTreeSnapshot,
+  sourceResources: ResourceSnapshotState,
+): void {
+  if (parentId === RESOURCE_ROOT_ID || parentId === "") {
+    return;
+  }
+  if (state.resourceTree.nodes[parentId] !== undefined) {
+    return;
+  }
+
+  const sourceEntry = sourceResources.entries.get(parentId);
+  if (sourceEntry === undefined) {
+    throw new Error(`提交中缺少祖先节点：${parentId}`);
+  }
+  ensureResourceAncestorsFromSource(state, sourceEntry.parentId, sourceTree, sourceResources);
+
+  const sourceNode = sourceTree.nodes[parentId];
+  if (sourceNode === undefined || sourceNode.type !== "folder") {
+    throw new Error(`提交中缺少文件夹节点：${parentId}`);
+  }
+  state.resourceTree.nodes[parentId] = cloneResourceTreeNode({
+    ...sourceNode,
+    childIds: [],
+  });
+  const parent = requireResourceFolder(state, sourceEntry.parentId);
+  if (!parent.childIds.includes(parentId)) {
+    parent.childIds.splice(clampChildIndex(sourceEntry.index, parent.childIds.length), 0, parentId);
+  }
+  rebuildCurrentResourcesFromTree(state);
+}
+
+/**
+ * Restore one leaf entity from a commit into the draft (tip/base unchanged).
+ * Recreates missing nodes from the commit tree when needed.
+ */
+export function restoreEntityFromCommit(
+  state: WorktreeSessionState,
+  commitHash: string,
+  target: HistoryTarget,
+): ChangesSnapshot {
+  const commit = requireCommitObject(state, commitHash);
+  const commitTree = commit.tree;
+  const shortHash = commitHash.slice(0, 7);
+
+  if (target.domain === "manuscript") {
+    const source = loadManuscriptAtTree(state, commitTree);
+    const sourceEntry = source.snapshot.entries.get(target.entityId);
+    if (sourceEntry === undefined) {
+      throw new Error("此提交中不存在该节点。");
+    }
+    if (sourceEntry.type !== "chapter") {
+      throw new Error("只能恢复章节正文。");
+    }
+
+    const beforeEntry = state.currentManuscript.entries.get(target.entityId);
+    const beforeContent = beforeEntry?.type === "chapter" ? beforeEntry.content : null;
+    if (beforeEntry?.type === "chapter" && beforeEntry.content === sourceEntry.content) {
+      return currentChangesOnlySnapshot(state);
+    }
+
+    ensureManuscriptAncestorsFromSource(state, sourceEntry.parentId, source.tree, source.snapshot);
+
+    const existingNode = state.manuscriptTree.nodes[target.entityId];
+    if (existingNode === undefined) {
+      const sourceNode = source.tree.nodes[target.entityId];
+      if (sourceNode === undefined || sourceNode.type !== "chapter") {
+        throw new Error("此提交中不存在该章节。");
+      }
+      state.manuscriptTree.nodes[target.entityId] = cloneManuscriptTreeNode(sourceNode);
+      const parent = requireManuscriptFolder(state, sourceEntry.parentId);
+      if (!parent.childIds.includes(target.entityId)) {
+        parent.childIds.splice(
+          clampChildIndex(sourceEntry.index, parent.childIds.length),
+          0,
+          target.entityId,
+        );
+      }
+      rebuildCurrentManuscriptFromTree(state, new Map([[target.entityId, sourceEntry.content]]));
+    } else if (existingNode.type !== "chapter") {
+      throw new Error("当前节点不是章节，无法恢复正文。");
+    } else {
+      const entry = state.currentManuscript.entries.get(target.entityId);
+      if (entry?.type !== "chapter") {
+        throw new Error(`Manuscript chapter is missing: ${target.entityId}`);
+      }
+      entry.content = sourceEntry.content;
+    }
+
+    const afterEntry = state.currentManuscript.entries.get(target.entityId);
+    if (afterEntry?.type !== "chapter") {
+      throw new Error(`Manuscript chapter is missing after restore: ${target.entityId}`);
+    }
+    persistAndEmit(state, false, {
+      source: "restore",
+      title: `恢复章节至提交 ${shortHash}`,
+      groupKey: `restore:entity:commit:${commitHash}:manuscript:${target.entityId}`,
+      operations: [
+        {
+          kind: "restore",
+          domain: "manuscript",
+          entityId: target.entityId,
+          entityKind: "chapter",
+          label: afterEntry.title,
+          displayPath: afterEntry.displayPath,
+          previousPath: beforeEntry?.displayPath ?? null,
+          beforeContent,
+          afterContent: afterEntry.content,
+        },
+      ],
+    });
+    return currentChangesOnlySnapshot(state);
+  }
+
+  const source = loadResourcesAtTree(state, commitTree);
+  const sourceEntry = source.snapshot.entries.get(target.entityId);
+  if (sourceEntry === undefined) {
+    throw new Error("此提交中不存在该节点。");
+  }
+  if (sourceEntry.type !== "file") {
+    throw new Error("只能恢复资源文件正文。");
+  }
+
+  const beforeEntry = state.currentResources.entries.get(target.entityId);
+  const beforeContent = beforeEntry?.type === "file" ? beforeEntry.content : null;
+  if (beforeEntry?.type === "file" && beforeEntry.content === sourceEntry.content) {
+    return currentChangesOnlySnapshot(state);
+  }
+
+  ensureResourceAncestorsFromSource(state, sourceEntry.parentId, source.tree, source.snapshot);
+
+  const existingNode = state.resourceTree.nodes[target.entityId];
+  if (existingNode === undefined) {
+    const sourceNode = source.tree.nodes[target.entityId];
+    if (sourceNode === undefined || sourceNode.type !== "file") {
+      throw new Error("此提交中不存在该资源文件。");
+    }
+    state.resourceTree.nodes[target.entityId] = cloneResourceTreeNode(sourceNode);
+    const parent = requireResourceFolder(state, sourceEntry.parentId);
+    if (!parent.childIds.includes(target.entityId)) {
+      parent.childIds.splice(
+        clampChildIndex(sourceEntry.index, parent.childIds.length),
+        0,
+        target.entityId,
+      );
+    }
+    rebuildCurrentResourcesFromTree(state, new Map([[target.entityId, sourceEntry.content]]));
+  } else if (existingNode.type !== "file") {
+    throw new Error("当前节点不是资源文件，无法恢复正文。");
+  } else {
+    const entry = state.currentResources.entries.get(target.entityId);
+    if (entry?.type !== "file") {
+      throw new Error(`Resource file is missing: ${target.entityId}`);
+    }
+    entry.content = sourceEntry.content;
+  }
+
+  const afterEntry = state.currentResources.entries.get(target.entityId);
+  if (afterEntry?.type !== "file") {
+    throw new Error(`Resource file is missing after restore: ${target.entityId}`);
+  }
+  persistAndEmit(state, false, {
+    source: "restore",
+    title: `恢复文件至提交 ${shortHash}`,
+    groupKey: `restore:entity:commit:${commitHash}:resource:${target.entityId}`,
+    operations: [
+      {
+        kind: "restore",
+        domain: "resource",
+        entityId: target.entityId,
+        entityKind: "file",
+        label: afterEntry.name,
+        displayPath: afterEntry.displayPath,
+        previousPath: beforeEntry?.displayPath ?? null,
+        beforeContent,
+        afterContent: afterEntry.content,
+      },
+    ],
+  });
+  return currentChangesOnlySnapshot(state);
+}
+
+/**
+ * Restore one leaf entity from a journal history entry's after-content.
+ * Requires the entity to still exist in the current draft.
+ */
+export function restoreEntityFromHistoryEntry(
+  state: WorktreeSessionState,
+  entryId: string,
+): ChangesSnapshot {
+  const journalEntryId = parseJournalHistoryEntryId(entryId);
+  if (journalEntryId === null) {
+    throw new Error(`Unknown history entry: ${entryId}`);
+  }
+
+  const historyEntry = state.store.getJournalHistoryEntry(
+    state.projectId,
+    state.branchName,
+    journalEntryId,
+  );
+  if (historyEntry === null) {
+    throw new Error(`Unknown journal history entry: ${entryId}`);
+  }
+  if (historyEntry.afterContent === null) {
+    throw new Error("此记录没有可恢复内容。");
+  }
+
+  const nextContent = historyEntry.afterContent.toString("utf-8");
+
+  if (historyEntry.domain === "manuscript") {
+    const entry = state.currentManuscript.entries.get(historyEntry.entityId);
+    if (entry?.type !== "chapter") {
+      throw new Error("当前草稿中不存在该章节，无法整文件恢复。");
+    }
+    if (entry.content === nextContent) {
+      return currentChangesOnlySnapshot(state);
+    }
+    const beforeContent = entry.content;
+    entry.content = nextContent;
+    persistAndEmit(state, false, {
+      source: "restore",
+      title: "恢复历史版本",
+      groupKey: `restore:entity:history:${historyEntry.entityId}`,
+      operations: [
+        {
+          kind: "restore",
+          domain: "manuscript",
+          entityId: historyEntry.entityId,
+          entityKind: "chapter",
+          label: entry.title,
+          displayPath: entry.displayPath,
+          beforeContent,
+          afterContent: nextContent,
+        },
+      ],
+    });
+    return currentChangesOnlySnapshot(state);
+  }
+
+  const entry = state.currentResources.entries.get(historyEntry.entityId);
+  if (entry?.type !== "file") {
+    throw new Error("当前草稿中不存在该资源文件，无法整文件恢复。");
+  }
+  if (entry.content === nextContent) {
+    return currentChangesOnlySnapshot(state);
+  }
+  const beforeContent = entry.content;
+  entry.content = nextContent;
+  persistAndEmit(state, false, {
+    source: "restore",
+    title: "恢复历史版本",
+    groupKey: `restore:entity:history:${historyEntry.entityId}`,
+    operations: [
+      {
+        kind: "restore",
+        domain: "resource",
+        entityId: historyEntry.entityId,
+        entityKind: "file",
+        label: entry.name,
+        displayPath: entry.displayPath,
+        beforeContent,
+        afterContent: nextContent,
+      },
+    ],
+  });
+  return currentChangesOnlySnapshot(state);
 }
