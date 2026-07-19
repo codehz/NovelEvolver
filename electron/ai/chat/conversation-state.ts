@@ -7,6 +7,7 @@ import {
   cloneAiChatAssistantPart,
   cloneAiChatAssistantPartPatch,
   cloneAiChatMessagePatch,
+  cloneAiToolView,
 } from "#shared/rpc/ai/index";
 import type {
   AiChatAssistantMessage,
@@ -1168,6 +1169,15 @@ export class AiConversationState {
           resultText: patch.resultText !== undefined ? patch.resultText : current.resultText,
           errorMessage:
             patch.errorMessage !== undefined ? patch.errorMessage : current.errorMessage,
+          // Must persist UI view (e.g. subagent timeline). Deltas already carried it to the
+          // renderer, but omitting it here left the authority tree + SQLite as view:null so
+          // re-open / resubscribe wiped the timeline.
+          view:
+            patch.view !== undefined
+              ? patch.view
+                ? cloneAiToolView(patch.view)
+                : null
+              : current.view,
         };
         break;
     }
