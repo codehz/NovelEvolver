@@ -59,9 +59,9 @@ export function AiContextStatusItem() {
         : runningSubagent
           ? runningSubagentProgress
             ? describeRunningSubagentStatus(runningSubagentProgress)
-            : "子代理执行中"
+            : "子代理进行中"
           : pendingTool
-            ? "AI 执行工具"
+            ? "AI 调用工具中"
             : meta.pending
               ? "AI 正在生成"
               : usage

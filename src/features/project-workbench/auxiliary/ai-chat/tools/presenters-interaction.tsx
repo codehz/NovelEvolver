@@ -1,25 +1,13 @@
 import { parseAskUserToolArguments } from "./ask-user-prompt";
-import { DetailField, DetailList, ErrorTechnicalFields } from "./presenter-detail";
+import { DetailField, DetailList, maybeErrorTechnicalFields } from "./presenter-detail";
 import { domainLabel, toolActionLabel, toolIcon, truncateText } from "./presenter-format";
 import { getObject, getString, parseObject } from "./presenter-parse";
-import type { TechnicalField, ToolPresenter } from "./presenter-types";
+import type { ToolPresenter } from "./presenter-types";
 import {
   describeSubagentProgressIndicator,
   parseSubagentProgressUi,
   subagentPhaseLabel,
 } from "./subagent-progress-ui";
-
-function techFields(fields: Array<TechnicalField | null | false | undefined>): TechnicalField[] {
-  return fields.filter((field): field is TechnicalField => Boolean(field));
-}
-
-function maybeErrorTech(status: string, fields: Array<TechnicalField | null | false | undefined>) {
-  if (status !== "error") {
-    return null;
-  }
-  const list = techFields(fields);
-  return list.length > 0 ? <ErrorTechnicalFields fields={list} /> : null;
-}
 
 export const askUserPresenter: ToolPresenter = (toolCall) => {
   const args = parseAskUserToolArguments(toolCall.argumentsText);
@@ -73,10 +61,12 @@ export const askUserPresenter: ToolPresenter = (toolCall) => {
             </DetailField>
           ) : null}
         </DetailList>
-        {isError ? maybeErrorTech(toolCall.status, [{ label: "工具", value: "ask_user" }]) : null}
+        {isError
+          ? maybeErrorTechnicalFields(toolCall.status, [{ label: "工具", value: "ask_user" }])
+          : null}
       </>
     ) : isError ? (
-      maybeErrorTech(toolCall.status, [{ label: "工具", value: "ask_user" }])
+      maybeErrorTechnicalFields(toolCall.status, [{ label: "工具", value: "ask_user" }])
     ) : null,
   };
 };
@@ -218,7 +208,7 @@ export const runSubagentPresenter: ToolPresenter = (toolCall) => {
             <DetailField label="错误">{error}</DetailField>
           ) : null}
         </DetailList>
-        {maybeErrorTech(toolCall.status, [
+        {maybeErrorTechnicalFields(toolCall.status, [
           agentId ? { label: "Agent ID", value: agentId } : null,
           status ? { label: "状态码", value: status } : null,
         ])}

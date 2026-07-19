@@ -2,7 +2,7 @@ import {
   ActivityPathList,
   DetailField,
   DetailList,
-  ErrorTechnicalFields,
+  maybeErrorTechnicalFields,
 } from "./presenter-detail";
 import {
   domainLabel,
@@ -16,19 +16,7 @@ import {
   toolIcon,
 } from "./presenter-format";
 import { getNumber, getObject, getString, parseObject } from "./presenter-parse";
-import type { TechnicalField, ToolPresenter } from "./presenter-types";
-
-function techFields(fields: Array<TechnicalField | null | false | undefined>): TechnicalField[] {
-  return fields.filter((field): field is TechnicalField => Boolean(field));
-}
-
-function maybeErrorTech(status: string, fields: Array<TechnicalField | null | false | undefined>) {
-  if (status !== "error") {
-    return null;
-  }
-  const list = techFields(fields);
-  return list.length > 0 ? <ErrorTechnicalFields fields={list} /> : null;
-}
+import type { ToolPresenter } from "./presenter-types";
 
 export const structurePresenter: ToolPresenter = (toolCall) => {
   const args = parseObject(toolCall.argumentsText);
@@ -67,7 +55,7 @@ export const structurePresenter: ToolPresenter = (toolCall) => {
             {collapsed > 0 ? <DetailField label="待展开目录">{collapsed}</DetailField> : null}
           </DetailList>
         ) : null}
-        {maybeErrorTech(toolCall.status, [
+        {maybeErrorTechnicalFields(toolCall.status, [
           targetId ? { label: "节点 ID", value: targetId } : null,
           getNumber(result, "budget") !== null
             ? { label: "预算", value: String(getNumber(result, "budget")) }
@@ -113,7 +101,7 @@ export const readPresenter: ToolPresenter = (toolCall) => {
     summary: `${domainLabel(domain)} · ${documentName}`,
     indicator: contentScale ?? undefined,
     detail: isError
-      ? maybeErrorTech(toolCall.status, [
+      ? maybeErrorTechnicalFields(toolCall.status, [
           id ? { label: "节点 ID", value: id } : null,
           revision !== null ? { label: "Revision", value: String(revision) } : null,
         ])
@@ -163,7 +151,7 @@ export const searchPresenter: ToolPresenter = (toolCall) => {
               )}
             </DetailList>
           ) : null}
-          {maybeErrorTech(toolCall.status, [
+          {maybeErrorTechnicalFields(toolCall.status, [
             { label: "关键词", value: query },
             getNumber(args, "max_results") !== null
               ? { label: "上限", value: String(getNumber(args, "max_results")) }
@@ -205,7 +193,9 @@ export const changesPresenter: ToolPresenter = (toolCall) => {
               <p className="text-ctp-subtext0">无变更</p>
             )
           ) : null}
-          {maybeErrorTech(toolCall.status, [domain ? { label: "范围", value: domain } : null])}
+          {maybeErrorTechnicalFields(toolCall.status, [
+            domain ? { label: "范围", value: domain } : null,
+          ])}
         </>
       ) : null,
   };
@@ -248,7 +238,7 @@ export const changePresenter: ToolPresenter = (toolCall) => {
               ) : null}
             </DetailList>
           ) : null}
-          {maybeErrorTech(toolCall.status, [
+          {maybeErrorTechnicalFields(toolCall.status, [
             target.id ? { label: "节点 ID", value: target.id } : null,
           ])}
         </>
@@ -278,7 +268,7 @@ export const historyPresenter: ToolPresenter = (toolCall) => {
     summary: `${domainLabel(target.domain ?? requestedDomain)} · ${path}`,
     indicator: hasResult ? `${entries.length} 条` : undefined,
     detail: isError
-      ? maybeErrorTech(toolCall.status, [
+      ? maybeErrorTechnicalFields(toolCall.status, [
           (target.id ?? requestedId)
             ? { label: "节点 ID", value: target.id ?? requestedId ?? "" }
             : null,
@@ -324,7 +314,9 @@ export const historyEntryPresenter: ToolPresenter = (toolCall) => {
               ) : null}
             </DetailList>
           ) : null}
-          {maybeErrorTech(toolCall.status, [entryId ? { label: "条目 ID", value: entryId } : null])}
+          {maybeErrorTechnicalFields(toolCall.status, [
+            entryId ? { label: "条目 ID", value: entryId } : null,
+          ])}
         </>
       ) : null,
   };

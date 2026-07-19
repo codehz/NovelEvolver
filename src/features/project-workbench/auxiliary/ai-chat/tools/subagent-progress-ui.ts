@@ -1,3 +1,5 @@
+import { toolActionLabel } from "./presenter-format";
+
 /** UI-side parse of `AiChatToolCall.progressText` for `run_subagent`. */
 
 export type SubagentProgressUiPhase = "starting" | "thinking" | "tool" | "finalizing";
@@ -107,49 +109,10 @@ export function subagentPhaseLabel(phase: SubagentProgressUiPhase): string {
   }
 }
 
-function toolNameLabel(name: string): string {
-  // Keep labels in sync with presenter-format.toolActionLabel without a circular import.
-  switch (name) {
-    case "ask_user":
-      return "询问";
-    case "run_subagent":
-      return "子代理";
-    case "read_structure":
-      return "查看结构";
-    case "read_document":
-      return "读取";
-    case "search_documents":
-      return "搜索";
-    case "write_document":
-      return "重写";
-    case "replace_document_text":
-      return "替换片段";
-    case "create_folder":
-      return "创建文件夹";
-    case "create_document":
-      return "创建文档";
-    case "move_node":
-      return "移动节点";
-    case "rename_node":
-      return "重命名节点";
-    case "delete_node":
-      return "删除节点";
-    case "read_changes":
-    case "read_change":
-      return "查看变更";
-    case "read_history":
-      return "查看历史";
-    case "read_history_entry":
-      return "历史版本";
-    default:
-      return name;
-  }
-}
-
 export function describeSubagentProgressIndicator(progress: SubagentProgressUi): string {
   const roundLabel = progress.round > 0 ? `第${progress.round}/${progress.maxRounds}轮` : null;
   if (progress.phase === "tool" && progress.currentTool) {
-    const toolLabel = toolNameLabel(progress.currentTool.name);
+    const toolLabel = toolActionLabel(progress.currentTool.name);
     return roundLabel ? `${toolLabel} · ${roundLabel}` : toolLabel;
   }
   const phase = subagentPhaseLabel(progress.phase);
@@ -160,7 +123,7 @@ export function describeRunningSubagentStatus(progress: SubagentProgressUi): str
   const phase = subagentPhaseLabel(progress.phase);
   const name = progress.agentName || progress.agentId;
   if (progress.phase === "tool" && progress.currentTool) {
-    return `子代理 · ${name} · ${toolNameLabel(progress.currentTool.name)}`;
+    return `子代理 · ${name} · ${toolActionLabel(progress.currentTool.name)}`;
   }
   return `子代理 · ${name} · ${phase}`;
 }

@@ -82,13 +82,16 @@ export function AiToolCallBlock({ toolCall }: AiToolCallBlockProps) {
     }
   }, [hasDetail, toolCall.id, toolCall.name, toolCall.status]);
 
-  const iconClass = isError
-    ? toolCallIconErrorClass
-    : isRunning
-      ? toolCallIconRunningClass
-      : isWrite
-        ? toolCallIconWriteClass
-        : toolCallIconClass;
+  const iconClass = cn(
+    isError
+      ? toolCallIconErrorClass
+      : isRunning
+        ? toolCallIconRunningClass
+        : isWrite
+          ? toolCallIconWriteClass
+          : toolCallIconClass,
+    isRunning && "animate-pulse",
+  );
   const labelClass = isWrite && !isError ? toolCallLabelWriteClass : toolCallLabelClass;
   const statusClass = isError ? toolCallStatusErrorClass : toolCallStatusClass;
 

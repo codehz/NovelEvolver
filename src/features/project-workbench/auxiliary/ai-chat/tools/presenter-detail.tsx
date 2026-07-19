@@ -88,3 +88,15 @@ export function ErrorTechnicalFields({ fields }: ErrorTechnicalFieldsProps) {
     </dl>
   );
 }
+
+/** Helper for presenters: only render technical fields on error. */
+export function maybeErrorTechnicalFields(
+  status: string,
+  fields: ReadonlyArray<TechnicalField | null | false | undefined>,
+) {
+  if (status !== "error") {
+    return null;
+  }
+  const list = fields.filter((field): field is TechnicalField => Boolean(field));
+  return list.length > 0 ? <ErrorTechnicalFields fields={list} /> : null;
+}

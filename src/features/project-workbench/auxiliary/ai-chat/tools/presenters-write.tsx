@@ -1,4 +1,9 @@
-import { DetailField, DetailList, ErrorTechnicalFields, SnippetPreview } from "./presenter-detail";
+import {
+  DetailField,
+  DetailList,
+  maybeErrorTechnicalFields,
+  SnippetPreview,
+} from "./presenter-detail";
 import {
   domainLabel,
   displayTargetName,
@@ -14,19 +19,7 @@ import {
   writeIndicator,
 } from "./presenter-format";
 import { getNumber, getString, parseObject } from "./presenter-parse";
-import type { TechnicalField, ToolPresenter } from "./presenter-types";
-
-function techFields(fields: Array<TechnicalField | null | false | undefined>): TechnicalField[] {
-  return fields.filter((field): field is TechnicalField => Boolean(field));
-}
-
-function maybeErrorTech(status: string, fields: Array<TechnicalField | null | false | undefined>) {
-  if (status !== "error") {
-    return null;
-  }
-  const list = techFields(fields);
-  return list.length > 0 ? <ErrorTechnicalFields fields={list} /> : null;
-}
+import type { ToolPresenter } from "./presenter-types";
 
 export const editPresenter: ToolPresenter = (toolCall) => {
   const args = parseObject(toolCall.argumentsText);
@@ -71,7 +64,7 @@ export const editPresenter: ToolPresenter = (toolCall) => {
               ) : null}
             </DetailList>
           ) : null}
-          {maybeErrorTech(toolCall.status, [
+          {maybeErrorTechnicalFields(toolCall.status, [
             id ? { label: "节点 ID", value: id } : null,
             expectedRevision !== null
               ? { label: "期望 revision", value: String(expectedRevision) }
@@ -147,7 +140,7 @@ export const replacePresenter: ToolPresenter = (toolCall) => {
               ) : null}
             </div>
           ) : null}
-          {maybeErrorTech(toolCall.status, [
+          {maybeErrorTechnicalFields(toolCall.status, [
             id ? { label: "节点 ID", value: id } : null,
             nextRevision !== null ? { label: "新 revision", value: String(nextRevision) } : null,
           ])}
@@ -186,7 +179,7 @@ export const createPresenter: ToolPresenter = (toolCall) => {
           ? "已创建"
           : undefined,
     detail: isError ? (
-      maybeErrorTech(toolCall.status, [
+      maybeErrorTechnicalFields(toolCall.status, [
         parentId ? { label: "父节点 ID", value: parentId } : null,
         revision !== null ? { label: "Revision", value: String(revision) } : null,
         getNumber(args, "index") !== null
@@ -241,7 +234,7 @@ export const nodeMutationPresenter =
                 : "完成"
           : undefined,
       detail: isError
-        ? maybeErrorTech(toolCall.status, [
+        ? maybeErrorTechnicalFields(toolCall.status, [
             id ? { label: "节点 ID", value: id } : null,
             targetParentId ? { label: "目标父节点", value: targetParentId } : null,
             newName ? { label: "新名称", value: newName } : null,

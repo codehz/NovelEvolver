@@ -82,7 +82,7 @@ export function describeAssistantStreamingMeta(message: AiChatAssistantMessage):
   const hasRunningTool = message.parts.some(
     (part) => part.type === "tool_call" && part.status === "running",
   );
-  return hasRunningTool ? "执行工具中" : "正在工作";
+  return hasRunningTool ? "调用工具中" : "正在工作";
 }
 
 /** Completed-turn usage summary for hover on the model label. */
