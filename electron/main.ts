@@ -7,6 +7,7 @@ import { ElectronRpcServer } from "./rpc/server/connect";
 import { AiAgentsStore } from "./settings/ai-agents-store";
 import { AiModelsStore } from "./settings/ai-models-store";
 import { AiPromptsStore } from "./settings/ai-prompts-store";
+import { AiRuntimePolicyStore } from "./settings/ai-runtime-policy-store";
 
 app.commandLine.appendSwitch("enable-features", "OverlayScrollbar");
 
@@ -16,6 +17,7 @@ let appDb: AppDatabase | null = null;
 let aiModelsStore: AiModelsStore | null = null;
 let aiAgentsStore: AiAgentsStore | null = null;
 let aiPromptsStore: AiPromptsStore | null = null;
+let aiRuntimePolicyStore: AiRuntimePolicyStore | null = null;
 let rpcServer: ElectronRpcServer | null = null;
 
 function getAppDb(): AppDatabase {
@@ -46,6 +48,13 @@ function getAiPromptsStore(): AiPromptsStore {
     throw new Error("AI prompts store is not initialized.");
   }
   return aiPromptsStore;
+}
+
+function getAiRuntimePolicyStore(): AiRuntimePolicyStore {
+  if (!aiRuntimePolicyStore) {
+    throw new Error("AI runtime policy store is not initialized.");
+  }
+  return aiRuntimePolicyStore;
 }
 
 function createWindow() {
@@ -79,11 +88,13 @@ void app.whenReady().then(() => {
   aiModelsStore = new AiModelsStore(join(userData, "ai-settings.json"));
   aiAgentsStore = new AiAgentsStore(join(userData, "ai-agents.json"), getAiModelsStore);
   aiPromptsStore = new AiPromptsStore(join(userData, "ai-prompts.json"));
+  aiRuntimePolicyStore = new AiRuntimePolicyStore(join(userData, "ai-runtime-policy.json"));
   rpcServer = new ElectronRpcServer({
     getAppDb,
     getAiModelsStore,
     getAiAgentsStore,
     getAiPromptsStore,
+    getAiRuntimePolicyStore,
     mockAiEnabled: process.env.NOVEL_EVOLVER_MOCK_AI === "1",
     getWindowState: (window) => ({
       isFocused: window.isFocused(),
@@ -114,5 +125,6 @@ app.on("will-quit", () => {
   aiModelsStore = null;
   aiAgentsStore = null;
   aiPromptsStore = null;
+  aiRuntimePolicyStore = null;
   rpcServer = null;
 });

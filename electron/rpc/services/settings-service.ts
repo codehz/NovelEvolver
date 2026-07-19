@@ -8,6 +8,8 @@ import type {
   AiPromptConfigWrite,
   AiPromptsSettingsSnapshot,
   AiProviderConfigWrite,
+  AiRuntimePolicySnapshot,
+  AiRuntimePolicyWrite,
   SettingsService,
 } from "#shared/rpc/services/index";
 
@@ -67,5 +69,13 @@ export class SettingsServiceImpl extends RpcTarget implements SettingsService {
 
   removeAiPrompt(id: string): AiPromptsSettingsSnapshot {
     return this.#deps.getAiPromptsStore().remove(id);
+  }
+
+  getAiRuntimePolicy(): AiRuntimePolicySnapshot {
+    return this.#deps.getAiRuntimePolicyStore().getSnapshot();
+  }
+
+  setAiRuntimePolicy(input: AiRuntimePolicyWrite): AiRuntimePolicySnapshot {
+    return this.#deps.getAiRuntimePolicyStore().setPolicy(input);
   }
 }
