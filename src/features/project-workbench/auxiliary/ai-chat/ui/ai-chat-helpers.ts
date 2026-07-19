@@ -53,9 +53,9 @@ export function describeToolCallStatus(status: AiChatToolCall["status"]): string
 }
 
 /**
- * Work segment collapsed summary. Step counts only — never durations.
- * Live: current action / 进行中 · 第 k/N 步. Done: 已完成 N 个步骤.
- * Reasoning and tool calls both count as one step; no type-split labels.
+ * Work segment collapsed summary. Step counts only on done — never durations.
+ * Live: status/action only (no N 步 / k/N — meaningless while streaming).
+ * Done: 已完成 N 个步骤. Reasoning and tool calls both count as one step.
  */
 export function describeWorkSummary(steps: readonly AssistantWorkStep[]): string {
   const total = steps.length;
@@ -72,23 +72,17 @@ export function describeWorkSummary(steps: readonly AssistantWorkStep[]): string
       (step) => step.type === "reasoning" && step.status === "streaming",
     );
     if (streamingReasoning) {
-      return `进行中 · ${total} 步`;
+      return "进行中";
     }
 
-    let runningIndex = -1;
     for (let index = steps.length - 1; index >= 0; index -= 1) {
       const step = steps[index]!;
       if (step.type === "tool_call" && (step.status === "running" || step.status === "pending")) {
-        runningIndex = index;
-        break;
+        return toolActionLabel(step.name);
       }
     }
-    if (runningIndex >= 0) {
-      const running = steps[runningIndex] as AiChatToolCall;
-      return `${toolActionLabel(running.name)} · 第 ${runningIndex + 1}/${total} 步`;
-    }
 
-    return `进行中 · ${total} 步`;
+    return "进行中";
   }
 
   if (errorCount > 0) {

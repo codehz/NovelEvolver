@@ -173,13 +173,13 @@ describe("describeWorkSummary", () => {
     expect(describeWorkSummary([])).toBe("无步骤");
   });
 
-  test("live streaming reasoning is type-agnostic", () => {
-    expect(describeWorkSummary([reasoning("r1", "streaming")])).toBe("进行中 · 1 步");
+  test("live streaming reasoning is status-only", () => {
+    expect(describeWorkSummary([reasoning("r1", "streaming")])).toBe("进行中");
   });
 
-  test("live running tool shows step index", () => {
-    expect(describeWorkSummary([reasoning("r1"), tool("t1", "read_document", "running")])).toMatch(
-      /第 2\/2 步/,
+  test("live running tool shows action label without step index", () => {
+    expect(describeWorkSummary([reasoning("r1"), tool("t1", "read_document", "running")])).toBe(
+      "读取",
     );
   });
 });

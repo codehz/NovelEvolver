@@ -105,7 +105,8 @@ export function readSubagentCardModel(toolCall: AiChatToolCall): SubagentCardMod
 
 export function describeSubagentCardSummary(model: SubagentCardModel): string {
   const chunks = [model.agentLabel, model.taskPreview];
-  if (model.stepCount > 0) {
+  // Live step counts are noise (partial/changing); keep only after completion.
+  if (!model.isLive && model.stepCount > 0) {
     chunks.push(`${model.stepCount} 步`);
   }
   const status = model.statusLabel ?? model.liveIndicator;

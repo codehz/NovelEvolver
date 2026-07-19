@@ -87,7 +87,7 @@ export function AiSubagentCard({ toolCall }: AiSubagentCardProps): ReactNode {
                   第 {model.round}/{model.maxRounds} 轮
                 </span>
               ) : null}
-              {model.stepCount > 0 ? <span>{model.stepCount} 步</span> : null}
+              {!model.isLive && model.stepCount > 0 ? <span>{model.stepCount} 步</span> : null}
               {model.wrote !== null ? <span>{model.wrote ? "已写回" : "只读"}</span> : null}
               {model.touchedCount > 0 ? <span>触及 {model.touchedCount} 个节点</span> : null}
             </div>
