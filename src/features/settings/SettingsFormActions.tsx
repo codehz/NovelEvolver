@@ -1,4 +1,4 @@
-import { Button } from "#app/shared/ui";
+import { Button, SlotText } from "#app/shared/ui";
 
 type SettingsFormActionsProps = {
   busy?: boolean;
@@ -24,7 +24,10 @@ export function SettingsFormActions({
 }: SettingsFormActionsProps) {
   return (
     <Button disabled={busy || disabled} form={form} type="submit" variant="primary">
-      {busy ? busyLabel : submitLabel}
+      <SlotText
+        text={busy ? busyLabel : submitLabel}
+        options={{ interrupt: false, skipUnchanged: false }}
+      />
     </Button>
   );
 }
