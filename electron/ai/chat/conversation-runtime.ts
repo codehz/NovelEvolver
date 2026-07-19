@@ -375,8 +375,21 @@ export class AiConversationRuntime {
     });
   }
 
+  /**
+   * 中断当前生成或等待用户输入。
+   * - `pending` 流式中：abort 流（现有行为）。
+   * - 等待 openInteractions：settle 未决 user-input 为取消结果、落盘 history，**不**继续工具环。
+   */
   stopGeneration(): void {
-    if (this.#disposed || !this.#state.pending) {
+    if (this.#disposed) {
+      return;
+    }
+    const batch = this.#state.pendingToolBatch;
+    if (batch !== null) {
+      this.#interruptPendingUserInput(batch);
+      return;
+    }
+    if (!this.#state.pending) {
       return;
     }
     this.#generationAbort?.abort();
@@ -401,7 +414,11 @@ export class AiConversationRuntime {
     this.#applySettledPendingInput(batch, id, result);
   }
 
-  /** 取消开放交互。未知 id / 已 settle 时幂等忽略。 */
+  /**
+   * 取消单条开放交互（工具侧以 rejected 结果继续工具环）。
+   * 未知 id / 已 settle 时幂等忽略。
+   * 若要中断整轮输出、不再继续生成，请用 `stopGeneration`。
+   */
   cancelInteraction(id: string): void {
     if (this.#disposed) {
       return;
@@ -866,8 +883,58 @@ export class AiConversationRuntime {
   }
 
   /**
+   * 等待用户输入时中断整轮输出：
+   * - 未 settle 的 user-input 一律 resolveCancel（history 回放为「取消回答」）
+   * - 同步清空 pendingToolBatch，避免已在跑的 `#awaitPendingInputs` 竞态续跑
+   * - **不**再发起 `#runRequest`
+   */
+  #interruptPendingUserInput(batch: PendingToolBatch): void {
+    for (const entry of batch.pendingInputs) {
+      if (entry.settled) {
+        continue;
+      }
+      const result = settlePendingUserInputCancel(batch, entry.id);
+      if (result === null) {
+        continue;
+      }
+      this.#applySettledPendingInput(batch, entry.id, result);
+    }
+
+    const transcript = [...batch.transcript];
+    for (const call of batch.calls) {
+      const result = batch.resolvedResultsByCallId.get(call.id);
+      if (!result) {
+        throw new Error(`中断时工具 ${call.id} 缺少执行结果。`);
+      }
+      transcript.push(result);
+    }
+
+    // 必须在 microtask 调度 `#awaitPendingInputs` 续跑前清空 batch。
+    this.#state.replaceHistory(transcript);
+    this.#state.setPendingToolBatch(null);
+    this.#state.setPending(false);
+    this.#state.setErrorMessage(null);
+
+    const ops: AiChatDeltaOp[] = [
+      ...this.#state.updateMessage(batch.assistantMessageId, { status: "complete" }),
+      {
+        type: "state.updated",
+        patch: {
+          pending: false,
+          openInteractions: [],
+          errorMessage: null,
+          canRetry: this.#state.canRetry,
+        },
+      },
+    ];
+    this.#emitDelta(ops);
+    this.#state.persistIfNeeded();
+  }
+
+  /**
    * 单条 pending 被 settle 后：写入结果、更新 tool 卡片、刷新 openInteractions。
    * 工具环继续由 `#awaitPendingInputs` 的 Promise.all 门闩控制。
+   * rejected（用户取消）不把取消文案写入 ask_user.answer。
    */
   #applySettledPendingInput(batch: PendingToolBatch, id: string, result: ToolResultItem): void {
     batch.resolvedResultsByCallId.set(id, result);
@@ -882,18 +949,20 @@ export class AiConversationRuntime {
     let nextView = currentView;
     if (currentView?.kind === "ask_user") {
       let answer: string | null = null;
-      try {
-        const parsed: unknown = JSON.parse(resultText);
-        if (
-          typeof parsed === "object" &&
-          parsed !== null &&
-          !Array.isArray(parsed) &&
-          typeof (parsed as { answer?: unknown }).answer === "string"
-        ) {
-          answer = (parsed as { answer: string }).answer;
+      if (result.outcome !== "rejected") {
+        try {
+          const parsed: unknown = JSON.parse(resultText);
+          if (
+            typeof parsed === "object" &&
+            parsed !== null &&
+            !Array.isArray(parsed) &&
+            typeof (parsed as { answer?: unknown }).answer === "string"
+          ) {
+            answer = (parsed as { answer: string }).answer;
+          }
+        } catch {
+          answer = resultText || null;
         }
-      } catch {
-        answer = resultText || null;
       }
       nextView = { ...currentView, answer };
     } else if (!currentView && call) {
@@ -928,6 +997,7 @@ export class AiConversationRuntime {
     backend = this.#activeBackend ?? this.#resolveBackend(),
   ): Promise<void> {
     // 等齐全部 settle；单条 UI/状态更新由 submit/cancel → #applySettledPendingInput 完成。
+    // stopGeneration 中断会在 settle 后同步清空 pendingToolBatch，此处再检查后直接 return。
     await Promise.all(batch.pendingInputs.map((entry) => entry.resolverPromise));
 
     if (this.#state.pendingToolBatch !== batch || this.#disposed) {
