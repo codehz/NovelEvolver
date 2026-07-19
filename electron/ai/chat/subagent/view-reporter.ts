@@ -1,13 +1,12 @@
 import type { AiSubagentToolView, AiSubagentViewStep, AiToolViewFocus } from "#shared/rpc/ai/index";
 
 import { MAX_SUBAGENT_TOOL_ROUNDS } from "./policy";
+import type { SubagentArtifacts, SubagentRunStatus } from "./result";
 import {
-  createProgressThrottle,
+  createViewThrottle,
   PARTIAL_SUMMARY_THROTTLE_MS,
   truncatePartialSummary,
-  type SubagentProgress,
-} from "./progress";
-import type { SubagentArtifacts, SubagentRunStatus } from "./result";
+} from "./throttle";
 
 export type SubagentViewPhase = AiSubagentToolView["phase"];
 
@@ -101,23 +100,15 @@ export function createSubagentViewReporter(
     options.onView?.(view);
   };
 
-  // Reuse the progress throttle interval; cast through unknown because the
-  // helper is typed for the legacy SubagentProgress payload.
-  const throttle = createProgressThrottle({
-    onEmit: (payload) => emitRaw(payload as unknown as AiSubagentToolView),
+  const throttle = createViewThrottle<AiSubagentToolView>({
+    onEmit: emitRaw,
     intervalMs: PARTIAL_SUMMARY_THROTTLE_MS,
   });
-  const schedule = (view: AiSubagentToolView) => {
-    throttle.schedule(view as unknown as SubagentProgress);
-  };
-  const forceFlushThrottle = () => {
-    throttle.forceFlush();
-  };
 
   return {
     emit(nextPhase) {
       phase = nextPhase;
-      forceFlushThrottle();
+      throttle.forceFlush();
       emitRaw(build(phase));
     },
     setReport(text) {
@@ -125,7 +116,7 @@ export function createSubagentViewReporter(
       if (phase === "starting") {
         phase = "thinking";
       }
-      schedule(build(phase));
+      throttle.schedule(build(phase));
     },
     beginStep(input) {
       stepSeq += 1;
@@ -141,7 +132,7 @@ export function createSubagentViewReporter(
         },
       ];
       phase = "tool";
-      forceFlushThrottle();
+      throttle.forceFlush();
       emitRaw(build("tool"));
       return id;
     },
@@ -157,7 +148,7 @@ export function createSubagentViewReporter(
             }
           : step,
       );
-      forceFlushThrottle();
+      throttle.forceFlush();
       emitRaw(build(phase));
     },
     setArtifacts(next) {
@@ -168,14 +159,14 @@ export function createSubagentViewReporter(
       return round;
     },
     forceFlush() {
-      forceFlushThrottle();
+      throttle.forceFlush();
     },
     cancel() {
       throttle.cancel();
     },
     finalize(status) {
       runStatus = status;
-      forceFlushThrottle();
+      throttle.forceFlush();
       const view = build("done");
       emitRaw(view);
       return view;

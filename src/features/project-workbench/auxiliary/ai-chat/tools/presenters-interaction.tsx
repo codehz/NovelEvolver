@@ -23,7 +23,7 @@ export const askUserPresenter: ToolPresenter = (toolCall) => {
   return {
     icon: toolIcon("ask_user"),
     label: toolActionLabel("ask_user"),
-    summary: truncateText(question, 64),
+    subject: truncateText(question, 64),
     indicator:
       toolCall.status === "complete"
         ? "已回答"
@@ -187,7 +187,7 @@ export const runSubagentPresenter: ToolPresenter = (toolCall) => {
   return {
     icon: toolIcon("run_subagent"),
     label: toolActionLabel("run_subagent"),
-    summary: `${agentLabel} · ${taskPreview}`,
+    subject: `${agentLabel} · ${taskPreview}`,
     indicator: statusLabel ?? liveIndicator,
     detail: hasBody ? (
       <div className="flex flex-col gap-2">

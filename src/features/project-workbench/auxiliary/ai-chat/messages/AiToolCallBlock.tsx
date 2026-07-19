@@ -100,7 +100,7 @@ export function AiToolCallBlock({ toolCall }: AiToolCallBlockProps) {
       {hasDetail ? <DisclosureChevron expanded={open} /> : <span className="size-3.5 shrink-0" />}
       <span aria-hidden="true" className={cn(presentation.icon, iconClass)} />
       <span className={labelClass}>{presentation.label}</span>
-      <span className={toolCallSummaryClass}>{presentation.summary}</span>
+      <span className={toolCallSummaryClass}>{presentation.subject}</span>
       {indicator ? <span className={statusClass}>{indicator}</span> : null}
     </>
   );

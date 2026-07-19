@@ -9,9 +9,9 @@ export type ToolPresentation = {
   icon?: string;
   /** Short product action, e.g. 读取 / 搜索. */
   label: string;
-  /** Target / subject, e.g. path or query. */
-  summary: string;
-  /** Result chip on the trailing edge; omit when summary already carries the outcome. */
+  /** Target / subject of the action (path, query, agent task) — not a result summary. */
+  subject: string;
+  /** Result chip on the trailing edge; omit when subject already carries the outcome. */
   indicator?: string;
   /** Expand body; `null` means the shell should not render a collapsible. */
   detail: ReactNode | null;

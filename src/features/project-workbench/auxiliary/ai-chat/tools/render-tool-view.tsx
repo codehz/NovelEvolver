@@ -35,7 +35,7 @@ function presentFromView(toolCall: AiChatToolCall, view: AiToolView): ToolPresen
       return {
         icon: toolIcon("search_documents"),
         label: toolActionLabel("search_documents"),
-        summary: `“${view.query}”${view.isRegex ? " · 正则" : ""}`,
+        subject: `“${view.query}”${view.isRegex ? " · 正则" : ""}`,
         indicator:
           toolCall.status === "complete" || view.hits.length > 0
             ? `${view.hitCount} 处命中`
@@ -78,7 +78,7 @@ function presentFromView(toolCall: AiChatToolCall, view: AiToolView): ToolPresen
       return {
         icon: toolIcon("read_document"),
         label: toolActionLabel("read_document"),
-        summary: `${view.domainLabel} · ${view.documentName}`,
+        subject: `${view.domainLabel} · ${view.documentName}`,
         indicator: view.scale ?? undefined,
         detail:
           toolCall.status === "error"
@@ -92,7 +92,7 @@ function presentFromView(toolCall: AiChatToolCall, view: AiToolView): ToolPresen
       return {
         icon: toolIcon("read_structure"),
         label: toolActionLabel("read_structure"),
-        summary: view.scopeLabel,
+        subject: view.scopeLabel,
         indicator:
           toolCall.status === "complete" || view.nodeCount > 0
             ? `${view.nodeCount} 个节点`
@@ -150,7 +150,7 @@ function presentFromView(toolCall: AiChatToolCall, view: AiToolView): ToolPresen
               : "write_document",
         ),
         label,
-        summary: `${view.domainLabel} · ${view.documentName}`,
+        subject: `${view.domainLabel} · ${view.documentName}`,
         indicator,
         detail:
           hasFacts || toolCall.status === "error" ? (
@@ -198,7 +198,7 @@ function presentFromView(toolCall: AiChatToolCall, view: AiToolView): ToolPresen
                 : "create_folder",
         ),
         label: view.actionLabel,
-        summary: `${view.domainLabel} · ${view.display}`,
+        subject: `${view.domainLabel} · ${view.display}`,
         indicator: mutationIndicator(view.actionLabel, toolCall.status),
         detail:
           toolCall.status === "error"
@@ -210,7 +210,7 @@ function presentFromView(toolCall: AiChatToolCall, view: AiToolView): ToolPresen
       return {
         icon: toolIcon("read_changes"),
         label: toolActionLabel("read_changes"),
-        summary: view.scopeLabel,
+        subject: view.scopeLabel,
         indicator:
           toolCall.status === "complete" || view.count > 0 ? `${view.count} 项` : undefined,
         detail:
@@ -232,7 +232,7 @@ function presentFromView(toolCall: AiChatToolCall, view: AiToolView): ToolPresen
       return {
         icon: toolIcon("read_change"),
         label: toolActionLabel("read_change"),
-        summary: `${view.domainLabel} · ${view.documentName}`,
+        subject: `${view.domainLabel} · ${view.documentName}`,
         indicator: view.currentScale ?? view.originalScale ?? undefined,
         detail:
           view.originalScale != null || view.currentScale != null || toolCall.status === "error" ? (
@@ -256,7 +256,7 @@ function presentFromView(toolCall: AiChatToolCall, view: AiToolView): ToolPresen
       return {
         icon: toolIcon("read_history"),
         label: toolActionLabel("read_history"),
-        summary: `${view.domainLabel} · ${view.documentName}`,
+        subject: `${view.domainLabel} · ${view.documentName}`,
         indicator:
           toolCall.status === "complete" || view.entryCount > 0
             ? `${view.entryCount} 条`
@@ -273,7 +273,7 @@ function presentFromView(toolCall: AiChatToolCall, view: AiToolView): ToolPresen
       return {
         icon: toolIcon("read_history_entry"),
         label: toolActionLabel("read_history_entry"),
-        summary: `${view.domainLabel} · ${view.documentName}`,
+        subject: `${view.domainLabel} · ${view.documentName}`,
         indicator: view.contentScale ?? undefined,
         detail:
           view.contentScale != null || view.beforeScale != null || toolCall.status === "error" ? (
@@ -299,7 +299,7 @@ function presentFromView(toolCall: AiChatToolCall, view: AiToolView): ToolPresen
       return {
         icon: toolIcon("ask_user"),
         label: toolActionLabel("ask_user"),
-        summary: view.question.length > 64 ? `${view.question.slice(0, 64)}…` : view.question,
+        subject: view.question.length > 64 ? `${view.question.slice(0, 64)}…` : view.question,
         indicator:
           toolCall.status === "complete"
             ? "已回答"
@@ -350,7 +350,7 @@ function presentFromView(toolCall: AiChatToolCall, view: AiToolView): ToolPresen
       return {
         icon: toolIcon(toolCall.name),
         label: view.label,
-        summary: view.subject,
+        subject: view.subject,
         indicator: view.outcome ?? undefined,
         detail:
           (view.detailLines && view.detailLines.length > 0) || toolCall.status === "error" ? (
@@ -394,7 +394,7 @@ export function presentToolCall(toolCall: AiChatToolCall): ResolvedToolPresentat
   return {
     icon: toolIcon(toolCall.name),
     label: toolActionLabel(toolCall.name),
-    summary: "已执行",
+    subject: "已执行",
     detail:
       toolCall.status === "error" ? (
         <p className="text-ctp-subtext0">工具标识：{toolCall.name}</p>
