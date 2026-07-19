@@ -1,15 +1,14 @@
 import type { ToolCallItem } from "@codehz/ai";
-import { RpcTarget } from "capnweb";
 
 import type {
+  AiChatInteractionAnswer,
   AskUserChoice,
-  AskUserPendingInput,
-  AskUserRequestHandle,
+  AskUserOpenInteraction,
 } from "#shared/rpc/ai/index";
 
 import { parseNonEmptyString, parseToolArgs } from "../parse";
 import { rejectedToolResult, successToolResult } from "../result";
-import type { ToolSpec, UserInputRequest, UserInputResolver } from "../types";
+import type { ToolSpec, UserInputRequest } from "../types";
 
 export type AskUserArgs = {
   question: string;
@@ -18,48 +17,10 @@ export type AskUserArgs = {
   choices?: AskUserChoice[];
 };
 
-/**
- * `ask_user` 工具的 typed handle 实现。
- *
- * 只暴露 `submitAnswer`/`cancel`（Cap'n Web 按引用）。展示字段由
- * `toAskUserPendingInput` 打成纯 DTO 随事件按值推送。
- * 幂等：首次调用后 resolver 即置空，后续调用静默忽略。
- */
-export class AskUserRequestHandleImpl extends RpcTarget implements AskUserRequestHandle {
-  #callId: string;
-  #resolver: UserInputResolver | null;
-
-  constructor(call: ToolCallItem, resolver: UserInputResolver) {
-    super();
-    this.#callId = call.id;
-    this.#resolver = resolver;
-  }
-
-  submitAnswer(text: string): void {
-    const resolver = this.#resolver;
-    if (resolver === null) {
-      return;
-    }
-    this.#resolver = null;
-    resolver.resolve(successToolResult(this.#callId, "ask_user", { answer: text }));
-  }
-
-  cancel(): void {
-    const resolver = this.#resolver;
-    if (resolver === null) {
-      return;
-    }
-    this.#resolver = null;
-    resolver.resolve(rejectedToolResult(this.#callId, "ask_user", "用户取消了回答。"));
-  }
-}
-
-/** 由已解析参数与 handle 组装客户端可用的 pending input 视图。 */
-export function toAskUserPendingInput(
-  args: AskUserArgs,
-  handle: AskUserRequestHandle,
-): AskUserPendingInput {
+/** 由已解析参数组装客户端可用的开放交互 DTO（无 handle）。 */
+export function toAskUserOpenInteraction(id: string, args: AskUserArgs): AskUserOpenInteraction {
   return {
+    id,
     kind: "ask_user",
     toolName: "ask_user",
     prompt: args.question,
@@ -67,7 +28,6 @@ export function toAskUserPendingInput(
     context: args.context ?? null,
     placeholder: args.placeholder ?? null,
     choices: args.choices ?? null,
-    handle,
   };
 }
 
@@ -130,9 +90,18 @@ function buildUserInputRequest(call: ToolCallItem, args: AskUserArgs): UserInput
   return {
     toolName: call.name,
     prompt: args.question,
-    createHandle: (resolver) => new AskUserRequestHandleImpl(call, resolver),
     serializable: { toolName: call.name, args },
   };
+}
+
+function parseSerializableArgs(serializable: { args: unknown }): AskUserArgs {
+  const call: ToolCallItem = {
+    type: "tool_call",
+    id: "rebuild",
+    name: "ask_user",
+    argumentsText: JSON.stringify(serializable.args),
+  };
+  return parseAskUserArgs(call);
 }
 
 export const askUserSpec: ToolSpec<"ask_user"> = {
@@ -183,23 +152,21 @@ export const askUserSpec: ToolSpec<"ask_user"> = {
     return buildUserInputRequest(call, parseAskUserArgs(call));
   },
   userInput: {
-    createFromSerializable(callId, serializable, resolver) {
-      const call: ToolCallItem = {
-        type: "tool_call",
-        id: callId,
-        name: "ask_user",
-        argumentsText: JSON.stringify(serializable.args),
-      };
-      return toAskUserPendingInput(
-        parseAskUserArgs(call),
-        new AskUserRequestHandleImpl(call, resolver),
-      );
+    createOpenInteraction(id, serializable) {
+      return toAskUserOpenInteraction(id, parseSerializableArgs(serializable));
     },
-    createFromRequest(request, handle) {
-      return toAskUserPendingInput(
-        request.serializable.args as AskUserArgs,
-        handle as AskUserRequestHandle,
-      );
+    resolveAnswer(id, answer: AiChatInteractionAnswer) {
+      if (answer.kind !== "ask_user") {
+        return null;
+      }
+      const text = answer.text.trim();
+      if (text === "") {
+        return null;
+      }
+      return successToolResult(id, "ask_user", { answer: text });
+    },
+    resolveCancel(id) {
+      return rejectedToolResult(id, "ask_user", "用户取消了回答。");
     },
   },
 };

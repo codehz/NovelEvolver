@@ -1,9 +1,9 @@
 import type { ToolCallItem, ToolDefinition, ToolResultItem } from "@codehz/ai";
 
 import type {
-  AiChatPendingUserInput,
+  AiChatInteractionAnswer,
+  AiChatOpenInteraction,
   AiToolView,
-  UserInputRequestHandle,
 } from "#shared/rpc/ai/index";
 
 import type { WorktreeSession } from "../../worktree/session";
@@ -15,26 +15,25 @@ export type ToolContext = {
   call: ToolCallItem;
 };
 
-export type UserInputResolver = {
-  resolve(result: ToolResultItem): void;
+export type PendingUserInputSerializable = {
+  toolName: string;
+  args: unknown;
 };
 
 /**
- * 工具请求用户输入的描述。
+ * 工具请求用户输入的描述（主进程内部）。
  *
- * `createHandle` 由 session 在绑定 resolver 后调用，产出仅含回传方法的
- * 瘦 handle；展示数据由 session 根据 `serializable` 组装成
- * `AiChatPendingUserInput` DTO。`serializable` 同时用于持久化与重开重建。
+ * 展示数据经 contribution 组装为纯 DTO `AiChatOpenInteraction`；
+ * 回传经 `AiChatHandle.submitInteraction` / `cancelInteraction`，
+ * 再由 contribution 映射为 `ToolResultItem`。
  */
 export type UserInputRequest = {
   /** 发起该请求的工具名。 */
   toolName: string;
   /** 展示给用户的简短提示（如问题标题）。 */
   prompt: string;
-  /** 绑定 resolver 后构造瘦 handle（仅 submit/cancel）。 */
-  createHandle(resolver: UserInputResolver): UserInputRequestHandle;
-  /** 纯数据形式，用于 DTO 组装、持久化与重开 app 后重建 handle。 */
-  serializable: { toolName: string; args: unknown };
+  /** 纯数据形式，用于 DTO 组装、持久化与重开重建。 */
+  serializable: PendingUserInputSerializable;
 };
 
 export type ToolExecutionResult = {
@@ -46,21 +45,17 @@ export type ToolExecutionResult = {
   userInputRequest?: UserInputRequest;
 };
 
-export type PendingUserInputSerializable = {
-  toolName: string;
-  args: unknown;
-};
-
 export type UserInputContribution = {
-  createFromSerializable(
-    callId: string,
+  createOpenInteraction(
+    id: string,
     serializable: PendingUserInputSerializable,
-    resolver: UserInputResolver,
-  ): AiChatPendingUserInput;
-  createFromRequest(
-    request: UserInputRequest,
-    handle: UserInputRequestHandle,
-  ): AiChatPendingUserInput;
+  ): AiChatOpenInteraction;
+  /**
+   * 将客户端 answer 映射为 tool result；kind 不匹配返回 null。
+   */
+  resolveAnswer(id: string, answer: AiChatInteractionAnswer): ToolResultItem | null;
+  /** 用户取消。 */
+  resolveCancel(id: string): ToolResultItem;
 };
 
 /**
@@ -87,7 +82,6 @@ export function isUserInputRequest(value: unknown): value is UserInputRequest {
   return (
     typeof candidate.toolName === "string" &&
     typeof candidate.prompt === "string" &&
-    typeof candidate.createHandle === "function" &&
     typeof candidate.serializable === "object" &&
     candidate.serializable !== null
   );

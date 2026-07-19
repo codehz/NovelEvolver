@@ -1,20 +1,27 @@
 import type { InputItem, ToolCallItem, ToolResultItem } from "@codehz/ai";
 
-import type { AiChatMessageUsage, AiChatPendingUserInput } from "#shared/rpc/ai/index";
+import type {
+  AiChatInteractionAnswer,
+  AiChatMessageUsage,
+  AiChatOpenInteraction,
+} from "#shared/rpc/ai/index";
 
 import {
-  createPendingViewFromRequest,
-  createPendingViewFromSerializable,
+  createOpenInteractionFromSerializable,
+  resolveUserInputAnswer,
+  resolveUserInputCancel,
   type PendingUserInputSerializable,
   type UserInputRequest,
 } from "../tools";
 
 export type PendingUserInput = {
-  callId: string;
-  pending: AiChatPendingUserInput;
+  /** 稳定 id（= tool call id），供 DTO / 命令回传。 */
+  id: string;
+  view: AiChatOpenInteraction;
   resolverPromise: Promise<ToolResultItem>;
   resolve: (result: ToolResultItem) => void;
   serializable: PendingUserInputSerializable;
+  settled: boolean;
 };
 
 export type PendingToolBatch = {
@@ -34,7 +41,8 @@ type SerializedPendingToolBatch = {
   transcript: InputItem[];
   resolvedResultsByCallId: [string, ToolResultItem][];
   pendingInputs: {
-    callId: string;
+    id?: string;
+    callId?: string;
     serializable: PendingUserInputSerializable;
   }[];
   usage?: AiChatMessageUsage | null;
@@ -48,19 +56,25 @@ function createResolver(): Pick<PendingUserInput, "resolverPromise" | "resolve">
   return { resolverPromise, resolve };
 }
 
+export function listOpenInteractions(batch: PendingToolBatch | null): AiChatOpenInteraction[] {
+  if (batch === null) {
+    return [];
+  }
+  return batch.pendingInputs.filter((entry) => !entry.settled).map((entry) => entry.view);
+}
+
 export function createPendingUserInputFromSerializable(
-  callId: string,
+  id: string,
   serializable: PendingUserInputSerializable,
 ): PendingUserInput {
   const resolver = createResolver();
   return {
-    callId,
-    pending: createPendingViewFromSerializable(callId, serializable, {
-      resolve: resolver.resolve,
-    }),
+    id,
+    view: createOpenInteractionFromSerializable(id, serializable),
     resolverPromise: resolver.resolverPromise,
     resolve: resolver.resolve,
     serializable,
+    settled: false,
   };
 }
 
@@ -69,14 +83,48 @@ export function createPendingUserInputFromRequest(
   request: UserInputRequest,
 ): PendingUserInput {
   const resolver = createResolver();
-  const handle = request.createHandle({ resolve: resolver.resolve });
   return {
-    callId: call.id,
-    pending: createPendingViewFromRequest(request, handle),
+    id: call.id,
+    view: createOpenInteractionFromSerializable(call.id, request.serializable),
     resolverPromise: resolver.resolverPromise,
     resolve: resolver.resolve,
     serializable: request.serializable,
+    settled: false,
   };
+}
+
+/** 幂等 settle：已 settle / 未知 id / kind 不匹配时返回 null。 */
+export function settlePendingUserInputAnswer(
+  batch: PendingToolBatch,
+  id: string,
+  answer: AiChatInteractionAnswer,
+): ToolResultItem | null {
+  const entry = batch.pendingInputs.find((item) => item.id === id);
+  if (!entry || entry.settled) {
+    return null;
+  }
+  const result = resolveUserInputAnswer(entry.serializable.toolName, id, answer);
+  if (result === null) {
+    return null;
+  }
+  entry.settled = true;
+  entry.resolve(result);
+  return result;
+}
+
+/** 幂等 cancel。 */
+export function settlePendingUserInputCancel(
+  batch: PendingToolBatch,
+  id: string,
+): ToolResultItem | null {
+  const entry = batch.pendingInputs.find((item) => item.id === id);
+  if (!entry || entry.settled) {
+    return null;
+  }
+  const result = resolveUserInputCancel(entry.serializable.toolName, id);
+  entry.settled = true;
+  entry.resolve(result);
+  return result;
 }
 
 export function parsePendingToolBatch(json: string | null): PendingToolBatch | null {
@@ -92,9 +140,12 @@ export function parsePendingToolBatch(json: string | null): PendingToolBatch | n
       input: parsed.input,
       transcript: parsed.transcript,
       resolvedResultsByCallId: new Map(parsed.resolvedResultsByCallId),
-      pendingInputs: parsed.pendingInputs.map((entry) =>
-        createPendingUserInputFromSerializable(entry.callId, entry.serializable),
-      ),
+      pendingInputs: parsed.pendingInputs.map((entry) => {
+        // Legacy rows used `callId`; prefer `id`.
+        const id =
+          typeof entry.id === "string" && entry.id !== "" ? entry.id : (entry.callId ?? "");
+        return createPendingUserInputFromSerializable(id, entry.serializable);
+      }),
       usage: parsed.usage ?? null,
     };
   } catch {
@@ -114,7 +165,7 @@ export function serializePendingToolBatch(batch: PendingToolBatch | null): strin
     transcript: batch.transcript,
     resolvedResultsByCallId: [...batch.resolvedResultsByCallId.entries()],
     pendingInputs: batch.pendingInputs.map((input) => ({
-      callId: input.callId,
+      id: input.id,
       serializable: input.serializable,
     })),
     usage: batch.usage,

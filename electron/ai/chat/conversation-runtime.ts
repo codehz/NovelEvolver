@@ -9,6 +9,7 @@ import { aggregateEvents } from "@codehz/ai";
 
 import { cloneAiChatMessage, MOCK_AI_MODEL_ID } from "#shared/rpc/ai/index";
 import type {
+  AiChatInteractionAnswer,
   AiChatMessageUsage,
   AiChatSelectableModelKind,
   AiChatDeltaOp,
@@ -42,7 +43,13 @@ import {
 import { projectToolView } from "../tools/project-view";
 import { AiConversationState } from "./conversation-state";
 import { expandMentionsForModel } from "./mention-expand";
-import { createPendingUserInputFromRequest, type PendingToolBatch } from "./pending-tool-batch";
+import {
+  createPendingUserInputFromRequest,
+  listOpenInteractions,
+  settlePendingUserInputAnswer,
+  settlePendingUserInputCancel,
+  type PendingToolBatch,
+} from "./pending-tool-batch";
 import { countCommittedAssistantParts, rebuildLastRequestInput } from "./request-history";
 import { resolveReasoningLevelForModel } from "./selectable-models";
 import { expandSlashForModel } from "./slash-expand";
@@ -376,6 +383,41 @@ export class AiConversationRuntime {
   }
 
   /**
+   * 提交开放交互回答。未知 id / 已 settle / kind 不匹配时幂等忽略。
+   * 工具环仍等齐所有 pending 后继续。
+   */
+  submitInteraction(id: string, answer: AiChatInteractionAnswer): void {
+    if (this.#disposed) {
+      return;
+    }
+    const batch = this.#state.pendingToolBatch;
+    if (batch === null) {
+      return;
+    }
+    const result = settlePendingUserInputAnswer(batch, id, answer);
+    if (result === null) {
+      return;
+    }
+    this.#applySettledPendingInput(batch, id, result);
+  }
+
+  /** 取消开放交互。未知 id / 已 settle 时幂等忽略。 */
+  cancelInteraction(id: string): void {
+    if (this.#disposed) {
+      return;
+    }
+    const batch = this.#state.pendingToolBatch;
+    if (batch === null) {
+      return;
+    }
+    const result = settlePendingUserInputCancel(batch, id);
+    if (result === null) {
+      return;
+    }
+    this.#applySettledPendingInput(batch, id, result);
+  }
+
+  /**
    * Switch sibling branch for messageId to index; emit path.replaced.
    */
   selectMessageBranch(messageId: string, index: number): void {
@@ -649,7 +691,7 @@ export class AiConversationRuntime {
           type: "state.updated",
           patch: {
             pending: false,
-            pendingUserInputs: [],
+            openInteractions: [],
             canRetry: this.#state.canRetry,
           },
         },
@@ -685,7 +727,7 @@ export class AiConversationRuntime {
         type: "state.updated",
         patch: {
           pending: false,
-          pendingUserInputs: [],
+          openInteractions: [],
           errorMessage,
           canRetry: this.#state.canRetry,
         },
@@ -764,7 +806,7 @@ export class AiConversationRuntime {
           type: "state.updated",
           patch: {
             pending: false,
-            pendingUserInputs: pendingInputs.map((entry) => entry.pending),
+            openInteractions: listOpenInteractions(batch),
             errorMessage: null,
             canRetry: false,
           },
@@ -823,62 +865,81 @@ export class AiConversationRuntime {
     });
   }
 
+  /**
+   * 单条 pending 被 settle 后：写入结果、更新 tool 卡片、刷新 openInteractions。
+   * 工具环继续由 `#awaitPendingInputs` 的 Promise.all 门闩控制。
+   */
+  #applySettledPendingInput(batch: PendingToolBatch, id: string, result: ToolResultItem): void {
+    batch.resolvedResultsByCallId.set(id, result);
+    const resultText = joinContentBlocksText(result.content);
+    const call = batch.calls.find((item) => item.id === id);
+    const current = this.#state
+      .getSnapshot()
+      .messages.find((message) => message.id === batch.assistantMessageId);
+    const currentPart =
+      current?.role === "assistant" ? current.parts.find((part) => part.id === id) : null;
+    const currentView = currentPart?.type === "tool_call" ? currentPart.view : null;
+    let nextView = currentView;
+    if (currentView?.kind === "ask_user") {
+      let answer: string | null = null;
+      try {
+        const parsed: unknown = JSON.parse(resultText);
+        if (
+          typeof parsed === "object" &&
+          parsed !== null &&
+          !Array.isArray(parsed) &&
+          typeof (parsed as { answer?: unknown }).answer === "string"
+        ) {
+          answer = (parsed as { answer: string }).answer;
+        }
+      } catch {
+        answer = resultText || null;
+      }
+      nextView = { ...currentView, answer };
+    } else if (!currentView && call) {
+      nextView = projectToolView({
+        name: call.name,
+        argumentsText: call.argumentsText,
+        resultText,
+      });
+    }
+
+    const ops: AiChatDeltaOp[] = [
+      ...this.#state.updateAssistantPart(batch.assistantMessageId, id, {
+        status: "complete",
+        resultText,
+        errorMessage: null,
+        view: nextView,
+      }),
+      {
+        type: "state.updated",
+        patch: {
+          openInteractions: listOpenInteractions(batch),
+          canRetry: false,
+        },
+      },
+    ];
+    this.#emitDelta(ops);
+    this.#state.persistIfNeeded();
+  }
+
   async #awaitPendingInputs(
     batch: PendingToolBatch,
     backend = this.#activeBackend ?? this.#resolveBackend(),
   ): Promise<void> {
-    const results = await Promise.all(batch.pendingInputs.map((entry) => entry.resolverPromise));
+    // 等齐全部 settle；单条 UI/状态更新由 submit/cancel → #applySettledPendingInput 完成。
+    await Promise.all(batch.pendingInputs.map((entry) => entry.resolverPromise));
 
     if (this.#state.pendingToolBatch !== batch || this.#disposed) {
       return;
     }
 
-    for (let i = 0; i < batch.pendingInputs.length; i++) {
-      const entry = batch.pendingInputs[i]!;
-      const result = results[i]!;
-      batch.resolvedResultsByCallId.set(entry.callId, result);
-      const resultText = joinContentBlocksText(result.content);
-      const call = batch.calls.find((item) => item.id === entry.callId);
-      const current = this.#state
-        .getSnapshot()
-        .messages.find((message) => message.id === batch.assistantMessageId);
-      const currentPart =
-        current?.role === "assistant"
-          ? current.parts.find((part) => part.id === entry.callId)
-          : null;
-      const currentView = currentPart?.type === "tool_call" ? currentPart.view : null;
-      let nextView = currentView;
-      if (currentView?.kind === "ask_user") {
-        let answer: string | null = null;
-        try {
-          const parsed: unknown = JSON.parse(resultText);
-          if (
-            typeof parsed === "object" &&
-            parsed !== null &&
-            !Array.isArray(parsed) &&
-            typeof (parsed as { answer?: unknown }).answer === "string"
-          ) {
-            answer = (parsed as { answer: string }).answer;
-          }
-        } catch {
-          answer = resultText || null;
-        }
-        nextView = { ...currentView, answer };
-      } else if (!currentView && call) {
-        nextView = projectToolView({
-          name: call.name,
-          argumentsText: call.argumentsText,
-          resultText,
-        });
+    // 兜底：若结果尚未写入 map（例如从持久化重建后直接 await），在此补齐。
+    for (const entry of batch.pendingInputs) {
+      if (!batch.resolvedResultsByCallId.has(entry.id)) {
+        const result = await entry.resolverPromise;
+        this.#applySettledPendingInput(batch, entry.id, result);
       }
-      this.#emitDelta(
-        this.#state.updateAssistantPart(batch.assistantMessageId, entry.callId, {
-          status: "complete",
-          resultText,
-          errorMessage: null,
-          view: nextView,
-        }),
-      );
     }
 
     const input = [...batch.input];
@@ -900,7 +961,7 @@ export class AiConversationRuntime {
         type: "state.updated",
         patch: {
           pending: true,
-          pendingUserInputs: [],
+          openInteractions: [],
           errorMessage: null,
           canRetry: false,
         },

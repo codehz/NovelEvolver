@@ -1,6 +1,6 @@
-import type { ToolDefinition } from "@codehz/ai";
+import type { ToolDefinition, ToolResultItem } from "@codehz/ai";
 
-import type { AiChatPendingUserInput, UserInputRequestHandle } from "#shared/rpc/ai/index";
+import type { AiChatInteractionAnswer, AiChatOpenInteraction } from "#shared/rpc/ai/index";
 
 import { askUserSpec } from "./specs/ask-user";
 import { createDocumentSpec } from "./specs/create-document";
@@ -18,13 +18,7 @@ import { replaceDocumentTextSpec } from "./specs/replace-document-text";
 import { runSubagentSpec } from "./specs/run-subagent";
 import { searchDocumentsSpec } from "./specs/search-documents";
 import { writeDocumentSpec } from "./specs/write-document";
-import type {
-  PendingUserInputSerializable,
-  ToolSpec,
-  UserInputContribution,
-  UserInputRequest,
-  UserInputResolver,
-} from "./types";
+import type { PendingUserInputSerializable, ToolSpec, UserInputContribution } from "./types";
 
 /** 全部 tool 规格；加 tool = 新增 specs/* + 在此挂一行。 */
 export const TOOL_SPECS = [
@@ -90,21 +84,21 @@ function getUserInputContribution(toolName: string): UserInputContribution {
   return contribution;
 }
 
-export function createPendingViewFromSerializable(
-  callId: string,
+export function createOpenInteractionFromSerializable(
+  id: string,
   serializable: PendingUserInputSerializable,
-  resolver: UserInputResolver,
-): AiChatPendingUserInput {
-  return getUserInputContribution(serializable.toolName).createFromSerializable(
-    callId,
-    serializable,
-    resolver,
-  );
+): AiChatOpenInteraction {
+  return getUserInputContribution(serializable.toolName).createOpenInteraction(id, serializable);
 }
 
-export function createPendingViewFromRequest(
-  request: UserInputRequest,
-  handle: UserInputRequestHandle,
-): AiChatPendingUserInput {
-  return getUserInputContribution(request.toolName).createFromRequest(request, handle);
+export function resolveUserInputAnswer(
+  toolName: string,
+  id: string,
+  answer: AiChatInteractionAnswer,
+): ToolResultItem | null {
+  return getUserInputContribution(toolName).resolveAnswer(id, answer);
+}
+
+export function resolveUserInputCancel(toolName: string, id: string): ToolResultItem {
+  return getUserInputContribution(toolName).resolveCancel(id);
 }

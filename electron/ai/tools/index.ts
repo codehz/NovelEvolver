@@ -6,5 +6,4 @@ export type {
   ToolExecutionResult,
   ToolRunner,
   UserInputRequest,
-  UserInputResolver,
 } from "./types";

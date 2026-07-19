@@ -3,6 +3,7 @@ import { RpcTarget } from "capnweb";
 import type {
   AiChatEvent,
   AiChatHandle,
+  AiChatInteractionAnswer,
   AiChatSelectableAgent,
   AiChatSelectableModel,
   AiChatSendMessageInput,
@@ -33,6 +34,14 @@ export class AiChatHandleImpl extends RpcTarget implements AiChatHandle {
 
   stopGeneration(): void {
     this.#chat.stopGeneration();
+  }
+
+  submitInteraction(id: string, answer: AiChatInteractionAnswer): void {
+    this.#chat.submitInteraction(id, answer);
+  }
+
+  cancelInteraction(id: string): void {
+    this.#chat.cancelInteraction(id);
   }
 
   retryLastRequest(): void {

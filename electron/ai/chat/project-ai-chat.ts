@@ -1,5 +1,6 @@
 import type {
   AiChatEvent,
+  AiChatInteractionAnswer,
   AiChatSelectableAgent,
   AiChatSelectableModel,
   AiChatSendMessageInput,
@@ -188,6 +189,14 @@ export class ProjectAiChatController {
 
   stopGeneration(): void {
     this.#getActiveRuntime().stopGeneration();
+  }
+
+  submitInteraction(id: string, answer: AiChatInteractionAnswer): void {
+    this.#getActiveRuntime().submitInteraction(id, answer);
+  }
+
+  cancelInteraction(id: string): void {
+    this.#getActiveRuntime().cancelInteraction(id);
   }
 
   retryLastRequest(): void {

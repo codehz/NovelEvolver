@@ -373,8 +373,10 @@ export class AiConversationState {
       warnings: this.#warnings.map((warning) => ({ ...warning })),
       messages: projectActiveMessages(this.#tree),
       pending: this.#pending,
-      pendingUserInputs: this.#pendingToolBatch
-        ? this.#pendingToolBatch.pendingInputs.map((input) => input.pending)
+      openInteractions: this.#pendingToolBatch
+        ? this.#pendingToolBatch.pendingInputs
+            .filter((input) => !input.settled)
+            .map((input) => input.view)
         : [],
       errorMessage: this.#errorMessage,
       canRetry: this.canRetry,
