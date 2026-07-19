@@ -394,7 +394,12 @@ export type AiChatEvent = AiChatSnapshotEvent | AiChatDeltaEvent;
 export interface AiChatHandle extends RpcTarget {
   subscribeChat(): RpcSubscriptionResult<AiChatEvent>;
   sendMessage(input: AiChatSendMessageInput): void;
-  /** Abort the in-flight model stream / tool loop when `pending`. No-op otherwise. */
+  /**
+   * 中断当前生成或等待用户输入。
+   * - `pending`：abort 进行中的模型流 / 工具环。
+   * - 存在 `openInteractions`（等待用户）：将未决交互 settle 为取消 tool_result 并落盘 history，**不**继续生成。
+   * - 否则 no-op。
+   */
   stopGeneration(): void;
   /**
    * 提交开放交互的回答（按 `openInteractions[].id`）。
@@ -402,8 +407,9 @@ export interface AiChatHandle extends RpcTarget {
    */
   submitInteraction(id: string, answer: AiChatInteractionAnswer): void;
   /**
-   * 取消开放交互（工具侧以 rejected 结果继续）。
+   * 取消**单条**开放交互：工具侧以 rejected 结果 settle，工具环等齐后**继续**生成。
    * 未知 id / 已 settle 时幂等忽略。
+   * 若要中断整轮输出、不再继续，请用 `stopGeneration`。
    */
   cancelInteraction(id: string): void;
   /**
