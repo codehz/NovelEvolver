@@ -1,11 +1,16 @@
+import { AutoTransition } from "@codehz/auto-transition";
+
 import { cn } from "#app/shared/lib/ui/cn";
 
 import {
   settingsDetailInsetClass,
   settingsDetailSurfaceClass,
-  settingsLayerHiddenClass,
   settingsPanelRootClass,
 } from "../settings-chrome";
+import {
+  settingsPageFadeTransition,
+  settingsPageTransitionHostClass,
+} from "../settings-page-transition";
 import { SettingsFormActions } from "../SettingsFormActions";
 import { SettingsPanelLoadError, SettingsPanelLoading } from "../SettingsPanelStatus";
 import { SettingsSubpageHeader } from "../SettingsSubpageHeader";
@@ -83,72 +88,75 @@ export function AiModelsSettingsPanel({ active = true }: AiModelsSettingsPanelPr
 
   return (
     <div className={settingsPanelRootClass}>
-      {isSubpageOpen && subpageTitle ? (
-        <SettingsSubpageHeader
-          title={subpageTitle}
-          actions={
-            subpageSubmit ? (
-              <SettingsFormActions
-                busy={busy}
-                form={subpageSubmit.form}
-                submitLabel={subpageSubmit.submitLabel}
-              />
-            ) : undefined
-          }
-          onBack={() => {
-            void requestClose();
-          }}
-        />
-      ) : null}
-
-      {/* Keep-alive list layer: dual-column owns its own column scrollports. */}
-      <div
-        className={cn(
-          "flex min-h-0 flex-1 flex-col overflow-hidden",
-          isSubpageOpen && settingsLayerHiddenClass,
-        )}
+      <AutoTransition
+        as="div"
+        className={settingsPageTransitionHostClass}
+        exitLayout="absolute"
+        transition={settingsPageFadeTransition}
       >
-        <AiModelsListLayer
-          actionError={actionError}
-          busy={busy}
-          defaultModelId={defaultModelId}
-          modelsByProvider={modelsByProvider}
-          providers={providers}
-          onOpenEditor={openEditor}
-          onRemoveModel={(id) => {
-            void handleRemoveModel(id);
-          }}
-          onRemoveProvider={(id) => {
-            void handleRemoveProvider(id);
-          }}
-          onSetDefault={(id) => {
-            void handleSetDefault(id);
-          }}
-        />
-      </div>
+        {isSubpageOpen ? (
+          <div key="subpage" className="flex min-h-0 flex-1 flex-col overflow-hidden">
+            {subpageTitle ? (
+              <SettingsSubpageHeader
+                title={subpageTitle}
+                actions={
+                  subpageSubmit ? (
+                    <SettingsFormActions
+                      busy={busy}
+                      form={subpageSubmit.form}
+                      submitLabel={subpageSubmit.submitLabel}
+                    />
+                  ) : undefined
+                }
+                onBack={() => {
+                  void requestClose();
+                }}
+              />
+            ) : null}
 
-      {isSubpageOpen ? (
-        <div className={settingsDetailInsetClass}>
-          <div
-            className={cn(
-              settingsDetailSurfaceClass,
-              "min-h-0 flex-1 overflow-x-hidden overflow-y-auto",
-            )}
-          >
-            <AiModelsEditorLayer
-              key={formKey}
+            <div className={settingsDetailInsetClass}>
+              <div
+                className={cn(
+                  settingsDetailSurfaceClass,
+                  "min-h-0 flex-1 overflow-x-hidden overflow-y-auto",
+                )}
+              >
+                <AiModelsEditorLayer
+                  key={formKey}
+                  actionError={actionError}
+                  busy={busy}
+                  editor={editor}
+                  formRef={formRef}
+                  providers={providers}
+                  onDirtyChange={onDirtyChange}
+                  onModelSubmit={handleModelSubmit}
+                  onProviderSubmit={handleProviderSubmit}
+                />
+              </div>
+            </div>
+          </div>
+        ) : (
+          <div key="list" className="flex min-h-0 flex-1 flex-col overflow-hidden">
+            <AiModelsListLayer
               actionError={actionError}
               busy={busy}
-              editor={editor}
-              formRef={formRef}
+              defaultModelId={defaultModelId}
+              modelsByProvider={modelsByProvider}
               providers={providers}
-              onDirtyChange={onDirtyChange}
-              onModelSubmit={handleModelSubmit}
-              onProviderSubmit={handleProviderSubmit}
+              onOpenEditor={openEditor}
+              onRemoveModel={(id) => {
+                void handleRemoveModel(id);
+              }}
+              onRemoveProvider={(id) => {
+                void handleRemoveProvider(id);
+              }}
+              onSetDefault={(id) => {
+                void handleSetDefault(id);
+              }}
             />
           </div>
-        </div>
-      ) : null}
+        )}
+      </AutoTransition>
     </div>
   );
 }

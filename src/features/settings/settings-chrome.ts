@@ -96,9 +96,6 @@ export const settingsSubpageTitleClass = cn(
   "min-w-0 flex-1 truncate text-sm font-medium text-app-foreground",
 );
 
-/** Keep-alive list layer while a subpage form is shown. */
-export const settingsLayerHiddenClass = cn("hidden");
-
 export const settingsPanelSectionClass = cn("flex flex-col gap-2.5 px-3 py-2.5");
 
 export const settingsPanelHeaderClass = cn("flex items-start justify-between gap-2");
