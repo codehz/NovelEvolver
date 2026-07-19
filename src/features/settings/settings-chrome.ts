@@ -339,6 +339,7 @@ export const settingsChipDefaultButtonClass = cn(
   "disabled:cursor-default disabled:opacity-80",
 );
 
-export const settingsFormActionsClass = cn("flex items-center justify-end gap-2");
+/** Compact action cluster for settings headers (save + icon actions). */
+export const settingsHeaderActionsClass = cn("flex shrink-0 items-center gap-1.5");
 
 export const settingsFormErrorClass = cn("text-xs text-ctp-red");
