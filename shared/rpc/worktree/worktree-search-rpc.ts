@@ -1,7 +1,9 @@
 import type { RpcTarget } from "capnweb";
 
-/** 与变更域对齐：手稿正文树 vs 资源库树。 */
-export type WorktreeSearchDomain = "manuscript" | "resource";
+import type { WorktreeDomain } from "./worktree-domain";
+
+/** 与变更域对齐：手稿正文树 vs 资源库树。 @deprecated Prefer {@link WorktreeDomain}. */
+export type WorktreeSearchDomain = WorktreeDomain;
 
 /** `all` 表示两个域都搜；结果仍分栏返回，便于 UI 区分。 */
 export type WorktreeSearchScope = WorktreeSearchDomain | "all";

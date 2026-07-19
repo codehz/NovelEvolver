@@ -1,6 +1,7 @@
 import type { RpcTarget } from "capnweb";
 
 import type { RpcSubscriptionResult } from "../transport/stream";
+import type { WorktreeDomain } from "./worktree-domain";
 import type {
   ManuscriptTreeDelta,
   ManuscriptTreeSnapshot,
@@ -8,7 +9,8 @@ import type {
   ResourceTreeSnapshot,
 } from "./worktree-tree-rpc";
 
-export type ChangeDomain = "manuscript" | "resource";
+/** @deprecated Prefer {@link WorktreeDomain}. */
+export type ChangeDomain = WorktreeDomain;
 export type ChangeKind = "create" | "delete" | "rename" | "move" | "reorder" | "content";
 export type LeafEntityKind = "chapter" | "file";
 export type EntityKind = LeafEntityKind | "folder";

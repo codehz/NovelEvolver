@@ -6,8 +6,10 @@ import type {
   ChangeTextComparisonTarget,
   ChangesSnapshot,
 } from "./worktree-changes-rpc";
+import type { WorktreeDomain } from "./worktree-domain";
 
-export type HistoryDomain = "manuscript" | "resource";
+/** @deprecated Prefer {@link WorktreeDomain}. */
+export type HistoryDomain = WorktreeDomain;
 
 export type HistoryTarget =
   | {

@@ -85,3 +85,18 @@ AppRpcRoot
 - Server 侧缓存的 session/workspace handle **由 server 拥有**（如 `ProjectSession` 的 branch workspace map）。
 - Renderer **不得**在 scope unmount 时 dispose 这类缓存句柄，否则会得到 zombie（例如 `subscribeChanges` 空流结束、UI 永久 loading）。
 - 仅对「本次 RPC 会话根打开、且明确由客户端持有」的对象使用 `wrapDisposable`（如 `openProject` 返回的 `ProjectSession`）。
+
+### 范例：`ProjectAi` 三子 handle
+
+```ts
+// ProjectSession.ai
+interface ProjectAi extends RpcTarget {
+  readonly active: AiActiveChatHandle; // State feed: subscribe() → AiChatEvent
+  readonly conversations: AiConversationsHandle; // Directory feed: subscribe() → snapshot-only
+  readonly catalog: AiCatalogHandle; // pull listModels / listAgents
+}
+```
+
+- 活跃会话回合与选择写入在 `active`；目录 CRUD/search 在 `conversations`；模型/Agent 只读目录在 `catalog`。
+- 会话目录 **不含** `activeConversationId`（避免与 active snapshot 双源）。
+- 搜索保持 pull（`conversations.search`），不把 query 塞进订阅状态。
