@@ -47,6 +47,7 @@ export {
   RECENT_TOOLS_MAX,
   serializeSubagentProgress,
   SUBAGENT_PROGRESS_KIND,
+  toSubagentToolView,
   truncatePartialSummary,
   type BuildSubagentProgressInput,
   type SubagentProgress,

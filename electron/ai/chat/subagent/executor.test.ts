@@ -186,6 +186,7 @@ describe("executeSubagentToolCall", () => {
             ]),
             resultText: '{"ok":true}',
             errorMessage: null,
+            view: null,
           }),
         },
       },

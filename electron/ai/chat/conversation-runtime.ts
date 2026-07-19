@@ -45,11 +45,7 @@ import { createPendingUserInputFromRequest, type PendingToolBatch } from "./pend
 import { countCommittedAssistantParts, rebuildLastRequestInput } from "./request-history";
 import { resolveReasoningLevelForModel } from "./selectable-models";
 import { expandSlashForModel } from "./slash-expand";
-import {
-  executeSubagentToolCall,
-  RUN_SUBAGENT_TOOL_NAME,
-  serializeSubagentProgress,
-} from "./subagent";
+import { executeSubagentToolCall, RUN_SUBAGENT_TOOL_NAME, toSubagentToolView } from "./subagent";
 
 type RuntimeEventListener = (event: AiChatEvent) => void;
 
@@ -732,7 +728,7 @@ export class AiConversationRuntime {
             status: "awaiting_user",
             resultText: null,
             errorMessage: null,
-            progressText: null,
+            view: execution.view,
           }),
         );
         pendingInputs.push(pending);
@@ -744,7 +740,7 @@ export class AiConversationRuntime {
           status: execution.errorMessage === null ? "complete" : "error",
           resultText: execution.resultText,
           errorMessage: execution.errorMessage,
-          progressText: null,
+          view: execution.view,
         }),
       );
       resolvedResultsByCallId.set(call.id, execution.toolResult);
@@ -816,10 +812,10 @@ export class AiConversationRuntime {
         if (this.#disposed || signal.aborted) {
           return;
         }
-        // UI-only live progress; never persist every tick.
+        // UI-only live view; never forwarded to the model.
         this.#emitDelta(
           this.#state.updateAssistantPart(assistantMessageId, call.id, {
-            progressText: serializeSubagentProgress(progress),
+            view: toSubagentToolView(progress),
           }),
         );
       },

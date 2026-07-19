@@ -1,6 +1,8 @@
+import type { AiSubagentToolView } from "#shared/rpc/ai/index";
+
 import { MAX_SUBAGENT_TOOL_ROUNDS } from "./policy";
 
-/** Discriminator for JSON stored in `AiChatToolCall.progressText`. */
+/** @deprecated Internal builder shape; UI consumes `AiSubagentToolView` via `toSubagentToolView`. */
 export const SUBAGENT_PROGRESS_KIND = "subagent_progress" as const;
 
 export const PARTIAL_SUMMARY_THROTTLE_MS = 250;
@@ -117,6 +119,62 @@ export function buildSubagentProgress(input: BuildSubagentProgressInput): Subage
 
 export function serializeSubagentProgress(progress: SubagentProgress): string {
   return JSON.stringify(progress);
+}
+
+/**
+ * Temporary bridge: map the internal progress snapshot onto the typed UI view.
+ * Phase 1 replaces this with a first-class timeline builder (full steps, task, focus).
+ */
+export function toSubagentToolView(
+  progress: SubagentProgress,
+  options?: {
+    task?: string;
+    constraints?: string | null;
+    report?: string | null;
+    runStatus?: AiSubagentToolView["runStatus"];
+    phase?: AiSubagentToolView["phase"];
+  },
+): AiSubagentToolView {
+  const steps = progress.recent_tools.map((tool, index) => ({
+    id: `recent-${index}-${tool.name}`,
+    name: tool.name,
+    status: tool.status,
+    subject: null,
+    outcome: null,
+  }));
+  if (progress.current_tool) {
+    steps.push({
+      id: `current-${progress.current_tool.name}`,
+      name: progress.current_tool.name,
+      status: progress.current_tool.status,
+      subject: null,
+      outcome: null,
+    });
+  }
+
+  return {
+    kind: "subagent",
+    agentId: progress.agent_id,
+    agentName: progress.agent_name,
+    task: options?.task ?? "",
+    constraints: options?.constraints ?? null,
+    focus: [],
+    phase: options?.phase ?? progress.phase,
+    round: progress.round,
+    maxRounds: progress.max_rounds,
+    steps,
+    report: options?.report ?? (progress.partial_summary !== "" ? progress.partial_summary : null),
+    runStatus: options?.runStatus ?? null,
+    artifacts: {
+      wrote: progress.artifacts.wrote,
+      touched:
+        progress.artifacts.touched_count > 0
+          ? Array.from({ length: progress.artifacts.touched_count }, (_, index) => ({
+              id: `touched-${index}`,
+            }))
+          : [],
+    },
+  };
 }
 
 export function parseSubagentProgress(text: string | null | undefined): SubagentProgress | null {

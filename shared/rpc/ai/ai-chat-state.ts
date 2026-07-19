@@ -8,6 +8,7 @@ import type {
   AiChatMessagePatch,
   AiChatSnapshot,
 } from "./ai-rpc";
+import { cloneAiToolView } from "./ai-tool-view";
 
 export function createInitialAiChatSnapshot(model = "mock-assistant"): AiChatSnapshot {
   return {
@@ -31,8 +32,7 @@ export function cloneAiChatAssistantPart(part: AiChatAssistantPart): AiChatAssis
   if (part.type === "tool_call") {
     return {
       ...part,
-      // Legacy persisted rows may omit progressText.
-      progressText: part.progressText ?? null,
+      view: part.view ? cloneAiToolView(part.view) : null,
     };
   }
   return { ...part };
@@ -139,8 +139,14 @@ export function applyAiChatAssistantPartPatch(
             : part.status,
         resultText: patch.resultText !== undefined ? patch.resultText : part.resultText,
         errorMessage: patch.errorMessage !== undefined ? patch.errorMessage : part.errorMessage,
-        progressText:
-          patch.progressText !== undefined ? patch.progressText : (part.progressText ?? null),
+        view:
+          patch.view !== undefined
+            ? patch.view
+              ? cloneAiToolView(patch.view)
+              : null
+            : part.view
+              ? cloneAiToolView(part.view)
+              : null,
       };
   }
 }

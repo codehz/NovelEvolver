@@ -1,6 +1,10 @@
 import type { ToolCallItem, ToolDefinition, ToolResultItem } from "@codehz/ai";
 
-import type { AiChatPendingUserInput, UserInputRequestHandle } from "#shared/rpc/ai/index";
+import type {
+  AiChatPendingUserInput,
+  AiToolView,
+  UserInputRequestHandle,
+} from "#shared/rpc/ai/index";
 
 import type { WorktreeSession } from "../../worktree/session";
 
@@ -37,6 +41,8 @@ export type ToolExecutionResult = {
   toolResult: ToolResultItem;
   resultText: string | null;
   errorMessage: string | null;
+  /** UI projection; null when no custom card is available. */
+  view: AiToolView | null;
   userInputRequest?: UserInputRequest;
 };
 

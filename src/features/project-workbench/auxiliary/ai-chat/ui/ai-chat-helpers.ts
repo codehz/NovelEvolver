@@ -8,7 +8,7 @@ import type {
 
 import {
   describeRunningSubagentStatus,
-  parseSubagentProgressUi,
+  progressUiFromToolView,
 } from "../tools/subagent-progress-ui";
 
 /** Provider auxiliary warnings from `@codehz/ai` that are not actionable in the chat UI. */
@@ -72,7 +72,7 @@ export function describeAssistantStreamingMeta(message: AiChatAssistantMessage):
 
   const runningSubagent = findRunningSubagentToolCall(message);
   if (runningSubagent) {
-    const progress = parseSubagentProgressUi(runningSubagent.progressText);
+    const progress = progressUiFromToolView(runningSubagent.view);
     if (progress) {
       return describeRunningSubagentStatus(progress);
     }

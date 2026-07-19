@@ -5,7 +5,7 @@ import { getObject, getString, parseObject } from "./presenter-parse";
 import type { ToolPresenter } from "./presenter-types";
 import {
   describeSubagentProgressIndicator,
-  parseSubagentProgressUi,
+  progressUiFromToolView,
   subagentPhaseLabel,
 } from "./subagent-progress-ui";
 
@@ -77,25 +77,31 @@ export const runSubagentPresenter: ToolPresenter = (toolCall) => {
     toolCall.status === "complete" || toolCall.status === "error"
       ? parseObject(toolCall.resultText)
       : null;
-  const progress =
-    toolCall.status === "running" ? parseSubagentProgressUi(toolCall.progressText) : null;
+  const progress = progressUiFromToolView(toolCall.view);
   const agentId =
     getString(result, "agent_id") ??
     progress?.agentId ??
     getString(args, "agent_id") ??
     "未知 Agent";
   const agentName = getString(result, "agent_name") ?? progress?.agentName ?? null;
-  const task = getString(args, "task") ?? "未指定任务";
+  const task =
+    (progress?.task && progress.task !== "" ? progress.task : null) ??
+    getString(args, "task") ??
+    "未指定任务";
   const taskPreview = truncateText(task, 48);
-  const status = getString(result, "status");
-  const summary = getString(result, "summary");
+  const status = getString(result, "status") ?? progress?.runStatus ?? null;
+  const summary = getString(result, "summary") ?? progress?.report ?? null;
   const error = getString(result, "error") ?? toolCall.errorMessage;
   const artifacts = getObject(result?.artifacts);
   const wrote =
     typeof artifacts?.wrote === "boolean" ? artifacts.wrote : progress ? progress.wrote : null;
   const touched = Array.isArray(artifacts?.touched_node_ids)
     ? artifacts.touched_node_ids.filter((id): id is string => typeof id === "string")
-    : [];
+    : progress
+      ? progress.steps.length > 0 && progress.touchedCount > 0
+        ? Array.from({ length: progress.touchedCount }, (_, index) => `节点 ${index + 1}`)
+        : []
+      : [];
   const focus = Array.isArray(args?.focus) ? args.focus : [];
   const constraints = getString(args, "constraints");
   const agentLabel = agentName ?? agentId;

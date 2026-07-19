@@ -2,6 +2,7 @@ import type { RpcTarget } from "capnweb";
 
 import type { AiReasoningLevel } from "../services/settings-rpc";
 import type { RpcSubscriptionResult } from "../transport/stream";
+import type { AiToolView } from "./ai-tool-view";
 
 export type AiChatMessageUsage = {
   /**
@@ -56,13 +57,14 @@ export type AiChatToolCall = {
   name: string;
   argumentsText: string;
   status: AiChatToolCallStatus;
+  /** Model-facing result payload (JSON/text). Not the primary UI source. */
   resultText: string | null;
   errorMessage: string | null;
   /**
-   * UI-only live progress payload (JSON string). Not forwarded to the model.
-   * Cleared when the tool call reaches a terminal status.
+   * UI-only typed projection. Live updates while running; retained after complete.
+   * Never forwarded to the model.
    */
-  progressText: string | null;
+  view: AiToolView | null;
 };
 
 export type AskUserChoice = {
@@ -118,7 +120,7 @@ export type AiChatAssistantPartPatch = {
   resultText?: string | null;
   errorMessage?: string | null;
   /** UI-only; omitted means leave unchanged. */
-  progressText?: string | null;
+  view?: AiToolView | null;
 };
 
 /**

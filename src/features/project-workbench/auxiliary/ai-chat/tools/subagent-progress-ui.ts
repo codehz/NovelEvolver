@@ -1,14 +1,15 @@
+import type { AiSubagentToolView, AiToolView } from "#shared/rpc/ai/index";
+
 import { toolActionLabel } from "./presenter-format";
 
-/** UI-side parse of `AiChatToolCall.progressText` for `run_subagent`. */
-
-export type SubagentProgressUiPhase = "starting" | "thinking" | "tool" | "finalizing";
+export type SubagentProgressUiPhase = AiSubagentToolView["phase"];
 
 export type SubagentProgressUiTool = {
   name: string;
   status: "running" | "complete" | "error";
 };
 
+/** UI-facing snapshot derived from `AiChatToolCall.view` when kind is subagent. */
 export type SubagentProgressUi = {
   agentId: string;
   agentName: string;
@@ -20,80 +21,45 @@ export type SubagentProgressUi = {
   partialSummary: string;
   wrote: boolean;
   touchedCount: number;
+  task: string;
+  report: string | null;
+  runStatus: AiSubagentToolView["runStatus"];
+  steps: AiSubagentToolView["steps"];
 };
 
-function isPhase(value: unknown): value is SubagentProgressUiPhase {
-  return value === "starting" || value === "thinking" || value === "tool" || value === "finalizing";
+export function readSubagentView(view: AiToolView | null | undefined): AiSubagentToolView | null {
+  return view?.kind === "subagent" ? view : null;
 }
 
-function parseTool(value: unknown): SubagentProgressUiTool | null {
-  if (typeof value !== "object" || value === null || Array.isArray(value)) {
-    return null;
-  }
-  const record = value as Record<string, unknown>;
-  if (typeof record.name !== "string") {
-    return null;
-  }
-  if (record.status !== "running" && record.status !== "complete" && record.status !== "error") {
-    return null;
-  }
-  return { name: record.name, status: record.status };
+export function subagentViewToProgressUi(view: AiSubagentToolView): SubagentProgressUi {
+  const running = [...view.steps].reverse().find((step) => step.status === "running") ?? null;
+  const recentTools = view.steps
+    .filter((step) => step.status !== "running")
+    .map((step) => ({ name: step.name, status: step.status }));
+
+  return {
+    agentId: view.agentId,
+    agentName: view.agentName,
+    phase: view.phase,
+    round: view.round,
+    maxRounds: view.maxRounds,
+    currentTool: running ? { name: running.name, status: running.status } : null,
+    recentTools,
+    partialSummary: view.report ?? "",
+    wrote: view.artifacts.wrote,
+    touchedCount: view.artifacts.touched.length,
+    task: view.task,
+    report: view.report,
+    runStatus: view.runStatus,
+    steps: view.steps,
+  };
 }
 
-export function parseSubagentProgressUi(
-  text: string | null | undefined,
+export function progressUiFromToolView(
+  view: AiToolView | null | undefined,
 ): SubagentProgressUi | null {
-  if (typeof text !== "string" || text.trim() === "") {
-    return null;
-  }
-  try {
-    const parsed: unknown = JSON.parse(text);
-    if (typeof parsed !== "object" || parsed === null || Array.isArray(parsed)) {
-      return null;
-    }
-    const record = parsed as Record<string, unknown>;
-    if (record.kind !== "subagent_progress") {
-      return null;
-    }
-    if (typeof record.agent_id !== "string" || typeof record.agent_name !== "string") {
-      return null;
-    }
-    if (!isPhase(record.phase)) {
-      return null;
-    }
-
-    const recentTools: SubagentProgressUiTool[] = [];
-    if (Array.isArray(record.recent_tools)) {
-      for (const entry of record.recent_tools) {
-        const tool = parseTool(entry);
-        if (tool) {
-          recentTools.push(tool);
-        }
-      }
-    }
-
-    const artifacts =
-      typeof record.artifacts === "object" &&
-      record.artifacts !== null &&
-      !Array.isArray(record.artifacts)
-        ? (record.artifacts as Record<string, unknown>)
-        : {};
-
-    return {
-      agentId: record.agent_id,
-      agentName: record.agent_name,
-      phase: record.phase,
-      round: typeof record.round === "number" ? record.round : 0,
-      maxRounds: typeof record.max_rounds === "number" ? record.max_rounds : 8,
-      currentTool: parseTool(record.current_tool),
-      recentTools,
-      partialSummary: typeof record.partial_summary === "string" ? record.partial_summary : "",
-      wrote: artifacts.wrote === true,
-      touchedCount: typeof artifacts.touched_count === "number" ? artifacts.touched_count : 0,
-    };
-  } catch {
-    return null;
-  }
+  const subagent = readSubagentView(view);
+  return subagent ? subagentViewToProgressUi(subagent) : null;
 }
 
 export function subagentPhaseLabel(phase: SubagentProgressUiPhase): string {
@@ -106,6 +72,8 @@ export function subagentPhaseLabel(phase: SubagentProgressUiPhase): string {
       return "调用工具";
     case "finalizing":
       return "收尾中";
+    case "done":
+      return "已完成";
   }
 }
 
@@ -114,6 +82,17 @@ export function describeSubagentProgressIndicator(progress: SubagentProgressUi):
   if (progress.phase === "tool" && progress.currentTool) {
     const toolLabel = toolActionLabel(progress.currentTool.name);
     return roundLabel ? `${toolLabel} · ${roundLabel}` : toolLabel;
+  }
+  if (progress.phase === "done" && progress.runStatus) {
+    const status =
+      progress.runStatus === "completed"
+        ? "完成"
+        : progress.runStatus === "failed"
+          ? "失败"
+          : progress.runStatus === "aborted"
+            ? "已中止"
+            : "需用户";
+    return status;
   }
   const phase = subagentPhaseLabel(progress.phase);
   return roundLabel ? `${phase} · ${roundLabel}` : phase;

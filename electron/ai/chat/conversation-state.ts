@@ -913,7 +913,7 @@ export class AiConversationState {
         status: "pending",
         resultText: null,
         errorMessage: null,
-        progressText: null,
+        view: null,
       });
     }
 
@@ -1230,7 +1230,7 @@ export class AiConversationState {
           status: fallback?.type === "tool_call" ? fallback.status : "pending",
           resultText: fallback?.type === "tool_call" ? fallback.resultText : null,
           errorMessage: fallback?.type === "tool_call" ? fallback.errorMessage : null,
-          progressText: fallback?.type === "tool_call" ? (fallback.progressText ?? null) : null,
+          view: fallback?.type === "tool_call" ? (fallback.view ?? null) : null,
         };
       case "opaque":
         return null;
@@ -1306,10 +1306,9 @@ export class AiConversationState {
         if (current.errorMessage !== canonical.errorMessage) {
           patch.errorMessage = canonical.errorMessage;
         }
-        const currentProgress = current.progressText ?? null;
-        const canonicalProgress = canonical.progressText ?? null;
-        if (currentProgress !== canonicalProgress) {
-          patch.progressText = canonicalProgress;
+        // Reference equality is enough: live patches replace the whole view object.
+        if (current.view !== canonical.view) {
+          patch.view = canonical.view;
         }
         return Object.keys(patch).length > 0 ? patch : null;
       }

@@ -7,7 +7,7 @@ import { StatusBarItemInfo } from "#workbench/chrome";
 import { useAiChatActions, useAiChatStatusMeta } from "./state/use-ai-chat-state";
 import {
   describeRunningSubagentStatus,
-  parseSubagentProgressUi,
+  progressUiFromToolView,
 } from "./tools/subagent-progress-ui";
 import {
   describeContextUsageRatio,
@@ -41,7 +41,7 @@ export function AiContextStatusItem() {
   const runningSubagent =
     latestMessage?.role === "assistant" ? findRunningSubagentToolCall(latestMessage) : null;
   const runningSubagentProgress = runningSubagent
-    ? parseSubagentProgressUi(runningSubagent.progressText)
+    ? progressUiFromToolView(runningSubagent.view)
     : null;
   const pendingTool =
     latestMessage?.role === "assistant" &&

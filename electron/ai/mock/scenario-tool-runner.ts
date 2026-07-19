@@ -36,6 +36,7 @@ export function createScenarioToolRunner(
           ]),
           resultText: null,
           errorMessage: message,
+          view: null,
         };
       }
 
@@ -44,6 +45,7 @@ export function createScenarioToolRunner(
         toolResult: toolResultItem(call.id, call.name, result.outcome, [...result.content]),
         resultText: resultText === "" ? null : resultText,
         errorMessage: result.errorMessage ?? (result.outcome === "error" ? resultText : null),
+        view: null,
       };
     },
   };

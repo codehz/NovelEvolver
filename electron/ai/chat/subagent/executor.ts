@@ -88,8 +88,12 @@ function emptyArtifacts(): SubagentArtifacts {
   return { touched_node_ids: [], wrote: false };
 }
 
-function toToolExecution(call: ToolCallItem, result: SubagentRunResult): ToolExecutionResult {
-  return okJson(call, result);
+function toToolExecution(
+  call: ToolCallItem,
+  result: SubagentRunResult,
+  view: ToolExecutionResult["view"] = null,
+): ToolExecutionResult {
+  return okJson(call, result, view);
 }
 
 function resolveBackend(
@@ -249,7 +253,7 @@ export async function executeSubagentToolCall(options: {
   depth: number;
   signal: AbortSignal;
   deps: SubagentExecutorDeps;
-  /** Optional UI progress sink (serialized by the runtime into `progressText`). */
+  /** Optional UI progress sink (mapped to `AiChatToolCall.view` by the runtime). */
   onProgress?: (progress: SubagentProgress) => void;
 }): Promise<ToolExecutionResult> {
   const { call, depth, signal, deps, onProgress } = options;
