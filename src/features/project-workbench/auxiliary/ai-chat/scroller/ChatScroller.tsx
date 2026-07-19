@@ -231,7 +231,7 @@ export function ChatScrollerItem({
   return (
     <div
       ref={setRef}
-      className={cn("min-w-0 shrink-0 [overflow-anchor:none]", className)}
+      className={cn("min-w-0 shrink-0 overflow-anchor-none", className)}
       data-message-id={messageId}
       data-turn-anchor={turnAnchor ? "true" : undefined}
       data-chat-meta={pathMember ? undefined : ""}

@@ -15,6 +15,9 @@
   --app-region-drag: drag;
   --app-region-no-drag: no-drag;
 
+  --overflow-anchor-auto: auto;
+  --overflow-anchor-none: none;
+
   --font-display: "MiSans", sans-serif;
   --font-mono: "Maple Mono CN", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
   --text-2xs: 0.6875rem;
@@ -178,6 +181,10 @@
 
 @utility app-region-* {
   -webkit-app-region: --value(--app-region-*);
+}
+
+@utility overflow-anchor-* {
+  overflow-anchor: --value(--overflow-anchor-*);
 }
 
 @utility counter-reset-* {
