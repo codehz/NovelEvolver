@@ -169,12 +169,17 @@ export type AiAgentConfigPublic = {
   defaultModelId: string | null;
   availableToolNames: string[];
   builtin: boolean;
+  /** Shown in the chat agent selector when true. */
+  userSelectable: boolean;
+  /** Allowed as a `run_subagent` target when true. */
+  subagentEligible: boolean;
 };
 
 /**
  * Create/update payload for `upsertAiAgent`.
  * When `id` is a builtin agent id, only `defaultModelId` is applied;
- * name / systemPrompt / availableToolNames are ignored.
+ * name / systemPrompt / availableToolNames / userSelectable / subagentEligible
+ * are ignored (builtin flags are code-owned).
  */
 export type AiAgentConfigWrite = {
   id?: string;
@@ -182,6 +187,8 @@ export type AiAgentConfigWrite = {
   systemPrompt: string;
   defaultModelId: string | null;
   availableToolNames: string[];
+  userSelectable: boolean;
+  subagentEligible: boolean;
 };
 
 export type AiAgentsSettingsSnapshot = {
