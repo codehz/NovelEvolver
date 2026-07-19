@@ -76,6 +76,8 @@ function builtinWritingAssistant(): AiAgentConfigPublic {
     defaultModelId: null,
     availableToolNames: [...ALL_TOOL_NAMES],
     builtin: true,
+    userSelectable: true,
+    subagentEligible: false,
   };
 }
 
@@ -87,6 +89,8 @@ function builtinConsistencyReviewer(): AiAgentConfigPublic {
     defaultModelId: null,
     availableToolNames: [...READ_TOOL_NAMES],
     builtin: true,
+    userSelectable: false,
+    subagentEligible: true,
   };
 }
 
@@ -98,6 +102,45 @@ function builtinChapterWriter(): AiAgentConfigPublic {
     defaultModelId: null,
     availableToolNames: [...CHAPTER_WRITER_TOOL_NAMES],
     builtin: true,
+    userSelectable: false,
+    subagentEligible: true,
+  };
+}
+
+/** Missing flags on legacy custom agents default to both enabled. */
+function parseBooleanFlag(value: unknown, fallback: boolean): boolean {
+  return typeof value === "boolean" ? value : fallback;
+}
+
+function normalizeStoredAgent(raw: unknown): StoredAgentRecord | null {
+  if (raw == null || typeof raw !== "object" || Array.isArray(raw)) {
+    return null;
+  }
+  const record = raw as Partial<StoredAgentRecord> & { id?: unknown };
+  if (typeof record.id !== "string" || record.id.trim() === "") {
+    return null;
+  }
+  if (typeof record.name !== "string" || typeof record.systemPrompt !== "string") {
+    return null;
+  }
+  if (!Array.isArray(record.availableToolNames)) {
+    return null;
+  }
+  const defaultModelId =
+    record.defaultModelId === null || typeof record.defaultModelId === "string"
+      ? record.defaultModelId
+      : null;
+
+  return {
+    id: record.id,
+    name: record.name,
+    systemPrompt: record.systemPrompt,
+    defaultModelId,
+    availableToolNames: record.availableToolNames.filter(
+      (name): name is string => typeof name === "string",
+    ),
+    userSelectable: parseBooleanFlag(record.userSelectable, true),
+    subagentEligible: parseBooleanFlag(record.subagentEligible, true),
   };
 }
 
@@ -181,6 +224,8 @@ export class AiAgentsStore {
       systemPrompt,
       defaultModelId: input.defaultModelId,
       availableToolNames,
+      userSelectable: input.userSelectable,
+      subagentEligible: input.subagentEligible,
     };
     if (input.id) {
       const index = this.#data.agents.findIndex((agent) => agent.id === input.id);
@@ -259,9 +304,14 @@ export class AiAgentsStore {
     }
     try {
       const parsed = JSON.parse(readFileSync(this.#filePath, "utf8")) as Partial<StoredFile>;
+      const agents = Array.isArray(parsed.agents)
+        ? parsed.agents
+            .map((agent) => normalizeStoredAgent(agent))
+            .filter((agent): agent is StoredAgentRecord => agent !== null)
+        : [];
       return {
         version: FILE_VERSION,
-        agents: Array.isArray(parsed.agents) ? parsed.agents : [],
+        agents,
         builtinDefaultModelIds: parseBuiltinDefaultModelIds(parsed.builtinDefaultModelIds),
       };
     } catch {
