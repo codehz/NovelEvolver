@@ -5,6 +5,7 @@ import { ManuscriptSectionBody } from "#workbench/explorer/manuscript/Manuscript
 import { ResourceLibrarySectionBody } from "#workbench/explorer/resource-library/ResourceLibrarySection";
 import { FileHistorySectionBody } from "#workbench/history/FileHistorySection";
 
+// Lower panes keep these preferred heights; manuscript (first expanded) absorbs remaining body space via SidebarPaneStack geometry.
 const DEFAULT_MANUSCRIPT_BODY_HEIGHT = 168;
 const DEFAULT_REFERENCE_BODY_HEIGHT = 148;
 const DEFAULT_HISTORY_BODY_HEIGHT = 116;
