@@ -105,26 +105,31 @@ export const settingsPanelHeaderClass = cn("flex items-start justify-between gap
 
 /**
  * Dual-pane shell (provider rail + detail).
- * Rail is transparent over the dark dialog shell; detail is the elevated inset island.
+ * Single spacing owner: `p-2` outer inset + `gap-2` between rail and detail island.
+ * Children must not re-apply horizontal rail/detail padding that would double the gap.
  */
-export const settingsDualPaneClass = cn("flex min-h-0 flex-1");
+export const settingsDualPaneClass = cn("flex min-h-0 flex-1 gap-2 p-2");
 
-export const settingsDualPaneRailClass = cn("flex w-44 shrink-0 flex-col");
+/** Left master column — no outer pad; shell owns inset/gap. */
+export const settingsDualPaneRailClass = cn("flex w-44 shrink-0 flex-col gap-1");
 
 export const settingsDualPaneRailLabelClass = cn(
-  "shrink-0 px-2.5 py-1.5 text-2xs font-medium text-app-muted",
+  "shrink-0 px-2 py-1 text-2xs font-medium text-app-muted",
 );
 
-export const settingsDualPaneRailScrollClass = cn("min-h-0 flex-1 overflow-y-auto px-1.5 pb-2");
+export const settingsDualPaneRailScrollClass = cn("min-h-0 flex-1 overflow-y-auto");
 
 export const settingsDualPaneRailListClass = cn("flex flex-col gap-0.5");
 
-/** Right detail column container (outer; inset + surface applied by SettingsDetailPane). */
+/** Bottom primary action under the rail list — no extra pad (shell `p-2` + rail `gap-1`). */
+export const settingsDualPaneRailFooterClass = cn("shrink-0");
+
+/** Right detail column — surface fill only; shell owns outer inset/gap. */
 export const settingsDualPaneDetailClass = cn("flex min-h-0 min-w-0 flex-1 flex-col");
 
 /**
- * 8px outer inset around the detail card — matches workbench `WORKBENCH_SIDEBAR_INSET`.
- * Used by SettingsDetailPane and model subpage form area.
+ * Solo inset wrapper when there is no dual-pane shell (e.g. model subpage form).
+ * Do not combine with `settingsDualPaneClass` — that shell already applies `p-2`.
  */
 export const settingsDetailInsetClass = cn("flex min-h-0 min-w-0 flex-1 flex-col p-2");
 

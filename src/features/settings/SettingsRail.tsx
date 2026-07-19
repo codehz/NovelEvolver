@@ -4,6 +4,7 @@ import { Button } from "#app/shared/ui";
 
 import {
   settingsDualPaneRailClass,
+  settingsDualPaneRailFooterClass,
   settingsDualPaneRailLabelClass,
   settingsDualPaneRailListClass,
   settingsDualPaneRailScrollClass,
@@ -35,7 +36,7 @@ export function SettingsRail({
           {children}
         </ul>
       </div>
-      <div className="shrink-0 p-2">
+      <div className={settingsDualPaneRailFooterClass}>
         <Button className="w-full" disabled={addDisabled} variant="primary" onClick={onAdd}>
           <span aria-hidden="true" className="icon-[codicon--add] text-sm" />
           {addLabel}
