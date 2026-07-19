@@ -2,6 +2,7 @@ import type { ToolCallItem } from "@codehz/ai";
 
 import { toErrorMessage } from "../ai-utils";
 import { TOOL_SPEC_BY_NAME } from "./catalog";
+import { projectToolView } from "./project-view";
 import { err, okJson, pendingUserInput } from "./result";
 import {
   isUserInputRequest,
@@ -17,7 +18,15 @@ export function createToolRunner(resolveWorktree: ResolveWorktree): ToolRunner {
     async execute(call: ToolCallItem): Promise<ToolExecutionResult> {
       const spec = TOOL_SPEC_BY_NAME.get(call.name);
       if (!spec) {
-        return err(call, `Unknown tool: ${call.name}`);
+        return err(
+          call,
+          `Unknown tool: ${call.name}`,
+          projectToolView({
+            name: call.name,
+            argumentsText: call.argumentsText,
+            errorMessage: `Unknown tool: ${call.name}`,
+          }),
+        );
       }
       try {
         const output = spec.run({
@@ -25,11 +34,35 @@ export function createToolRunner(resolveWorktree: ResolveWorktree): ToolRunner {
           call,
         });
         if (isUserInputRequest(output)) {
-          return pendingUserInput(call, output);
+          return pendingUserInput(
+            call,
+            output,
+            projectToolView({
+              name: call.name,
+              argumentsText: call.argumentsText,
+            }),
+          );
         }
-        return okJson(call, output);
+        return okJson(
+          call,
+          output,
+          projectToolView({
+            name: call.name,
+            argumentsText: call.argumentsText,
+            result: output,
+          }),
+        );
       } catch (error) {
-        return err(call, toErrorMessage(error));
+        const message = toErrorMessage(error);
+        return err(
+          call,
+          message,
+          projectToolView({
+            name: call.name,
+            argumentsText: call.argumentsText,
+            errorMessage: message,
+          }),
+        );
       }
     },
   };

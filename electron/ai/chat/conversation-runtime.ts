@@ -39,6 +39,7 @@ import {
   type ToolExecutionResult,
   type ToolRunner,
 } from "../tools";
+import { projectToolView } from "../tools/project-view";
 import { AiConversationState } from "./conversation-state";
 import { expandMentionsForModel } from "./mention-expand";
 import { createPendingUserInputFromRequest, type PendingToolBatch } from "./pending-tool-batch";
@@ -836,11 +837,46 @@ export class AiConversationRuntime {
       const entry = batch.pendingInputs[i]!;
       const result = results[i]!;
       batch.resolvedResultsByCallId.set(entry.callId, result);
+      const resultText = joinContentBlocksText(result.content);
+      const call = batch.calls.find((item) => item.id === entry.callId);
+      const current = this.#state
+        .getSnapshot()
+        .messages.find((message) => message.id === batch.assistantMessageId);
+      const currentPart =
+        current?.role === "assistant"
+          ? current.parts.find((part) => part.id === entry.callId)
+          : null;
+      const currentView = currentPart?.type === "tool_call" ? currentPart.view : null;
+      let nextView = currentView;
+      if (currentView?.kind === "ask_user") {
+        let answer: string | null = null;
+        try {
+          const parsed: unknown = JSON.parse(resultText);
+          if (
+            typeof parsed === "object" &&
+            parsed !== null &&
+            !Array.isArray(parsed) &&
+            typeof (parsed as { answer?: unknown }).answer === "string"
+          ) {
+            answer = (parsed as { answer: string }).answer;
+          }
+        } catch {
+          answer = resultText || null;
+        }
+        nextView = { ...currentView, answer };
+      } else if (!currentView && call) {
+        nextView = projectToolView({
+          name: call.name,
+          argumentsText: call.argumentsText,
+          resultText,
+        });
+      }
       this.#emitDelta(
         this.#state.updateAssistantPart(batch.assistantMessageId, entry.callId, {
           status: "complete",
-          resultText: joinContentBlocksText(result.content),
+          resultText,
           errorMessage: null,
+          view: nextView,
         }),
       );
     }

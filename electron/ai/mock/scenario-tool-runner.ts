@@ -1,6 +1,7 @@
 import { toolResultItem } from "@codehz/ai";
 
 import type { ToolExecutionResult, ToolRunner } from "../tools";
+import { projectToolView } from "../tools/project-view";
 import type { MockScenarioDefinition } from "./scenario-types";
 
 function contentText(content: readonly { type: string; text?: string; json?: unknown }[]): string {
@@ -41,11 +42,17 @@ export function createScenarioToolRunner(
       }
 
       const resultText = contentText(result.content);
+      const errorMessage = result.errorMessage ?? (result.outcome === "error" ? resultText : null);
       return {
         toolResult: toolResultItem(call.id, call.name, result.outcome, [...result.content]),
         resultText: resultText === "" ? null : resultText,
-        errorMessage: result.errorMessage ?? (result.outcome === "error" ? resultText : null),
-        view: null,
+        errorMessage,
+        view: projectToolView({
+          name: call.name,
+          argumentsText: call.argumentsText,
+          resultText: resultText === "" ? null : resultText,
+          errorMessage,
+        }),
       };
     },
   };
