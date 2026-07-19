@@ -60,7 +60,7 @@ describe("resolvePaneHeights", () => {
     expect(resolvedHeights).toEqual([400]);
   });
 
-  test("multiple panes respect preferred then remainder on last", () => {
+  test("multiple panes respect preferred then remainder on first", () => {
     const { resolvedHeights } = resolvePaneHeights(
       [
         pane("a", { defaultBodyHeight: 100 }),
@@ -70,9 +70,9 @@ describe("resolvePaneHeights", () => {
       { a: 100, b: 120, c: 80 },
       400,
     );
-    expect(resolvedHeights[0]).toBe(100);
+    expect(resolvedHeights[0]).toBe(200);
     expect(resolvedHeights[1]).toBe(120);
-    expect(resolvedHeights[2]).toBe(180);
+    expect(resolvedHeights[2]).toBe(80);
     expect(sum(resolvedHeights)).toBe(400);
   });
 
@@ -102,7 +102,26 @@ describe("resolveDisplayHeights", () => {
     expect(displayHeights.b).toBe(0);
     expect(displayHeights.a).toBe(resolvedHeights[0]);
     expect(displayHeights.c).toBe(resolvedHeights[1]);
+    // First expanded pane absorbs remainder after lower preferred heights.
+    expect(displayHeights.a).toBe(200);
+    expect(displayHeights.c).toBe(100);
     expect(displayHeights.a! + displayHeights.c!).toBe(300);
+  });
+
+  test("first expanded among remaining absorbs remainder when leading pane collapsed", () => {
+    const { displayHeights } = resolveDisplayHeights(
+      [
+        pane("a", { expanded: false, defaultBodyHeight: 100 }),
+        pane("b", { expanded: true, defaultBodyHeight: 100 }),
+        pane("c", { expanded: true, defaultBodyHeight: 80 }),
+      ],
+      { a: 100, b: 100, c: 80 },
+      300,
+    );
+
+    expect(displayHeights.a).toBe(0);
+    expect(displayHeights.b).toBe(220);
+    expect(displayHeights.c).toBe(80);
   });
 
   test("all collapsed yields zero display heights", () => {
