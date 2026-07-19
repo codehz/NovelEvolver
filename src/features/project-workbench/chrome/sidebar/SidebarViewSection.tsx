@@ -69,7 +69,11 @@ export function SidebarViewSection({
         <div
           id={panelId}
           aria-hidden={!expanded}
-          className={cn(sidebarSectionBodyShellClass, bodyClassName)}
+          className={cn(
+            sidebarSectionBodyShellClass,
+            !expanded && "pointer-events-none",
+            bodyClassName,
+          )}
           style={{ height: bodyHeight }}
         >
           <div className={sidebarSectionBodyScrollClass}>{children}</div>

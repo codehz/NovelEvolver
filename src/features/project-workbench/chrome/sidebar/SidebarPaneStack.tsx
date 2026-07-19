@@ -26,6 +26,7 @@ import {
 import { SidebarSectionRowResizeHandle, SidebarViewSection } from "./SidebarViewSection";
 
 const PANE_HEIGHT_ANIMATION_MS = 250;
+const noop = () => {};
 
 type SidebarPanePhase = "idle" | "animating" | "resizing";
 
@@ -377,13 +378,7 @@ export function SidebarPaneStack({ panes, className }: SidebarPaneStackProps) {
               expanded={pane.expanded}
               panelId={pane.panelId}
               title={pane.title}
-              onToggleExpanded={
-                canToggle
-                  ? pane.onToggleExpanded
-                  : () => {
-                      /* ignore mid-animation / resize */
-                    }
-              }
+              onToggleExpanded={canToggle ? pane.onToggleExpanded : noop}
             >
               {pane.body}
             </SidebarViewSection>
