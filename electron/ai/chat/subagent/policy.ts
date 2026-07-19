@@ -1,6 +1,16 @@
 /** Tool name used by the orchestrator to spawn a nested specialist run. */
 export const RUN_SUBAGENT_TOOL_NAME = "run_subagent" as const;
 
+/**
+ * Ensure the target agent is allowed to run as a nested subagent.
+ * Custom agents may opt out; builtin writing assistant is never eligible.
+ */
+export function assertSubagentEligible(agent: { name: string; subagentEligible: boolean }): void {
+  if (!agent.subagentEligible) {
+    throw new Error(`Agent「${agent.name}」不可用作子代理。`);
+  }
+}
+
 /** Nested subagent runs are depth-0 only (no further spawn). */
 export const MAX_SUBAGENT_DEPTH = 1;
 

@@ -266,7 +266,8 @@ export class ProjectAiChatController {
   listSelectableAgents(): AiChatSelectableAgent[] {
     return this.#getAiAgentsStore()
       .getSnapshot()
-      .agents.map((agent) => ({
+      .agents.filter((agent) => agent.userSelectable)
+      .map((agent) => ({
         id: agent.id,
         name: agent.name,
         defaultModelId: agent.defaultModelId,
@@ -281,7 +282,13 @@ export class ProjectAiChatController {
       throw new Error("Agent id 不能为空。");
     }
 
-    const agent = this.#getAiAgentsStore().getRuntimeConfig(normalized);
+    const agent = this.#getAiAgentsStore().findRuntimeConfig(normalized);
+    if (!agent) {
+      throw new Error(`Agent「${normalized}」不存在。`);
+    }
+    if (!agent.userSelectable) {
+      throw new Error(`Agent「${agent.name}」未开放给用户选择。`);
+    }
 
     const modelsSnapshot = this.#getAiModelsStore().getSnapshot();
     const targetModelId =

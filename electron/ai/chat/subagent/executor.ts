@@ -45,6 +45,7 @@ import { buildSubagentUserMessage, parseRunSubagentArgs } from "./context";
 import { resolveFocusSnapshots } from "./focus-inject";
 import {
   assertSubagentDepth,
+  assertSubagentEligible,
   MAX_SUBAGENT_TOOL_ROUNDS,
   resolveSubagentModelId,
   RUN_SUBAGENT_TOOL_NAME,
@@ -244,6 +245,19 @@ export async function executeSubagentToolCall(options: {
       );
     }
     agentName = agent.name;
+
+    try {
+      assertSubagentEligible(agent);
+    } catch (error) {
+      return toToolExecution(
+        call,
+        failedSubagentResult({
+          agentId: agent.id,
+          agentName: agent.name,
+          error: toErrorMessage(error),
+        }),
+      );
+    }
 
     const focus: AiToolViewFocus[] = args.focus.map((entry) => ({
       domain: entry.domain,
