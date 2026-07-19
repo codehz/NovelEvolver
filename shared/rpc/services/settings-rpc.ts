@@ -231,6 +231,104 @@ export function isAiPromptSlug(value: unknown): value is string {
   return typeof value === "string" && AI_PROMPT_SLUG_PATTERN.test(value);
 }
 
+/**
+ * Global AI runtime budgets (tool loops + subagent focus injection).
+ * Applied only to newly started requests / subagent runs — not mid-flight.
+ * Subagent nesting depth remains code-owned and is not part of this policy.
+ */
+export type AiRuntimePolicySnapshot = {
+  /** Parent orchestrator tool-loop budget per user request. */
+  maxToolRounds: number;
+  /** Independent tool-loop budget for a single `run_subagent` run. */
+  maxSubagentToolRounds: number;
+  /** Hard cap on parent_summary forwarded into the child context. */
+  maxParentSummaryChars: number;
+  /** Max focus targets whose content is auto-injected into a subagent prompt. */
+  maxFocusTargets: number;
+  /** Per text-node char budget when injecting focus content. */
+  maxFocusContentChars: number;
+};
+
+/** Full-replace write payload (same shape as snapshot). */
+export type AiRuntimePolicyWrite = AiRuntimePolicySnapshot;
+
+/** Defaults aligned with historical hard-coded constants. */
+export const DEFAULT_AI_RUNTIME_POLICY: AiRuntimePolicySnapshot = {
+  maxToolRounds: 16,
+  maxSubagentToolRounds: 8,
+  maxParentSummaryChars: 2000,
+  maxFocusTargets: 8,
+  maxFocusContentChars: 40_000,
+};
+
+export type AiRuntimePolicyFieldLimit = {
+  min: number;
+  max: number;
+};
+
+/** Inclusive numeric bounds for each policy field. */
+export const AI_RUNTIME_POLICY_LIMITS = {
+  maxToolRounds: { min: 1, max: 64 },
+  maxSubagentToolRounds: { min: 1, max: 32 },
+  maxParentSummaryChars: { min: 200, max: 20_000 },
+  maxFocusTargets: { min: 1, max: 32 },
+  maxFocusContentChars: { min: 1000, max: 200_000 },
+} as const satisfies Record<keyof AiRuntimePolicySnapshot, AiRuntimePolicyFieldLimit>;
+
+function clampPolicyInt(
+  value: unknown,
+  fallback: number,
+  limit: AiRuntimePolicyFieldLimit,
+): number {
+  const n =
+    typeof value === "number" && Number.isFinite(value)
+      ? Math.floor(value)
+      : typeof value === "string" && value.trim() !== "" && Number.isFinite(Number(value))
+        ? Math.floor(Number(value))
+        : fallback;
+  if (!Number.isInteger(n)) {
+    return fallback;
+  }
+  return Math.min(limit.max, Math.max(limit.min, n));
+}
+
+/**
+ * Coerce a partial / untrusted policy into a full snapshot.
+ * Missing / non-numeric fields fall back to defaults; values are floored and clamped.
+ */
+export function normalizeAiRuntimePolicy(
+  input: Partial<AiRuntimePolicyWrite> | null | undefined,
+): AiRuntimePolicySnapshot {
+  const source = input ?? {};
+  return {
+    maxToolRounds: clampPolicyInt(
+      source.maxToolRounds,
+      DEFAULT_AI_RUNTIME_POLICY.maxToolRounds,
+      AI_RUNTIME_POLICY_LIMITS.maxToolRounds,
+    ),
+    maxSubagentToolRounds: clampPolicyInt(
+      source.maxSubagentToolRounds,
+      DEFAULT_AI_RUNTIME_POLICY.maxSubagentToolRounds,
+      AI_RUNTIME_POLICY_LIMITS.maxSubagentToolRounds,
+    ),
+    maxParentSummaryChars: clampPolicyInt(
+      source.maxParentSummaryChars,
+      DEFAULT_AI_RUNTIME_POLICY.maxParentSummaryChars,
+      AI_RUNTIME_POLICY_LIMITS.maxParentSummaryChars,
+    ),
+    maxFocusTargets: clampPolicyInt(
+      source.maxFocusTargets,
+      DEFAULT_AI_RUNTIME_POLICY.maxFocusTargets,
+      AI_RUNTIME_POLICY_LIMITS.maxFocusTargets,
+    ),
+    maxFocusContentChars: clampPolicyInt(
+      source.maxFocusContentChars,
+      DEFAULT_AI_RUNTIME_POLICY.maxFocusContentChars,
+      AI_RUNTIME_POLICY_LIMITS.maxFocusContentChars,
+    ),
+  };
+}
+
 export interface SettingsService extends RpcTarget {
   getAiModels(): AiModelsSettingsSnapshot;
   upsertAiProvider(input: AiProviderConfigWrite): AiModelsSettingsSnapshot;
@@ -244,4 +342,6 @@ export interface SettingsService extends RpcTarget {
   getAiPrompts(): AiPromptsSettingsSnapshot;
   upsertAiPrompt(input: AiPromptConfigWrite): AiPromptsSettingsSnapshot;
   removeAiPrompt(id: string): AiPromptsSettingsSnapshot;
+  getAiRuntimePolicy(): AiRuntimePolicySnapshot;
+  setAiRuntimePolicy(input: AiRuntimePolicyWrite): AiRuntimePolicySnapshot;
 }
