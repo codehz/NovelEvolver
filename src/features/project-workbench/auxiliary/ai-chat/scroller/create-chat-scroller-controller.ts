@@ -1,3 +1,5 @@
+import { applyScrollEdgeMaskFromFlags } from "#app/shared/lib/ui/scroll-edge-mask";
+
 import {
   applyElementViewportPin,
   classifyPathChange,
@@ -138,6 +140,8 @@ export function createChatScrollerController(
       scrollable = published;
       emitScrollable();
     }
+    // Same flags as Jump to Latest — content-aware end; follow hides bottom fade.
+    applyScrollEdgeMaskFromFlags(viewport, published, "y");
   };
 
   const recomputeOrderedIds = () => {
@@ -429,6 +433,9 @@ export function createChatScrollerController(
 
   return {
     setViewport(element) {
+      if (viewport != null && viewport !== element) {
+        delete viewport.dataset.edge;
+      }
       viewport = element;
       if (element != null) {
         lastScrollTop = element.scrollTop;
@@ -541,6 +548,9 @@ export function createChatScrollerController(
     dispose() {
       contentRo?.disconnect();
       viewportRo?.disconnect();
+      if (viewport != null) {
+        delete viewport.dataset.edge;
+      }
       if (reconcileRaf !== 0) {
         window.cancelAnimationFrame(reconcileRaf);
       }

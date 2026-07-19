@@ -5,6 +5,7 @@ import {
   controlFocusVisibleClass,
   panelHoverClass,
 } from "#app/shared/lib/ui/interaction-chrome";
+import { scrollEdgeMaskClass } from "#app/shared/lib/ui/scroll-edge-mask";
 
 export const panelSectionClass = cn("mx-auto flex w-full max-w-3xl flex-col");
 export const conversationRailClass = cn("gap-3 px-3 py-2.5 select-text");
@@ -12,8 +13,10 @@ export const conversationRailClass = cn("gap-3 px-3 py-2.5 select-text");
 export const conversationScrollerRootClass = cn(
   "relative flex h-0 min-h-0 flex-1 flex-col overflow-hidden",
 );
+/** Edge fades via `data-edge` from ChatScroller scrollable flags (see controller). */
 export const conversationScrollerViewportClass = cn(
   "min-h-0 flex-1 overflow-x-hidden overflow-y-auto",
+  scrollEdgeMaskClass({ axis: "y", fade: "1.75rem" }),
 );
 /**
  * Last user turn + reply zone. CSS pad only (100cqh of the scroller viewport size
