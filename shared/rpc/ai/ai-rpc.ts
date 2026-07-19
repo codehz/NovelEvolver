@@ -1,7 +1,7 @@
 import type { RpcTarget } from "capnweb";
 
 import type { AiReasoningLevel } from "../services/settings-rpc";
-import type { RpcSubscriptionResult } from "../transport/stream";
+import type { RpcSnapshotEvent, RpcSubscriptionResult } from "../transport/stream";
 import type { AiToolView } from "./ai-tool-view";
 
 export type AiChatMessageUsage = {
@@ -274,10 +274,6 @@ export type AiConversationActivity = "idle" | "streaming" | "awaiting_user";
 
 export type AiConversationStatus = "active" | "archived";
 
-export type AiConversationListOptions = {
-  includeArchived?: boolean;
-};
-
 export type AiConversationSearchOptions = {
   includeArchived?: boolean;
 };
@@ -298,6 +294,18 @@ export type AiConversationSearchHit = AiConversationSummary & {
   /** Matching fragment from title or message body; null when only title matched without body context. */
   snippet: string | null;
 };
+
+/**
+ * Full conversation directory for a project.
+ * Always includes active + archived (filter on the client). Sorted by recency.
+ * Does **not** include activeConversationId — use active chat snapshot for that.
+ */
+export type AiConversationDirectorySnapshot = {
+  conversations: AiConversationSummary[];
+};
+
+/** Directory feed: snapshot-only full replace. */
+export type AiConversationDirectoryEvent = RpcSnapshotEvent<AiConversationDirectorySnapshot>;
 
 export type AiChatMessagePatch = {
   status?: AiChatMessageStatus;
@@ -391,8 +399,12 @@ export type AiChatDeltaEvent = {
 
 export type AiChatEvent = AiChatSnapshotEvent | AiChatDeltaEvent;
 
-export interface AiChatHandle extends RpcTarget {
-  subscribeChat(): RpcSubscriptionResult<AiChatEvent>;
+/**
+ * Active conversation turn surface (State feed).
+ * Selection writes land here; model/agent catalogs live on {@link AiCatalogHandle}.
+ */
+export interface AiActiveChatHandle extends RpcTarget {
+  subscribe(): RpcSubscriptionResult<AiChatEvent>;
   sendMessage(input: AiChatSendMessageInput): void;
   /**
    * 中断当前生成或等待用户输入。
@@ -428,24 +440,43 @@ export interface AiChatHandle extends RpcTarget {
    * 生成中 / 等待用户输入时忽略。
    */
   editUserMessage(messageId: string, input: AiChatSendMessageInput): void;
-  createConversation(): void;
-  listConversations(options?: AiConversationListOptions): AiConversationSummary[];
-  searchConversations(
-    query: string,
-    options?: AiConversationSearchOptions,
-  ): AiConversationSearchHit[];
-  switchConversation(conversationId: string): void;
-  renameConversation(conversationId: string, title: string): void;
-  archiveConversation(conversationId: string): void;
-  unarchiveConversation(conversationId: string): void;
-  deleteConversation(conversationId: string): void;
-  listSelectableModels(): AiChatSelectableModel[];
   setSelectedModel(modelId: string): void;
-  listSelectableAgents(): AiChatSelectableAgent[];
   setSelectedAgent(agentId: string): void;
   /**
    * Session reasoning effort for subsequent requests.
    * Must be a member of the current model's available levels, or `null` when unavailable.
    */
   setSelectedReasoningLevel(level: AiReasoningLevel | null): void;
+}
+
+/**
+ * Project conversation directory (Directory feed, snapshot-only).
+ * Search stays pull; list is replaced by {@link subscribe}.
+ */
+export interface AiConversationsHandle extends RpcTarget {
+  /** Snapshot-only full replace; always includes active + archived summaries. */
+  subscribe(): RpcSubscriptionResult<AiConversationDirectoryEvent>;
+  search(query: string, options?: AiConversationSearchOptions): AiConversationSearchHit[];
+  create(): void;
+  switch(conversationId: string): void;
+  rename(conversationId: string, title: string): void;
+  archive(conversationId: string): void;
+  unarchive(conversationId: string): void;
+  delete(conversationId: string): void;
+}
+
+/** Selectable model / agent catalog (pull; settings-derived). */
+export interface AiCatalogHandle extends RpcTarget {
+  listModels(): AiChatSelectableModel[];
+  listAgents(): AiChatSelectableAgent[];
+}
+
+/**
+ * Project-scoped AI facade: active turn + conversation directory + catalog.
+ * Mock test controls stay on {@link import("../session/project-session-rpc").ProjectSession}.
+ */
+export interface ProjectAi extends RpcTarget {
+  readonly active: AiActiveChatHandle;
+  readonly conversations: AiConversationsHandle;
+  readonly catalog: AiCatalogHandle;
 }
