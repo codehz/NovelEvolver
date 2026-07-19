@@ -53,7 +53,13 @@ import {
 import { countCommittedAssistantParts, rebuildLastRequestInput } from "./request-history";
 import { resolveReasoningLevelForModel } from "./selectable-models";
 import { expandSlashForModel } from "./slash-expand";
-import { executeSubagentToolCall, RUN_SUBAGENT_TOOL_NAME } from "./subagent";
+import {
+  composeSystemPromptWithSubagents,
+  executeSubagentToolCall,
+  listSubagentCatalog,
+  RUN_SUBAGENT_TOOL_NAME,
+  type SubagentCatalogAgent,
+} from "./subagent";
 
 type RuntimeEventListener = (event: AiChatEvent) => void;
 
@@ -79,6 +85,11 @@ export type AiConversationRuntimeOptions = {
   initialModel: string;
   resolveModelConfig: (modelId: string) => AiModelRuntimeConfig | null;
   resolveAgentConfig: (agentId: string) => AiAgentRuntimeConfig;
+  /**
+   * Live agent catalog for parent system-prompt injection (subagent visibility).
+   * Re-read on each request so settings changes apply without restarting the conversation.
+   */
+  listAgentConfigs: () => readonly SubagentCatalogAgent[];
 };
 
 const MAX_TOOL_ROUNDS = 16;
@@ -103,6 +114,7 @@ export class AiConversationRuntime {
   readonly #clientLabel: string;
   readonly #resolveModelConfig: AiConversationRuntimeOptions["resolveModelConfig"];
   readonly #resolveAgentConfig: AiConversationRuntimeOptions["resolveAgentConfig"];
+  readonly #listAgentConfigs: AiConversationRuntimeOptions["listAgentConfigs"];
   readonly #scenarioBackend: AiBackendSession | null;
   readonly #scenarioPacing: MockScenarioPacing | undefined;
   #activeBackend: AiBackendSession | null = null;
@@ -114,6 +126,7 @@ export class AiConversationRuntime {
     this.#clientLabel = options.clientLabel ?? `project-${options.projectId}`;
     this.#resolveModelConfig = options.resolveModelConfig;
     this.#resolveAgentConfig = options.resolveAgentConfig;
+    this.#listAgentConfigs = options.listAgentConfigs;
     this.#resolveWorktree = options.resolveWorktree;
     this.#scenarioPacing = options.pacing;
     this.#scenarioBackend = scenarioId
@@ -1063,10 +1076,16 @@ export class AiConversationRuntime {
       throw new Error("所选 AI 模型不存在或已被删除，请重新选择模型。");
     }
     const agentConfig = this.#resolveAgentConfig(this.#state.selectedAgentId);
+    const hasRunSubagentTool = agentConfig.availableToolNames.includes(RUN_SUBAGENT_TOOL_NAME);
+    const catalog = listSubagentCatalog(this.#listAgentConfigs(), {
+      excludeAgentId: agentConfig.id,
+    });
     return createAiBackendSession({
       clientLabel: this.#clientLabel,
       modelConfig,
-      instructionsOverride: agentConfig.systemPrompt,
+      instructionsOverride: composeSystemPromptWithSubagents(agentConfig.systemPrompt, catalog, {
+        hasRunSubagentTool,
+      }),
     });
   }
 

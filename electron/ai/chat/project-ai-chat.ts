@@ -164,6 +164,7 @@ export class ProjectAiChatController {
       clientLabel: options.clientLabel,
       resolveModelConfig: (modelId) => this.#getAiModelsStore().getRuntimeConfig(modelId),
       resolveAgentConfig: (agentId) => this.#getAiAgentsStore().getRuntimeConfig(agentId),
+      listAgentConfigs: () => this.#getAiAgentsStore().getSnapshot().agents,
     };
 
     const latest = this.#repository.getLatestByProject(options.projectId);
