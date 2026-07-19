@@ -24,7 +24,7 @@ export type PendingUserInputSerializable = {
  * 工具请求用户输入的描述（主进程内部）。
  *
  * 展示数据经 contribution 组装为纯 DTO `AiChatOpenInteraction`；
- * 回传经 `AiChatHandle.submitInteraction` / `cancelInteraction`，
+ * 回传经 `AiActiveChatHandle.submitInteraction` / `cancelInteraction`，
  * 再由 contribution 映射为 `ToolResultItem`。
  */
 export type UserInputRequest = {

@@ -1,7 +1,12 @@
 import { molecule, use, useMolecule } from "bunshi/react";
 import type { RpcPromise } from "capnweb";
 
-import type { AiChatHandle } from "#shared/rpc/ai/index";
+import type {
+  AiActiveChatHandle,
+  AiCatalogHandle,
+  AiConversationsHandle,
+  ProjectAi,
+} from "#shared/rpc/ai/index";
 import type { BranchWorkspace } from "#shared/rpc/session/index";
 import type { HistoryHandle } from "#shared/rpc/worktree/index";
 import type { ManuscriptHandle } from "#shared/rpc/worktree/index";
@@ -40,8 +45,17 @@ export const worktreeChangesMolecule = molecule(() => use(branchWorkspaceMolecul
 /** 当前分支文件历史句柄（`openBranchWorkspace(...).history` 级联，不在此 await）。 */
 export const historyMolecule = molecule(() => use(branchWorkspaceMolecule).history);
 
-/** 项目级 AI 对话句柄（`openProject(...).ai`，跨分支共享）。 */
-export const aiChatMolecule = molecule(() => use(projectMolecule).ai);
+/** 项目级 AI facade（`openProject(...).ai`，跨分支共享）。 */
+export const projectAiMolecule = molecule(() => use(projectMolecule).ai);
+
+/** 活跃会话 State feed（`project.ai.active`）。 */
+export const aiActiveChatMolecule = molecule(() => use(projectAiMolecule).active);
+
+/** 会话目录 Directory feed（`project.ai.conversations`）。 */
+export const aiConversationsMolecule = molecule(() => use(projectAiMolecule).conversations);
+
+/** 模型 / Agent 目录（`project.ai.catalog`）。 */
+export const aiCatalogMolecule = molecule(() => use(projectAiMolecule).catalog);
 
 export function useBranchWorkspace(): RpcPromise<BranchWorkspace> {
   return useMolecule(branchWorkspaceMolecule);
@@ -67,6 +81,18 @@ export function useHistory(): RpcPromise<HistoryHandle> {
   return useMolecule(historyMolecule);
 }
 
-export function useAiChat(): RpcPromise<AiChatHandle> {
-  return useMolecule(aiChatMolecule);
+export function useProjectAi(): RpcPromise<ProjectAi> {
+  return useMolecule(projectAiMolecule);
+}
+
+export function useAiActiveChat(): RpcPromise<AiActiveChatHandle> {
+  return useMolecule(aiActiveChatMolecule);
+}
+
+export function useAiConversations(): RpcPromise<AiConversationsHandle> {
+  return useMolecule(aiConversationsMolecule);
+}
+
+export function useAiCatalog(): RpcPromise<AiCatalogHandle> {
+  return useMolecule(aiCatalogMolecule);
 }

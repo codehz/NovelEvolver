@@ -9,8 +9,10 @@ import {
 } from "react";
 
 import { confirmDialogApi } from "#app/shared/lib/confirm-dialog";
+import { consumeRpcSubscription } from "#app/shared/lib/rpc/app-rpc-react";
 import { popupContextMenu } from "#app/shared/lib/shell/popup-context-menu";
 import type { AiConversationSearchHit, AiConversationSummary } from "#shared/rpc/ai/index";
+import { useAiConversations } from "#workbench/session/workspace-handles";
 
 import { useSelectorListNavigation } from "../selectors/use-selector-list-navigation";
 import { useAiChatActions, useAiChatConversationId } from "../state/use-ai-chat-state";
@@ -35,8 +37,8 @@ export function useAiChatHistoryList({
   onClearDraft: () => void;
 }) {
   const activeConversationId = useAiChatConversationId();
+  const conversations = useAiConversations();
   const {
-    listConversations,
     searchConversations,
     switchConversation,
     renameConversation,
@@ -53,8 +55,10 @@ export function useAiChatHistoryList({
   const [includeArchived, setIncludeArchived] = useState(false);
   const [query, setQuery] = useState("");
   const [debouncedQuery, setDebouncedQuery] = useState("");
-  const [items, setItems] = useState<AiConversationSearchHit[]>([]);
-  const [loadingList, setLoadingList] = useState(false);
+  const [directoryItems, setDirectoryItems] = useState<AiConversationSummary[]>([]);
+  const [searchItems, setSearchItems] = useState<AiConversationSearchHit[]>([]);
+  const [directoryLoading, setDirectoryLoading] = useState(true);
+  const [searchLoading, setSearchLoading] = useState(false);
   const [renamingId, setRenamingId] = useState<string | null>(null);
   const [renameDraft, setRenameDraft] = useState("");
 
@@ -73,43 +77,72 @@ export function useAiChatHistoryList({
     };
   }, [open, query]);
 
-  const refreshList = useCallback(async () => {
+  // Directory feed: always live while the history panel is open.
+  useEffect(() => {
     if (!open) {
       return;
     }
-    const seq = ++requestSeqRef.current;
-    setLoadingList(true);
-    try {
-      const nextQuery = debouncedQuery.trim();
-      const nextItems =
-        nextQuery === ""
-          ? toSearchHits(await listConversations({ includeArchived }))
-          : await searchConversations(nextQuery, { includeArchived });
-      if (seq !== requestSeqRef.current) {
-        return;
-      }
-      setItems(nextItems);
-    } finally {
-      if (seq === requestSeqRef.current) {
-        setLoadingList(false);
-      }
-    }
-  }, [debouncedQuery, includeArchived, listConversations, open, searchConversations]);
+    setDirectoryLoading(true);
+    return consumeRpcSubscription({
+      subscribe: () => conversations.subscribe(),
+      onValue: (event) => {
+        setDirectoryItems(event.snapshot.conversations);
+        setDirectoryLoading(false);
+      },
+      onError: () => {
+        setDirectoryLoading(false);
+      },
+      cancelReason: "AI conversation directory subscription disposed.",
+    });
+  }, [conversations, open]);
 
+  // Search remains pull-based.
   useEffect(() => {
-    void refreshList();
-  }, [refreshList]);
+    if (!open || !isSearching) {
+      setSearchItems([]);
+      setSearchLoading(false);
+      return;
+    }
+    const seq = ++requestSeqRef.current;
+    setSearchLoading(true);
+    void searchConversations(debouncedQuery.trim(), { includeArchived })
+      .then((nextItems) => {
+        if (seq !== requestSeqRef.current) {
+          return;
+        }
+        setSearchItems(nextItems);
+      })
+      .finally(() => {
+        if (seq === requestSeqRef.current) {
+          setSearchLoading(false);
+        }
+      });
+  }, [debouncedQuery, includeArchived, isSearching, open, searchConversations]);
+
+  const items = useMemo((): AiConversationSearchHit[] => {
+    if (isSearching) {
+      return searchItems;
+    }
+    const filtered = includeArchived
+      ? directoryItems
+      : directoryItems.filter((entry) => entry.status !== "archived");
+    return toSearchHits(filtered);
+  }, [directoryItems, includeArchived, isSearching, searchItems]);
+
+  const loadingList = isSearching ? searchLoading : directoryLoading;
 
   // Keep list content mounted during the exit animation. Reset only after
   // Base UI reports the close transition finished (onOpenChangeComplete).
   const resetClosedState = useCallback(() => {
     setQuery("");
     setDebouncedQuery("");
-    setItems([]);
+    setDirectoryItems([]);
+    setSearchItems([]);
     setIncludeArchived(false);
     setRenamingId(null);
     setRenameDraft("");
-    setLoadingList(false);
+    setDirectoryLoading(true);
+    setSearchLoading(false);
   }, []);
 
   useEffect(() => {
@@ -163,8 +196,7 @@ export function useAiChatHistoryList({
       return;
     }
     await renameConversation(conversationId, nextTitle);
-    await refreshList();
-  }, [items, refreshList, renameConversation, renameDraft, renamingId]);
+  }, [items, renameConversation, renameDraft, renamingId]);
 
   const cancelRename = useCallback(() => {
     setRenamingId(null);
@@ -230,12 +262,10 @@ export function useAiChatHistoryList({
         }
         if (actionId === "archive") {
           await archiveConversation(conversation.id);
-          await refreshList();
           return;
         }
         if (actionId === "unarchive") {
           await unarchiveConversation(conversation.id);
-          await refreshList();
           return;
         }
         if (actionId === "delete") {
@@ -250,7 +280,6 @@ export function useAiChatHistoryList({
             return;
           }
           await deleteConversation(conversation.id);
-          await refreshList();
         }
       } finally {
         window.setTimeout(() => {
@@ -258,14 +287,7 @@ export function useAiChatHistoryList({
         }, 0);
       }
     },
-    [
-      archiveConversation,
-      deleteConversation,
-      isRenaming,
-      refreshList,
-      startRename,
-      unarchiveConversation,
-    ],
+    [archiveConversation, deleteConversation, isRenaming, startRename, unarchiveConversation],
   );
 
   const handleSearchKeyDown = useCallback(

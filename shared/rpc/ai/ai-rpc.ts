@@ -76,7 +76,7 @@ export type AskUserChoice = {
  * 需要用户介入的交互会话（纯 DTO，stream 按值推送）。
  *
  * - `id` 稳定且可序列化（通常 = tool call id），供 UI 切题/草稿 key 与命令回传。
- * - **禁止**嵌入 `RpcTarget`/stub；回传走 `AiChatHandle.submitInteraction` / `cancelInteraction`。
+ * - **禁止**嵌入 `RpcTarget`/stub；回传走 `AiActiveChatHandle.submitInteraction` / `cancelInteraction`。
  * - 按 `kind` 扩展新交互时只加联合成员，不绑死 `ask_user`。
  */
 export type AskUserOpenInteraction = {

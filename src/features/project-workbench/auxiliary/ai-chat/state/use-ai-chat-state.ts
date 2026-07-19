@@ -18,13 +18,15 @@ import type {
   AiChatSelectableModel,
   AiChatSendMessageInput,
   AiChatSnapshot,
-  AiConversationListOptions,
   AiConversationSearchHit,
   AiConversationSearchOptions,
-  AiConversationSummary,
 } from "#shared/rpc/ai/index";
 import type { AiReasoningLevel } from "#shared/rpc/services/index";
-import { useAiChat } from "#workbench/session/workspace-handles";
+import {
+  useAiActiveChat,
+  useAiCatalog,
+  useAiConversations,
+} from "#workbench/session/workspace-handles";
 
 import { stripHiddenAiChatWarningsFromSnapshot } from "../ui/ai-chat-helpers";
 import { aiChatStateMolecule, initialAiChatTransportState } from "./ai-chat-state-molecule";
@@ -38,7 +40,6 @@ type AiChatActions = {
   selectMessageBranch: (messageId: string, index: number) => Promise<void>;
   editUserMessage: (messageId: string, input: AiChatSendMessageInput) => Promise<void>;
   createConversation: () => Promise<void>;
-  listConversations: (options?: AiConversationListOptions) => Promise<AiConversationSummary[]>;
   searchConversations: (
     query: string,
     options?: AiConversationSearchOptions,
@@ -58,7 +59,9 @@ type AiChatActions = {
 const AiChatActionsContext = createContext<AiChatActions | null>(null);
 
 function useAiChatActionsValue(): AiChatActions {
-  const aiChat = useAiChat();
+  const active = useAiActiveChat();
+  const conversations = useAiConversations();
+  const catalog = useAiCatalog();
   const store = useStore();
   const { snapshotAtom } = useMolecule(aiChatStateMolecule);
 
@@ -77,7 +80,7 @@ function useAiChatActionsValue(): AiChatActions {
       }
 
       await Promise.resolve(
-        aiChat.sendMessage({
+        active.sendMessage({
           text: input.text,
           slash: input.slash ?? null,
           mentions: input.mentions ?? [],
@@ -85,7 +88,7 @@ function useAiChatActionsValue(): AiChatActions {
       );
       return true;
     },
-    [aiChat, snapshotAtom, store],
+    [active, snapshotAtom, store],
   );
 
   const stopGeneration = useCallback(async (): Promise<void> => {
@@ -94,124 +97,117 @@ function useAiChatActionsValue(): AiChatActions {
     if (!snapshot.pending && snapshot.openInteractions.length === 0) {
       return;
     }
-    await Promise.resolve(aiChat.stopGeneration());
-  }, [aiChat, snapshotAtom, store]);
+    await Promise.resolve(active.stopGeneration());
+  }, [active, snapshotAtom, store]);
 
   const submitInteraction = useCallback(
     async (id: string, answer: AiChatInteractionAnswer): Promise<void> => {
-      await Promise.resolve(aiChat.submitInteraction(id, answer));
+      await Promise.resolve(active.submitInteraction(id, answer));
     },
-    [aiChat],
+    [active],
   );
 
   const cancelInteraction = useCallback(
     async (id: string): Promise<void> => {
-      await Promise.resolve(aiChat.cancelInteraction(id));
+      await Promise.resolve(active.cancelInteraction(id));
     },
-    [aiChat],
+    [active],
   );
 
   const createConversation = useCallback(async (): Promise<void> => {
-    await Promise.resolve(aiChat.createConversation());
-  }, [aiChat]);
-
-  const listConversations = useCallback(
-    async (options?: AiConversationListOptions): Promise<AiConversationSummary[]> => {
-      return await Promise.resolve(aiChat.listConversations(options));
-    },
-    [aiChat],
-  );
+    await Promise.resolve(conversations.create());
+  }, [conversations]);
 
   const searchConversations = useCallback(
     async (
       query: string,
       options?: AiConversationSearchOptions,
     ): Promise<AiConversationSearchHit[]> => {
-      return await Promise.resolve(aiChat.searchConversations(query, options));
+      return await Promise.resolve(conversations.search(query, options));
     },
-    [aiChat],
+    [conversations],
   );
 
   const switchConversation = useCallback(
     async (conversationId: string): Promise<void> => {
-      await Promise.resolve(aiChat.switchConversation(conversationId));
+      await Promise.resolve(conversations.switch(conversationId));
     },
-    [aiChat],
+    [conversations],
   );
 
   const renameConversation = useCallback(
     async (conversationId: string, title: string): Promise<void> => {
-      await Promise.resolve(aiChat.renameConversation(conversationId, title));
+      await Promise.resolve(conversations.rename(conversationId, title));
     },
-    [aiChat],
+    [conversations],
   );
 
   const archiveConversation = useCallback(
     async (conversationId: string): Promise<void> => {
-      await Promise.resolve(aiChat.archiveConversation(conversationId));
+      await Promise.resolve(conversations.archive(conversationId));
     },
-    [aiChat],
+    [conversations],
   );
 
   const unarchiveConversation = useCallback(
     async (conversationId: string): Promise<void> => {
-      await Promise.resolve(aiChat.unarchiveConversation(conversationId));
+      await Promise.resolve(conversations.unarchive(conversationId));
     },
-    [aiChat],
+    [conversations],
   );
 
   const deleteConversation = useCallback(
     async (conversationId: string): Promise<void> => {
-      await Promise.resolve(aiChat.deleteConversation(conversationId));
+      await Promise.resolve(conversations.delete(conversationId));
     },
-    [aiChat],
+    [conversations],
   );
 
   const listSelectableModels = useCallback(async (): Promise<AiChatSelectableModel[]> => {
-    return await Promise.resolve(aiChat.listSelectableModels());
-  }, [aiChat]);
+    return await Promise.resolve(catalog.listModels());
+  }, [catalog]);
 
   const setSelectedModel = useCallback(
     async (modelId: string): Promise<void> => {
-      await Promise.resolve(aiChat.setSelectedModel(modelId));
+      await Promise.resolve(active.setSelectedModel(modelId));
     },
-    [aiChat],
+    [active],
   );
 
   const listSelectableAgents = useCallback(async (): Promise<AiChatSelectableAgent[]> => {
-    return await Promise.resolve(aiChat.listSelectableAgents());
-  }, [aiChat]);
+    return await Promise.resolve(catalog.listAgents());
+  }, [catalog]);
 
   const setSelectedAgent = useCallback(
     async (agentId: string): Promise<void> => {
-      await Promise.resolve(aiChat.setSelectedAgent(agentId));
+      await Promise.resolve(active.setSelectedAgent(agentId));
     },
-    [aiChat],
+    [active],
   );
 
   const setSelectedReasoningLevel = useCallback(
     async (level: AiReasoningLevel | null): Promise<void> => {
-      await Promise.resolve(aiChat.setSelectedReasoningLevel(level));
+      await Promise.resolve(active.setSelectedReasoningLevel(level));
     },
-    [aiChat],
+    [active],
   );
 
   const retryLastRequest = useCallback(async (): Promise<void> => {
-    await Promise.resolve(aiChat.retryLastRequest());
-  }, [aiChat]);
+    await Promise.resolve(active.retryLastRequest());
+  }, [active]);
 
   const selectMessageBranch = useCallback(
     async (messageId: string, index: number): Promise<void> => {
-      await Promise.resolve(aiChat.selectMessageBranch(messageId, index));
+      await Promise.resolve(active.selectMessageBranch(messageId, index));
     },
-    [aiChat],
+    [active],
   );
 
   const editUserMessage = useCallback(
     async (messageId: string, input: AiChatSendMessageInput): Promise<void> => {
-      await Promise.resolve(aiChat.editUserMessage(messageId, input));
+      await Promise.resolve(active.editUserMessage(messageId, input));
     },
-    [aiChat],
+    [active],
   );
 
   return useMemo(
@@ -224,7 +220,6 @@ function useAiChatActionsValue(): AiChatActions {
       selectMessageBranch,
       editUserMessage,
       createConversation,
-      listConversations,
       searchConversations,
       switchConversation,
       renameConversation,
@@ -243,7 +238,6 @@ function useAiChatActionsValue(): AiChatActions {
       createConversation,
       deleteConversation,
       editUserMessage,
-      listConversations,
       listSelectableAgents,
       listSelectableModels,
       renameConversation,
@@ -263,7 +257,7 @@ function useAiChatActionsValue(): AiChatActions {
 }
 
 function AiChatFeedSync() {
-  const aiChat = useAiChat();
+  const active = useAiActiveChat();
   const { snapshotAtom, transportAtom } = useMolecule(aiChatStateMolecule);
   const setSnapshot = useSetAtom(snapshotAtom);
   const setTransport = useSetAtom(transportAtom);
@@ -273,7 +267,7 @@ function AiChatFeedSync() {
     setTransport(initialAiChatTransportState);
 
     return consumeRpcSubscription({
-      subscribe: () => aiChat.subscribeChat(),
+      subscribe: () => active.subscribe(),
       onValue: (event) => {
         setSnapshot((current) =>
           stripHiddenAiChatWarningsFromSnapshot(applyAiChatEvent(current, event)),
@@ -288,7 +282,7 @@ function AiChatFeedSync() {
       },
       cancelReason: "AI chat subscription disposed.",
     });
-  }, [aiChat, setSnapshot, setTransport]);
+  }, [active, setSnapshot, setTransport]);
 
   return null;
 }
@@ -353,9 +347,9 @@ export function useAiChatState() {
   const loading = useAiChatLoading();
   const subscriptionError = useAiChatSubscriptionError();
   return {
+    ...actions,
     snapshot,
     loading,
     subscriptionError,
-    ...actions,
   };
 }

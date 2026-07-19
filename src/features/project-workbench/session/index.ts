@@ -25,15 +25,21 @@ export { useWorktreeChangesRevision } from "./changes-feed/use-worktree-changes-
 export { useWorktreeTreeSnapshot } from "./changes-feed/use-worktree-tree-snapshot";
 export { projectIdScope, projectMolecule, useProjectContext } from "./project-scope";
 export {
-  aiChatMolecule,
+  aiActiveChatMolecule,
+  aiCatalogMolecule,
+  aiConversationsMolecule,
   branchWorkspaceMolecule,
   historyMolecule,
   manuscriptMolecule,
+  projectAiMolecule,
   resourceLibraryMolecule,
-  useAiChat,
+  useAiActiveChat,
+  useAiCatalog,
+  useAiConversations,
   useBranchWorkspace,
   useHistory,
   useManuscript,
+  useProjectAi,
   useResourceLibrary,
   useWorktreeChanges,
   useWorktreeSearch,
