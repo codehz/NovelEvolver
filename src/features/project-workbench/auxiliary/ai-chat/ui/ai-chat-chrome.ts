@@ -154,18 +154,30 @@ export const agentSelectorButtonClass = cn(
 export const modelSelectorLabelClass = cn("min-w-0 truncate");
 // Same as reasoningPanelClass: no root gap — keep spacing inside the panel body.
 export const toolCallPanelClass = cn("flex flex-col");
-export const toolCallToggleClass = cn(
-  "grid w-full grid-cols-[auto_auto_minmax(0,1fr)_auto] items-center gap-1.5 text-left text-2xs text-ctp-subtext1 outline-none",
-  controlFocusVisibleClass,
+/** Compact activity row: chevron | icon | label | summary | indicator. */
+export const toolCallRowClass = cn(
+  "grid w-full min-w-0 grid-cols-[auto_auto_auto_minmax(0,1fr)_auto] items-center gap-1.5",
+  "text-left text-2xs text-ctp-subtext1 outline-none",
 );
+export const toolCallToggleClass = cn(toolCallRowClass, controlFocusVisibleClass);
 export const toolCallToggleActiveClass = cn("rounded-sm ring-1 ring-ctp-blue/40");
+export const toolCallIconClass = cn("size-3.5 shrink-0 text-ctp-subtext0");
+export const toolCallIconWriteClass = cn("size-3.5 shrink-0 text-ctp-blue/80");
+export const toolCallIconErrorClass = cn("size-3.5 shrink-0 text-ctp-red");
+export const toolCallIconRunningClass = cn("size-3.5 shrink-0 text-ctp-subtext0");
 export const toolCallLabelClass = cn(
+  "font-medium tracking-[0.02em] whitespace-nowrap text-ctp-subtext1",
+);
+export const toolCallLabelWriteClass = cn(
   "font-medium tracking-[0.02em] whitespace-nowrap text-ctp-blue",
 );
-export const toolCallStatusClass = cn("text-2xs whitespace-nowrap text-ctp-overlay0");
+export const toolCallSummaryClass = cn("min-w-0 truncate text-ctp-subtext0");
+export const toolCallStatusClass = cn("text-2xs whitespace-nowrap text-ctp-overlay0 tabular-nums");
+export const toolCallStatusErrorClass = cn("text-2xs whitespace-nowrap text-ctp-red tabular-nums");
 export const toolCallBodyClass = cn(
-  "flex flex-col gap-2 pt-1 text-chat-meta leading-5 text-app-muted",
+  "flex flex-col gap-1.5 pt-1 text-chat-meta leading-5 text-app-muted",
 );
+export const toolCallErrorMessageClass = cn("text-chat-meta leading-5 text-ctp-red");
 export const toolCallQuestionClass = cn("text-chat-meta leading-5 text-app-foreground");
 export const warningBannerClass = cn(
   "rounded-sm border border-ctp-yellow/40 bg-ctp-yellow/10 px-3 py-2 text-xs break-all whitespace-pre-wrap text-ctp-yellow select-text",

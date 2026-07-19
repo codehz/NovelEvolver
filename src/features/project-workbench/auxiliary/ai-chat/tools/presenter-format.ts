@@ -19,6 +19,121 @@ export function domainLabel(domain: string | null): string {
   return domain === "manuscript" ? "手稿" : domain === "resource" ? "资源库" : "全部内容";
 }
 
+/** Codicon class for a tool activity row. */
+export function toolIcon(name: string): string {
+  switch (name) {
+    case "read_structure":
+      return "icon-[codicon--list-tree]";
+    case "read_document":
+      return "icon-[codicon--file]";
+    case "search_documents":
+      return "icon-[codicon--search]";
+    case "write_document":
+      return "icon-[codicon--edit]";
+    case "replace_document_text":
+      return "icon-[codicon--replace]";
+    case "create_folder":
+      return "icon-[codicon--new-folder]";
+    case "create_document":
+      return "icon-[codicon--new-file]";
+    case "move_node":
+      return "icon-[codicon--export]";
+    case "rename_node":
+      return "icon-[codicon--tag]";
+    case "delete_node":
+      return "icon-[codicon--trash]";
+    case "read_changes":
+    case "read_change":
+      return "icon-[codicon--diff]";
+    case "read_history":
+    case "read_history_entry":
+      return "icon-[codicon--history]";
+    case "ask_user":
+      return "icon-[codicon--comment-discussion]";
+    case "run_subagent":
+      return "icon-[codicon--hubot]";
+    default:
+      return "icon-[codicon--tools]";
+  }
+}
+
+/** Short product action label for a tool (also used by subagent progress). */
+export function toolActionLabel(name: string): string {
+  switch (name) {
+    case "ask_user":
+      return "询问";
+    case "run_subagent":
+      return "子代理";
+    case "read_structure":
+      return "查看结构";
+    case "read_document":
+      return "读取";
+    case "search_documents":
+      return "搜索";
+    case "write_document":
+      return "重写";
+    case "replace_document_text":
+      return "替换片段";
+    case "create_folder":
+      return "创建文件夹";
+    case "create_document":
+      return "创建文档";
+    case "move_node":
+      return "移动节点";
+    case "rename_node":
+      return "重命名节点";
+    case "delete_node":
+      return "删除节点";
+    case "read_changes":
+      return "查看变更";
+    case "read_change":
+      return "查看变更";
+    case "read_history":
+      return "查看历史";
+    case "read_history_entry":
+      return "历史版本";
+    default:
+      return "工具";
+  }
+}
+
+export function isWriteToolName(name: string): boolean {
+  switch (name) {
+    case "write_document":
+    case "replace_document_text":
+    case "create_folder":
+    case "create_document":
+    case "move_node":
+    case "rename_node":
+    case "delete_node":
+      return true;
+    default:
+      return false;
+  }
+}
+
+/** Prefer a readable path/name; never surface bare UUIDs as the primary summary. */
+export function displayTargetName(options: {
+  displayPath?: string | null;
+  label?: string | null;
+  id?: string | null;
+  fallback?: string;
+}): string {
+  const path = options.displayPath?.trim();
+  if (path) {
+    return path;
+  }
+  const label = options.label?.trim();
+  if (label) {
+    return label;
+  }
+  return options.fallback ?? "未知目标";
+}
+
+export function truncateText(text: string, max = 48): string {
+  return text.length > max ? `${text.slice(0, max)}…` : text;
+}
+
 export function kindLabel(kind: string | null): string {
   switch (kind) {
     case "chapter":

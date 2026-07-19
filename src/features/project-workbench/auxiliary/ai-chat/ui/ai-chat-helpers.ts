@@ -37,13 +37,13 @@ export function stripHiddenAiChatWarningsFromSnapshot(snapshot: AiChatSnapshot):
 export function describeToolCallStatus(status: AiChatToolCall["status"]): string {
   switch (status) {
     case "pending":
-      return "等待参数";
+      return "准备中";
     case "running":
-      return "执行中";
+      return "进行中";
     case "awaiting_user":
-      return "等待你的回答 ↓";
+      return "等待回答";
     case "complete":
-      return "已完成";
+      return "完成";
     case "error":
       return "失败";
   }

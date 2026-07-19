@@ -1,5 +1,6 @@
 import type { AiChatToolCall } from "#shared/rpc/ai/index";
 
+import { toolActionLabel, toolIcon } from "./presenter-format";
 import type { ToolPresentation, ToolPresenter } from "./presenter-types";
 import { askUserPresenter, runSubagentPresenter } from "./presenters-interaction";
 import {
@@ -37,14 +38,21 @@ const presenters: Partial<Record<string, ToolPresenter>> = {
   read_history_entry: historyEntryPresenter,
 };
 
-export function presentToolCall(toolCall: AiChatToolCall): ToolPresentation {
+export type ResolvedToolPresentation = ToolPresentation & { icon: string };
+
+export function presentToolCall(toolCall: AiChatToolCall): ResolvedToolPresentation {
   const presenter = presenters[toolCall.name];
   if (presenter) {
-    return presenter(toolCall);
+    const presentation = presenter(toolCall);
+    return {
+      ...presentation,
+      icon: presentation.icon ?? toolIcon(toolCall.name),
+    };
   }
   return {
-    label: "执行工具",
+    icon: toolIcon(toolCall.name),
+    label: toolActionLabel(toolCall.name),
     summary: toolCall.name,
-    detail: <p className="text-ctp-subtext0">此工具暂未提供专属详情视图。原始参数和结果已隐藏。</p>,
+    detail: null,
   };
 }
