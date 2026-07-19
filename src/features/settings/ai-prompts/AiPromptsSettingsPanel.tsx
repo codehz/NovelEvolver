@@ -8,6 +8,7 @@ import type { AiPromptConfigWrite } from "#shared/rpc/services/index";
 
 import {
   settingsGhostActionClass,
+  settingsHeaderActionsClass,
   settingsListItemMetaClass,
   settingsListItemTitleClass,
   settingsPanelRootClass,
@@ -15,6 +16,7 @@ import {
 import { settingsErrorMessage } from "../settings-error";
 import type { SettingsFormHandle } from "../settings-leave-guard";
 import { SettingsDetailPane } from "../SettingsDetailPane";
+import { SettingsFormActions } from "../SettingsFormActions";
 import { SettingsMasterDetailShell } from "../SettingsMasterDetailShell";
 import {
   SettingsPanelEmpty,
@@ -25,7 +27,7 @@ import { SettingsRail } from "../SettingsRail";
 import { SettingsRailItem, settingsRailItemMetaLineClass } from "../SettingsRailItem";
 import { useSettingsEditorLeave } from "../use-settings-editor-leave";
 import { useSettingsMutation } from "../use-settings-mutation";
-import { AiPromptConfigForm } from "./AiPromptConfigForm";
+import { AI_PROMPT_CONFIG_FORM_ID, AiPromptConfigForm } from "./AiPromptConfigForm";
 
 type PromptSelection = { type: "create" } | { type: "edit"; id: string };
 
@@ -262,8 +264,8 @@ export function AiPromptsSettingsPanel({ active = true }: AiPromptsSettingsPanel
                     )}
                   </div>
                 </div>
-                {selectedPrompt ? (
-                  <div className="flex shrink-0 items-center gap-0.5">
+                <div className={settingsHeaderActionsClass}>
+                  {selectedPrompt ? (
                     <Button
                       aria-label={`删除提示词 ${selectedPrompt.title}`}
                       className={settingsGhostActionClass}
@@ -276,8 +278,13 @@ export function AiPromptsSettingsPanel({ active = true }: AiPromptsSettingsPanel
                     >
                       <span aria-hidden="true" className="icon-[codicon--trash] text-base" />
                     </Button>
-                  </div>
-                ) : null}
+                  ) : null}
+                  <SettingsFormActions
+                    busy={busy}
+                    form={AI_PROMPT_CONFIG_FORM_ID}
+                    submitLabel={selection.type === "create" ? "添加" : "保存"}
+                  />
+                </div>
               </>
             ) : undefined
           }

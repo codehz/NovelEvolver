@@ -9,6 +9,7 @@ import type { AiAgentConfigPublic, AiAgentConfigWrite } from "#shared/rpc/servic
 
 import {
   settingsGhostActionClass,
+  settingsHeaderActionsClass,
   settingsListItemMetaClass,
   settingsListItemTitleClass,
   settingsPanelRootClass,
@@ -17,6 +18,7 @@ import {
 import { settingsErrorMessage } from "../settings-error";
 import type { SettingsFormHandle } from "../settings-leave-guard";
 import { SettingsDetailPane } from "../SettingsDetailPane";
+import { SettingsFormActions } from "../SettingsFormActions";
 import { SettingsMasterDetailShell } from "../SettingsMasterDetailShell";
 import {
   SettingsPanelEmpty,
@@ -27,7 +29,7 @@ import { SettingsRail } from "../SettingsRail";
 import { SettingsRailItem, settingsRailItemMetaLineClass } from "../SettingsRailItem";
 import { useSettingsEditorLeave } from "../use-settings-editor-leave";
 import { useSettingsMutation } from "../use-settings-mutation";
-import { AiAgentConfigForm } from "./AiAgentConfigForm";
+import { AI_AGENT_CONFIG_FORM_ID, AiAgentConfigForm } from "./AiAgentConfigForm";
 
 type AgentSelection = { type: "create" } | { type: "edit"; id: string };
 
@@ -329,8 +331,8 @@ export function AiAgentsSettingsPanel({ active = true }: AiAgentsSettingsPanelPr
                     </div>
                   )}
                 </div>
-                {selectedAgent && !selectedAgent.builtin ? (
-                  <div className="flex shrink-0 items-center gap-0.5">
+                <div className={settingsHeaderActionsClass}>
+                  {selectedAgent && !selectedAgent.builtin ? (
                     <Button
                       aria-label={`删除 Agent ${selectedAgent.name}`}
                       className={settingsGhostActionClass}
@@ -343,8 +345,13 @@ export function AiAgentsSettingsPanel({ active = true }: AiAgentsSettingsPanelPr
                     >
                       <span aria-hidden="true" className="icon-[codicon--trash] text-base" />
                     </Button>
-                  </div>
-                ) : null}
+                  ) : null}
+                  <SettingsFormActions
+                    busy={busy}
+                    form={AI_AGENT_CONFIG_FORM_ID}
+                    submitLabel={selection.type === "create" ? "添加" : "保存"}
+                  />
+                </div>
               </>
             ) : undefined
           }

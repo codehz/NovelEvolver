@@ -5,12 +5,32 @@ import {
   settingsPanelRootClass,
   settingsPanelScrollClass,
 } from "../settings-chrome";
+import { SettingsFormActions } from "../SettingsFormActions";
 import { SettingsPanelLoadError, SettingsPanelLoading } from "../SettingsPanelStatus";
 import { SettingsSubpageHeader } from "../SettingsSubpageHeader";
+import { AI_MODEL_CONFIG_FORM_ID } from "./AiModelConfigForm";
 import { AiModelsEditorLayer } from "./AiModelsEditorLayer";
 import { AiModelsListLayer } from "./AiModelsListLayer";
-import { resolveModelsSubpageTitle } from "./editor-mode";
+import { AI_PROVIDER_CONFIG_FORM_ID } from "./AiProviderConfigForm";
+import { resolveModelsSubpageTitle, type EditorMode } from "./editor-mode";
 import { useAiModelsSettings } from "./use-ai-models-settings";
+
+function resolveModelsSubpageSubmit(
+  editor: EditorMode,
+): { form: string; submitLabel: string } | null {
+  switch (editor.type) {
+    case "create-provider":
+      return { form: AI_PROVIDER_CONFIG_FORM_ID, submitLabel: "添加" };
+    case "edit-provider":
+      return { form: AI_PROVIDER_CONFIG_FORM_ID, submitLabel: "保存" };
+    case "create-model":
+      return { form: AI_MODEL_CONFIG_FORM_ID, submitLabel: "添加" };
+    case "edit-model":
+      return { form: AI_MODEL_CONFIG_FORM_ID, submitLabel: "保存" };
+    case "closed":
+      return null;
+  }
+}
 
 type AiModelsSettingsPanelProps = {
   /** Whether the models tab is currently active. */
@@ -58,12 +78,22 @@ export function AiModelsSettingsPanel({ active = true }: AiModelsSettingsPanelPr
 
   const isSubpageOpen = editor.type !== "closed";
   const subpageTitle = resolveModelsSubpageTitle(editor);
+  const subpageSubmit = resolveModelsSubpageSubmit(editor);
 
   return (
     <div className={settingsPanelRootClass}>
       {isSubpageOpen && subpageTitle ? (
         <SettingsSubpageHeader
           title={subpageTitle}
+          actions={
+            subpageSubmit ? (
+              <SettingsFormActions
+                busy={busy}
+                form={subpageSubmit.form}
+                submitLabel={subpageSubmit.submitLabel}
+              />
+            ) : undefined
+          }
           onBack={() => {
             void requestClose();
           }}
