@@ -1,7 +1,7 @@
 import { Field } from "@base-ui/react/field";
 import { Form } from "@base-ui/react/form";
 import { NumberField } from "@base-ui/react/number-field";
-import { useEffect, useImperativeHandle, useMemo, useRef, useState, type Ref } from "react";
+import { useMemo, type Ref } from "react";
 
 import { cn } from "#app/shared/lib/ui/cn";
 import { AppTooltip, Button } from "#app/shared/ui";
@@ -23,6 +23,7 @@ import {
   settingsPanelSectionClass,
 } from "../settings-chrome";
 import type { SettingsFormHandle } from "../settings-leave-guard";
+import { useSettingsForm } from "../use-settings-form";
 
 const policyFieldControlRowClass = cn("flex min-w-0 items-center gap-1");
 const policyFieldNumberRootClass = cn("min-w-0 flex-1");
@@ -96,6 +97,19 @@ function isPositiveIntegerInRange(value: number | null, min: number, max: number
   return typeof value === "number" && Number.isInteger(value) && value >= min && value <= max;
 }
 
+function toWritePayload(form: FormState): AiRuntimePolicyWrite {
+  return {
+    maxToolRounds: form.maxToolRounds ?? DEFAULT_AI_RUNTIME_POLICY.maxToolRounds,
+    maxSubagentToolRounds:
+      form.maxSubagentToolRounds ?? DEFAULT_AI_RUNTIME_POLICY.maxSubagentToolRounds,
+    maxParentSummaryChars:
+      form.maxParentSummaryChars ?? DEFAULT_AI_RUNTIME_POLICY.maxParentSummaryChars,
+    maxFocusTargets: form.maxFocusTargets ?? DEFAULT_AI_RUNTIME_POLICY.maxFocusTargets,
+    maxFocusContentChars:
+      form.maxFocusContentChars ?? DEFAULT_AI_RUNTIME_POLICY.maxFocusContentChars,
+  };
+}
+
 export function AiRuntimePolicyForm({
   initial,
   busy = false,
@@ -104,66 +118,30 @@ export function AiRuntimePolicyForm({
   onDirtyChange,
   onSubmit,
 }: AiRuntimePolicyFormProps) {
-  const [form, setForm] = useState<FormState>(() => toFormState(initial));
-  const [baseline, setBaseline] = useState<FormState>(() => toFormState(initial));
-  const formElementRef = useRef<HTMLFormElement | null>(null);
-  const onSubmitRef = useRef(onSubmit);
-  onSubmitRef.current = onSubmit;
+  const initialState = useMemo(() => toFormState(initial), [initial]);
 
-  useEffect(() => {
-    const next = toFormState(initial);
-    setForm(next);
-    setBaseline(next);
-  }, [initial]);
-
-  const dirty = useMemo(
-    () =>
-      form.maxToolRounds !== baseline.maxToolRounds ||
-      form.maxSubagentToolRounds !== baseline.maxSubagentToolRounds ||
-      form.maxParentSummaryChars !== baseline.maxParentSummaryChars ||
-      form.maxFocusTargets !== baseline.maxFocusTargets ||
-      form.maxFocusContentChars !== baseline.maxFocusContentChars,
-    [baseline, form],
-  );
-
-  useEffect(() => {
-    onDirtyChange?.(dirty);
-  }, [dirty, onDirtyChange]);
-
-  const submit = async (): Promise<boolean> => {
-    if (busy) {
-      return false;
-    }
-    const payload: AiRuntimePolicyWrite = {
-      maxToolRounds: form.maxToolRounds ?? DEFAULT_AI_RUNTIME_POLICY.maxToolRounds,
-      maxSubagentToolRounds:
-        form.maxSubagentToolRounds ?? DEFAULT_AI_RUNTIME_POLICY.maxSubagentToolRounds,
-      maxParentSummaryChars:
-        form.maxParentSummaryChars ?? DEFAULT_AI_RUNTIME_POLICY.maxParentSummaryChars,
-      maxFocusTargets: form.maxFocusTargets ?? DEFAULT_AI_RUNTIME_POLICY.maxFocusTargets,
-      maxFocusContentChars:
-        form.maxFocusContentChars ?? DEFAULT_AI_RUNTIME_POLICY.maxFocusContentChars,
-    };
-
-    for (const key of Object.keys(payload) as PolicyFieldKey[]) {
-      const limit = AI_RUNTIME_POLICY_LIMITS[key];
-      if (!isPositiveIntegerInRange(payload[key], limit.min, limit.max)) {
-        formElementRef.current?.reportValidity();
-        return false;
+  const {
+    values: form,
+    setField,
+    submit,
+    formElementRef,
+  } = useSettingsForm<FormState>({
+    initial: initialState,
+    formRef,
+    onDirtyChange,
+    busy,
+    onSubmit: async (values) => {
+      const payload = toWritePayload(values);
+      for (const key of Object.keys(payload) as PolicyFieldKey[]) {
+        const limit = AI_RUNTIME_POLICY_LIMITS[key];
+        if (!isPositiveIntegerInRange(payload[key], limit.min, limit.max)) {
+          formElementRef.current?.reportValidity();
+          return false;
+        }
       }
-    }
-
-    const result = await onSubmitRef.current(payload);
-    return result !== false;
-  };
-
-  useImperativeHandle(formRef, () => ({
-    save: submit,
-  }));
-
-  const update = (key: PolicyFieldKey, value: number | null) => {
-    setForm((prev) => ({ ...prev, [key]: value }));
-  };
+      return onSubmit(payload);
+    },
+  });
 
   const renderField = (spec: FieldSpec) => {
     const limit = AI_RUNTIME_POLICY_LIMITS[spec.key];
@@ -198,7 +176,7 @@ export function AiRuntimePolicyForm({
               step={1}
               value={form[spec.key]}
               onValueChange={(next) => {
-                update(spec.key, next);
+                setField(spec.key, next);
               }}
             >
               <NumberField.Input
@@ -215,7 +193,7 @@ export function AiRuntimePolicyForm({
                   type="button"
                   variant="ghost"
                   onClick={() => {
-                    update(spec.key, defaultValue);
+                    setField(spec.key, defaultValue);
                   }}
                 >
                   <span aria-hidden="true" className="icon-[codicon--discard] text-sm" />
