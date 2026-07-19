@@ -6,6 +6,9 @@ import type {
   AiChatSnapshot,
 } from "#shared/rpc/ai/index";
 
+import type { AssistantWorkStep } from "../messages/project-assistant-segments";
+import { isWorkSegmentLive } from "../messages/project-assistant-segments";
+import { toolActionLabel } from "../tools/presenter-format";
 import {
   describeRunningSubagentStatus,
   progressUiFromToolView,
@@ -47,6 +50,61 @@ export function describeToolCallStatus(status: AiChatToolCall["status"]): string
     case "error":
       return "失败";
   }
+}
+
+/**
+ * Work segment collapsed summary. Step counts only — never durations.
+ * Live: current action / 进行中 · 第 k/N 步. Done: 思考 · N 个工具 / N 步.
+ */
+export function describeWorkSummary(steps: readonly AssistantWorkStep[]): string {
+  const total = steps.length;
+  if (total === 0) {
+    return "无步骤";
+  }
+
+  const reasoningCount = steps.filter((step) => step.type === "reasoning").length;
+  const toolSteps = steps.filter((step) => step.type === "tool_call");
+  const toolCount = toolSteps.length;
+  const errorCount = toolSteps.filter((step) => step.status === "error").length;
+
+  if (isWorkSegmentLive(steps)) {
+    const streamingReasoning = steps.find(
+      (step) => step.type === "reasoning" && step.status === "streaming",
+    );
+    if (streamingReasoning) {
+      return `思考中 · ${total} 步`;
+    }
+
+    let runningIndex = -1;
+    for (let index = steps.length - 1; index >= 0; index -= 1) {
+      const step = steps[index]!;
+      if (step.type === "tool_call" && (step.status === "running" || step.status === "pending")) {
+        runningIndex = index;
+        break;
+      }
+    }
+    if (runningIndex >= 0) {
+      const running = steps[runningIndex] as AiChatToolCall;
+      return `${toolActionLabel(running.name)} · 第 ${runningIndex + 1}/${total} 步`;
+    }
+
+    return `进行中 · ${total} 步`;
+  }
+
+  const chunks: string[] = [];
+  if (reasoningCount > 0 && toolCount > 0) {
+    chunks.push("思考", `${toolCount} 个工具`, `共 ${total} 步`);
+  } else if (reasoningCount > 0) {
+    chunks.push(reasoningCount === 1 ? "思考" : `思考 · ${reasoningCount} 步`);
+  } else if (toolCount > 0) {
+    chunks.push(`${toolCount} 个工具`);
+  } else {
+    chunks.push(`${total} 步`);
+  }
+  if (errorCount > 0) {
+    chunks.push(`${errorCount} 失败`);
+  }
+  return chunks.join(" · ");
 }
 
 export function findRunningSubagentToolCall(

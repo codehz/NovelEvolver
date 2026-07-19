@@ -7,6 +7,7 @@ import type {
   AiChatToolCall,
 } from "#shared/rpc/ai/index";
 
+import { describeWorkSummary } from "../ui/ai-chat-helpers";
 import {
   countWorkSteps,
   isElevatedToolCall,
@@ -140,5 +141,23 @@ describe("projectAssistantSegments", () => {
     expect(isWorkSegmentLive([tool("t1", "read_document", "running")])).toBe(true);
     expect(isWorkSegmentLive([tool("t1", "read_document", "pending")])).toBe(true);
     expect(isWorkSegmentLive([tool("t1", "ask_user", "awaiting_user")])).toBe(true);
+  });
+});
+
+describe("describeWorkSummary", () => {
+  test("counts steps without duration", () => {
+    expect(
+      describeWorkSummary([
+        reasoning("r1"),
+        tool("t1", "read_document"),
+        tool("t2", "search_documents"),
+      ]),
+    ).toBe("思考 · 2 个工具 · 共 3 步");
+  });
+
+  test("live running tool shows step index", () => {
+    expect(describeWorkSummary([reasoning("r1"), tool("t1", "read_document", "running")])).toMatch(
+      /第 2\/2 步/,
+    );
   });
 });

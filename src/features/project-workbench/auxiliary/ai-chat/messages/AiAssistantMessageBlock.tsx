@@ -15,6 +15,7 @@ import {
 import { describeAssistantStreamingMeta, describeAssistantUsageMeta } from "../ui/ai-chat-helpers";
 import { AiAssistantPartBlock } from "./AiAssistantPartBlock";
 import { AiMessageBranchSwitcher } from "./AiMessageBranchSwitcher";
+import { AiWorkBlock } from "./AiWorkBlock";
 import { projectAssistantSegments, type AssistantSegment } from "./project-assistant-segments";
 
 type AiAssistantMessageBlockProps = {
@@ -26,24 +27,15 @@ type AiAssistantMessageBlockProps = {
   onSelectBranch?: (index: number) => void;
 };
 
-/**
- * Phase 1 interim: render segments via existing part blocks.
- * Work steps still map 1:1 to old reasoning/tool shells until Phase 3.
- */
 function renderAssistantSegment(segment: AssistantSegment) {
   switch (segment.kind) {
     case "prose":
       return <AiAssistantPartBlock key={segment.id} part={segment.part} />;
     case "work":
-      return (
-        <div key={segment.id} className="flex flex-col gap-1" data-assistant-segment="work">
-          {segment.steps.map((step) => (
-            <AiAssistantPartBlock key={step.id} part={step} />
-          ))}
-        </div>
-      );
+      return <AiWorkBlock key={segment.id} segmentId={segment.id} steps={segment.steps} />;
     case "subagent":
     case "ask_user":
+      // Elevated cards land in Phase 4/5; keep legacy tool shell until then.
       return <AiAssistantPartBlock key={segment.id} part={segment.part} />;
   }
 }
