@@ -1,13 +1,11 @@
 import { cn } from "#app/shared/lib/ui/cn";
-import { Button } from "#app/shared/ui";
 
 import {
-  settingsEmptyStateClass,
   settingsLayerHiddenClass,
   settingsPanelRootClass,
   settingsPanelScrollClass,
-  settingsPanelSectionClass,
 } from "../settings-chrome";
+import { SettingsPanelLoadError, SettingsPanelLoading } from "../SettingsPanelStatus";
 import { SettingsSubpageHeader } from "../SettingsSubpageHeader";
 import { AiModelsEditorLayer } from "./AiModelsEditorLayer";
 import { AiModelsListLayer } from "./AiModelsListLayer";
@@ -44,31 +42,17 @@ export function AiModelsSettingsPanel({ active = true }: AiModelsSettingsPanelPr
   } = useAiModelsSettings({ active });
 
   if (isLoading && snapshot === undefined) {
-    return (
-      <div className={settingsPanelRootClass}>
-        <div className={settingsPanelScrollClass}>
-          <div className={settingsEmptyStateClass}>加载中…</div>
-        </div>
-      </div>
-    );
+    return <SettingsPanelLoading />;
   }
 
   if (loadError && snapshot === undefined) {
     return (
-      <div className={settingsPanelRootClass}>
-        <div className={settingsPanelScrollClass}>
-          <div className={settingsPanelSectionClass}>
-            <p className="text-xs text-ctp-red">{loadError}</p>
-            <Button
-              onClick={() => {
-                void refresh();
-              }}
-            >
-              重试
-            </Button>
-          </div>
-        </div>
-      </div>
+      <SettingsPanelLoadError
+        message={loadError}
+        onRetry={() => {
+          void refresh();
+        }}
+      />
     );
   }
 
