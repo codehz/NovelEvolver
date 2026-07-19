@@ -1,6 +1,10 @@
 import type { ReactNode } from "react";
 
+import { cn } from "#app/shared/lib/ui/cn";
+
 import {
+  settingsDetailInsetClass,
+  settingsDetailSurfaceClass,
   settingsDualPaneDetailClass,
   settingsDualPaneDetailHeaderClass,
   settingsDualPaneDetailScrollClass,
@@ -16,7 +20,7 @@ type SettingsDetailPaneProps = {
   scrollBody?: boolean;
 };
 
-/** Right detail column for master-detail settings. */
+/** Right detail column for master-detail settings — editor-style inset card. */
 export function SettingsDetailPane({
   header,
   banner,
@@ -24,10 +28,16 @@ export function SettingsDetailPane({
   scrollBody = true,
 }: SettingsDetailPaneProps) {
   return (
-    <section className={settingsDualPaneDetailClass}>
-      {banner}
-      {header ? <div className={settingsDualPaneDetailHeaderClass}>{header}</div> : null}
-      {scrollBody ? <div className={settingsDualPaneDetailScrollClass}>{children}</div> : children}
+    <section className={cn(settingsDualPaneDetailClass, settingsDetailInsetClass)}>
+      <div className={cn(settingsDetailSurfaceClass, "flex min-h-0 flex-1 flex-col")}>
+        {banner}
+        {header ? <div className={settingsDualPaneDetailHeaderClass}>{header}</div> : null}
+        {scrollBody ? (
+          <div className={settingsDualPaneDetailScrollClass}>{children}</div>
+        ) : (
+          children
+        )}
+      </div>
     </section>
   );
 }
