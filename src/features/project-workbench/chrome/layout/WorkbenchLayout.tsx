@@ -8,6 +8,7 @@ import { SidebarDock } from "./SidebarDock";
 import { SidebarFrame } from "./SidebarFrame";
 import { useMeasuredElementWidth } from "./use-measured-element-width";
 import { useWorkbenchActiveView } from "./use-workbench-active-view";
+import { useWorkbenchLayoutMotion } from "./use-workbench-layout-motion";
 import { useWorkbenchLayoutPreferences } from "./use-workbench-layout-preferences";
 import { useWorkbenchSidebarResize } from "./use-workbench-sidebar-resize";
 import { WorkbenchChromeProvider } from "./workbench-chrome-context";
@@ -56,11 +57,7 @@ export function WorkbenchLayout({
   });
   const { ref: containerRef, width: containerWidth } =
     useMeasuredElementWidth<HTMLDivElement>(INITIAL_WORKBENCH_WIDTH);
-  const {
-    resolved: resolvedLayout,
-    primary,
-    auxiliary: auxiliaryChrome,
-  } = useMemo(
+  const chromeLayout = useMemo(
     () =>
       deriveWorkbenchChromeLayout({
         layoutPreferences,
@@ -68,10 +65,16 @@ export function WorkbenchLayout({
       }),
     [containerWidth, layoutPreferences],
   );
+  const { resolved: resolvedLayout, primary, auxiliary: auxiliaryChrome } = chromeLayout;
   const { activeResizeSide, startResizeDrag } = useWorkbenchSidebarResize({
     layoutPreferences,
     resolvedLayout,
     setLayoutPreferences,
+  });
+  const { displayed } = useWorkbenchLayoutMotion({
+    chromeLayout,
+    containerWidth,
+    activeResizeSide,
   });
   const activityItems = useMemo(
     () =>
@@ -120,14 +123,13 @@ export function WorkbenchLayout({
             onSelectView={handleActivitySelectView}
           />
           <SidebarDock
-            panelWidth={primary.panelWidth}
+            opacity={displayed.primary.opacity}
+            panelWidth={displayed.primary.panelWidth}
             resizeActive={activeResizeSide === "primary"}
             resizeAriaLabel="调整主侧边栏宽度"
-            resizeTransitionDisabled={activeResizeSide === "primary"}
             side="primary"
-            spacerWidth={primary.spacerWidth}
+            spacerWidth={displayed.primary.spacerWidth}
             title={activePrimaryView.title}
-            visible={primary.visible}
             onResizePointerDown={(event) => {
               startResizeDrag("primary", event);
             }}
@@ -139,14 +141,13 @@ export function WorkbenchLayout({
             {editor}
           </div>
           <SidebarDock
-            panelWidth={auxiliaryChrome.panelWidth}
+            opacity={displayed.auxiliary.opacity}
+            panelWidth={displayed.auxiliary.panelWidth}
             resizeActive={activeResizeSide === "auxiliary"}
             resizeAriaLabel="调整辅助侧边栏宽度"
-            resizeTransitionDisabled={activeResizeSide === "auxiliary"}
             side="auxiliary"
-            spacerWidth={auxiliaryChrome.spacerWidth}
+            spacerWidth={displayed.auxiliary.spacerWidth}
             title="AI 助手"
-            visible={auxiliaryChrome.visible}
             onResizePointerDown={(event) => {
               startResizeDrag("auxiliary", event);
             }}

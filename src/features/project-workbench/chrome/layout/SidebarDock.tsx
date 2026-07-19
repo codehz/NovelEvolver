@@ -12,18 +12,10 @@ import { sidebarChromeTitleTextClass } from "../sidebar/sidebar-chrome";
 import { SidebarResizeSash } from "./SidebarResizeSash";
 import { WORKBENCH_SIDEBAR_INSET, sidebarChromeOuterSize } from "./workbench-layout-resolver";
 
-const sidebarDockMotionClass = cn("duration-200 ease-out");
-
-const sidebarDockSpacerClass = cn(
-  "pointer-events-none h-full min-h-0 shrink-0",
-  "transition-[width]",
-  sidebarDockMotionClass,
-);
+const sidebarDockSpacerClass = cn("pointer-events-none h-full min-h-0 shrink-0");
 
 const sidebarDockChromeBaseClass = cn(
-  "absolute top-0 bottom-0 overflow-visible",
-  "transition-opacity will-change-[opacity]",
-  sidebarDockMotionClass,
+  "absolute top-0 bottom-0 overflow-visible will-change-[opacity]",
 );
 
 const sidebarDockPanelClass = cn("absolute top-0 bottom-0 overflow-hidden");
@@ -38,10 +30,10 @@ type SidebarDockSide = "primary" | "auxiliary";
 
 type SidebarDockProps = {
   side: SidebarDockSide;
-  visible: boolean;
   spacerWidth: number;
   panelWidth: number;
-  resizeTransitionDisabled: boolean;
+  /** 0..1 chrome opacity driven by layout motion controller. */
+  opacity: number;
   resizeActive: boolean;
   resizeAriaLabel: string;
   /** When set, paints a dock-level SlotText overlay over the panel header. */
@@ -52,10 +44,9 @@ type SidebarDockProps = {
 
 export const SidebarDock = memo(function SidebarDock({
   side,
-  visible,
   spacerWidth,
   panelWidth,
-  resizeTransitionDisabled,
+  opacity,
   resizeActive,
   resizeAriaLabel,
   title,
@@ -63,10 +54,12 @@ export const SidebarDock = memo(function SidebarDock({
   children,
 }: SidebarDockProps) {
   const isPrimary = side === "primary";
+  const interactive = opacity >= 0.99;
   const spacerStyle: CSSProperties = { width: spacerWidth };
   // Dock owns panel + sash only; workbench row owns the right window-edge gap.
   const chromeStyle: CSSProperties = {
     width: sidebarChromeOuterSize(panelWidth),
+    opacity,
   };
   const panelStyle: CSSProperties = isPrimary
     ? { left: 0, width: panelWidth }
@@ -98,16 +91,12 @@ export const SidebarDock = memo(function SidebarDock({
 
   return (
     <div className="relative z-0 h-full min-h-0 shrink-0 overflow-visible">
-      <div
-        aria-hidden
-        className={cn(sidebarDockSpacerClass, resizeTransitionDisabled && "transition-none")}
-        style={spacerStyle}
-      />
+      <div aria-hidden className={sidebarDockSpacerClass} style={spacerStyle} />
       <div
         className={cn(
           sidebarDockChromeBaseClass,
           isPrimary ? "left-0" : "right-0 z-0",
-          visible ? "opacity-100" : "pointer-events-none opacity-0",
+          !interactive && "pointer-events-none",
         )}
         style={chromeStyle}
       >
