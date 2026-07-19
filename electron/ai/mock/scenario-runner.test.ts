@@ -27,6 +27,8 @@ const reviewer: AiAgentRuntimeConfig = {
   defaultModelId: null,
   availableToolNames: ["read_document", "search_documents", "read_structure"],
   builtin: true,
+  userSelectable: false,
+  subagentEligible: true,
 };
 
 function subagentUserInput(task: string): InputItem[] {

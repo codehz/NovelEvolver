@@ -2,6 +2,7 @@ import { describe, expect, test } from "bun:test";
 
 import {
   assertSubagentDepth,
+  assertSubagentEligible,
   MAX_PARENT_SUMMARY_CHARS,
   MAX_SUBAGENT_DEPTH,
   resolveSubagentModelId,
@@ -38,6 +39,20 @@ describe("assertSubagentDepth", () => {
   test("rejects invalid depth", () => {
     expect(() => assertSubagentDepth(-1)).toThrow();
     expect(() => assertSubagentDepth(0.5)).toThrow();
+  });
+});
+
+describe("assertSubagentEligible", () => {
+  test("allows eligible agents", () => {
+    expect(() =>
+      assertSubagentEligible({ name: "一致性审查", subagentEligible: true }),
+    ).not.toThrow();
+  });
+
+  test("rejects ineligible agents", () => {
+    expect(() => assertSubagentEligible({ name: "写作助手", subagentEligible: false })).toThrow(
+      /不可用作子代理/,
+    );
   });
 });
 

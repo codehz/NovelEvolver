@@ -42,6 +42,8 @@ const reviewer: AiAgentRuntimeConfig = {
   defaultModelId: null,
   availableToolNames: ["read_document", "search_documents", "run_subagent", "ask_user"],
   builtin: true,
+  userSelectable: false,
+  subagentEligible: true,
 };
 
 describe("executeSubagentToolCall", () => {
@@ -65,6 +67,42 @@ describe("executeSubagentToolCall", () => {
 
     expect(result.errorMessage).toBeNull();
     expect(result.resultText).toContain("不存在");
+    expect(result.resultText).toContain('"status": "failed"');
+  });
+
+  test("returns failed when agent is not subagent eligible", async () => {
+    let backendCreated = false;
+    const ineligible: AiAgentRuntimeConfig = {
+      ...reviewer,
+      id: "custom-writer",
+      name: "仅对话助手",
+      subagentEligible: false,
+      userSelectable: true,
+    };
+    const result = await executeSubagentToolCall({
+      call: toolCall({ agent_id: ineligible.id, task: "审查" }),
+      depth: 0,
+      signal: new AbortController().signal,
+      deps: {
+        resolveAgentConfig: (id) => (id === ineligible.id ? ineligible : null),
+        resolveModelConfig: () => null,
+        resolveWorktree: () => {
+          throw new Error("no worktree");
+        },
+        clientLabel: "test",
+        parentSelectedModelId: "mock",
+        parentSelectedReasoningLevel: null,
+        parentAdapterKind: "mock",
+        createBackend: () => {
+          backendCreated = true;
+          return createMockBackend("should not run");
+        },
+      },
+    });
+
+    expect(backendCreated).toBe(false);
+    expect(result.errorMessage).toBeNull();
+    expect(result.resultText).toContain("不可用作子代理");
     expect(result.resultText).toContain('"status": "failed"');
   });
 
