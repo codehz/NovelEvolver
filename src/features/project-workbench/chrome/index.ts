@@ -16,6 +16,7 @@ export {
   SidebarHeaderActionButton,
   type SidebarHeaderActionButtonProps,
 } from "./sidebar/header/SidebarHeaderActionButton";
+export { sidebarHeaderActionClass, sidebarHeaderIconClass } from "./sidebar/sidebar-chrome";
 export { ErrorRetryView } from "./sidebar/ErrorRetryView";
 export {
   statusBarIconOnlyButtonClass,
