@@ -1,8 +1,15 @@
 import { useMolecule } from "bunshi/react";
 import { useAtomValue } from "jotai";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useState,
+  type MouseEvent as ReactMouseEvent,
+} from "react";
 
 import { notificationApi } from "#app/shared/lib/notifications";
+import { popupContextMenu } from "#app/shared/lib/shell/popup-context-menu";
 import { cn } from "#app/shared/lib/ui/cn";
 import type { HistoryEntry, HistoryTarget } from "#shared/rpc/worktree/index";
 import { getWorkbenchEditorTabHistoryTarget } from "#workbench/editor/contributions/registry";
@@ -11,6 +18,9 @@ import { useWorkbenchEditorActions } from "#workbench/editor/use-workbench-edito
 import { formatHistoryTime } from "#workbench/lib/format-history-time";
 import { useWorktreeChangesRevision } from "#workbench/session/changes-feed/use-worktree-changes-revision";
 import { useHistory } from "#workbench/session/workspace-handles";
+
+import { buildFileHistoryEntryContextMenuItems } from "./history-commit-context-menu";
+import { useRestoreFromHistory } from "./use-restore-from-history";
 
 const historyRowClass = cn(
   "group flex w-full min-w-0 items-start gap-2 border-b border-titlebar-border p-2 text-left",
@@ -69,6 +79,7 @@ export function FileHistorySectionBody() {
   const { activeEditorTabAtom } = useMolecule(workbenchEditorMolecule);
   const activeTab = useAtomValue(activeEditorTabAtom);
   const { focusTarget, openTarget } = useWorkbenchEditorActions();
+  const { restoreEntityFromHistoryEntry } = useRestoreFromHistory();
   const [entries, setEntries] = useState<HistoryEntry[] | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -136,6 +147,30 @@ export function FileHistorySectionBody() {
     [focusTarget, openTarget, target],
   );
 
+  const handleEntryContextMenu = useCallback(
+    (event: ReactMouseEvent, entry: HistoryEntry) => {
+      event.preventDefault();
+      event.stopPropagation();
+      void (async () => {
+        const actionId = await popupContextMenu(
+          buildFileHistoryEntryContextMenuItems(entry.hasContent),
+          {
+            x: event.clientX,
+            y: event.clientY,
+          },
+        );
+        if (actionId === "open-preview") {
+          openPreviewEntry(entry, "open");
+          return;
+        }
+        if (actionId === "restore-entry") {
+          await restoreEntityFromHistoryEntry(entry);
+        }
+      })();
+    },
+    [openPreviewEntry, restoreEntityFromHistoryEntry],
+  );
+
   return (
     <>
       {target === null ? (
@@ -157,6 +192,7 @@ export function FileHistorySectionBody() {
               type="button"
               onClick={() => openPreviewEntry(entry, "focus")}
               onDoubleClick={() => openPreviewEntry(entry, "open")}
+              onContextMenu={(event) => handleEntryContextMenu(event, entry)}
             >
               <span
                 aria-hidden="true"

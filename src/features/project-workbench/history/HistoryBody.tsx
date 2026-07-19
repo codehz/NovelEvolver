@@ -9,6 +9,7 @@ import {
   type ReactNode,
 } from "react";
 
+import { notificationApi } from "#app/shared/lib/notifications";
 import { popupContextMenu } from "#app/shared/lib/shell/popup-context-menu";
 import { cn } from "#app/shared/lib/ui/cn";
 import { rowHoverClass } from "#app/shared/lib/ui/interaction-chrome";
@@ -27,7 +28,10 @@ import {
 } from "#workbench/tree/tree-row-motion";
 import { TreeMotionRow } from "#workbench/tree/TreeMotionRow";
 
-import { buildHistoryCommitContextMenuItems } from "./history-commit-context-menu";
+import {
+  buildHistoryChangeContextMenuItems,
+  buildHistoryCommitContextMenuItems,
+} from "./history-commit-context-menu";
 import {
   collectCommitExpansionSeedKeys,
   flattenHistoryTree,
@@ -37,6 +41,7 @@ import {
 } from "./history-tree-projector";
 import { HistoryCommitRow } from "./HistoryCommitRow";
 import type { CommitChangesCacheEntry } from "./use-commit-changes-state";
+import { useRestoreFromHistory } from "./use-restore-from-history";
 
 const changeFolderRowClass = cn(
   "cursor-pointer text-xs text-ctp-subtext1 hover:bg-ctp-surface0/50",
@@ -157,6 +162,7 @@ function HistoryChangeItemRow({
   ariaExpanded,
   onClick,
   onKeyDown,
+  onContextMenu,
 }: {
   item: Change;
   depth: number;
@@ -168,6 +174,7 @@ function HistoryChangeItemRow({
   ariaExpanded?: boolean;
   onClick?: () => void;
   onKeyDown?: (event: KeyboardEvent) => void;
+  onContextMenu?: (event: ReactMouseEvent) => void;
 }) {
   return (
     <TreeMotionRow
@@ -178,6 +185,15 @@ function HistoryChangeItemRow({
       tabIndex={0}
       onClick={onClick}
       onKeyDown={onKeyDown}
+      onContextMenu={
+        onContextMenu === undefined
+          ? undefined
+          : (event) => {
+              event.preventDefault();
+              event.stopPropagation();
+              onContextMenu(event);
+            }
+      }
     >
       {disclosure ?? <span className={treeRowDisclosureSpacerClass} />}
       <span className={iconClassName ?? contentEntityIconClass(item.entityKind)} />
@@ -200,11 +216,13 @@ function HistoryChangeFolderRow({
   layout,
   onToggle,
   onOpenChange,
+  onChangeContextMenu,
 }: {
   row: Extract<HistoryFlatRow, { kind: "folder" }>;
   layout: TreeRowLayout;
   onToggle: (commitHash: string, folderKey: string) => void;
   onOpenChange: (commitHash: string, change: Change) => void;
+  onChangeContextMenu: (event: ReactMouseEvent, commitHash: string, change: Change) => void;
 }) {
   const hasChildren = row.childCount > 0;
   const toggle = () => {
@@ -245,6 +263,7 @@ function HistoryChangeFolderRow({
               ? activateOnEnterSpace(() => onOpenChange(row.commitHash, row.inlineChange!))
               : undefined
         }
+        onContextMenu={(event) => onChangeContextMenu(event, row.commitHash, row.inlineChange!)}
       />
     );
   }
@@ -291,6 +310,8 @@ function HistoryList({
   onOpenChange,
   onCreateBranchFromCommit,
 }: HistoryListProps) {
+  const { restoreWorkingTreeFromCommit, restoreEntityFromCommit, copyCommitHash } =
+    useRestoreFromHistory();
   const [expandedDomainKeys, setExpandedDomainKeys] = useState<Set<string>>(() => new Set());
   const [expandedFolderKeys, setExpandedFolderKeys] = useState<Set<string>>(() => new Set());
   const seededCommitsRef = useRef<Set<string>>(new Set());
@@ -400,10 +421,51 @@ function HistoryList({
         });
         if (actionId === "create-branch") {
           onCreateBranchFromCommit(commit);
+          return;
+        }
+        if (actionId === "restore-working-tree") {
+          await restoreWorkingTreeFromCommit(commit);
+          return;
+        }
+        if (actionId === "copy-hash") {
+          await copyCommitHash(commit);
         }
       })();
     },
-    [onCreateBranchFromCommit],
+    [copyCommitHash, onCreateBranchFromCommit, restoreWorkingTreeFromCommit],
+  );
+
+  const handleChangeContextMenu = useCallback(
+    (event: ReactMouseEvent, commitHash: string, change: Change) => {
+      void (async () => {
+        const commit = commitByHash.get(commitHash);
+        if (commit === undefined) {
+          return;
+        }
+        const actionId = await popupContextMenu(buildHistoryChangeContextMenuItems(), {
+          x: event.clientX,
+          y: event.clientY,
+        });
+        if (actionId === "open-diff") {
+          if (isPreviewableChange(change)) {
+            onOpenChange(commit, change);
+          }
+          return;
+        }
+        if (actionId === "restore-entity") {
+          if (change.entityKind !== "chapter" && change.entityKind !== "file") {
+            notificationApi.error("只能恢复章节或资源文件。", { source: "历史" });
+            return;
+          }
+          await restoreEntityFromCommit(
+            commit,
+            { domain: change.domain, entityId: change.entityId },
+            change.label,
+          );
+        }
+      })();
+    },
+    [commitByHash, onOpenChange, restoreEntityFromCommit],
   );
 
   const getItemKey = useCallback((row: HistoryFlatRow) => row.key, []);
@@ -451,6 +513,7 @@ function HistoryList({
                 layout={layout}
                 onToggle={onToggleFolder}
                 onOpenChange={handleOpenChange}
+                onChangeContextMenu={handleChangeContextMenu}
               />
             );
           }
@@ -469,6 +532,7 @@ function HistoryList({
                   ? activateOnEnterSpace(() => handleOpenChange(row.commitHash, row.item))
                   : undefined
               }
+              onContextMenu={(event) => handleChangeContextMenu(event, row.commitHash, row.item)}
               className={isPreviewableChange(row.item) ? cn("cursor-pointer") : undefined}
             />
           );
