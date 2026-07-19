@@ -52,7 +52,10 @@ export function presentToolCall(toolCall: AiChatToolCall): ResolvedToolPresentat
   return {
     icon: toolIcon(toolCall.name),
     label: toolActionLabel(toolCall.name),
-    summary: toolCall.name,
-    detail: null,
+    summary: "已执行",
+    detail:
+      toolCall.status === "error" ? (
+        <p className="text-ctp-subtext0">工具标识：{toolCall.name}</p>
+      ) : null,
   };
 }
