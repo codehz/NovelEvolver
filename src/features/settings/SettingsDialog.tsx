@@ -1,5 +1,6 @@
 import { Dialog } from "@base-ui/react/dialog";
 import { Tabs } from "@base-ui/react/tabs";
+import { AutoTransition } from "@codehz/auto-transition";
 import { useState } from "react";
 
 import { AiAgentsSettingsPanel } from "./ai-agents/AiAgentsSettingsPanel";
@@ -19,6 +20,10 @@ import {
   settingsTitleClass,
 } from "./settings-chrome";
 import { requestSettingsLeave } from "./settings-leave-guard";
+import {
+  settingsPageFadeTransition,
+  settingsPageTransitionHostClass,
+} from "./settings-page-transition";
 
 const SETTINGS_CATEGORIES = [
   { id: "ai-models", label: "AI 模型" },
@@ -30,6 +35,10 @@ type SettingsCategoryId = (typeof SETTINGS_CATEGORIES)[number]["id"];
 
 function isSettingsCategoryId(value: unknown): value is SettingsCategoryId {
   return SETTINGS_CATEGORIES.some((category) => category.id === value);
+}
+
+function settingsCategoryLabel(id: SettingsCategoryId): string {
+  return SETTINGS_CATEGORIES.find((category) => category.id === id)?.label ?? id;
 }
 
 type SettingsDialogProps = {
@@ -91,15 +100,23 @@ export function SettingsDialog({ open, onDismiss }: SettingsDialogProps) {
             </header>
 
             <div className={settingsBodyClass}>
-              <Tabs.Panel className={settingsContentClass} value="ai-models">
-                <AiModelsSettingsPanel active={activeCategoryId === "ai-models"} />
-              </Tabs.Panel>
-              <Tabs.Panel className={settingsContentClass} value="ai-agents">
-                <AiAgentsSettingsPanel active={activeCategoryId === "ai-agents"} />
-              </Tabs.Panel>
-              <Tabs.Panel className={settingsContentClass} value="ai-prompts">
-                <AiPromptsSettingsPanel active={activeCategoryId === "ai-prompts"} />
-              </Tabs.Panel>
+              <AutoTransition
+                as="div"
+                className={settingsPageTransitionHostClass}
+                exitLayout="absolute"
+                transition={settingsPageFadeTransition}
+              >
+                <div
+                  key={activeCategoryId}
+                  role="tabpanel"
+                  aria-label={settingsCategoryLabel(activeCategoryId)}
+                  className={settingsContentClass}
+                >
+                  {activeCategoryId === "ai-models" ? <AiModelsSettingsPanel /> : null}
+                  {activeCategoryId === "ai-agents" ? <AiAgentsSettingsPanel /> : null}
+                  {activeCategoryId === "ai-prompts" ? <AiPromptsSettingsPanel /> : null}
+                </div>
+              </AutoTransition>
             </div>
           </Tabs.Root>
         </Dialog.Popup>
