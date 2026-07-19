@@ -5,7 +5,6 @@ import {
   useMemo,
   useRef,
   useState,
-  type CSSProperties,
   type PointerEvent as ReactPointerEvent,
   type ReactNode,
 } from "react";
@@ -13,26 +12,16 @@ import {
 import { cn } from "#app/shared/lib/ui/cn";
 
 import {
-  SidebarSectionRowResizeHandle,
-  SidebarViewSection,
+  applyResizeDelta,
+  resolveAvailableBodyHeight,
+  resolveDisplayHeights,
   SIDEBAR_SECTION_HEADER_HEIGHT_PX,
-  SIDEBAR_SECTION_RESIZE_STRIP_HEIGHT,
-} from "./SidebarViewSection";
+  sum,
+  type SidebarPaneGeometryInput,
+} from "./sidebar-pane-geometry";
+import { SidebarSectionRowResizeHandle, SidebarViewSection } from "./SidebarViewSection";
 
-const MIN_SIDEBAR_SECTION_BODY_HEIGHT = 72;
-
-type SidebarPaneStackPane = {
-  id: string;
-  expanded: boolean;
-  defaultBodyHeight: number;
-  minBodyHeight?: number;
-};
-
-type SidebarPaneStackLayout = {
-  bodyFillsSection: boolean;
-  bodyStyle?: CSSProperties;
-  sectionStyle?: CSSProperties;
-};
+type SidebarPaneStackPane = SidebarPaneGeometryInput;
 
 export type SidebarPaneStackItem = SidebarPaneStackPane & {
   title: string;
@@ -46,165 +35,6 @@ export type SidebarPaneStackProps = {
   panes: SidebarPaneStackItem[];
   className?: string;
 };
-
-function sum(values: number[]) {
-  return values.reduce((total, value) => total + value, 0);
-}
-
-function scaleHeightsToTotal(heights: number[], total: number) {
-  if (heights.length === 0) {
-    return [];
-  }
-
-  if (total <= 0) {
-    return heights.map(() => 0);
-  }
-
-  const currentTotal = sum(heights);
-  if (currentTotal <= 0) {
-    const evenShare = Math.floor(total / heights.length);
-    const remainder = total - evenShare * heights.length;
-    return heights.map((_, index) => evenShare + (index < remainder ? 1 : 0));
-  }
-
-  const scaled = heights.map((height) => (height * total) / currentTotal);
-  const floors = scaled.map((value) => Math.floor(value));
-  let remaining = total - sum(floors);
-
-  const indexesByFraction = scaled
-    .map((value, index) => ({ index, fraction: value - floors[index]! }))
-    .sort((left, right) => right.fraction - left.fraction);
-
-  for (let index = 0; index < indexesByFraction.length && remaining > 0; index += 1) {
-    floors[indexesByFraction[index]!.index] += 1;
-    remaining -= 1;
-  }
-
-  return floors;
-}
-
-function resolveEffectiveMinHeights(panes: SidebarPaneStackPane[], availableBodyHeight: number) {
-  const minHeights = panes.map((pane) =>
-    Math.max(
-      MIN_SIDEBAR_SECTION_BODY_HEIGHT,
-      pane.minBodyHeight ?? MIN_SIDEBAR_SECTION_BODY_HEIGHT,
-    ),
-  );
-  const totalMinHeight = sum(minHeights);
-
-  if (totalMinHeight <= availableBodyHeight) {
-    return minHeights;
-  }
-
-  return scaleHeightsToTotal(minHeights, availableBodyHeight);
-}
-
-function resolvePaneHeights(
-  panes: SidebarPaneStackPane[],
-  preferredHeights: Record<string, number>,
-  availableBodyHeight: number,
-) {
-  if (panes.length === 0) {
-    return {
-      effectiveMinHeights: [] as number[],
-      resolvedHeights: [] as number[],
-    };
-  }
-
-  const effectiveMinHeights = resolveEffectiveMinHeights(panes, availableBodyHeight);
-
-  if (panes.length === 1) {
-    return {
-      effectiveMinHeights,
-      resolvedHeights: [Math.max(availableBodyHeight, 0)],
-    };
-  }
-
-  let remainingBodyHeight = Math.max(availableBodyHeight, 0);
-  const resolvedHeights = panes.map(() => 0);
-  const minHeightSuffixSums = panes.map((_, paneIndex) =>
-    sum(effectiveMinHeights.slice(paneIndex + 1)),
-  );
-
-  for (let paneIndex = 0; paneIndex < panes.length - 1; paneIndex += 1) {
-    const pane = panes[paneIndex]!;
-    const minHeight = effectiveMinHeights[paneIndex]!;
-    const maxHeight = Math.max(minHeight, remainingBodyHeight - minHeightSuffixSums[paneIndex]!);
-    const preferredHeight = Math.round(preferredHeights[pane.id] ?? pane.defaultBodyHeight);
-    const resolvedHeight = Math.min(maxHeight, Math.max(minHeight, preferredHeight));
-
-    resolvedHeights[paneIndex] = resolvedHeight;
-    remainingBodyHeight -= resolvedHeight;
-  }
-
-  resolvedHeights[panes.length - 1] = Math.max(remainingBodyHeight, 0);
-
-  return {
-    effectiveMinHeights,
-    resolvedHeights,
-  };
-}
-
-function applyResizeDelta(
-  heights: number[],
-  minHeights: number[],
-  handleIndex: number,
-  delta: number,
-) {
-  if (delta === 0) {
-    return heights;
-  }
-
-  const nextHeights = [...heights];
-
-  if (delta > 0) {
-    const shrinkCapacity = sum(
-      nextHeights.slice(handleIndex + 1).map((height, paneIndex) => {
-        const minHeight = minHeights[handleIndex + 1 + paneIndex]!;
-        return Math.max(height - minHeight, 0);
-      }),
-    );
-    let remainingDelta = Math.min(delta, shrinkCapacity);
-
-    nextHeights[handleIndex] += remainingDelta;
-
-    for (
-      let paneIndex = handleIndex + 1;
-      paneIndex < nextHeights.length && remainingDelta > 0;
-      paneIndex += 1
-    ) {
-      const shrinkAmount = Math.min(
-        Math.max(nextHeights[paneIndex]! - minHeights[paneIndex]!, 0),
-        remainingDelta,
-      );
-      nextHeights[paneIndex] -= shrinkAmount;
-      remainingDelta -= shrinkAmount;
-    }
-
-    return nextHeights;
-  }
-
-  const growth = Math.abs(delta);
-  const shrinkCapacity = sum(
-    nextHeights
-      .slice(0, handleIndex + 1)
-      .map((height, paneIndex) => Math.max(height - minHeights[paneIndex]!, 0)),
-  );
-  let remainingDelta = Math.min(growth, shrinkCapacity);
-
-  nextHeights[handleIndex + 1] += remainingDelta;
-
-  for (let paneIndex = handleIndex; paneIndex >= 0 && remainingDelta > 0; paneIndex -= 1) {
-    const shrinkAmount = Math.min(
-      Math.max(nextHeights[paneIndex]! - minHeights[paneIndex]!, 0),
-      remainingDelta,
-    );
-    nextHeights[paneIndex] -= shrinkAmount;
-    remainingDelta -= shrinkAmount;
-  }
-
-  return nextHeights;
-}
 
 function useSidebarPaneStack({ panes }: { panes: SidebarPaneStackPane[] }) {
   const [containerHeight, setContainerHeight] = useState(
@@ -267,48 +97,15 @@ function useSidebarPaneStack({ panes }: { panes: SidebarPaneStackPane[] }) {
   }, []);
 
   const expandedPanes = useMemo(() => panes.filter((pane) => pane.expanded), [panes]);
-  const availableBodyHeight = Math.max(
-    containerHeight -
-      panes.length * SIDEBAR_SECTION_HEADER_HEIGHT_PX -
-      Math.max(expandedPanes.length - 1, 0) * SIDEBAR_SECTION_RESIZE_STRIP_HEIGHT,
-    0,
+  const availableBodyHeight = resolveAvailableBodyHeight(
+    containerHeight,
+    panes.length,
+    expandedPanes.length,
   );
-  const { effectiveMinHeights, resolvedHeights } = useMemo(
-    () => resolvePaneHeights(expandedPanes, preferredHeights, availableBodyHeight),
-    [availableBodyHeight, expandedPanes, preferredHeights],
+  const { effectiveMinHeights, resolvedHeights, displayHeights } = useMemo(
+    () => resolveDisplayHeights(panes, preferredHeights, availableBodyHeight),
+    [availableBodyHeight, panes, preferredHeights],
   );
-
-  const paneLayouts = useMemo(() => {
-    const layouts: Record<string, SidebarPaneStackLayout> = {};
-
-    if (expandedPanes.length === 1) {
-      const pane = expandedPanes[0]!;
-      layouts[pane.id] = {
-        bodyFillsSection: true,
-        sectionStyle: {
-          flex: "1 1 0",
-          minHeight: 0,
-        },
-      };
-
-      return layouts;
-    }
-
-    expandedPanes.forEach((pane, paneIndex) => {
-      layouts[pane.id] = {
-        bodyFillsSection: false,
-        bodyStyle: {
-          height: resolvedHeights[paneIndex],
-        },
-        sectionStyle: {
-          flex: "0 0 auto",
-          minHeight: 0,
-        },
-      };
-    });
-
-    return layouts;
-  }, [expandedPanes, resolvedHeights]);
 
   const resizeHandles = useMemo(
     () =>
@@ -388,14 +185,14 @@ function useSidebarPaneStack({ panes }: { panes: SidebarPaneStackPane[] }) {
 
   return {
     stackRef,
-    paneLayouts,
+    displayHeights,
     resizeHandles,
     getResizeHandleProps,
   };
 }
 
 export function SidebarPaneStack({ panes, className }: SidebarPaneStackProps) {
-  const { stackRef, paneLayouts, resizeHandles, getResizeHandleProps } = useSidebarPaneStack({
+  const { stackRef, displayHeights, resizeHandles, getResizeHandleProps } = useSidebarPaneStack({
     panes,
   });
   const paneTitleMap = useMemo(
@@ -406,7 +203,6 @@ export function SidebarPaneStack({ panes, className }: SidebarPaneStackProps) {
   return (
     <div ref={stackRef} className={cn("flex min-h-0 flex-1 flex-col overflow-hidden", className)}>
       {panes.map((pane) => {
-        const layout = paneLayouts[pane.id];
         const resizeHandle = resizeHandles.find((handle) => handle.anchorPaneId === pane.id);
         const resizeHandleProps = resizeHandle ? getResizeHandleProps(resizeHandle.id) : null;
 
@@ -421,11 +217,9 @@ export function SidebarPaneStack({ panes, className }: SidebarPaneStackProps) {
             ) : null}
             <SidebarViewSection
               ariaLabel={pane.ariaLabel}
-              bodyFillsSection={layout?.bodyFillsSection}
-              bodyStyle={layout?.bodyStyle}
+              bodyHeight={displayHeights[pane.id] ?? 0}
               expanded={pane.expanded}
               panelId={pane.panelId}
-              sectionStyle={layout?.sectionStyle}
               title={pane.title}
               onToggleExpanded={pane.onToggleExpanded}
             >

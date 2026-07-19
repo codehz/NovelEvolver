@@ -15,14 +15,13 @@ import {
   SidebarHeaderActionsPortalTarget,
 } from "./sidebar-header-actions-portal";
 
-/** Layout flow height at the section seam (handle is overlaid, not counted in flex). */
-export const SIDEBAR_SECTION_RESIZE_STRIP_HEIGHT = 0;
-export const SIDEBAR_SECTION_HEADER_HEIGHT_PX = 24;
+export {
+  SIDEBAR_SECTION_HEADER_HEIGHT_PX,
+  SIDEBAR_SECTION_RESIZE_STRIP_HEIGHT,
+} from "./sidebar-pane-geometry";
 
-/** Flex child that consumes remaining section height and scrolls. */
-const sidebarSectionBodyFillClass = cn("h-0 min-h-0 flex-1 overflow-x-hidden overflow-y-auto");
-/** Sized body (inline `style.height`) that scrolls within its fixed height. */
-const sidebarSectionBodyStretchClass = cn("h-full min-h-0 overflow-x-hidden overflow-y-auto");
+const sidebarSectionBodyShellClass = cn("shrink-0 overflow-hidden");
+const sidebarSectionBodyScrollClass = cn("h-full min-h-0 overflow-x-hidden overflow-y-auto");
 
 type SidebarViewSectionProps = {
   title: string;
@@ -31,9 +30,10 @@ type SidebarViewSectionProps = {
   onToggleExpanded: () => void;
   panelId: string;
   children: ReactNode;
+  /** Explicit body height in px. Collapsed panes use 0; content stays mounted. */
+  bodyHeight: number;
+  bodyClassName?: string;
   sectionStyle?: CSSProperties;
-  bodyStyle?: CSSProperties;
-  bodyFillsSection?: boolean;
 };
 
 export function SidebarViewSection({
@@ -43,15 +43,15 @@ export function SidebarViewSection({
   onToggleExpanded,
   panelId,
   children,
+  bodyHeight,
+  bodyClassName,
   sectionStyle,
-  bodyStyle,
-  bodyFillsSection,
 }: SidebarViewSectionProps) {
   return (
     <SidebarHeaderActionsPortalProvider>
       <section
         aria-label={ariaLabel}
-        className={cn("flex min-h-0 flex-col", bodyFillsSection && expanded && "min-h-0 flex-1")}
+        className="flex min-h-0 shrink-0 flex-col"
         style={sectionStyle}
       >
         <div className="flex shrink-0 items-center pr-3">
@@ -73,17 +73,14 @@ export function SidebarViewSection({
           </Button>
           <SidebarHeaderActionsPortalTarget as="div" className="flex shrink-0 items-center" />
         </div>
-        {expanded ? (
-          <div
-            id={panelId}
-            className={
-              bodyFillsSection ? sidebarSectionBodyFillClass : sidebarSectionBodyStretchClass
-            }
-            style={bodyStyle}
-          >
-            {children}
-          </div>
-        ) : null}
+        <div
+          id={panelId}
+          aria-hidden={!expanded}
+          className={cn(sidebarSectionBodyShellClass, bodyClassName)}
+          style={{ height: bodyHeight }}
+        >
+          <div className={sidebarSectionBodyScrollClass}>{children}</div>
+        </div>
       </section>
     </SidebarHeaderActionsPortalProvider>
   );
