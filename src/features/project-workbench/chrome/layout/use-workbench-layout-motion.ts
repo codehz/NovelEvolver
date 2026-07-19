@@ -4,6 +4,7 @@ import { useLayoutEffect, useMemo, useRef, useState } from "react";
 import type { ResizeSide } from "./use-workbench-sidebar-resize";
 import {
   displayedEqual,
+  holdClosedPanelWidth,
   lerpDisplayed,
   lerpSidebar,
   mergeSide,
@@ -243,8 +244,10 @@ export function useWorkbenchLayoutMotion({
         stopAnimation();
       }
 
-      // Active side always snaps (including self-close via threshold).
-      let next = mergeSide(displayedRef.current, activeSide, activeMetrics);
+      // Active side always snaps (including self-close via threshold). Hold the
+      // current panelWidth when closed so preferred does not jump into displayed.
+      const activeDisplayed = holdClosedPanelWidth(displayedRef.current[activeSide], activeMetrics);
+      let next = mergeSide(displayedRef.current, activeSide, activeDisplayed);
       visibilityIntentRef.current[activeSide] = activeMetrics.open;
 
       if (passiveTarget.open !== passiveIntent) {
@@ -264,7 +267,7 @@ export function useWorkbenchLayoutMotion({
         animPassiveTarget != null &&
         animPassiveTarget.open === passiveTarget.open
       ) {
-        // Keep passive tween; retarget if open metrics drifted (e.g. preferred width).
+        // Keep passive tween; retarget if open resolved/constrained metrics drifted.
         if (passiveTarget.open && !sidebarMetricsEqual(animPassiveTarget, passiveTarget)) {
           applyDisplayed(next);
           startLerp(
@@ -285,10 +288,14 @@ export function useWorkbenchLayoutMotion({
 
       if (passiveAnimating) {
         stopAnimation();
-        next = mergeSide(next, passiveSide, passiveTarget);
-      } else {
-        next = mergeSide(next, passiveSide, passiveTarget);
       }
+
+      // Closed passive must not snap to resolver preferred every drag frame.
+      next = mergeSide(
+        next,
+        passiveSide,
+        holdClosedPanelWidth(displayedRef.current[passiveSide], passiveTarget),
+      );
 
       visibilityIntentRef.current[passiveSide] = passiveTarget.open;
       applyDisplayed(next);
@@ -300,7 +307,11 @@ export function useWorkbenchLayoutMotion({
     // Drag ended this frame.
     if (wasDragging) {
       const activeWas = prevActiveResizeSideRef.current!;
-      let next = mergeSide(displayedRef.current, activeWas, targetsNow[activeWas]);
+      const activeEnd = holdClosedPanelWidth(
+        displayedRef.current[activeWas],
+        targetsNow[activeWas],
+      );
+      let next = mergeSide(displayedRef.current, activeWas, activeEnd);
       visibilityIntentRef.current[activeWas] = targetsNow[activeWas].open;
 
       if (animatingSidesRef.current != null) {
