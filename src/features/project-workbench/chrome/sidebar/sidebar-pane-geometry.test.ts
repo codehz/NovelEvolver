@@ -3,6 +3,7 @@ import { describe, expect, test } from "bun:test";
 import {
   applyResizeDelta,
   displayHeightsEqual,
+  expandedSignature,
   MIN_SIDEBAR_SECTION_BODY_HEIGHT,
   resolveAvailableBodyHeight,
   resolveDisplayHeights,
@@ -146,15 +147,51 @@ describe("applyResizeDelta", () => {
     expect(next).toEqual([70, 130]);
   });
 
-  test("respects min heights", () => {
+  test("respects min heights when growing upper", () => {
     const next = applyResizeDelta([50, 100], [40, 40], 0, 100);
     expect(next[0]).toBe(110);
     expect(next[1]).toBe(40);
   });
 
+  test("respects min heights when growing lower", () => {
+    const next = applyResizeDelta([100, 50], [40, 40], 0, -100);
+    expect(next[0]).toBe(40);
+    expect(next[1]).toBe(110);
+  });
+
+  test("three panes: positive delta shrinks panes below handle first", () => {
+    const next = applyResizeDelta([100, 100, 100], [40, 40, 40], 0, 50);
+    expect(next[0]).toBe(150);
+    expect(sum(next)).toBe(300);
+    expect(next[1]! + next[2]!).toBe(150);
+  });
+
   test("zero delta returns same array reference", () => {
     const heights = [100, 100];
     expect(applyResizeDelta(heights, [40, 40], 0, 0)).toBe(heights);
+  });
+});
+
+describe("expandedSignature", () => {
+  test("encodes id and expanded flags", () => {
+    expect(
+      expandedSignature([
+        { id: "a", expanded: true },
+        { id: "b", expanded: false },
+      ]),
+    ).toBe("a:1|b:0");
+  });
+
+  test("changes when any expanded flag flips", () => {
+    const base = expandedSignature([
+      { id: "a", expanded: true },
+      { id: "b", expanded: true },
+    ]);
+    const flipped = expandedSignature([
+      { id: "a", expanded: true },
+      { id: "b", expanded: false },
+    ]);
+    expect(base).not.toBe(flipped);
   });
 });
 
