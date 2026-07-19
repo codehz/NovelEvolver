@@ -81,6 +81,8 @@ export function resolveEffectiveMinHeights(
 /**
  * Allocate body heights for expanded panes only.
  * Single expanded pane always consumes the full available budget.
+ * Multiple panes: lower panes keep preferred heights; the first expanded pane
+ * absorbs the remaining body height (clamped by mins).
  */
 export function resolvePaneHeights(
   panes: SidebarPaneGeometryInput[],
@@ -105,14 +107,14 @@ export function resolvePaneHeights(
 
   let remainingBodyHeight = Math.max(availableBodyHeight, 0);
   const resolvedHeights = panes.map(() => 0);
-  const minHeightSuffixSums = panes.map((_, paneIndex) =>
-    sum(effectiveMinHeights.slice(paneIndex + 1)),
+  const minHeightPrefixSums = panes.map((_, paneIndex) =>
+    sum(effectiveMinHeights.slice(0, paneIndex)),
   );
 
-  for (let paneIndex = 0; paneIndex < panes.length - 1; paneIndex += 1) {
+  for (let paneIndex = panes.length - 1; paneIndex >= 1; paneIndex -= 1) {
     const pane = panes[paneIndex]!;
     const minHeight = effectiveMinHeights[paneIndex]!;
-    const maxHeight = Math.max(minHeight, remainingBodyHeight - minHeightSuffixSums[paneIndex]!);
+    const maxHeight = Math.max(minHeight, remainingBodyHeight - minHeightPrefixSums[paneIndex]!);
     const preferredHeight = Math.round(preferredHeights[pane.id] ?? pane.defaultBodyHeight);
     const resolvedHeight = Math.min(maxHeight, Math.max(minHeight, preferredHeight));
 
@@ -120,7 +122,7 @@ export function resolvePaneHeights(
     remainingBodyHeight -= resolvedHeight;
   }
 
-  resolvedHeights[panes.length - 1] = Math.max(remainingBodyHeight, 0);
+  resolvedHeights[0] = Math.max(remainingBodyHeight, 0);
 
   return {
     effectiveMinHeights,
