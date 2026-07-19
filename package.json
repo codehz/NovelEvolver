@@ -16,7 +16,8 @@
     "format": "oxfmt --write .",
     "format:check": "oxfmt --check .",
     "test": "bun test",
-    "prepare": "husky"
+    "fonts:ensure": "node scripts/ensure-fonts.mjs",
+    "prepare": "node scripts/ensure-fonts.mjs && husky"
   },
   "dependencies": {
     "@base-ui/react": "^1.6.0",

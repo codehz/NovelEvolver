@@ -33,4 +33,7 @@ bun.lockb
 # TypeScript
 *.tsbuildinfo
 
+# Local full fonts (downloaded by scripts/ensure-fonts.mjs)
+vendor/fonts/
+
 .claude/plans

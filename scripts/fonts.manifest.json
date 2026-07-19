@@ -1,0 +1,37 @@
+{
+  "outputDir": "vendor/fonts",
+  "packages": [
+    {
+      "id": "misans",
+      "name": "MiSans",
+      "url": "https://hyperos.mi.com/font-download/MiSans.zip",
+      "zipSha256": "b6aa1fc827035922612df8edf36e5609bca1c5441e25cd57572204569b7b81d9",
+      "extracts": [
+        {
+          "from": "MiSans/可变字体/MiSansVF.ttf",
+          "to": "misans/MiSansVF.ttf",
+          "sha256": "0ddef90648998900175cfdca9a6f087a2544c182f130b0ad4f7e94a03a115e79"
+        }
+      ]
+    },
+    {
+      "id": "maple-mono",
+      "name": "Maple Mono CN",
+      "url": "https://github.com/subframe7536/maple-font/releases/download/v7.9/MapleMono-CN-unhinted.zip",
+      "zipSha256": "d41cb72721e99cfe4fbd1a7b0f182a013457de46aa612018f924dd024699d3b9",
+      "githubMirrorEnv": "GITHUB_MIRROR",
+      "extracts": [
+        {
+          "from": "MapleMono-CN-Regular.ttf",
+          "to": "maple-mono/MapleMono-CN-Regular.ttf",
+          "sha256": "0fcc5139bfd5ab14ff989bb7dfd5236d0cafc10e60b9828569e6883613ab4085"
+        },
+        {
+          "from": "MapleMono-CN-Bold.ttf",
+          "to": "maple-mono/MapleMono-CN-Bold.ttf",
+          "sha256": "ca79870485fb382e01f4e70edb08bccd3cf1dbdf74b82023fdf2f0c95db55725"
+        }
+      ]
+    }
+  ]
+}
