@@ -1,0 +1,103 @@
+import type { SidebarChromeMetrics, WorkbenchChromeLayout } from "./workbench-layout-resolver";
+
+export type WorkbenchLayoutPhase = "idle" | "dragging" | "animating";
+
+export type DisplayedSidebarMetrics = {
+  spacerWidth: number;
+  panelWidth: number;
+  opacity: number;
+  /** Semantic open intent (target visible), not mid-lerp opacity. */
+  open: boolean;
+};
+
+export type DisplayedWorkbenchChrome = {
+  primary: DisplayedSidebarMetrics;
+  auxiliary: DisplayedSidebarMetrics;
+};
+
+export type WorkbenchLayoutSide = keyof DisplayedWorkbenchChrome;
+
+/** Matches previous CSS `duration-200 ease-out`. */
+export const WORKBENCH_LAYOUT_MOTION = {
+  duration: 0.2,
+  ease: "easeOut" as const,
+};
+
+const WIDTH_EPSILON = 0.5;
+const OPACITY_EPSILON = 0.01;
+
+export function sidebarMetricsFromChrome(metrics: SidebarChromeMetrics): DisplayedSidebarMetrics {
+  return {
+    spacerWidth: metrics.spacerWidth,
+    panelWidth: metrics.panelWidth,
+    opacity: metrics.visible ? 1 : 0,
+    open: metrics.visible,
+  };
+}
+
+export function targetsFromChromeLayout(chrome: WorkbenchChromeLayout): DisplayedWorkbenchChrome {
+  return {
+    primary: sidebarMetricsFromChrome(chrome.primary),
+    auxiliary: sidebarMetricsFromChrome(chrome.auxiliary),
+  };
+}
+
+function lerp(from: number, to: number, t: number): number {
+  return from + (to - from) * t;
+}
+
+export function lerpSidebar(
+  from: DisplayedSidebarMetrics,
+  to: DisplayedSidebarMetrics,
+  t: number,
+): DisplayedSidebarMetrics {
+  return {
+    spacerWidth: lerp(from.spacerWidth, to.spacerWidth, t),
+    panelWidth: lerp(from.panelWidth, to.panelWidth, t),
+    opacity: lerp(from.opacity, to.opacity, t),
+    // Intent tracks the destination so visibility-flip detection stays stable mid-lerp.
+    open: to.open,
+  };
+}
+
+export function lerpDisplayed(
+  from: DisplayedWorkbenchChrome,
+  to: DisplayedWorkbenchChrome,
+  t: number,
+): DisplayedWorkbenchChrome {
+  return {
+    primary: lerpSidebar(from.primary, to.primary, t),
+    auxiliary: lerpSidebar(from.auxiliary, to.auxiliary, t),
+  };
+}
+
+export function sidebarMetricsEqual(
+  a: DisplayedSidebarMetrics,
+  b: DisplayedSidebarMetrics,
+): boolean {
+  return (
+    Math.abs(a.spacerWidth - b.spacerWidth) < WIDTH_EPSILON &&
+    Math.abs(a.panelWidth - b.panelWidth) < WIDTH_EPSILON &&
+    Math.abs(a.opacity - b.opacity) < OPACITY_EPSILON &&
+    a.open === b.open
+  );
+}
+
+export function displayedEqual(a: DisplayedWorkbenchChrome, b: DisplayedWorkbenchChrome): boolean {
+  return sidebarMetricsEqual(a.primary, b.primary) && sidebarMetricsEqual(a.auxiliary, b.auxiliary);
+}
+
+export function oppositeSide(side: WorkbenchLayoutSide): WorkbenchLayoutSide {
+  return side === "primary" ? "auxiliary" : "primary";
+}
+
+export function mergeSide(
+  base: DisplayedWorkbenchChrome,
+  side: WorkbenchLayoutSide,
+  metrics: DisplayedSidebarMetrics,
+): DisplayedWorkbenchChrome {
+  if (side === "primary") {
+    return { primary: metrics, auxiliary: base.auxiliary };
+  }
+  return { primary: base.primary, auxiliary: metrics };
+}
