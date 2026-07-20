@@ -1,0 +1,73 @@
+name: package
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: package-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+env:
+  HUSKY: "0"
+  CSC_IDENTITY_AUTO_DISCOVERY: "false"
+
+jobs:
+  package:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            platform: linux
+            builder_args: --linux AppImage
+          - os: windows-latest
+            platform: windows
+            builder_args: --win nsis portable
+          - os: macos-latest
+            platform: macos
+            builder_args: --mac dmg
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Ensure fonts
+        run: bun run fonts:ensure
+
+      - name: Lint
+        run: bun run lint
+
+      - name: Build
+        run: bun run build
+
+      - name: Package
+        run: bunx electron-builder ${{ matrix.builder_args }} --publish never
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: NovelEvolver-${{ matrix.platform }}-${{ github.sha }}
+          path: |
+            release/*
+            !release/*-unpacked/**
+            !release/builder-effective-config.yaml
+            !release/builder-debug.yml
+            !release/*.blockmap
+          if-no-files-found: error
+          retention-days: 14
