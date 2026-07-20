@@ -8,6 +8,7 @@ import { AiAgentsStore } from "./settings/ai-agents-store";
 import { AiModelsStore } from "./settings/ai-models-store";
 import { AiPromptsStore } from "./settings/ai-prompts-store";
 import { AiRuntimePolicyStore } from "./settings/ai-runtime-policy-store";
+import { GitCredentialsStore } from "./settings/git-credentials-store";
 
 app.commandLine.appendSwitch("enable-features", "OverlayScrollbar");
 
@@ -18,6 +19,7 @@ let aiModelsStore: AiModelsStore | null = null;
 let aiAgentsStore: AiAgentsStore | null = null;
 let aiPromptsStore: AiPromptsStore | null = null;
 let aiRuntimePolicyStore: AiRuntimePolicyStore | null = null;
+let gitCredentialsStore: GitCredentialsStore | null = null;
 let rpcServer: ElectronRpcServer | null = null;
 
 function getAppDb(): AppDatabase {
@@ -57,6 +59,13 @@ function getAiRuntimePolicyStore(): AiRuntimePolicyStore {
   return aiRuntimePolicyStore;
 }
 
+function getGitCredentialsStore(): GitCredentialsStore {
+  if (!gitCredentialsStore) {
+    throw new Error("Git credentials store is not initialized.");
+  }
+  return gitCredentialsStore;
+}
+
 function createWindow() {
   const window = new BrowserWindow({
     width: 1280,
@@ -89,12 +98,14 @@ void app.whenReady().then(() => {
   aiAgentsStore = new AiAgentsStore(join(userData, "ai-agents.json"), getAiModelsStore);
   aiPromptsStore = new AiPromptsStore(join(userData, "ai-prompts.json"));
   aiRuntimePolicyStore = new AiRuntimePolicyStore(join(userData, "ai-runtime-policy.json"));
+  gitCredentialsStore = new GitCredentialsStore(join(userData, "git-credentials.json"));
   rpcServer = new ElectronRpcServer({
     getAppDb,
     getAiModelsStore,
     getAiAgentsStore,
     getAiPromptsStore,
     getAiRuntimePolicyStore,
+    getGitCredentialsStore,
     mockAiEnabled: process.env.NOVEL_EVOLVER_MOCK_AI === "1",
     getWindowState: (window) => ({
       isFocused: window.isFocused(),

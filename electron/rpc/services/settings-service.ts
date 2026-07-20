@@ -10,6 +10,8 @@ import type {
   AiProviderConfigWrite,
   AiRuntimePolicySnapshot,
   AiRuntimePolicyWrite,
+  GitCredentialConfigWrite,
+  GitCredentialsSettingsSnapshot,
   SettingsService,
 } from "#shared/rpc/services/index";
 
@@ -77,5 +79,17 @@ export class SettingsServiceImpl extends RpcTarget implements SettingsService {
 
   setAiRuntimePolicy(input: AiRuntimePolicyWrite): AiRuntimePolicySnapshot {
     return this.#deps.getAiRuntimePolicyStore().setPolicy(input);
+  }
+
+  getGitCredentials(): GitCredentialsSettingsSnapshot {
+    return this.#deps.getGitCredentialsStore().getSnapshot();
+  }
+
+  upsertGitCredential(input: GitCredentialConfigWrite): GitCredentialsSettingsSnapshot {
+    return this.#deps.getGitCredentialsStore().upsert(input);
+  }
+
+  removeGitCredential(id: string): GitCredentialsSettingsSnapshot {
+    return this.#deps.getGitCredentialsStore().remove(id);
   }
 }
