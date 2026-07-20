@@ -4,19 +4,24 @@ type ProjectRow = {
   id: number;
   path: string;
   last_opened_at: number;
+  remote_url: string | null;
 };
 
 export type ProjectDbRecord = {
   id: number;
   path: string;
   lastOpenedAt: number;
+  remoteUrl: string | null;
 };
+
+const PROJECT_SELECT = `SELECT id, path, last_opened_at, remote_url FROM projects`;
 
 function rowToRecord(row: ProjectRow): ProjectDbRecord {
   return {
     id: row.id,
     path: row.path,
     lastOpenedAt: row.last_opened_at,
+    remoteUrl: row.remote_url ?? null,
   };
 }
 
@@ -35,16 +40,16 @@ export class ProjectsRepository {
 
   list(): ProjectDbRecord[] {
     const rows = this.#db
-      .prepare(`SELECT id, path, last_opened_at FROM projects ORDER BY last_opened_at DESC`)
+      .prepare(`${PROJECT_SELECT} ORDER BY last_opened_at DESC`)
       .all() as ProjectRow[];
 
     return rows.map(rowToRecord);
   }
 
   getById(id: number): ProjectDbRecord | null {
-    const row = this.#db
-      .prepare(`SELECT id, path, last_opened_at FROM projects WHERE id = ?`)
-      .get(id) as ProjectRow | undefined;
+    const row = this.#db.prepare(`${PROJECT_SELECT} WHERE id = ?`).get(id) as
+      | ProjectRow
+      | undefined;
 
     return row ? rowToRecord(row) : null;
   }
@@ -60,9 +65,9 @@ export class ProjectsRepository {
       )
       .run(absolutePath, lastOpenedAt);
 
-    const row = this.#db
-      .prepare(`SELECT id, path, last_opened_at FROM projects WHERE path = ?`)
-      .get(absolutePath) as ProjectRow | undefined;
+    const row = this.#db.prepare(`${PROJECT_SELECT} WHERE path = ?`).get(absolutePath) as
+      | ProjectRow
+      | undefined;
 
     if (!row) {
       throw new Error(`Failed to upsert project at ${absolutePath}`);
@@ -74,11 +79,21 @@ export class ProjectsRepository {
   touchById(id: number, lastOpenedAt: number): ProjectDbRecord | null {
     this.#db.prepare(`UPDATE projects SET last_opened_at = ? WHERE id = ?`).run(lastOpenedAt, id);
 
-    const row = this.#db
-      .prepare(`SELECT id, path, last_opened_at FROM projects WHERE id = ?`)
-      .get(id) as ProjectRow | undefined;
+    return this.getById(id);
+  }
 
-    return row ? rowToRecord(row) : null;
+  /**
+   * Persist HTTPS remote URL for a project.
+   * Empty string is stored as null.
+   */
+  setRemoteUrl(id: number, remoteUrl: string | null): void {
+    const value = remoteUrl === null || remoteUrl.trim() === "" ? null : remoteUrl;
+    const result = this.#db
+      .prepare(`UPDATE projects SET remote_url = ? WHERE id = ?`)
+      .run(value, id);
+    if (result.changes === 0) {
+      throw new Error(`Project with id ${id} not found`);
+    }
   }
 
   removeById(id: number): boolean {
