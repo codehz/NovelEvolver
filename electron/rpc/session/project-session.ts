@@ -17,7 +17,6 @@ import { ProjectAiChatController } from "../../ai/chat/project-ai-chat";
 import type { AiChatRepository } from "../../db/repositories/ai-chat-repo";
 import type { ProjectDbRecord, ProjectsRepository } from "../../db/repositories/projects-repo";
 import type { WorktreeRepository } from "../../db/repositories/worktree-repo";
-import { buildGitHttpsBasicAuthHeaders } from "../../lib/git-https-auth";
 import { toProjectMetadata } from "../../projects/home-path";
 import type { AiAgentsStore } from "../../settings/ai-agents-store";
 import type { AiModelsStore } from "../../settings/ai-models-store";
@@ -174,7 +173,10 @@ export class ProjectSessionImpl extends RpcTarget implements ProjectSession {
     let result;
     try {
       result = await this.#repo.push(remoteUrl, {
-        headers: buildGitHttpsBasicAuthHeaders(credential.username, credential.secret),
+        auth: {
+          username: credential.username,
+          password: credential.secret,
+        },
       });
     } catch (error) {
       throw new Error(formatPushTransportError(error, host));

@@ -49,7 +49,7 @@
     "foxact": "^0.3.8",
     "jotai": "^2.20.2",
     "motion": "^12.42.2",
-    "nano-git": "^0.9.4",
+    "nano-git": "^0.10.0",
     "nanoid": "^6.0.0",
     "partial-json": "^0.1.7",
     "react": "^19.2.7",
