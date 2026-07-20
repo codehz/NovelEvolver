@@ -113,6 +113,10 @@ export function useChangesState() {
 
   const listCommits = useCallback((maxCount?: number) => history.listCommits(maxCount), [history]);
 
+  const invalidateCommits = useCallback(() => {
+    setCommitsRefreshKey((current) => current + 1);
+  }, []);
+
   return {
     canRevertAll,
     commit,
@@ -120,6 +124,7 @@ export function useChangesState() {
     committing,
     commitsRefreshKey,
     error: status === "error",
+    invalidateCommits,
     loading,
     result,
     retry,

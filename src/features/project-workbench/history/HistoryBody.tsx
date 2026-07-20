@@ -42,6 +42,7 @@ import {
 } from "./history-tree-projector";
 import { HistoryCommitRow } from "./HistoryCommitRow";
 import type { CommitChangesCacheEntry } from "./use-commit-changes-state";
+import { useGitPull } from "./use-git-pull";
 import { useGitPush } from "./use-git-push";
 import { useRestoreFromHistory } from "./use-restore-from-history";
 
@@ -555,6 +556,8 @@ type HistoryBodyProps = {
   onRetryCommit: (commitHash: string) => void;
   onOpenChange: (commit: CommitSummary, change: Change) => void;
   onCreateBranchFromCommit: (commit: CommitSummary) => void;
+  /** Called after local history tip may have changed (e.g. pull). */
+  onHistoryMutated?: () => void;
 };
 
 export function HistoryBody({
@@ -568,8 +571,11 @@ export function HistoryBody({
   onRetryCommit,
   onOpenChange,
   onCreateBranchFromCommit,
+  onHistoryMutated,
 }: HistoryBodyProps) {
   const { pushing, push } = useGitPush();
+  const { pulling, pull } = useGitPull({ onSuccess: onHistoryMutated });
+  const busy = pushing || pulling;
 
   let body = null;
   if (loading) {
@@ -596,9 +602,17 @@ export function HistoryBody({
     <div className="flex min-h-0 flex-col">
       <SidebarHeaderActions>
         <SidebarHeaderActionButton
+          label={pulling ? "拉取中…" : "拉取当前分支（Shift+点击可改远程）"}
+          icon={pulling ? "icon-[codicon--loading] animate-spin" : "icon-[codicon--repo-pull]"}
+          disabled={busy}
+          onClick={(event) => {
+            void pull({ forcePromptRemote: event.shiftKey });
+          }}
+        />
+        <SidebarHeaderActionButton
           label={pushing ? "推送中…" : "推送当前分支（Shift+点击可改远程）"}
           icon={pushing ? "icon-[codicon--loading] animate-spin" : "icon-[codicon--repo-push]"}
-          disabled={pushing}
+          disabled={busy}
           onClick={(event) => {
             void push({ forcePromptRemote: event.shiftKey });
           }}

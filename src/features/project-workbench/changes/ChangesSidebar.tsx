@@ -22,6 +22,7 @@ export function ChangesSidebar() {
     committing,
     commitsRefreshKey,
     error,
+    invalidateCommits,
     loading,
     result,
     retry,
@@ -118,6 +119,7 @@ export function ChangesSidebar() {
               onCreateBranchFromCommit={(commitSummary) => {
                 void createBranchFromCommit(commitSummary);
               }}
+              onHistoryMutated={invalidateCommits}
             />
           ),
           onToggleExpanded: () => setHistoryExpanded((value) => !value),
