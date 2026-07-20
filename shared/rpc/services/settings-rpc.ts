@@ -329,6 +329,87 @@ export function normalizeAiRuntimePolicy(
   };
 }
 
+/**
+ * HTTPS Git host credentials (password / PAT), keyed by hostname.
+ * Secrets are never returned over RPC — only `hasSecret`.
+ */
+export type GitCredentialConfigPublic = {
+  id: string;
+  /** Lowercase hostname only (no scheme, path, or port). */
+  host: string;
+  username: string;
+  hasSecret: boolean;
+};
+
+/**
+ * Create/update payload for `upsertGitCredential`.
+ * - `id` omitted → create
+ * - `secret` undefined → keep existing secret
+ * - `secret` `""` → clear secret
+ * - `secret` non-empty → replace secret
+ * Create requires a non-empty secret.
+ */
+export type GitCredentialConfigWrite = {
+  id?: string;
+  host: string;
+  username: string;
+  secret?: string;
+};
+
+export type GitCredentialsSettingsSnapshot = {
+  credentials: GitCredentialConfigPublic[];
+};
+
+/**
+ * Basic hostname shape: labels of alphanumerics / hyphen, joined by dots.
+ * Leading/trailing hyphens and empty labels are rejected. No IP literals.
+ */
+export const GIT_CREDENTIAL_HOST_PATTERN =
+  /^(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?)(?:\.(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?))*$/;
+
+export function isGitCredentialHost(value: unknown): value is string {
+  return typeof value === "string" && value !== "" && GIT_CREDENTIAL_HOST_PATTERN.test(value);
+}
+
+/**
+ * Normalize user input to a lowercase hostname.
+ * Accepts bare hosts, `https://host/path`, `http://host:port/...`, and `git@host:path`.
+ * Drops scheme, userinfo, path, query, fragment, and port. Does not read username from userinfo.
+ */
+export function normalizeGitCredentialHost(raw: string): string {
+  const trimmed = raw.trim();
+  if (trimmed === "") {
+    throw new Error("域名不能为空。");
+  }
+
+  let candidate = trimmed;
+
+  const scpMatch = candidate.match(/^[\w.-]+@([^/\s:]+)(?::.*)?$/);
+  if (scpMatch) {
+    candidate = scpMatch[1] ?? "";
+  } else if (/^[a-zA-Z][a-zA-Z0-9+.-]*:\/\//.test(candidate)) {
+    try {
+      const url = new URL(candidate);
+      candidate = url.hostname;
+    } catch {
+      throw new Error("无法解析域名，请输入主机名或完整远程 URL。");
+    }
+  } else {
+    // Bare host, optional path/port: host, host/path, host:port, host:port/path
+    const withoutPath = candidate.split(/[/?#]/, 1)[0] ?? "";
+    const withoutPort = withoutPath.includes(":")
+      ? (withoutPath.slice(0, withoutPath.indexOf(":")) ?? "")
+      : withoutPath;
+    candidate = withoutPort;
+  }
+
+  const host = candidate.trim().toLowerCase().replace(/\.$/, "");
+  if (!isGitCredentialHost(host)) {
+    throw new Error("域名格式无效，请输入如 github.com 的主机名。");
+  }
+  return host;
+}
+
 export interface SettingsService extends RpcTarget {
   getAiModels(): AiModelsSettingsSnapshot;
   upsertAiProvider(input: AiProviderConfigWrite): AiModelsSettingsSnapshot;
@@ -344,4 +425,7 @@ export interface SettingsService extends RpcTarget {
   removeAiPrompt(id: string): AiPromptsSettingsSnapshot;
   getAiRuntimePolicy(): AiRuntimePolicySnapshot;
   setAiRuntimePolicy(input: AiRuntimePolicyWrite): AiRuntimePolicySnapshot;
+  getGitCredentials(): GitCredentialsSettingsSnapshot;
+  upsertGitCredential(input: GitCredentialConfigWrite): GitCredentialsSettingsSnapshot;
+  removeGitCredential(id: string): GitCredentialsSettingsSnapshot;
 }
