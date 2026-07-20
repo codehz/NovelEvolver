@@ -1,0 +1,43 @@
+appId: app.codehz.novelevolver
+productName: NovelEvolver
+asar: true
+# Main/preload are esbuild-bundled; renderer is Vite-built. No runtime node_modules needed.
+npmRebuild: false
+nodeGypRebuild: false
+
+directories:
+  output: release
+
+files:
+  # Start from an empty set so production deps are not auto-packed.
+  - "!**/*"
+  - package.json
+  - dist/**/*
+  - dist-electron/**/*
+  - "!**/*.map"
+
+artifactName: ${productName}-${version}-${os}-${arch}.${ext}
+
+linux:
+  target:
+    - AppImage
+  category: Office
+
+win:
+  target:
+    - target: nsis
+      arch:
+        - x64
+    - target: portable
+      arch:
+        - x64
+
+nsis:
+  oneClick: false
+  allowToChangeInstallationDirectory: true
+
+mac:
+  target:
+    - dmg
+  # Prototype builds are unsigned; avoid certificate discovery failures in CI/local.
+  identity: null
