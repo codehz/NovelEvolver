@@ -1,4 +1,4 @@
-import { projectDisplayName } from "#app/shared/lib/project-display-name";
+import { resolveProjectDisplayName } from "#app/shared/lib/project-display-name";
 import { cn } from "#app/shared/lib/ui/cn";
 import {
   controlFocusVisibleClass,
@@ -24,7 +24,7 @@ type ProjectListCardProps = {
 };
 
 export function ProjectListCard({ project, onOpen, onRemove }: ProjectListCardProps) {
-  const name = projectDisplayName(project.path);
+  const name = resolveProjectDisplayName(project);
 
   return (
     <li>

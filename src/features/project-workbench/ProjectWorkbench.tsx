@@ -1,10 +1,10 @@
 import { AutoTransition } from "@codehz/auto-transition";
 import { ScopeProvider, useMolecule } from "bunshi/react";
-import { Suspense, use, useMemo } from "react";
+import { Suspense, use, useMemo, useState } from "react";
 import { ErrorBoundary } from "react-error-boundary";
 import { Link, useParams } from "wouter";
 
-import { projectDisplayName } from "#app/shared/lib/project-display-name";
+import { resolveProjectDisplayName } from "#app/shared/lib/project-display-name";
 import { convertRpcPromise } from "#app/shared/lib/rpc/rpc-utils";
 import { useTitleBarTitle } from "#app/shared/lib/shell/titlebar-title";
 import { cn } from "#app/shared/lib/ui/cn";
@@ -15,6 +15,7 @@ import { WorkbenchLayout, type WorkbenchPrimaryView } from "#workbench/chrome";
 import { WorkbenchStatusBar } from "#workbench/composition/WorkbenchStatusBar";
 import { EditorArea } from "#workbench/editor/EditorArea";
 import { ExplorerSidebar } from "#workbench/explorer/ExplorerSidebar";
+import { ProjectSettingsDialog } from "#workbench/project-settings";
 import { SearchSidebar } from "#workbench/search/SearchSidebar";
 import { BranchScopeProvider } from "#workbench/session/BranchScopeProvider";
 import { projectIdScope, projectMolecule } from "#workbench/session/project-scope";
@@ -69,7 +70,8 @@ const projectMetadataPromiseMolecule = convertRpcPromise(
 
 function ProjectWorkbenchInner() {
   const metadata = use(useMolecule(projectMetadataPromiseMolecule));
-  const displayName = projectDisplayName(metadata.path);
+  const [displayName, setDisplayName] = useState(() => resolveProjectDisplayName(metadata));
+  const [projectSettingsOpen, setProjectSettingsOpen] = useState(false);
   useTitleBarTitle(displayName);
   const primaryViews = useMemo<readonly WorkbenchPrimaryView[]>(
     () => [
@@ -104,8 +106,27 @@ function ProjectWorkbenchInner() {
           primaryViews={primaryViews}
           editor={editorSlot}
           auxiliary={auxiliarySlot}
+          projectSettingsOpen={projectSettingsOpen}
+          onOpenProjectSettings={() => {
+            setProjectSettingsOpen(true);
+          }}
         />
         <WorkbenchStatusBar />
+        <ProjectSettingsDialog
+          metadata={metadata}
+          open={projectSettingsOpen}
+          onDismiss={() => {
+            setProjectSettingsOpen(false);
+          }}
+          onSaved={(result) => {
+            setDisplayName(
+              resolveProjectDisplayName({
+                path: metadata.path,
+                displayName: result.displayName,
+              }),
+            );
+          }}
+        />
       </AiChatStateProvider>
     </BranchScopeProvider>
   );

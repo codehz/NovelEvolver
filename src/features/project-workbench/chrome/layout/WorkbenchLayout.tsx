@@ -36,6 +36,8 @@ export type WorkbenchLayoutProps = {
   editor: ReactNode;
   auxiliary: ReactNode;
   defaultActiveViewId?: string;
+  projectSettingsOpen?: boolean;
+  onOpenProjectSettings?: () => void;
 };
 
 export function WorkbenchLayout({
@@ -43,6 +45,8 @@ export function WorkbenchLayout({
   editor,
   auxiliary,
   defaultActiveViewId,
+  projectSettingsOpen = false,
+  onOpenProjectSettings,
 }: WorkbenchLayoutProps) {
   if (primaryViews.length === 0) {
     throw new Error("WorkbenchLayout requires at least one primary view");
@@ -120,6 +124,8 @@ export function WorkbenchLayout({
             items={activityItems}
             activeView={activeViewId}
             primarySidebarVisible={primary.visible}
+            projectSettingsOpen={projectSettingsOpen}
+            onOpenProjectSettings={onOpenProjectSettings}
             onSelectView={handleActivitySelectView}
           />
           <SidebarDock

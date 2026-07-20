@@ -58,6 +58,8 @@ type WorkbenchActivityBarProps = {
   items: readonly ActivityItem[];
   activeView: string;
   primarySidebarVisible: boolean;
+  projectSettingsOpen?: boolean;
+  onOpenProjectSettings?: () => void;
   onSelectView: (viewId: string) => void;
 };
 
@@ -65,6 +67,8 @@ export const WorkbenchActivityBar = memo(function WorkbenchActivityBar({
   items,
   activeView,
   primarySidebarVisible,
+  projectSettingsOpen = false,
+  onOpenProjectSettings,
   onSelectView,
 }: WorkbenchActivityBarProps) {
   const settingsOpen = useAtomValue(settingsOpenAtom);
@@ -93,6 +97,16 @@ export const WorkbenchActivityBar = memo(function WorkbenchActivityBar({
       </div>
 
       <div className="mt-auto flex flex-col">
+        {onOpenProjectSettings !== undefined ? (
+          <ActivityBarIconButton
+            expanded={projectSettingsOpen || undefined}
+            hasPopup
+            iconClass="icon-[codicon--repo]"
+            label="项目设置"
+            noDrag
+            onClick={onOpenProjectSettings}
+          />
+        ) : null}
         <ActivityBarIconButton
           expanded={settingsOpen || undefined}
           hasPopup
