@@ -8,6 +8,7 @@ import { normalizeGitCredentialHost } from "#shared/rpc/services/index";
 import type {
   BranchSummary,
   BranchWorkspace,
+  ProjectPullResult,
   ProjectPushResult,
   ProjectSession,
 } from "#shared/rpc/session/index";
@@ -204,6 +205,88 @@ export class ProjectSessionImpl extends RpcTarget implements ProjectSession {
     };
   }
 
+  async pullCurrentBranch(): Promise<ProjectPullResult> {
+    this.#assertNotDisposed();
+
+    const remoteUrl = this.#remoteUrl;
+    if (remoteUrl === null || remoteUrl === "") {
+      throw new Error("尚未配置远程仓库地址。");
+    }
+
+    const branchName = this.#repo.getCurrentBranch();
+    if (branchName === null || branchName === "") {
+      throw new Error("当前处于 detached HEAD，无法拉取。");
+    }
+
+    let host: string;
+    try {
+      host = normalizeGitCredentialHost(remoteUrl);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      throw new Error(`远程仓库地址无效：${message}`);
+    }
+
+    const credential = this.#getGitCredentialsStore().resolve(host);
+    if (credential === null) {
+      throw new Error(`未找到「${host}」的 Git 凭证，请到 设置 → Git 凭证 中添加。`);
+    }
+    if (credential.secret === null || credential.secret === "") {
+      throw new Error(`「${host}」凭证缺少密码或 PAT，请到 设置 → Git 凭证 中补全。`);
+    }
+
+    const workspaceEntry = this.#getOrCreateBranchWorkspace(branchName);
+    if (workspaceEntry.session.hasPendingChanges()) {
+      throw new Error("当前分支有未提交更改，请先提交或还原后再拉取。");
+    }
+
+    const localTipBefore = this.#repo.readBranch(branchName);
+    const refName = `refs/heads/${branchName}`;
+
+    let result;
+    try {
+      result = await this.#repo.fetch(remoteUrl, {
+        refSpecs: [`${refName}:${refName}`],
+        auth: {
+          username: credential.username,
+          password: credential.secret,
+        },
+        noTags: true,
+      });
+    } catch (error) {
+      throw new Error(formatRemoteTransportError(error, host, "拉取"));
+    }
+
+    const failed = result.updatedRefs.find((ref) => !ref.success);
+    if (failed !== undefined) {
+      throw new Error(formatPullRefFailure(failed.error, failed.refName));
+    }
+
+    const primary =
+      result.updatedRefs.find((ref) => ref.refName === refName) ?? result.updatedRefs[0];
+
+    if (primary === undefined) {
+      // Custom refspec matched nothing on the remote advertisement.
+      throw new Error(`拉取失败：远端不存在同名分支「${branchName}」。`);
+    }
+
+    const oldHash = primary.oldHash ?? localTipBefore;
+    const newHash = primary.newHash;
+    const fastForwarded = oldHash !== newHash && newHash !== null;
+
+    // Always realign: repairs lagging draft base even when tip did not move.
+    workspaceEntry.session.realignToBranchTip();
+
+    return {
+      branchName,
+      remoteUrl,
+      objectCount: result.objectCount,
+      updatedRef: primary.refName,
+      oldHash,
+      newHash,
+      fastForwarded,
+    };
+  }
+
   checkoutBranch(name: string): void {
     this.#repo.refs.write("HEAD", `ref: refs/heads/${name}`);
   }
@@ -333,24 +416,31 @@ export class ProjectSessionImpl extends RpcTarget implements ProjectSession {
   }
 }
 
-function formatPushTransportError(error: unknown, host: string): string {
+function formatRemoteTransportError(error: unknown, host: string, action: "推送" | "拉取"): string {
   const message = error instanceof Error ? error.message : String(error);
   const statusMatch = message.match(/status\s+(\d{3})/i);
   const status = statusMatch?.[1] !== undefined ? Number(statusMatch[1]) : null;
 
   if (status === 401 || status === 403) {
-    return `推送到「${host}」认证失败（HTTP ${status}），请到 设置 → Git 凭证 检查用户名与密码/PAT。`;
+    return `${action}「${host}」认证失败（HTTP ${status}），请到 设置 → Git 凭证 检查用户名与密码/PAT。`;
   }
   if (status === 404) {
-    return `推送失败：远程仓库不存在或无权访问（HTTP 404）。`;
+    return `${action}失败：远程仓库不存在或无权访问（HTTP 404）。`;
   }
   if (/Failed to fetch|network|ENOTFOUND|ECONNREFUSED|ETIMEDOUT|fetch failed/i.test(message)) {
-    return `推送失败：无法连接远程「${host}」（网络错误）。`;
+    return `${action}失败：无法连接远程「${host}」（网络错误）。`;
   }
   if (/non-fast-forward|not a fast-forward|rejected/i.test(message)) {
-    return "推送被拒绝：远端有新提交，非快进更新（本应用不支持强制推送）。";
+    if (action === "推送") {
+      return "推送被拒绝：远端有新提交，非快进更新（本应用不支持强制推送）。";
+    }
+    return "拉取被拒绝：本地与远端历史已分叉，无法快进（本应用不支持自动合并）。";
   }
-  return `推送失败：${message}`;
+  return `${action}失败：${message}`;
+}
+
+function formatPushTransportError(error: unknown, host: string): string {
+  return formatRemoteTransportError(error, host, "推送");
 }
 
 function formatPushRefFailure(error: string | undefined, refName: string): string {
@@ -362,4 +452,15 @@ function formatPushRefFailure(error: string | undefined, refName: string): strin
     return `推送 ${refName} 失败：${detail}`;
   }
   return `推送 ${refName} 失败。`;
+}
+
+function formatPullRefFailure(error: string | undefined, refName: string): string {
+  const detail = error?.trim() ?? "";
+  if (/non-fast-forward|not a fast-forward|rejected/i.test(detail)) {
+    return "拉取被拒绝：本地与远端历史已分叉，无法快进（本应用不支持自动合并）。";
+  }
+  if (detail !== "") {
+    return `拉取 ${refName} 失败：${detail}`;
+  }
+  return `拉取 ${refName} 失败。`;
 }

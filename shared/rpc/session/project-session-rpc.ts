@@ -23,6 +23,18 @@ export type ProjectPushResult = {
   newHash: string | null;
 };
 
+/** Result of a successful {@link ProjectSession.pullCurrentBranch}. */
+export type ProjectPullResult = {
+  branchName: string;
+  remoteUrl: string;
+  objectCount: number;
+  updatedRef: string;
+  oldHash: string | null;
+  newHash: string | null;
+  /** True when the local branch tip advanced (fast-forward). */
+  fastForwarded: boolean;
+};
+
 /**
  * RPC handle for an open project's repository session.
  *
@@ -74,6 +86,15 @@ export interface ProjectSession extends RpcTarget {
    * Does not force-push.
    */
   pushCurrentBranch(): Promise<ProjectPushResult>;
+  /**
+   * Pull (fast-forward only) the current branch from the configured HTTPS remote
+   * (same-name refspec). Uses stored Git credentials for the remote host (HTTP Basic).
+   *
+   * Rejects when the current branch has uncommitted draft changes. On success,
+   * realigns that branch's draft worktree to the updated tip.
+   * Does not merge, rebase, or force-update local history.
+   */
+  pullCurrentBranch(): Promise<ProjectPullResult>;
   /**
    * Opens the draft workspace for `name` (branch name). Persisted under key
    * `<project-id>:<branch-name>`. Creates on first use from the branch tip tree,

@@ -32,7 +32,11 @@ import {
 } from "./document-revision";
 import { resolveBaseTree } from "./helpers";
 import * as historyOps from "./history-ops";
-import { loadOrSeed } from "./load";
+import {
+  hasPendingChanges as worktreeHasPendingChanges,
+  loadOrSeed,
+  realignToBranchTip as worktreeRealignToBranchTip,
+} from "./load";
 import * as manuscriptOps from "./manuscript-ops";
 import { replaceInWorktree } from "./replace-ops";
 import * as resourceOps from "./resource-ops";
@@ -156,6 +160,18 @@ export class WorktreeSession {
 
   getChangesSnapshot(): ChangesSnapshot {
     return currentChangesOnlySnapshot(this.#state);
+  }
+
+  hasPendingChanges(): boolean {
+    return worktreeHasPendingChanges(this.#state);
+  }
+
+  /**
+   * Realign a clean draft to the current branch tip (monotonic revision + full snapshot).
+   * Rejects when the draft has uncommitted changes.
+   */
+  realignToBranchTip(): ChangesSnapshot {
+    return worktreeRealignToBranchTip(this.#state);
   }
 
   /** Per-document content OCC revision (not the global worktree revision). */

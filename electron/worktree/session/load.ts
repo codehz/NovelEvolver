@@ -1,6 +1,6 @@
 import type { SHA1 } from "nano-git";
 
-import type { ResourceTreeSnapshot } from "#shared/rpc/worktree/index";
+import type { ChangesSnapshot, ResourceTreeSnapshot } from "#shared/rpc/worktree/index";
 
 import type {
   ManuscriptNodeCommittedRow,
@@ -33,12 +33,13 @@ import {
   manuscriptTreeFromOutline,
   manuscriptTreeToOutline,
 } from "../trees/worktree-tree-bridge";
+import { currentChangesOnlySnapshot, resetChangesStreamBaseline } from "./changes-snapshot";
 import {
   clearDocumentContentRevisions,
   hydrateDocumentContentRevisions,
 } from "./document-revision";
 import { readResourceTreeFromTree, resolveBaseTree } from "./helpers";
-import { persistState } from "./persistence";
+import { persistAndEmit, persistState } from "./persistence";
 import { recomputeAllChangeStatuses } from "./rebuild";
 import { RESOURCES_FILES_DIR, type WorktreeSessionState } from "./state";
 
@@ -124,14 +125,17 @@ export function loadFromStore(state: WorktreeSessionState, record: WorktreeRecor
   recomputeAllChangeStatuses(state);
 }
 
-export function seedFromBaseCommit(
+/**
+ * Rebuild manuscript/resource draft state from a commit tip.
+ * Does not touch `revision` or persist — callers own lifecycle.
+ */
+export function applySeedContentFromBaseCommit(
   state: WorktreeSessionState,
   baseCommitSha: SHA1 | null,
   warning: string | null = null,
 ): void {
   state.baseCommitSha = baseCommitSha;
   state.warning = warning;
-  state.revision = warning === null ? 0 : state.revision + 1;
   clearDocumentContentRevisions(state);
 
   if (baseCommitSha === null) {
@@ -159,7 +163,6 @@ export function seedFromBaseCommit(
     state.resourcePathById.set(RESOURCE_ROOT_ID, "");
     state.resourceIdByPath.clear();
     state.resourceIdByPath.set("", RESOURCE_ROOT_ID);
-    persistState(state, true);
     return;
   }
 
@@ -182,7 +185,39 @@ export function seedFromBaseCommit(
   for (const [path, id] of seededResources.idByPath.entries()) {
     state.resourceIdByPath.set(path, id);
   }
+}
+
+export function seedFromBaseCommit(
+  state: WorktreeSessionState,
+  baseCommitSha: SHA1 | null,
+  warning: string | null = null,
+): void {
+  applySeedContentFromBaseCommit(state, baseCommitSha, warning);
+  // Fresh seed starts at revision 0; recovery from corruption advances revision.
+  state.revision = warning === null ? 0 : state.revision + 1;
   persistState(state, true);
+}
+
+export function hasPendingChanges(state: WorktreeSessionState): boolean {
+  return currentChangesOnlySnapshot(state).hasChanges;
+}
+
+/**
+ * Realign a clean draft worktree to the current branch tip.
+ * Monotonically advances revision and emits a full changes snapshot.
+ * Rejects when the draft has uncommitted changes.
+ */
+export function realignToBranchTip(state: WorktreeSessionState): ChangesSnapshot {
+  if (hasPendingChanges(state)) {
+    throw new Error("当前分支有未提交更改，请先提交或还原后再拉取。");
+  }
+
+  const tip = state.repo.readBranch(state.branchName);
+  applySeedContentFromBaseCommit(state, tip, null);
+  state.changeTracker.clearCache();
+  resetChangesStreamBaseline(state);
+  persistAndEmit(state, true);
+  return currentChangesOnlySnapshot(state);
 }
 
 export function seedResourcesFromBaseTree(
