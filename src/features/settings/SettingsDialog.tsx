@@ -7,6 +7,7 @@ import { AiAgentsSettingsPanel } from "./ai-agents/AiAgentsSettingsPanel";
 import { AiModelsSettingsPanel } from "./ai-models/AiModelsSettingsPanel";
 import { AiPromptsSettingsPanel } from "./ai-prompts/AiPromptsSettingsPanel";
 import { AiRuntimePolicySettingsPanel } from "./ai-runtime-policy/AiRuntimePolicySettingsPanel";
+import { GitCredentialsSettingsPanel } from "./git-credentials/GitCredentialsSettingsPanel";
 import {
   settingsBackdropClass,
   settingsBodyClass,
@@ -31,6 +32,7 @@ const SETTINGS_CATEGORIES = [
   { id: "ai-agents", label: "AI Agent" },
   { id: "ai-prompts", label: "AI 提示词" },
   { id: "ai-runtime-policy", label: "AI 运行策略" },
+  { id: "git-credentials", label: "Git 凭证" },
 ] as const;
 
 type SettingsCategoryId = (typeof SETTINGS_CATEGORIES)[number]["id"];
@@ -120,6 +122,7 @@ export function SettingsDialog({ open, onDismiss }: SettingsDialogProps) {
                   {activeCategoryId === "ai-runtime-policy" ? (
                     <AiRuntimePolicySettingsPanel />
                   ) : null}
+                  {activeCategoryId === "git-credentials" ? <GitCredentialsSettingsPanel /> : null}
                 </div>
               </AutoTransition>
             </div>
