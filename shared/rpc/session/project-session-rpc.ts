@@ -64,6 +64,11 @@ export interface ProjectSession extends RpcTarget {
    */
   setRemoteUrl(url: string | null): void;
   /**
+   * Set or clear the project custom display name.
+   * null / empty clears (UI falls back to path-derived name).
+   */
+  setDisplayName(name: string | null): void;
+  /**
    * Push the current branch to the configured HTTPS remote (same-name refspec).
    * Uses stored Git credentials for the remote host (HTTP Basic).
    * Does not force-push.

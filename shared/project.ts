@@ -4,4 +4,6 @@ export type ProjectMetadata = {
   path: string;
   lastOpenedAt: number;
   displayPath: string;
+  /** Custom display name; null falls back to path-derived name. */
+  displayName: string | null;
 };

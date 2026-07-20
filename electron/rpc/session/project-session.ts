@@ -48,7 +48,7 @@ export class ProjectSessionImpl extends RpcTarget implements ProjectSession {
   readonly #projects: ProjectsRepository;
   readonly #getGitCredentialsStore: () => GitCredentialsStore;
   readonly #branchWorkspaces = new Map<string, BranchWorkspaceEntry>();
-  readonly #metadata: ProjectMetadata;
+  #metadata: ProjectMetadata;
   readonly #aiChat: ProjectAiChatController;
   readonly #ai: ProjectAi;
   readonly #mockAi: MockAiControlHandle | null;
@@ -125,6 +125,16 @@ export class ProjectSessionImpl extends RpcTarget implements ProjectSession {
     const next = url === null || url.trim() === "" ? null : normalizeHttpsRemoteUrl(url);
     this.#projects.setRemoteUrl(this.#projectId, next);
     this.#remoteUrl = next;
+  }
+
+  setDisplayName(name: string | null): void {
+    this.#assertNotDisposed();
+    const next = name === null || name.trim() === "" ? null : name.trim();
+    this.#projects.setDisplayName(this.#projectId, next);
+    this.#metadata = {
+      ...this.#metadata,
+      displayName: next,
+    };
   }
 
   async pushCurrentBranch(): Promise<ProjectPushResult> {

@@ -5,6 +5,7 @@ type ProjectRow = {
   path: string;
   last_opened_at: number;
   remote_url: string | null;
+  display_name: string | null;
 };
 
 export type ProjectDbRecord = {
@@ -12,9 +13,10 @@ export type ProjectDbRecord = {
   path: string;
   lastOpenedAt: number;
   remoteUrl: string | null;
+  displayName: string | null;
 };
 
-const PROJECT_SELECT = `SELECT id, path, last_opened_at, remote_url FROM projects`;
+const PROJECT_SELECT = `SELECT id, path, last_opened_at, remote_url, display_name FROM projects`;
 
 function rowToRecord(row: ProjectRow): ProjectDbRecord {
   return {
@@ -22,6 +24,7 @@ function rowToRecord(row: ProjectRow): ProjectDbRecord {
     path: row.path,
     lastOpenedAt: row.last_opened_at,
     remoteUrl: row.remote_url ?? null,
+    displayName: row.display_name ?? null,
   };
 }
 
@@ -90,6 +93,20 @@ export class ProjectsRepository {
     const value = remoteUrl === null || remoteUrl.trim() === "" ? null : remoteUrl;
     const result = this.#db
       .prepare(`UPDATE projects SET remote_url = ? WHERE id = ?`)
+      .run(value, id);
+    if (result.changes === 0) {
+      throw new Error(`Project with id ${id} not found`);
+    }
+  }
+
+  /**
+   * Persist custom display name for a project.
+   * Empty string is stored as null (UI falls back to path-derived name).
+   */
+  setDisplayName(id: number, displayName: string | null): void {
+    const value = displayName === null || displayName.trim() === "" ? null : displayName.trim();
+    const result = this.#db
+      .prepare(`UPDATE projects SET display_name = ? WHERE id = ?`)
       .run(value, id);
     if (result.changes === 0) {
       throw new Error(`Project with id ${id} not found`);

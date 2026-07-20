@@ -26,11 +26,13 @@ export function toProjectMetadata(record: {
   id: number;
   path: string;
   lastOpenedAt: number;
+  displayName?: string | null;
 }): ProjectMetadata {
   return {
     id: record.id,
     path: record.path,
     lastOpenedAt: record.lastOpenedAt,
     displayPath: shortenHomePath(record.path, getHomeDirForDisplay()),
+    displayName: record.displayName ?? null,
   };
 }

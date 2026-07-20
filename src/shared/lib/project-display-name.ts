@@ -4,3 +4,15 @@ export function projectDisplayName(path: string): string {
   const fileName = segments.at(-1) ?? path;
   return fileName.toLowerCase().endsWith(".npk") ? fileName.slice(0, -4) : fileName;
 }
+
+/** Prefer custom display name; fall back to path-derived name when empty/null. */
+export function resolveProjectDisplayName(project: {
+  path: string;
+  displayName?: string | null;
+}): string {
+  const custom = project.displayName?.trim();
+  if (custom !== undefined && custom !== "") {
+    return custom;
+  }
+  return projectDisplayName(project.path);
+}
