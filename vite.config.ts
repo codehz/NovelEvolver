@@ -24,6 +24,8 @@ function vendorChunkName(id: string): string | undefined {
 }
 
 export default defineConfig({
+  // Electron loads the renderer via file:// (packaged + production); relative asset URLs are required.
+  base: "./",
   plugins: [react(), tailwindcss({ optimize: false })],
   resolve: {
     alias: pathAlias,
