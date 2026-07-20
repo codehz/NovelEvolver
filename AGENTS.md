@@ -83,6 +83,8 @@ Use Bun for local work because the repo is locked with `bun.lock`.
 - `bun install` installs dependencies.
 - `bun run dev` starts Vite, watches Electron with `scripts/build-electron.mjs`, and launches the desktop app.
 - `bun run build` builds both renderer and Electron bundles. If you see CSS warnings about `::highlight` (e.g. "Unknown pseudo class" or similar), these are false positives caused by lightningcss's incomplete support for the CSS `::highlight()` pseudo-element — they can be safely ignored.
+- `bun run pack` builds then runs `electron-builder --dir` for a local unpacked smoke binary under `release/`.
+- `bun run dist` builds then packages the **current host OS** defaults into `release/` (`dist:linux` / `dist:win` / `dist:mac` for explicit targets). Packaging is native-host only — no cross-compile. Config lives in `electron-builder.yml`. Prototype phase: **no code signing / notarization** and **no GitHub Releases** (CI uploads artifacts only via `.github/workflows/package.yml`).
 - `bun run lint` is the **only** TypeScript validation gate: `oxlint` runs with `typeAware` and `typeCheck` (see `.oxlintrc.json`) on `src/`, `electron/`, and `shared/`, including compiler-style diagnostics. Renderer files must not import `electron` or `electron/` (enforced via `no-restricted-imports`). **Do not** add a `typecheck` script, `tsc --noEmit` npm script, or parallel CI step for standalone `tsc`; extend `.oxlintrc.json` if you need stricter checks. It may take a while to return results, so when invoking it from an agent or terminal tool, use a 5-second result wait timeout (`yield_time_ms`) rather than a shorter default.
 - `bun run lint:fix` applies safe lint fixes.
 - `bun run format` and `bun run format:check` run `oxfmt`.
