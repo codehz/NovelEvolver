@@ -18,7 +18,44 @@ env:
   CSC_IDENTITY_AUTO_DISCOVERY: "false"
 
 jobs:
+  # Linux-only: download + convert fonts once, cache across runs, share via artifact.
+  # Matrix package jobs must download before bun install so prepare→ensure-fonts is a cache hit
+  # (avoids Windows missing `unzip` / flaky CDN during install).
+  fonts:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Cache vendor fonts
+        uses: actions/cache@v4
+        with:
+          path: vendor/fonts
+          key: fonts-${{ hashFiles('scripts/fonts.manifest.json', 'scripts/ensure-fonts.mjs') }}
+          restore-keys: |
+            fonts-
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Ensure fonts
+        run: bun run fonts:ensure
+
+      - name: Upload vendor fonts
+        uses: actions/upload-artifact@v4
+        with:
+          name: vendor-fonts
+          path: vendor/fonts/
+          if-no-files-found: error
+          retention-days: 1
+
   package:
+    needs: [fonts]
     strategy:
       fail-fast: false
       matrix:
@@ -44,11 +81,16 @@ jobs:
         with:
           bun-version: latest
 
+      # Must run before install: package.json prepare → ensure-fonts.mjs (needs system unzip
+      # only on miss). Pre-seeded WOFF2 + pinned sha256 → cache hit on all platforms.
+      - name: Download vendor fonts
+        uses: actions/download-artifact@v4
+        with:
+          name: vendor-fonts
+          path: vendor/fonts
+
       - name: Install dependencies
         run: bun install --frozen-lockfile
-
-      - name: Ensure fonts
-        run: bun run fonts:ensure
 
       - name: Lint
         run: bun run lint
