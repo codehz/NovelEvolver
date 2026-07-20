@@ -27,7 +27,7 @@
         "foxact": "^0.3.8",
         "jotai": "^2.20.2",
         "motion": "^12.42.2",
-        "nano-git": "^0.10.0",
+        "nano-git": "^0.10.1",
         "nanoid": "^6.0.0",
         "partial-json": "^0.1.7",
         "react": "^19.2.7",
@@ -1153,7 +1153,7 @@
 
     "ms": ["ms@2.1.3", "", {}, "sha512-6FlzubTLZG3J2a/NVCAleEhjzq5oxgHyaCU9yYXvcLsvoVaHJq/s5xXI6/XXP6tz7R9xAOtHnSO/tXtF3WRTlA=="],
 
-    "nano-git": ["nano-git@0.10.0", "", { "dependencies": { "native-sqlite": "^0.1.0" }, "peerDependencies": { "typescript": "^6" } }, "sha512-A5CY0PuEHebvdji3E3OXjPCuR8V1/ioAprh6aBJ8bv9tHEAZjBVcE1pfdZsZ3QfBVhLUk/w5xT7muC98ZEbivg=="],
+    "nano-git": ["nano-git@0.10.1", "", { "dependencies": { "native-sqlite": "^0.1.0" }, "peerDependencies": { "typescript": "^6" } }, "sha512-lcNeECkhQBbyQ5a73LK45gWIbSQSdmIGwRX4dqmYrhjBjIinod9OtvkBHafZlz9i1ZZdiu8MzWP9zRnQhbbvpg=="],
 
     "nanoid": ["nanoid@6.0.0", "", { "bin": { "nanoid": "bin/nanoid.js" } }, "sha512-mkUH+rPkwU2qPadJ0oJZOjeZ5Mxn8Q1UhevwkTRWNuUZzyia3h4rhzK39hxaHTk0o2OxB8W2SQ6A8k23ZDi1pQ=="],
 
