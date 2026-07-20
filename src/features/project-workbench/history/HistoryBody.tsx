@@ -15,6 +15,7 @@ import { cn } from "#app/shared/lib/ui/cn";
 import { rowHoverClass } from "#app/shared/lib/ui/interaction-chrome";
 import { Button, DisclosureChevron } from "#app/shared/ui";
 import type { Change, CommitSummary } from "#shared/rpc/worktree/index";
+import { SidebarHeaderActionButton, SidebarHeaderActions } from "#workbench/chrome";
 import { activateOnEnterSpace } from "#workbench/lib/activate-on-enter-space";
 import { ChangesDomainRow } from "#workbench/lib/ChangesDomainRow";
 import { ChangeStatsBadge } from "#workbench/lib/ChangeStatsBadge";
@@ -41,6 +42,7 @@ import {
 } from "./history-tree-projector";
 import { HistoryCommitRow } from "./HistoryCommitRow";
 import type { CommitChangesCacheEntry } from "./use-commit-changes-state";
+import { useGitPush } from "./use-git-push";
 import { useRestoreFromHistory } from "./use-restore-from-history";
 
 const changeFolderRowClass = cn(
@@ -567,24 +569,42 @@ export function HistoryBody({
   onOpenChange,
   onCreateBranchFromCommit,
 }: HistoryBodyProps) {
+  const { pushing, push } = useGitPush();
+
+  let body = null;
   if (loading) {
-    return <HistoryLoading />;
+    body = <HistoryLoading />;
+  } else if (error) {
+    body = <HistoryError onRetry={onRetry} />;
+  } else if (commits === null || commits.length === 0) {
+    body = <HistoryEmptyState />;
+  } else {
+    body = (
+      <HistoryList
+        commits={commits}
+        expandedHashes={expandedHashes}
+        cache={cache}
+        onToggleCommit={onToggleCommit}
+        onRetryCommit={onRetryCommit}
+        onOpenChange={onOpenChange}
+        onCreateBranchFromCommit={onCreateBranchFromCommit}
+      />
+    );
   }
-  if (error) {
-    return <HistoryError onRetry={onRetry} />;
-  }
-  if (commits === null || commits.length === 0) {
-    return <HistoryEmptyState />;
-  }
+
   return (
-    <HistoryList
-      commits={commits}
-      expandedHashes={expandedHashes}
-      cache={cache}
-      onToggleCommit={onToggleCommit}
-      onRetryCommit={onRetryCommit}
-      onOpenChange={onOpenChange}
-      onCreateBranchFromCommit={onCreateBranchFromCommit}
-    />
+    <div className="flex min-h-0 flex-col">
+      <SidebarHeaderActions>
+        <SidebarHeaderActionButton
+          label={pushing ? "推送中…" : "推送当前分支（Shift+点击可改远程）"}
+          icon={pushing ? "icon-[codicon--loading] animate-spin" : "icon-[codicon--repo-push]"}
+          disabled={pushing}
+          onClick={(event) => {
+            void push({ forcePromptRemote: event.shiftKey });
+          }}
+        />
+      </SidebarHeaderActions>
+      {body}
+    </div>
   );
 }

@@ -1,3 +1,5 @@
+import type { MouseEvent } from "react";
+
 import { cn } from "#app/shared/lib/ui/cn";
 import { Button, AppTooltip } from "#app/shared/ui";
 
@@ -9,7 +11,7 @@ export type SidebarHeaderActionButtonProps = {
   /** Tailwind icon class, e.g. `"icon-[codicon--new-file]"`. */
   icon: string;
   disabled?: boolean;
-  onClick: () => void;
+  onClick: (event: MouseEvent<HTMLButtonElement>) => void;
 };
 
 export function SidebarHeaderActionButton({
