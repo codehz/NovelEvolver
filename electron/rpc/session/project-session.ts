@@ -4,17 +4,25 @@ import { createSqliteRepository } from "nano-git/repository/sqlite";
 
 import type { ProjectMetadata } from "#shared/project";
 import type { MockAiControlHandle, ProjectAi } from "#shared/rpc/ai/index";
-import type { BranchWorkspace } from "#shared/rpc/session/index";
-import type { BranchSummary, ProjectSession } from "#shared/rpc/session/index";
+import { normalizeGitCredentialHost } from "#shared/rpc/services/index";
+import type {
+  BranchSummary,
+  BranchWorkspace,
+  ProjectPushResult,
+  ProjectSession,
+} from "#shared/rpc/session/index";
+import { normalizeHttpsRemoteUrl } from "#shared/rpc/session/index";
 
 import { ProjectAiChatController } from "../../ai/chat/project-ai-chat";
 import type { AiChatRepository } from "../../db/repositories/ai-chat-repo";
-import type { ProjectDbRecord } from "../../db/repositories/projects-repo";
+import type { ProjectDbRecord, ProjectsRepository } from "../../db/repositories/projects-repo";
 import type { WorktreeRepository } from "../../db/repositories/worktree-repo";
+import { buildGitHttpsBasicAuthHeaders } from "../../lib/git-https-auth";
 import { toProjectMetadata } from "../../projects/home-path";
 import type { AiAgentsStore } from "../../settings/ai-agents-store";
 import type { AiModelsStore } from "../../settings/ai-models-store";
 import type { AiRuntimePolicyStore } from "../../settings/ai-runtime-policy-store";
+import type { GitCredentialsStore } from "../../settings/git-credentials-store";
 import { WorktreeSession } from "../../worktree/session";
 import { MockAiControlHandleImpl } from "../handles/mock-ai-control-handle";
 import { ProjectAiHandleImpl } from "../handles/project-ai-handle";
@@ -37,29 +45,37 @@ export class ProjectSessionImpl extends RpcTarget implements ProjectSession {
   readonly #projectId: number;
   readonly #repo: ReturnType<typeof createSqliteRepository>;
   readonly #worktrees: WorktreeRepository;
+  readonly #projects: ProjectsRepository;
+  readonly #getGitCredentialsStore: () => GitCredentialsStore;
   readonly #branchWorkspaces = new Map<string, BranchWorkspaceEntry>();
   readonly #metadata: ProjectMetadata;
   readonly #aiChat: ProjectAiChatController;
   readonly #ai: ProjectAi;
   readonly #mockAi: MockAiControlHandle | null;
+  #remoteUrl: string | null;
   #disposed = false;
 
   constructor(
     projectId: number,
     repoPath: string,
     worktrees: WorktreeRepository,
+    projects: ProjectsRepository,
     projectRecord: ProjectDbRecord,
     aiChatRepository: AiChatRepository,
     mockAiEnabled: boolean,
     getAiModelsStore: () => AiModelsStore,
     getAiAgentsStore: () => AiAgentsStore,
     getAiRuntimePolicyStore: () => AiRuntimePolicyStore,
+    getGitCredentialsStore: () => GitCredentialsStore,
   ) {
     super();
     this.#projectId = projectId;
     this.#repo = createSqliteRepository(repoPath);
     this.#worktrees = worktrees;
+    this.#projects = projects;
+    this.#getGitCredentialsStore = getGitCredentialsStore;
     this.#metadata = toProjectMetadata(projectRecord);
+    this.#remoteUrl = projectRecord.remoteUrl;
     this.#aiChat = new ProjectAiChatController({
       projectId,
       repository: aiChatRepository,
@@ -92,12 +108,88 @@ export class ProjectSessionImpl extends RpcTarget implements ProjectSession {
     }));
   }
 
+  get remoteUrl(): string | null {
+    return this.#remoteUrl;
+  }
+
   get ai(): ProjectAi {
     return this.#ai;
   }
 
   getMockAiControl(): MockAiControlHandle | null {
     return this.#mockAi;
+  }
+
+  setRemoteUrl(url: string | null): void {
+    this.#assertNotDisposed();
+    const next = url === null || url.trim() === "" ? null : normalizeHttpsRemoteUrl(url);
+    this.#projects.setRemoteUrl(this.#projectId, next);
+    this.#remoteUrl = next;
+  }
+
+  async pushCurrentBranch(): Promise<ProjectPushResult> {
+    this.#assertNotDisposed();
+
+    const remoteUrl = this.#remoteUrl;
+    if (remoteUrl === null || remoteUrl === "") {
+      throw new Error("尚未配置远程仓库地址。");
+    }
+
+    const branchName = this.#repo.getCurrentBranch();
+    if (branchName === null || branchName === "") {
+      throw new Error("当前处于 detached HEAD，无法推送。");
+    }
+
+    const tip = this.#repo.readBranch(branchName);
+    if (tip === null) {
+      throw new Error("当前分支尚无提交，无法推送。");
+    }
+
+    let host: string;
+    try {
+      host = normalizeGitCredentialHost(remoteUrl);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      throw new Error(`远程仓库地址无效：${message}`);
+    }
+
+    const credential = this.#getGitCredentialsStore().resolve(host);
+    if (credential === null) {
+      throw new Error(`未找到「${host}」的 Git 凭证，请到 设置 → Git 凭证 中添加。`);
+    }
+    if (credential.secret === null || credential.secret === "") {
+      throw new Error(`「${host}」凭证缺少密码或 PAT，请到 设置 → Git 凭证 中补全。`);
+    }
+
+    let result;
+    try {
+      result = await this.#repo.push(remoteUrl, {
+        headers: buildGitHttpsBasicAuthHeaders(credential.username, credential.secret),
+      });
+    } catch (error) {
+      throw new Error(formatPushTransportError(error, host));
+    }
+
+    const failed = result.pushedRefs.find((ref) => !ref.success);
+    if (failed !== undefined) {
+      throw new Error(formatPushRefFailure(failed.error, failed.refName));
+    }
+
+    const primary =
+      result.pushedRefs.find((ref) => ref.refName === `refs/heads/${branchName}`) ??
+      result.pushedRefs[0];
+    if (primary === undefined) {
+      throw new Error("推送完成但远端未返回引用更新结果。");
+    }
+
+    return {
+      branchName,
+      remoteUrl,
+      objectCount: result.objectCount,
+      updatedRef: primary.refName,
+      oldHash: primary.oldHash,
+      newHash: primary.newHash,
+    };
   }
 
   checkoutBranch(name: string): void {
@@ -227,4 +319,35 @@ export class ProjectSessionImpl extends RpcTarget implements ProjectSession {
     this.#branchWorkspaces.clear();
     this.#repo[Symbol.dispose]();
   }
+}
+
+function formatPushTransportError(error: unknown, host: string): string {
+  const message = error instanceof Error ? error.message : String(error);
+  const statusMatch = message.match(/status\s+(\d{3})/i);
+  const status = statusMatch?.[1] !== undefined ? Number(statusMatch[1]) : null;
+
+  if (status === 401 || status === 403) {
+    return `推送到「${host}」认证失败（HTTP ${status}），请到 设置 → Git 凭证 检查用户名与密码/PAT。`;
+  }
+  if (status === 404) {
+    return `推送失败：远程仓库不存在或无权访问（HTTP 404）。`;
+  }
+  if (/Failed to fetch|network|ENOTFOUND|ECONNREFUSED|ETIMEDOUT|fetch failed/i.test(message)) {
+    return `推送失败：无法连接远程「${host}」（网络错误）。`;
+  }
+  if (/non-fast-forward|not a fast-forward|rejected/i.test(message)) {
+    return "推送被拒绝：远端有新提交，非快进更新（本应用不支持强制推送）。";
+  }
+  return `推送失败：${message}`;
+}
+
+function formatPushRefFailure(error: string | undefined, refName: string): string {
+  const detail = error?.trim() ?? "";
+  if (/non-fast-forward|not a fast-forward|rejected/i.test(detail)) {
+    return "推送被拒绝：远端有新提交，非快进更新（本应用不支持强制推送）。";
+  }
+  if (detail !== "") {
+    return `推送 ${refName} 失败：${detail}`;
+  }
+  return `推送 ${refName} 失败。`;
 }

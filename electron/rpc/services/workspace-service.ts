@@ -17,6 +17,7 @@ export class WorkspaceServiceImpl extends RpcTarget implements WorkspaceService 
   readonly #getAiModelsStore: RpcMainDeps["getAiModelsStore"];
   readonly #getAiAgentsStore: RpcMainDeps["getAiAgentsStore"];
   readonly #getAiRuntimePolicyStore: RpcMainDeps["getAiRuntimePolicyStore"];
+  readonly #getGitCredentialsStore: RpcMainDeps["getGitCredentialsStore"];
   readonly #openSessions = new Set<ProjectSessionImpl>();
 
   constructor(window: BrowserWindow, deps: RpcMainDeps) {
@@ -30,6 +31,7 @@ export class WorkspaceServiceImpl extends RpcTarget implements WorkspaceService 
     this.#getAiModelsStore = deps.getAiModelsStore;
     this.#getAiAgentsStore = deps.getAiAgentsStore;
     this.#getAiRuntimePolicyStore = deps.getAiRuntimePolicyStore;
+    this.#getGitCredentialsStore = deps.getGitCredentialsStore;
   }
 
   openProject(projectId: number): ProjectSessionImpl {
@@ -42,12 +44,14 @@ export class WorkspaceServiceImpl extends RpcTarget implements WorkspaceService 
       record.id,
       record.path,
       this.#worktrees,
+      this.#projects,
       record,
       this.#aiChat,
       this.#mockAiEnabled,
       this.#getAiModelsStore,
       this.#getAiAgentsStore,
       this.#getAiRuntimePolicyStore,
+      this.#getGitCredentialsStore,
     );
     this.#openSessions.add(session);
     return session;

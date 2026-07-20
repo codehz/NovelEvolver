@@ -22,9 +22,15 @@ export function getHomeDirForDisplay(): string {
   return cachedHomeDir;
 }
 
-export function toProjectMetadata(record: Omit<ProjectMetadata, "displayPath">): ProjectMetadata {
+export function toProjectMetadata(record: {
+  id: number;
+  path: string;
+  lastOpenedAt: number;
+}): ProjectMetadata {
   return {
-    ...record,
+    id: record.id,
+    path: record.path,
+    lastOpenedAt: record.lastOpenedAt,
     displayPath: shortenHomePath(record.path, getHomeDirForDisplay()),
   };
 }
