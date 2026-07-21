@@ -2,11 +2,13 @@ import { Collapsible } from "@base-ui/react/collapsible";
 import { useState, type ReactNode } from "react";
 
 import { cn } from "#app/shared/lib/ui/cn";
+import { MarkdownStream } from "#app/shared/ui";
 import type { AiChatToolCall } from "#shared/rpc/ai/index";
 
 import { maybeErrorTechnicalFields } from "../tools/presenter-detail";
 import { toolIcon } from "../tools/presenter-format";
 import {
+  assistantMessageBodyClass,
   collapsiblePanelClass,
   elevatedCardBodyClass,
   elevatedCardHeaderClass,
@@ -18,6 +20,7 @@ import {
 } from "../ui/ai-chat-chrome";
 import { ClippedLivePanel } from "../ui/ClippedLivePanel";
 import { HoverRevealChevron } from "../ui/HoverRevealChevron";
+import { stripMarkdownPreview } from "../ui/strip-markdown-preview";
 import { TimelineRail } from "../ui/TimelineRail";
 import { useAutoCollapseExpand } from "../ui/use-auto-collapse-expand";
 import {
@@ -67,7 +70,9 @@ export function AiSubagentCard({ toolCall }: AiSubagentCardProps): ReactNode {
       </Collapsible.Trigger>
 
       {!open && model.report ? (
-        <p className="line-clamp-1 px-2 pb-1.5 text-chat-meta text-app-muted">{model.report}</p>
+        <p className="line-clamp-1 px-2 pb-1.5 text-chat-meta text-app-muted">
+          {stripMarkdownPreview(model.report)}
+        </p>
       ) : null}
 
       <Collapsible.Panel className={collapsiblePanelClass}>
@@ -154,14 +159,15 @@ export function AiSubagentCard({ toolCall }: AiSubagentCardProps): ReactNode {
                 <span>报告</span>
                 <HoverRevealChevron expanded={reportOpen} forceVisible={reportOpen} />
               </button>
-              <p
-                className={cn(
-                  "min-w-0 wrap-break-word whitespace-pre-wrap text-app-foreground",
-                  !reportOpen && "line-clamp-1",
-                )}
-              >
-                {model.report}
-              </p>
+              {reportOpen ? (
+                <div className={assistantMessageBodyClass}>
+                  <MarkdownStream>{model.report}</MarkdownStream>
+                </div>
+              ) : (
+                <p className="line-clamp-1 min-w-0 wrap-break-word text-app-foreground">
+                  {stripMarkdownPreview(model.report)}
+                </p>
+              )}
             </div>
           ) : null}
 

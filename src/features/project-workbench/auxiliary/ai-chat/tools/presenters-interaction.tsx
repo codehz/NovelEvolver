@@ -1,5 +1,7 @@
+import { MarkdownStream } from "#app/shared/ui";
 import type { AiSubagentToolView } from "#shared/rpc/ai/index";
 
+import { assistantMessageBodyClass } from "../ui/ai-chat-chrome";
 import { TimelineRail } from "../ui/TimelineRail";
 import { parseAskUserToolArguments } from "./ask-user-prompt";
 import { DetailField, DetailList, maybeErrorTechnicalFields } from "./presenter-detail";
@@ -215,9 +217,9 @@ export const runSubagentPresenter: ToolPresenter = (toolCall) => {
         {report ? (
           <div className="flex flex-col gap-0.5">
             <span className="text-2xs text-ctp-overlay0">报告</span>
-            <p className="min-w-0 wrap-break-word whitespace-pre-wrap text-app-foreground">
-              {report}
-            </p>
+            <div className={assistantMessageBodyClass}>
+              <MarkdownStream>{report}</MarkdownStream>
+            </div>
           </div>
         ) : null}
 
