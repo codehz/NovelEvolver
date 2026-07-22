@@ -8,6 +8,7 @@ import {
   readSubagentView,
   subagentPhaseLabel,
 } from "../tools/subagent-progress-ui";
+import { stripMarkdownPreview } from "../ui/strip-markdown-preview";
 
 export type SubagentCardModel = {
   agentId: string;
@@ -84,7 +85,7 @@ export function readSubagentCardModel(toolCall: AiChatToolCall): SubagentCardMod
     agentId,
     agentLabel: agentName ?? agentId,
     task,
-    taskPreview: truncateText(task, 48),
+    taskPreview: truncateText(stripMarkdownPreview(task), 48),
     constraints,
     report,
     runStatus,

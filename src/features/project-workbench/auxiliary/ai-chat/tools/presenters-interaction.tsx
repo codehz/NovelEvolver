@@ -2,6 +2,7 @@ import { MarkdownStream } from "#app/shared/ui/MarkdownStream";
 import type { AiSubagentToolView } from "#shared/rpc/ai/index";
 
 import { assistantMessageBodyClass } from "../ui/ai-chat-chrome";
+import { stripMarkdownPreview } from "../ui/strip-markdown-preview";
 import { TimelineRail } from "../ui/TimelineRail";
 import { parseAskUserToolArguments } from "./ask-user-prompt";
 import { DetailField, DetailList, maybeErrorTechnicalFields } from "./presenter-detail";
@@ -151,7 +152,7 @@ export const runSubagentPresenter: ToolPresenter = (toolCall) => {
   const agentName = view?.agentName ?? getString(result, "agent_name") ?? null;
   const task =
     (view?.task && view.task !== "" ? view.task : null) ?? getString(args, "task") ?? "未指定任务";
-  const taskPreview = truncateText(task, 48);
+  const taskPreview = truncateText(stripMarkdownPreview(task), 48);
   const constraints = view?.constraints ?? getString(args, "constraints");
   const report =
     view?.report ?? getString(result, "report") ?? getString(result, "summary") ?? null;
@@ -188,13 +189,18 @@ export const runSubagentPresenter: ToolPresenter = (toolCall) => {
     indicator: statusLabel ?? liveIndicator,
     detail: hasBody ? (
       <div className="flex flex-col gap-2">
-        <div className="flex flex-col gap-0.5">
+        <div className="flex flex-col gap-1.5">
           <p className="text-app-foreground">{agentLabel}</p>
-          <p className="min-w-0 wrap-break-word text-ctp-subtext0">{task}</p>
+          <div className={assistantMessageBodyClass}>
+            <MarkdownStream>{task}</MarkdownStream>
+          </div>
           {constraints ? (
-            <p className="min-w-0 text-2xs wrap-break-word text-ctp-overlay0">
-              约束：{constraints}
-            </p>
+            <div className="flex flex-col gap-0.5">
+              <span className="text-2xs text-ctp-overlay0">约束</span>
+              <div className={assistantMessageBodyClass}>
+                <MarkdownStream>{constraints}</MarkdownStream>
+              </div>
+            </div>
           ) : null}
         </div>
 

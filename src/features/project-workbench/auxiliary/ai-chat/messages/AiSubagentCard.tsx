@@ -77,13 +77,18 @@ export function AiSubagentCard({ toolCall }: AiSubagentCardProps): ReactNode {
 
       <Collapsible.Panel className={collapsiblePanelClass}>
         <div className={elevatedCardBodyClass}>
-          <div className="flex flex-col gap-0.5">
+          <div className="flex flex-col gap-1.5">
             <p className="text-app-foreground">{model.agentLabel}</p>
-            <p className="min-w-0 wrap-break-word text-ctp-subtext0">{model.task}</p>
+            <div className={assistantMessageBodyClass}>
+              <MarkdownStream>{model.task}</MarkdownStream>
+            </div>
             {model.constraints ? (
-              <p className="min-w-0 text-2xs wrap-break-word text-ctp-overlay0">
-                约束：{model.constraints}
-              </p>
+              <div className="flex flex-col gap-0.5">
+                <span className="text-2xs text-ctp-overlay0">约束</span>
+                <div className={assistantMessageBodyClass}>
+                  <MarkdownStream>{model.constraints}</MarkdownStream>
+                </div>
+              </div>
             ) : null}
             <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-2xs text-ctp-overlay0">
               {model.phaseLabel ? <span>{model.phaseLabel}</span> : null}
