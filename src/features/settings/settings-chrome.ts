@@ -212,13 +212,18 @@ export const settingsToolCardSelectedClass = cn(
   "bg-badge-background/12 hover:bg-badge-background/16",
 );
 
-export const settingsToolCardBodyClass = cn("min-w-0 flex-1");
+/** Title + description stack beside the checkbox. */
+export const settingsToolCardBodyClass = cn("flex min-w-0 flex-1 flex-col gap-0.5");
 
+/** Technical tool id (e.g. ask_user) — mono, one line. */
 export const settingsToolCardTitleClass = cn(
-  "truncate text-xs leading-tight font-medium text-app-foreground",
+  "min-w-0 truncate font-mono text-xs leading-tight font-medium text-app-foreground",
 );
 
-export const settingsToolCardDescriptionClass = cn("mt-0.5 text-2xs leading-snug text-app-muted");
+/** Full multi-line tool description under the id. */
+export const settingsToolCardDescriptionClass = cn(
+  "min-w-0 text-2xs leading-snug wrap-break-word text-app-muted",
+);
 
 export const settingsStatusBadgeClass = cn(
   "inline-flex h-4 shrink-0 items-center rounded-sm bg-ctp-surface0/70 px-1.5 text-2xs leading-none text-app-muted",
