@@ -24,6 +24,7 @@ const reviewer: AiAgentRuntimeConfig = {
   id: "builtin-consistency-reviewer",
   name: "一致性审查",
   systemPrompt: "你是审查员",
+  defaultSystemPrompt: "你是审查员",
   defaultModelId: null,
   availableToolNames: ["read_document", "search_documents", "read_structure"],
   builtin: true,

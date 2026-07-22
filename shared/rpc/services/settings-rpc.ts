@@ -166,6 +166,8 @@ export type AiAgentConfigPublic = {
   id: string;
   name: string;
   systemPrompt: string;
+  /** Code-defined baseline for builtin agents; `null` for custom agents. */
+  defaultSystemPrompt: string | null;
   defaultModelId: string | null;
   availableToolNames: string[];
   builtin: boolean;
@@ -177,9 +179,9 @@ export type AiAgentConfigPublic = {
 
 /**
  * Create/update payload for `upsertAiAgent`.
- * When `id` is a builtin agent id, only `defaultModelId` is applied;
- * name / systemPrompt / availableToolNames / userSelectable / subagentEligible
- * are ignored (builtin flags are code-owned).
+ * When `id` is a builtin agent id, only `systemPrompt` and `defaultModelId`
+ * are applied. Name / availableToolNames / userSelectable / subagentEligible
+ * are ignored (builtin definitions are code-owned).
  */
 export type AiAgentConfigWrite = {
   id?: string;

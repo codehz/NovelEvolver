@@ -25,27 +25,31 @@ import {
 import { AI_TOOL_CATALOG, AI_TOOL_NAMES } from "../ai/tools";
 import type { AiModelsStore } from "./ai-models-store";
 
-const FILE_VERSION = 1 as const;
+const FILE_VERSION = 2 as const;
 
 export const BUILTIN_AI_AGENT_SYSTEM_PROMPT = DEFAULT_AI_SYSTEM_PROMPT;
 
 export type AiAgentRuntimeConfig = AiAgentConfigPublic;
 
-type StoredAgentRecord = Omit<AiAgentConfigPublic, "builtin">;
+type StoredAgentRecord = Omit<AiAgentConfigPublic, "builtin" | "defaultSystemPrompt">;
 
 /** Per-builtin override: null clears to “inherit chat default”. Missing key = no override. */
 type BuiltinDefaultModelIds = Partial<Record<BuiltinAiAgentId, string | null>>;
+
+type BuiltinSystemPromptOverrides = Partial<Record<BuiltinAiAgentId, string>>;
 
 type StoredFile = {
   version: typeof FILE_VERSION;
   agents: StoredAgentRecord[];
   builtinDefaultModelIds: BuiltinDefaultModelIds;
+  builtinSystemPromptOverrides: BuiltinSystemPromptOverrides;
 };
 
 const EMPTY_FILE: StoredFile = {
   version: FILE_VERSION,
   agents: [],
   builtinDefaultModelIds: {},
+  builtinSystemPromptOverrides: {},
 };
 
 const ALL_TOOL_NAMES = Object.keys(AI_TOOL_NAMES);
@@ -73,6 +77,7 @@ function builtinWritingAssistant(): AiAgentConfigPublic {
     id: BUILTIN_AI_AGENT_ID,
     name: "写作助手",
     systemPrompt: BUILTIN_AI_AGENT_SYSTEM_PROMPT,
+    defaultSystemPrompt: BUILTIN_AI_AGENT_SYSTEM_PROMPT,
     defaultModelId: null,
     availableToolNames: [...ALL_TOOL_NAMES],
     builtin: true,
@@ -86,6 +91,7 @@ function builtinConsistencyReviewer(): AiAgentConfigPublic {
     id: BUILTIN_CONSISTENCY_REVIEWER_ID,
     name: "一致性审查",
     systemPrompt: CONSISTENCY_REVIEWER_SYSTEM_PROMPT,
+    defaultSystemPrompt: CONSISTENCY_REVIEWER_SYSTEM_PROMPT,
     defaultModelId: null,
     availableToolNames: [...READ_TOOL_NAMES],
     builtin: true,
@@ -99,6 +105,7 @@ function builtinChapterWriter(): AiAgentConfigPublic {
     id: BUILTIN_CHAPTER_WRITER_ID,
     name: "章节续写",
     systemPrompt: CHAPTER_WRITER_SYSTEM_PROMPT,
+    defaultSystemPrompt: CHAPTER_WRITER_SYSTEM_PROMPT,
     defaultModelId: null,
     availableToolNames: [...CHAPTER_WRITER_TOOL_NAMES],
     builtin: true,
@@ -165,6 +172,20 @@ function parseBuiltinDefaultModelIds(raw: unknown): BuiltinDefaultModelIds {
   return result;
 }
 
+function parseBuiltinSystemPromptOverrides(raw: unknown): BuiltinSystemPromptOverrides {
+  if (raw == null || typeof raw !== "object" || Array.isArray(raw)) {
+    return {};
+  }
+  const result: BuiltinSystemPromptOverrides = {};
+  for (const id of BUILTIN_AI_AGENT_IDS) {
+    const value = (raw as Record<string, unknown>)[id];
+    if (typeof value === "string" && value.trim() !== "") {
+      result[id] = value.trim();
+    }
+  }
+  return result;
+}
+
 export class AiAgentsStore {
   readonly #filePath: string;
   readonly #getAiModelsStore: () => AiModelsStore;
@@ -180,7 +201,11 @@ export class AiAgentsStore {
     return {
       agents: [
         ...this.#mergedBuiltinAgents(),
-        ...this.#data.agents.map((agent) => ({ ...agent, builtin: false as const })),
+        ...this.#data.agents.map((agent) => ({
+          ...agent,
+          defaultSystemPrompt: null,
+          builtin: false as const,
+        })),
       ],
       tools: AI_TOOL_CATALOG.map((tool) => ({ ...tool })),
     };
@@ -200,7 +225,7 @@ export class AiAgentsStore {
 
   upsert(input: AiAgentConfigWrite): AiAgentsSettingsSnapshot {
     if (input.id !== undefined && isBuiltinAiAgentId(input.id)) {
-      return this.#upsertBuiltinDefaultModel(input.id, input.defaultModelId);
+      return this.#upsertBuiltin(input.id, input.systemPrompt, input.defaultModelId);
     }
 
     const name = input.name.trim();
@@ -253,12 +278,17 @@ export class AiAgentsStore {
     return this.getSnapshot();
   }
 
-  #upsertBuiltinDefaultModel(
+  #upsertBuiltin(
     id: BuiltinAiAgentId,
+    systemPromptInput: string,
     defaultModelId: string | null,
   ): AiAgentsSettingsSnapshot {
     this.#assertDefaultModelId(defaultModelId);
-    // Only defaultModelId is user-configurable for builtins; name/prompt/tools stay code-defined.
+    const systemPrompt = systemPromptInput.trim();
+    if (systemPrompt === "") {
+      throw new Error("系统提示词不能为空。");
+    }
+
     if (defaultModelId === null) {
       const { [id]: _removed, ...rest } = this.#data.builtinDefaultModelIds;
       this.#data.builtinDefaultModelIds = rest;
@@ -268,6 +298,18 @@ export class AiAgentsStore {
         [id]: defaultModelId,
       };
     }
+
+    const defaultSystemPrompt = builtinAgents().find((agent) => agent.id === id)!.systemPrompt;
+    if (systemPrompt === defaultSystemPrompt) {
+      const { [id]: _removed, ...rest } = this.#data.builtinSystemPromptOverrides;
+      this.#data.builtinSystemPromptOverrides = rest;
+    } else {
+      this.#data.builtinSystemPromptOverrides = {
+        ...this.#data.builtinSystemPromptOverrides,
+        [id]: systemPrompt,
+      };
+    }
+
     this.#persist();
     return this.getSnapshot();
   }
@@ -292,15 +334,22 @@ export class AiAgentsStore {
       return agent;
     }
     const override = this.#data.builtinDefaultModelIds[agent.id];
+    const systemPromptOverride = this.#data.builtinSystemPromptOverrides[agent.id];
     return {
       ...agent,
+      systemPrompt: systemPromptOverride ?? agent.systemPrompt,
       defaultModelId: override === undefined ? null : override,
     };
   }
 
   #load(): StoredFile {
     if (!existsSync(this.#filePath)) {
-      return { ...EMPTY_FILE, agents: [], builtinDefaultModelIds: {} };
+      return {
+        ...EMPTY_FILE,
+        agents: [],
+        builtinDefaultModelIds: {},
+        builtinSystemPromptOverrides: {},
+      };
     }
     try {
       const parsed = JSON.parse(readFileSync(this.#filePath, "utf8")) as Partial<StoredFile>;
@@ -313,9 +362,17 @@ export class AiAgentsStore {
         version: FILE_VERSION,
         agents,
         builtinDefaultModelIds: parseBuiltinDefaultModelIds(parsed.builtinDefaultModelIds),
+        builtinSystemPromptOverrides: parseBuiltinSystemPromptOverrides(
+          parsed.builtinSystemPromptOverrides,
+        ),
       };
     } catch {
-      return { ...EMPTY_FILE, agents: [], builtinDefaultModelIds: {} };
+      return {
+        ...EMPTY_FILE,
+        agents: [],
+        builtinDefaultModelIds: {},
+        builtinSystemPromptOverrides: {},
+      };
     }
   }
 
