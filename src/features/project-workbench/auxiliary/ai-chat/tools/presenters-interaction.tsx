@@ -1,4 +1,4 @@
-import { MarkdownStream } from "#app/shared/ui";
+import { MarkdownStream } from "#app/shared/ui/MarkdownStream";
 import type { AiSubagentToolView } from "#shared/rpc/ai/index";
 
 import { assistantMessageBodyClass } from "../ui/ai-chat-chrome";
