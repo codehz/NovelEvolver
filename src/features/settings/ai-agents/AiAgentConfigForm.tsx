@@ -3,6 +3,7 @@ import { Form } from "@base-ui/react/form";
 import { useEffect, useImperativeHandle, useMemo, useRef, useState, type Ref } from "react";
 
 import { cn } from "#app/shared/lib/ui/cn";
+import { Button } from "#app/shared/ui";
 import type {
   AiAgentConfigPublic,
   AiAgentConfigWrite,
@@ -47,11 +48,6 @@ type AiAgentConfigFormProps = {
   initial?: AiAgentConfigPublic | null;
   /** Full form locked (view-only). */
   readOnly?: boolean;
-  /**
-   * Lock name / system prompt / tools but keep default model editable.
-   * Used for builtin agents (definition is code-owned).
-   */
-  lockDefinitionFields?: boolean;
   busy?: boolean;
   error?: string | null;
   formRef?: Ref<SettingsFormHandle | null>;
@@ -83,17 +79,19 @@ function sameToolNames(a: readonly string[], b: readonly string[]): boolean {
 function isAgentFormDirty(
   form: FormState,
   baseline: FormState,
-  lockDefinitionFields: boolean,
+  fixedFieldsLocked: boolean,
 ): boolean {
-  if (form.defaultModelId !== baseline.defaultModelId) {
+  if (
+    form.systemPrompt !== baseline.systemPrompt ||
+    form.defaultModelId !== baseline.defaultModelId
+  ) {
     return true;
   }
-  if (lockDefinitionFields) {
+  if (fixedFieldsLocked) {
     return false;
   }
   return (
     form.name !== baseline.name ||
-    form.systemPrompt !== baseline.systemPrompt ||
     !sameToolNames(form.availableToolNames, baseline.availableToolNames) ||
     form.userSelectable !== baseline.userSelectable ||
     form.subagentEligible !== baseline.subagentEligible
@@ -106,7 +104,6 @@ export function AiAgentConfigForm({
   providers,
   initial = null,
   readOnly = false,
-  lockDefinitionFields = false,
   busy = false,
   error = null,
   formRef = null,
@@ -114,7 +111,8 @@ export function AiAgentConfigForm({
   onSubmit,
 }: AiAgentConfigFormProps) {
   const isEdit = initial != null;
-  const definitionLocked = readOnly || lockDefinitionFields;
+  const isBuiltin = initial?.builtin === true;
+  const fixedFieldsLocked = readOnly || isBuiltin;
   const canEditDefaultModel = !readOnly;
   const canSubmit = !readOnly && onSubmit != null;
   const baselineRef = useRef(toFormState(initial));
@@ -124,8 +122,8 @@ export function AiAgentConfigForm({
     if (readOnly) {
       return false;
     }
-    return isAgentFormDirty(form, baselineRef.current, lockDefinitionFields);
-  }, [form, lockDefinitionFields, readOnly]);
+    return isAgentFormDirty(form, baselineRef.current, fixedFieldsLocked);
+  }, [fixedFieldsLocked, form, readOnly]);
 
   useEffect(() => {
     onDirtyChange?.(dirty);
@@ -137,10 +135,8 @@ export function AiAgentConfigForm({
     }
     const name = form.name.trim();
     const systemPrompt = form.systemPrompt.trim();
-    if (!definitionLocked) {
-      if (name === "" || systemPrompt === "") {
-        return null;
-      }
+    if (systemPrompt === "" || (!fixedFieldsLocked && name === "")) {
+      return null;
     }
     return {
       ...(isEdit ? { id: initial.id } : {}),
@@ -172,7 +168,7 @@ export function AiAgentConfigForm({
         return submitPayload(payload);
       },
     }),
-    [form, canSubmit, definitionLocked, isEdit, initial, onSubmit],
+    [form, canSubmit, fixedFieldsLocked, isEdit, initial, onSubmit],
   );
 
   const providerNameById = new Map<string, string>();
@@ -182,7 +178,7 @@ export function AiAgentConfigForm({
 
   const update = <K extends keyof FormState>(key: K, value: FormState[K]) => {
     if (readOnly) return;
-    if (lockDefinitionFields && key !== "defaultModelId") return;
+    if (isBuiltin && key !== "systemPrompt" && key !== "defaultModelId") return;
     setForm((prev) => ({ ...prev, [key]: value }));
   };
 
@@ -201,23 +197,23 @@ export function AiAgentConfigForm({
       <div className={settingsFormGridClass}>
         <Field.Root
           className={settingsFieldRootClass}
-          disabled={busy || definitionLocked}
+          disabled={busy || fixedFieldsLocked}
           name="name"
         >
           <Field.Label className={settingsFieldLabelClass}>名称</Field.Label>
           <div className={settingsFieldControlCellClass}>
             <Field.Control
-              autoFocus={!definitionLocked}
+              autoFocus={!fixedFieldsLocked}
               className={settingsInputClass}
-              placeholder={definitionLocked ? undefined : "例如：写作助手"}
-              readOnly={definitionLocked}
-              required={!definitionLocked}
+              placeholder={fixedFieldsLocked ? undefined : "例如：写作助手"}
+              readOnly={fixedFieldsLocked}
+              required={!fixedFieldsLocked}
               value={form.name}
               onValueChange={(next) => {
                 update("name", next);
               }}
             />
-            {definitionLocked ? null : (
+            {fixedFieldsLocked ? null : (
               <Field.Error className={settingsFieldErrorClass} match="valueMissing">
                 请填写名称。
               </Field.Error>
@@ -227,26 +223,42 @@ export function AiAgentConfigForm({
 
         <Field.Root
           className={settingsFieldRootClass}
-          disabled={busy || definitionLocked}
+          disabled={busy || readOnly}
           name="systemPrompt"
         >
           <Field.Label className={settingsFieldLabelClass}>系统提示词</Field.Label>
           <div className={settingsFieldControlCellClass}>
             <Field.Control
               className={settingsTextareaClass}
-              placeholder={definitionLocked ? undefined : "设定 Agent 的行为、性格与限制…"}
-              readOnly={definitionLocked}
+              placeholder={readOnly ? undefined : "设定 Agent 的行为、性格与限制…"}
+              readOnly={readOnly}
               render={<textarea rows={5} />}
-              required={!definitionLocked}
+              required={!readOnly}
               value={form.systemPrompt}
               onValueChange={(next) => {
                 update("systemPrompt", next);
               }}
             />
-            {definitionLocked ? null : (
-              <Field.Error className={settingsFieldErrorClass} match="valueMissing">
-                请填写系统提示词。
-              </Field.Error>
+            {readOnly ? null : (
+              <>
+                <Field.Error className={settingsFieldErrorClass} match="valueMissing">
+                  请填写系统提示词。
+                </Field.Error>
+                {isBuiltin && initial.defaultSystemPrompt ? (
+                  <div className="flex items-center justify-between gap-2">
+                    <p className="text-2xs text-app-muted">恢复后需保存才会生效。</p>
+                    <Button
+                      disabled={busy || form.systemPrompt === initial.defaultSystemPrompt}
+                      variant="text"
+                      onClick={() => {
+                        update("systemPrompt", initial.defaultSystemPrompt!);
+                      }}
+                    >
+                      恢复默认
+                    </Button>
+                  </div>
+                ) : null}
+              </>
             )}
           </div>
         </Field.Root>
@@ -278,14 +290,14 @@ export function AiAgentConfigForm({
 
         <Field.Root
           className={settingsFieldRootClass}
-          disabled={busy || definitionLocked}
+          disabled={busy || fixedFieldsLocked}
           name="availableToolNames"
         >
           <Field.Label className={settingsFieldLabelClass}>可用工具</Field.Label>
           <div className={settingsFieldControlCellClass}>
             <AiAgentToolPicker
               disabled={busy}
-              readOnly={definitionLocked}
+              readOnly={fixedFieldsLocked}
               tools={tools}
               value={form.availableToolNames}
               onChange={(next) => {
@@ -297,7 +309,7 @@ export function AiAgentConfigForm({
 
         <Field.Root
           className={settingsFieldRootClass}
-          disabled={busy || definitionLocked}
+          disabled={busy || fixedFieldsLocked}
           name="userSelectable"
         >
           <Field.Label className={settingsFieldLabelClass}>可见性</Field.Label>
@@ -307,13 +319,13 @@ export function AiAgentConfigForm({
                 className={cn(
                   settingsCheckboxLabelClass,
                   "items-center",
-                  definitionLocked && "cursor-default text-app-muted",
+                  fixedFieldsLocked && "cursor-default text-app-muted",
                 )}
               >
                 <SettingsCheckbox
                   checked={form.userSelectable}
-                  disabled={busy || definitionLocked}
-                  readOnly={definitionLocked}
+                  disabled={busy || fixedFieldsLocked}
+                  readOnly={fixedFieldsLocked}
                   onCheckedChange={(checked) => {
                     update("userSelectable", checked);
                   }}
@@ -329,13 +341,13 @@ export function AiAgentConfigForm({
                 className={cn(
                   settingsCheckboxLabelClass,
                   "items-center",
-                  definitionLocked && "cursor-default text-app-muted",
+                  fixedFieldsLocked && "cursor-default text-app-muted",
                 )}
               >
                 <SettingsCheckbox
                   checked={form.subagentEligible}
-                  disabled={busy || definitionLocked}
-                  readOnly={definitionLocked}
+                  disabled={busy || fixedFieldsLocked}
+                  readOnly={fixedFieldsLocked}
                   onCheckedChange={(checked) => {
                     update("subagentEligible", checked);
                   }}
@@ -347,7 +359,7 @@ export function AiAgentConfigForm({
                   </span>
                 </span>
               </label>
-              {definitionLocked ? (
+              {fixedFieldsLocked ? (
                 <p className="text-2xs text-app-muted">
                   内置 Agent 的可见性与子代理资格由代码固定。
                 </p>

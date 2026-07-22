@@ -378,7 +378,6 @@ export function AiAgentsSettingsPanel({ active = true }: AiAgentsSettingsPanelPr
               error={actionError}
               formRef={formRef}
               initial={selectedAgent}
-              lockDefinitionFields={selectedAgent.builtin}
               models={models}
               providers={providers}
               tools={tools}
