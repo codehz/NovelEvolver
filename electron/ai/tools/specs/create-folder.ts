@@ -1,8 +1,8 @@
 import {
   parseDocumentDomain,
   parseNonEmptyString,
-  parseOptionalIndex,
   parseToolArgs,
+  resolveDomainIndex,
 } from "../parse";
 import type { ToolSpec } from "../types";
 import { findCreatedNodePath } from "../worktree-helpers";
@@ -45,7 +45,7 @@ export const createFolderSpec: ToolSpec<"create_folder"> = {
     const domain = parseDocumentDomain(args.domain, "domain");
     const parentId = parseNonEmptyString(args.parent_id, "parent_id");
     const name = parseNonEmptyString(args.name, "name");
-    const index = parseOptionalIndex(args.index);
+    const { index, warning } = resolveDomainIndex(domain, args.index);
 
     if (domain === "manuscript") {
       const created = worktree.createManuscriptFolder(parentId, name, index);
@@ -56,11 +56,8 @@ export const createFolderSpec: ToolSpec<"create_folder"> = {
         parent_id: parentId,
         name,
         display_path: findCreatedNodePath(worktree, domain, parentId, created.nodeId),
+        warning,
       };
-    }
-
-    if (index !== undefined) {
-      throw new Error("resource 文件夹创建不支持 index。");
     }
 
     const created = worktree.createResourceFolder(parentId, name);
@@ -71,6 +68,7 @@ export const createFolderSpec: ToolSpec<"create_folder"> = {
       parent_id: parentId,
       name,
       display_path: findCreatedNodePath(worktree, domain, parentId, created.nodeId),
+      warning,
     };
   },
 };

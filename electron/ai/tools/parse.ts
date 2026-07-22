@@ -50,6 +50,28 @@ export function parseOptionalIndex(value: unknown): number | undefined {
   return value;
 }
 
+/** resource 域忽略 index 时的统一 warning 文案。 */
+export const RESOURCE_INDEX_IGNORED_WARNING = "resource 域不支持 index，已忽略。";
+
+/**
+ * manuscript 校验并使用 index；resource 忽略 index（不校验类型）并可选返回 warning。
+ */
+export function resolveDomainIndex(
+  domain: "manuscript" | "resource",
+  value: unknown,
+): { index: number | undefined; warning: string | null } {
+  if (domain === "resource") {
+    return {
+      index: undefined,
+      warning: value !== undefined ? RESOURCE_INDEX_IGNORED_WARNING : null,
+    };
+  }
+  return {
+    index: parseOptionalIndex(value),
+    warning: null,
+  };
+}
+
 export function parseDocumentTarget(value: unknown): {
   domain: "manuscript" | "resource";
   id: string;

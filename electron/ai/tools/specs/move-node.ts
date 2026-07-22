@@ -1,8 +1,8 @@
 import {
   parseDocumentDomain,
   parseNonEmptyString,
-  parseOptionalIndex,
   parseToolArgs,
+  resolveDomainIndex,
 } from "../parse";
 import type { ToolSpec } from "../types";
 
@@ -43,15 +43,12 @@ export const moveNodeSpec: ToolSpec<"move_node"> = {
     const domain = parseDocumentDomain(args.domain, "domain");
     const id = parseNonEmptyString(args.id, "id");
     const targetParentId = parseNonEmptyString(args.target_parent_id, "target_parent_id");
-    const index = parseOptionalIndex(args.index);
+    const { index, warning } = resolveDomainIndex(domain, args.index);
     const previous = worktree.getProjectNodeInfo(domain, id);
 
     if (domain === "manuscript") {
       worktree.moveManuscriptNode(id, targetParentId, index);
     } else {
-      if (index !== undefined) {
-        throw new Error("resource 域移动不支持 index。");
-      }
       worktree.moveResourceNode(id, targetParentId);
     }
 
@@ -65,6 +62,7 @@ export const moveNodeSpec: ToolSpec<"move_node"> = {
       display_path: current.displayPath,
       target_parent_id: targetParentId,
       moved: true,
+      warning,
     };
   },
 };

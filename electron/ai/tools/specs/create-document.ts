@@ -1,8 +1,8 @@
 import {
   parseDocumentDomain,
   parseNonEmptyString,
-  parseOptionalIndex,
   parseToolArgs,
+  resolveDomainIndex,
 } from "../parse";
 import { withWriteStats } from "../text-stats";
 import type { ToolSpec } from "../types";
@@ -50,7 +50,7 @@ export const createDocumentSpec: ToolSpec<"create_document"> = {
     const domain = parseDocumentDomain(args.domain, "domain");
     const parentId = parseNonEmptyString(args.parent_id, "parent_id");
     const name = parseNonEmptyString(args.name, "name");
-    const index = parseOptionalIndex(args.index);
+    const { index, warning } = resolveDomainIndex(domain, args.index);
     if (typeof args.content !== "string") {
       throw new Error("content 需要字符串。");
     }
@@ -69,12 +69,10 @@ export const createDocumentSpec: ToolSpec<"create_document"> = {
         display_path: findCreatedNodePath(worktree, domain, parentId, created.nodeId),
         ...writeStats,
         revision: worktree.getDocumentContentRevision(domain, created.nodeId),
+        warning,
       };
     }
 
-    if (index !== undefined) {
-      throw new Error("resource 文件创建不支持 index。");
-    }
     const created = worktree.createResourceFile(parentId, name);
     worktree.writeResourceFile(created.nodeId, args.content);
     return {
@@ -86,6 +84,7 @@ export const createDocumentSpec: ToolSpec<"create_document"> = {
       display_path: findCreatedNodePath(worktree, domain, parentId, created.nodeId),
       ...writeStats,
       revision: worktree.getDocumentContentRevision(domain, created.nodeId),
+      warning,
     };
   },
 };
