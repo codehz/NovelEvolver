@@ -6,7 +6,21 @@ import { cn } from "#app/shared/lib/ui/cn";
 
 import { MarkdownTableCards } from "./MarkdownTableCards";
 
-const streamClassName = cn("text-inherit");
+/**
+ * Compact chat typography: shrink Streamdown's doc-scale headings and make
+ * inline code match ambient size (Streamdown defaults to `text-sm`).
+ * Use `text-[1em]` (not `text-inherit` — that inherits color only).
+ */
+const streamClassName = cn(
+  "text-inherit",
+  "**:data-[streamdown='heading-1']:text-sm",
+  "**:data-[streamdown='heading-2']:text-chat",
+  "**:data-[streamdown='heading-3']:text-chat",
+  "**:data-[streamdown='heading-4']:text-chat",
+  "**:data-[streamdown='heading-5']:text-chat",
+  "**:data-[streamdown='heading-6']:text-chat",
+  "**:data-[streamdown='inline-code']:text-[1em]",
+);
 
 /** Hang markers outside the content box so wrapped lines align with the text. */
 const unorderedListClass = cn(

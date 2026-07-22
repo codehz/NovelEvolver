@@ -61,12 +61,12 @@ export const assistantMessageModelLabelClass = cn(
 export const assistantMessageBodyClass = cn(
   "text-chat leading-5 text-app-foreground",
   "[&_a]:text-ctp-blue [&_a]:underline [&_a]:underline-offset-2",
-  "[&_code]:rounded-sm [&_code]:bg-app-crust [&_code]:px-1.5 [&_code]:py-0.5 [&_code]:font-mono [&_code]:text-chat-meta",
+  // Font size for headings / inline code lives on MarkdownStream; keep chrome only.
+  "[&_code]:rounded-sm [&_code]:bg-app-crust [&_code]:px-1.5 [&_code]:py-0.5 [&_code]:font-mono",
   "**:data-[streamdown='blockquote']:border-ctp-blue/40 **:data-[streamdown='blockquote']:text-app-muted",
   "**:data-[streamdown='code-block']:border-titlebar-border **:data-[streamdown='code-block']:bg-app-surface",
   "**:data-[streamdown='code-block-actions']:border-titlebar-border **:data-[streamdown='code-block-actions']:bg-app-surface/80",
   "**:data-[streamdown='code-block-body']:border-titlebar-border **:data-[streamdown='code-block-body']:bg-app-crust",
-  "**:data-[streamdown='heading-1']:text-base",
   "**:data-[streamdown='heading-1']:text-ctp-mauve **:data-[streamdown='heading-2']:text-ctp-mauve **:data-[streamdown='heading-3']:text-ctp-mauve",
   "**:data-[streamdown='inline-code']:text-ctp-green",
 );
@@ -91,12 +91,12 @@ export const collapsiblePanelClass = cn(
 );
 export const reasoningBodyClass = cn(
   "pt-1 text-chat-meta leading-5 text-app-muted",
+  // Heading / inline-code sizes come from MarkdownStream.
   "[&_code]:rounded-sm [&_code]:bg-app-background [&_code]:px-1.5 [&_code]:py-0.5 [&_code]:font-mono",
   "**:data-[streamdown='blockquote']:border-ctp-blue/30 **:data-[streamdown='blockquote']:text-ctp-subtext0",
   "**:data-[streamdown='code-block']:border-titlebar-border **:data-[streamdown='code-block']:bg-app-surface/80",
   "**:data-[streamdown='code-block-actions']:border-titlebar-border **:data-[streamdown='code-block-actions']:bg-app-surface/70",
   "**:data-[streamdown='code-block-body']:border-titlebar-border **:data-[streamdown='code-block-body']:bg-app-background",
-  "**:data-[streamdown='heading-1']:text-sm **:data-[streamdown='heading-2']:text-sm **:data-[streamdown='heading-3']:text-sm",
 );
 export const userMessageRowClass = cn("flex flex-col items-end gap-1");
 export const userMessageBubbleClass = cn(
