@@ -109,6 +109,15 @@ export function SettingsDialog({ open, onDismiss }: SettingsDialogProps) {
                 className={settingsPageTransitionHostClass}
                 exitLayout="absolute"
                 transition={settingsPageFadeTransition}
+                onScroll={(event) => {
+                  const el = event.currentTarget;
+                  if (el.scrollTop !== 0) {
+                    el.scrollTop = 0;
+                  }
+                  if (el.scrollLeft !== 0) {
+                    el.scrollLeft = 0;
+                  }
+                }}
               >
                 <div
                   key={activeCategoryId}
