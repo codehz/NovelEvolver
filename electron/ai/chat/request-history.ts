@@ -5,6 +5,7 @@ import type { AiChatAssistantPart } from "#shared/rpc/ai/index";
 /**
  * 去掉 history 末尾连续的模型产物，停在 user message 或 tool_result。
  * 结果即「上一次 model request」的 input，与 send 使用的 history 前缀语义一致。
+ * 用于继续会话 / abort 落盘（保留已提交 tool 轮次）。
  */
 export function rebuildLastRequestInput(history: readonly InputItem[]): InputItem[] {
   let end = history.length;
@@ -13,6 +14,22 @@ export function rebuildLastRequestInput(history: readonly InputItem[]): InputIte
     if (item.type === "tool_result") {
       break;
     }
+    if (item.type === "message" && item.role === "user") {
+      break;
+    }
+    end -= 1;
+  }
+  return history.slice(0, end);
+}
+
+/**
+ * 去掉 history 末尾直到（并保留）最后一个 user message。
+ * **不**在 tool_result 处停下——用于 sibling 重试，避免复用本轮 tool 上下文。
+ */
+export function rebuildFromLastUserMessage(history: readonly InputItem[]): InputItem[] {
+  let end = history.length;
+  while (end > 0) {
+    const item = history[end - 1]!;
     if (item.type === "message" && item.role === "user") {
       break;
     }

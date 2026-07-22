@@ -25,6 +25,7 @@ export function createInitialAiChatSnapshot(model = "mock-assistant"): AiChatSna
     openInteractions: [],
     errorMessage: null,
     canRetry: false,
+    canContinue: false,
   };
 }
 
@@ -190,6 +191,7 @@ export function applyAiChatEvent(snapshot: AiChatSnapshot, event: AiChatEvent): 
           openInteractions: [],
           errorMessage: null,
           canRetry: false,
+          canContinue: false,
           warnings: [],
         };
         break;

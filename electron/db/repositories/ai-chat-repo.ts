@@ -29,6 +29,8 @@ export type AiConversationRecord = Omit<AiConversationSummaryRecord, "hasPending
   pendingToolBatchJson: string | null;
   warningsJson: string;
   errorMessage: string | null;
+  /** Interrupted/failed assistant id eligible for in-place continue; null when none. */
+  continueAssistantId: string | null;
 };
 
 export type AiConversationSearchRecord = AiConversationSummaryRecord & {
@@ -57,6 +59,7 @@ type AiConversationRow = AiConversationSummaryRow & {
   history_json: string;
   warnings_json: string;
   error_message: string | null;
+  continue_assistant_id: string | null;
 };
 
 type AiConversationSearchRow = AiConversationSummaryRow & {
@@ -70,7 +73,7 @@ const SUMMARY_COLUMNS = `
 `;
 
 const FULL_COLUMNS = `
-  ${SUMMARY_COLUMNS}, messages_json, history_json, warnings_json, error_message
+  ${SUMMARY_COLUMNS}, messages_json, history_json, warnings_json, error_message, continue_assistant_id
 `;
 
 function toStatus(value: string): AiConversationStatus {
@@ -130,6 +133,7 @@ function rowToRecord(row: AiConversationRow): AiConversationRecord {
     pendingToolBatchJson: row.pending_tool_batch_json,
     warningsJson: row.warnings_json,
     errorMessage: row.error_message,
+    continueAssistantId: row.continue_assistant_id,
   };
 }
 
@@ -268,8 +272,9 @@ export class AiChatRepository {
         INSERT INTO ai_conversation (
           id, project_id, title, title_customized, status, created_at, updated_at, last_active_at,
           adapter_kind, model, selected_model_id, selected_agent_id, selected_reasoning_level,
-          scenario_id, messages_json, history_json, pending_tool_batch_json, warnings_json, error_message
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+          scenario_id, messages_json, history_json, pending_tool_batch_json, warnings_json,
+          error_message, continue_assistant_id
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         ON CONFLICT(id) DO UPDATE SET
           project_id = excluded.project_id,
           title = excluded.title,
@@ -287,7 +292,8 @@ export class AiChatRepository {
           history_json = excluded.history_json,
           pending_tool_batch_json = excluded.pending_tool_batch_json,
           warnings_json = excluded.warnings_json,
-          error_message = excluded.error_message
+          error_message = excluded.error_message,
+          continue_assistant_id = excluded.continue_assistant_id
         `,
       )
       .run(
@@ -310,6 +316,7 @@ export class AiChatRepository {
         record.pendingToolBatchJson,
         record.warningsJson,
         record.errorMessage,
+        record.continueAssistantId,
       );
   }
 

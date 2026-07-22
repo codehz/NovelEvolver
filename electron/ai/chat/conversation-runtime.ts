@@ -55,7 +55,11 @@ import {
   settlePendingUserInputCancel,
   type PendingToolBatch,
 } from "./pending-tool-batch";
-import { countCommittedAssistantParts, rebuildLastRequestInput } from "./request-history";
+import {
+  countCommittedAssistantParts,
+  rebuildFromLastUserMessage,
+  rebuildLastRequestInput,
+} from "./request-history";
 import { resolveReasoningLevelForModel } from "./selectable-models";
 import { expandSlashForModel } from "./slash-expand";
 import {
@@ -372,6 +376,7 @@ export class AiConversationRuntime {
     const assistantMessage = this.#state.appendAssistantMessage(this.#resolveSelectedModelName());
     const requestInput = [...this.#state.history, toInputItem(modelText)];
 
+    this.#state.setContinueAssistantId(null);
     this.#state.setPending(true);
     this.#state.setErrorMessage(null);
     this.#emitDelta([
@@ -389,6 +394,7 @@ export class AiConversationRuntime {
           pending: true,
           errorMessage: null,
           canRetry: false,
+          canContinue: false,
         },
       },
     ]);
@@ -482,6 +488,7 @@ export class AiConversationRuntime {
         patch: {
           errorMessage: null,
           canRetry: this.#state.canRetry,
+          canContinue: this.#state.canContinue,
         },
       },
     ]);
@@ -517,6 +524,7 @@ export class AiConversationRuntime {
     // History for the new path: prior nodes + new user item (user node history filled on complete).
     const requestInput = [...this.#state.history, toInputItem(modelText)];
 
+    this.#state.setContinueAssistantId(null);
     this.#state.setPending(true);
     this.#state.setErrorMessage(null);
     this.#emitDelta([
@@ -530,6 +538,7 @@ export class AiConversationRuntime {
           pending: true,
           errorMessage: null,
           canRetry: false,
+          canContinue: false,
         },
       },
     ]);
@@ -543,14 +552,14 @@ export class AiConversationRuntime {
   /**
    * Regenerate last assistant as a new sibling under the same parent user.
    * Previous assistant versions stay on the tree (‹n/m›). requestInput is rebuilt
-   * from history last-request boundary without rewriting old nodes.
+   * from the last user message (does not reuse this turn's tool context).
    */
   retryLastRequest(): void {
     if (this.#disposed || !this.#state.canRetry) {
       return;
     }
 
-    const requestInput = rebuildLastRequestInput(this.#state.history);
+    const requestInput = rebuildFromLastUserMessage(this.#state.history);
     if (requestInput.length === 0) {
       return;
     }
@@ -563,6 +572,7 @@ export class AiConversationRuntime {
       this.#state.clearWarningsForMessage(previousAssistant.id);
     }
 
+    // Keep continueAssistantId on the interrupted sibling so switching back can still continue.
     this.#state.setPending(true);
     this.#state.setErrorMessage(null);
     this.#emitDelta([
@@ -576,6 +586,7 @@ export class AiConversationRuntime {
           pending: true,
           errorMessage: null,
           canRetry: false,
+          canContinue: false,
         },
       },
     ]);
@@ -583,6 +594,48 @@ export class AiConversationRuntime {
     void this.#runRequest({
       assistantMessageId: assistantMessage.id,
       requestInput,
+    });
+  }
+
+  /**
+   * Resume the interrupted/failed leaf assistant in-place (no sibling fork).
+   * requestInput uses last-request boundary so committed tool rounds are retained.
+   */
+  continueLastRequest(): void {
+    if (this.#disposed || !this.#state.canContinue) {
+      return;
+    }
+
+    const assistant = this.#state.lastAssistantMessage;
+    if (!assistant) {
+      return;
+    }
+
+    const requestInput = rebuildLastRequestInput(this.#state.history);
+    if (requestInput.length === 0) {
+      return;
+    }
+
+    this.#state.setPending(true);
+    this.#state.setErrorMessage(null);
+    this.#emitDelta([
+      ...this.#state.updateMessage(assistant.id, { status: "streaming" }),
+      {
+        type: "state.updated",
+        patch: {
+          pending: true,
+          errorMessage: null,
+          canRetry: false,
+          canContinue: false,
+        },
+      },
+    ]);
+
+    void this.#runRequest({
+      assistantMessageId: assistant.id,
+      requestInput,
+      transcript: [...requestInput],
+      usage: assistant.usage,
     });
   }
 
@@ -729,6 +782,7 @@ export class AiConversationRuntime {
       );
       this.#state.replaceHistory(transcript);
       this.#state.setPendingToolBatch(null);
+      this.#state.setContinueAssistantId(null);
       this.#state.setPending(false);
       this.#emitDelta([
         {
@@ -737,6 +791,7 @@ export class AiConversationRuntime {
             pending: false,
             openInteractions: [],
             canRetry: this.#state.canRetry,
+            canContinue: false,
           },
         },
       ]);
@@ -748,9 +803,11 @@ export class AiConversationRuntime {
       this.#state.setPendingToolBatch(null);
       const errorMessage = stopped ? null : toErrorMessage(error);
       this.#state.setErrorMessage(errorMessage);
+      // Mark this assistant for in-place continue (stop or fail).
+      this.#state.setContinueAssistantId(context.assistantMessageId);
 
       // Drop dangling model output (e.g. tool_calls without results) so history stays a valid
-      // request prefix for send/retry — same boundary rebuildLastRequestInput uses.
+      // request prefix for send/continue — same boundary rebuildLastRequestInput uses.
       const committedHistory = rebuildLastRequestInput(transcript);
       this.#state.replaceHistory(committedHistory);
 
@@ -774,6 +831,7 @@ export class AiConversationRuntime {
           openInteractions: [],
           errorMessage,
           canRetry: this.#state.canRetry,
+          canContinue: this.#state.canContinue,
         },
       });
       this.#emitDelta(ops);
@@ -853,6 +911,7 @@ export class AiConversationRuntime {
             openInteractions: listOpenInteractions(batch),
             errorMessage: null,
             canRetry: false,
+            canContinue: false,
           },
         },
       ]);
@@ -946,6 +1005,7 @@ export class AiConversationRuntime {
     // 必须在 microtask 调度 `#awaitPendingInputs` 续跑前清空 batch。
     this.#state.replaceHistory(transcript);
     this.#state.setPendingToolBatch(null);
+    this.#state.setContinueAssistantId(batch.assistantMessageId);
     this.#state.setPending(false);
     this.#state.setErrorMessage(null);
 
@@ -958,6 +1018,7 @@ export class AiConversationRuntime {
           openInteractions: [],
           errorMessage: null,
           canRetry: this.#state.canRetry,
+          canContinue: this.#state.canContinue,
         },
       },
     ];
@@ -1019,6 +1080,7 @@ export class AiConversationRuntime {
         patch: {
           openInteractions: listOpenInteractions(batch),
           canRetry: false,
+          canContinue: false,
         },
       },
     ];
@@ -1068,6 +1130,7 @@ export class AiConversationRuntime {
           openInteractions: [],
           errorMessage: null,
           canRetry: false,
+          canContinue: false,
         },
       },
     ]);

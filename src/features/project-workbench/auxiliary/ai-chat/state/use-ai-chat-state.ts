@@ -37,6 +37,7 @@ type AiChatActions = {
   submitInteraction: (id: string, answer: AiChatInteractionAnswer) => Promise<void>;
   cancelInteraction: (id: string) => Promise<void>;
   retryLastRequest: () => Promise<void>;
+  continueLastRequest: () => Promise<void>;
   selectMessageBranch: (messageId: string, index: number) => Promise<void>;
   editUserMessage: (messageId: string, input: AiChatSendMessageInput) => Promise<void>;
   createConversation: () => Promise<void>;
@@ -196,6 +197,10 @@ function useAiChatActionsValue(): AiChatActions {
     await Promise.resolve(active.retryLastRequest());
   }, [active]);
 
+  const continueLastRequest = useCallback(async (): Promise<void> => {
+    await Promise.resolve(active.continueLastRequest());
+  }, [active]);
+
   const selectMessageBranch = useCallback(
     async (messageId: string, index: number): Promise<void> => {
       await Promise.resolve(active.selectMessageBranch(messageId, index));
@@ -217,6 +222,7 @@ function useAiChatActionsValue(): AiChatActions {
       submitInteraction,
       cancelInteraction,
       retryLastRequest,
+      continueLastRequest,
       selectMessageBranch,
       editUserMessage,
       createConversation,
@@ -235,6 +241,7 @@ function useAiChatActionsValue(): AiChatActions {
     [
       archiveConversation,
       cancelInteraction,
+      continueLastRequest,
       createConversation,
       deleteConversation,
       editUserMessage,

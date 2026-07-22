@@ -4,7 +4,11 @@ import type { InputItem } from "@codehz/ai";
 
 import type { AiChatAssistantPart } from "#shared/rpc/ai/index";
 
-import { countCommittedAssistantParts, rebuildLastRequestInput } from "./request-history";
+import {
+  countCommittedAssistantParts,
+  rebuildFromLastUserMessage,
+  rebuildLastRequestInput,
+} from "./request-history";
 
 describe("rebuildLastRequestInput", () => {
   test("strips trailing assistant message after user", () => {
@@ -36,6 +40,40 @@ describe("rebuildLastRequestInput", () => {
       { type: "message", role: "user", content: [{ type: "text", text: "hi" }] },
     ];
     expect(rebuildLastRequestInput(history)).toEqual(history);
+  });
+});
+
+describe("rebuildFromLastUserMessage", () => {
+  test("strips trailing assistant after user", () => {
+    const history: InputItem[] = [
+      { type: "message", role: "user", content: [{ type: "text", text: "hi" }] },
+      { type: "message", role: "assistant", content: [{ type: "text", text: "hello" }] },
+    ];
+    expect(rebuildFromLastUserMessage(history)).toEqual([history[0]!]);
+  });
+
+  test("drops tool rounds back to last user (unlike last-request boundary)", () => {
+    const history: InputItem[] = [
+      { type: "message", role: "user", content: [{ type: "text", text: "go" }] },
+      { type: "tool_call", id: "c1", name: "read", argumentsText: "{}" },
+      {
+        type: "tool_result",
+        callId: "c1",
+        toolName: "read",
+        outcome: "success",
+        content: [{ type: "text", text: "ok" }],
+      },
+      { type: "message", role: "assistant", content: [{ type: "text", text: "done" }] },
+    ];
+    expect(rebuildFromLastUserMessage(history)).toEqual([history[0]!]);
+    expect(rebuildLastRequestInput(history)).toEqual(history.slice(0, 3));
+  });
+
+  test("no-op when already ends on user", () => {
+    const history: InputItem[] = [
+      { type: "message", role: "user", content: [{ type: "text", text: "hi" }] },
+    ];
+    expect(rebuildFromLastUserMessage(history)).toEqual(history);
   });
 });
 

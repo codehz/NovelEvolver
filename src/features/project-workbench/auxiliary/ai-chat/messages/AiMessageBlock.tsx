@@ -9,6 +9,7 @@ type AiMessageBlockProps = {
   message: AiChatMessage;
   onRetry?: () => void;
   retryLabel?: string;
+  onContinue?: () => void;
   footerAlwaysVisible?: boolean;
   actionsDisabled?: boolean;
   onEditUser?: (text: string) => void;
@@ -19,6 +20,7 @@ export const AiMessageBlock = memo(function AiMessageBlock({
   message,
   onRetry,
   retryLabel,
+  onContinue,
   footerAlwaysVisible,
   actionsDisabled,
   onEditUser,
@@ -40,6 +42,7 @@ export const AiMessageBlock = memo(function AiMessageBlock({
       message={message}
       onRetry={onRetry}
       retryLabel={retryLabel}
+      onContinue={onContinue}
       footerAlwaysVisible={footerAlwaysVisible}
       actionsDisabled={actionsDisabled}
       onSelectBranch={onSelectBranch}

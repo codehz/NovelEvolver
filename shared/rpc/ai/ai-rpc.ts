@@ -264,10 +264,15 @@ export type AiChatSnapshot = {
    */
   errorMessage: string | null;
   /**
-   * Whether `retryLastRequest()` can regenerate a sibling assistant from history.
-   * False while pending, awaiting user input, path leaf is not assistant, or history cannot rebuild a request.
+   * Whether `retryLastRequest()` can regenerate a sibling assistant from the last user message.
+   * False while pending, awaiting user input, path leaf is not assistant, or history has no user boundary.
    */
   canRetry: boolean;
+  /**
+   * Whether `continueLastRequest()` can resume the interrupted/failed leaf assistant in-place.
+   * True only when the active leaf is the marked continue assistant and last-request input rebuilds.
+   */
+  canContinue: boolean;
 };
 
 export type AiConversationActivity = "idle" | "streaming" | "awaiting_user";
@@ -321,6 +326,7 @@ export type AiChatStatePatch = {
   openInteractions?: AiChatOpenInteraction[];
   errorMessage?: string | null;
   canRetry?: boolean;
+  canContinue?: boolean;
   selectedModelId?: string;
   selectedAgentId?: string;
   selectedReasoningLevel?: AiReasoningLevel | null;
@@ -426,10 +432,16 @@ export interface AiActiveChatHandle extends RpcTarget {
   cancelInteraction(id: string): void;
   /**
    * 重新生成末条助手：在同一用户节点下新建 sibling assistant 并生成。
-   * 旧版本保留，可通过 ‹n/m› 切换。requestInput 从 history 的 last-request 边界重建。
+   * 旧版本保留，可通过 ‹n/m› 切换。requestInput 从**上一用户消息**边界重建（不复用本轮 tool 上下文）。
    * 仅当 `canRetry` 时生效，否则静默忽略。生成中 / 等待用户输入时忽略。
    */
   retryLastRequest(): void;
+  /**
+   * 继续被中断或失败的末条助手：在**同一 assistant 节点**上续写，不创建分叉。
+   * requestInput 从 history 的 last-request 边界重建（保留已提交 tool 轮次）。
+   * 仅当 `canContinue` 时生效，否则静默忽略。生成中 / 等待用户输入时忽略。
+   */
+  continueLastRequest(): void;
   /**
    * 在指定消息的兄弟分支中切换到 `index`（0-based）。
    * 生成中 / 等待用户输入时忽略。

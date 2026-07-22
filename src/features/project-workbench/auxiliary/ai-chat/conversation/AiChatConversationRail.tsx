@@ -104,6 +104,7 @@ type AiChatConversationRailProps = {
   /** Last model-request error; rendered under the last assistant turn. */
   turnError: string | null;
   onRetry?: () => void;
+  onContinue?: () => void;
   actionsDisabled?: boolean;
   onSelectBranch?: (messageId: string, index: number) => void;
   onEditUser?: (messageId: string, text: string) => void;
@@ -115,6 +116,7 @@ function AiChatConversationRailBody({
   subscriptionError,
   turnError,
   onRetry,
+  onContinue,
   actionsDisabled = false,
   onSelectBranch,
   onEditUser,
@@ -131,6 +133,12 @@ function AiChatConversationRailBody({
     !snapshot.pending &&
     snapshot.openInteractions.length === 0 &&
     snapshot.canRetry;
+
+  const showTurnContinue =
+    onContinue !== undefined &&
+    !snapshot.pending &&
+    snapshot.openInteractions.length === 0 &&
+    snapshot.canContinue;
 
   const lastAssistantMessageId = useMemo(() => {
     for (let index = snapshot.messages.length - 1; index >= 0; index -= 1) {
@@ -279,6 +287,7 @@ function AiChatConversationRailBody({
               const isLastAssistant =
                 message.role === "assistant" && message.id === lastAssistantMessageId;
               const messageRetry = showTurnRetry && isLastAssistant ? onRetry : undefined;
+              const messageContinue = showTurnContinue && isLastAssistant ? onContinue : undefined;
               const fadeToken =
                 activeBranchFade != null && messageIndex >= activeBranchFade.fromIndex
                   ? activeBranchFade.token
@@ -294,6 +303,7 @@ function AiChatConversationRailBody({
                       message={message}
                       onRetry={messageRetry}
                       retryLabel={messageRetry ? retryLabel : undefined}
+                      onContinue={messageContinue}
                       footerAlwaysVisible={
                         isLastAssistant || (message.branch != null && message.branch.count > 1)
                       }

@@ -16,7 +16,8 @@ export function AiChatPanel() {
   const snapshot = useAiChatSnapshot();
   const loading = useAiChatLoading();
   const subscriptionError = useAiChatSubscriptionError();
-  const { retryLastRequest, selectMessageBranch, editUserMessage } = useAiChatActions();
+  const { retryLastRequest, continueLastRequest, selectMessageBranch, editUserMessage } =
+    useAiChatActions();
   const mockAiAvailable = useMockAiAvailable();
   const composer = useAiChatComposer();
 
@@ -24,6 +25,11 @@ export function AiChatPanel() {
     void retryLastRequest();
   }, [retryLastRequest]);
   const handleRetry = snapshot.canRetry && !subscriptionError ? retryTurn : undefined;
+
+  const continueTurn = useCallback(() => {
+    void continueLastRequest();
+  }, [continueLastRequest]);
+  const handleContinue = snapshot.canContinue && !subscriptionError ? continueTurn : undefined;
 
   const branchActionsDisabled =
     snapshot.pending || snapshot.openInteractions.length > 0 || subscriptionError != null;
@@ -60,6 +66,7 @@ export function AiChatPanel() {
         subscriptionError={subscriptionError}
         turnError={snapshot.errorMessage}
         onRetry={handleRetry}
+        onContinue={handleContinue}
         actionsDisabled={branchActionsDisabled}
         onSelectBranch={handleSelectBranch}
         onEditUser={handleEditUser}

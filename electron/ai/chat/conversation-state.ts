@@ -59,7 +59,7 @@ import {
   serializePendingToolBatch,
   type PendingToolBatch,
 } from "./pending-tool-batch";
-import { rebuildLastRequestInput } from "./request-history";
+import { rebuildFromLastUserMessage, rebuildLastRequestInput } from "./request-history";
 import { formatUserMessageDisplay } from "./slash-expand";
 
 const EMPTY_TITLE = "新会话";
@@ -271,6 +271,11 @@ export class AiConversationState {
   #pendingToolBatch: PendingToolBatch | null = null;
   #pending = false;
   #errorMessage: string | null = null;
+  /**
+   * Assistant message id eligible for in-place continue after stop/fail.
+   * `canContinue` is true only when the active leaf matches this id.
+   */
+  #continueAssistantId: string | null = null;
   #messageCounter = 0;
   #dirty = false;
   #persisted = false;
@@ -380,11 +385,12 @@ export class AiConversationState {
         : [],
       errorMessage: this.#errorMessage,
       canRetry: this.canRetry,
+      canContinue: this.canContinue,
     };
   }
 
   /**
-   * Idle + not awaiting user + path leaf is assistant + history can rebuild last request.
+   * Idle + not awaiting user + path leaf is assistant + history can rebuild from last user.
    * Used for sibling regenerate (retryLastRequest), not same-node overwrite.
    */
   get canRetry(): boolean {
@@ -395,7 +401,29 @@ export class AiConversationState {
     if (!leaf || leaf.role !== "assistant") {
       return false;
     }
+    return rebuildFromLastUserMessage(this.history).length > 0;
+  }
+
+  /**
+   * Idle + active leaf is the marked interrupted/failed assistant + last-request input rebuilds.
+   * Used for same-node continue (continueLastRequest).
+   */
+  get canContinue(): boolean {
+    if (this.#pending || this.#pendingToolBatch !== null) {
+      return false;
+    }
+    if (this.#continueAssistantId === null) {
+      return false;
+    }
+    const leaf = getPathLeaf(this.#tree);
+    if (!leaf || leaf.role !== "assistant" || leaf.id !== this.#continueAssistantId) {
+      return false;
+    }
     return rebuildLastRequestInput(this.history).length > 0;
+  }
+
+  get continueAssistantId(): string | null {
+    return this.#continueAssistantId;
   }
 
   get status(): AiConversationStatus {
@@ -521,6 +549,7 @@ export class AiConversationState {
       pendingToolBatchJson: serializePendingToolBatch(this.#pendingToolBatch),
       warningsJson: JSON.stringify(this.#warnings),
       errorMessage: this.#errorMessage,
+      continueAssistantId: this.#continueAssistantId,
     };
     this.#repository.upsert(record);
     this.#persisted = true;
@@ -539,6 +568,15 @@ export class AiConversationState {
 
   setErrorMessage(errorMessage: string | null): void {
     this.#errorMessage = errorMessage;
+    this.#markDirty();
+  }
+
+  /** Mark which assistant leaf may be continued in-place after stop/fail; null clears. */
+  setContinueAssistantId(messageId: string | null): void {
+    if (this.#continueAssistantId === messageId) {
+      return;
+    }
+    this.#continueAssistantId = messageId;
     this.#markDirty();
   }
 
@@ -947,6 +985,7 @@ export class AiConversationState {
     this.#pendingToolBatch = null;
     this.#pending = false;
     this.#errorMessage = null;
+    this.#continueAssistantId = null;
     this.#messageCounter = 0;
     this.#dirty = false;
     this.#persisted = false;
@@ -967,6 +1006,7 @@ export class AiConversationState {
     this.#selectedReasoningLevel = parseStoredReasoningLevel(record.selectedReasoningLevel);
     this.#pending = false;
     this.#errorMessage = record.errorMessage;
+    this.#continueAssistantId = record.continueAssistantId;
     this.#dirty = false;
     this.#persisted = true;
     this.#discarded = false;

@@ -217,6 +217,10 @@ export class ProjectAiChatController {
     this.#getActiveRuntime().retryLastRequest();
   }
 
+  continueLastRequest(): void {
+    this.#getActiveRuntime().continueLastRequest();
+  }
+
   selectMessageBranch(messageId: string, index: number): void {
     this.#getActiveRuntime().selectMessageBranch(messageId, index);
   }

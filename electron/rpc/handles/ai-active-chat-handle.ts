@@ -42,6 +42,10 @@ export class AiActiveChatHandleImpl extends RpcTarget implements AiActiveChatHan
     this.#chat.retryLastRequest();
   }
 
+  continueLastRequest(): void {
+    this.#chat.continueLastRequest();
+  }
+
   selectMessageBranch(messageId: string, index: number): void {
     this.#chat.selectMessageBranch(messageId, index);
   }

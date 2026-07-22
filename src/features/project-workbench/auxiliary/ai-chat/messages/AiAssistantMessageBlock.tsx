@@ -29,6 +29,7 @@ type AiAssistantMessageBlockProps = {
   message: AiChatAssistantMessage;
   onRetry?: () => void;
   retryLabel?: string;
+  onContinue?: () => void;
   footerAlwaysVisible?: boolean;
   actionsDisabled?: boolean;
   onSelectBranch?: (index: number) => void;
@@ -102,6 +103,7 @@ export function AiAssistantMessageBlock({
   message,
   onRetry,
   retryLabel = "重新生成",
+  onContinue,
   footerAlwaysVisible = false,
   actionsDisabled = false,
   onSelectBranch,
@@ -130,7 +132,7 @@ export function AiAssistantMessageBlock({
   const usageMeta = describeAssistantUsageMeta(message);
   const branch = message.branch;
   const showBranch = branch != null && branch.count > 1;
-  const hasLeading = onRetry != null || showBranch;
+  const hasLeading = onRetry != null || onContinue != null || showBranch;
   const alwaysVisible = footerAlwaysVisible || showBranch;
 
   return (
@@ -152,6 +154,20 @@ export function AiAssistantMessageBlock({
                   onSelectBranch?.(index);
                 }}
               />
+            ) : null}
+            {onContinue ? (
+              <AppTooltip label="继续会话" side="top">
+                <Button
+                  variant="ghost"
+                  size="icon-sm"
+                  aria-label="继续会话"
+                  disabled={actionsDisabled}
+                  className={messageActionButtonClass}
+                  onClick={onContinue}
+                >
+                  <span aria-hidden="true" className="icon-[codicon--debug-continue] text-sm" />
+                </Button>
+              </AppTooltip>
             ) : null}
             {onRetry ? (
               <AppTooltip label={retryLabel} side="top">

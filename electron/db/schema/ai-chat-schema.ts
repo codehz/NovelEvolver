@@ -28,6 +28,7 @@ export function initAiChatSchema(db: DatabaseSync): void {
       pending_tool_batch_json TEXT,
       warnings_json TEXT NOT NULL DEFAULT '[]',
       error_message TEXT,
+      continue_assistant_id TEXT,
       PRIMARY KEY (id),
       FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE
     );
@@ -60,5 +61,8 @@ export function initAiChatSchema(db: DatabaseSync): void {
   }
   if (!columns.some((column) => column.name === "selected_reasoning_level")) {
     db.exec("ALTER TABLE ai_conversation ADD COLUMN selected_reasoning_level TEXT");
+  }
+  if (!columns.some((column) => column.name === "continue_assistant_id")) {
+    db.exec("ALTER TABLE ai_conversation ADD COLUMN continue_assistant_id TEXT");
   }
 }
