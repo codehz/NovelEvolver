@@ -130,3 +130,20 @@ export function isWorkSegmentLive(steps: readonly AssistantWorkStep[]): boolean 
     );
   });
 }
+
+/**
+ * Whether the Work collapsible should stay expanded (feeds useAutoCollapseExpand).
+ *
+ * - Any step live → expand
+ * - Message still streaming and this work is the trailing segment → hold open
+ *   (covers tool gaps where all steps finished but the model has not yet
+ *   emitted the next tool / prose / elevated card)
+ * - Otherwise → allow auto-collapse
+ */
+export function shouldKeepWorkExpanded(options: {
+  isStepsLive: boolean;
+  messageStreaming: boolean;
+  isLastSegment: boolean;
+}): boolean {
+  return options.isStepsLive || (options.messageStreaming && options.isLastSegment);
+}

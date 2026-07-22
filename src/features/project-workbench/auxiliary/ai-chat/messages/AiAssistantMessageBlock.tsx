@@ -21,6 +21,7 @@ import { AiWorkBlock } from "./AiWorkBlock";
 import {
   isWorkSegmentLive,
   projectAssistantSegments,
+  shouldKeepWorkExpanded,
   type AssistantSegment,
 } from "./project-assistant-segments";
 
@@ -33,12 +34,30 @@ type AiAssistantMessageBlockProps = {
   onSelectBranch?: (index: number) => void;
 };
 
-function renderAssistantSegment(segment: AssistantSegment) {
+type SegmentRenderContext = {
+  messageStreaming: boolean;
+  isLastSegment: boolean;
+};
+
+function renderAssistantSegment(segment: AssistantSegment, context: SegmentRenderContext) {
   switch (segment.kind) {
     case "prose":
       return <AiAssistantPartBlock key={segment.id} part={segment.part} />;
-    case "work":
-      return <AiWorkBlock key={segment.id} segmentId={segment.id} steps={segment.steps} />;
+    case "work": {
+      const keepExpanded = shouldKeepWorkExpanded({
+        isStepsLive: isWorkSegmentLive(segment.steps),
+        messageStreaming: context.messageStreaming,
+        isLastSegment: context.isLastSegment,
+      });
+      return (
+        <AiWorkBlock
+          key={segment.id}
+          segmentId={segment.id}
+          steps={segment.steps}
+          keepExpanded={keepExpanded}
+        />
+      );
+    }
     case "subagent":
       return <AiSubagentCard key={segment.id} toolCall={segment.part} />;
     case "ask_user":
@@ -46,11 +65,18 @@ function renderAssistantSegment(segment: AssistantSegment) {
   }
 }
 
-/** True when Work / elevated cards already show live process chrome. */
-function hasVisibleLiveProcess(segments: readonly AssistantSegment[]): boolean {
-  return segments.some((segment) => {
+/** True when Work / elevated cards already show live process chrome (incl. trailing hold). */
+function hasVisibleLiveProcess(
+  segments: readonly AssistantSegment[],
+  messageStreaming: boolean,
+): boolean {
+  return segments.some((segment, index) => {
     if (segment.kind === "work") {
-      return isWorkSegmentLive(segment.steps);
+      return shouldKeepWorkExpanded({
+        isStepsLive: isWorkSegmentLive(segment.steps),
+        messageStreaming,
+        isLastSegment: index === segments.length - 1,
+      });
     }
     if (segment.kind === "subagent" || segment.kind === "ask_user") {
       return (
@@ -63,6 +89,15 @@ function hasVisibleLiveProcess(segments: readonly AssistantSegment[]): boolean {
   });
 }
 
+function mapAssistantSegments(segments: readonly AssistantSegment[], messageStreaming: boolean) {
+  return segments.map((segment, index) =>
+    renderAssistantSegment(segment, {
+      messageStreaming,
+      isLastSegment: index === segments.length - 1,
+    }),
+  );
+}
+
 export function AiAssistantMessageBlock({
   message,
   onRetry,
@@ -72,14 +107,16 @@ export function AiAssistantMessageBlock({
   onSelectBranch,
 }: AiAssistantMessageBlockProps) {
   const segments = projectAssistantSegments(message.parts);
+  const messageStreaming = message.status === "streaming";
 
-  if (message.status === "streaming") {
+  if (messageStreaming) {
     const hasStreamingPart = message.parts.some((part) => part.status === "streaming");
     const streamingMeta = describeAssistantStreamingMeta(message);
-    const showStreamingMeta = !hasStreamingPart && !hasVisibleLiveProcess(segments);
+    const showStreamingMeta =
+      !hasStreamingPart && !hasVisibleLiveProcess(segments, messageStreaming);
     return (
       <article className={assistantMessageBlockClass}>
-        {segments.map(renderAssistantSegment)}
+        {mapAssistantSegments(segments, messageStreaming)}
         {showStreamingMeta ? (
           <p className={reasoningMetaClass} title={streamingMeta}>
             {streamingMeta}
@@ -98,7 +135,7 @@ export function AiAssistantMessageBlock({
 
   return (
     <article className={assistantMessageBlockClass}>
-      {segments.map(renderAssistantSegment)}
+      {mapAssistantSegments(segments, messageStreaming)}
       <div
         className={cn(
           assistantMessageFooterClass,

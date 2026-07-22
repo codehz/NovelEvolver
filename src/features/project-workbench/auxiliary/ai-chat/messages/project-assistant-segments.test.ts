@@ -13,6 +13,7 @@ import {
   isElevatedToolCall,
   isWorkSegmentLive,
   projectAssistantSegments,
+  shouldKeepWorkExpanded,
 } from "./project-assistant-segments";
 
 function prose(id: string, text = "hello"): AiChatMessagePart {
@@ -141,6 +142,44 @@ describe("projectAssistantSegments", () => {
     expect(isWorkSegmentLive([tool("t1", "read_document", "running")])).toBe(true);
     expect(isWorkSegmentLive([tool("t1", "read_document", "pending")])).toBe(true);
     expect(isWorkSegmentLive([tool("t1", "ask_user", "awaiting_user")])).toBe(true);
+  });
+
+  test("shouldKeepWorkExpanded holds open during trailing tool gaps", () => {
+    expect(
+      shouldKeepWorkExpanded({
+        isStepsLive: true,
+        messageStreaming: false,
+        isLastSegment: false,
+      }),
+    ).toBe(true);
+    expect(
+      shouldKeepWorkExpanded({
+        isStepsLive: false,
+        messageStreaming: true,
+        isLastSegment: true,
+      }),
+    ).toBe(true);
+    expect(
+      shouldKeepWorkExpanded({
+        isStepsLive: false,
+        messageStreaming: true,
+        isLastSegment: false,
+      }),
+    ).toBe(false);
+    expect(
+      shouldKeepWorkExpanded({
+        isStepsLive: false,
+        messageStreaming: false,
+        isLastSegment: true,
+      }),
+    ).toBe(false);
+    expect(
+      shouldKeepWorkExpanded({
+        isStepsLive: true,
+        messageStreaming: true,
+        isLastSegment: false,
+      }),
+    ).toBe(true);
   });
 });
 

@@ -38,6 +38,11 @@ import { isWorkSegmentLive, type AssistantWorkStep } from "./project-assistant-s
 type AiWorkBlockProps = {
   segmentId: string;
   steps: readonly AssistantWorkStep[];
+  /**
+   * Expand while true (step live or trailing streaming hold).
+   * ClippedLivePanel still uses step-only live so tool gaps show full history.
+   */
+  keepExpanded: boolean;
 };
 
 function workStepStatus(step: AssistantWorkStep): TimelineRailItemStatus {
@@ -173,10 +178,14 @@ function WorkToolRow({ toolCall }: { toolCall: AiChatToolCall }): ReactNode {
   );
 }
 
-export function AiWorkBlock({ segmentId, steps }: AiWorkBlockProps): ReactNode {
-  const isLive = isWorkSegmentLive(steps);
-  const { open, onOpenChange } = useAutoCollapseExpand({ isLive, resetKey: segmentId });
-  const summary = describeWorkSummary(steps);
+export function AiWorkBlock({ segmentId, steps, keepExpanded }: AiWorkBlockProps): ReactNode {
+  const stepsLive = isWorkSegmentLive(steps);
+  const { open, onOpenChange } = useAutoCollapseExpand({
+    isLive: keepExpanded,
+    resetKey: segmentId,
+  });
+  // Hold-only gaps (all steps complete, message still streaming) must not say "已完成".
+  const summary = keepExpanded && !stepsLive ? "进行中" : describeWorkSummary(steps);
 
   return (
     <Collapsible.Root
@@ -196,7 +205,7 @@ export function AiWorkBlock({ segmentId, steps }: AiWorkBlockProps): ReactNode {
 
       <Collapsible.Panel className={collapsiblePanelClass}>
         <div className={workBlockBodyClass}>
-          <ClippedLivePanel live={isLive}>
+          <ClippedLivePanel live={stepsLive}>
             <TimelineRail
               items={steps.map((step) => ({
                 id: step.id,
