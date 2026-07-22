@@ -10,21 +10,23 @@ export const moveNodeSpec: ToolSpec<"move_node"> = {
   name: "move_node",
   definition: {
     description:
-      "将现有节点移动到现有文件夹下。先用 read_structure 摘要或按 target 展开获取 id 和 target_parent_id；不能移动根节点或移入自身后代。仅 manuscript 支持 index，resource 不得传 index。成功时返回移动后路径信息。",
+      "将现有节点在同一 domain 内移动到现有文件夹下。domain 固定了树边界：manuscript 与 resource 互不相通，不能把 manuscript 节点移入 resource（或反向）。先用 read_structure 摘要或按 target 展开获取同域的 id 与 target_parent_id；不能移动根节点或移入自身后代。仅 manuscript 支持 index，resource 不得传 index。成功时返回移动后路径信息。",
     inputSchema: {
       type: "object",
       properties: {
         domain: {
           type: "string",
           enum: ["manuscript", "resource"],
+          description: "节点所属树；id 与 target_parent_id 必须同属该 domain，禁止跨域移动。",
         },
         id: {
           type: "string",
-          description: "要移动的节点 ID。",
+          description: "要移动的节点 ID（必须属于 domain 指定的树）。",
         },
         target_parent_id: {
           type: "string",
-          description: "目标 folder 的节点 ID；移动到根级时使用对应树的 root_id。",
+          description:
+            "目标 folder 的节点 ID（必须与 id 同属 domain）；移动到根级时使用该 domain 树的 root_id，不得使用另一棵树的 root。",
         },
         index: {
           type: "integer",
