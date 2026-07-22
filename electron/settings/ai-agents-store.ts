@@ -38,11 +38,20 @@ type BuiltinDefaultModelIds = Partial<Record<BuiltinAiAgentId, string | null>>;
 
 type BuiltinSystemPromptOverrides = Partial<Record<BuiltinAiAgentId, string>>;
 
+/** Partial channel overrides for builtins; missing key/field = use code default. */
+type BuiltinChannelOverride = {
+  userSelectable?: boolean;
+  subagentEligible?: boolean;
+};
+
+type BuiltinChannelOverrides = Partial<Record<BuiltinAiAgentId, BuiltinChannelOverride>>;
+
 type StoredFile = {
   version: typeof FILE_VERSION;
   agents: StoredAgentRecord[];
   builtinDefaultModelIds: BuiltinDefaultModelIds;
   builtinSystemPromptOverrides: BuiltinSystemPromptOverrides;
+  builtinChannelOverrides: BuiltinChannelOverrides;
 };
 
 const EMPTY_FILE: StoredFile = {
@@ -50,6 +59,7 @@ const EMPTY_FILE: StoredFile = {
   agents: [],
   builtinDefaultModelIds: {},
   builtinSystemPromptOverrides: {},
+  builtinChannelOverrides: {},
 };
 
 const ALL_TOOL_NAMES = Object.keys(AI_TOOL_NAMES);
@@ -186,6 +196,31 @@ function parseBuiltinSystemPromptOverrides(raw: unknown): BuiltinSystemPromptOve
   return result;
 }
 
+function parseBuiltinChannelOverrides(raw: unknown): BuiltinChannelOverrides {
+  if (raw == null || typeof raw !== "object" || Array.isArray(raw)) {
+    return {};
+  }
+  const result: BuiltinChannelOverrides = {};
+  for (const id of BUILTIN_AI_AGENT_IDS) {
+    const value = (raw as Record<string, unknown>)[id];
+    if (value == null || typeof value !== "object" || Array.isArray(value)) {
+      continue;
+    }
+    const record = value as Partial<BuiltinChannelOverride>;
+    const override: BuiltinChannelOverride = {};
+    if (typeof record.userSelectable === "boolean") {
+      override.userSelectable = record.userSelectable;
+    }
+    if (typeof record.subagentEligible === "boolean") {
+      override.subagentEligible = record.subagentEligible;
+    }
+    if (override.userSelectable !== undefined || override.subagentEligible !== undefined) {
+      result[id] = override;
+    }
+  }
+  return result;
+}
+
 export class AiAgentsStore {
   readonly #filePath: string;
   readonly #getAiModelsStore: () => AiModelsStore;
@@ -225,7 +260,7 @@ export class AiAgentsStore {
 
   upsert(input: AiAgentConfigWrite): AiAgentsSettingsSnapshot {
     if (input.id !== undefined && isBuiltinAiAgentId(input.id)) {
-      return this.#upsertBuiltin(input.id, input.systemPrompt, input.defaultModelId);
+      return this.#upsertBuiltin(input.id, input);
     }
 
     const name = input.name.trim();
@@ -278,13 +313,10 @@ export class AiAgentsStore {
     return this.getSnapshot();
   }
 
-  #upsertBuiltin(
-    id: BuiltinAiAgentId,
-    systemPromptInput: string,
-    defaultModelId: string | null,
-  ): AiAgentsSettingsSnapshot {
+  #upsertBuiltin(id: BuiltinAiAgentId, input: AiAgentConfigWrite): AiAgentsSettingsSnapshot {
+    const defaultModelId = input.defaultModelId;
     this.#assertDefaultModelId(defaultModelId);
-    const systemPrompt = systemPromptInput.trim();
+    const systemPrompt = input.systemPrompt.trim();
     if (systemPrompt === "") {
       throw new Error("系统提示词不能为空。");
     }
@@ -299,14 +331,31 @@ export class AiAgentsStore {
       };
     }
 
-    const defaultSystemPrompt = builtinAgents().find((agent) => agent.id === id)!.systemPrompt;
-    if (systemPrompt === defaultSystemPrompt) {
+    const baseline = builtinAgents().find((agent) => agent.id === id)!;
+    if (systemPrompt === baseline.systemPrompt) {
       const { [id]: _removed, ...rest } = this.#data.builtinSystemPromptOverrides;
       this.#data.builtinSystemPromptOverrides = rest;
     } else {
       this.#data.builtinSystemPromptOverrides = {
         ...this.#data.builtinSystemPromptOverrides,
         [id]: systemPrompt,
+      };
+    }
+
+    const nextChannel: BuiltinChannelOverride = {};
+    if (input.userSelectable !== baseline.userSelectable) {
+      nextChannel.userSelectable = input.userSelectable;
+    }
+    if (input.subagentEligible !== baseline.subagentEligible) {
+      nextChannel.subagentEligible = input.subagentEligible;
+    }
+    if (nextChannel.userSelectable === undefined && nextChannel.subagentEligible === undefined) {
+      const { [id]: _removed, ...rest } = this.#data.builtinChannelOverrides;
+      this.#data.builtinChannelOverrides = rest;
+    } else {
+      this.#data.builtinChannelOverrides = {
+        ...this.#data.builtinChannelOverrides,
+        [id]: nextChannel,
       };
     }
 
@@ -335,10 +384,13 @@ export class AiAgentsStore {
     }
     const override = this.#data.builtinDefaultModelIds[agent.id];
     const systemPromptOverride = this.#data.builtinSystemPromptOverrides[agent.id];
+    const channelOverride = this.#data.builtinChannelOverrides[agent.id];
     return {
       ...agent,
       systemPrompt: systemPromptOverride ?? agent.systemPrompt,
       defaultModelId: override === undefined ? null : override,
+      userSelectable: channelOverride?.userSelectable ?? agent.userSelectable,
+      subagentEligible: channelOverride?.subagentEligible ?? agent.subagentEligible,
     };
   }
 
@@ -349,6 +401,7 @@ export class AiAgentsStore {
         agents: [],
         builtinDefaultModelIds: {},
         builtinSystemPromptOverrides: {},
+        builtinChannelOverrides: {},
       };
     }
     try {
@@ -365,6 +418,7 @@ export class AiAgentsStore {
         builtinSystemPromptOverrides: parseBuiltinSystemPromptOverrides(
           parsed.builtinSystemPromptOverrides,
         ),
+        builtinChannelOverrides: parseBuiltinChannelOverrides(parsed.builtinChannelOverrides),
       };
     } catch {
       return {
@@ -372,6 +426,7 @@ export class AiAgentsStore {
         agents: [],
         builtinDefaultModelIds: {},
         builtinSystemPromptOverrides: {},
+        builtinChannelOverrides: {},
       };
     }
   }

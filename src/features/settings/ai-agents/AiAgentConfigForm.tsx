@@ -33,6 +33,16 @@ import { AiAgentToolPicker } from "./AiAgentToolPicker";
 /** Stable form id for header submit association. */
 export const AI_AGENT_CONFIG_FORM_ID = "settings-ai-agent-form";
 
+/** Prefill values when creating a custom agent (e.g. duplicate). */
+export type AiAgentConfigFormSeed = {
+  name: string;
+  systemPrompt: string;
+  defaultModelId: string | null;
+  availableToolNames: string[];
+  userSelectable: boolean;
+  subagentEligible: boolean;
+};
+
 type FormState = {
   name: string;
   systemPrompt: string;
@@ -47,6 +57,8 @@ type AiAgentConfigFormProps = {
   models: AiModelConfigPublic[];
   providers: AiProviderConfigPublic[];
   initial?: AiAgentConfigPublic | null;
+  /** Prefill for create mode (ignored when `initial` is set). */
+  seed?: AiAgentConfigFormSeed | null;
   /** Full form locked (view-only). */
   readOnly?: boolean;
   busy?: boolean;
@@ -56,15 +68,38 @@ type AiAgentConfigFormProps = {
   onSubmit?: (input: AiAgentConfigWrite) => boolean | void | Promise<boolean | void>;
 };
 
-function toFormState(initial?: AiAgentConfigPublic | null): FormState {
+function toFormState(
+  initial?: AiAgentConfigPublic | null,
+  seed?: AiAgentConfigFormSeed | null,
+): FormState {
+  if (initial != null) {
+    return {
+      name: initial.name,
+      systemPrompt: initial.systemPrompt,
+      defaultModelId: initial.defaultModelId ?? "",
+      availableToolNames: [...initial.availableToolNames],
+      userSelectable: initial.userSelectable,
+      subagentEligible: initial.subagentEligible,
+    };
+  }
+  if (seed != null) {
+    return {
+      name: seed.name,
+      systemPrompt: seed.systemPrompt,
+      defaultModelId: seed.defaultModelId ?? "",
+      availableToolNames: [...seed.availableToolNames],
+      userSelectable: seed.userSelectable,
+      subagentEligible: seed.subagentEligible,
+    };
+  }
   return {
-    name: initial?.name ?? "",
-    systemPrompt: initial?.systemPrompt ?? "",
-    defaultModelId: initial?.defaultModelId ?? "",
-    availableToolNames: initial ? [...initial.availableToolNames] : [],
+    name: "",
+    systemPrompt: "",
+    defaultModelId: "",
+    availableToolNames: [],
     // New custom agents default to both channels enabled.
-    userSelectable: initial?.userSelectable ?? true,
-    subagentEligible: initial?.subagentEligible ?? true,
+    userSelectable: true,
+    subagentEligible: true,
   };
 }
 
@@ -77,25 +112,21 @@ function sameToolNames(a: readonly string[], b: readonly string[]): boolean {
   return left.every((value, index) => value === right[index]);
 }
 
-function isAgentFormDirty(
-  form: FormState,
-  baseline: FormState,
-  fixedFieldsLocked: boolean,
-): boolean {
+function isAgentFormDirty(form: FormState, baseline: FormState, identityLocked: boolean): boolean {
   if (
     form.systemPrompt !== baseline.systemPrompt ||
-    form.defaultModelId !== baseline.defaultModelId
+    form.defaultModelId !== baseline.defaultModelId ||
+    form.userSelectable !== baseline.userSelectable ||
+    form.subagentEligible !== baseline.subagentEligible
   ) {
     return true;
   }
-  if (fixedFieldsLocked) {
+  if (identityLocked) {
     return false;
   }
   return (
     form.name !== baseline.name ||
-    !sameToolNames(form.availableToolNames, baseline.availableToolNames) ||
-    form.userSelectable !== baseline.userSelectable ||
-    form.subagentEligible !== baseline.subagentEligible
+    !sameToolNames(form.availableToolNames, baseline.availableToolNames)
   );
 }
 
@@ -104,6 +135,7 @@ export function AiAgentConfigForm({
   models,
   providers,
   initial = null,
+  seed = null,
   readOnly = false,
   busy = false,
   error = null,
@@ -113,18 +145,19 @@ export function AiAgentConfigForm({
 }: AiAgentConfigFormProps) {
   const isEdit = initial != null;
   const isBuiltin = initial?.builtin === true;
-  const fixedFieldsLocked = readOnly || isBuiltin;
+  const identityLocked = readOnly || isBuiltin;
+  const channelsLocked = readOnly;
   const canEditDefaultModel = !readOnly;
   const canSubmit = !readOnly && onSubmit != null;
-  const baselineRef = useRef(toFormState(initial));
-  const [form, setForm] = useState<FormState>(() => toFormState(initial));
+  const baselineRef = useRef(toFormState(initial, seed));
+  const [form, setForm] = useState<FormState>(() => toFormState(initial, seed));
 
   const dirty = useMemo(() => {
     if (readOnly) {
       return false;
     }
-    return isAgentFormDirty(form, baselineRef.current, fixedFieldsLocked);
-  }, [fixedFieldsLocked, form, readOnly]);
+    return isAgentFormDirty(form, baselineRef.current, identityLocked);
+  }, [form, identityLocked, readOnly]);
 
   useEffect(() => {
     onDirtyChange?.(dirty);
@@ -136,7 +169,7 @@ export function AiAgentConfigForm({
     }
     const name = form.name.trim();
     const systemPrompt = form.systemPrompt.trim();
-    if (systemPrompt === "" || (!fixedFieldsLocked && name === "")) {
+    if (systemPrompt === "" || (!identityLocked && name === "")) {
       return null;
     }
     return {
@@ -169,7 +202,7 @@ export function AiAgentConfigForm({
         return submitPayload(payload);
       },
     }),
-    [form, canSubmit, fixedFieldsLocked, isEdit, initial, onSubmit],
+    [form, canSubmit, identityLocked, isEdit, initial, onSubmit],
   );
 
   const providerNameById = new Map<string, string>();
@@ -179,7 +212,15 @@ export function AiAgentConfigForm({
 
   const update = <K extends keyof FormState>(key: K, value: FormState[K]) => {
     if (readOnly) return;
-    if (isBuiltin && key !== "systemPrompt" && key !== "defaultModelId") return;
+    if (isBuiltin) {
+      const allowed: (keyof FormState)[] = [
+        "systemPrompt",
+        "defaultModelId",
+        "userSelectable",
+        "subagentEligible",
+      ];
+      if (!allowed.includes(key)) return;
+    }
     setForm((prev) => ({ ...prev, [key]: value }));
   };
 
@@ -198,23 +239,23 @@ export function AiAgentConfigForm({
       <div className={settingsFormGridClass}>
         <Field.Root
           className={settingsFieldRootClass}
-          disabled={busy || fixedFieldsLocked}
+          disabled={busy || identityLocked}
           name="name"
         >
           <Field.Label className={settingsFieldLabelClass}>名称</Field.Label>
           <div className={settingsFieldControlCellClass}>
             <Field.Control
-              autoFocus={!fixedFieldsLocked}
+              autoFocus={!identityLocked}
               className={settingsInputClass}
-              placeholder={fixedFieldsLocked ? undefined : "例如：写作助手"}
-              readOnly={fixedFieldsLocked}
-              required={!fixedFieldsLocked}
+              placeholder={identityLocked ? undefined : "例如：写作助手"}
+              readOnly={identityLocked}
+              required={!identityLocked}
               value={form.name}
               onValueChange={(next) => {
                 update("name", next);
               }}
             />
-            {fixedFieldsLocked ? null : (
+            {identityLocked ? null : (
               <Field.Error className={settingsFieldErrorClass} match="valueMissing">
                 请填写名称。
               </Field.Error>
@@ -298,14 +339,14 @@ export function AiAgentConfigForm({
 
         <Field.Root
           className={settingsFieldRootClass}
-          disabled={busy || fixedFieldsLocked}
+          disabled={busy || identityLocked}
           name="availableToolNames"
         >
           <Field.Label className={settingsFieldLabelClass}>可用工具</Field.Label>
           <div className={settingsFieldControlCellClass}>
             <AiAgentToolPicker
               disabled={busy}
-              readOnly={fixedFieldsLocked}
+              readOnly={identityLocked}
               tools={tools}
               value={form.availableToolNames}
               onChange={(next) => {
@@ -317,7 +358,7 @@ export function AiAgentConfigForm({
 
         <Field.Root
           className={settingsFieldRootClass}
-          disabled={busy || fixedFieldsLocked}
+          disabled={busy || channelsLocked}
           name="userSelectable"
         >
           <Field.Label className={settingsFieldLabelClass}>可见性</Field.Label>
@@ -327,13 +368,13 @@ export function AiAgentConfigForm({
                 className={cn(
                   settingsCheckboxLabelClass,
                   "items-center",
-                  fixedFieldsLocked && "cursor-default text-app-muted",
+                  channelsLocked && "cursor-default text-app-muted",
                 )}
               >
                 <SettingsCheckbox
                   checked={form.userSelectable}
-                  disabled={busy || fixedFieldsLocked}
-                  readOnly={fixedFieldsLocked}
+                  disabled={busy || channelsLocked}
+                  readOnly={channelsLocked}
                   onCheckedChange={(checked) => {
                     update("userSelectable", checked);
                   }}
@@ -349,13 +390,13 @@ export function AiAgentConfigForm({
                 className={cn(
                   settingsCheckboxLabelClass,
                   "items-center",
-                  fixedFieldsLocked && "cursor-default text-app-muted",
+                  channelsLocked && "cursor-default text-app-muted",
                 )}
               >
                 <SettingsCheckbox
                   checked={form.subagentEligible}
-                  disabled={busy || fixedFieldsLocked}
-                  readOnly={fixedFieldsLocked}
+                  disabled={busy || channelsLocked}
+                  readOnly={channelsLocked}
                   onCheckedChange={(checked) => {
                     update("subagentEligible", checked);
                   }}
@@ -367,9 +408,9 @@ export function AiAgentConfigForm({
                   </span>
                 </span>
               </label>
-              {fixedFieldsLocked ? (
+              {isBuiltin ? (
                 <p className="text-2xs text-app-muted">
-                  内置 Agent 的可见性与子代理资格由代码固定。
+                  内置 Agent 可关闭通道；名称与工具列表仍由代码固定。
                 </p>
               ) : null}
             </div>

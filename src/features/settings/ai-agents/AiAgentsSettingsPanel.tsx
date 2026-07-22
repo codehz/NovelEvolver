@@ -30,9 +30,15 @@ import { SettingsRail } from "../SettingsRail";
 import { SettingsRailItem, settingsRailItemMetaLineClass } from "../SettingsRailItem";
 import { useSettingsEditorLeave } from "../use-settings-editor-leave";
 import { useSettingsMutation } from "../use-settings-mutation";
-import { AI_AGENT_CONFIG_FORM_ID, AiAgentConfigForm } from "./AiAgentConfigForm";
+import {
+  AI_AGENT_CONFIG_FORM_ID,
+  AiAgentConfigForm,
+  type AiAgentConfigFormSeed,
+} from "./AiAgentConfigForm";
 
-type AgentSelection = { type: "create" } | { type: "edit"; id: string };
+type AgentSelection =
+  | { type: "create"; seed?: AiAgentConfigFormSeed }
+  | { type: "edit"; id: string };
 
 type AgentsSettingsData = {
   agents: Awaited<ReturnType<typeof settingsService.getAiAgents>>;
@@ -52,6 +58,7 @@ function sameSelection(a: AgentSelection | null, b: AgentSelection | null): bool
     return a === b;
   }
   if (a.type === "create" && b.type === "create") {
+    // Seed identity is handled by formKey remount when re-entering create.
     return true;
   }
   if (a.type === "edit" && b.type === "edit") {
@@ -77,6 +84,33 @@ function agentMetaLine(agent: AiAgentConfigPublic, modelNameById: Map<string, st
     parts.push("未启用");
   }
   return parts.join(" · ");
+}
+
+function uniqueCopyName(sourceName: string, agents: readonly AiAgentConfigPublic[]): string {
+  const names = new Set(agents.map((agent) => agent.name));
+  const base = `${sourceName} 副本`;
+  if (!names.has(base)) {
+    return base;
+  }
+  let index = 2;
+  while (names.has(`${base} ${index}`)) {
+    index += 1;
+  }
+  return `${base} ${index}`;
+}
+
+function seedFromAgent(
+  agent: AiAgentConfigPublic,
+  agents: readonly AiAgentConfigPublic[],
+): AiAgentConfigFormSeed {
+  return {
+    name: uniqueCopyName(agent.name, agents),
+    systemPrompt: agent.systemPrompt,
+    defaultModelId: agent.defaultModelId,
+    availableToolNames: [...agent.availableToolNames],
+    userSelectable: agent.userSelectable,
+    subagentEligible: agent.subagentEligible,
+  };
 }
 
 type AiAgentsSettingsPanelProps = {
@@ -155,6 +189,13 @@ export function AiAgentsSettingsPanel({ active = true }: AiAgentsSettingsPanelPr
     },
   });
 
+  const applySelection = (next: AgentSelection | null) => {
+    clearActionError();
+    setEditorDirty(false);
+    setFormKey((key) => key + 1);
+    setSelection(next);
+  };
+
   const select = async (next: AgentSelection | null) => {
     if (sameSelection(selection, next)) {
       return;
@@ -163,10 +204,20 @@ export function AiAgentsSettingsPanel({ active = true }: AiAgentsSettingsPanelPr
     if (!ok) {
       return;
     }
-    clearActionError();
-    setEditorDirty(false);
-    setFormKey((key) => key + 1);
-    setSelection(next);
+    applySelection(next);
+  };
+
+  /** Enter create-with-seed even when already on create (fresh remount). */
+  const selectCreateWithSeed = async (seed: AiAgentConfigFormSeed) => {
+    if (selection?.type === "create") {
+      const ok = await requestLeave();
+      if (!ok) {
+        return;
+      }
+      applySelection({ type: "create", seed });
+      return;
+    }
+    await select({ type: "create", seed });
   };
 
   const handleSubmit = async (input: AiAgentConfigWrite) => {
@@ -217,6 +268,10 @@ export function AiAgentsSettingsPanel({ active = true }: AiAgentsSettingsPanelPr
     }
   };
 
+  const handleCopy = async (agent: AiAgentConfigPublic) => {
+    await selectCreateWithSeed(seedFromAgent(agent, agents));
+  };
+
   if (isLoading && data === undefined) {
     return <SettingsPanelLoading />;
   }
@@ -234,7 +289,9 @@ export function AiAgentsSettingsPanel({ active = true }: AiAgentsSettingsPanelPr
 
   const detailTitle =
     selection?.type === "create"
-      ? "添加 Agent"
+      ? selection.seed
+        ? "复制 Agent"
+        : "添加 Agent"
       : selectedAgent
         ? selectedAgent.builtin
           ? `配置：${selectedAgent.name}`
@@ -328,11 +385,29 @@ export function AiAgentsSettingsPanel({ active = true }: AiAgentsSettingsPanelPr
                     </div>
                   ) : (
                     <div className={settingsListItemMetaClass}>
-                      <span>定义独立系统提示词与工具权限的自定义角色</span>
+                      <span>
+                        {selection.type === "create" && selection.seed
+                          ? "基于已有 Agent 预填，保存后成为自定义 Agent"
+                          : "定义独立系统提示词与工具权限的自定义角色"}
+                      </span>
                     </div>
                   )}
                 </div>
                 <div className={settingsHeaderActionsClass}>
+                  {selectedAgent ? (
+                    <Button
+                      aria-label={`复制 Agent ${selectedAgent.name}`}
+                      className={settingsGhostActionClass}
+                      disabled={busy}
+                      variant="ghost"
+                      size="icon-md"
+                      onClick={() => {
+                        void handleCopy(selectedAgent);
+                      }}
+                    >
+                      <span aria-hidden="true" className="icon-[codicon--copy] text-base" />
+                    </Button>
+                  ) : null}
                   {selectedAgent && !selectedAgent.builtin ? (
                     <Button
                       aria-label={`删除 Agent ${selectedAgent.name}`}
@@ -367,6 +442,7 @@ export function AiAgentsSettingsPanel({ active = true }: AiAgentsSettingsPanelPr
               formRef={formRef}
               models={models}
               providers={providers}
+              seed={selection.seed ?? null}
               tools={tools}
               onDirtyChange={setEditorDirty}
               onSubmit={handleSubmit}

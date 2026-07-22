@@ -4,7 +4,11 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 
 import type { AiAgentConfigPublic, AiAgentConfigWrite } from "#shared/rpc/services/index";
-import { BUILTIN_AI_AGENT_IDS, BUILTIN_CONSISTENCY_REVIEWER_ID } from "#shared/rpc/services/index";
+import {
+  BUILTIN_AI_AGENT_ID,
+  BUILTIN_AI_AGENT_IDS,
+  BUILTIN_CONSISTENCY_REVIEWER_ID,
+} from "#shared/rpc/services/index";
 
 import { AiAgentsStore } from "./ai-agents-store";
 import type { AiModelsStore } from "./ai-models-store";
@@ -109,5 +113,75 @@ describe("AiAgentsStore builtin system prompt overrides", () => {
 
     expect(custom.defaultSystemPrompt).toBeNull();
     expect(createStore(filePath).store.findRuntimeConfig(custom.id)).toEqual(custom);
+  });
+});
+
+describe("AiAgentsStore builtin channel overrides", () => {
+  test("returns code-default channel flags for builtin agents", () => {
+    const { store } = createStore();
+    const writing = store.findRuntimeConfig(BUILTIN_AI_AGENT_ID)!;
+    const reviewer = store.findRuntimeConfig(BUILTIN_CONSISTENCY_REVIEWER_ID)!;
+
+    expect(writing.userSelectable).toBe(true);
+    expect(writing.subagentEligible).toBe(false);
+    expect(reviewer.userSelectable).toBe(false);
+    expect(reviewer.subagentEligible).toBe(true);
+  });
+
+  test("persists channel overrides and reloads them", () => {
+    const { filePath, store } = createStore();
+    const writing = store.findRuntimeConfig(BUILTIN_AI_AGENT_ID)!;
+
+    store.upsert({
+      ...toWrite(writing),
+      userSelectable: false,
+      subagentEligible: true,
+    });
+
+    const updated = store.findRuntimeConfig(BUILTIN_AI_AGENT_ID)!;
+    expect(updated.userSelectable).toBe(false);
+    expect(updated.subagentEligible).toBe(true);
+
+    const reloaded = createStore(filePath).store.findRuntimeConfig(BUILTIN_AI_AGENT_ID)!;
+    expect(reloaded.userSelectable).toBe(false);
+    expect(reloaded.subagentEligible).toBe(true);
+  });
+
+  test("removes channel override when saving code defaults", () => {
+    const { filePath, store } = createStore();
+    const writing = store.findRuntimeConfig(BUILTIN_AI_AGENT_ID)!;
+
+    store.upsert({
+      ...toWrite(writing),
+      userSelectable: false,
+      subagentEligible: true,
+    });
+    store.upsert(toWrite(writing));
+
+    const restored = store.findRuntimeConfig(BUILTIN_AI_AGENT_ID)!;
+    expect(restored.userSelectable).toBe(true);
+    expect(restored.subagentEligible).toBe(false);
+
+    const persisted = JSON.parse(readFileSync(filePath, "utf8")) as {
+      builtinChannelOverrides: Record<string, unknown>;
+    };
+    expect(persisted.builtinChannelOverrides[writing.id]).toBeUndefined();
+  });
+
+  test("ignores name and tool list changes for builtin agents", () => {
+    const { store } = createStore();
+    const writing = store.findRuntimeConfig(BUILTIN_AI_AGENT_ID)!;
+
+    store.upsert({
+      ...toWrite(writing),
+      name: "改名应被忽略",
+      availableToolNames: ["read_document"],
+      userSelectable: false,
+    });
+
+    const updated = store.findRuntimeConfig(BUILTIN_AI_AGENT_ID)!;
+    expect(updated.name).toBe(writing.name);
+    expect(updated.availableToolNames).toEqual(writing.availableToolNames);
+    expect(updated.userSelectable).toBe(false);
   });
 });

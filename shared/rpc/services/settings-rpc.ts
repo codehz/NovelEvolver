@@ -179,9 +179,9 @@ export type AiAgentConfigPublic = {
 
 /**
  * Create/update payload for `upsertAiAgent`.
- * When `id` is a builtin agent id, only `systemPrompt` and `defaultModelId`
- * are applied. Name / availableToolNames / userSelectable / subagentEligible
- * are ignored (builtin definitions are code-owned).
+ * When `id` is a builtin agent id, only `systemPrompt`, `defaultModelId`,
+ * `userSelectable`, and `subagentEligible` are applied. Name /
+ * availableToolNames remain code-owned for builtins.
  */
 export type AiAgentConfigWrite = {
   id?: string;
