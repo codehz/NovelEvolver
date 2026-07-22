@@ -6,34 +6,14 @@ import { cn } from "#app/shared/lib/ui/cn";
 
 import { MarkdownTableCards } from "./MarkdownTableCards";
 
+import "./markdown-stream.css";
+
 /**
- * Compact chat typography: shrink Streamdown's doc-scale headings and make
- * inline code match ambient size (Streamdown defaults to `text-sm`).
- * Use `text-[1em]` (not `text-inherit` — that inherits color only).
- *
- * Code blocks: simple framed box — no copy/download, no line numbers, tight
- * padding, and break-all wrap for long tokens (JSON in a narrow chat rail).
- * Language header stays; actions are off via `controls.code: false`.
+ * Chat markdown via Streamdown. Layout / wrap for third-party code shells
+ * lives in `markdown-stream.css` (not utility piles). Host chrome still paints
+ * theme colors. Code blocks: no copy/download, no line numbers; language label kept.
  */
-const streamClassName = cn(
-  "text-inherit",
-  "**:data-[streamdown='heading-1']:text-sm",
-  "**:data-[streamdown='heading-2']:text-chat",
-  "**:data-[streamdown='heading-3']:text-chat",
-  "**:data-[streamdown='heading-4']:text-chat",
-  "**:data-[streamdown='heading-5']:text-chat",
-  "**:data-[streamdown='heading-6']:text-chat",
-  "**:data-[streamdown='inline-code']:text-[1em]",
-  // Outer shell: Streamdown defaults `my-4 p-2 gap-2 rounded-xl`.
-  "**:data-[streamdown='code-block']:my-2 **:data-[streamdown='code-block']:min-w-0 **:data-[streamdown='code-block']:gap-0 **:data-[streamdown='code-block']:rounded-lg **:data-[streamdown='code-block']:p-0",
-  // Language label only (controls disabled).
-  "**:data-[streamdown='code-block-header']:h-6 **:data-[streamdown='code-block-header']:px-2 **:data-[streamdown='code-block-header']:text-2xs",
-  // Body: drop horizontal scroll / nested border / doc-scale padding.
-  "**:data-[streamdown='code-block-body']:overflow-x-hidden **:data-[streamdown='code-block-body']:rounded-none **:data-[streamdown='code-block-body']:border-0 **:data-[streamdown='code-block-body']:p-2 **:data-[streamdown='code-block-body']:text-chat",
-  // Wrap long lines; re-block line spans (lineNumbers off removes Streamdown's `block`).
-  "**:data-[streamdown='code-block-body']_pre:m-0 **:data-[streamdown='code-block-body']_pre:whitespace-pre-wrap **:data-[streamdown='code-block-body']_pre:break-all",
-  "**:data-[streamdown='code-block-body']_code>span:block",
-);
+const streamClassName = "markdown-stream";
 
 /** Hang markers outside the content box so wrapped lines align with the text. */
 const unorderedListClass = cn(

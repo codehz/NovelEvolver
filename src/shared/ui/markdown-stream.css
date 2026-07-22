@@ -1,0 +1,83 @@
+/**
+ * Streamdown layout overrides for chat markdown.
+ *
+ * Streamdown ships document-scale code shells (`my-4 p-2`, body `overflow-x-auto
+ * p-4`, browser `pre { white-space: pre }`). Those fight a narrow chat rail, and
+ * utility piles on `data-streamdown` are brittle. Structure + wrap live here;
+ * host chrome still paints theme colors (border / surface).
+ */
+
+.markdown-stream {
+  color: inherit;
+}
+
+/* Compact headings (Streamdown defaults are doc-scale). */
+.markdown-stream [data-streamdown="heading-1"] {
+  font-size: var(--text-sm);
+}
+
+.markdown-stream [data-streamdown="heading-2"],
+.markdown-stream [data-streamdown="heading-3"],
+.markdown-stream [data-streamdown="heading-4"],
+.markdown-stream [data-streamdown="heading-5"],
+.markdown-stream [data-streamdown="heading-6"] {
+  font-size: var(--text-chat);
+}
+
+/* Match ambient type size (Streamdown inline code defaults to text-sm). */
+.markdown-stream [data-streamdown="inline-code"] {
+  font-size: 1em;
+}
+
+/* Outer frame: tight box, no doc padding / gap. */
+.markdown-stream [data-streamdown="code-block"] {
+  margin-block: 0.5rem;
+  min-width: 0;
+  max-width: 100%;
+  gap: 0;
+  border-radius: var(--radius-lg, 0.5rem);
+  padding: 0;
+  overflow: hidden;
+}
+
+/* Language label only (copy / download disabled via controls). */
+.markdown-stream [data-streamdown="code-block-header"] {
+  height: 1.5rem;
+  padding-inline: 0.5rem;
+  font-size: var(--text-2xs);
+}
+
+/*
+ * Body: kill horizontal scroll shell. Nested border is dropped so the outer
+ * frame is the single box.
+ */
+.markdown-stream [data-streamdown="code-block-body"] {
+  max-width: 100%;
+  overflow-x: hidden;
+  border: none;
+  border-radius: 0;
+  padding: 0.5rem;
+  font-size: var(--text-chat);
+}
+
+/*
+ * Wrap long tokens (JSON without spaces). Apply on pre/code/line spans —
+ * Streamdown token spans stay inline children of each line.
+ */
+.markdown-stream [data-streamdown="code-block-body"] pre,
+.markdown-stream [data-streamdown="code-block-body"] code {
+  margin: 0;
+  max-width: 100%;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  word-break: break-all;
+}
+
+/* lineNumbers={false} leaves bare spans; force block so multi-line stays stacked. */
+.markdown-stream [data-streamdown="code-block-body"] code > span {
+  display: block;
+  max-width: 100%;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  word-break: break-all;
+}

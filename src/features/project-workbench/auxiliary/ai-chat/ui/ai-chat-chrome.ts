@@ -43,7 +43,9 @@ export const branchSuffixEnterClass = cn(
   "data-entered:opacity-100",
   "motion-reduce:opacity-100 motion-reduce:transition-none",
 );
-export const assistantMessageBlockClass = cn("group/assistant-msg flex w-full flex-col gap-2");
+export const assistantMessageBlockClass = cn(
+  "group/assistant-msg flex w-full min-w-0 flex-col gap-2",
+);
 export const assistantMessageFooterClass = cn("flex w-full min-w-0 items-center gap-2 pt-0.5");
 /** Hide completed footer until the block is hovered or focus moves into it. */
 export const assistantMessageFooterHoverRevealClass = cn(
@@ -59,9 +61,10 @@ export const assistantMessageModelLabelClass = cn(
   "block max-w-full truncate text-right text-2xs text-ctp-subtext1 tabular-nums outline-none",
 );
 export const assistantMessageBodyClass = cn(
-  "text-chat leading-5 text-app-foreground",
+  // min-w-0: flex/grid parents must allow the stream (and code pre) to shrink so wrap works.
+  "min-w-0 text-chat leading-5 text-app-foreground",
   "[&_a]:text-ctp-blue [&_a]:underline [&_a]:underline-offset-2",
-  // Layout / sizes live on MarkdownStream; chrome only colors surfaces.
+  // Layout / wrap live in markdown-stream.css; chrome only colors surfaces.
   "**:data-[streamdown='blockquote']:border-ctp-blue/40 **:data-[streamdown='blockquote']:text-app-muted",
   "**:data-[streamdown='code-block']:border-titlebar-border **:data-[streamdown='code-block']:bg-app-surface",
   "**:data-[streamdown='code-block-body']:bg-app-crust",
@@ -89,8 +92,8 @@ export const collapsiblePanelClass = cn(
   "[&[hidden]:not([hidden='until-found'])]:hidden",
 );
 export const reasoningBodyClass = cn(
-  "pt-1 text-chat-meta leading-5 text-app-muted",
-  // Layout / sizes live on MarkdownStream; chrome only colors surfaces.
+  "min-w-0 pt-1 text-chat-meta leading-5 text-app-muted",
+  // Layout / wrap live in markdown-stream.css; chrome only colors surfaces.
   "**:data-[streamdown='blockquote']:border-ctp-blue/30 **:data-[streamdown='blockquote']:text-ctp-subtext0",
   "**:data-[streamdown='code-block']:border-titlebar-border **:data-[streamdown='code-block']:bg-app-surface/80",
   "**:data-[streamdown='code-block-body']:bg-app-background",
