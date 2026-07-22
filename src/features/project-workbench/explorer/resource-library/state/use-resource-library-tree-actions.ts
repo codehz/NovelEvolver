@@ -2,6 +2,7 @@ import { useMolecule } from "bunshi/react";
 import { useSetAtom, useStore } from "jotai";
 import { useCallback, useRef } from "react";
 
+import { confirmDialogApi } from "#app/shared/lib/confirm-dialog";
 import { notificationApi } from "#app/shared/lib/notifications";
 import { normalizeResourceNameInput } from "#shared/resource-library-path";
 import type { ResourceTreeSnapshot } from "#shared/rpc/worktree/index";
@@ -175,7 +176,13 @@ export function useResourceLibraryTreeActions() {
     if (node === undefined || current.selected.id === current.snapshot.rootId) {
       return;
     }
-    if (!confirm(`确定要删除「${node.name}」吗？`)) {
+    const confirmed = await confirmDialogApi.confirm({
+      title: "删除",
+      description: `确定要删除「${node.name}」吗？`,
+      confirmLabel: "删除",
+      tone: "danger",
+    });
+    if (!confirmed) {
       return;
     }
 

@@ -2,6 +2,7 @@ import { useMolecule } from "bunshi/react";
 import { useSetAtom, useStore } from "jotai";
 import { useCallback } from "react";
 
+import { confirmDialogApi } from "#app/shared/lib/confirm-dialog";
 import { notificationApi } from "#app/shared/lib/notifications";
 import type { ManuscriptTreeNode } from "#shared/rpc/worktree/index";
 import { useWorkbenchEditorActions } from "#workbench/editor/use-workbench-editor-actions";
@@ -137,7 +138,13 @@ export function useManuscriptTreeActions() {
     if (node === undefined || node.id === "root") {
       return;
     }
-    if (!confirm(`确定要删除「${node.title}」吗？`)) {
+    const confirmed = await confirmDialogApi.confirm({
+      title: "删除",
+      description: `确定要删除「${node.title}」吗？`,
+      confirmLabel: "删除",
+      tone: "danger",
+    });
+    if (!confirmed) {
       return;
     }
     try {
