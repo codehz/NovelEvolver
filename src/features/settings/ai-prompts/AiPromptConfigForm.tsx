@@ -8,15 +8,16 @@ import { AI_PROMPT_SLUG_PATTERN } from "#shared/rpc/services/index";
 import {
   settingsFieldControlCellClass,
   settingsFieldErrorClass,
+  settingsFieldHiddenControlClass,
   settingsFieldLabelClass,
   settingsFieldRootClass,
   settingsFormClass,
   settingsFormErrorClass,
   settingsFormGridClass,
   settingsInputClass,
-  settingsTextareaClass,
 } from "../settings-chrome";
 import type { SettingsFormHandle } from "../settings-leave-guard";
+import { SettingsPlainTextEditor } from "../SettingsPlainTextEditor";
 
 /** Stable form id for header submit association. */
 export const AI_PROMPT_CONFIG_FORM_ID = "settings-ai-prompt-form";
@@ -193,11 +194,19 @@ export function AiPromptConfigForm({
           <Field.Label className={settingsFieldLabelClass}>提示词内容</Field.Label>
           <div className={settingsFieldControlCellClass}>
             <Field.Control
-              className={settingsTextareaClass}
-              placeholder={readOnly ? undefined : "输入可复用的提示词正文…"}
-              readOnly={readOnly}
-              render={<textarea rows={8} />}
+              className={settingsFieldHiddenControlClass}
               required={!readOnly}
+              tabIndex={-1}
+              value={form.prompt}
+              onValueChange={(next) => {
+                update("prompt", next);
+              }}
+            />
+            <SettingsPlainTextEditor
+              aria-label="提示词内容"
+              disabled={busy || readOnly}
+              minHeight="10rem"
+              placeholder={readOnly ? undefined : "输入可复用的提示词正文…"}
               value={form.prompt}
               onValueChange={(next) => {
                 update("prompt", next);

@@ -16,16 +16,17 @@ import {
   settingsCheckboxLabelClass,
   settingsFieldControlCellClass,
   settingsFieldErrorClass,
+  settingsFieldHiddenControlClass,
   settingsFieldLabelClass,
   settingsFieldRootClass,
   settingsFormClass,
   settingsFormErrorClass,
   settingsFormGridClass,
   settingsInputClass,
-  settingsTextareaClass,
 } from "../settings-chrome";
 import type { SettingsFormHandle } from "../settings-leave-guard";
 import { SettingsCheckbox } from "../SettingsCheckbox";
+import { SettingsPlainTextEditor } from "../SettingsPlainTextEditor";
 import { SettingsSelect } from "../SettingsSelect";
 import { AiAgentToolPicker } from "./AiAgentToolPicker";
 
@@ -229,11 +230,18 @@ export function AiAgentConfigForm({
           <Field.Label className={settingsFieldLabelClass}>系统提示词</Field.Label>
           <div className={settingsFieldControlCellClass}>
             <Field.Control
-              className={settingsTextareaClass}
-              placeholder={readOnly ? undefined : "设定 Agent 的行为、性格与限制…"}
-              readOnly={readOnly}
-              render={<textarea rows={5} />}
+              className={settingsFieldHiddenControlClass}
               required={!readOnly}
+              tabIndex={-1}
+              value={form.systemPrompt}
+              onValueChange={(next) => {
+                update("systemPrompt", next);
+              }}
+            />
+            <SettingsPlainTextEditor
+              aria-label="系统提示词"
+              disabled={busy || readOnly}
+              placeholder={readOnly ? undefined : "设定 Agent 的行为、性格与限制…"}
               value={form.systemPrompt}
               onValueChange={(next) => {
                 update("systemPrompt", next);

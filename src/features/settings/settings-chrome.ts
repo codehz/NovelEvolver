@@ -264,6 +264,12 @@ export const settingsJsonEditorHostClass = cn(
   "w-full min-w-0 overflow-hidden",
 );
 
+/** Host shell for settings CodeMirror plain-text / prompt editors (same surface as JSON). */
+export const settingsPlainTextEditorHostClass = cn(
+  fieldSurfaceFocusWithinClass,
+  "w-full min-w-0 overflow-hidden",
+);
+
 /** Visually hidden native control used to register custom editors with Base UI Field. */
 export const settingsFieldHiddenControlClass = cn("sr-only");
 
