@@ -46,6 +46,15 @@ export function toAgentSelectorItems(
   activeAgentId: string,
 ): AiChatSelectorItem[] {
   return agents.map((agent) => {
+    const description = agent.description.trim();
+    if (description !== "") {
+      return {
+        id: agent.id,
+        label: agent.name,
+        detail: description,
+        emphasized: agent.id === activeAgentId,
+      };
+    }
     const model = agent.defaultModelId
       ? (models.find((entry) => entry.id === agent.defaultModelId)?.name ?? "未知模型")
       : "继承默认模型";

@@ -235,6 +235,8 @@ export type AiChatSelectableModel = {
 export type AiChatSelectableAgent = {
   id: string;
   name: string;
+  /** Short blurb for the agent selector; empty when unset. */
+  description: string;
   defaultModelId: string | null;
   toolCount: number;
   builtin: boolean;

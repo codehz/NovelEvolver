@@ -99,6 +99,15 @@ describe("listSubagentCatalog", () => {
     expect(result.find((e) => e.id === "r")?.capability).toBe("只读");
     expect(result.find((e) => e.id === "w")?.capability).toBe("可写");
   });
+
+  test("forwards trimmed description", () => {
+    const result = listSubagentCatalog([
+      agent({ id: "a", name: "A", description: "  简短说明  " }),
+      agent({ id: "b", name: "B" }),
+    ]);
+    expect(result.find((e) => e.id === "a")?.description).toBe("简短说明");
+    expect(result.find((e) => e.id === "b")?.description).toBe("");
+  });
 });
 
 describe("formatAvailableSubagentsSection", () => {
@@ -111,13 +120,33 @@ describe("formatAvailableSubagentsSection", () => {
 
   test("renders id, name, and capability lines", () => {
     const text = formatAvailableSubagentsSection([
-      { id: "builtin-consistency-reviewer", name: "一致性审查", capability: "只读" },
-      { id: "custom-writer", name: "定制写手", capability: "可写" },
+      {
+        id: "builtin-consistency-reviewer",
+        name: "一致性审查",
+        capability: "只读",
+        description: "",
+      },
+      { id: "custom-writer", name: "定制写手", capability: "可写", description: "" },
     ]);
     expect(text).toContain("## 可用子代理");
     expect(text).toContain("agent_id` 必须从下列列表选取");
     expect(text).toContain("`builtin-consistency-reviewer`（一致性审查，只读）");
     expect(text).toContain("`custom-writer`（定制写手，可写）");
+    expect(text).not.toContain("—");
+  });
+
+  test("appends description when present", () => {
+    const text = formatAvailableSubagentsSection([
+      {
+        id: "builtin-consistency-reviewer",
+        name: "一致性审查",
+        capability: "只读",
+        description: "对照设定与正文做只读一致性审查",
+      },
+    ]);
+    expect(text).toContain(
+      "`builtin-consistency-reviewer`（一致性审查，只读）— 对照设定与正文做只读一致性审查",
+    );
   });
 });
 
@@ -126,21 +155,25 @@ describe("composeSystemPromptWithSubagents", () => {
 
   test("returns base unchanged when run_subagent is absent", () => {
     expect(
-      composeSystemPromptWithSubagents(base, [{ id: "a", name: "A", capability: "只读" }], {
-        hasRunSubagentTool: false,
-      }),
+      composeSystemPromptWithSubagents(
+        base,
+        [{ id: "a", name: "A", capability: "只读", description: "" }],
+        {
+          hasRunSubagentTool: false,
+        },
+      ),
     ).toBe(base);
   });
 
   test("appends section when run_subagent is present", () => {
     const result = composeSystemPromptWithSubagents(
       base,
-      [{ id: "a", name: "A", capability: "只读" }],
+      [{ id: "a", name: "A", capability: "只读", description: "短简介" }],
       { hasRunSubagentTool: true },
     );
     expect(result.startsWith(base)).toBe(true);
     expect(result).toContain("## 可用子代理");
-    expect(result).toContain("`a`（A，只读）");
+    expect(result).toContain("`a`（A，只读）— 短简介");
     expect(result).toMatch(/\n\n## 可用子代理/);
   });
 

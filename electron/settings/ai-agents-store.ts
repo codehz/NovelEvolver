@@ -31,12 +31,24 @@ export const BUILTIN_AI_AGENT_SYSTEM_PROMPT = DEFAULT_AI_SYSTEM_PROMPT;
 
 export type AiAgentRuntimeConfig = AiAgentConfigPublic;
 
-type StoredAgentRecord = Omit<AiAgentConfigPublic, "builtin" | "defaultSystemPrompt">;
+/** Max chars for agent description (settings UI + store normalize). */
+export const AI_AGENT_DESCRIPTION_MAX_LENGTH = 120;
+
+type StoredAgentRecord = Omit<
+  AiAgentConfigPublic,
+  "builtin" | "defaultSystemPrompt" | "defaultDescription"
+>;
 
 /** Per-builtin override: null clears to “inherit chat default”. Missing key = no override. */
 type BuiltinDefaultModelIds = Partial<Record<BuiltinAiAgentId, string | null>>;
 
 type BuiltinSystemPromptOverrides = Partial<Record<BuiltinAiAgentId, string>>;
+
+/**
+ * Per-builtin description override.
+ * Key present with string (including empty) = override; missing key = code default.
+ */
+type BuiltinDescriptionOverrides = Partial<Record<BuiltinAiAgentId, string>>;
 
 /** Partial channel overrides for builtins; missing key/field = use code default. */
 type BuiltinChannelOverride = {
@@ -51,6 +63,7 @@ type StoredFile = {
   agents: StoredAgentRecord[];
   builtinDefaultModelIds: BuiltinDefaultModelIds;
   builtinSystemPromptOverrides: BuiltinSystemPromptOverrides;
+  builtinDescriptionOverrides: BuiltinDescriptionOverrides;
   builtinChannelOverrides: BuiltinChannelOverrides;
 };
 
@@ -59,6 +72,7 @@ const EMPTY_FILE: StoredFile = {
   agents: [],
   builtinDefaultModelIds: {},
   builtinSystemPromptOverrides: {},
+  builtinDescriptionOverrides: {},
   builtinChannelOverrides: {},
 };
 
@@ -82,10 +96,20 @@ const CHAPTER_WRITER_TOOL_NAMES = [
   "create_folder",
 ] as const;
 
+const BUILTIN_WRITING_ASSISTANT_DESCRIPTION = "主对话写作助手，可使用完整工具并委派子代理";
+const BUILTIN_CONSISTENCY_REVIEWER_DESCRIPTION = "对照设定与正文做只读一致性审查";
+const BUILTIN_CHAPTER_WRITER_DESCRIPTION = "按既有文风续写或改写章节并写回手稿";
+
+function normalizeDescription(value: string): string {
+  return value.trim().slice(0, AI_AGENT_DESCRIPTION_MAX_LENGTH);
+}
+
 function builtinWritingAssistant(): AiAgentConfigPublic {
   return {
     id: BUILTIN_AI_AGENT_ID,
     name: "写作助手",
+    description: BUILTIN_WRITING_ASSISTANT_DESCRIPTION,
+    defaultDescription: BUILTIN_WRITING_ASSISTANT_DESCRIPTION,
     systemPrompt: BUILTIN_AI_AGENT_SYSTEM_PROMPT,
     defaultSystemPrompt: BUILTIN_AI_AGENT_SYSTEM_PROMPT,
     defaultModelId: null,
@@ -100,6 +124,8 @@ function builtinConsistencyReviewer(): AiAgentConfigPublic {
   return {
     id: BUILTIN_CONSISTENCY_REVIEWER_ID,
     name: "一致性审查",
+    description: BUILTIN_CONSISTENCY_REVIEWER_DESCRIPTION,
+    defaultDescription: BUILTIN_CONSISTENCY_REVIEWER_DESCRIPTION,
     systemPrompt: CONSISTENCY_REVIEWER_SYSTEM_PROMPT,
     defaultSystemPrompt: CONSISTENCY_REVIEWER_SYSTEM_PROMPT,
     defaultModelId: null,
@@ -114,6 +140,8 @@ function builtinChapterWriter(): AiAgentConfigPublic {
   return {
     id: BUILTIN_CHAPTER_WRITER_ID,
     name: "章节续写",
+    description: BUILTIN_CHAPTER_WRITER_DESCRIPTION,
+    defaultDescription: BUILTIN_CHAPTER_WRITER_DESCRIPTION,
     systemPrompt: CHAPTER_WRITER_SYSTEM_PROMPT,
     defaultSystemPrompt: CHAPTER_WRITER_SYSTEM_PROMPT,
     defaultModelId: null,
@@ -148,9 +176,13 @@ function normalizeStoredAgent(raw: unknown): StoredAgentRecord | null {
       ? record.defaultModelId
       : null;
 
+  const description =
+    typeof record.description === "string" ? normalizeDescription(record.description) : "";
+
   return {
     id: record.id,
     name: record.name,
+    description,
     systemPrompt: record.systemPrompt,
     defaultModelId,
     availableToolNames: record.availableToolNames.filter(
@@ -191,6 +223,24 @@ function parseBuiltinSystemPromptOverrides(raw: unknown): BuiltinSystemPromptOve
     const value = (raw as Record<string, unknown>)[id];
     if (typeof value === "string" && value.trim() !== "") {
       result[id] = value.trim();
+    }
+  }
+  return result;
+}
+
+function parseBuiltinDescriptionOverrides(raw: unknown): BuiltinDescriptionOverrides {
+  if (raw == null || typeof raw !== "object" || Array.isArray(raw)) {
+    return {};
+  }
+  const result: BuiltinDescriptionOverrides = {};
+  for (const id of BUILTIN_AI_AGENT_IDS) {
+    if (!Object.prototype.hasOwnProperty.call(raw, id)) {
+      continue;
+    }
+    const value = (raw as Record<string, unknown>)[id];
+    if (typeof value === "string") {
+      // Allow empty string override (user cleared the default).
+      result[id] = normalizeDescription(value);
     }
   }
   return result;
@@ -238,6 +288,7 @@ export class AiAgentsStore {
         ...this.#mergedBuiltinAgents(),
         ...this.#data.agents.map((agent) => ({
           ...agent,
+          defaultDescription: null,
           defaultSystemPrompt: null,
           builtin: false as const,
         })),
@@ -281,6 +332,7 @@ export class AiAgentsStore {
     const record: StoredAgentRecord = {
       id: input.id ?? nanoid(12),
       name,
+      description: normalizeDescription(input.description),
       systemPrompt,
       defaultModelId: input.defaultModelId,
       availableToolNames,
@@ -342,6 +394,17 @@ export class AiAgentsStore {
       };
     }
 
+    const description = normalizeDescription(input.description);
+    if (description === baseline.description) {
+      const { [id]: _removed, ...rest } = this.#data.builtinDescriptionOverrides;
+      this.#data.builtinDescriptionOverrides = rest;
+    } else {
+      this.#data.builtinDescriptionOverrides = {
+        ...this.#data.builtinDescriptionOverrides,
+        [id]: description,
+      };
+    }
+
     const nextChannel: BuiltinChannelOverride = {};
     if (input.userSelectable !== baseline.userSelectable) {
       nextChannel.userSelectable = input.userSelectable;
@@ -384,9 +447,11 @@ export class AiAgentsStore {
     }
     const override = this.#data.builtinDefaultModelIds[agent.id];
     const systemPromptOverride = this.#data.builtinSystemPromptOverrides[agent.id];
+    const descriptionOverride = this.#data.builtinDescriptionOverrides[agent.id];
     const channelOverride = this.#data.builtinChannelOverrides[agent.id];
     return {
       ...agent,
+      description: descriptionOverride === undefined ? agent.description : descriptionOverride,
       systemPrompt: systemPromptOverride ?? agent.systemPrompt,
       defaultModelId: override === undefined ? null : override,
       userSelectable: channelOverride?.userSelectable ?? agent.userSelectable,
@@ -401,6 +466,7 @@ export class AiAgentsStore {
         agents: [],
         builtinDefaultModelIds: {},
         builtinSystemPromptOverrides: {},
+        builtinDescriptionOverrides: {},
         builtinChannelOverrides: {},
       };
     }
@@ -418,6 +484,9 @@ export class AiAgentsStore {
         builtinSystemPromptOverrides: parseBuiltinSystemPromptOverrides(
           parsed.builtinSystemPromptOverrides,
         ),
+        builtinDescriptionOverrides: parseBuiltinDescriptionOverrides(
+          parsed.builtinDescriptionOverrides,
+        ),
         builtinChannelOverrides: parseBuiltinChannelOverrides(parsed.builtinChannelOverrides),
       };
     } catch {
@@ -426,6 +495,7 @@ export class AiAgentsStore {
         agents: [],
         builtinDefaultModelIds: {},
         builtinSystemPromptOverrides: {},
+        builtinDescriptionOverrides: {},
         builtinChannelOverrides: {},
       };
     }

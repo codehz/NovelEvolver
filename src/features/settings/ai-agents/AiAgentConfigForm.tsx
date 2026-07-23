@@ -36,6 +36,7 @@ export const AI_AGENT_CONFIG_FORM_ID = "settings-ai-agent-form";
 /** Prefill values when creating a custom agent (e.g. duplicate). */
 export type AiAgentConfigFormSeed = {
   name: string;
+  description: string;
   systemPrompt: string;
   defaultModelId: string | null;
   availableToolNames: string[];
@@ -45,12 +46,16 @@ export type AiAgentConfigFormSeed = {
 
 type FormState = {
   name: string;
+  description: string;
   systemPrompt: string;
   defaultModelId: string;
   availableToolNames: string[];
   userSelectable: boolean;
   subagentEligible: boolean;
 };
+
+/** Keep in sync with `AI_AGENT_DESCRIPTION_MAX_LENGTH` in electron/settings. */
+const DESCRIPTION_MAX_LENGTH = 120;
 
 type AiAgentConfigFormProps = {
   tools: AiAgentTool[];
@@ -75,6 +80,7 @@ function toFormState(
   if (initial != null) {
     return {
       name: initial.name,
+      description: initial.description,
       systemPrompt: initial.systemPrompt,
       defaultModelId: initial.defaultModelId ?? "",
       availableToolNames: [...initial.availableToolNames],
@@ -85,6 +91,7 @@ function toFormState(
   if (seed != null) {
     return {
       name: seed.name,
+      description: seed.description,
       systemPrompt: seed.systemPrompt,
       defaultModelId: seed.defaultModelId ?? "",
       availableToolNames: [...seed.availableToolNames],
@@ -94,6 +101,7 @@ function toFormState(
   }
   return {
     name: "",
+    description: "",
     systemPrompt: "",
     defaultModelId: "",
     availableToolNames: [],
@@ -114,6 +122,7 @@ function sameToolNames(a: readonly string[], b: readonly string[]): boolean {
 
 function isAgentFormDirty(form: FormState, baseline: FormState, identityLocked: boolean): boolean {
   if (
+    form.description !== baseline.description ||
     form.systemPrompt !== baseline.systemPrompt ||
     form.defaultModelId !== baseline.defaultModelId ||
     form.userSelectable !== baseline.userSelectable ||
@@ -175,6 +184,7 @@ export function AiAgentConfigForm({
     return {
       ...(isEdit ? { id: initial.id } : {}),
       name,
+      description: form.description.trim(),
       systemPrompt,
       defaultModelId: form.defaultModelId === "" ? null : form.defaultModelId,
       availableToolNames: form.availableToolNames,
@@ -214,6 +224,7 @@ export function AiAgentConfigForm({
     if (readOnly) return;
     if (isBuiltin) {
       const allowed: (keyof FormState)[] = [
+        "description",
         "systemPrompt",
         "defaultModelId",
         "userSelectable",
@@ -259,6 +270,47 @@ export function AiAgentConfigForm({
               <Field.Error className={settingsFieldErrorClass} match="valueMissing">
                 请填写名称。
               </Field.Error>
+            )}
+          </div>
+        </Field.Root>
+
+        <Field.Root
+          className={settingsFieldRootClass}
+          disabled={busy || readOnly}
+          name="description"
+        >
+          <Field.Label className={settingsFieldLabelClass}>简介</Field.Label>
+          <div className={settingsFieldControlCellClass}>
+            <Field.Control
+              className={settingsInputClass}
+              maxLength={DESCRIPTION_MAX_LENGTH}
+              placeholder={readOnly ? undefined : "一句话说明适用场景…"}
+              readOnly={readOnly}
+              value={form.description}
+              onValueChange={(next) => {
+                update("description", next);
+              }}
+            />
+            {readOnly ? null : (
+              <div className="flex items-center justify-between gap-2">
+                <p className="text-2xs text-app-muted">
+                  可选；显示在 Agent 选择器，并注入父会话的可用子代理目录。
+                  {form.description.length > 0
+                    ? ` ${form.description.length}/${DESCRIPTION_MAX_LENGTH}`
+                    : null}
+                </p>
+                {isBuiltin && initial.defaultDescription != null ? (
+                  <Button
+                    disabled={busy || form.description === initial.defaultDescription}
+                    variant="text"
+                    onClick={() => {
+                      update("description", initial.defaultDescription!);
+                    }}
+                  >
+                    恢复默认
+                  </Button>
+                ) : null}
+              </div>
             )}
           </div>
         </Field.Root>

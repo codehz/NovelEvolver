@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, test } from "bun:test";
-import { mkdtempSync, readFileSync, rmSync } from "node:fs";
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
@@ -37,6 +37,7 @@ function toWrite(
   return {
     id: agent.id,
     name: agent.name,
+    description: agent.description,
     systemPrompt,
     defaultModelId: agent.defaultModelId,
     availableToolNames: agent.availableToolNames,
@@ -103,6 +104,7 @@ describe("AiAgentsStore builtin system prompt overrides", () => {
     const { filePath, store } = createStore();
     const snapshot = store.upsert({
       name: "自定义写手",
+      description: "按风格写作的自定义助手",
       systemPrompt: "按指定风格写作。",
       defaultModelId: null,
       availableToolNames: ["read_document"],
@@ -112,7 +114,109 @@ describe("AiAgentsStore builtin system prompt overrides", () => {
     const custom = snapshot.agents.find((agent) => !agent.builtin)!;
 
     expect(custom.defaultSystemPrompt).toBeNull();
+    expect(custom.defaultDescription).toBeNull();
+    expect(custom.description).toBe("按风格写作的自定义助手");
     expect(createStore(filePath).store.findRuntimeConfig(custom.id)).toEqual(custom);
+  });
+});
+
+describe("AiAgentsStore description", () => {
+  test("returns code defaults for builtin agent descriptions", () => {
+    const { store } = createStore();
+    const writing = store.findRuntimeConfig(BUILTIN_AI_AGENT_ID)!;
+    const reviewer = store.findRuntimeConfig(BUILTIN_CONSISTENCY_REVIEWER_ID)!;
+
+    expect(writing.defaultDescription).not.toBeNull();
+    expect(writing.description).toBe(writing.defaultDescription!);
+    expect(writing.description.length).toBeGreaterThan(0);
+    expect(reviewer.description).toBe(reviewer.defaultDescription!);
+  });
+
+  test("persists builtin description override and reloads", () => {
+    const { filePath, store } = createStore();
+    const reviewer = store.findRuntimeConfig(BUILTIN_CONSISTENCY_REVIEWER_ID)!;
+
+    store.upsert({
+      ...toWrite(reviewer),
+      description: "  自定义简介文案。  ",
+    });
+
+    expect(store.getRuntimeConfig(reviewer.id).description).toBe("自定义简介文案。");
+    expect(store.findRuntimeConfig(reviewer.id)?.defaultDescription).toBe(
+      reviewer.defaultDescription,
+    );
+
+    const reloaded = createStore(filePath).store;
+    expect(reloaded.getRuntimeConfig(reviewer.id).description).toBe("自定义简介文案。");
+  });
+
+  test("allows clearing builtin description to empty string", () => {
+    const { filePath, store } = createStore();
+    const reviewer = store.findRuntimeConfig(BUILTIN_CONSISTENCY_REVIEWER_ID)!;
+
+    store.upsert({
+      ...toWrite(reviewer),
+      description: "",
+    });
+
+    expect(store.getRuntimeConfig(reviewer.id).description).toBe("");
+    const reloaded = createStore(filePath).store.findRuntimeConfig(reviewer.id)!;
+    expect(reloaded.description).toBe("");
+  });
+
+  test("removes description override when saving the code default", () => {
+    const { filePath, store } = createStore();
+    const reviewer = store.findRuntimeConfig(BUILTIN_CONSISTENCY_REVIEWER_ID)!;
+
+    store.upsert({
+      ...toWrite(reviewer),
+      description: "临时简介",
+    });
+    store.upsert({
+      ...toWrite(reviewer),
+      description: reviewer.defaultDescription!,
+    });
+
+    expect(store.getRuntimeConfig(reviewer.id).description).toBe(reviewer.defaultDescription!);
+    const persisted = JSON.parse(readFileSync(filePath, "utf8")) as {
+      builtinDescriptionOverrides: Record<string, string>;
+    };
+    expect(persisted.builtinDescriptionOverrides[reviewer.id]).toBeUndefined();
+  });
+
+  test("loads legacy custom agents without description as empty string", () => {
+    const directory = mkdtempSync(join(tmpdir(), "novelevolver-ai-agents-legacy-"));
+    temporaryDirectories.push(directory);
+    const filePath = join(directory, "ai-agents.json");
+    writeFileSync(
+      filePath,
+      `${JSON.stringify(
+        {
+          version: 2,
+          agents: [
+            {
+              id: "legacy-agent",
+              name: "旧写手",
+              systemPrompt: "写东西",
+              defaultModelId: null,
+              availableToolNames: ["read_document"],
+              userSelectable: true,
+              subagentEligible: true,
+            },
+          ],
+          builtinDefaultModelIds: {},
+          builtinSystemPromptOverrides: {},
+          builtinChannelOverrides: {},
+        },
+        null,
+        2,
+      )}\n`,
+      "utf8",
+    );
+
+    const agent = createStore(filePath).store.findRuntimeConfig("legacy-agent")!;
+    expect(agent.description).toBe("");
+    expect(agent.defaultDescription).toBeNull();
   });
 });
 

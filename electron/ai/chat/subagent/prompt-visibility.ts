@@ -19,6 +19,8 @@ export type SubagentCatalogEntry = {
   id: string;
   name: string;
   capability: SubagentCapability;
+  /** Optional short blurb shown after the capability label. */
+  description: string;
 };
 
 export type SubagentCatalogAgent = {
@@ -26,6 +28,7 @@ export type SubagentCatalogAgent = {
   name: string;
   availableToolNames: readonly string[];
   subagentEligible: boolean;
+  description?: string;
 };
 
 /** Builtin specialist ids preferred at the top of the catalog. */
@@ -74,6 +77,7 @@ export function listSubagentCatalog(
       id: agent.id,
       name: agent.name,
       capability: summarizeSubagentCapability(agent.availableToolNames),
+      description: agent.description?.trim() ?? "",
     });
   }
 
@@ -106,7 +110,8 @@ export function formatAvailableSubagentsSection(entries: readonly SubagentCatalo
     "- 调用 `run_subagent` 时，`agent_id` 必须从下列列表选取，不要臆造 id。",
   ];
   for (const entry of entries) {
-    lines.push(`- \`${entry.id}\`（${entry.name}，${entry.capability}）`);
+    const base = `\`${entry.id}\`（${entry.name}，${entry.capability}）`;
+    lines.push(entry.description === "" ? `- ${base}` : `- ${base}— ${entry.description}`);
   }
   return lines.join("\n");
 }

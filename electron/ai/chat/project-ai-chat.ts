@@ -280,6 +280,7 @@ export class ProjectAiChatController {
       .map((agent) => ({
         id: agent.id,
         name: agent.name,
+        description: agent.description,
         defaultModelId: agent.defaultModelId,
         toolCount: agent.availableToolNames.length,
         builtin: agent.builtin,

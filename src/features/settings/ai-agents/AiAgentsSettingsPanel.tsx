@@ -105,6 +105,7 @@ function seedFromAgent(
 ): AiAgentConfigFormSeed {
   return {
     name: uniqueCopyName(agent.name, agents),
+    description: agent.description,
     systemPrompt: agent.systemPrompt,
     defaultModelId: agent.defaultModelId,
     availableToolNames: [...agent.availableToolNames],

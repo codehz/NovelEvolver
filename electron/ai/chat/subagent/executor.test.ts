@@ -38,6 +38,8 @@ function createMockBackend(message: string): AiBackendSession {
 const reviewer: AiAgentRuntimeConfig = {
   id: "builtin-consistency-reviewer",
   name: "一致性审查",
+  description: "对照设定与正文做只读一致性审查",
+  defaultDescription: "对照设定与正文做只读一致性审查",
   systemPrompt: "你是审查员",
   defaultSystemPrompt: "你是审查员",
   defaultModelId: null,

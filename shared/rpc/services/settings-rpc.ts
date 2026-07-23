@@ -165,6 +165,13 @@ export type AiAgentTool = {
 export type AiAgentConfigPublic = {
   id: string;
   name: string;
+  /** Short optional blurb for selectors / subagent catalog. Empty when unset. */
+  description: string;
+  /**
+   * Code-defined baseline description for builtin agents;
+   * `null` for custom agents.
+   */
+  defaultDescription: string | null;
   systemPrompt: string;
   /** Code-defined baseline for builtin agents; `null` for custom agents. */
   defaultSystemPrompt: string | null;
@@ -179,13 +186,14 @@ export type AiAgentConfigPublic = {
 
 /**
  * Create/update payload for `upsertAiAgent`.
- * When `id` is a builtin agent id, only `systemPrompt`, `defaultModelId`,
- * `userSelectable`, and `subagentEligible` are applied. Name /
- * availableToolNames remain code-owned for builtins.
+ * When `id` is a builtin agent id, only `description`, `systemPrompt`,
+ * `defaultModelId`, `userSelectable`, and `subagentEligible` are applied.
+ * Name / availableToolNames remain code-owned for builtins.
  */
 export type AiAgentConfigWrite = {
   id?: string;
   name: string;
+  description: string;
   systemPrompt: string;
   defaultModelId: string | null;
   availableToolNames: string[];
