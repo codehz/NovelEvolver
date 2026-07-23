@@ -75,6 +75,32 @@ export function TabBar<T extends TabItem>({
     });
   }, [activeId, tabs]);
 
+  // 原生非 passive wheel：纵向滚轮映射为横向滚动（React 合成 wheel 在 Electron 中可能无法 preventDefault）。
+  useEffect(() => {
+    const list = listRef.current;
+    if (!list) {
+      return;
+    }
+
+    const onWheel = (event: WheelEvent) => {
+      if (list.scrollWidth <= list.clientWidth) {
+        return;
+      }
+      // Trackpad 横向手势交给原生；纵向滚轮映射为横向滚动。
+      if (Math.abs(event.deltaY) <= Math.abs(event.deltaX)) {
+        return;
+      }
+
+      event.preventDefault();
+      list.scrollLeft += event.deltaY;
+    };
+
+    list.addEventListener("wheel", onWheel, { passive: false });
+    return () => {
+      list.removeEventListener("wheel", onWheel);
+    };
+  }, [tabs.length]);
+
   if (tabs.length === 0) {
     return null;
   }
