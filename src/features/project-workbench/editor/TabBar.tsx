@@ -56,11 +56,21 @@ export function TabBar<T extends TabItem>({
       return;
     }
 
-    const tabCenter = tab.offsetLeft + tab.offsetWidth / 2;
-    const targetLeft = tabCenter - list.clientWidth / 2;
+    const listRect = list.getBoundingClientRect();
+    const tabRect = tab.getBoundingClientRect();
+    const current = list.scrollLeft;
+    let next = current;
+    if (tabRect.left < listRect.left) {
+      next = current + (tabRect.left - listRect.left);
+    } else if (tabRect.right > listRect.right) {
+      next = current + (tabRect.right - listRect.right);
+    } else {
+      return;
+    }
+
     const maxLeft = Math.max(0, list.scrollWidth - list.clientWidth);
     list.scrollTo({
-      left: Math.min(Math.max(0, targetLeft), maxLeft),
+      left: Math.min(Math.max(0, next), maxLeft),
       behavior: "smooth",
     });
   }, [activeId, tabs]);
