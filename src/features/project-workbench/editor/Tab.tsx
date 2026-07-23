@@ -1,4 +1,4 @@
-import type { KeyboardEvent, ReactNode, Ref } from "react";
+import type { KeyboardEvent, MouseEvent, ReactNode, Ref } from "react";
 
 import { cn } from "#app/shared/lib/ui/cn";
 import { Button, SlotText } from "#app/shared/ui";
@@ -44,6 +44,22 @@ export function Tab({
     }
   };
 
+  const handleMouseDown = (event: MouseEvent<HTMLDivElement>) => {
+    // 阻止中键默认自动滚动，确保 auxclick 可正常触发关闭。
+    if (event.button === 1) {
+      event.preventDefault();
+    }
+  };
+
+  const handleAuxClick = (event: MouseEvent<HTMLDivElement>) => {
+    if (event.button !== 1 || !onClose) {
+      return;
+    }
+    event.preventDefault();
+    event.stopPropagation();
+    onClose();
+  };
+
   return (
     <div
       ref={ref}
@@ -52,6 +68,8 @@ export function Tab({
       aria-selected={active}
       onClick={onActivate}
       onDoubleClick={onPin}
+      onMouseDown={handleMouseDown}
+      onAuxClick={handleAuxClick}
       onKeyDown={handleKeyDown}
       tabIndex={0}
     >
