@@ -108,10 +108,19 @@ export function formatAvailableSubagentsSection(entries: readonly SubagentCatalo
   const lines = [
     AVAILABLE_SECTION_HEADING,
     "- 调用 `run_subagent` 时，`agent_id` 必须从下列列表选取，不要臆造 id。",
+    "- 按各条目简介匹配任务；简介可多行，缩进内容同属该 Agent。",
   ];
   for (const entry of entries) {
-    const base = `\`${entry.id}\`（${entry.name}，${entry.capability}）`;
-    lines.push(entry.description === "" ? `- ${base}` : `- ${base}— ${entry.description}`);
+    lines.push(`- \`${entry.id}\`（${entry.name}，${entry.capability}）`);
+    if (entry.description === "") {
+      continue;
+    }
+    for (const bodyLine of entry.description.split("\n")) {
+      const trimmed = bodyLine.trim();
+      if (trimmed !== "") {
+        lines.push(`  ${trimmed}`);
+      }
+    }
   }
   return lines.join("\n");
 }

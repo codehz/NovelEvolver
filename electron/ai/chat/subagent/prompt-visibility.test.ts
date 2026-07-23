@@ -135,18 +135,19 @@ describe("formatAvailableSubagentsSection", () => {
     expect(text).not.toContain("—");
   });
 
-  test("appends description when present", () => {
+  test("appends multi-line description as indented body", () => {
     const text = formatAvailableSubagentsSection([
       {
         id: "builtin-consistency-reviewer",
         name: "一致性审查",
         capability: "只读",
-        description: "对照设定与正文做只读一致性审查",
+        description: "对照设定与正文做只读一致性审查。\n可扫描人设与时间线；不修改正文。",
       },
     ]);
-    expect(text).toContain(
-      "`builtin-consistency-reviewer`（一致性审查，只读）— 对照设定与正文做只读一致性审查",
-    );
+    expect(text).toContain("- `builtin-consistency-reviewer`（一致性审查，只读）");
+    expect(text).toContain("  对照设定与正文做只读一致性审查。");
+    expect(text).toContain("  可扫描人设与时间线；不修改正文。");
+    expect(text).not.toContain("—");
   });
 });
 
@@ -173,7 +174,8 @@ describe("composeSystemPromptWithSubagents", () => {
     );
     expect(result.startsWith(base)).toBe(true);
     expect(result).toContain("## 可用子代理");
-    expect(result).toContain("`a`（A，只读）— 短简介");
+    expect(result).toContain("- `a`（A，只读）");
+    expect(result).toContain("  短简介");
     expect(result).toMatch(/\n\n## 可用子代理/);
   });
 

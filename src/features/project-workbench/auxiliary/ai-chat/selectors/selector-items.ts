@@ -40,18 +40,43 @@ export function toModelSelectorItems(
   });
 }
 
+/**
+ * First non-empty description line for selector rows, with light Markdown stripped.
+ * Full multi-line text is reserved for settings / subagent catalog injection.
+ */
+export function agentDescriptionSelectorDetail(description: string): string {
+  const firstLine =
+    description
+      .split(/\r?\n/)
+      .map((line) => line.trim())
+      .find((line) => line !== "") ?? "";
+  if (firstLine === "") {
+    return "";
+  }
+  return firstLine
+    .replace(/\[([^\]]+)\]\([^)]+\)/g, "$1")
+    .replace(/`([^`]+)`/g, "$1")
+    .replace(/\*\*([^*]+)\*\*/g, "$1")
+    .replace(/__([^_]+)__/g, "$1")
+    .replace(/\*([^*]+)\*/g, "$1")
+    .replace(/_([^_]+)_/g, "$1")
+    .replace(/~~([^~]+)~~/g, "$1")
+    .replace(/^#{1,6}\s+/, "")
+    .trim();
+}
+
 export function toAgentSelectorItems(
   agents: readonly AiChatSelectableAgent[],
   models: readonly AiChatSelectableModel[],
   activeAgentId: string,
 ): AiChatSelectorItem[] {
   return agents.map((agent) => {
-    const description = agent.description.trim();
-    if (description !== "") {
+    const detailFromDescription = agentDescriptionSelectorDetail(agent.description);
+    if (detailFromDescription !== "") {
       return {
         id: agent.id,
         label: agent.name,
-        detail: description,
+        detail: detailFromDescription,
         emphasized: agent.id === activeAgentId,
       };
     }

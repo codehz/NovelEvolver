@@ -31,8 +31,8 @@ export const BUILTIN_AI_AGENT_SYSTEM_PROMPT = DEFAULT_AI_SYSTEM_PROMPT;
 
 export type AiAgentRuntimeConfig = AiAgentConfigPublic;
 
-/** Max chars for agent description (settings UI + store normalize). */
-export const AI_AGENT_DESCRIPTION_MAX_LENGTH = 120;
+/** Max chars for agent description (settings UI + store normalize; multi-line OK). */
+export const AI_AGENT_DESCRIPTION_MAX_LENGTH = 500;
 
 type StoredAgentRecord = Omit<
   AiAgentConfigPublic,
@@ -96,13 +96,35 @@ const CHAPTER_WRITER_TOOL_NAMES = [
   "create_folder",
 ] as const;
 
-const BUILTIN_WRITING_ASSISTANT_DESCRIPTION = "主对话写作助手，可使用完整工具并委派子代理";
-const BUILTIN_CONSISTENCY_REVIEWER_DESCRIPTION = "对照设定与正文做只读一致性审查";
-const BUILTIN_CHAPTER_WRITER_DESCRIPTION =
-  "可创建新章节，或按既有文风续写/改写并直接写回手稿（无需父代理先建文件）";
+const BUILTIN_WRITING_ASSISTANT_DESCRIPTION = ["主对话写作助手，可使用完整工具并委派子代理。"].join(
+  "\n",
+);
 
+const BUILTIN_CONSISTENCY_REVIEWER_DESCRIPTION = [
+  "对照设定与正文做只读一致性审查。",
+  "可扫描人设、世界观、时间线与事实冲突；不修改正文。",
+].join("\n");
+
+const BUILTIN_CHAPTER_WRITER_DESCRIPTION = [
+  "可创建新章节，或按既有文风续写/改写并直接写回手稿。",
+  "新建时在 task 写明父节点与标题；无需父代理先 create_document。",
+  "focus 可传父 folder 或既有章节；勿塞空 chapter 浪费预算。",
+].join("\n");
+
+/** Normalize multi-line description: LF newlines, per-line trim, cap length. */
 function normalizeDescription(value: string): string {
-  return value.trim().slice(0, AI_AGENT_DESCRIPTION_MAX_LENGTH);
+  const lines = value
+    .replace(/\r\n/g, "\n")
+    .replace(/\r/g, "\n")
+    .split("\n")
+    .map((line) => line.trim());
+  while (lines.length > 0 && lines[0] === "") {
+    lines.shift();
+  }
+  while (lines.length > 0 && lines[lines.length - 1] === "") {
+    lines.pop();
+  }
+  return lines.join("\n").slice(0, AI_AGENT_DESCRIPTION_MAX_LENGTH);
 }
 
 function builtinWritingAssistant(): AiAgentConfigPublic {

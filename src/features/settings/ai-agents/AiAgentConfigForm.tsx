@@ -55,7 +55,7 @@ type FormState = {
 };
 
 /** Keep in sync with `AI_AGENT_DESCRIPTION_MAX_LENGTH` in electron/settings. */
-const DESCRIPTION_MAX_LENGTH = 120;
+const DESCRIPTION_MAX_LENGTH = 500;
 
 type AiAgentConfigFormProps = {
   tools: AiAgentTool[];
@@ -282,19 +282,30 @@ export function AiAgentConfigForm({
           <Field.Label className={settingsFieldLabelClass}>简介</Field.Label>
           <div className={settingsFieldControlCellClass}>
             <Field.Control
-              className={settingsInputClass}
-              maxLength={DESCRIPTION_MAX_LENGTH}
-              placeholder={readOnly ? undefined : "一句话说明适用场景…"}
-              readOnly={readOnly}
+              className={settingsFieldHiddenControlClass}
+              tabIndex={-1}
               value={form.description}
               onValueChange={(next) => {
-                update("description", next);
+                update("description", next.slice(0, DESCRIPTION_MAX_LENGTH));
+              }}
+            />
+            <SettingsPlainTextEditor
+              aria-label="简介"
+              disabled={busy || readOnly}
+              maxHeight="8rem"
+              minHeight="3.5rem"
+              placeholder={
+                readOnly ? undefined : "首行用于选择器；完整多行简介会注入可用子代理目录…"
+              }
+              value={form.description}
+              onValueChange={(next) => {
+                update("description", next.slice(0, DESCRIPTION_MAX_LENGTH));
               }}
             />
             {readOnly ? null : (
               <div className="flex items-center justify-between gap-2">
                 <p className="text-2xs text-app-muted">
-                  可选；显示在 Agent 选择器，并注入父会话的可用子代理目录。
+                  可选多行；选择器只显示首行（去 Markdown），全文写入父会话子代理目录。
                   {form.description.length > 0
                     ? ` ${form.description.length}/${DESCRIPTION_MAX_LENGTH}`
                     : null}

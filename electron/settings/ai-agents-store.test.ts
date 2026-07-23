@@ -184,6 +184,24 @@ describe("AiAgentsStore description", () => {
     expect(persisted.builtinDescriptionOverrides[reviewer.id]).toBeUndefined();
   });
 
+  test("persists multi-line custom description", () => {
+    const { filePath, store } = createStore();
+    const snapshot = store.upsert({
+      name: "多行写手",
+      description: "首行\n第二行细节\n  \n第三行  ",
+      systemPrompt: "写",
+      defaultModelId: null,
+      availableToolNames: ["read_document"],
+      userSelectable: true,
+      subagentEligible: true,
+    });
+    const custom = snapshot.agents.find((agent) => agent.name === "多行写手")!;
+    expect(custom.description).toBe("首行\n第二行细节\n\n第三行");
+    expect(createStore(filePath).store.findRuntimeConfig(custom.id)?.description).toBe(
+      "首行\n第二行细节\n\n第三行",
+    );
+  });
+
   test("loads legacy custom agents without description as empty string", () => {
     const directory = mkdtempSync(join(tmpdir(), "novelevolver-ai-agents-legacy-"));
     temporaryDirectories.push(directory);
