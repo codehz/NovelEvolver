@@ -98,7 +98,8 @@ const CHAPTER_WRITER_TOOL_NAMES = [
 
 const BUILTIN_WRITING_ASSISTANT_DESCRIPTION = "主对话写作助手，可使用完整工具并委派子代理";
 const BUILTIN_CONSISTENCY_REVIEWER_DESCRIPTION = "对照设定与正文做只读一致性审查";
-const BUILTIN_CHAPTER_WRITER_DESCRIPTION = "按既有文风续写或改写章节并写回手稿";
+const BUILTIN_CHAPTER_WRITER_DESCRIPTION =
+  "可创建新章节，或按既有文风续写/改写并直接写回手稿（无需父代理先建文件）";
 
 function normalizeDescription(value: string): string {
   return value.trim().slice(0, AI_AGENT_DESCRIPTION_MAX_LENGTH);
