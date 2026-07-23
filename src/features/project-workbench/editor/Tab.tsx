@@ -1,4 +1,4 @@
-import type { KeyboardEvent, ReactNode } from "react";
+import type { KeyboardEvent, ReactNode, Ref } from "react";
 
 import { cn } from "#app/shared/lib/ui/cn";
 import { Button, SlotText } from "#app/shared/ui";
@@ -24,6 +24,7 @@ type TabProps = {
   onClose?: () => void;
   onPin?: () => void;
   icon?: ReactNode;
+  ref?: Ref<HTMLDivElement>;
 };
 
 export function Tab({
@@ -34,6 +35,7 @@ export function Tab({
   onClose,
   onPin,
   icon,
+  ref,
 }: TabProps) {
   const handleKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
     if (event.key === "Enter" || event.key === " ") {
@@ -44,6 +46,7 @@ export function Tab({
 
   return (
     <div
+      ref={ref}
       className={cn(editorTabClass, active ? editorTabActiveClass : editorTabInactiveClass)}
       role="tab"
       aria-selected={active}
