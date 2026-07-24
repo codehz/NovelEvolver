@@ -3,6 +3,7 @@ name: package
 on:
   push:
     branches: [main]
+    tags: ["v*"]
   pull_request:
   workflow_dispatch:
 
@@ -113,3 +114,26 @@ jobs:
             !release/*.blockmap
           if-no-files-found: error
           retention-days: 14
+
+  # Tag push (v*): publish a GitHub Release with all platform packages attached.
+  release:
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: [package]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Download package artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+          pattern: NovelEvolver-*
+          merge-multiple: true
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: artifacts/*
+          generate_release_notes: true
+          # Treat semver pre-release tags (e.g. v1.0.0-beta.1) as prereleases.
+          prerelease: ${{ contains(github.ref_name, '-') }}
