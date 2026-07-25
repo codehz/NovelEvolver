@@ -36,6 +36,7 @@ import {
 import {
   buildResourceSnapshotFromTree,
   manuscriptTreeFromOutline,
+  sortResourceChildrenByName,
 } from "../trees/worktree-tree-bridge";
 import { currentChangesOnlySnapshot } from "./changes-snapshot";
 import {
@@ -629,6 +630,8 @@ function ensureResourceAncestorsFromSource(
   if (!parent.childIds.includes(parentId)) {
     parent.childIds.splice(clampChildIndex(sourceEntry.index, parent.childIds.length), 0, parentId);
   }
+  // Resource children are ordered by type (folder first) + name, not source index.
+  sortResourceChildrenByName(state.resourceTree, sourceEntry.parentId);
   rebuildCurrentResourcesFromTree(state);
 }
 
@@ -746,6 +749,8 @@ export function restoreEntityFromCommit(
         target.entityId,
       );
     }
+    // Resource children are ordered by type (folder first) + name, not source index.
+    sortResourceChildrenByName(state.resourceTree, sourceEntry.parentId);
     rebuildCurrentResourcesFromTree(state, new Map([[target.entityId, sourceEntry.content]]));
   } else if (existingNode.type !== "file") {
     throw new Error("当前节点不是资源文件，无法恢复正文。");

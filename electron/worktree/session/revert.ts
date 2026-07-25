@@ -167,6 +167,8 @@ export function restoreResourceSubtreeFromBase(state: WorktreeSessionState, id: 
   if (!parent.childIds.includes(id)) {
     parent.childIds.splice(clampChildIndex(baseIndex, parent.childIds.length), 0, id);
   }
+  // Resource children are ordered by type (folder first) + name, not base index.
+  sortResourceChildrenByName(state.resourceTree, parentId);
   rebuildCurrentResourcesFromTree(state, contentById);
 }
 
@@ -209,6 +211,8 @@ export function moveResourceToBase(state: WorktreeSessionState, id: string): voi
   const targetParent = requireResourceFolder(state, entry.parentId);
   targetParent.childIds.splice(clampChildIndex(entry.index, targetParent.childIds.length), 0, id);
   node.parentId = targetParent.id;
+  sortResourceChildrenByName(state.resourceTree, sourceParent.id);
+  sortResourceChildrenByName(state.resourceTree, targetParent.id);
   rebuildCurrentResourcesFromTree(state);
 }
 
