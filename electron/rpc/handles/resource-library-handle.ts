@@ -1,7 +1,11 @@
 import { RpcTarget } from "capnweb";
 
-import type { WorktreeNodeIdResult } from "#shared/rpc/worktree/index";
-import type { ResourceLibraryHandle } from "#shared/rpc/worktree/index";
+import type {
+  ResourceImportEntry,
+  ResourceImportResult,
+  ResourceLibraryHandle,
+  WorktreeNodeIdResult,
+} from "#shared/rpc/worktree/index";
 
 import type { WorktreeSession } from "../../worktree/session";
 
@@ -19,6 +23,13 @@ export class ResourceLibraryHandleImpl extends RpcTarget implements ResourceLibr
 
   createFolder(parentId: string, name: string): WorktreeNodeIdResult {
     return this.#session.createResourceFolder(parentId, name);
+  }
+
+  importEntries(
+    targetParentId: string,
+    entries: readonly ResourceImportEntry[],
+  ): ResourceImportResult {
+    return this.#session.importResourceEntries(targetParentId, entries);
   }
 
   readFile(id: string): string {

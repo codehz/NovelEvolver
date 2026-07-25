@@ -1,21 +1,19 @@
 import type { Repository } from "nano-git/repository/core";
 
 import type {
+  ChangeTextComparison,
+  ChangeTextComparisonTarget,
+  ChangesEvent,
+  ChangesSnapshot,
   CommitChangeTextComparison,
   CommitChangesSnapshot,
   CommitSummary,
   HistoryEntry,
   HistoryEntryContent,
   HistoryTarget,
-} from "#shared/rpc/worktree/index";
-import type { WorktreeNodeIdResult } from "#shared/rpc/worktree/index";
-import type {
-  ChangeTextComparison,
-  ChangeTextComparisonTarget,
-  ChangesEvent,
-  ChangesSnapshot,
-} from "#shared/rpc/worktree/index";
-import type {
+  ResourceImportEntry,
+  ResourceImportResult,
+  WorktreeNodeIdResult,
   WorktreeReplaceQuery,
   WorktreeReplaceResult,
   WorktreeSearchQuery,
@@ -213,6 +211,13 @@ export class WorktreeSession {
 
   createResourceFolder(parentId: string, name: string): WorktreeNodeIdResult {
     return resourceOps.createResourceFolder(this.#state, parentId, name);
+  }
+
+  importResourceEntries(
+    targetParentId: string,
+    entries: readonly ResourceImportEntry[],
+  ): ResourceImportResult {
+    return resourceOps.importResourceEntries(this.#state, targetParentId, entries);
   }
 
   renameResourceNode(id: string, name: string): void {

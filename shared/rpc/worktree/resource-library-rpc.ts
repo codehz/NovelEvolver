@@ -2,6 +2,41 @@ import type { RpcTarget } from "capnweb";
 
 import type { WorktreeNodeIdResult } from "./manuscript-rpc";
 
+/** Max UTF-8 byte size for a single imported resource file (64 KiB exclusive). */
+export const RESOURCE_IMPORT_MAX_FILE_BYTES = 64 * 1024;
+
+/** One filesystem entry relative to the import target parent folder. */
+export type ResourceImportEntry =
+  | { kind: "folder"; relativePath: string }
+  | { kind: "file"; relativePath: string; content: string };
+
+export type ResourceImportSkipReason =
+  | "name-conflict"
+  | "type-conflict"
+  | "invalid-name"
+  | "too-large"
+  | "empty-path"
+  | "invalid-utf8"
+  | "unreadable"
+  | "missing-parent";
+
+export type ResourceImportSkip = {
+  relativePath: string;
+  reason: ResourceImportSkipReason;
+  message?: string;
+};
+
+export type ResourceImportCreated = {
+  nodeId: string;
+  relativePath: string;
+  kind: "file" | "folder";
+};
+
+export type ResourceImportResult = {
+  created: ResourceImportCreated[];
+  skipped: ResourceImportSkip[];
+};
+
 /**
  * File operations under the branch worktree's `resources/` directory.
  *
@@ -15,6 +50,17 @@ export interface ResourceLibraryHandle extends RpcTarget {
 
   /** Create a folder under `parentId`. */
   createFolder(parentId: string, name: string): WorktreeNodeIdResult;
+
+  /**
+   * Batch-import folders and UTF-8 text files under `targetParentId`.
+   *
+   * `relativePath` is relative to the target parent (no leading/trailing `/`).
+   * Same-name folders merge; same-name files are skipped. Single journal group on success.
+   */
+  importEntries(
+    targetParentId: string,
+    entries: readonly ResourceImportEntry[],
+  ): ResourceImportResult;
 
   /** Read a file as UTF-8 text. */
   readFile(id: string): string;

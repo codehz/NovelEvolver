@@ -1,5 +1,14 @@
-import type { WorktreeNodeIdResult } from "#shared/rpc/worktree/index";
+import { resourceBaseName, resourceParentPath } from "#shared/resource-library-path";
+import type {
+  ResourceImportCreated,
+  ResourceImportEntry,
+  ResourceImportResult,
+  ResourceImportSkip,
+  WorktreeNodeIdResult,
+} from "#shared/rpc/worktree/index";
+import { RESOURCE_IMPORT_MAX_FILE_BYTES } from "#shared/rpc/worktree/index";
 
+import type { JournalOperationCapture } from "../journal/journal-types";
 import { RESOURCE_ROOT_ID } from "../resources/index";
 import { assertResourceLibraryFilePath, assertResourceLibraryListPath } from "../resources/paths";
 import {
@@ -305,4 +314,195 @@ export function writeResourceFile(state: WorktreeSessionState, id: string, conte
       },
     ],
   });
+}
+
+function findSiblingByName(
+  state: WorktreeSessionState,
+  parentId: string,
+  name: string,
+): { id: string; type: "file" | "folder" } | null {
+  const parent = requireResourceFolder(state, parentId);
+  for (const childId of parent.childIds) {
+    const child = state.resourceTree.nodes[childId];
+    if (child?.name === name) {
+      return { id: childId, type: child.type };
+    }
+  }
+  return null;
+}
+
+function tryNormalizeImportName(
+  relativePath: string,
+): { name: string } | { skip: ResourceImportSkip } {
+  if (relativePath === "") {
+    return {
+      skip: {
+        relativePath,
+        reason: "empty-path",
+        message: "路径不能为空",
+      },
+    };
+  }
+  try {
+    const name = normalizeResourceNodeName(resourceBaseName(relativePath));
+    return { name };
+  } catch (error) {
+    return {
+      skip: {
+        relativePath,
+        reason: "invalid-name",
+        message: error instanceof Error ? error.message : "名称无效",
+      },
+    };
+  }
+}
+
+/**
+ * Batch-import folders and UTF-8 text files under `targetParentId`.
+ * Folder name conflicts merge into the existing folder; file name conflicts are skipped.
+ * Emits a single journal revision when any node is created.
+ */
+export function importResourceEntries(
+  state: WorktreeSessionState,
+  targetParentId: string,
+  entries: readonly ResourceImportEntry[],
+): ResourceImportResult {
+  requireResourceFolder(state, targetParentId);
+
+  const deduped = new Map<string, ResourceImportEntry>();
+  for (const entry of entries) {
+    deduped.set(entry.relativePath, entry);
+  }
+
+  const ordered = [...deduped.values()].sort((left, right) => {
+    const leftDepth = left.relativePath === "" ? 0 : left.relativePath.split("/").length;
+    const rightDepth = right.relativePath === "" ? 0 : right.relativePath.split("/").length;
+    if (leftDepth !== rightDepth) {
+      return leftDepth - rightDepth;
+    }
+    return left.relativePath.localeCompare(right.relativePath);
+  });
+
+  const pathToNodeId = new Map<string, string>();
+  const created: ResourceImportCreated[] = [];
+  const skipped: ResourceImportSkip[] = [];
+  const contentOverrides = new Map<string, string>();
+  const parentsToSort = new Set<string>();
+
+  for (const entry of ordered) {
+    const normalized = tryNormalizeImportName(entry.relativePath);
+    if ("skip" in normalized) {
+      skipped.push(normalized.skip);
+      continue;
+    }
+    const { name } = normalized;
+    const parentRelative = resourceParentPath(entry.relativePath);
+    const parentId =
+      parentRelative === "" ? targetParentId : (pathToNodeId.get(parentRelative) ?? null);
+    if (parentId === null) {
+      skipped.push({
+        relativePath: entry.relativePath,
+        reason: "missing-parent",
+        message: `缺少父目录: ${parentRelative}`,
+      });
+      continue;
+    }
+
+    if (entry.kind === "folder") {
+      const existing = findSiblingByName(state, parentId, name);
+      if (existing !== null) {
+        if (existing.type === "folder") {
+          pathToNodeId.set(entry.relativePath, existing.id);
+          continue;
+        }
+        skipped.push({
+          relativePath: entry.relativePath,
+          reason: "type-conflict",
+          message: `已存在同名文件: ${name}`,
+        });
+        continue;
+      }
+      const nodeId = createResourceId(state);
+      const parent = requireResourceFolder(state, parentId);
+      state.resourceTree.nodes[nodeId] = {
+        id: nodeId,
+        type: "folder",
+        name,
+        parentId,
+        childIds: [],
+      };
+      parent.childIds.push(nodeId);
+      parentsToSort.add(parentId);
+      pathToNodeId.set(entry.relativePath, nodeId);
+      created.push({ nodeId, relativePath: entry.relativePath, kind: "folder" });
+      continue;
+    }
+
+    if (Buffer.byteLength(entry.content, "utf8") >= RESOURCE_IMPORT_MAX_FILE_BYTES) {
+      skipped.push({
+        relativePath: entry.relativePath,
+        reason: "too-large",
+        message: `文件超过 ${RESOURCE_IMPORT_MAX_FILE_BYTES} 字节`,
+      });
+      continue;
+    }
+
+    const existing = findSiblingByName(state, parentId, name);
+    if (existing !== null) {
+      skipped.push({
+        relativePath: entry.relativePath,
+        reason: existing.type === "file" ? "name-conflict" : "type-conflict",
+        message: existing.type === "file" ? `已存在同名文件: ${name}` : `已存在同名文件夹: ${name}`,
+      });
+      continue;
+    }
+
+    const nodeId = createResourceId(state);
+    const parent = requireResourceFolder(state, parentId);
+    state.resourceTree.nodes[nodeId] = {
+      id: nodeId,
+      type: "file",
+      name,
+      parentId,
+      childIds: [],
+    };
+    parent.childIds.push(nodeId);
+    parentsToSort.add(parentId);
+    pathToNodeId.set(entry.relativePath, nodeId);
+    contentOverrides.set(nodeId, entry.content);
+    created.push({ nodeId, relativePath: entry.relativePath, kind: "file" });
+  }
+
+  if (created.length === 0) {
+    return { created, skipped };
+  }
+
+  for (const parentId of parentsToSort) {
+    sortResourceChildrenByName(state.resourceTree, parentId);
+  }
+
+  rebuildCurrentResourcesFromTree(state, contentOverrides);
+
+  const operations: JournalOperationCapture[] = [];
+  for (const item of created) {
+    const journalEntry = requireResourceJournalEntry(state, item.nodeId);
+    operations.push({
+      kind: "create",
+      domain: "resource",
+      entityId: item.nodeId,
+      entityKind: item.kind,
+      label: journalEntry.name,
+      displayPath: journalEntry.displayPath,
+      afterContent: item.kind === "file" ? journalEntry.content : null,
+    });
+  }
+
+  persistAndEmit(state, false, {
+    source: "import",
+    title: created.length === 1 ? "导入文件" : `导入 ${created.length} 项`,
+    groupKey: null,
+    operations,
+  });
+
+  return { created, skipped };
 }

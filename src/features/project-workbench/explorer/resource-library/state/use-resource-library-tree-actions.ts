@@ -5,13 +5,79 @@ import { useCallback, useRef } from "react";
 import { confirmDialogApi } from "#app/shared/lib/confirm-dialog";
 import { notificationApi } from "#app/shared/lib/notifications";
 import { normalizeResourceNameInput } from "#shared/resource-library-path";
-import type { ResourceTreeSnapshot } from "#shared/rpc/worktree/index";
+import type {
+  ResourceImportCreated,
+  ResourceImportEntry,
+  ResourceImportSkip,
+  ResourceImportSkipReason,
+  ResourceTreeSnapshot,
+} from "#shared/rpc/worktree/index";
 import { useWorkbenchEditorActions } from "#workbench/editor/use-workbench-editor-actions";
 import { useResourceLibrary } from "#workbench/session/workspace-handles";
 
 import { findResourceParentId } from "../resource-tree";
 import { resourceLibraryTreeMolecule } from "./resource-tree-molecule";
 import type { ResourceTreeEditingState, ResourceTreeSelection } from "./types";
+
+const SKIP_REASON_LABEL: Record<ResourceImportSkipReason, string> = {
+  "name-conflict": "同名冲突",
+  "type-conflict": "类型冲突",
+  "invalid-name": "名称无效",
+  "too-large": "文件过大",
+  "empty-path": "路径为空",
+  "invalid-utf8": "非 UTF-8 文本",
+  unreadable: "无法读取",
+  "missing-parent": "缺少父目录",
+};
+
+function formatSkipDetail(skip: ResourceImportSkip): string {
+  const reason = SKIP_REASON_LABEL[skip.reason] ?? skip.reason;
+  const detail = skip.message != null && skip.message !== "" ? ` — ${skip.message}` : "";
+  return `• ${skip.relativePath || "(根)"}：${reason}${detail}`;
+}
+
+function showImportSummary(created: ResourceImportCreated[], skipped: ResourceImportSkip[]): void {
+  const createdCount = created.length;
+  const skippedCount = skipped.length;
+  if (createdCount === 0 && skippedCount === 0) {
+    notificationApi.info("没有可导入的文件", { source: "资源库" });
+    return;
+  }
+
+  let message: string;
+  if (createdCount === 0) {
+    message = `全部跳过（${skippedCount} 项）`;
+  } else if (skippedCount === 0) {
+    message = createdCount === 1 ? "已导入 1 项" : `已导入 ${createdCount} 项`;
+  } else {
+    message = `已导入 ${createdCount} 项，跳过 ${skippedCount} 项`;
+  }
+
+  const severity = createdCount === 0 || skippedCount > 0 ? "warning" : "info";
+  const actions =
+    skippedCount === 0
+      ? undefined
+      : [
+          {
+            label: "详情",
+            onClick: async () => {
+              await confirmDialogApi.confirm({
+                title: "导入详情",
+                description: skipped.map(formatSkipDetail).join("\n"),
+                confirmLabel: "知道了",
+                cancelLabel: "关闭",
+              });
+            },
+          },
+        ];
+
+  notificationApi.show({
+    severity,
+    message,
+    source: "资源库",
+    actions,
+  });
+}
 
 function parentIdForCreating(
   selected: ResourceTreeSelection | null,
@@ -210,6 +276,48 @@ export function useResourceLibraryTreeActions() {
     [submitCreating, submitRenaming],
   );
 
+  const importExternalEntries = useCallback(
+    async (
+      targetParentId: string,
+      entries: readonly ResourceImportEntry[],
+      localSkips: readonly ResourceImportSkip[] = [],
+    ) => {
+      if (entries.length === 0) {
+        showImportSummary([], [...localSkips]);
+        return;
+      }
+
+      try {
+        const result = await resources.importEntries(targetParentId, entries);
+        const created = result.created;
+        const skipped = [...localSkips, ...result.skipped];
+
+        dispatch({ type: "expandPath", id: targetParentId });
+        for (const item of created) {
+          if (item.kind === "folder") {
+            dispatch({ type: "expandPath", id: item.nodeId });
+          }
+        }
+
+        const first = created[0];
+        if (first !== undefined) {
+          dispatch({ type: "select", id: first.nodeId, nodeType: first.kind });
+          const onlyOneFile = created.length === 1 && first.kind === "file";
+          if (onlyOneFile) {
+            openTarget({ kind: "resource", resourceId: first.nodeId });
+          }
+        }
+
+        showImportSummary(created, skipped);
+      } catch (error) {
+        notificationApi.error(error instanceof Error ? error.message : "导入失败", {
+          source: "资源库",
+        });
+      }
+    },
+    [dispatch, openTarget, resources],
+  );
+
   return {
     startCreating,
     startRenaming,
@@ -219,5 +327,6 @@ export function useResourceLibraryTreeActions() {
     activateNode,
     deleteNode,
     moveNode,
+    importExternalEntries,
   };
 }

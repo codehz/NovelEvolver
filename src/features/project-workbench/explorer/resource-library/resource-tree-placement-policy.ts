@@ -71,41 +71,12 @@ function resolveDropTargetFromRow(
   return candidate;
 }
 
-export function resolveResourceDropTarget({
-  snapshot,
-  projection,
-  start,
-  hoveredRow,
-}: {
-  snapshot: ResourceTreeSnapshot;
-  projection: ResourceRenderProjection;
-  start: { rowId: string; rowType: ResourceTreeNode["type"] };
-  hoveredRow: TreeRowDomData<ResourceTreeNode["type"]> | null;
-  hoverZone: TreeRowHoverZone | null;
-  listRect: DOMRect | null;
-  clientX: number;
-  clientY: number;
-}): TreeResolvedDrop<string> | null {
-  const listHeight = projection.items.length * TREE_ROW_HEIGHT_PX;
-  if (hoveredRow === null) {
-    if (isInvalidDropTarget(snapshot, start.rowId, start.rowType, snapshot.rootId)) {
-      return null;
-    }
-    return {
-      preview: { kind: "highlight", top: 0, height: listHeight },
-      target: snapshot.rootId,
-    };
-  }
-  const targetParentId = resolveDropTargetFromRow(
-    snapshot,
-    hoveredRow.rowId,
-    hoveredRow.rowType,
-    start.rowId,
-    start.rowType,
-  );
-  if (targetParentId === null) {
-    return null;
-  }
+function buildFolderDropPreview(
+  snapshot: ResourceTreeSnapshot,
+  projection: ResourceRenderProjection,
+  targetParentId: string,
+): TreeResolvedDrop<string> | null {
+  const listHeight = Math.max(projection.items.length, 1) * TREE_ROW_HEIGHT_PX;
   if (targetParentId === snapshot.rootId) {
     return {
       preview: { kind: "highlight", top: 0, height: listHeight },
@@ -132,4 +103,63 @@ export function resolveResourceDropTarget({
     },
     target: targetParentId,
   };
+}
+
+export function resolveResourceDropTarget({
+  snapshot,
+  projection,
+  start,
+  hoveredRow,
+}: {
+  snapshot: ResourceTreeSnapshot;
+  projection: ResourceRenderProjection;
+  start: { rowId: string; rowType: ResourceTreeNode["type"] };
+  hoveredRow: TreeRowDomData<ResourceTreeNode["type"]> | null;
+  hoverZone: TreeRowHoverZone | null;
+  listRect: DOMRect | null;
+  clientX: number;
+  clientY: number;
+}): TreeResolvedDrop<string> | null {
+  if (hoveredRow === null) {
+    if (isInvalidDropTarget(snapshot, start.rowId, start.rowType, snapshot.rootId)) {
+      return null;
+    }
+    return buildFolderDropPreview(snapshot, projection, snapshot.rootId);
+  }
+  const targetParentId = resolveDropTargetFromRow(
+    snapshot,
+    hoveredRow.rowId,
+    hoveredRow.rowType,
+    start.rowId,
+    start.rowType,
+  );
+  if (targetParentId === null) {
+    return null;
+  }
+  return buildFolderDropPreview(snapshot, projection, targetParentId);
+}
+
+/** OS file drop: folder = itself, file = parent, empty area = root. */
+export function resolveExternalResourceDropTarget({
+  snapshot,
+  projection,
+  hoveredRow,
+}: {
+  snapshot: ResourceTreeSnapshot;
+  projection: ResourceRenderProjection;
+  hoveredRow: TreeRowDomData<ResourceTreeNode["type"]> | null;
+}): TreeResolvedDrop<string> | null {
+  if (hoveredRow === null) {
+    return buildFolderDropPreview(snapshot, projection, snapshot.rootId);
+  }
+  const targetNode = snapshot.nodes[hoveredRow.rowId];
+  if (targetNode === undefined) {
+    return buildFolderDropPreview(snapshot, projection, snapshot.rootId);
+  }
+  const targetParentId =
+    hoveredRow.rowType === "folder" ? hoveredRow.rowId : (targetNode.parentId ?? snapshot.rootId);
+  if (snapshot.nodes[targetParentId]?.type !== "folder") {
+    return buildFolderDropPreview(snapshot, projection, snapshot.rootId);
+  }
+  return buildFolderDropPreview(snapshot, projection, targetParentId);
 }
