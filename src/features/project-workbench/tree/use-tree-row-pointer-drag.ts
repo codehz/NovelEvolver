@@ -2,6 +2,7 @@ import { useCallback, useRef } from "react";
 import type { PointerEventHandler, RefObject } from "react";
 
 import type { TreeResolvedDrop, TreeRowHoverZone } from "./tree-drag";
+import { resolveHoverZone } from "./tree-drag";
 import type { TreeRowDomData } from "./tree-row-dom";
 import { findTreeRowDataAtPoint } from "./tree-row-dom";
 
@@ -36,17 +37,6 @@ type UseTreeRowPointerDragOptions<RowType extends string, DropTarget> = {
   onDragEnd: () => void;
   resolveDropTarget: (input: TreeDropResolveInput<RowType>) => TreeResolvedDrop<DropTarget> | null;
 };
-
-function resolveHoverZone(clientY: number, rect: DOMRect): TreeRowHoverZone {
-  const offsetY = clientY - rect.top;
-  if (offsetY < rect.height * 0.25) {
-    return "before";
-  }
-  if (offsetY > rect.height * 0.75) {
-    return "after";
-  }
-  return "inside";
-}
 
 export function useTreeRowPointerDrag<RowType extends string, DropTarget>({
   disabled,

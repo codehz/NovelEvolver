@@ -1,13 +1,13 @@
 import type {
-  ResourceImportEntry,
-  ResourceImportSkip,
-  ResourceImportSkipReason,
+  ExternalImportEntry,
+  ExternalImportSkip,
+  ExternalImportSkipReason,
 } from "#shared/rpc/worktree/index";
-import { RESOURCE_IMPORT_MAX_FILE_BYTES } from "#shared/rpc/worktree/index";
+import { EXTERNAL_IMPORT_MAX_FILE_BYTES } from "#shared/rpc/worktree/index";
 
 export type ExternalImportCollectResult = {
-  entries: ResourceImportEntry[];
-  skipped: ResourceImportSkip[];
+  entries: ExternalImportEntry[];
+  skipped: ExternalImportSkip[];
 };
 
 type FileSystemEntryLike = {
@@ -40,9 +40,9 @@ type DataTransferItemWithEntry = DataTransferItem & {
 
 function skip(
   relativePath: string,
-  reason: ResourceImportSkipReason,
+  reason: ExternalImportSkipReason,
   message?: string,
-): ResourceImportSkip {
+): ExternalImportSkip {
   return { relativePath, reason, message };
 }
 
@@ -76,9 +76,9 @@ async function collectFromFile(
   relativePath: string,
   result: ExternalImportCollectResult,
 ): Promise<void> {
-  if (file.size >= RESOURCE_IMPORT_MAX_FILE_BYTES) {
+  if (file.size >= EXTERNAL_IMPORT_MAX_FILE_BYTES) {
     result.skipped.push(
-      skip(relativePath, "too-large", `文件超过 ${RESOURCE_IMPORT_MAX_FILE_BYTES} 字节`),
+      skip(relativePath, "too-large", `文件超过 ${EXTERNAL_IMPORT_MAX_FILE_BYTES} 字节`),
     );
     return;
   }
@@ -139,7 +139,7 @@ function hasFilesType(dataTransfer: DataTransfer): boolean {
 }
 
 /**
- * Walk OS drag payloads into resource-library import entries.
+ * Walk OS drag payloads into external-import entries.
  * Prefers `webkitGetAsEntry` (directory-aware); falls back to flat `files`.
  */
 export async function collectExternalImportEntries(

@@ -77,23 +77,23 @@ export function isValidManuscriptMoveTarget(
   return target.index !== sourceIndex && target.index !== sourceIndex + 1;
 }
 
-export function resolveManuscriptDropTarget({
+type ResolveManuscriptDropInput = {
+  snapshot: ManuscriptTreeSnapshot;
+  projection: ManuscriptRenderProjection;
+  hoveredRow: TreeRowDomData<ManuscriptTreeNode["type"]> | null;
+  hoverZone: TreeRowHoverZone | null;
+  listRect: DOMRect | null;
+  clientY: number;
+};
+
+function resolveManuscriptDropCore({
   snapshot,
   projection,
   hoveredRow,
   hoverZone,
   listRect,
   clientY,
-}: {
-  snapshot: ManuscriptTreeSnapshot;
-  projection: ManuscriptRenderProjection;
-  start: { rowId: string; rowType: ManuscriptTreeNode["type"] };
-  hoveredRow: TreeRowDomData<ManuscriptTreeNode["type"]> | null;
-  hoverZone: TreeRowHoverZone | null;
-  listRect: DOMRect | null;
-  clientX: number;
-  clientY: number;
-}): TreeResolvedDrop<ManuscriptMoveTarget> | null {
+}: ResolveManuscriptDropInput): TreeResolvedDrop<ManuscriptMoveTarget> | null {
   const rootNode = snapshot.nodes[snapshot.rootId];
   if (rootNode?.type !== "folder") {
     return null;
@@ -198,4 +198,57 @@ export function resolveManuscriptDropTarget({
       ? (projection.subtreeEndIndexes[hoveredRowIndex] ?? hoveredRowIndex) + 1
       : hoveredRowIndex + 1;
   return resolveInsert(hoveredNode.id, afterVisualIndex, true);
+}
+
+export function resolveManuscriptDropTarget({
+  snapshot,
+  projection,
+  hoveredRow,
+  hoverZone,
+  listRect,
+  clientY,
+}: {
+  snapshot: ManuscriptTreeSnapshot;
+  projection: ManuscriptRenderProjection;
+  start: { rowId: string; rowType: ManuscriptTreeNode["type"] };
+  hoveredRow: TreeRowDomData<ManuscriptTreeNode["type"]> | null;
+  hoverZone: TreeRowHoverZone | null;
+  listRect: DOMRect | null;
+  clientX: number;
+  clientY: number;
+}): TreeResolvedDrop<ManuscriptMoveTarget> | null {
+  return resolveManuscriptDropCore({
+    snapshot,
+    projection,
+    hoveredRow,
+    hoverZone,
+    listRect,
+    clientY,
+  });
+}
+
+/** OS file drop: same insert/into placement as internal drag, without source validation. */
+export function resolveExternalManuscriptDropTarget({
+  snapshot,
+  projection,
+  hoveredRow,
+  hoverZone,
+  listRect,
+  clientY,
+}: {
+  snapshot: ManuscriptTreeSnapshot;
+  projection: ManuscriptRenderProjection;
+  hoveredRow: TreeRowDomData<ManuscriptTreeNode["type"]> | null;
+  hoverZone: TreeRowHoverZone | null;
+  listRect: DOMRect | null;
+  clientY: number;
+}): TreeResolvedDrop<ManuscriptMoveTarget> | null {
+  return resolveManuscriptDropCore({
+    snapshot,
+    projection,
+    hoveredRow,
+    hoverZone,
+    listRect,
+    clientY,
+  });
 }

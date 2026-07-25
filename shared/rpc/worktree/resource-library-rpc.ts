@@ -1,30 +1,19 @@
 import type { RpcTarget } from "capnweb";
 
+import {
+  EXTERNAL_IMPORT_MAX_FILE_BYTES,
+  type ExternalImportEntry,
+  type ExternalImportSkip,
+  type ExternalImportSkipReason,
+} from "./external-import";
 import type { WorktreeNodeIdResult } from "./manuscript-rpc";
 
-/** Max UTF-8 byte size for a single imported resource file (64 KiB exclusive). */
-export const RESOURCE_IMPORT_MAX_FILE_BYTES = 64 * 1024;
+/** @deprecated Prefer `EXTERNAL_IMPORT_MAX_FILE_BYTES`. */
+export const RESOURCE_IMPORT_MAX_FILE_BYTES = EXTERNAL_IMPORT_MAX_FILE_BYTES;
 
-/** One filesystem entry relative to the import target parent folder. */
-export type ResourceImportEntry =
-  | { kind: "folder"; relativePath: string }
-  | { kind: "file"; relativePath: string; content: string };
-
-export type ResourceImportSkipReason =
-  | "name-conflict"
-  | "type-conflict"
-  | "invalid-name"
-  | "too-large"
-  | "empty-path"
-  | "invalid-utf8"
-  | "unreadable"
-  | "missing-parent";
-
-export type ResourceImportSkip = {
-  relativePath: string;
-  reason: ResourceImportSkipReason;
-  message?: string;
-};
+export type ResourceImportEntry = ExternalImportEntry;
+export type ResourceImportSkipReason = ExternalImportSkipReason;
+export type ResourceImportSkip = ExternalImportSkip;
 
 export type ResourceImportCreated = {
   nodeId: string;

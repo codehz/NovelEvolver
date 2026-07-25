@@ -13,7 +13,10 @@ import { TreeBody } from "#workbench/tree/TreeBody";
 import type { TreeDropResolveInput } from "#workbench/tree/use-tree-row-pointer-drag";
 
 import { useContentTreeReveal } from "../shared/content-tree-reveal";
-import { collectExternalImportEntries, dataTransferHasFiles } from "./external-import-collect";
+import {
+  collectExternalImportEntries,
+  dataTransferHasFiles,
+} from "../shared/external-import-collect";
 import { resourceParentChain } from "./resource-tree";
 import { buildResourceTreeContextMenuItems } from "./resource-tree-context-menu";
 import {

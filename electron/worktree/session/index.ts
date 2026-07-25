@@ -8,9 +8,11 @@ import type {
   CommitChangeTextComparison,
   CommitChangesSnapshot,
   CommitSummary,
+  ExternalImportEntry,
   HistoryEntry,
   HistoryEntryContent,
   HistoryTarget,
+  ManuscriptImportResult,
   ResourceImportEntry,
   ResourceImportResult,
   WorktreeNodeIdResult,
@@ -183,6 +185,14 @@ export class WorktreeSession {
 
   createManuscriptChapter(parentId: string, title: string, index?: number): WorktreeNodeIdResult {
     return manuscriptOps.createManuscriptChapter(this.#state, parentId, title, index);
+  }
+
+  importManuscriptEntries(
+    targetParentId: string,
+    entries: readonly ExternalImportEntry[],
+    index?: number,
+  ): ManuscriptImportResult {
+    return manuscriptOps.importManuscriptEntries(this.#state, targetParentId, entries, index);
   }
 
   renameManuscriptNode(id: string, title: string): void {

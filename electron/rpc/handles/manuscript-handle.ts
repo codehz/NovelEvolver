@@ -1,6 +1,11 @@
 import { RpcTarget } from "capnweb";
 
-import type { ManuscriptHandle, WorktreeNodeIdResult } from "#shared/rpc/worktree/index";
+import type {
+  ExternalImportEntry,
+  ManuscriptHandle,
+  ManuscriptImportResult,
+  WorktreeNodeIdResult,
+} from "#shared/rpc/worktree/index";
 
 import type { WorktreeSession } from "../../worktree/session";
 
@@ -18,6 +23,14 @@ export class ManuscriptHandleImpl extends RpcTarget implements ManuscriptHandle 
 
   createChapter(parentId: string, title: string, index?: number): WorktreeNodeIdResult {
     return this.#session.createManuscriptChapter(parentId, title, index);
+  }
+
+  importEntries(
+    targetParentId: string,
+    entries: readonly ExternalImportEntry[],
+    index?: number,
+  ): ManuscriptImportResult {
+    return this.#session.importManuscriptEntries(targetParentId, entries, index);
   }
 
   renameNode(id: string, title: string): void {

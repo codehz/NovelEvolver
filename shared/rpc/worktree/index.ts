@@ -1,3 +1,4 @@
+export * from "./external-import";
 export * from "./history-rpc";
 export * from "./manuscript-rpc";
 export * from "./resource-library-rpc";

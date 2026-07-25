@@ -1,5 +1,14 @@
-import type { WorktreeNodeIdResult } from "#shared/rpc/worktree/index";
+import { resourceBaseName, resourceParentPath } from "#shared/resource-library-path";
+import type {
+  ExternalImportEntry,
+  ExternalImportSkip,
+  ManuscriptImportCreated,
+  ManuscriptImportResult,
+  WorktreeNodeIdResult,
+} from "#shared/rpc/worktree/index";
+import { EXTERNAL_IMPORT_MAX_FILE_BYTES } from "#shared/rpc/worktree/index";
 
+import type { JournalOperationCapture } from "../journal/journal-types";
 import {
   clampChildIndex,
   MANUSCRIPT_ROOT_ID,
@@ -17,6 +26,46 @@ import { persistAndEmit } from "./persistence";
 import { rebuildCurrentManuscriptFromTree } from "./rebuild";
 import { deleteManuscriptNodeFromCurrent } from "./revert";
 import type { WorktreeSessionState } from "./state";
+
+const CHAPTER_TITLE_STRIP_EXTENSIONS = [".markdown", ".md", ".txt"] as const;
+
+function stripChapterTitleExtension(basename: string): string {
+  const lower = basename.toLowerCase();
+  for (const ext of CHAPTER_TITLE_STRIP_EXTENSIONS) {
+    if (lower.endsWith(ext) && basename.length > ext.length) {
+      return basename.slice(0, -ext.length);
+    }
+  }
+  return basename;
+}
+
+function tryNormalizeImportTitle(
+  relativePath: string,
+  kind: "folder" | "file",
+): { title: string } | { skip: ExternalImportSkip } {
+  if (relativePath === "") {
+    return {
+      skip: {
+        relativePath,
+        reason: "empty-path",
+        message: "路径不能为空",
+      },
+    };
+  }
+  const basename = resourceBaseName(relativePath);
+  const rawTitle = kind === "file" ? stripChapterTitleExtension(basename) : basename;
+  try {
+    return { title: normalizeManuscriptTitle(rawTitle) };
+  } catch (error) {
+    return {
+      skip: {
+        relativePath,
+        reason: "invalid-name",
+        message: error instanceof Error ? error.message : "名称无效",
+      },
+    };
+  }
+}
 
 export function createManuscriptFolder(
   state: WorktreeSessionState,
@@ -234,4 +283,138 @@ export function writeChapter(state: WorktreeSessionState, id: string, content: s
       },
     ],
   });
+}
+
+/**
+ * Batch-import folders and UTF-8 text files as manuscript folders/chapters.
+ * Always creates new nodes (duplicate titles allowed). Single journal revision.
+ */
+export function importManuscriptEntries(
+  state: WorktreeSessionState,
+  targetParentId: string,
+  entries: readonly ExternalImportEntry[],
+  index?: number,
+): ManuscriptImportResult {
+  requireManuscriptFolder(state, targetParentId);
+
+  const deduped = new Map<string, ExternalImportEntry>();
+  for (const entry of entries) {
+    deduped.set(entry.relativePath, entry);
+  }
+
+  const ordered = [...deduped.values()].sort((left, right) => {
+    const leftDepth = left.relativePath === "" ? 0 : left.relativePath.split("/").length;
+    const rightDepth = right.relativePath === "" ? 0 : right.relativePath.split("/").length;
+    if (leftDepth !== rightDepth) {
+      return leftDepth - rightDepth;
+    }
+    return left.relativePath.localeCompare(right.relativePath);
+  });
+
+  const pathToNodeId = new Map<string, string>();
+  const created: ManuscriptImportCreated[] = [];
+  const skipped: ExternalImportSkip[] = [];
+  const contentOverrides = new Map<string, string>();
+  let nextTopLevelIndex = clampChildIndex(
+    index,
+    requireManuscriptFolder(state, targetParentId).childIds.length,
+  );
+
+  for (const entry of ordered) {
+    const normalized = tryNormalizeImportTitle(entry.relativePath, entry.kind);
+    if ("skip" in normalized) {
+      skipped.push(normalized.skip);
+      continue;
+    }
+    const { title } = normalized;
+    const parentRelative = resourceParentPath(entry.relativePath);
+    const isTopLevel = parentRelative === "";
+    const parentId = isTopLevel ? targetParentId : (pathToNodeId.get(parentRelative) ?? null);
+    if (parentId === null) {
+      skipped.push({
+        relativePath: entry.relativePath,
+        reason: "missing-parent",
+        message: `缺少父目录: ${parentRelative}`,
+      });
+      continue;
+    }
+
+    if (entry.kind === "folder") {
+      const nodeId = createUniqueManuscriptId(state);
+      const parent = requireManuscriptFolder(state, parentId);
+      if (isTopLevel) {
+        parent.childIds.splice(nextTopLevelIndex, 0, nodeId);
+        nextTopLevelIndex += 1;
+      } else {
+        parent.childIds.push(nodeId);
+      }
+      state.manuscriptTree.nodes[nodeId] = {
+        id: nodeId,
+        type: "folder",
+        title,
+        parentId,
+        childIds: [],
+      };
+      pathToNodeId.set(entry.relativePath, nodeId);
+      created.push({ nodeId, relativePath: entry.relativePath, kind: "folder" });
+      continue;
+    }
+
+    if (Buffer.byteLength(entry.content, "utf8") >= EXTERNAL_IMPORT_MAX_FILE_BYTES) {
+      skipped.push({
+        relativePath: entry.relativePath,
+        reason: "too-large",
+        message: `文件超过 ${EXTERNAL_IMPORT_MAX_FILE_BYTES} 字节`,
+      });
+      continue;
+    }
+
+    const nodeId = createUniqueManuscriptId(state);
+    const parent = requireManuscriptFolder(state, parentId);
+    if (isTopLevel) {
+      parent.childIds.splice(nextTopLevelIndex, 0, nodeId);
+      nextTopLevelIndex += 1;
+    } else {
+      parent.childIds.push(nodeId);
+    }
+    state.manuscriptTree.nodes[nodeId] = {
+      id: nodeId,
+      type: "chapter",
+      title,
+      parentId,
+      childIds: [],
+    };
+    pathToNodeId.set(entry.relativePath, nodeId);
+    contentOverrides.set(nodeId, entry.content);
+    created.push({ nodeId, relativePath: entry.relativePath, kind: "chapter" });
+  }
+
+  if (created.length === 0) {
+    return { created, skipped };
+  }
+
+  rebuildCurrentManuscriptFromTree(state, contentOverrides);
+
+  const operations: JournalOperationCapture[] = [];
+  for (const item of created) {
+    const journalEntry = requireManuscriptJournalEntry(state, item.nodeId);
+    operations.push({
+      kind: "create",
+      domain: "manuscript",
+      entityId: item.nodeId,
+      entityKind: item.kind === "chapter" ? "chapter" : "folder",
+      label: journalEntry.title,
+      displayPath: journalEntry.displayPath,
+      afterContent: item.kind === "chapter" ? journalEntry.content : null,
+    });
+  }
+
+  persistAndEmit(state, false, {
+    source: "import",
+    title: created.length === 1 ? "导入文件" : `导入 ${created.length} 项`,
+    groupKey: null,
+    operations,
+  });
+
+  return { created, skipped };
 }
