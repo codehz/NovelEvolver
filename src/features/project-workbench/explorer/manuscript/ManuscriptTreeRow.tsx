@@ -11,7 +11,7 @@ import type { TreeRowLayout } from "#workbench/tree/tree-row-layout";
 import { TreeRowShell } from "#workbench/tree/TreeRowShell";
 import type { TreeDropResolveInput } from "#workbench/tree/use-tree-row-pointer-drag";
 
-import type { ManuscriptEditingState, ManuscriptMoveTarget } from "./state/types";
+import type { ManuscriptDropTarget, ManuscriptEditingState } from "./state/types";
 
 type ManuscriptTreeRowProps = {
   id: string | null;
@@ -28,7 +28,7 @@ type ManuscriptTreeRowProps = {
   listRef: RefObject<HTMLUListElement | null>;
   resolveDropTarget: (
     input: TreeDropResolveInput<ManuscriptTreeNode["type"]>,
-  ) => TreeResolvedDrop<ManuscriptMoveTarget> | null;
+  ) => TreeResolvedDrop<ManuscriptDropTarget> | null;
   onActivate: (
     id: string,
     type: ManuscriptTreeNode["type"],
@@ -38,7 +38,7 @@ type ManuscriptTreeRowProps = {
   onCancelEditing: () => void;
   onSubmitEditing: (editing: ManuscriptEditingState, title: string) => Promise<void>;
   onDragStart: (id: string, type: ManuscriptTreeNode["type"]) => void;
-  onDragMove: (resolved: TreeResolvedDrop<ManuscriptMoveTarget> | null) => void;
+  onDragMove: (resolved: TreeResolvedDrop<ManuscriptDropTarget> | null) => void;
   onDragEnd: () => void;
   onContextMenu?: (
     id: string,
@@ -78,7 +78,7 @@ export function ManuscriptTreeRow({
         ? "重命名文件夹"
         : "重命名章节";
   return (
-    <TreeRowShell<ManuscriptTreeNode["type"], ManuscriptMoveTarget>
+    <TreeRowShell<ManuscriptTreeNode["type"], ManuscriptDropTarget>
       layout={layout}
       depth={depth}
       disclosureExpanded={type === "folder" ? expanded : undefined}

@@ -5,3 +5,13 @@ export {
   dataTransferHasFiles,
   type ExternalImportCollectResult,
 } from "./external-import-collect";
+export {
+  explorerCrossDragMolecule,
+  findExplorerDomainAtPoint,
+  isPointInsideElement,
+  type ExplorerCrossDragHover,
+  type ExplorerCrossDragSource,
+  type ExplorerDomain,
+} from "./explorer-cross-drag";
+export { runExplorerTransfer } from "./explorer-transfer";
+export { useExplorerTransfer } from "./use-explorer-transfer";

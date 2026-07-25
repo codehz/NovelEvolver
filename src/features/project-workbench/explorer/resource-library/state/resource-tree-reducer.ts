@@ -8,7 +8,7 @@ import type { TreeResolvedDrop } from "#workbench/tree/tree-drag";
 
 import { findResourceParentId } from "../resource-tree";
 import { isInvalidDropTarget } from "../resource-tree-placement-policy";
-import type { ResourceTreeEditingState, ResourceTreeState } from "./types";
+import type { ResourceDropTarget, ResourceTreeEditingState, ResourceTreeState } from "./types";
 import { initialResourceTreeState } from "./types";
 
 export type ResourceTreeAction =
@@ -23,7 +23,7 @@ export type ResourceTreeAction =
   | { type: "startEditing"; editing: ResourceTreeEditingState }
   | { type: "cancelEditing" }
   | { type: "dragStart"; sourceId: string; sourceType: ResourceTreeNode["type"] }
-  | { type: "dragMove"; resolved: TreeResolvedDrop<string> | null }
+  | { type: "dragMove"; resolved: TreeResolvedDrop<ResourceDropTarget> | null }
   | { type: "dragEnd" };
 
 function appendExpandedPath(expandedPaths: Record<string, true>, id: string): Record<string, true> {
@@ -248,18 +248,35 @@ export function resourceTreeReducer(
       if (state.drag === null) {
         return state;
       }
+      if (action.resolved === null) {
+        return {
+          ...state,
+          drag: {
+            ...state.drag,
+            resolved: null,
+          },
+        };
+      }
+      if (action.resolved.target.mode === "transfer") {
+        return {
+          ...state,
+          drag: {
+            ...state.drag,
+            resolved: action.resolved,
+          },
+        };
+      }
       return {
         ...state,
         drag: {
           ...state.drag,
           resolved:
-            action.resolved !== null &&
             state.snapshot !== null &&
             !isInvalidDropTarget(
               state.snapshot,
               state.drag.sourceId,
               state.drag.sourceType,
-              action.resolved.target,
+              action.resolved.target.targetParentId,
             )
               ? action.resolved
               : null,

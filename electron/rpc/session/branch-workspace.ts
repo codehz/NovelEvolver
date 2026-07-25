@@ -4,6 +4,7 @@ import type { BranchWorkspace } from "#shared/rpc/session/index";
 import type { HistoryHandle } from "#shared/rpc/worktree/index";
 import type { ManuscriptHandle } from "#shared/rpc/worktree/index";
 import type { ResourceLibraryHandle } from "#shared/rpc/worktree/index";
+import type { WorktreeTransferInput, WorktreeTransferResult } from "#shared/rpc/worktree/index";
 import type { WorktreeChangesHandle } from "#shared/rpc/worktree/index";
 import type { WorktreeSearchHandle } from "#shared/rpc/worktree/index";
 
@@ -53,6 +54,10 @@ export class BranchWorkspaceImpl extends RpcTarget implements BranchWorkspace {
 
   get history(): HistoryHandle {
     return this.#history;
+  }
+
+  transferNode(input: WorktreeTransferInput): WorktreeTransferResult {
+    return this.#session.transferNode(input);
   }
 
   [Symbol.dispose](): void {

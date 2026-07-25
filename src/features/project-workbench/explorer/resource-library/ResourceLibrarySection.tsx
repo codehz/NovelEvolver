@@ -1,6 +1,6 @@
 import { useMolecule } from "bunshi/react";
 import { useAtomValue, useSetAtom, useStore } from "jotai";
-import { useCallback, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { DragEvent as ReactDragEvent } from "react";
 
 import { cn } from "#app/shared/lib/ui/cn";
@@ -12,11 +12,18 @@ import { findTreeRowDataAtPoint } from "#workbench/tree/tree-row-dom";
 import { TreeBody } from "#workbench/tree/TreeBody";
 import type { TreeDropResolveInput } from "#workbench/tree/use-tree-row-pointer-drag";
 
+import { manuscriptTreeMolecule } from "../manuscript/state/manuscript-tree-molecule";
 import { useContentTreeReveal } from "../shared/content-tree-reveal";
+import {
+  explorerCrossDragMolecule,
+  findExplorerDomainAtPoint,
+} from "../shared/explorer-cross-drag";
 import {
   collectExternalImportEntries,
   dataTransferHasFiles,
 } from "../shared/external-import-collect";
+import { resolveDropOntoManuscript } from "../shared/resolve-cross-domain-drop";
+import { useExplorerTransfer } from "../shared/use-explorer-transfer";
 import { resourceParentChain } from "./resource-tree";
 import { buildResourceTreeContextMenuItems } from "./resource-tree-context-menu";
 import {
@@ -26,23 +33,94 @@ import {
 import { buildResourceRenderProjection, type ResourceRenderItem } from "./resource-tree-projector";
 import { ResourceLibraryTreeRow } from "./ResourceLibraryTreeRow";
 import { resourceLibraryTreeMolecule } from "./state/resource-tree-molecule";
+import type { ResourceDropTarget } from "./state/types";
 import { useResourceLibraryTreeActions } from "./state/use-resource-library-tree-actions";
 import { useResourceTreeSync } from "./state/use-resource-tree-sync";
 
 const externalDropShellClass = cn("relative min-h-full");
+
+function sameHighlightPreview(
+  prev: TreeResolvedDrop<string> | null,
+  next: TreeResolvedDrop<string> | null,
+): boolean {
+  if (prev?.target === next?.target && prev?.preview.kind === next?.preview.kind) {
+    if (
+      prev !== null &&
+      next !== null &&
+      prev.preview.kind === "highlight" &&
+      next.preview.kind === "highlight" &&
+      prev.preview.top === next.preview.top &&
+      prev.preview.height === next.preview.height
+    ) {
+      return true;
+    }
+    if (prev === null && next === null) {
+      return true;
+    }
+  }
+  return false;
+}
+
+function sameCrossHover(
+  prev: {
+    targetParentId: string;
+    index?: number;
+    preview: TreeResolvedDrop<unknown>["preview"];
+  } | null,
+  next: {
+    targetParentId: string;
+    index?: number;
+    preview: TreeResolvedDrop<unknown>["preview"];
+  } | null,
+): boolean {
+  if (prev === next) {
+    return true;
+  }
+  if (prev === null || next === null) {
+    return false;
+  }
+  if (
+    prev.targetParentId !== next.targetParentId ||
+    prev.index !== next.index ||
+    prev.preview.kind !== next.preview.kind
+  ) {
+    return false;
+  }
+  if (prev.preview.kind === "highlight" && next.preview.kind === "highlight") {
+    return prev.preview.top === next.preview.top && prev.preview.height === next.preview.height;
+  }
+  if (prev.preview.kind === "insert" && next.preview.kind === "insert") {
+    return (
+      prev.preview.top === next.preview.top &&
+      prev.preview.height === next.preview.height &&
+      prev.preview.depth === next.preview.depth
+    );
+  }
+  return false;
+}
 
 export function ResourceLibrarySectionBody() {
   useResourceTreeSync();
   const { treeAtom, onRevealRequest, retryPendingReveal } = useMolecule(
     resourceLibraryTreeMolecule,
   );
+  const { treeAtom: manuscriptTreeAtom } = useMolecule(manuscriptTreeMolecule);
+  const {
+    sourceAtom: crossSourceAtom,
+    hoverAtom: crossHoverAtom,
+    domainRefs,
+  } = useMolecule(explorerCrossDragMolecule);
   const state = useAtomValue(treeAtom);
+  const crossHover = useAtomValue(crossHoverAtom);
   const dispatch = useSetAtom(treeAtom);
+  const setCrossSource = useSetAtom(crossSourceAtom);
+  const setCrossHover = useSetAtom(crossHoverAtom);
   const store = useStore();
   const listRef = useRef<HTMLUListElement>(null);
   const dropShellRef = useRef<HTMLDivElement>(null);
   const [externalDrop, setExternalDrop] = useState<TreeResolvedDrop<string> | null>(null);
   const projection = useMemo(() => buildResourceRenderProjection(state), [state]);
+  const transferNode = useExplorerTransfer();
   const {
     startCreating,
     selectNode,
@@ -54,6 +132,15 @@ export function ResourceLibrarySectionBody() {
     moveNode,
     importExternalEntries,
   } = useResourceLibraryTreeActions();
+
+  useEffect(() => {
+    domainRefs.resource.list = listRef.current;
+    domainRefs.resource.shell = dropShellRef.current;
+    return () => {
+      domainRefs.resource.list = null;
+      domainRefs.resource.shell = null;
+    };
+  });
 
   const handleRowContextMenu = useCallback(
     (id: string, type: ResourceTreeNode["type"], position: { x: number; y: number }) => {
@@ -118,17 +205,63 @@ export function ResourceLibrarySectionBody() {
 
   const resolveDropTarget = useCallback(
     (input: TreeDropResolveInput<ResourceTreeNode["type"]>) => {
+      const domainAtPoint = findExplorerDomainAtPoint(input.clientX, input.clientY);
+      if (domainAtPoint === "manuscript") {
+        const resolved = resolveDropOntoManuscript({
+          manuscriptState: store.get(manuscriptTreeAtom),
+          clientX: input.clientX,
+          clientY: input.clientY,
+          manuscriptRefs: domainRefs.manuscript,
+        });
+        if (resolved === null) {
+          setCrossHover(null);
+          return null;
+        }
+        const transferTarget =
+          resolved.target.kind === "insert"
+            ? {
+                mode: "transfer" as const,
+                targetParentId: resolved.target.parentId,
+                index: resolved.target.index,
+              }
+            : {
+                mode: "transfer" as const,
+                targetParentId: resolved.target.parentId,
+              };
+        setCrossHover((prev) => {
+          const next = {
+            domain: "manuscript" as const,
+            preview: resolved.preview,
+            targetParentId: transferTarget.targetParentId,
+            index: transferTarget.index,
+          };
+          return sameCrossHover(prev, next) ? prev : next;
+        });
+        return {
+          preview: resolved.preview,
+          target: transferTarget,
+        };
+      }
+
+      setCrossHover(null);
       const snapshot = store.get(treeAtom).snapshot;
       if (snapshot === null) {
         return null;
       }
-      return resolveResourceDropTarget({
+      const local = resolveResourceDropTarget({
         snapshot,
         projection,
         ...input,
       });
+      if (local === null) {
+        return null;
+      }
+      return {
+        preview: local.preview,
+        target: { mode: "local" as const, targetParentId: local.target },
+      };
     },
-    [projection, store, treeAtom],
+    [domainRefs, manuscriptTreeAtom, projection, setCrossHover, store, treeAtom],
   );
 
   const resolveExternalDropAtPoint = useCallback(
@@ -159,24 +292,7 @@ export function ResourceLibrarySectionBody() {
       event.preventDefault();
       event.dataTransfer.dropEffect = "copy";
       const next = resolveExternalDropAtPoint(event.clientX, event.clientY);
-      setExternalDrop((prev) => {
-        if (prev?.target === next?.target && prev?.preview.kind === next?.preview.kind) {
-          if (
-            prev !== null &&
-            next !== null &&
-            prev.preview.kind === "highlight" &&
-            next.preview.kind === "highlight" &&
-            prev.preview.top === next.preview.top &&
-            prev.preview.height === next.preview.height
-          ) {
-            return prev;
-          }
-          if (prev === null && next === null) {
-            return prev;
-          }
-        }
-        return next;
-      });
+      setExternalDrop((prev) => (sameHighlightPreview(prev, next) ? prev : next));
     },
     [resolveExternalDropAtPoint, store, treeAtom],
   );
@@ -224,8 +340,15 @@ export function ResourceLibrarySectionBody() {
     [importExternalEntries, projection, resolveExternalDropAtPoint, store, treeAtom],
   );
 
-  const activeDropPreview = state.drag?.resolved?.preview ?? externalDrop?.preview ?? null;
-  const isDragging = state.drag !== null || externalDrop !== null;
+  const localDragPreview =
+    state.drag?.resolved?.target.mode === "transfer"
+      ? null
+      : (state.drag?.resolved?.preview ?? null);
+  const inboundCrossPreview = crossHover?.domain === "resource" ? crossHover.preview : null;
+  const activeDropPreview =
+    inboundCrossPreview ?? localDragPreview ?? externalDrop?.preview ?? null;
+  const isDragging =
+    state.drag !== null || externalDrop !== null || crossHover?.domain === "resource";
 
   return (
     <>
@@ -248,15 +371,16 @@ export function ResourceLibrarySectionBody() {
       <div
         ref={dropShellRef}
         className={externalDropShellClass}
+        data-explorer-domain="resource"
         onDragEnter={handleExternalDragOver}
         onDragOver={handleExternalDragOver}
         onDragLeave={handleExternalDragLeave}
         onDrop={handleExternalDrop}
       >
-        <TreeBody<ResourceRenderItem, ResourceTreeNode["type"], string>
+        <TreeBody<ResourceRenderItem, ResourceTreeNode["type"], ResourceDropTarget>
           listRef={listRef}
           status={state.status}
-          isEmpty={projection.items.length === 0}
+          isEmpty={projection.items.length === 0 && !isDragging}
           loadingContent={<p className="px-2 py-1 text-xs text-ctp-subtext0">加载资源库…</p>}
           errorContent={
             state.error === null ? null : (
@@ -275,18 +399,34 @@ export function ResourceLibrarySectionBody() {
           dragController={{
             getCurrentDrag: () => store.get(treeAtom).drag,
             dispatchDragStart: (sourceId, sourceType) => {
+              setCrossSource({ domain: "resource", sourceId, sourceType });
               dispatch({ type: "dragStart", sourceId, sourceType });
             },
             dispatchDragMove: (resolved) => {
               dispatch({ type: "dragMove", resolved });
             },
             dispatchDragEnd: () => {
+              setCrossSource(null);
+              setCrossHover(null);
               dispatch({ type: "dragEnd" });
             },
             commitResolvedDrop: async (drag) => {
-              await moveNode(drag.sourceId, drag.sourceType, drag.resolved.target);
+              const target = drag.resolved.target;
+              if (target.mode === "transfer") {
+                await transferNode({
+                  sourceDomain: "resource",
+                  sourceId: drag.sourceId,
+                  targetDomain: "manuscript",
+                  targetParentId: target.targetParentId,
+                  index: target.index,
+                });
+                return;
+              }
+              await moveNode(drag.sourceId, drag.sourceType, target.targetParentId);
             },
-            shouldCommitDrop: (drag) => drag.resolved.target !== drag.sourceId,
+            shouldCommitDrop: (drag) =>
+              drag.resolved.target.mode === "transfer" ||
+              drag.resolved.target.targetParentId !== drag.sourceId,
             resolveDropTarget,
           }}
           renderRow={({

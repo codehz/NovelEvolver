@@ -22,10 +22,15 @@ export type ManuscriptMoveTarget =
   | { kind: "into"; parentId: string }
   | { kind: "insert"; parentId: string; index: number };
 
+/** Local reorder/move or cross-domain transfer into the resource library. */
+export type ManuscriptDropTarget =
+  | { mode: "local"; move: ManuscriptMoveTarget }
+  | { mode: "transfer"; targetParentId: string };
+
 export type ManuscriptDragState = {
   sourceId: string;
   sourceType: ManuscriptTreeNode["type"];
-  resolved: TreeResolvedDrop<ManuscriptMoveTarget> | null;
+  resolved: TreeResolvedDrop<ManuscriptDropTarget> | null;
 };
 
 export type ManuscriptTreeState = {

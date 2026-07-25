@@ -20,6 +20,8 @@ import type {
   WorktreeReplaceResult,
   WorktreeSearchQuery,
   WorktreeSearchResult,
+  WorktreeTransferInput,
+  WorktreeTransferResult,
 } from "#shared/rpc/worktree/index";
 
 import type { WorktreeRepository } from "../../db/repositories/worktree-repo";
@@ -42,6 +44,7 @@ import { replaceInWorktree } from "./replace-ops";
 import * as resourceOps from "./resource-ops";
 import { searchWorktree } from "./search-ops";
 import { createWorktreeSessionState, type WorktreeSessionState } from "./state";
+import * as transferOps from "./transfer-ops";
 
 export type AiProjectStructureDomain = "manuscript" | "resource";
 
@@ -256,6 +259,10 @@ export class WorktreeSession {
 
   writeResourceFile(id: string, content: string): void {
     resourceOps.writeResourceFile(this.#state, id, content);
+  }
+
+  transferNode(input: WorktreeTransferInput): WorktreeTransferResult {
+    return transferOps.transferNode(this.#state, input);
   }
 
   revertChange(changeId: string): ChangesSnapshot {

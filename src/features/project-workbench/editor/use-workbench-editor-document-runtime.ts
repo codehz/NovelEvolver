@@ -6,6 +6,7 @@ import { notificationApi } from "#app/shared/lib/notifications";
 import type { PlainTextEditorHandle } from "#workbench/editor/PlainTextEditor";
 import { useManuscript, useResourceLibrary } from "#workbench/session/workspace-handles";
 
+import { registerEditorAutosaveFlush } from "./editor-autosave-flush";
 import {
   getWorkbenchEditorContentTabDocumentKey,
   getWorkbenchEditorContentTabNotificationSource,
@@ -40,6 +41,34 @@ function cancelStaleAutosaves(
   }
 }
 
+function contentTabFromDocumentKey(key: string): ContentWorkbenchEditorTab | null {
+  if (key.startsWith("manuscript:")) {
+    const chapterId = key.slice("manuscript:".length);
+    if (chapterId === "") {
+      return null;
+    }
+    return {
+      id: key,
+      kind: "manuscript",
+      chapterId,
+      label: "",
+    };
+  }
+  if (key.startsWith("resource:")) {
+    const resourceId = key.slice("resource:".length);
+    if (resourceId === "") {
+      return null;
+    }
+    return {
+      id: key,
+      kind: "resource",
+      resourceId,
+      label: "",
+    };
+  }
+  return null;
+}
+
 export function useWorkbenchEditorDocumentRuntime(): WorkbenchEditorDocumentRuntime {
   const editorHandlesRef = useRef(new Map<string, PlainTextEditorHandle>());
   const autosaveTimersRef = useRef(new Map<string, ReturnType<typeof setTimeout>>());
@@ -67,7 +96,40 @@ export function useWorkbenchEditorDocumentRuntime(): WorkbenchEditorDocumentRunt
 
   useEffect(() => {
     const autosaveTimers = autosaveTimersRef.current;
+    registerEditorAutosaveFlush(async () => {
+      const pending = [...autosaveTimers.entries()];
+      if (pending.length === 0) {
+        return;
+      }
+      const writes: Promise<unknown>[] = [];
+      for (const [key, timer] of pending) {
+        clearTimeout(timer);
+        autosaveTimers.delete(key);
+        const liveContent = editorHandlesRef.current.get(key)?.getValue();
+        if (liveContent === undefined) {
+          continue;
+        }
+        const tab = contentTabFromDocumentKey(key);
+        if (tab === null) {
+          continue;
+        }
+        writes.push(
+          Promise.resolve(
+            writeWorkbenchEditorContentTab(tab, liveContent, {
+              manuscript: manuscriptRef.current,
+              resources: resourcesRef.current,
+            }),
+          ).catch((error) => {
+            notificationApi.error(error instanceof Error ? error.message : "自动保存失败", {
+              source: getWorkbenchEditorContentTabNotificationSource(tab),
+            });
+          }),
+        );
+      }
+      await Promise.all(writes);
+    });
     return () => {
+      registerEditorAutosaveFlush(null);
       for (const timer of autosaveTimers.values()) {
         clearTimeout(timer);
       }

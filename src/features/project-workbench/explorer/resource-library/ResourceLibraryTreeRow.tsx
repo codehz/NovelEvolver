@@ -12,6 +12,7 @@ import { TreeRowShell } from "#workbench/tree/TreeRowShell";
 import type { TreeDropResolveInput } from "#workbench/tree/use-tree-row-pointer-drag";
 
 import type { ResourceRenderItem } from "./resource-tree-projector";
+import type { ResourceDropTarget } from "./state/types";
 
 type ResourceLibraryTreeRowProps = {
   item: ResourceRenderItem;
@@ -22,7 +23,7 @@ type ResourceLibraryTreeRowProps = {
   listRef: RefObject<HTMLUListElement | null>;
   resolveDropTarget: (
     input: TreeDropResolveInput<ResourceTreeNode["type"]>,
-  ) => TreeResolvedDrop<string> | null;
+  ) => TreeResolvedDrop<ResourceDropTarget> | null;
   onActivate: (
     id: string,
     type: ResourceTreeNode["type"],
@@ -35,7 +36,7 @@ type ResourceLibraryTreeRowProps = {
     name: string,
   ) => Promise<void>;
   onDragStart: (sourceId: string, sourceType: ResourceTreeNode["type"]) => void;
-  onDragMove: (resolved: TreeResolvedDrop<string> | null) => void;
+  onDragMove: (resolved: TreeResolvedDrop<ResourceDropTarget> | null) => void;
   onDragEnd: () => void;
   onContextMenu?: (
     id: string,
@@ -78,7 +79,7 @@ export function ResourceLibraryTreeRow({
         : "例如 设定"
       : undefined;
   return (
-    <TreeRowShell<ResourceTreeNode["type"], string>
+    <TreeRowShell<ResourceTreeNode["type"], ResourceDropTarget>
       layout={layout}
       depth={item.depth}
       disclosureExpanded={item.type === "folder" ? item.expanded : undefined}

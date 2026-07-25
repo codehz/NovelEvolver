@@ -22,10 +22,15 @@ export type ResourceTreeSelection = {
   type: ResourceTreeNode["type"];
 };
 
+/** Local folder move or cross-domain transfer into the manuscript tree. */
+export type ResourceDropTarget =
+  | { mode: "local"; targetParentId: string }
+  | { mode: "transfer"; targetParentId: string; index?: number };
+
 export type ResourceTreeDragState = {
   sourceId: string;
   sourceType: ResourceTreeNode["type"];
-  resolved: TreeResolvedDrop<string> | null;
+  resolved: TreeResolvedDrop<ResourceDropTarget> | null;
 };
 
 export type ResourceTreeState = {

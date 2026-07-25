@@ -8,7 +8,7 @@ import type { TreeResolvedDrop } from "#workbench/tree/tree-drag";
 
 import { findManuscriptParentId } from "../manuscript-tree";
 import { isValidManuscriptMoveTarget } from "../manuscript-tree-placement-policy";
-import type { ManuscriptMoveTarget, ManuscriptTreeState } from "./types";
+import type { ManuscriptDropTarget, ManuscriptTreeState } from "./types";
 import { initialManuscriptTreeState } from "./types";
 
 export type ManuscriptTreeAction =
@@ -23,7 +23,7 @@ export type ManuscriptTreeAction =
   | { type: "startRenaming"; id: string; kind: ManuscriptTreeNode["type"] }
   | { type: "cancelEditing" }
   | { type: "dragStart"; sourceId: string; sourceType: ManuscriptTreeNode["type"] }
-  | { type: "dragMove"; resolved: TreeResolvedDrop<ManuscriptMoveTarget> | null }
+  | { type: "dragMove"; resolved: TreeResolvedDrop<ManuscriptDropTarget> | null }
   | { type: "dragEnd" };
 
 function pruneSelection(
@@ -134,20 +134,36 @@ export function manuscriptTreeReducer(
       if (state.drag === null) {
         return state;
       }
+      if (action.resolved === null) {
+        return {
+          ...state,
+          drag: {
+            ...state.drag,
+            resolved: null,
+          },
+        };
+      }
+      if (action.resolved.target.mode === "transfer") {
+        return {
+          ...state,
+          drag: {
+            ...state.drag,
+            resolved: action.resolved,
+          },
+        };
+      }
       return {
         ...state,
         drag: {
           ...state.drag,
-          resolved:
-            action.resolved !== null &&
-            isValidManuscriptMoveTarget(
-              state.snapshot,
-              state.drag.sourceId,
-              state.drag.sourceType,
-              action.resolved.target,
-            )
-              ? action.resolved
-              : null,
+          resolved: isValidManuscriptMoveTarget(
+            state.snapshot,
+            state.drag.sourceId,
+            state.drag.sourceType,
+            action.resolved.target.move,
+          )
+            ? action.resolved
+            : null,
         },
       };
     case "dragEnd":
