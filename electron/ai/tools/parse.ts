@@ -1,16 +1,47 @@
 import type { ToolCallItem } from "@codehz/ai";
-
+import { AIRecoverableError } from "@codehz/ai";
 export function parseToolArgs(call: ToolCallItem): Record<string, unknown> {
   const argumentsText = call.argumentsText.trim();
   if (argumentsText === "") {
     return {};
   }
 
-  const parsed: unknown = JSON.parse(argumentsText);
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(argumentsText);
+  } catch (error) {
+    throw new AIRecoverableError(
+      error instanceof Error ? error.message : "工具参数不是合法 JSON。",
+      "TOOL_CALL_ARGUMENTS_INVALID",
+    );
+  }
   if (typeof parsed !== "object" || parsed === null || Array.isArray(parsed)) {
     throw new Error("工具参数必须是 JSON 对象。");
   }
   return parsed as Record<string, unknown>;
+}
+
+export function findRecoverableToolCallError(
+  calls: readonly ToolCallItem[],
+): { call: ToolCallItem; error: AIRecoverableError } | null {
+  for (const call of calls) {
+    try {
+      parseToolArgs(call);
+    } catch (error) {
+      if (error instanceof AIRecoverableError) {
+        return { call, error };
+      }
+    }
+  }
+  return null;
+}
+
+export function appendToolCallRecoveryInstruction(
+  instructions: string,
+  toolName: string,
+  message: string,
+): string {
+  return `${instructions}\n\n上一轮工具调用「${toolName}」未执行：参数不是合法的 JSON 对象（${message}）。请重新生成这一轮工具调用，严格按工具 inputSchema 输出参数；不要重做之前已经完成的工具调用。`;
 }
 
 export function parseNonEmptyString(value: unknown, fieldName: string): string {

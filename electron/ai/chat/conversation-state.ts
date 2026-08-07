@@ -848,9 +848,9 @@ export class AiConversationState {
     const usedFallbackIds = new Set<string>();
     const canonicalParts = response.output.flatMap((item, index) => {
       const fallback =
-        item.type === "opaque"
-          ? null
-          : this.#findFallbackPart(streamedParts, item.type, usedFallbackIds);
+        item.type === "message" || item.type === "reasoning" || item.type === "tool_call"
+          ? this.#findFallbackPart(streamedParts, item.type, usedFallbackIds)
+          : null;
       const canonical = this.#createCanonicalPart(
         item,
         fallback,
@@ -1285,6 +1285,9 @@ export class AiConversationState {
           view: fallback?.type === "tool_call" ? (fallback.view ?? null) : null,
         };
       case "opaque":
+      case "server_tool_call":
+      case "server_tool_result":
+      case "server_tool_discovery":
         return null;
     }
   }

@@ -1,4 +1,5 @@
 import type { ToolCallItem } from "@codehz/ai";
+import { AIRecoverableError } from "@codehz/ai";
 
 import { toErrorMessage } from "../ai-utils";
 import { TOOL_SPEC_BY_NAME } from "./catalog";
@@ -53,6 +54,9 @@ export function createToolRunner(resolveWorktree: ResolveWorktree): ToolRunner {
           }),
         );
       } catch (error) {
+        if (error instanceof AIRecoverableError) {
+          throw error;
+        }
         const message = toErrorMessage(error);
         return err(
           call,

@@ -5,7 +5,7 @@ import type {
   ToolCallItem,
   ToolDefinition,
 } from "@codehz/ai";
-import { aggregateEvents } from "@codehz/ai";
+import { collectStream } from "@codehz/ai";
 
 import type {
   AiChatMessageUsage,
@@ -35,6 +35,7 @@ import {
   type ToolExecutionResult,
   type ToolRunner,
 } from "../../tools";
+import { appendToolCallRecoveryInstruction, findRecoverableToolCallError } from "../../tools/parse";
 import {
   projectToolOutcome,
   projectToolSubject,
@@ -194,25 +195,26 @@ async function consumeStreamWithProgress(
   signal: AbortSignal,
   onMessageDelta: (fullText: string) => void,
 ): Promise<AIResponse> {
-  const events: AIStreamEvent[] = [];
   let partialText = "";
 
-  for await (const event of stream) {
-    if (signal.aborted) {
-      throw new DOMException("AI generation stopped by user.", "AbortError");
-    }
-    events.push(event);
-
-    if (event.type === "message.delta") {
-      const chunk = contentBlockToDisplayText(event.delta);
-      if (chunk !== "") {
-        partialText += chunk;
-        onMessageDelta(partialText);
+  async function* observeProgress(): AsyncGenerator<AIStreamEvent> {
+    for await (const event of stream) {
+      if (signal.aborted) {
+        throw new DOMException("AI generation stopped by user.", "AbortError");
       }
+
+      if (event.type === "message.delta") {
+        const chunk = contentBlockToDisplayText(event.delta);
+        if (chunk !== "") {
+          partialText += chunk;
+          onMessageDelta(partialText);
+        }
+      }
+      yield event;
     }
   }
 
-  return aggregateEvents(events);
+  return collectStream(observeProgress());
 }
 
 function finishWith(
@@ -363,6 +365,7 @@ export async function executeSubagentToolCall(options: {
     let input: InputItem[] = [toInputItem(userMessage)];
     let toolRoundCount = 0;
     let lastReport = "";
+    let recoveryInstruction: { toolName: string; message: string } | null = null;
 
     while (true) {
       if (signal.aborted) {
@@ -379,12 +382,22 @@ export async function executeSubagentToolCall(options: {
         );
       }
 
+      const reportBeforeRound = lastReport;
+
       reporter.bumpRound();
       reporter.emit("thinking");
 
+      const instructions = recoveryInstruction
+        ? appendToolCallRecoveryInstruction(
+            backend.instructions,
+            recoveryInstruction.toolName,
+            recoveryInstruction.message,
+          )
+        : backend.instructions;
+      recoveryInstruction = null;
       const response = await consumeStreamWithProgress(
         backend.client.stream({
-          instructions: backend.instructions,
+          instructions,
           input,
           tools,
           signal,
@@ -430,6 +443,18 @@ export async function executeSubagentToolCall(options: {
           }),
           reporter,
         );
+      }
+
+      const recoverable = findRecoverableToolCallError(response.toolCalls);
+      if (recoverable) {
+        recoveryInstruction = {
+          toolName: recoverable.call.name,
+          message: recoverable.error.message,
+        };
+        lastReport = reportBeforeRound;
+        reporter.setReport(lastReport);
+        reporter.forceFlush();
+        continue;
       }
 
       input = [...input, ...response.replay];

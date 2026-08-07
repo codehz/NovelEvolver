@@ -312,6 +312,91 @@ describe("executeSubagentToolCall", () => {
     }
   });
 
+  test("retries only the malformed tool round", async () => {
+    let requestCount = 0;
+    const executedCalls: string[] = [];
+    const adapter = new MockAdapter({
+      handler: async function* (request) {
+        requestCount += 1;
+        if (requestCount === 1) {
+          yield {
+            type: "tool_call",
+            id: "malformed-read",
+            name: "read_document",
+            argumentsText: '{"target":',
+          };
+          yield { type: "complete" };
+          return;
+        }
+        if (requestCount === 2) {
+          expect(request.instructions).toContain("参数不是合法的 JSON 对象");
+          expect(request.input.some((item) => item.type === "tool_call")).toBe(false);
+          yield {
+            type: "tool_call",
+            id: "recovered-read",
+            name: "read_document",
+            argumentsText: JSON.stringify({
+              target: { domain: "manuscript", id: "ch-1" },
+            }),
+          };
+          yield { type: "complete" };
+          return;
+        }
+
+        expect(request.instructions).toBe("test");
+        expect(
+          request.input.some((item) => item.type === "tool_call" && item.id === "malformed-read"),
+        ).toBe(false);
+        expect(
+          request.input.some((item) => item.type === "tool_call" && item.id === "recovered-read"),
+        ).toBe(true);
+        yield { type: "message", content: "恢复完成。" };
+        yield { type: "complete" };
+      },
+    });
+
+    const result = await executeSubagentToolCall({
+      call: toolCall({ agent_id: reviewer.id, task: "审查" }),
+      depth: 0,
+      signal: new AbortController().signal,
+      deps: {
+        resolveAgentConfig: (id) => (id === reviewer.id ? reviewer : null),
+        resolveModelConfig: () => null,
+        resolveWorktree: () => {
+          throw new Error("no worktree");
+        },
+        clientLabel: "test",
+        parentSelectedModelId: "mock",
+        parentSelectedReasoningLevel: null,
+        parentAdapterKind: "mock",
+        createBackend: () => ({
+          adapterKind: "mock",
+          model: "mock",
+          instructions: "test",
+          client: createAIClient({ adapter, model: "mock" }),
+          scenarioId: null,
+        }),
+        toolRunner: {
+          execute: async (call) => {
+            executedCalls.push(call.id);
+            return {
+              toolResult: toolResultItem(call.id, call.name, "success", [
+                { type: "json", json: { ok: true } },
+              ]),
+              resultText: '{"ok":true}',
+              errorMessage: null,
+              view: null,
+            };
+          },
+        },
+      },
+    });
+
+    expect(requestCount).toBe(3);
+    expect(executedCalls).toEqual(["recovered-read"]);
+    expect(result.resultText).toContain("恢复完成");
+  });
+
   test("rejects nested depth", async () => {
     const result = await executeSubagentToolCall({
       call: toolCall({ agent_id: reviewer.id, task: "x" }),

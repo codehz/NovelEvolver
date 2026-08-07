@@ -134,7 +134,9 @@ describe("mock AI scenario runner", () => {
     const scenario = getMockScenario("errors.provider-warning");
     const client = createScenarioClient({ scenario, pacing: "instant", clientLabel: "test" });
     const response = await collectStream(client.stream({ input: initialInput }));
-    expect(response.warnings).toContain("这是可恢复的测试警告，响应仍会继续。");
+    expect(response.warnings?.map((warning) => warning.message)).toContain(
+      "这是可恢复的测试警告，响应仍会继续。",
+    );
     expect(response.text).toContain("正文已正常完成");
   });
 

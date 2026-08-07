@@ -5,7 +5,7 @@ import type {
   ToolCallItem,
   ToolResultItem,
 } from "@codehz/ai";
-import { aggregateEvents } from "@codehz/ai";
+import { collectStream } from "@codehz/ai";
 
 import { cloneAiChatMessage, MOCK_AI_MODEL_ID } from "#shared/rpc/ai/index";
 import type {
@@ -45,6 +45,7 @@ import {
   type ToolExecutionResult,
   type ToolRunner,
 } from "../tools";
+import { appendToolCallRecoveryInstruction, findRecoverableToolCallError } from "../tools/parse";
 import { projectToolView } from "../tools/project-view";
 import { AiConversationState } from "./conversation-state";
 import { expandMentionsForModel } from "./mention-expand";
@@ -659,12 +660,16 @@ export class AiConversationRuntime {
     stream: AsyncIterable<AIStreamEvent>,
     assistantMessageId: string,
   ): Promise<AIResponse> {
-    const events: AIStreamEvent[] = [];
-    for await (const event of stream) {
-      this.#emitDelta(this.#state.handleStreamEvent(event, assistantMessageId));
-      events.push(event);
+    const state = this.#state;
+    const emitDelta = (ops: AiChatDeltaOp[]) => this.#emitDelta(ops);
+    async function* observeEvents(): AsyncGenerator<AIStreamEvent> {
+      for await (const event of stream) {
+        emitDelta(state.handleStreamEvent(event, assistantMessageId));
+        yield event;
+      }
     }
-    return aggregateEvents(events);
+
+    return collectStream(observeEvents());
   }
 
   async #runRequest(context: {
@@ -679,6 +684,7 @@ export class AiConversationRuntime {
     let completedResponse: AIResponse | null = null;
     let toolRoundCount = 0;
     let usage = context.usage ?? null;
+    let recoveryInstruction: { toolName: string; message: string } | null = null;
     const abortController = new AbortController();
     this.#generationAbort = abortController;
     const { signal } = abortController;
@@ -714,9 +720,17 @@ export class AiConversationRuntime {
         }
 
         const streamStartPartCount = this.#state.countAssistantParts(context.assistantMessageId);
+        const instructions = recoveryInstruction
+          ? appendToolCallRecoveryInstruction(
+              backend.instructions,
+              recoveryInstruction.toolName,
+              recoveryInstruction.message,
+            )
+          : backend.instructions;
+        recoveryInstruction = null;
         completedResponse = await this.#consumeStream(
           backend.client.stream({
-            instructions: backend.instructions,
+            instructions,
             input,
             tools: resolvedTools,
             signal,
@@ -737,7 +751,6 @@ export class AiConversationRuntime {
             completedResponse,
           ),
         );
-        transcript.push(...completedResponse.replay);
         usage = addMessageUsage(usage, completedResponse.usage);
         this.#emitDelta(
           this.#state.updateMessage(context.assistantMessageId, {
@@ -746,6 +759,7 @@ export class AiConversationRuntime {
         );
 
         if (!shouldProcessToolCalls(completedResponse)) {
+          transcript.push(...completedResponse.replay);
           break;
         }
 
@@ -758,6 +772,19 @@ export class AiConversationRuntime {
           throw new Error(`AI 工具循环超过 ${maxToolRounds} 轮。`);
         }
 
+        const recoverable = findRecoverableToolCallError(completedResponse.toolCalls);
+        if (recoverable) {
+          recoveryInstruction = {
+            toolName: recoverable.call.name,
+            message: recoverable.error.message,
+          };
+          this.#emitDelta(
+            this.#state.truncateAssistantParts(context.assistantMessageId, streamStartPartCount),
+          );
+          continue;
+        }
+
+        transcript.push(...completedResponse.replay);
         input = [...input, ...completedResponse.replay];
         const batchOutcome = await this.#processToolBatch(
           context.assistantMessageId,
