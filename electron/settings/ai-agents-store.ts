@@ -116,7 +116,7 @@ const BUILTIN_CHAPTER_WRITER_DESCRIPTION = [
 const BUILTIN_ROLEPLAY_DESCRIPTION = [
   "纯文本创意人格：固定视角/文风产出 prose，不调用工具。",
   "适合反派视角改写、老编辑口吻润色、角色对话演练等委派任务。",
-  "focus 可预载段落或设定；task 写清人格与输出形式。",
+  "需要使用 focus 来预载段落和设定；task 写清人格与输出形式。",
 ].join("\n");
 
 /** Normalize multi-line description: LF newlines, per-line trim, cap length. */
