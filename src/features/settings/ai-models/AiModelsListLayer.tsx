@@ -1,5 +1,3 @@
-import { useEffect, useState } from "react";
-
 import { cn } from "#app/shared/lib/ui/cn";
 import { Button } from "#app/shared/ui";
 import type { AiModelConfigPublic, AiProviderConfigPublic } from "#shared/rpc/services/index";
@@ -27,9 +25,11 @@ import { ProviderRailItem } from "./ProviderRailItem";
 type AiModelsListLayerProps = {
   providers: readonly AiProviderConfigPublic[];
   modelsByProvider: ReadonlyMap<string, readonly AiModelConfigPublic[]>;
+  selectedProviderId: string | null;
   defaultModelId: string | null;
   busy: boolean;
   actionError: string | null;
+  onSelectProvider: (id: string) => void;
   onOpenEditor: (next: EditorMode) => void;
   onRemoveProvider: (id: string) => void;
   onSetDefault: (id: string | null) => void;
@@ -39,29 +39,16 @@ type AiModelsListLayerProps = {
 export function AiModelsListLayer({
   providers,
   modelsByProvider,
+  selectedProviderId,
   defaultModelId,
   busy,
   actionError,
+  onSelectProvider,
   onOpenEditor,
   onRemoveProvider,
   onSetDefault,
   onRemoveModel,
 }: AiModelsListLayerProps) {
-  const [selectedProviderId, setSelectedProviderId] = useState<string | null>(
-    () => providers[0]?.id ?? null,
-  );
-
-  useEffect(() => {
-    const firstProvider = providers[0];
-    if (firstProvider === undefined) {
-      setSelectedProviderId(null);
-      return;
-    }
-    if (selectedProviderId === null || !providers.some((p) => p.id === selectedProviderId)) {
-      setSelectedProviderId(firstProvider.id);
-    }
-  }, [providers, selectedProviderId]);
-
   const selectedProvider =
     selectedProviderId === null
       ? null
@@ -114,7 +101,7 @@ export function AiModelsListLayer({
               provider={provider}
               modelCount={modelsByProvider.get(provider.id)?.length ?? 0}
               selected={provider.id === selectedProviderId}
-              onSelect={setSelectedProviderId}
+              onSelect={onSelectProvider}
             />
           </li>
         ))}

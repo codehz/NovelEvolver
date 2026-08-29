@@ -13,7 +13,7 @@ import { settingsErrorMessage } from "../settings-error";
 import type { SettingsFormHandle } from "../settings-leave-guard";
 import { useSettingsEditorLeave } from "../use-settings-editor-leave";
 import { useSettingsMutation } from "../use-settings-mutation";
-import { type EditorMode, isEditorTiedToProvider } from "./editor-mode";
+import { type EditorMode, isEditorTiedToProvider, resolveEditorProviderId } from "./editor-mode";
 
 const modelsSettingsLoader = createAsyncLoader(() => settingsService.getAiModels());
 
@@ -33,6 +33,7 @@ export function useAiModelsSettings({ active = true }: UseAiModelsSettingsOption
   const [editor, setEditor] = useState<EditorMode>({ type: "closed" });
   const [editorDirty, setEditorDirty] = useState(false);
   const [formKey, setFormKey] = useState(0);
+  const [selectedProviderId, setSelectedProviderId] = useState<string | null>(null);
   const formRef = useRef<SettingsFormHandle | null>(null);
 
   useEffect(() => {
@@ -60,6 +61,11 @@ export function useAiModelsSettings({ active = true }: UseAiModelsSettingsOption
     return map;
   }, [models, providers]);
 
+  const resolvedSelectedProviderId =
+    selectedProviderId !== null && providers.some((provider) => provider.id === selectedProviderId)
+      ? selectedProviderId
+      : (providers[0]?.id ?? null);
+
   const closeEditor = () => {
     clearActionError();
     setEditorDirty(false);
@@ -83,16 +89,29 @@ export function useAiModelsSettings({ active = true }: UseAiModelsSettingsOption
     clearActionError();
     setEditorDirty(false);
     setFormKey((key) => key + 1);
+    const providerId = resolveEditorProviderId(next);
+    if (providerId != null) {
+      setSelectedProviderId(providerId);
+    }
     setEditor(next);
   };
 
   const handleProviderSubmit = async (input: AiProviderConfigWrite) => {
+    const previousIds = new Set(providers.map((provider) => provider.id));
     const result = await runMutation(
       () => settingsService.upsertAiProvider(input),
       input.id ? "保存供应商失败" : "添加供应商失败",
     );
     if (result != null) {
       setEditorDirty(false);
+      if (input.id) {
+        setSelectedProviderId(input.id);
+      } else {
+        const created = result.providers.find((provider) => !previousIds.has(provider.id));
+        if (created) {
+          setSelectedProviderId(created.id);
+        }
+      }
       setEditor({ type: "closed" });
       return true;
     }
@@ -122,6 +141,7 @@ export function useAiModelsSettings({ active = true }: UseAiModelsSettingsOption
     );
     if (result != null) {
       setEditorDirty(false);
+      setSelectedProviderId(input.providerId);
       setEditor({ type: "closed" });
       return true;
     }
@@ -167,6 +187,8 @@ export function useAiModelsSettings({ active = true }: UseAiModelsSettingsOption
     openEditor,
     onDirtyChange: setEditorDirty,
     providers,
+    selectedProviderId: resolvedSelectedProviderId,
+    setSelectedProviderId,
     refresh,
     snapshot,
   };

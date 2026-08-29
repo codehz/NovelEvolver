@@ -22,10 +22,20 @@ export function resolveModelsSubpageTitle(editor: EditorMode): string | null {
   }
 }
 
+export function resolveEditorProviderId(editor: EditorMode): string | null {
+  switch (editor.type) {
+    case "edit-provider":
+      return editor.provider.id;
+    case "create-model":
+      return editor.providerId;
+    case "edit-model":
+      return editor.model.providerId;
+    case "closed":
+    case "create-provider":
+      return null;
+  }
+}
+
 export function isEditorTiedToProvider(editor: EditorMode, providerId: string): boolean {
-  return (
-    (editor.type === "edit-provider" && editor.provider.id === providerId) ||
-    (editor.type === "edit-model" && editor.model.providerId === providerId) ||
-    (editor.type === "create-model" && editor.providerId === providerId)
-  );
+  return resolveEditorProviderId(editor) === providerId;
 }

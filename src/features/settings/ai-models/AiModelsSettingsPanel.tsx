@@ -64,6 +64,8 @@ export function AiModelsSettingsPanel({ active = true }: AiModelsSettingsPanelPr
     onDirtyChange,
     providers,
     refresh,
+    selectedProviderId,
+    setSelectedProviderId,
     snapshot,
   } = useAiModelsSettings({ active });
 
@@ -141,7 +143,9 @@ export function AiModelsSettingsPanel({ active = true }: AiModelsSettingsPanelPr
               defaultModelId={defaultModelId}
               modelsByProvider={modelsByProvider}
               providers={providers}
+              selectedProviderId={selectedProviderId}
               onOpenEditor={openEditor}
+              onSelectProvider={setSelectedProviderId}
               onRemoveModel={(id) => {
                 void handleRemoveModel(id);
               }}
