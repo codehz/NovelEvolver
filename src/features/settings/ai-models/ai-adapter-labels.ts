@@ -26,6 +26,11 @@ export const AI_ADAPTER_OPTIONS: readonly {
     label: "Ollama",
     endpointPlaceholder: "http://localhost:11434",
   },
+  {
+    value: "gemini",
+    label: "Google Gemini",
+    endpointPlaceholder: "https://generativelanguage.googleapis.com/v1beta",
+  },
 ] as const;
 
 const LABEL_BY_KIND = Object.fromEntries(

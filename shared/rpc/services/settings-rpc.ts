@@ -1,13 +1,14 @@
 import type { RpcTarget } from "capnweb";
 
 /** User-configurable adapter kinds from `@codehz/ai` (excludes `mock`). */
-export type AiAdapterKind = "responses" | "chat-completions" | "messages" | "ollama";
+export type AiAdapterKind = "responses" | "chat-completions" | "messages" | "ollama" | "gemini";
 
 export const AI_ADAPTER_KINDS: readonly AiAdapterKind[] = [
   "responses",
   "chat-completions",
   "messages",
   "ollama",
+  "gemini",
 ] as const;
 
 /** Default max output tokens for new models and legacy configs without the field. */
@@ -33,6 +34,7 @@ export const AI_REASONING_LEVELS: readonly AiReasoningLevel[] = [
   "medium",
   "high",
   "xhigh",
+  "max",
 ] as const;
 
 export const AI_REASONING_LEVEL_LABELS: Record<AiReasoningLevel, string> = {
@@ -47,6 +49,45 @@ export const AI_REASONING_LEVEL_LABELS: Record<AiReasoningLevel, string> = {
 
 export function isAiReasoningLevel(value: unknown): value is AiReasoningLevel {
   return typeof value === "string" && (AI_REASONING_LEVELS as readonly string[]).includes(value);
+}
+
+/** Portable prompt-cache strategy from `@codehz/ai` `PromptCacheSettings.mode`. */
+export type AiPromptCacheMode = "off" | "auto" | "explicit";
+
+export const AI_PROMPT_CACHE_MODES: readonly AiPromptCacheMode[] = [
+  "off",
+  "auto",
+  "explicit",
+] as const;
+
+export const AI_PROMPT_CACHE_MODE_LABELS: Record<AiPromptCacheMode, string> = {
+  off: "关闭",
+  auto: "自动",
+  explicit: "显式",
+};
+
+export function isAiPromptCacheMode(value: unknown): value is AiPromptCacheMode {
+  return typeof value === "string" && (AI_PROMPT_CACHE_MODES as readonly string[]).includes(value);
+}
+
+/**
+ * Model-level prompt cache defaults (request `cache`).
+ * Empty object means not configured — omit `cache` on the request.
+ */
+export type AiPromptCacheConfig = {
+  mode?: AiPromptCacheMode;
+  /** Session / tenant routing hint; providers may ignore it. */
+  key?: string;
+  /** Portable retention (`short` / `long`) or a provider-native TTL string. */
+  ttl?: string;
+};
+
+export function isAiPromptCacheConfigured(cache: AiPromptCacheConfig): boolean {
+  return (
+    cache.mode != null ||
+    (typeof cache.key === "string" && cache.key.trim() !== "") ||
+    (typeof cache.ttl === "string" && cache.ttl.trim() !== "")
+  );
 }
 
 /** API 供应商（连接与密钥），不含具体模型。 */
@@ -98,6 +139,16 @@ export type AiModelConfigPublic = {
    */
   defaultReasoningLevel: AiReasoningLevel | null;
   /**
+   * Sampling temperature for `AIRequest.temperature`.
+   * `null` means not configured (omit on the request).
+   */
+  temperature: number | null;
+  /**
+   * Prompt-cache defaults for `AIRequest.cache`.
+   * Empty object means not configured.
+   */
+  cache: AiPromptCacheConfig;
+  /**
    * Extra HTTP headers for the provider adapter (constructor-time).
    * Empty object means not configured.
    */
@@ -129,6 +180,10 @@ export type AiModelConfigWrite = {
    *   is filled with the first available level on write / load).
    */
   defaultReasoningLevel?: AiReasoningLevel | null;
+  /** Omit, null → not configured. */
+  temperature?: number | null;
+  /** Full replace; omit or `{}` → clear / not configured. */
+  cache?: AiPromptCacheConfig;
   /** Full replace; omit or `{}` → clear / not configured. */
   headers?: Record<string, string>;
   /** Full replace; omit or `{}` → clear / not configured. */

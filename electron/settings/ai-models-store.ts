@@ -9,6 +9,7 @@ import type {
   AiModelConfigPublic,
   AiModelConfigWrite,
   AiModelsSettingsSnapshot,
+  AiPromptCacheConfig,
   AiProviderConfigPublic,
   AiProviderConfigWrite,
   AiReasoningLevel,
@@ -17,6 +18,7 @@ import {
   AI_ADAPTER_KINDS,
   AI_REASONING_LEVELS,
   DEFAULT_AI_MODEL_MAX_OUTPUT_TOKENS,
+  isAiPromptCacheMode,
   isAiReasoningLevel,
 } from "#shared/rpc/services/index";
 
@@ -39,6 +41,8 @@ type StoredModelRecord = {
   contextLength: number | null;
   availableReasoningLevels: AiReasoningLevel[];
   defaultReasoningLevel: AiReasoningLevel | null;
+  temperature: number | null;
+  cache: AiPromptCacheConfig;
   headers: Record<string, string>;
   extraBody: Record<string, unknown>;
 };
@@ -54,6 +58,8 @@ export type AiModelRuntimeConfig = {
   contextLength: number | null;
   availableReasoningLevels: AiReasoningLevel[];
   defaultReasoningLevel: AiReasoningLevel | null;
+  temperature: number | null;
+  cache: AiPromptCacheConfig;
   headers: Record<string, string>;
   extraBody: Record<string, unknown>;
 };
@@ -99,6 +105,8 @@ function toModelPublic(record: StoredModelRecord): AiModelConfigPublic {
     contextLength: record.contextLength,
     availableReasoningLevels: [...record.availableReasoningLevels],
     defaultReasoningLevel: record.defaultReasoningLevel,
+    temperature: record.temperature,
+    cache: { ...record.cache },
     headers: { ...record.headers },
     extraBody: { ...record.extraBody },
   };
@@ -247,6 +255,8 @@ export class AiModelsStore {
       input,
       availableReasoningLevels,
     );
+    const temperature = parseTemperatureFromWrite(input);
+    const cache = parseCacheFromWrite(input);
     const headers = parseHeadersFromWrite(input);
     const extraBody = parseExtraBodyFromWrite(input);
 
@@ -266,6 +276,8 @@ export class AiModelsStore {
         contextLength,
         availableReasoningLevels,
         defaultReasoningLevel,
+        temperature,
+        cache,
         headers,
         extraBody,
       };
@@ -279,6 +291,8 @@ export class AiModelsStore {
         contextLength,
         availableReasoningLevels,
         defaultReasoningLevel,
+        temperature,
+        cache,
         headers,
         extraBody,
       });
@@ -341,6 +355,8 @@ export class AiModelsStore {
       contextLength: record.contextLength,
       availableReasoningLevels: [...record.availableReasoningLevels],
       defaultReasoningLevel: record.defaultReasoningLevel,
+      temperature: record.temperature,
+      cache: { ...record.cache },
       headers: { ...record.headers },
       extraBody: { ...record.extraBody },
     };
@@ -385,6 +401,8 @@ export class AiModelsStore {
         contextLength: entry.contextLength,
         availableReasoningLevels: entry.availableReasoningLevels,
         defaultReasoningLevel: entry.defaultReasoningLevel,
+        temperature: entry.temperature,
+        cache: entry.cache,
         headers: entry.headers,
         extraBody: entry.extraBody,
       })),
@@ -463,6 +481,8 @@ function normalizeStoredFile(value: unknown): StoredFile {
         entry.defaultReasoningLevel,
         availableReasoningLevels,
       ),
+      temperature: normalizeTemperature(entry.temperature),
+      cache: normalizeCache(entry.cache),
       headers: normalizeHeaders(entry.headers),
       extraBody: normalizeExtraBody(entry.extraBody),
     });
@@ -591,6 +611,96 @@ function parseDefaultReasoningLevelFromWrite(
     return available[0]!;
   }
   return input.defaultReasoningLevel;
+}
+
+const MAX_TEMPERATURE = 2;
+
+/** Missing / invalid → not configured (`null`). */
+function normalizeTemperature(value: unknown): number | null {
+  if (value === null || value === undefined) {
+    return null;
+  }
+  if (typeof value !== "number" || !Number.isFinite(value)) {
+    return null;
+  }
+  if (value < 0 || value > MAX_TEMPERATURE) {
+    return null;
+  }
+  return value;
+}
+
+function parseTemperatureFromWrite(input: AiModelConfigWrite): number | null {
+  if (input.temperature === undefined || input.temperature === null) {
+    return null;
+  }
+  if (typeof input.temperature !== "number" || !Number.isFinite(input.temperature)) {
+    throw new Error("temperature 必须是数字。");
+  }
+  if (input.temperature < 0 || input.temperature > MAX_TEMPERATURE) {
+    throw new Error(`temperature 必须在 0 到 ${MAX_TEMPERATURE} 之间。`);
+  }
+  return input.temperature;
+}
+
+/** Missing / invalid → empty object (not configured). */
+function normalizeCache(value: unknown): AiPromptCacheConfig {
+  if (!isPlainObject(value)) {
+    return {};
+  }
+
+  const cache: AiPromptCacheConfig = {};
+  if (isAiPromptCacheMode(value.mode)) {
+    cache.mode = value.mode;
+  }
+  if (typeof value.key === "string") {
+    const key = value.key.trim();
+    if (key !== "") {
+      cache.key = key;
+    }
+  }
+  if (typeof value.ttl === "string") {
+    const ttl = value.ttl.trim();
+    if (ttl !== "") {
+      cache.ttl = ttl;
+    }
+  }
+  return cache;
+}
+
+function parseCacheFromWrite(input: AiModelConfigWrite): AiPromptCacheConfig {
+  if (input.cache === undefined) {
+    return {};
+  }
+  if (!isPlainObject(input.cache)) {
+    throw new Error("cache 必须是对象。");
+  }
+
+  const cache: AiPromptCacheConfig = {};
+  if (input.cache.mode !== undefined) {
+    if (!isAiPromptCacheMode(input.cache.mode)) {
+      throw new Error(`不支持的 prompt cache 策略：${String(input.cache.mode)}。`);
+    }
+    cache.mode = input.cache.mode;
+  }
+  if (input.cache.key !== undefined) {
+    if (typeof input.cache.key !== "string") {
+      throw new Error("cache.key 必须是字符串。");
+    }
+    const key = input.cache.key.trim();
+    if (key !== "") {
+      cache.key = key;
+    }
+  }
+  if (input.cache.ttl !== undefined) {
+    if (typeof input.cache.ttl !== "string") {
+      throw new Error("cache.ttl 必须是字符串。");
+    }
+    const ttl = input.cache.ttl.trim();
+    if (ttl !== "") {
+      cache.ttl = ttl;
+    }
+  }
+  return cache;
 }
 
 function isPlainObject(value: unknown): value is Record<string, unknown> {

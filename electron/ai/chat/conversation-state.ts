@@ -71,6 +71,7 @@ function toAdapterKind(value: string): AiChatSelectableModelKind {
     case "chat-completions":
     case "messages":
     case "ollama":
+    case "gemini":
     case "mock":
       return value;
     default:

@@ -1,10 +1,14 @@
 import {
   ChatCompletionsAdapter,
+  GeminiAdapter,
   MessagesAdapter,
   OllamaAdapter,
   ResponsesAdapter,
   createAIClient,
+  type AIRequest,
 } from "@codehz/ai";
+
+import { isAiPromptCacheConfigured } from "#shared/rpc/services/index";
 
 import type { AiModelRuntimeConfig } from "../../settings/ai-models-store";
 import { DEFAULT_AI_SYSTEM_PROMPT } from "../default-system-prompt";
@@ -97,14 +101,30 @@ function createProviderBackendSession(
           ...(headers ? { headers } : {}),
           ...(extraBody ? { extraBody } : {}),
         });
+      case "gemini":
+        return new GeminiAdapter({
+          apiKey: requireApiKey(config),
+          baseUrl,
+          ...(headers ? { headers } : {}),
+          ...(extraBody ? { extraBody } : {}),
+        });
     }
   })();
+
+  const defaults: Partial<AIRequest> = {
+    ...(config.temperature != null ? { temperature: config.temperature } : {}),
+    ...(isAiPromptCacheConfigured(config.cache) ? { cache: config.cache } : {}),
+  };
 
   return {
     adapterKind: config.kind,
     model: config.model,
     instructions: instructionsOverride ?? DEFAULT_AI_SYSTEM_PROMPT,
-    client: createAIClient({ adapter, model: config.model }),
+    client: createAIClient({
+      adapter,
+      model: config.model,
+      ...(Object.keys(defaults).length > 0 ? { defaults } : {}),
+    }),
     scenarioId: null,
     maxOutputTokens: config.maxOutputTokens,
     ...(config.defaultReasoningLevel != null

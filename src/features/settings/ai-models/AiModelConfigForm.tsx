@@ -7,10 +7,14 @@ import { cn } from "#app/shared/lib/ui/cn";
 import type {
   AiModelConfigPublic,
   AiModelConfigWrite,
+  AiPromptCacheConfig,
+  AiPromptCacheMode,
   AiProviderConfigPublic,
   AiReasoningLevel,
 } from "#shared/rpc/services/index";
 import {
+  AI_PROMPT_CACHE_MODE_LABELS,
+  AI_PROMPT_CACHE_MODES,
   AI_REASONING_LEVELS,
   DEFAULT_AI_MODEL_MAX_OUTPUT_TOKENS,
   isLowMaxOutputTokensForNovelAgent,
@@ -47,6 +51,12 @@ type FormState = {
   availableReasoningLevels: AiReasoningLevel[];
   /** null only when available is empty; otherwise a member of available. */
   defaultReasoningLevel: AiReasoningLevel | null;
+  /** null means not configured. */
+  temperature: number | null;
+  /** Empty string means follow the provider default. */
+  cacheMode: "" | AiPromptCacheMode;
+  cacheKey: string;
+  cacheTtl: string;
   /** Raw JSON text for headers; empty string means not configured. */
   headersText: string;
   /** Raw JSON text for extraBody; empty string means not configured. */
@@ -85,6 +95,10 @@ function toFormState(
     contextLength: initial?.contextLength ?? null,
     availableReasoningLevels,
     defaultReasoningLevel: resolveDefaultReasoningLevel(availableReasoningLevels, defaultLevel),
+    temperature: initial?.temperature ?? null,
+    cacheMode: initial?.cache?.mode ?? "",
+    cacheKey: initial?.cache?.key ?? "",
+    cacheTtl: initial?.cache?.ttl ?? "",
     headersText: recordToEditorText(initial?.headers),
     extraBodyText: recordToEditorText(initial?.extraBody),
   };
@@ -113,6 +127,36 @@ function resolveDefaultReasoningLevel(
 function isPositiveInteger(value: unknown): value is number {
   return typeof value === "number" && Number.isInteger(value) && value >= 1;
 }
+
+function isValidTemperature(value: unknown): value is number {
+  return typeof value === "number" && Number.isFinite(value) && value >= 0 && value <= 2;
+}
+
+function cacheFromForm(form: FormState): AiPromptCacheConfig {
+  const cache: AiPromptCacheConfig = {};
+  if (form.cacheMode !== "") {
+    cache.mode = form.cacheMode;
+  }
+  const key = form.cacheKey.trim();
+  if (key !== "") {
+    cache.key = key;
+  }
+  const ttl = form.cacheTtl.trim();
+  if (ttl !== "") {
+    cache.ttl = ttl;
+  }
+  return cache;
+}
+
+type CacheModeSelectValue = "" | AiPromptCacheMode;
+
+const CACHE_MODE_OPTIONS: readonly { value: CacheModeSelectValue; label: string }[] = [
+  { value: "", label: "跟随提供商" },
+  ...AI_PROMPT_CACHE_MODES.map((mode) => ({
+    value: mode,
+    label: AI_PROMPT_CACHE_MODE_LABELS[mode],
+  })),
+];
 
 function isPlainObject(value: unknown): value is Record<string, unknown> {
   return value !== null && typeof value === "object" && !Array.isArray(value);
@@ -195,6 +239,10 @@ function isModelFormDirty(form: FormState, baseline: FormState): boolean {
     form.maxOutputTokens !== baseline.maxOutputTokens ||
     form.contextLength !== baseline.contextLength ||
     form.defaultReasoningLevel !== baseline.defaultReasoningLevel ||
+    form.temperature !== baseline.temperature ||
+    form.cacheMode !== baseline.cacheMode ||
+    form.cacheKey !== baseline.cacheKey ||
+    form.cacheTtl !== baseline.cacheTtl ||
     form.headersText !== baseline.headersText ||
     form.extraBodyText !== baseline.extraBodyText ||
     !sameReasoningLevels(form.availableReasoningLevels, baseline.availableReasoningLevels)
@@ -236,6 +284,9 @@ export function AiModelConfigForm({
     if (form.contextLength !== null && !isPositiveInteger(form.contextLength)) {
       return null;
     }
+    if (form.temperature !== null && !isValidTemperature(form.temperature)) {
+      return null;
+    }
     if (form.name.trim() === "" || form.model.trim() === "" || form.providerId === "") {
       return null;
     }
@@ -264,6 +315,8 @@ export function AiModelConfigForm({
       contextLength: form.contextLength,
       availableReasoningLevels,
       defaultReasoningLevel,
+      temperature: form.temperature,
+      cache: cacheFromForm(form),
       headers: headersResult.value,
       extraBody: extraBodyResult.value,
     };
@@ -400,6 +453,40 @@ export function AiModelConfigForm({
         <Field.Root
           className={settingsFieldRootClass}
           disabled={busy}
+          name="temperature"
+          validate={(value) => {
+            if (value == null || value === "") {
+              return null;
+            }
+            return isValidTemperature(value)
+              ? null
+              : "temperature 请留空，或输入 0 到 2 之间的数字。";
+          }}
+        >
+          <Field.Label className={settingsFieldLabelClass}>Temperature</Field.Label>
+          <div className={settingsFieldControlCellClass}>
+            <NumberField.Root
+              allowOutOfRange
+              max={2}
+              min={0}
+              step={0.1}
+              value={form.temperature}
+              onValueChange={(next) => {
+                update("temperature", next);
+              }}
+            >
+              <NumberField.Input className={settingsInputClass} placeholder="可选，例如 0.7" />
+            </NumberField.Root>
+            <Field.Description className={settingsFieldDescriptionClass}>
+              采样温度（0–2）。留空表示不发送，由提供商默认决定。
+            </Field.Description>
+            <Field.Error className={settingsFieldErrorClass} />
+          </div>
+        </Field.Root>
+
+        <Field.Root
+          className={settingsFieldRootClass}
+          disabled={busy}
           name="contextLength"
           validate={(value) => {
             if (value == null || value === "") {
@@ -449,6 +536,58 @@ export function AiModelConfigForm({
             />
             <Field.Description className={settingsFieldDescriptionClass}>
               点选公开档位；悬停已选项可切换默认。至少选一时必有默认；全部取消表示不暴露该选项。
+            </Field.Description>
+          </div>
+        </Field.Root>
+
+        <Field.Root className={settingsFieldRootClass} disabled={busy} name="cacheMode">
+          <Field.Label className={settingsFieldLabelClass}>Prompt Cache</Field.Label>
+          <div className={settingsFieldControlCellClass}>
+            <SettingsSelect
+              value={form.cacheMode}
+              options={CACHE_MODE_OPTIONS}
+              onValueChange={(next) => {
+                update("cacheMode", next);
+              }}
+            />
+            <Field.Description className={settingsFieldDescriptionClass}>
+              可移植缓存策略。跟随提供商表示不发送 cache 字段。
+            </Field.Description>
+          </div>
+        </Field.Root>
+
+        <Field.Root className={settingsFieldRootClass} disabled={busy} name="cacheKey">
+          <Field.Label className={settingsFieldLabelClass}>Cache Key</Field.Label>
+          <div className={settingsFieldControlCellClass}>
+            <Field.Control
+              className={settingsInputClass}
+              placeholder="可选，会话或租户路由提示"
+              spellCheck={false}
+              value={form.cacheKey}
+              onValueChange={(next) => {
+                update("cacheKey", next);
+              }}
+            />
+            <Field.Description className={settingsFieldDescriptionClass}>
+              提示缓存路由键。提供商可能忽略。留空表示不发送。
+            </Field.Description>
+          </div>
+        </Field.Root>
+
+        <Field.Root className={settingsFieldRootClass} disabled={busy} name="cacheTtl">
+          <Field.Label className={settingsFieldLabelClass}>Cache TTL</Field.Label>
+          <div className={settingsFieldControlCellClass}>
+            <Field.Control
+              className={settingsInputClass}
+              placeholder="short / long / 5m / 1h"
+              spellCheck={false}
+              value={form.cacheTtl}
+              onValueChange={(next) => {
+                update("cacheTtl", next);
+              }}
+            />
+            <Field.Description className={settingsFieldDescriptionClass}>
+              可移植保留时长（short / long）或提供商原生 TTL。留空表示不发送。
             </Field.Description>
           </div>
         </Field.Root>

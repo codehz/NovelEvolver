@@ -19,6 +19,8 @@ function kindLabel(kind: AiChatSelectableModel["kind"]): string {
       return "Messages";
     case "ollama":
       return "Ollama";
+    case "gemini":
+      return "Gemini";
   }
 }
 

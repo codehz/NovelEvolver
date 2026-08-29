@@ -208,7 +208,8 @@ export type AiChatSelectableModelKind =
   | "responses"
   | "chat-completions"
   | "messages"
-  | "ollama";
+  | "ollama"
+  | "gemini";
 
 /** Model option shown in the chat composer selector. */
 export type AiChatSelectableModel = {
