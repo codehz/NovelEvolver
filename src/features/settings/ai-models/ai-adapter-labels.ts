@@ -17,6 +17,11 @@ export const AI_ADAPTER_OPTIONS: readonly {
     endpointPlaceholder: "https://api.openai.com/v1",
   },
   {
+    value: "delta-completions",
+    label: "Delta Completions（纯文本）",
+    endpointPlaceholder: "https://your-gateway.example/v1",
+  },
+  {
     value: "messages",
     label: "Anthropic Messages",
     endpointPlaceholder: "https://api.anthropic.com/v1",

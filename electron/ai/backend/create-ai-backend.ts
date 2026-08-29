@@ -1,5 +1,6 @@
 import {
   ChatCompletionsAdapter,
+  DeltaCompletionsAdapter,
   GeminiAdapter,
   MessagesAdapter,
   OllamaAdapter,
@@ -87,6 +88,20 @@ function createProviderBackendSession(
           ...(headers ? { headers } : {}),
           ...(extraBody ? { extraBody } : {}),
         });
+      case "delta-completions": {
+        const deltaBaseUrl = config.baseUrl?.trim();
+        if (!deltaBaseUrl) {
+          throw new Error(
+            `模型“${config.name}”的供应商缺少 Endpoint；delta-completions 必须配置 baseUrl。`,
+          );
+        }
+        return new DeltaCompletionsAdapter({
+          baseUrl: deltaBaseUrl,
+          ...(config.apiKey ? { apiKey: config.apiKey } : {}),
+          ...(headers ? { headers } : {}),
+          ...(extraBody ? { extraBody } : {}),
+        });
+      }
       case "messages":
         return new MessagesAdapter({
           apiKey: requireApiKey(config),

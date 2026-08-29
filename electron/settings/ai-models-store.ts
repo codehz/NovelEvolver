@@ -20,6 +20,8 @@ import {
   DEFAULT_AI_MODEL_MAX_OUTPUT_TOKENS,
   isAiPromptCacheMode,
   isAiReasoningLevel,
+  isToollessAdapterKind,
+  requiresAdapterBaseUrl,
 } from "#shared/rpc/services/index";
 
 const FILE_VERSION = 2 as const;
@@ -168,6 +170,9 @@ export class AiModelsStore {
     if (!isAiAdapterKind(kind)) {
       throw new Error("不支持的 API 形式。");
     }
+    if (requiresAdapterBaseUrl(kind) && baseUrl === "") {
+      throw new Error("delta-completions 必须填写 Endpoint。");
+    }
 
     if (input.id) {
       const index = this.#data.providers.findIndex((entry) => entry.id === input.id);
@@ -193,6 +198,14 @@ export class AiModelsStore {
         baseUrl,
         apiKeyCipher,
       };
+
+      if (isToollessAdapterKind(kind)) {
+        for (const model of this.#data.models) {
+          if (model.providerId === existing.id) {
+            model.supportsTools = false;
+          }
+        }
+      }
     } else {
       let apiKeyCipher: string | undefined;
       if (input.apiKey !== undefined && input.apiKey !== "") {
@@ -251,6 +264,9 @@ export class AiModelsStore {
       throw new Error("供应商不存在。");
     }
 
+    const provider = this.#data.providers.find((entry) => entry.id === providerId)!;
+    const toollessProvider = isToollessAdapterKind(provider.kind);
+
     const maxOutputTokens = parseMaxOutputTokensFromWrite(input);
     const contextLength = parseContextLengthFromWrite(input);
     const availableReasoningLevels = parseAvailableReasoningLevelsFromWrite(input);
@@ -262,7 +278,13 @@ export class AiModelsStore {
     const cache = parseCacheFromWrite(input);
     const headers = parseHeadersFromWrite(input);
     const extraBody = parseExtraBodyFromWrite(input);
-    const supportsTools = parseSupportsToolsFromWrite(input);
+    let supportsTools = parseSupportsToolsFromWrite(input);
+    if (toollessProvider) {
+      if (supportsTools) {
+        throw new Error("delta-completions 供应商下的模型不支持工具调用。");
+      }
+      supportsTools = false;
+    }
 
     if (input.id) {
       const index = this.#data.models.findIndex((entry) => entry.id === input.id);

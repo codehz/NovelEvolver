@@ -207,6 +207,7 @@ export type AiChatSelectableModelKind =
   | "mock"
   | "responses"
   | "chat-completions"
+  | "delta-completions"
   | "messages"
   | "ollama"
   | "gemini";

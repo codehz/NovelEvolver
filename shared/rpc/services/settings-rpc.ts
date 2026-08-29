@@ -1,15 +1,35 @@
 import type { RpcTarget } from "capnweb";
 
 /** User-configurable adapter kinds from `@codehz/ai` (excludes `mock`). */
-export type AiAdapterKind = "responses" | "chat-completions" | "messages" | "ollama" | "gemini";
+export type AiAdapterKind =
+  | "responses"
+  | "chat-completions"
+  | "delta-completions"
+  | "messages"
+  | "ollama"
+  | "gemini";
 
 export const AI_ADAPTER_KINDS: readonly AiAdapterKind[] = [
   "responses",
   "chat-completions",
+  "delta-completions",
   "messages",
   "ollama",
   "gemini",
 ] as const;
+
+/** Adapter kinds that require an explicit provider base URL (no library default). */
+export function requiresAdapterBaseUrl(kind: AiAdapterKind): boolean {
+  return kind === "delta-completions";
+}
+
+/**
+ * Adapter kinds with no tool / server-tool support.
+ * Models on these providers always have `supportsTools: false` and cannot re-enable it.
+ */
+export function isToollessAdapterKind(kind: AiAdapterKind): boolean {
+  return kind === "delta-completions";
+}
 
 /** Default max output tokens for new models and legacy configs without the field. */
 export const DEFAULT_AI_MODEL_MAX_OUTPUT_TOKENS = 4096;

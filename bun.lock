@@ -7,7 +7,7 @@
       "dependencies": {
         "@base-ui/react": "^1.6.0",
         "@catppuccin/tailwindcss": "^1.0.0",
-        "@codehz/ai": "^0.9.0",
+        "@codehz/ai": "0.9.1",
         "@codehz/auto-transition": "^0.0.8-3",
         "@codemirror/commands": "^6.10.4",
         "@codemirror/lang-json": "^6.0.2",
@@ -83,7 +83,7 @@
 
     "@catppuccin/tailwindcss": ["@catppuccin/tailwindcss@1.0.0", "", {}, "sha512-l8pOlcYe2ncGd8a1gUmL5AHmKlxR2+CHuG5kt4Me6IZwzntW1DoLmj89BH+DcsPHBsdDGLrTSv35emlYyU3FeQ=="],
 
-    "@codehz/ai": ["@codehz/ai@0.9.0", "", {}, "sha512-LqEFpQq9D5fjWpXMmfndXWIcNvaH+AFPA79bsvq/xpOA5dA4BezGxQf5ZmHv6rItgxeVq+bLF5LOJrpdJx48DA=="],
+    "@codehz/ai": ["@codehz/ai@0.9.1", "", {}, "sha512-D29TreQvUjLoYCmxy00Cehso1PhsgW8Masj7e7fwuxXTYGiwVQVl7J92f2CLoJsypIIhcYyn4TadeEo6oQH+vw=="],
 
     "@codehz/auto-transition": ["@codehz/auto-transition@0.0.8-3", "", { "dependencies": { "@radix-ui/react-slot": "^1.2.4" }, "peerDependencies": { "react": "^19.2.4" } }, "sha512-PcJf8VVh8LuGjN6NxS0/bFhMWd0QXdLeSOEy0JFrebNidYnPiKd9au911qxY2fHKd4CSaAg8UxOFUV+hlaOtuw=="],
 

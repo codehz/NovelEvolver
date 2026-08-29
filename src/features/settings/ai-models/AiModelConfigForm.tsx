@@ -18,6 +18,7 @@ import {
   AI_REASONING_LEVELS,
   DEFAULT_AI_MODEL_MAX_OUTPUT_TOKENS,
   isLowMaxOutputTokensForNovelAgent,
+  isToollessAdapterKind,
 } from "#shared/rpc/services/index";
 
 import {
@@ -87,11 +88,15 @@ function recordToEditorText(value: Record<string, unknown> | undefined | null): 
 function toFormState(
   initial: AiModelConfigPublic | null | undefined,
   defaultProviderId: string,
+  providers: readonly AiProviderConfigPublic[],
 ): FormState {
+  const providerId = initial?.providerId ?? defaultProviderId;
+  const provider = providers.find((entry) => entry.id === providerId);
+  const toolless = provider != null && isToollessAdapterKind(provider.kind);
   const availableReasoningLevels = orderReasoningLevels(initial?.availableReasoningLevels ?? []);
   const defaultLevel = initial?.defaultReasoningLevel;
   return {
-    providerId: initial?.providerId ?? defaultProviderId,
+    providerId,
     name: initial?.name ?? "",
     model: initial?.model ?? "",
     maxOutputTokens: initial?.maxOutputTokens ?? DEFAULT_AI_MODEL_MAX_OUTPUT_TOKENS,
@@ -104,7 +109,7 @@ function toFormState(
     cacheTtl: initial?.cache?.ttl ?? "",
     headersText: recordToEditorText(initial?.headers),
     extraBodyText: recordToEditorText(initial?.extraBody),
-    supportsTools: initial?.supportsTools ?? true,
+    supportsTools: toolless ? false : (initial?.supportsTools ?? true),
   };
 }
 
@@ -266,10 +271,17 @@ export function AiModelConfigForm({
 }: AiModelConfigFormProps) {
   const isEdit = initial != null;
   const initialProviderId = defaultProviderId || providers[0]?.id || "";
-  const baselineRef = useRef(toFormState(initial, initialProviderId));
-  const [form, setForm] = useState<FormState>(() => toFormState(initial, initialProviderId));
+  const baselineRef = useRef(toFormState(initial, initialProviderId, providers));
+  const [form, setForm] = useState<FormState>(() =>
+    toFormState(initial, initialProviderId, providers),
+  );
 
   const dirty = useMemo(() => isModelFormDirty(form, baselineRef.current), [form]);
+  const selectedProvider = useMemo(
+    () => providers.find((provider) => provider.id === form.providerId),
+    [providers, form.providerId],
+  );
+  const toollessProvider = selectedProvider != null && isToollessAdapterKind(selectedProvider.kind);
 
   useEffect(() => {
     onDirtyChange?.(dirty);
@@ -324,7 +336,7 @@ export function AiModelConfigForm({
       cache: cacheFromForm(form),
       headers: headersResult.value,
       extraBody: extraBodyResult.value,
-      supportsTools: form.supportsTools,
+      supportsTools: toollessProvider ? false : form.supportsTools,
     };
   };
 
@@ -375,7 +387,13 @@ export function AiModelConfigForm({
                 label: provider.name,
               }))}
               onValueChange={(next) => {
-                update("providerId", next);
+                const provider = providers.find((entry) => entry.id === next);
+                const toolless = provider != null && isToollessAdapterKind(provider.kind);
+                setForm((prev) => ({
+                  ...prev,
+                  providerId: next,
+                  ...(toolless ? { supportsTools: false } : {}),
+                }));
               }}
             />
           </div>
@@ -456,13 +474,17 @@ export function AiModelConfigForm({
           </div>
         </Field.Root>
 
-        <Field.Root className={settingsFieldRootClass} disabled={busy} name="supportsTools">
+        <Field.Root
+          className={settingsFieldRootClass}
+          disabled={busy || toollessProvider}
+          name="supportsTools"
+        >
           <Field.Label className={settingsFieldLabelClass}>工具调用</Field.Label>
           <div className={settingsFieldControlCellClass}>
             <label className={cn(settingsCheckboxLabelClass, "items-center")}>
               <SettingsCheckbox
-                checked={form.supportsTools}
-                disabled={busy}
+                checked={toollessProvider ? false : form.supportsTools}
+                disabled={busy || toollessProvider}
                 onCheckedChange={(checked) => {
                   update("supportsTools", checked);
                 }}
@@ -470,7 +492,9 @@ export function AiModelConfigForm({
               <span className="min-w-0">
                 <span className="block text-app-foreground">支持工具调用</span>
                 <span className="mt-0.5 block text-2xs text-app-muted">
-                  关闭后不会出现在主对话模型列表；仍可作为纯文本子代理的默认模型。
+                  {toollessProvider
+                    ? "delta-completions 供应商仅支持纯文本补全，不可启用工具调用；仍可作为子代理默认模型。"
+                    : "关闭后不会出现在主对话模型列表；仍可作为纯文本子代理的默认模型。"}
                 </span>
               </span>
             </label>

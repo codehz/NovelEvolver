@@ -69,6 +69,7 @@ function toAdapterKind(value: string): AiChatSelectableModelKind {
   switch (value) {
     case "responses":
     case "chat-completions":
+    case "delta-completions":
     case "messages":
     case "ollama":
     case "gemini":

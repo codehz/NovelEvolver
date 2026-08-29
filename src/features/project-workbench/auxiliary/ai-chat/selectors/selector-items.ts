@@ -15,6 +15,8 @@ function kindLabel(kind: AiChatSelectableModel["kind"]): string {
       return "Responses";
     case "chat-completions":
       return "Chat Completions";
+    case "delta-completions":
+      return "Delta Completions";
     case "messages":
       return "Messages";
     case "ollama":

@@ -8,10 +8,12 @@ import type {
   AiProviderConfigPublic,
   AiProviderConfigWrite,
 } from "#shared/rpc/services/index";
+import { requiresAdapterBaseUrl } from "#shared/rpc/services/index";
 
 import {
   settingsCheckboxLabelClass,
   settingsFieldControlCellClass,
+  settingsFieldDescriptionClass,
   settingsFieldErrorClass,
   settingsFieldLabelClass,
   settingsFieldRootClass,
@@ -86,6 +88,10 @@ export function AiProviderConfigForm({
   const buildPayload = (): AiProviderConfigWrite | null => {
     const name = form.name.trim();
     if (name === "") {
+      return null;
+    }
+    const baseUrl = form.baseUrl.trim();
+    if (requiresAdapterBaseUrl(form.kind) && baseUrl === "") {
       return null;
     }
     const payload: AiProviderConfigWrite = {
@@ -186,12 +192,25 @@ export function AiProviderConfigForm({
           </div>
         </Field.Root>
 
-        <Field.Root className={settingsFieldRootClass} disabled={busy} name="baseUrl">
+        <Field.Root
+          className={settingsFieldRootClass}
+          disabled={busy}
+          name="baseUrl"
+          validate={(value) => {
+            if (!requiresAdapterBaseUrl(form.kind)) {
+              return null;
+            }
+            return typeof value === "string" && value.trim() !== ""
+              ? null
+              : "delta-completions 必须填写 Endpoint。";
+          }}
+        >
           <Field.Label className={settingsFieldLabelClass}>Endpoint</Field.Label>
           <div className={settingsFieldControlCellClass}>
             <Field.Control
               className={settingsInputClass}
               placeholder={aiAdapterEndpointPlaceholder(form.kind)}
+              required={requiresAdapterBaseUrl(form.kind)}
               spellCheck={false}
               type="url"
               value={form.baseUrl}
@@ -199,6 +218,11 @@ export function AiProviderConfigForm({
                 update("baseUrl", next);
               }}
             />
+            {requiresAdapterBaseUrl(form.kind) ? (
+              <Field.Description className={settingsFieldDescriptionClass}>
+                delta-completions 无默认 Endpoint，必须指向兼容残缺 SSE 的网关。
+              </Field.Description>
+            ) : null}
             <Field.Error className={settingsFieldErrorClass} match="typeMismatch">
               请输入有效的 URL。
             </Field.Error>
