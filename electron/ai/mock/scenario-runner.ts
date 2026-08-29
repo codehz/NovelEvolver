@@ -4,8 +4,7 @@ import type { AIClient, MockStep } from "@codehz/ai";
 import type { MockScenarioDefinition, MockScenarioPacing } from "./scenario-types";
 
 export const MOCK_AI_MODEL = "mock-scenario-runner";
-export const MOCK_AI_INSTRUCTIONS =
-  "NovelEvolver mock AI scenario runner. Output is deterministic test data.";
+export const MOCK_AI_INSTRUCTIONS = "Mock AI scenario runner. Output is deterministic test data.";
 
 function applyPacing(step: MockStep, pacing: MockScenarioPacing): MockStep {
   if (step.type !== "message" && step.type !== "reasoning" && step.type !== "tool_call") {

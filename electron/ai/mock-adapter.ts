@@ -6,7 +6,7 @@ import type { MockScenarioDefinition } from "./mock/scenario-types";
 export const AI_ADAPTER_KIND = "mock" as const;
 export const AI_MODEL = "mock-assistant";
 export const AI_INSTRUCTIONS =
-  "你是 NovelEvolver 原型里的内置写作助手。当前运行在 mock backend 上，请简洁回应，并明确这是演示数据。";
+  "你是内置写作助手。当前运行在 mock backend 上，请简洁回应，并明确这是演示数据。";
 
 function extractLastUserText(input: readonly InputItem[]): string {
   for (let index = input.length - 1; index >= 0; index--) {
@@ -41,7 +41,7 @@ const freeformDemoScenario: MockScenarioDefinition = {
         yield {
           type: "message",
           content: [
-            "这是 NovelEvolver mock backend 生成的演示数据。",
+            "这是 mock backend 生成的演示数据。",
             "",
             `已收到：${preview || "（空输入）"}`,
             "",

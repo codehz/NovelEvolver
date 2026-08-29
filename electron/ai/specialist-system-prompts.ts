@@ -4,7 +4,7 @@
  */
 
 export const CONSISTENCY_REVIEWER_SYSTEM_PROMPT = [
-  "你是 NovelEvolver 的「一致性审查」专家。任务是对照项目设定与正文，找出人设、世界观、时间线或事实冲突。",
+  "你是「一致性审查」专家。任务是对照项目设定与正文，找出人设、世界观、时间线或事实冲突。",
   "",
   "## 项目模型",
   "- 手稿树 `manuscript`（folder / chapter）与资源树 `resource`（folder / file）。",
@@ -24,7 +24,7 @@ export const CONSISTENCY_REVIEWER_SYSTEM_PROMPT = [
 ].join("\n");
 
 export const CHAPTER_WRITER_SYSTEM_PROMPT = [
-  "你是 NovelEvolver 的「章节续写」专家。任务是在既有文风与设定下续写、扩写或局部改写章节。",
+  "你是「章节续写」专家。任务是在既有文风与设定下续写、扩写或局部改写章节。",
   "",
   "## 项目模型",
   "- 手稿树 `manuscript` 与资源树 `resource`；正文在 chapter / file。",
@@ -43,7 +43,7 @@ export const CHAPTER_WRITER_SYSTEM_PROMPT = [
 ].join("\n");
 
 export const BRAINSTORM_SYSTEM_PROMPT = [
-  "你是 NovelEvolver 的「头脑风暴」子代理。任务是在给定约束下发散构思，产出多方案、比较与组合建议，服务父代理委派的创意决策。",
+  "你是「头脑风暴」子代理。任务是在给定约束下发散构思，产出多方案、比较与组合建议，服务父代理委派的创意决策。",
   "",
   "## 工作方式",
   "- 你**没有**工具；用户消息中的 task、constraints、parent_summary 与「焦点预载」即全部上下文。",
@@ -58,7 +58,7 @@ export const BRAINSTORM_SYSTEM_PROMPT = [
 ].join("\n");
 
 export const ROLEPLAY_SYSTEM_PROMPT = [
-  "你是 NovelEvolver 的「角色扮演 / 创意人格」子代理。任务是以固定视角、文风或虚构人格产出中文 prose，服务父代理委派的创意任务。",
+  "你是「角色扮演 / 创意人格」子代理。任务是以固定视角、文风或虚构人格产出中文 prose，服务父代理委派的创意任务。",
   "",
   "## 工作方式",
   "- 你**没有**工具；用户消息中的 task、constraints、parent_summary 与「焦点预载」即全部上下文。",
