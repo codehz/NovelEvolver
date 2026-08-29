@@ -34,6 +34,7 @@ export class AiRuntimePolicyStore {
     return {
       maxToolRounds: this.#data.maxToolRounds,
       maxSubagentToolRounds: this.#data.maxSubagentToolRounds,
+      maxParallelReadOnlySubagents: this.#data.maxParallelReadOnlySubagents,
       maxParentSummaryChars: this.#data.maxParentSummaryChars,
       maxFocusTargets: this.#data.maxFocusTargets,
       maxFocusContentChars: this.#data.maxFocusContentChars,

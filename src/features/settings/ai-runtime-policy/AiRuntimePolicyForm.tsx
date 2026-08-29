@@ -58,6 +58,11 @@ const SUBAGENT_FIELDS: readonly FieldSpec[] = [
     description: `单次 run_subagent 的独立工具循环预算。默认 ${DEFAULT_AI_RUNTIME_POLICY.maxSubagentToolRounds}。`,
   },
   {
+    key: "maxParallelReadOnlySubagents",
+    label: "只读/纯文本子代理并行度",
+    description: `同一工具批次内只读或纯文本子代理生成阶段的最大并行数；可写子代理仍串行，output_target 落盘在批次末串行执行。默认 ${DEFAULT_AI_RUNTIME_POLICY.maxParallelReadOnlySubagents}。`,
+  },
+  {
     key: "maxParentSummaryChars",
     label: "父摘要最大字数",
     description: `传入子代理的 parent_summary 截断上限。默认 ${DEFAULT_AI_RUNTIME_POLICY.maxParentSummaryChars}。`,
@@ -87,6 +92,7 @@ function toFormState(initial: AiRuntimePolicySnapshot): FormState {
   return {
     maxToolRounds: initial.maxToolRounds,
     maxSubagentToolRounds: initial.maxSubagentToolRounds,
+    maxParallelReadOnlySubagents: initial.maxParallelReadOnlySubagents,
     maxParentSummaryChars: initial.maxParentSummaryChars,
     maxFocusTargets: initial.maxFocusTargets,
     maxFocusContentChars: initial.maxFocusContentChars,
@@ -102,6 +108,8 @@ function toWritePayload(form: FormState): AiRuntimePolicyWrite {
     maxToolRounds: form.maxToolRounds ?? DEFAULT_AI_RUNTIME_POLICY.maxToolRounds,
     maxSubagentToolRounds:
       form.maxSubagentToolRounds ?? DEFAULT_AI_RUNTIME_POLICY.maxSubagentToolRounds,
+    maxParallelReadOnlySubagents:
+      form.maxParallelReadOnlySubagents ?? DEFAULT_AI_RUNTIME_POLICY.maxParallelReadOnlySubagents,
     maxParentSummaryChars:
       form.maxParentSummaryChars ?? DEFAULT_AI_RUNTIME_POLICY.maxParentSummaryChars,
     maxFocusTargets: form.maxFocusTargets ?? DEFAULT_AI_RUNTIME_POLICY.maxFocusTargets,

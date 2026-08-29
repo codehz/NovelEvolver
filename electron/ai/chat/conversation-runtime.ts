@@ -65,11 +65,17 @@ import { resolveReasoningLevelForModel } from "./selectable-models";
 import { expandSlashForModel } from "./slash-expand";
 import {
   composeSystemPromptWithSubagents,
+  executeSubagentGenerationPhase,
   executeSubagentToolCall,
+  finalizeSubagentPendingWrite,
   listSubagentCatalog,
   RUN_SUBAGENT_TOOL_NAME,
+  subagentBatchConflictExecution,
   type SubagentCatalogAgent,
+  type SubagentGenerationPhaseResult,
 } from "./subagent";
+import { runWithConcurrency } from "./subagent/parallel";
+import { isParallelEligibleSubagentCall, validateParallelOutputTargets } from "./subagent/policy";
 
 type RuntimeEventListener = (event: AiChatEvent) => void;
 
@@ -882,40 +888,41 @@ export class AiConversationRuntime {
     const resolvedResultsByCallId = new Map<string, ToolResultItem>();
     const pendingInputs: PendingToolBatch["pendingInputs"] = [];
 
-    for (const call of calls) {
-      this.#emitDelta(
-        this.#state.updateAssistantPart(assistantMessageId, call.id, {
-          status: "running",
-        }),
-      );
-
-      const execution =
-        call.name === RUN_SUBAGENT_TOOL_NAME
-          ? await this.#executeSubagent(assistantMessageId, call)
-          : await this.#toolRunner.execute(call);
-      if (execution.userInputRequest) {
-        const pending = createPendingUserInputFromRequest(call, execution.userInputRequest);
-        this.#emitDelta(
-          this.#state.updateAssistantPart(assistantMessageId, call.id, {
-            status: "awaiting_user",
-            resultText: null,
-            errorMessage: null,
-            view: execution.view,
-          }),
-        );
-        pendingInputs.push(pending);
+    let index = 0;
+    while (index < calls.length) {
+      const call = calls[index]!;
+      if (this.#isParallelEligibleSubagent(call)) {
+        let end = index + 1;
+        while (end < calls.length && this.#isParallelEligibleSubagent(calls[end]!)) {
+          end += 1;
+        }
+        const slice = calls.slice(index, end);
+        if (slice.length === 1) {
+          await this.#executeAndRecordToolCall(
+            assistantMessageId,
+            slice[0]!,
+            resolvedResultsByCallId,
+            pendingInputs,
+          );
+        } else {
+          await this.#executeParallelSubagentSlice(
+            assistantMessageId,
+            slice,
+            resolvedResultsByCallId,
+            pendingInputs,
+          );
+        }
+        index = end;
         continue;
       }
 
-      this.#emitDelta(
-        this.#state.updateAssistantPart(assistantMessageId, call.id, {
-          status: execution.errorMessage === null ? "complete" : "error",
-          resultText: execution.resultText,
-          errorMessage: execution.errorMessage,
-          view: execution.view,
-        }),
+      await this.#executeAndRecordToolCall(
+        assistantMessageId,
+        call,
+        resolvedResultsByCallId,
+        pendingInputs,
       );
-      resolvedResultsByCallId.set(call.id, execution.toolResult);
+      index += 1;
     }
 
     if (pendingInputs.length > 0) {
@@ -958,6 +965,171 @@ export class AiConversationRuntime {
     return "continue";
   }
 
+  #isParallelEligibleSubagent(call: ToolCallItem): boolean {
+    return isParallelEligibleSubagentCall(call, (agentId) => this.#resolveAgentConfig(agentId));
+  }
+
+  async #executeAndRecordToolCall(
+    assistantMessageId: string,
+    call: ToolCallItem,
+    resolvedResultsByCallId: Map<string, ToolResultItem>,
+    pendingInputs: PendingToolBatch["pendingInputs"],
+  ): Promise<void> {
+    this.#emitDelta(
+      this.#state.updateAssistantPart(assistantMessageId, call.id, {
+        status: "running",
+      }),
+    );
+
+    const execution =
+      call.name === RUN_SUBAGENT_TOOL_NAME
+        ? await this.#executeSubagent(assistantMessageId, call)
+        : await this.#toolRunner.execute(call);
+    this.#recordToolExecution(
+      assistantMessageId,
+      call,
+      execution,
+      resolvedResultsByCallId,
+      pendingInputs,
+    );
+  }
+
+  #recordToolExecution(
+    assistantMessageId: string,
+    call: ToolCallItem,
+    execution: ToolExecutionResult,
+    resolvedResultsByCallId: Map<string, ToolResultItem>,
+    pendingInputs: PendingToolBatch["pendingInputs"],
+  ): void {
+    if (execution.userInputRequest) {
+      const pending = createPendingUserInputFromRequest(call, execution.userInputRequest);
+      this.#emitDelta(
+        this.#state.updateAssistantPart(assistantMessageId, call.id, {
+          status: "awaiting_user",
+          resultText: null,
+          errorMessage: null,
+          view: execution.view,
+        }),
+      );
+      pendingInputs.push(pending);
+      return;
+    }
+
+    this.#emitDelta(
+      this.#state.updateAssistantPart(assistantMessageId, call.id, {
+        status: execution.errorMessage === null ? "complete" : "error",
+        resultText: execution.resultText,
+        errorMessage: execution.errorMessage,
+        view: execution.view,
+      }),
+    );
+    resolvedResultsByCallId.set(call.id, execution.toolResult);
+  }
+
+  async #executeParallelSubagentSlice(
+    assistantMessageId: string,
+    slice: ToolCallItem[],
+    resolvedResultsByCallId: Map<string, ToolResultItem>,
+    pendingInputs: PendingToolBatch["pendingInputs"],
+  ): Promise<void> {
+    for (const call of slice) {
+      this.#emitDelta(
+        this.#state.updateAssistantPart(assistantMessageId, call.id, {
+          status: "running",
+        }),
+      );
+    }
+
+    const conflict = validateParallelOutputTargets(slice);
+    if (conflict) {
+      for (const call of slice) {
+        this.#recordToolExecution(
+          assistantMessageId,
+          call,
+          subagentBatchConflictExecution(call, conflict),
+          resolvedResultsByCallId,
+          pendingInputs,
+        );
+      }
+      return;
+    }
+
+    const policy = this.#getRuntimePolicy();
+    const phaseResults = await runWithConcurrency(
+      slice.map((call) => () => this.#executeSubagentGenerationPhase(assistantMessageId, call)),
+      policy.maxParallelReadOnlySubagents,
+    );
+
+    for (let i = 0; i < slice.length; i += 1) {
+      const call = slice[i]!;
+      const phase = phaseResults[i]!;
+      const execution = this.#finalizeSubagentPhaseResult(phase);
+      this.#recordToolExecution(
+        assistantMessageId,
+        call,
+        execution,
+        resolvedResultsByCallId,
+        pendingInputs,
+      );
+    }
+  }
+
+  #finalizeSubagentPhaseResult(phase: SubagentGenerationPhaseResult): ToolExecutionResult {
+    if (phase.kind === "finished") {
+      return phase.execution;
+    }
+    return finalizeSubagentPendingWrite(phase.state, this.#resolveWorktree());
+  }
+
+  async #executeSubagentGenerationPhase(
+    assistantMessageId: string,
+    call: ToolCallItem,
+  ): Promise<SubagentGenerationPhaseResult> {
+    const signal = this.#generationAbort?.signal ?? new AbortController().signal;
+    const scenarioId = this.#scenarioBackend?.scenarioId ?? null;
+    const policy = this.#getRuntimePolicy();
+    return executeSubagentGenerationPhase({
+      call,
+      depth: 0,
+      signal,
+      deps: this.#subagentExecutorDeps(scenarioId, policy),
+      onView: (view) => {
+        if (this.#disposed || signal.aborted) {
+          return;
+        }
+        this.#emitDelta(
+          this.#state.updateAssistantPart(assistantMessageId, call.id, {
+            view,
+          }),
+        );
+      },
+    });
+  }
+
+  #subagentExecutorDeps(
+    scenarioId: string | null,
+    policy: AiRuntimePolicySnapshot,
+  ): Parameters<typeof executeSubagentToolCall>[0]["deps"] {
+    return {
+      resolveAgentConfig: (agentId) => this.#resolveAgentConfig(agentId),
+      resolveModelConfig: (modelId) => this.#resolveModelConfig(modelId),
+      resolveWorktree: this.#resolveWorktree,
+      clientLabel: this.#clientLabel,
+      parentSelectedModelId: this.#state.selectedModelId,
+      parentSelectedReasoningLevel: this.#state.selectedReasoningLevel,
+      parentAdapterKind: this.#state.getSnapshot().adapterKind,
+      scenarioId,
+      scenarioPacing: this.#scenarioPacing,
+      toolRunner: this.#toolRunner,
+      policy: {
+        maxSubagentToolRounds: policy.maxSubagentToolRounds,
+        maxParentSummaryChars: policy.maxParentSummaryChars,
+        maxFocusTargets: policy.maxFocusTargets,
+        maxFocusContentChars: policy.maxFocusContentChars,
+      },
+    };
+  }
+
   async #executeSubagent(
     assistantMessageId: string,
     call: ToolCallItem,
@@ -969,25 +1141,7 @@ export class AiConversationRuntime {
       call,
       depth: 0,
       signal,
-      deps: {
-        resolveAgentConfig: (agentId) => this.#resolveAgentConfig(agentId),
-        resolveModelConfig: (modelId) => this.#resolveModelConfig(modelId),
-        resolveWorktree: this.#resolveWorktree,
-        clientLabel: this.#clientLabel,
-        parentSelectedModelId: this.#state.selectedModelId,
-        parentSelectedReasoningLevel: this.#state.selectedReasoningLevel,
-        parentAdapterKind: this.#state.getSnapshot().adapterKind,
-        scenarioId,
-        scenarioPacing: this.#scenarioPacing,
-        // Share the parent scenario tool runner so simulated child tool results apply.
-        toolRunner: this.#toolRunner,
-        policy: {
-          maxSubagentToolRounds: policy.maxSubagentToolRounds,
-          maxParentSummaryChars: policy.maxParentSummaryChars,
-          maxFocusTargets: policy.maxFocusTargets,
-          maxFocusContentChars: policy.maxFocusContentChars,
-        },
-      },
+      deps: this.#subagentExecutorDeps(scenarioId, policy),
       onView: (view) => {
         if (this.#disposed || signal.aborted) {
           return;

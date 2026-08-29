@@ -343,6 +343,11 @@ export type AiRuntimePolicySnapshot = {
   maxToolRounds: number;
   /** Independent tool-loop budget for a single `run_subagent` run. */
   maxSubagentToolRounds: number;
+  /**
+   * Max concurrent read-only / pure-text subagent runs within one tool batch.
+   * Writable subagents always run sequentially; output_target writes are serialized after generation.
+   */
+  maxParallelReadOnlySubagents: number;
   /** Hard cap on parent_summary forwarded into the child context. */
   maxParentSummaryChars: number;
   /** Max focus targets whose content is auto-injected into a subagent prompt. */
@@ -358,6 +363,7 @@ export type AiRuntimePolicyWrite = AiRuntimePolicySnapshot;
 export const DEFAULT_AI_RUNTIME_POLICY: AiRuntimePolicySnapshot = {
   maxToolRounds: 16,
   maxSubagentToolRounds: 8,
+  maxParallelReadOnlySubagents: 3,
   maxParentSummaryChars: 2000,
   maxFocusTargets: 8,
   maxFocusContentChars: 40_000,
@@ -372,6 +378,7 @@ export type AiRuntimePolicyFieldLimit = {
 export const AI_RUNTIME_POLICY_LIMITS = {
   maxToolRounds: { min: 1, max: 64 },
   maxSubagentToolRounds: { min: 1, max: 32 },
+  maxParallelReadOnlySubagents: { min: 1, max: 8 },
   maxParentSummaryChars: { min: 200, max: 20_000 },
   maxFocusTargets: { min: 1, max: 32 },
   maxFocusContentChars: { min: 1000, max: 200_000 },
@@ -412,6 +419,11 @@ export function normalizeAiRuntimePolicy(
       source.maxSubagentToolRounds,
       DEFAULT_AI_RUNTIME_POLICY.maxSubagentToolRounds,
       AI_RUNTIME_POLICY_LIMITS.maxSubagentToolRounds,
+    ),
+    maxParallelReadOnlySubagents: clampPolicyInt(
+      source.maxParallelReadOnlySubagents,
+      DEFAULT_AI_RUNTIME_POLICY.maxParallelReadOnlySubagents,
+      AI_RUNTIME_POLICY_LIMITS.maxParallelReadOnlySubagents,
     ),
     maxParentSummaryChars: clampPolicyInt(
       source.maxParentSummaryChars,

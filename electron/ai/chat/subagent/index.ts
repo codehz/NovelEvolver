@@ -5,8 +5,13 @@ export {
   type SubagentFocusTarget,
 } from "./context";
 export {
+  executeSubagentGenerationPhase,
   executeSubagentToolCall,
+  finalizeSubagentPendingWrite,
+  subagentBatchConflictExecution,
   type SubagentExecutorDeps,
+  type SubagentGenerationPhaseResult,
+  type SubagentPendingWriteState,
   type SubagentRuntimePolicy,
 } from "./executor";
 export {
@@ -37,6 +42,8 @@ export {
 } from "./view-reporter";
 export {
   assertSubagentDepth,
+  formatOutputTargetKey,
+  isParallelEligibleSubagentCall,
   MAX_FOCUS_CONTENT_CHARS,
   MAX_FOCUS_TARGETS,
   MAX_PARENT_SUMMARY_CHARS,
@@ -47,7 +54,9 @@ export {
   stripSubagentTools,
   SUBAGENT_STRIPPED_TOOLS,
   truncateParentSummary,
+  validateParallelOutputTargets,
 } from "./policy";
+export { runWithConcurrency } from "./parallel";
 export {
   composeSystemPromptWithSubagents,
   formatAvailableSubagentsSection,

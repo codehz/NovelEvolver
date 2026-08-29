@@ -1,3 +1,10 @@
+import type { ToolCallItem } from "@codehz/ai";
+
+import type { AiAgentRuntimeConfig } from "../../../settings/ai-agents-store";
+import { parseRunSubagentArgs } from "./context";
+import type { SubagentOutputTarget } from "./output-write";
+import { summarizeSubagentCapability } from "./prompt-visibility";
+
 /** Tool name used by the orchestrator to spawn a nested specialist run. */
 export const RUN_SUBAGENT_TOOL_NAME = "run_subagent" as const;
 
@@ -102,4 +109,72 @@ export function resolveSubagentModelId(
     return preferred;
   }
   return parentSelectedModelId;
+}
+
+/** Stable key for deduplicating output_target within a parallel batch. */
+export function formatOutputTargetKey(target: SubagentOutputTarget): string {
+  return `${target.domain}:${target.id}`;
+}
+
+/**
+ * Whether a `run_subagent` call may participate in a parallel read-only batch.
+ * Writable subagents always run sequentially.
+ */
+export function isParallelEligibleSubagentCall(
+  call: ToolCallItem,
+  resolveAgentConfig: (agentId: string) => AiAgentRuntimeConfig | null,
+): boolean {
+  if (call.name !== RUN_SUBAGENT_TOOL_NAME) {
+    return false;
+  }
+
+  let args;
+  try {
+    args = parseRunSubagentArgs(call);
+  } catch {
+    return false;
+  }
+
+  const agent = resolveAgentConfig(args.agentId);
+  if (!agent?.subagentEligible) {
+    return false;
+  }
+
+  return summarizeSubagentCapability(agent) !== "可写";
+}
+
+/**
+ * Reject parallel batches where multiple calls target the same output_target document.
+ * Returns an error message when invalid; null when the batch may proceed.
+ */
+export function validateParallelOutputTargets(calls: readonly ToolCallItem[]): string | null {
+  const seen = new Map<string, string>();
+
+  for (const call of calls) {
+    if (call.name !== RUN_SUBAGENT_TOOL_NAME) {
+      continue;
+    }
+
+    let outputTarget;
+    try {
+      outputTarget = parseRunSubagentArgs(call).outputTarget;
+    } catch {
+      continue;
+    }
+
+    if (!outputTarget) {
+      continue;
+    }
+
+    const key = formatOutputTargetKey(outputTarget);
+    if (seen.has(key)) {
+      return (
+        `同一批次中多个 run_subagent 的 output_target 指向同一文档` +
+        `（${outputTarget.domain} id=${outputTarget.id}），无法并行执行。`
+      );
+    }
+    seen.set(key, call.id);
+  }
+
+  return null;
 }
