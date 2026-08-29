@@ -47,6 +47,7 @@ const reviewer: AiAgentRuntimeConfig = {
   builtin: true,
   userSelectable: false,
   subagentEligible: true,
+  textOnlyMode: false,
 };
 
 describe("executeSubagentToolCall", () => {
@@ -417,5 +418,90 @@ describe("executeSubagentToolCall", () => {
     const json = JSON.parse(result.resultText!) as { status: string; error: string };
     expect(json.status).toBe("failed");
     expect(json.error).toContain("嵌套深度");
+  });
+
+  test("completes text-only subagent without tools", async () => {
+    const roleplay: AiAgentRuntimeConfig = {
+      id: "builtin-roleplay",
+      name: "角色扮演",
+      description: "纯文本创意人格",
+      defaultDescription: "纯文本创意人格",
+      systemPrompt: "你是创意人格",
+      defaultSystemPrompt: "你是创意人格",
+      defaultModelId: null,
+      availableToolNames: [],
+      builtin: true,
+      userSelectable: false,
+      subagentEligible: true,
+      textOnlyMode: true,
+    };
+
+    const result = await executeSubagentToolCall({
+      call: toolCall({ agent_id: roleplay.id, task: "以反派口吻改写这段对话" }),
+      depth: 0,
+      signal: new AbortController().signal,
+      deps: {
+        resolveAgentConfig: (id) => (id === roleplay.id ? roleplay : null),
+        resolveModelConfig: () => null,
+        resolveWorktree: () => {
+          throw new Error("no worktree");
+        },
+        clientLabel: "test",
+        parentSelectedModelId: "mock",
+        parentSelectedReasoningLevel: null,
+        parentAdapterKind: "mock",
+        createBackend: () => createMockBackend("（冷笑）你以为逃得掉吗？"),
+      },
+    });
+
+    expect(result.errorMessage).toBeNull();
+    const json = JSON.parse(result.resultText!) as { status: string; report: string };
+    expect(json.status).toBe("completed");
+    expect(json.report).toContain("冷笑");
+  });
+
+  test("fails when agent needs tools but model does not support tools", async () => {
+    let backendCreated = false;
+    const result = await executeSubagentToolCall({
+      call: toolCall({ agent_id: reviewer.id, task: "审查" }),
+      depth: 0,
+      signal: new AbortController().signal,
+      deps: {
+        resolveAgentConfig: (id) => (id === reviewer.id ? reviewer : null),
+        resolveModelConfig: () => ({
+          id: "local-chat",
+          name: "Local Chat",
+          kind: "ollama",
+          model: "llama3",
+          baseUrl: "",
+          apiKey: null,
+          maxOutputTokens: 4096,
+          contextLength: null,
+          availableReasoningLevels: [],
+          defaultReasoningLevel: null,
+          temperature: null,
+          cache: {},
+          headers: {},
+          extraBody: {},
+          supportsTools: false,
+        }),
+        resolveWorktree: () => {
+          throw new Error("no worktree");
+        },
+        clientLabel: "test",
+        parentSelectedModelId: "local-chat",
+        parentSelectedReasoningLevel: null,
+        parentAdapterKind: "ollama",
+        createBackend: () => {
+          backendCreated = true;
+          return createMockBackend("should not run");
+        },
+      },
+    });
+
+    expect(backendCreated).toBe(false);
+    const json = JSON.parse(result.resultText!) as { status: string; error: string };
+    expect(json.status).toBe("failed");
+    expect(json.error).toContain("不支持工具调用");
   });
 });

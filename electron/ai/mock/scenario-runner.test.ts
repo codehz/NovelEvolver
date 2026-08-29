@@ -32,6 +32,7 @@ const reviewer: AiAgentRuntimeConfig = {
   builtin: true,
   userSelectable: false,
   subagentEligible: true,
+  textOnlyMode: false,
 };
 
 function subagentUserInput(task: string): InputItem[] {

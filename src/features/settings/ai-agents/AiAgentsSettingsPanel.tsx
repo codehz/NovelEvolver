@@ -68,7 +68,12 @@ function sameSelection(a: AgentSelection | null, b: AgentSelection | null): bool
 }
 
 function agentMetaLine(agent: AiAgentConfigPublic, modelNameById: Map<string, string>): string {
-  const parts: string[] = [`${agent.availableToolNames.length} 个工具`];
+  const parts: string[] = [];
+  if (agent.textOnlyMode) {
+    parts.push("纯文本");
+  } else {
+    parts.push(`${agent.availableToolNames.length} 个工具`);
+  }
   if (agent.defaultModelId) {
     parts.push(modelNameById.get(agent.defaultModelId) ?? agent.defaultModelId);
   } else {
@@ -111,6 +116,7 @@ function seedFromAgent(
     availableToolNames: [...agent.availableToolNames],
     userSelectable: agent.userSelectable,
     subagentEligible: agent.subagentEligible,
+    textOnlyMode: agent.textOnlyMode,
   };
 }
 

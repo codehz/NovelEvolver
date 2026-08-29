@@ -6,10 +6,31 @@ import {
   MAX_PARENT_SUMMARY_CHARS,
   MAX_SUBAGENT_DEPTH,
   resolveSubagentModelId,
+  resolveSubagentEffectiveToolNames,
   RUN_SUBAGENT_TOOL_NAME,
   stripSubagentTools,
   truncateParentSummary,
 } from "./policy";
+
+describe("resolveSubagentEffectiveToolNames", () => {
+  test("returns empty list for text-only agents", () => {
+    expect(
+      resolveSubagentEffectiveToolNames({
+        textOnlyMode: true,
+        availableToolNames: ["read_document", "write_document"],
+      }),
+    ).toEqual([]);
+  });
+
+  test("strips spawn tools for toolful agents", () => {
+    expect(
+      resolveSubagentEffectiveToolNames({
+        textOnlyMode: false,
+        availableToolNames: ["read_document", RUN_SUBAGENT_TOOL_NAME, "ask_user"],
+      }),
+    ).toEqual(["read_document"]);
+  });
+});
 
 describe("stripSubagentTools", () => {
   test("removes run_subagent and ask_user", () => {

@@ -55,6 +55,9 @@ export function listSelectableModels(options: {
   }
 
   for (const model of options.models.models) {
+    if (model.supportsTools === false) {
+      continue;
+    }
     const provider = providerById.get(model.providerId);
     if (!provider) {
       continue;
@@ -84,7 +87,9 @@ export function isSelectableModelId(
   if (modelId === MOCK_AI_MODEL_ID) {
     return options.mockAiEnabled;
   }
-  return options.models.models.some((model) => model.id === modelId);
+  return options.models.models.some(
+    (model) => model.id === modelId && model.supportsTools !== false,
+  );
 }
 
 /**
@@ -108,7 +113,7 @@ export function resolveDefaultSelectedModelId(options: {
     return defaultId;
   }
 
-  const first = options.models.models[0];
+  const first = options.models.models.find((model) => model.supportsTools !== false);
   if (first) {
     return first.id;
   }

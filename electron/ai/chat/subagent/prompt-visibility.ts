@@ -13,7 +13,7 @@ const WRITE_TOOL_NAMES = new Set([
   "delete_node",
 ]);
 
-export type SubagentCapability = "只读" | "可写";
+export type SubagentCapability = "只读" | "可写" | "纯文本";
 
 export type SubagentCatalogEntry = {
   id: string;
@@ -28,20 +28,31 @@ export type SubagentCatalogAgent = {
   name: string;
   availableToolNames: readonly string[];
   subagentEligible: boolean;
+  textOnlyMode: boolean;
   description?: string;
 };
 
 /** Builtin specialist ids preferred at the top of the catalog. */
-const BUILTIN_ORDER = ["builtin-consistency-reviewer", "builtin-chapter-writer"] as const;
+const BUILTIN_ORDER = [
+  "builtin-consistency-reviewer",
+  "builtin-chapter-writer",
+  "builtin-roleplay",
+] as const;
 
 const AVAILABLE_SECTION_HEADING = "## 可用子代理";
 
 /**
- * Derive a coarse capability label from the agent's tool whitelist.
- * Any structural/content write tool → 可写; otherwise 只读.
+ * Derive a coarse capability label from the agent config.
+ * Pure-text subagents are labeled separately from read/write tool profiles.
  */
-export function summarizeSubagentCapability(toolNames: readonly string[]): SubagentCapability {
-  for (const name of toolNames) {
+export function summarizeSubagentCapability(agent: {
+  availableToolNames: readonly string[];
+  textOnlyMode: boolean;
+}): SubagentCapability {
+  if (agent.textOnlyMode) {
+    return "纯文本";
+  }
+  for (const name of agent.availableToolNames) {
     if (WRITE_TOOL_NAMES.has(name)) {
       return "可写";
     }
@@ -76,7 +87,7 @@ export function listSubagentCatalog(
     entries.push({
       id: agent.id,
       name: agent.name,
-      capability: summarizeSubagentCapability(agent.availableToolNames),
+      capability: summarizeSubagentCapability(agent),
       description: agent.description?.trim() ?? "",
     });
   }

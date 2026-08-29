@@ -45,6 +45,7 @@ type StoredModelRecord = {
   cache: AiPromptCacheConfig;
   headers: Record<string, string>;
   extraBody: Record<string, unknown>;
+  supportsTools: boolean;
 };
 
 export type AiModelRuntimeConfig = {
@@ -62,6 +63,7 @@ export type AiModelRuntimeConfig = {
   cache: AiPromptCacheConfig;
   headers: Record<string, string>;
   extraBody: Record<string, unknown>;
+  supportsTools: boolean;
 };
 
 const MAX_PROVIDER_OPTION_KEYS = 64;
@@ -109,6 +111,7 @@ function toModelPublic(record: StoredModelRecord): AiModelConfigPublic {
     cache: { ...record.cache },
     headers: { ...record.headers },
     extraBody: { ...record.extraBody },
+    supportsTools: record.supportsTools,
   };
 }
 
@@ -259,6 +262,7 @@ export class AiModelsStore {
     const cache = parseCacheFromWrite(input);
     const headers = parseHeadersFromWrite(input);
     const extraBody = parseExtraBodyFromWrite(input);
+    const supportsTools = parseSupportsToolsFromWrite(input);
 
     if (input.id) {
       const index = this.#data.models.findIndex((entry) => entry.id === input.id);
@@ -280,6 +284,7 @@ export class AiModelsStore {
         cache,
         headers,
         extraBody,
+        supportsTools,
       };
     } else {
       this.#data.models.push({
@@ -295,6 +300,7 @@ export class AiModelsStore {
         cache,
         headers,
         extraBody,
+        supportsTools,
       });
     }
 
@@ -359,6 +365,7 @@ export class AiModelsStore {
       cache: { ...record.cache },
       headers: { ...record.headers },
       extraBody: { ...record.extraBody },
+      supportsTools: record.supportsTools,
     };
   }
 
@@ -405,6 +412,7 @@ export class AiModelsStore {
         cache: entry.cache,
         headers: entry.headers,
         extraBody: entry.extraBody,
+        supportsTools: entry.supportsTools,
       })),
     };
 
@@ -485,6 +493,7 @@ function normalizeStoredFile(value: unknown): StoredFile {
       cache: normalizeCache(entry.cache),
       headers: normalizeHeaders(entry.headers),
       extraBody: normalizeExtraBody(entry.extraBody),
+      supportsTools: normalizeSupportsTools(entry.supportsTools),
     });
   }
 
@@ -795,4 +804,18 @@ function parseExtraBodyFromWrite(input: AiModelConfigWrite): Record<string, unkn
   const result: Record<string, unknown> = { ...input.extraBody };
   assertProviderOptionSize("extraBody", result);
   return result;
+}
+
+function normalizeSupportsTools(value: unknown): boolean {
+  return typeof value === "boolean" ? value : true;
+}
+
+function parseSupportsToolsFromWrite(input: AiModelConfigWrite): boolean {
+  if (input.supportsTools === undefined) {
+    return true;
+  }
+  if (typeof input.supportsTools !== "boolean") {
+    throw new Error("supportsTools 必须是布尔值。");
+  }
+  return input.supportsTools;
 }

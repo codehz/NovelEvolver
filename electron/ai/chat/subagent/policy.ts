@@ -40,6 +40,17 @@ export function stripSubagentTools(toolNames: readonly string[]): string[] {
   return toolNames.filter((name) => !SUBAGENT_STRIPPED_TOOLS.has(name));
 }
 
+/** Resolve the tool whitelist for a nested subagent run (before selectAiTools). */
+export function resolveSubagentEffectiveToolNames(agent: {
+  textOnlyMode: boolean;
+  availableToolNames: readonly string[];
+}): string[] {
+  if (agent.textOnlyMode) {
+    return [];
+  }
+  return stripSubagentTools(agent.availableToolNames);
+}
+
 /**
  * Ensure the current nesting depth is legal before starting a subagent.
  * Parent orchestrator calls with depth 0; any nested call uses depth ≥ 1 and fails.

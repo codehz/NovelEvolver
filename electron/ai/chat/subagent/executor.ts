@@ -53,7 +53,7 @@ import {
   MAX_SUBAGENT_TOOL_ROUNDS,
   resolveSubagentModelId,
   RUN_SUBAGENT_TOOL_NAME,
-  stripSubagentTools,
+  resolveSubagentEffectiveToolNames,
 } from "./policy";
 import {
   abortedSubagentResult,
@@ -325,25 +325,32 @@ export async function executeSubagentToolCall(options: {
     });
     reporter.emit("starting");
 
-    const childToolNames = stripSubagentTools(agent.availableToolNames);
+    const childToolNames = resolveSubagentEffectiveToolNames(agent);
     const tools: ToolDefinition[] = selectAiTools(childToolNames);
-    if (tools.length === 0) {
-      return finishWith(
-        call,
-        failedSubagentResult({
-          agentId: agent.id,
-          agentName: agent.name,
-          error: `Agent「${agent.name}」没有可用于子运行的工具。`,
-        }),
-        reporter,
-      );
-    }
 
     const modelId = resolveSubagentModelId(
       agent.defaultModelId,
       deps.parentSelectedModelId,
       (id) => id === MOCK_AI_MODEL_ID || deps.resolveModelConfig(id) !== null,
     );
+
+    if (tools.length > 0) {
+      const modelConfig = deps.resolveModelConfig(modelId);
+      const supportsTools =
+        modelId === MOCK_AI_MODEL_ID || (modelConfig?.supportsTools ?? true) !== false;
+      if (!supportsTools) {
+        const modelLabel = modelConfig?.name?.trim() || modelId;
+        return finishWith(
+          call,
+          failedSubagentResult({
+            agentId: agent.id,
+            agentName: agent.name,
+            error: `模型「${modelLabel}」不支持工具调用，无法运行需要工具的子代理「${agent.name}」。`,
+          }),
+          reporter,
+        );
+      }
+    }
 
     const backend = resolveBackend(deps, agent, modelId);
     const toolRunner = deps.toolRunner ?? createToolRunner(deps.resolveWorktree);

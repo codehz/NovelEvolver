@@ -14,6 +14,7 @@ import {
   BUILTIN_AI_AGENT_IDS,
   BUILTIN_CHAPTER_WRITER_ID,
   BUILTIN_CONSISTENCY_REVIEWER_ID,
+  BUILTIN_ROLEPLAY_ID,
   isBuiltinAiAgentId,
 } from "#shared/rpc/services/index";
 
@@ -21,6 +22,7 @@ import { DEFAULT_AI_SYSTEM_PROMPT } from "../ai/default-system-prompt";
 import {
   CHAPTER_WRITER_SYSTEM_PROMPT,
   CONSISTENCY_REVIEWER_SYSTEM_PROMPT,
+  ROLEPLAY_SYSTEM_PROMPT,
 } from "../ai/specialist-system-prompts";
 import { AI_TOOL_CATALOG, AI_TOOL_NAMES } from "../ai/tools";
 import type { AiModelsStore } from "./ai-models-store";
@@ -111,6 +113,12 @@ const BUILTIN_CHAPTER_WRITER_DESCRIPTION = [
   "focus 可传父 folder 或既有章节；勿塞空 chapter 浪费预算。",
 ].join("\n");
 
+const BUILTIN_ROLEPLAY_DESCRIPTION = [
+  "纯文本创意人格：固定视角/文风产出 prose，不调用工具。",
+  "适合反派视角改写、老编辑口吻润色、角色对话演练等委派任务。",
+  "focus 可预载段落或设定；task 写清人格与输出形式。",
+].join("\n");
+
 /** Normalize multi-line description: LF newlines, per-line trim, cap length. */
 function normalizeDescription(value: string): string {
   const lines = value
@@ -140,6 +148,7 @@ function builtinWritingAssistant(): AiAgentConfigPublic {
     builtin: true,
     userSelectable: true,
     subagentEligible: false,
+    textOnlyMode: false,
   };
 }
 
@@ -156,6 +165,7 @@ function builtinConsistencyReviewer(): AiAgentConfigPublic {
     builtin: true,
     userSelectable: false,
     subagentEligible: true,
+    textOnlyMode: false,
   };
 }
 
@@ -172,6 +182,24 @@ function builtinChapterWriter(): AiAgentConfigPublic {
     builtin: true,
     userSelectable: false,
     subagentEligible: true,
+    textOnlyMode: false,
+  };
+}
+
+function builtinRoleplay(): AiAgentConfigPublic {
+  return {
+    id: BUILTIN_ROLEPLAY_ID,
+    name: "角色扮演",
+    description: BUILTIN_ROLEPLAY_DESCRIPTION,
+    defaultDescription: BUILTIN_ROLEPLAY_DESCRIPTION,
+    systemPrompt: ROLEPLAY_SYSTEM_PROMPT,
+    defaultSystemPrompt: ROLEPLAY_SYSTEM_PROMPT,
+    defaultModelId: null,
+    availableToolNames: [],
+    builtin: true,
+    userSelectable: false,
+    subagentEligible: true,
+    textOnlyMode: true,
   };
 }
 
@@ -202,6 +230,12 @@ function normalizeStoredAgent(raw: unknown): StoredAgentRecord | null {
   const description =
     typeof record.description === "string" ? normalizeDescription(record.description) : "";
 
+  const subagentEligible = parseBooleanFlag(record.subagentEligible, true);
+  const textOnlyMode = normalizeAgentTextOnlyMode(
+    subagentEligible,
+    parseBooleanFlag(record.textOnlyMode, false),
+  );
+
   return {
     id: record.id,
     name: record.name,
@@ -212,12 +246,22 @@ function normalizeStoredAgent(raw: unknown): StoredAgentRecord | null {
       (name): name is string => typeof name === "string",
     ),
     userSelectable: parseBooleanFlag(record.userSelectable, true),
-    subagentEligible: parseBooleanFlag(record.subagentEligible, true),
+    subagentEligible,
+    textOnlyMode,
   };
 }
 
+function normalizeAgentTextOnlyMode(subagentEligible: boolean, textOnlyMode: boolean): boolean {
+  return subagentEligible && textOnlyMode;
+}
+
 function builtinAgents(): AiAgentConfigPublic[] {
-  return [builtinWritingAssistant(), builtinConsistencyReviewer(), builtinChapterWriter()];
+  return [
+    builtinWritingAssistant(),
+    builtinConsistencyReviewer(),
+    builtinChapterWriter(),
+    builtinRoleplay(),
+  ];
 }
 
 function parseBuiltinDefaultModelIds(raw: unknown): BuiltinDefaultModelIds {
@@ -361,6 +405,7 @@ export class AiAgentsStore {
       availableToolNames,
       userSelectable: input.userSelectable,
       subagentEligible: input.subagentEligible,
+      textOnlyMode: normalizeAgentTextOnlyMode(input.subagentEligible, input.textOnlyMode),
     };
     if (input.id) {
       const index = this.#data.agents.findIndex((agent) => agent.id === input.id);

@@ -42,6 +42,7 @@ export type AiAgentConfigFormSeed = {
   availableToolNames: string[];
   userSelectable: boolean;
   subagentEligible: boolean;
+  textOnlyMode: boolean;
 };
 
 type FormState = {
@@ -52,6 +53,7 @@ type FormState = {
   availableToolNames: string[];
   userSelectable: boolean;
   subagentEligible: boolean;
+  textOnlyMode: boolean;
 };
 
 /** Keep in sync with `AI_AGENT_DESCRIPTION_MAX_LENGTH` in electron/settings. */
@@ -86,6 +88,7 @@ function toFormState(
       availableToolNames: [...initial.availableToolNames],
       userSelectable: initial.userSelectable,
       subagentEligible: initial.subagentEligible,
+      textOnlyMode: initial.textOnlyMode,
     };
   }
   if (seed != null) {
@@ -97,6 +100,7 @@ function toFormState(
       availableToolNames: [...seed.availableToolNames],
       userSelectable: seed.userSelectable,
       subagentEligible: seed.subagentEligible,
+      textOnlyMode: seed.textOnlyMode,
     };
   }
   return {
@@ -108,6 +112,7 @@ function toFormState(
     // New custom agents default to both channels enabled.
     userSelectable: true,
     subagentEligible: true,
+    textOnlyMode: false,
   };
 }
 
@@ -126,7 +131,8 @@ function isAgentFormDirty(form: FormState, baseline: FormState, identityLocked: 
     form.systemPrompt !== baseline.systemPrompt ||
     form.defaultModelId !== baseline.defaultModelId ||
     form.userSelectable !== baseline.userSelectable ||
-    form.subagentEligible !== baseline.subagentEligible
+    form.subagentEligible !== baseline.subagentEligible ||
+    form.textOnlyMode !== baseline.textOnlyMode
   ) {
     return true;
   }
@@ -190,6 +196,7 @@ export function AiAgentConfigForm({
       availableToolNames: form.availableToolNames,
       userSelectable: form.userSelectable,
       subagentEligible: form.subagentEligible,
+      textOnlyMode: form.subagentEligible ? form.textOnlyMode : false,
     };
   };
 
@@ -220,6 +227,16 @@ export function AiAgentConfigForm({
     providerNameById.set(p.id, p.name);
   }
 
+  const selectableModels = useMemo(() => {
+    if (form.textOnlyMode || !form.subagentEligible) {
+      return models;
+    }
+    return models.filter((model) => model.supportsTools !== false);
+  }, [form.subagentEligible, form.textOnlyMode, models]);
+
+  const toolPickerReadOnly = identityLocked || form.textOnlyMode;
+  const canEditTextOnlyMode = !readOnly && !isBuiltin && form.subagentEligible;
+
   const update = <K extends keyof FormState>(key: K, value: FormState[K]) => {
     if (readOnly) return;
     if (isBuiltin) {
@@ -232,7 +249,13 @@ export function AiAgentConfigForm({
       ];
       if (!allowed.includes(key)) return;
     }
-    setForm((prev) => ({ ...prev, [key]: value }));
+    setForm((prev) => {
+      const next = { ...prev, [key]: value };
+      if (key === "subagentEligible" && value === false) {
+        next.textOnlyMode = false;
+      }
+      return next;
+    });
   };
 
   return (
@@ -387,7 +410,7 @@ export function AiAgentConfigForm({
               value={form.defaultModelId}
               options={[
                 { value: "", label: "继承对话默认模型" },
-                ...models.map((model) => {
+                ...selectableModels.map((model) => {
                   const providerName = providerNameById.get(model.providerId);
                   const label = providerName ? `${model.name}（${providerName}）` : model.name;
                   return { value: model.id, label };
@@ -402,20 +425,25 @@ export function AiAgentConfigForm({
 
         <Field.Root
           className={settingsFieldRootClass}
-          disabled={busy || identityLocked}
+          disabled={busy || identityLocked || form.textOnlyMode}
           name="availableToolNames"
         >
           <Field.Label className={settingsFieldLabelClass}>可用工具</Field.Label>
           <div className={settingsFieldControlCellClass}>
             <AiAgentToolPicker
-              disabled={busy}
-              readOnly={identityLocked}
+              disabled={busy || form.textOnlyMode}
+              readOnly={toolPickerReadOnly}
               tools={tools}
               value={form.availableToolNames}
               onChange={(next) => {
                 update("availableToolNames", next);
               }}
             />
+            {form.textOnlyMode ? (
+              <p className="mt-2 text-2xs text-app-muted">
+                纯文本子代理运行时不会挂载工具；白名单仅保留以便关闭纯文本模式后恢复。
+              </p>
+            ) : null}
           </div>
         </Field.Root>
 
@@ -471,6 +499,23 @@ export function AiAgentConfigForm({
                   </span>
                 </span>
               </label>
+              {canEditTextOnlyMode ? (
+                <label className={cn(settingsCheckboxLabelClass, "items-center")}>
+                  <SettingsCheckbox
+                    checked={form.textOnlyMode}
+                    disabled={busy}
+                    onCheckedChange={(checked) => {
+                      update("textOnlyMode", checked);
+                    }}
+                  />
+                  <span className="min-w-0">
+                    <span className="block text-app-foreground">纯文本子代理</span>
+                    <span className="mt-0.5 block text-2xs text-app-muted">
+                      开启后子运行不挂载工具，适合角色扮演与创意人格
+                    </span>
+                  </span>
+                </label>
+              ) : null}
               {isBuiltin ? (
                 <p className="text-2xs text-app-muted">
                   内置 Agent 可关闭通道；名称与工具列表仍由代码固定。

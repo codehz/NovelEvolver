@@ -8,6 +8,7 @@ import {
   BUILTIN_AI_AGENT_ID,
   BUILTIN_AI_AGENT_IDS,
   BUILTIN_CONSISTENCY_REVIEWER_ID,
+  BUILTIN_ROLEPLAY_ID,
 } from "#shared/rpc/services/index";
 
 import { AiAgentsStore } from "./ai-agents-store";
@@ -43,6 +44,7 @@ function toWrite(
     availableToolNames: agent.availableToolNames,
     userSelectable: agent.userSelectable,
     subagentEligible: agent.subagentEligible,
+    textOnlyMode: agent.textOnlyMode,
   };
 }
 
@@ -110,6 +112,7 @@ describe("AiAgentsStore builtin system prompt overrides", () => {
       availableToolNames: ["read_document"],
       userSelectable: true,
       subagentEligible: false,
+      textOnlyMode: false,
     });
     const custom = snapshot.agents.find((agent) => !agent.builtin)!;
 
@@ -194,6 +197,7 @@ describe("AiAgentsStore description", () => {
       availableToolNames: ["read_document"],
       userSelectable: true,
       subagentEligible: true,
+      textOnlyMode: false,
     });
     const custom = snapshot.agents.find((agent) => agent.name === "多行写手")!;
     expect(custom.description).toBe("首行\n第二行细节\n\n第三行");
@@ -305,5 +309,42 @@ describe("AiAgentsStore builtin channel overrides", () => {
     expect(updated.name).toBe(writing.name);
     expect(updated.availableToolNames).toEqual(writing.availableToolNames);
     expect(updated.userSelectable).toBe(false);
+  });
+});
+
+describe("AiAgentsStore text-only subagents", () => {
+  test("includes builtin roleplay agent as text-only subagent", () => {
+    const { store } = createStore();
+    const roleplay = store.findRuntimeConfig(BUILTIN_ROLEPLAY_ID)!;
+
+    expect(roleplay.name).toBe("角色扮演");
+    expect(roleplay.subagentEligible).toBe(true);
+    expect(roleplay.textOnlyMode).toBe(true);
+    expect(roleplay.userSelectable).toBe(false);
+  });
+
+  test("persists custom textOnlyMode and clears it when subagentEligible is false", () => {
+    const { filePath, store } = createStore();
+    const snapshot = store.upsert({
+      name: "纯文本人格",
+      description: "测试",
+      systemPrompt: "你是人格",
+      defaultModelId: null,
+      availableToolNames: ["read_document"],
+      userSelectable: false,
+      subagentEligible: true,
+      textOnlyMode: true,
+    });
+    const custom = snapshot.agents.find((agent) => agent.name === "纯文本人格")!;
+    expect(custom.textOnlyMode).toBe(true);
+
+    store.upsert({
+      ...toWrite(custom),
+      subagentEligible: false,
+      textOnlyMode: true,
+    });
+    expect(store.findRuntimeConfig(custom.id)?.textOnlyMode).toBe(false);
+
+    expect(createStore(filePath).store.findRuntimeConfig(custom.id)?.textOnlyMode).toBe(false);
   });
 });

@@ -21,6 +21,7 @@ import {
 } from "#shared/rpc/services/index";
 
 import {
+  settingsCheckboxLabelClass,
   settingsFieldControlCellClass,
   settingsFieldDescriptionClass,
   settingsFieldErrorClass,
@@ -33,6 +34,7 @@ import {
   settingsInputClass,
 } from "../settings-chrome";
 import type { SettingsFormHandle } from "../settings-leave-guard";
+import { SettingsCheckbox } from "../SettingsCheckbox";
 import { SettingsJsonEditor } from "../SettingsJsonEditor";
 import { SettingsSelect } from "../SettingsSelect";
 import { ReasoningLevelChipList } from "./ReasoningLevelChipList";
@@ -61,6 +63,7 @@ type FormState = {
   headersText: string;
   /** Raw JSON text for extraBody; empty string means not configured. */
   extraBodyText: string;
+  supportsTools: boolean;
 };
 
 type AiModelConfigFormProps = {
@@ -101,6 +104,7 @@ function toFormState(
     cacheTtl: initial?.cache?.ttl ?? "",
     headersText: recordToEditorText(initial?.headers),
     extraBodyText: recordToEditorText(initial?.extraBody),
+    supportsTools: initial?.supportsTools ?? true,
   };
 }
 
@@ -245,6 +249,7 @@ function isModelFormDirty(form: FormState, baseline: FormState): boolean {
     form.cacheTtl !== baseline.cacheTtl ||
     form.headersText !== baseline.headersText ||
     form.extraBodyText !== baseline.extraBodyText ||
+    form.supportsTools !== baseline.supportsTools ||
     !sameReasoningLevels(form.availableReasoningLevels, baseline.availableReasoningLevels)
   );
 }
@@ -319,6 +324,7 @@ export function AiModelConfigForm({
       cache: cacheFromForm(form),
       headers: headersResult.value,
       extraBody: extraBodyResult.value,
+      supportsTools: form.supportsTools,
     };
   };
 
@@ -447,6 +453,27 @@ export function AiModelConfigForm({
               </p>
             ) : null}
             <Field.Error className={settingsFieldErrorClass} />
+          </div>
+        </Field.Root>
+
+        <Field.Root className={settingsFieldRootClass} disabled={busy} name="supportsTools">
+          <Field.Label className={settingsFieldLabelClass}>工具调用</Field.Label>
+          <div className={settingsFieldControlCellClass}>
+            <label className={cn(settingsCheckboxLabelClass, "items-center")}>
+              <SettingsCheckbox
+                checked={form.supportsTools}
+                disabled={busy}
+                onCheckedChange={(checked) => {
+                  update("supportsTools", checked);
+                }}
+              />
+              <span className="min-w-0">
+                <span className="block text-app-foreground">支持工具调用</span>
+                <span className="mt-0.5 block text-2xs text-app-muted">
+                  关闭后不会出现在主对话模型列表；仍可作为纯文本子代理的默认模型。
+                </span>
+              </span>
+            </label>
           </div>
         </Field.Root>
 

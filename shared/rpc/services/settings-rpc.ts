@@ -158,6 +158,11 @@ export type AiModelConfigPublic = {
    * Empty object means not configured. Shallow-merged; same-name keys may override built-ins.
    */
   extraBody: Record<string, unknown>;
+  /**
+   * When false, the model must not receive tool definitions (function calling).
+   * Omitted on legacy records → treated as true.
+   */
+  supportsTools: boolean;
 };
 
 export type AiModelConfigWrite = {
@@ -188,6 +193,8 @@ export type AiModelConfigWrite = {
   headers?: Record<string, string>;
   /** Full replace; omit or `{}` → clear / not configured. */
   extraBody?: Record<string, unknown>;
+  /** Omit → true (tool-capable). */
+  supportsTools?: boolean;
 };
 
 export type AiModelsSettingsSnapshot = {
@@ -199,11 +206,13 @@ export type AiModelsSettingsSnapshot = {
 export const BUILTIN_AI_AGENT_ID = "builtin-writing-assistant" as const;
 export const BUILTIN_CONSISTENCY_REVIEWER_ID = "builtin-consistency-reviewer" as const;
 export const BUILTIN_CHAPTER_WRITER_ID = "builtin-chapter-writer" as const;
+export const BUILTIN_ROLEPLAY_ID = "builtin-roleplay" as const;
 
 export const BUILTIN_AI_AGENT_IDS = [
   BUILTIN_AI_AGENT_ID,
   BUILTIN_CONSISTENCY_REVIEWER_ID,
   BUILTIN_CHAPTER_WRITER_ID,
+  BUILTIN_ROLEPLAY_ID,
 ] as const;
 
 export type BuiltinAiAgentId = (typeof BUILTIN_AI_AGENT_IDS)[number];
@@ -237,6 +246,11 @@ export type AiAgentConfigPublic = {
   userSelectable: boolean;
   /** Allowed as a `run_subagent` target when true. */
   subagentEligible: boolean;
+  /**
+   * Pure-text subagent: runtime omits tools even when `availableToolNames` is non-empty.
+   * Meaningful only when `subagentEligible` is true.
+   */
+  textOnlyMode: boolean;
 };
 
 /**
@@ -254,6 +268,7 @@ export type AiAgentConfigWrite = {
   availableToolNames: string[];
   userSelectable: boolean;
   subagentEligible: boolean;
+  textOnlyMode: boolean;
 };
 
 export type AiAgentsSettingsSnapshot = {
