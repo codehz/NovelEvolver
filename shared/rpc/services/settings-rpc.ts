@@ -227,11 +227,13 @@ export const BUILTIN_AI_AGENT_ID = "builtin-writing-assistant" as const;
 export const BUILTIN_CONSISTENCY_REVIEWER_ID = "builtin-consistency-reviewer" as const;
 export const BUILTIN_CHAPTER_WRITER_ID = "builtin-chapter-writer" as const;
 export const BUILTIN_ROLEPLAY_ID = "builtin-roleplay" as const;
+export const BUILTIN_BRAINSTORM_ID = "builtin-brainstorm" as const;
 
 export const BUILTIN_AI_AGENT_IDS = [
   BUILTIN_AI_AGENT_ID,
   BUILTIN_CONSISTENCY_REVIEWER_ID,
   BUILTIN_CHAPTER_WRITER_ID,
+  BUILTIN_BRAINSTORM_ID,
   BUILTIN_ROLEPLAY_ID,
 ] as const;
 

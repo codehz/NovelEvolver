@@ -101,6 +101,12 @@ describe("listSubagentCatalog", () => {
         availableToolNames: ["read_document"],
       }),
       agent({
+        id: "builtin-brainstorm",
+        name: "头脑风暴",
+        textOnlyMode: true,
+        availableToolNames: [],
+      }),
+      agent({
         id: "builtin-roleplay",
         name: "角色扮演",
         textOnlyMode: true,
@@ -111,10 +117,12 @@ describe("listSubagentCatalog", () => {
     expect(result.map((entry) => entry.id)).toEqual([
       "builtin-consistency-reviewer",
       "builtin-chapter-writer",
+      "builtin-brainstorm",
       "builtin-roleplay",
       "a-custom",
       "z-custom",
     ]);
+    expect(result.find((entry) => entry.id === "builtin-brainstorm")?.capability).toBe("纯文本");
     expect(result.find((entry) => entry.id === "builtin-roleplay")?.capability).toBe("纯文本");
   });
 

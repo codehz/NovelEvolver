@@ -12,6 +12,7 @@ import type {
 import {
   BUILTIN_AI_AGENT_ID,
   BUILTIN_AI_AGENT_IDS,
+  BUILTIN_BRAINSTORM_ID,
   BUILTIN_CHAPTER_WRITER_ID,
   BUILTIN_CONSISTENCY_REVIEWER_ID,
   BUILTIN_ROLEPLAY_ID,
@@ -20,6 +21,7 @@ import {
 
 import { DEFAULT_AI_SYSTEM_PROMPT } from "../ai/default-system-prompt";
 import {
+  BRAINSTORM_SYSTEM_PROMPT,
   CHAPTER_WRITER_SYSTEM_PROMPT,
   CONSISTENCY_REVIEWER_SYSTEM_PROMPT,
   ROLEPLAY_SYSTEM_PROMPT,
@@ -113,6 +115,12 @@ const BUILTIN_CHAPTER_WRITER_DESCRIPTION = [
   "focus 可传父 folder 或既有章节；勿塞空 chapter 浪费预算。",
 ].join("\n");
 
+const BUILTIN_BRAINSTORM_DESCRIPTION = [
+  "纯文本创意发散：围绕设定/情节产出多方案、利弊与组合建议，不调用工具。",
+  "适合 plot fork、人设动机、场景变体、冲突设计等需要隔离上下文的构思任务。",
+  "用 focus 预载相关设定/章节；task 写清约束（方案数量、格式、不要写什么）。",
+].join("\n");
+
 const BUILTIN_ROLEPLAY_DESCRIPTION = [
   "纯文本创意人格：固定视角/文风产出 prose，不调用工具。",
   "适合反派视角改写、老编辑口吻润色、角色对话演练等委派任务。",
@@ -183,6 +191,23 @@ function builtinChapterWriter(): AiAgentConfigPublic {
     userSelectable: false,
     subagentEligible: true,
     textOnlyMode: false,
+  };
+}
+
+function builtinBrainstorm(): AiAgentConfigPublic {
+  return {
+    id: BUILTIN_BRAINSTORM_ID,
+    name: "头脑风暴",
+    description: BUILTIN_BRAINSTORM_DESCRIPTION,
+    defaultDescription: BUILTIN_BRAINSTORM_DESCRIPTION,
+    systemPrompt: BRAINSTORM_SYSTEM_PROMPT,
+    defaultSystemPrompt: BRAINSTORM_SYSTEM_PROMPT,
+    defaultModelId: null,
+    availableToolNames: [],
+    builtin: true,
+    userSelectable: false,
+    subagentEligible: true,
+    textOnlyMode: true,
   };
 }
 
@@ -260,6 +285,7 @@ function builtinAgents(): AiAgentConfigPublic[] {
     builtinWritingAssistant(),
     builtinConsistencyReviewer(),
     builtinChapterWriter(),
+    builtinBrainstorm(),
     builtinRoleplay(),
   ];
 }

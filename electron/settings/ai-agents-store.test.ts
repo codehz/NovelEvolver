@@ -7,6 +7,7 @@ import type { AiAgentConfigPublic, AiAgentConfigWrite } from "#shared/rpc/servic
 import {
   BUILTIN_AI_AGENT_ID,
   BUILTIN_AI_AGENT_IDS,
+  BUILTIN_BRAINSTORM_ID,
   BUILTIN_CONSISTENCY_REVIEWER_ID,
   BUILTIN_ROLEPLAY_ID,
 } from "#shared/rpc/services/index";
@@ -313,6 +314,16 @@ describe("AiAgentsStore builtin channel overrides", () => {
 });
 
 describe("AiAgentsStore text-only subagents", () => {
+  test("includes builtin brainstorm agent as text-only subagent", () => {
+    const { store } = createStore();
+    const brainstorm = store.findRuntimeConfig(BUILTIN_BRAINSTORM_ID)!;
+
+    expect(brainstorm.name).toBe("头脑风暴");
+    expect(brainstorm.subagentEligible).toBe(true);
+    expect(brainstorm.textOnlyMode).toBe(true);
+    expect(brainstorm.userSelectable).toBe(false);
+  });
+
   test("includes builtin roleplay agent as text-only subagent", () => {
     const { store } = createStore();
     const roleplay = store.findRuntimeConfig(BUILTIN_ROLEPLAY_ID)!;

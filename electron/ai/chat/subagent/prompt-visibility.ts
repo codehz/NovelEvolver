@@ -36,6 +36,7 @@ export type SubagentCatalogAgent = {
 const BUILTIN_ORDER = [
   "builtin-consistency-reviewer",
   "builtin-chapter-writer",
+  "builtin-brainstorm",
   "builtin-roleplay",
 ] as const;
 
