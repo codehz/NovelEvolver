@@ -14,7 +14,6 @@ import {
   settingsChipListClass,
   settingsChipPopoverPanelClass,
   settingsChipPopoverPositionerClass,
-  settingsChipSelectedClass,
 } from "../settings-chrome";
 
 type ReasoningLevelChipListProps = {
@@ -85,7 +84,6 @@ function ReasoningLevelChip({
             value={level}
             className={cn(
               settingsChipClass,
-              isSelected && settingsChipSelectedClass,
               isDefault && settingsChipDefaultClass,
               disabled && disabledSurfaceClass,
             )}
@@ -93,7 +91,15 @@ function ReasoningLevelChip({
         }
       >
         <span className="font-medium">{label}</span>
-        <span className={cn("text-app-muted", isDefault && "text-badge-background/80")}>
+        <span
+          className={cn(
+            isDefault
+              ? "text-badge-background/75"
+              : isSelected
+                ? "text-ctp-overlay1"
+                : "text-ctp-overlay0",
+          )}
+        >
           {level}
         </span>
         {isDefault ? (

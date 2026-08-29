@@ -339,20 +339,26 @@ export const settingsCheckboxLabelClass = cn(
 /** Horizontal wrap list for multi-select pill chips (e.g. reasoning levels). */
 export const settingsChipListClass = cn("flex flex-wrap gap-1.5");
 
-/** ToggleGroup item shell for a reasoning-level pill — fill-only, field-like surface0. */
+/**
+ * ToggleGroup item for a reasoning-level pill.
+ * Selected look lives on `data-pressed` (Base UI Toggle) — unprefixed fills lose to that
+ * attribute selector and used to collapse into the rest surface.
+ */
 export const settingsChipClass = cn(
-  "inline-flex h-7 shrink-0 items-center gap-1 rounded-full bg-ctp-surface0 px-2.5 text-2xs leading-none text-app-muted outline-none select-none",
-  "hover:not-disabled:text-app-foreground",
-  "data-pressed:bg-ctp-surface0/80 data-pressed:text-app-foreground",
+  "inline-flex h-7 shrink-0 items-center gap-1 rounded-full bg-ctp-surface0/40 px-2.5 text-2xs leading-none text-app-muted outline-none select-none",
+  "transition-colors duration-150 ease-[cubic-bezier(0.33,1,0.68,1)]",
+  "hover:not-disabled:bg-ctp-surface0 hover:not-disabled:text-app-foreground",
+  "data-pressed:bg-ctp-surface1 data-pressed:text-app-foreground",
+  "hover:data-pressed:bg-ctp-overlay0/30 hover:data-pressed:text-app-foreground",
   controlFocusVisibleInsetClass,
   fieldDisabledClass,
 );
 
-/** Selected (available) pill — kept for explicit default/selected class composition. */
-export const settingsChipSelectedClass = cn("bg-ctp-surface1/55 text-app-foreground");
-
-/** Selected + default pill chip shell. */
-export const settingsChipDefaultClass = cn("bg-badge-background/15 text-badge-background");
+/** Selected + default pill — must use `data-pressed:` so it wins over the Toggle pressed fill. */
+export const settingsChipDefaultClass = cn(
+  "data-pressed:bg-badge-background/20 data-pressed:text-badge-background",
+  "hover:data-pressed:bg-badge-background/28 hover:data-pressed:text-badge-background",
+);
 
 /** Hover popover positioner for chip secondary actions. */
 export const settingsChipPopoverPositionerClass = cn("z-settings outline-none");
