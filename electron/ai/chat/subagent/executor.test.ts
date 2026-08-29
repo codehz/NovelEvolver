@@ -504,4 +504,201 @@ describe("executeSubagentToolCall", () => {
     expect(json.status).toBe("failed");
     expect(json.error).toContain("不支持工具调用");
   });
+
+  test("writes output_target and redacts report for parent on success", async () => {
+    let storedContent = "占位";
+    let revision = 1;
+    const roleplay: AiAgentRuntimeConfig = {
+      id: "builtin-roleplay",
+      name: "角色扮演",
+      description: "纯文本创意人格",
+      defaultDescription: "纯文本创意人格",
+      systemPrompt: "你是创意人格",
+      defaultSystemPrompt: "你是创意人格",
+      defaultModelId: null,
+      availableToolNames: [],
+      builtin: true,
+      userSelectable: false,
+      subagentEligible: true,
+      textOnlyMode: true,
+    };
+
+    const result = await executeSubagentToolCall({
+      call: toolCall({
+        agent_id: roleplay.id,
+        task: "写出本章正文",
+        output_target: { domain: "manuscript", id: "ch-out" },
+      }),
+      depth: 0,
+      signal: new AbortController().signal,
+      deps: {
+        resolveAgentConfig: (id) => (id === roleplay.id ? roleplay : null),
+        resolveModelConfig: () => null,
+        resolveWorktree: () =>
+          ({
+            getTextDocumentInfo(domain: string, id: string) {
+              if (domain !== "manuscript" || id !== "ch-out") {
+                throw new Error("missing");
+              }
+              return {
+                domain: "manuscript",
+                id: "ch-out",
+                kind: "chapter",
+                label: "第三章",
+                displayPath: "卷一/第三章",
+              };
+            },
+            getDocumentContentRevision() {
+              return revision;
+            },
+            readChapter() {
+              return storedContent;
+            },
+            writeChapter(_id: string, content: string) {
+              storedContent = content;
+              revision += 1;
+            },
+          }) as never,
+        clientLabel: "test",
+        parentSelectedModelId: "mock",
+        parentSelectedReasoningLevel: null,
+        parentAdapterKind: "mock",
+        createBackend: () => createMockBackend("这是落盘正文。"),
+      },
+    });
+
+    expect(result.errorMessage).toBeNull();
+    const json = JSON.parse(result.resultText!) as {
+      status: string;
+      report: string;
+      output: { written: boolean; target: { id: string }; stats: { char_count: number } };
+      artifacts: { wrote: boolean; touched_node_ids: string[] };
+    };
+    expect(json.status).toBe("completed");
+    expect(json.report).toBe("");
+    expect(json.output.written).toBe(true);
+    expect(json.output.target.id).toBe("ch-out");
+    expect(json.output.stats.char_count).toBe(7);
+    expect(json.artifacts.wrote).toBe(true);
+    expect(storedContent).toBe("这是落盘正文。");
+    expect(result.view?.kind === "subagent" ? result.view.report : null).toBe("这是落盘正文。");
+  });
+
+  test("returns failed when output_target set but report empty", async () => {
+    const roleplay: AiAgentRuntimeConfig = {
+      id: "builtin-roleplay",
+      name: "角色扮演",
+      description: "纯文本",
+      defaultDescription: "纯文本",
+      systemPrompt: "你是创意人格",
+      defaultSystemPrompt: "你是创意人格",
+      defaultModelId: null,
+      availableToolNames: [],
+      builtin: true,
+      userSelectable: false,
+      subagentEligible: true,
+      textOnlyMode: true,
+    };
+
+    const result = await executeSubagentToolCall({
+      call: toolCall({
+        agent_id: roleplay.id,
+        task: "写出正文",
+        output_target: { domain: "manuscript", id: "ch-out" },
+      }),
+      depth: 0,
+      signal: new AbortController().signal,
+      deps: {
+        resolveAgentConfig: (id) => (id === roleplay.id ? roleplay : null),
+        resolveModelConfig: () => null,
+        resolveWorktree: () =>
+          ({
+            getTextDocumentInfo() {
+              return {
+                domain: "manuscript",
+                id: "ch-out",
+                kind: "chapter",
+                label: "第三章",
+                displayPath: "卷一/第三章",
+              };
+            },
+            getDocumentContentRevision: () => 0,
+            readChapter: () => "",
+            writeChapter: () => {},
+          }) as never,
+        clientLabel: "test",
+        parentSelectedModelId: "mock",
+        parentSelectedReasoningLevel: null,
+        parentAdapterKind: "mock",
+        createBackend: () => createMockBackend("   "),
+      },
+    });
+
+    const json = JSON.parse(result.resultText!) as { status: string; error: string };
+    expect(json.status).toBe("failed");
+    expect(json.error).toContain("未产出正文");
+  });
+
+  test("keeps report when output_target write fails", async () => {
+    const roleplay: AiAgentRuntimeConfig = {
+      id: "builtin-roleplay",
+      name: "角色扮演",
+      description: "纯文本",
+      defaultDescription: "纯文本",
+      systemPrompt: "你是创意人格",
+      defaultSystemPrompt: "你是创意人格",
+      defaultModelId: null,
+      availableToolNames: [],
+      builtin: true,
+      userSelectable: false,
+      subagentEligible: true,
+      textOnlyMode: true,
+    };
+
+    const result = await executeSubagentToolCall({
+      call: toolCall({
+        agent_id: roleplay.id,
+        task: "写出正文",
+        output_target: { domain: "manuscript", id: "ch-out" },
+      }),
+      depth: 0,
+      signal: new AbortController().signal,
+      deps: {
+        resolveAgentConfig: (id) => (id === roleplay.id ? roleplay : null),
+        resolveModelConfig: () => null,
+        resolveWorktree: () =>
+          ({
+            getTextDocumentInfo() {
+              return {
+                domain: "manuscript",
+                id: "ch-out",
+                kind: "chapter",
+                label: "第三章",
+                displayPath: "卷一/第三章",
+              };
+            },
+            getDocumentContentRevision: () => 5,
+            readChapter: () => "旧内容",
+            writeChapter: () => {
+              throw new Error("写入被拒绝");
+            },
+          }) as never,
+        clientLabel: "test",
+        parentSelectedModelId: "mock",
+        parentSelectedReasoningLevel: null,
+        parentAdapterKind: "mock",
+        createBackend: () => createMockBackend("落盘失败时的正文"),
+      },
+    });
+
+    const json = JSON.parse(result.resultText!) as {
+      status: string;
+      report: string;
+      output: { written: boolean; error: string };
+    };
+    expect(json.status).toBe("completed");
+    expect(json.report).toBe("落盘失败时的正文");
+    expect(json.output.written).toBe(false);
+    expect(json.output.error).toContain("写入被拒绝");
+  });
 });

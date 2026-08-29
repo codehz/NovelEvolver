@@ -9,6 +9,37 @@ export type SubagentArtifacts = {
   wrote: boolean;
 };
 
+export type SubagentOutputTargetRef = {
+  domain: "manuscript" | "resource";
+  id: string;
+  kind: "chapter" | "file";
+  label: string;
+  display_path: string;
+};
+
+export type SubagentOutputStats = {
+  char_count: number;
+  line_count: number;
+  word_count: number;
+};
+
+export type SubagentOutputStatsDelta = {
+  char_delta: number;
+  line_delta: number;
+  word_delta: number;
+};
+
+/** Structured write result when run_subagent specifies output_target. */
+export type SubagentOutput = {
+  written: boolean;
+  error: string | null;
+  target: SubagentOutputTargetRef | null;
+  stats: SubagentOutputStats | null;
+  previous_stats: SubagentOutputStats | null;
+  delta: SubagentOutputStatsDelta | null;
+  revision: number | null;
+};
+
 export type SubagentRunResult = {
   status: SubagentRunStatus;
   agent_id: string;
@@ -18,6 +49,8 @@ export type SubagentRunResult = {
   /** Compressed timeline digest for the parent model (not a UI field). */
   steps_digest: string;
   artifacts: SubagentArtifacts;
+  /** Present when output_target was set on the tool call. */
+  output: SubagentOutput | null;
   usage: AiChatMessageUsage | null;
   error: string | null;
 };
@@ -114,6 +147,7 @@ export function buildSubagentResult(input: {
   report?: string;
   stepsDigest?: string;
   artifacts?: SubagentArtifacts;
+  output?: SubagentOutput | null;
   usage?: AiChatMessageUsage | null;
   error?: string | null;
 }): SubagentRunResult {
@@ -124,6 +158,7 @@ export function buildSubagentResult(input: {
     report: (input.report ?? "").trim(),
     steps_digest: (input.stepsDigest ?? "").trim(),
     artifacts: input.artifacts ?? emptyArtifacts(),
+    output: input.output ?? null,
     usage: input.usage ?? null,
     error: input.error ?? null,
   };
@@ -135,6 +170,7 @@ export function completedSubagentResult(input: {
   report?: string;
   stepsDigest?: string;
   artifacts?: SubagentArtifacts;
+  output?: SubagentOutput | null;
   usage?: AiChatMessageUsage | null;
 }): SubagentRunResult {
   return buildSubagentResult({
@@ -144,6 +180,7 @@ export function completedSubagentResult(input: {
     report: input.report,
     stepsDigest: input.stepsDigest,
     artifacts: input.artifacts,
+    output: input.output,
     usage: input.usage,
   });
 }
@@ -155,6 +192,7 @@ export function failedSubagentResult(input: {
   report?: string;
   stepsDigest?: string;
   artifacts?: SubagentArtifacts;
+  output?: SubagentOutput | null;
   usage?: AiChatMessageUsage | null;
 }): SubagentRunResult {
   return buildSubagentResult({
@@ -164,6 +202,7 @@ export function failedSubagentResult(input: {
     report: input.report ?? input.error,
     stepsDigest: input.stepsDigest,
     artifacts: input.artifacts,
+    output: input.output,
     usage: input.usage,
     error: input.error,
   });
@@ -175,6 +214,7 @@ export function abortedSubagentResult(input: {
   report?: string;
   stepsDigest?: string;
   artifacts?: SubagentArtifacts;
+  output?: SubagentOutput | null;
   usage?: AiChatMessageUsage | null;
 }): SubagentRunResult {
   return buildSubagentResult({
@@ -184,6 +224,7 @@ export function abortedSubagentResult(input: {
     report: input.report ?? "子代理运行已被用户中止。",
     stepsDigest: input.stepsDigest,
     artifacts: input.artifacts,
+    output: input.output,
     usage: input.usage,
     error: "aborted",
   });

@@ -2,6 +2,7 @@ import type { ToolCallItem } from "@codehz/ai";
 
 import { parseDocumentDomain, parseNonEmptyString, parseToolArgs } from "../../tools/parse";
 import { formatFocusSnapshotsForPrompt, type FocusSnapshot } from "./focus-inject";
+import { parseOptionalOutputTarget, type SubagentOutputTarget } from "./output-write";
 import { truncateParentSummary } from "./policy";
 
 export type SubagentFocusTarget = {
@@ -15,6 +16,7 @@ export type RunSubagentArgs = {
   constraints: string | null;
   focus: SubagentFocusTarget[];
   parentSummary: string | null;
+  outputTarget: SubagentOutputTarget | null;
 };
 
 function parseFocusEntry(value: unknown, index: number): SubagentFocusTarget {
@@ -75,12 +77,20 @@ export function parseRunSubagentArgs(
     constraints,
     focus,
     parentSummary,
+    outputTarget: parseOptionalOutputTarget(args.output_target),
   };
 }
 
 export type BuildSubagentUserMessageOptions = {
   /** Char budget used when formatting truncated focus notes. */
   maxFocusContentChars?: number;
+  /** When set, final assistant reply is persisted to this document by the executor. */
+  outputTarget?: {
+    domain: "manuscript" | "resource";
+    id: string;
+    label: string;
+    displayPath: string;
+  } | null;
 };
 
 /**
@@ -98,11 +108,22 @@ export function buildSubagentUserMessage(
   const lines: string[] = [
     `你是子代理「${agentName}」，正在执行一次独立委派任务。`,
     "不要假设父对话历史；仅依据下列任务说明、系统预载的焦点内容，以及你通过工具另行读取的项目内容作答。",
-    "完成后用简洁中文给出结论、发现与（如有）已做改动摘要。",
-    "",
-    "## 任务",
-    args.task,
   ];
+
+  if (options?.outputTarget) {
+    lines.push(
+      "你的最终回复将由执行器自动写入指定项目文档；不要在回复中说明「已写入」或使用元话语包装正文。",
+      "",
+      "## 输出目标",
+      `- 文档：${options.outputTarget.displayPath}（${options.outputTarget.label}）`,
+      `- 节点：${options.outputTarget.domain} id=${options.outputTarget.id}`,
+      "- 最终回复必须是可直接落盘的纯正文：不要「以下是…」「好的，我来…」等前言，也不要 Markdown 说明或变更摘要。",
+    );
+  } else {
+    lines.push("完成后用简洁中文给出结论、发现与（如有）已做改动摘要。");
+  }
+
+  lines.push("", "## 任务", args.task);
 
   if (args.constraints) {
     lines.push("", "## 约束", args.constraints);

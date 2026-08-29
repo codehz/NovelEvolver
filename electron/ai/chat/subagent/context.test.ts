@@ -31,6 +31,7 @@ describe("parseRunSubagentArgs", () => {
       constraints: "不要改文",
       focus: [{ domain: "manuscript", id: "ch-3" }],
       parentSummary: "用户想检查人设",
+      outputTarget: null,
     });
   });
 
@@ -70,6 +71,44 @@ describe("parseRunSubagentArgs", () => {
 });
 
 describe("buildSubagentUserMessage", () => {
+  test("parses output_target", () => {
+    const parsed = parseRunSubagentArgs(
+      toolCall({
+        agent_id: "builtin-roleplay",
+        task: "续写",
+        output_target: { domain: "manuscript", id: "ch-new" },
+      }),
+    );
+    expect(parsed.outputTarget).toEqual({ domain: "manuscript", id: "ch-new" });
+  });
+
+  test("includes output target instructions when configured", () => {
+    const text = buildSubagentUserMessage(
+      {
+        agentId: "w",
+        task: "续写本章",
+        constraints: null,
+        focus: [],
+        parentSummary: null,
+        outputTarget: { domain: "manuscript", id: "ch-1" },
+      },
+      "章节写手",
+      [],
+      {
+        outputTarget: {
+          domain: "manuscript",
+          id: "ch-1",
+          label: "第二章",
+          displayPath: "卷一/第二章",
+        },
+      },
+    );
+    expect(text).toContain("输出目标");
+    expect(text).toContain("卷一/第二章");
+    expect(text).toContain("可直接落盘的纯正文");
+    expect(text).not.toContain("已做改动摘要");
+  });
+
   test("includes task and isolation notice", () => {
     const text = buildSubagentUserMessage(
       {
@@ -78,6 +117,7 @@ describe("buildSubagentUserMessage", () => {
         constraints: "只读",
         focus: [{ domain: "manuscript", id: "ch-1" }],
         parentSummary: "背景一句",
+        outputTarget: null,
       },
       "一致性审查",
     );
@@ -97,6 +137,7 @@ describe("buildSubagentUserMessage", () => {
         constraints: null,
         focus: [{ domain: "manuscript", id: "ch-1" }],
         parentSummary: null,
+        outputTarget: null,
       },
       "一致性审查",
       [

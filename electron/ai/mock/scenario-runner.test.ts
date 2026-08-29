@@ -50,6 +50,7 @@ function subagentUserInput(task: string): InputItem[] {
               constraints: null,
               focus: [{ domain: "manuscript", id: "chapter-1" }],
               parentSummary: null,
+              outputTarget: null,
             },
             reviewer.name,
           ),

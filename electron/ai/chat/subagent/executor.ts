@@ -45,6 +45,11 @@ import { okJson } from "../../tools/result";
 import { buildSubagentUserMessage, parseRunSubagentArgs } from "./context";
 import { resolveFocusSnapshots } from "./focus-inject";
 import {
+  captureSubagentOutputTarget,
+  type CapturedSubagentOutputTarget,
+  writeSubagentOutput,
+} from "./output-write";
+import {
   assertSubagentDepth,
   assertSubagentEligible,
   MAX_FOCUS_CONTENT_CHARS,
@@ -61,6 +66,7 @@ import {
   completedSubagentResult,
   failedSubagentResult,
   type SubagentArtifacts,
+  type SubagentOutput,
   type SubagentRunResult,
 } from "./result";
 import {
@@ -217,6 +223,93 @@ async function consumeStreamWithProgress(
   return collectStream(observeProgress());
 }
 
+function pushUniqueNodeId(ids: string[], id: string): string[] {
+  if (id === "" || ids.includes(id)) {
+    return ids;
+  }
+  return [...ids, id];
+}
+
+function toSubagentOutput(writeResult: ReturnType<typeof writeSubagentOutput>): SubagentOutput {
+  return {
+    written: writeResult.written,
+    error: writeResult.error,
+    target: writeResult.target,
+    stats: writeResult.stats,
+    previous_stats: writeResult.previous_stats,
+    delta: writeResult.delta,
+    revision: writeResult.revision,
+  };
+}
+
+function finalizeOutputTargetResult(input: {
+  agentId: string;
+  agentName: string;
+  lastReport: string;
+  artifacts: SubagentArtifacts;
+  usage: AiChatMessageUsage | null;
+  stepsDigest: string;
+  capturedOutput: CapturedSubagentOutputTarget;
+  worktree: ReturnType<ResolveWorktree>;
+}): SubagentRunResult {
+  const trimmedReport = input.lastReport.trim();
+  if (trimmedReport === "") {
+    return failedSubagentResult({
+      agentId: input.agentId,
+      agentName: input.agentName,
+      error: "子代理未产出正文，无法写入 output_target。",
+      stepsDigest: input.stepsDigest,
+      artifacts: input.artifacts,
+      usage: input.usage,
+      output: toSubagentOutput({
+        written: false,
+        error: "子代理未产出正文。",
+        target: {
+          domain: input.capturedOutput.domain,
+          id: input.capturedOutput.id,
+          kind: input.capturedOutput.kind,
+          label: input.capturedOutput.label,
+          display_path: input.capturedOutput.displayPath,
+        },
+        stats: null,
+        previous_stats: null,
+        delta: null,
+        revision: null,
+      }),
+    });
+  }
+
+  const writeResult = writeSubagentOutput(input.worktree, input.capturedOutput, trimmedReport);
+  const output = toSubagentOutput(writeResult);
+  let artifacts = input.artifacts;
+
+  if (writeResult.written) {
+    artifacts = {
+      wrote: true,
+      touched_node_ids: pushUniqueNodeId(artifacts.touched_node_ids, input.capturedOutput.id),
+    };
+    return completedSubagentResult({
+      agentId: input.agentId,
+      agentName: input.agentName,
+      report: "",
+      stepsDigest: input.stepsDigest,
+      artifacts,
+      output,
+      usage: input.usage,
+    });
+  }
+
+  return completedSubagentResult({
+    agentId: input.agentId,
+    agentName: input.agentName,
+    report: trimmedReport,
+    stepsDigest: input.stepsDigest,
+    artifacts,
+    output,
+    usage: input.usage,
+  });
+}
+
 function finishWith(
   call: ToolCallItem,
   result: SubagentRunResult,
@@ -325,6 +418,23 @@ export async function executeSubagentToolCall(options: {
     });
     reporter.emit("starting");
 
+    let capturedOutput: CapturedSubagentOutputTarget | null = null;
+    if (args.outputTarget) {
+      try {
+        capturedOutput = captureSubagentOutputTarget(deps.resolveWorktree(), args.outputTarget);
+      } catch (error) {
+        return finishWith(
+          call,
+          failedSubagentResult({
+            agentId: agent.id,
+            agentName: agent.name,
+            error: toErrorMessage(error),
+          }),
+          reporter,
+        );
+      }
+    }
+
     const childToolNames = resolveSubagentEffectiveToolNames(agent);
     const tools: ToolDefinition[] = selectAiTools(childToolNames);
 
@@ -367,6 +477,14 @@ export async function executeSubagentToolCall(options: {
     }
     const userMessage = buildSubagentUserMessage(args, agent.name, focusSnapshots, {
       maxFocusContentChars: policy.maxFocusContentChars,
+      outputTarget: capturedOutput
+        ? {
+            domain: capturedOutput.domain,
+            id: capturedOutput.id,
+            label: capturedOutput.label,
+            displayPath: capturedOutput.displayPath,
+          }
+        : null,
     });
 
     let input: InputItem[] = [toInputItem(userMessage)];
@@ -552,6 +670,25 @@ export async function executeSubagentToolCall(options: {
 
     reporter.emit("finalizing");
 
+    const stepsDigest = buildStepsDigest(reporter.snapshot().steps);
+
+    if (capturedOutput) {
+      const outputResult = finalizeOutputTargetResult({
+        agentId: agent.id,
+        agentName: agent.name,
+        lastReport,
+        artifacts,
+        usage,
+        stepsDigest,
+        capturedOutput,
+        worktree: deps.resolveWorktree(),
+      });
+      if (outputResult.artifacts.wrote) {
+        reporter.setArtifacts(outputResult.artifacts);
+      }
+      return finishWith(call, outputResult, reporter);
+    }
+
     // Timeline-first: empty report is allowed when work completed without prose.
     return finishWith(
       call,
@@ -561,7 +698,7 @@ export async function executeSubagentToolCall(options: {
         report: lastReport,
         artifacts,
         usage,
-        stepsDigest: buildStepsDigest(reporter.snapshot().steps),
+        stepsDigest,
       }),
       reporter,
     );

@@ -66,6 +66,7 @@ describe("result builders", () => {
     expect(result.report).toBe("没有问题");
     expect(result.steps_digest).toBe("read_document → 完成");
     expect(result.error).toBeNull();
+    expect(result.output).toBeNull();
   });
 
   test("completed allows empty report", () => {
