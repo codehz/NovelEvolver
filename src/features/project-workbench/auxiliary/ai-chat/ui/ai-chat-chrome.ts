@@ -127,7 +127,13 @@ export const composerShellClass = cn(
 );
 export const composerTextareaClass = cn(
   "field-sizing-content min-h-20 w-full resize-none border-0 bg-transparent px-1 py-0.5 text-chat leading-5 text-app-foreground outline-none placeholder:text-ctp-overlay0",
-  "max-h-[50vh]",
+  "max-h-[50vh] overflow-y-auto",
+);
+/** ask_user 底部面板：tabs / 操作栏固定，中间题干区限高滚动。 */
+export const askUserPanelShellClass = cn("mx-auto flex min-h-0 w-full max-w-3xl flex-col gap-1");
+export const askUserPanelBodyClass = cn(
+  "max-h-[50vh] min-h-0 overflow-x-hidden overflow-y-auto",
+  scrollEdgeMaskClass({ axis: "y", fade: "0.75rem" }),
 );
 export const sendButtonClass = cn(
   "inline-flex size-6 shrink-0 items-center justify-center rounded-sm bg-transparent text-ctp-mauve transition-colors",

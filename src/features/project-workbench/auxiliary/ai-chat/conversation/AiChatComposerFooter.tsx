@@ -42,14 +42,14 @@ export function AiChatComposerFooter({ composer }: AiChatComposerFooterProps) {
 
   if (hasOpenInteractions) {
     return (
-      <footer className="shrink-0 p-3">
+      <footer className="min-h-0 shrink-0 p-3">
         <AskUserComposerPanel loading={loading} openInteractions={snapshot.openInteractions} />
       </footer>
     );
   }
 
   return (
-    <footer className="shrink-0 p-3">
+    <footer className="min-h-0 shrink-0 p-3">
       <AiChatMessageComposer
         canSend={canSend}
         canStop={canStop}

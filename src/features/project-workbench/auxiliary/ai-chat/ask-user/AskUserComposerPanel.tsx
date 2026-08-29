@@ -5,7 +5,12 @@ import { Button, AppTooltip } from "#app/shared/ui";
 import type { AiChatOpenInteraction } from "#shared/rpc/ai/index";
 
 import { useAiChatActions } from "../state/use-ai-chat-state";
-import { sendButtonClass, stopButtonClass } from "../ui/ai-chat-chrome";
+import {
+  askUserPanelBodyClass,
+  askUserPanelShellClass,
+  sendButtonClass,
+  stopButtonClass,
+} from "../ui/ai-chat-chrome";
 import { AskUserQuestionTabs } from "./AskUserQuestionTabs";
 import {
   InteractionBody,
@@ -120,23 +125,25 @@ export function AskUserComposerPanel({ loading, openInteractions }: AskUserCompo
   const activeDraft = draftsById[activeId] ?? "";
 
   return (
-    <div className="mx-auto flex w-full max-w-3xl flex-col gap-1">
+    <div className={askUserPanelShellClass}>
       <AskUserQuestionTabs
         activeKey={activeId}
         keys={interactionIds}
         summaries={openInteractions.map((input, index) => summarizeInteraction(input, index))}
         onSelectKey={setActiveId}
       />
-      <InteractionBody
-        draft={activeDraft}
-        disabled={disabled}
-        input={activeInput}
-        onDraftChange={(draft) => {
-          handleDraftChange(activeId, draft);
-        }}
-        onRequestCommit={handleRequestCommit}
-      />
-      <div className="flex min-w-0 items-center justify-end gap-1 px-1">
+      <div className={askUserPanelBodyClass}>
+        <InteractionBody
+          draft={activeDraft}
+          disabled={disabled}
+          input={activeInput}
+          onDraftChange={(draft) => {
+            handleDraftChange(activeId, draft);
+          }}
+          onRequestCommit={handleRequestCommit}
+        />
+      </div>
+      <div className="flex min-w-0 shrink-0 items-center justify-end gap-1 px-1">
         <AppTooltip label="中断" side="top" disabled={disabled}>
           <Button
             variant="ghost"
