@@ -10,12 +10,13 @@ import { Button } from "#app/shared/ui";
 import type { AskUserOpenInteraction } from "#shared/rpc/ai/index";
 
 import {
-  composerShellClass,
-  composerTextareaClass,
+  askUserCardShellClass,
+  askUserPromptScrollClass,
+  askUserTextareaClass,
   toolCallLabelClass,
 } from "../ui/ai-chat-chrome";
 
-const headerClass = cn("flex items-center gap-1.5 px-1");
+const headerClass = cn("flex shrink-0 items-center gap-1.5 px-1");
 const headerToolNameClass = cn("truncate font-mono text-2xs text-ctp-overlay0");
 const questionClass = cn("px-1 text-chat leading-5 text-app-foreground");
 const contextClass = cn("px-1 text-chat-meta leading-5 text-app-muted");
@@ -76,41 +77,43 @@ export function AskUserComposer({
   }
 
   return (
-    <div className={composerShellClass}>
+    <div className={askUserCardShellClass}>
       <div className={headerClass}>
         <span className={toolCallLabelClass}>需要你回答</span>
         <span className={headerToolNameClass}>{input.toolName}</span>
       </div>
 
-      <p className={questionClass}>{input.question}</p>
-      {input.context ? <p className={contextClass}>{input.context}</p> : null}
+      <div className={askUserPromptScrollClass}>
+        <p className={questionClass}>{input.question}</p>
+        {input.context ? <p className={contextClass}>{input.context}</p> : null}
 
-      {hasChoices ? (
-        <div className={choicesClass}>
-          <p className={choicesLabelClass}>参考选项（点击快速填入）</p>
-          {choices.map((choice) => (
-            <Button
-              key={choice.title}
-              variant="ghost"
-              className={choiceButtonClass}
-              disabled={disabled}
-              onClick={() => {
-                onDraftChange(choice.title);
-                textareaRef.current?.focus();
-              }}
-            >
-              <span className={choiceTitleClass}>{choice.title}</span>
-              {choice.description ? (
-                <span className={choiceDescriptionClass}>{choice.description}</span>
-              ) : null}
-            </Button>
-          ))}
-        </div>
-      ) : null}
+        {hasChoices ? (
+          <div className={choicesClass}>
+            <p className={choicesLabelClass}>参考选项（点击快速填入）</p>
+            {choices.map((choice) => (
+              <Button
+                key={choice.title}
+                variant="ghost"
+                className={choiceButtonClass}
+                disabled={disabled}
+                onClick={() => {
+                  onDraftChange(choice.title);
+                  textareaRef.current?.focus();
+                }}
+              >
+                <span className={choiceTitleClass}>{choice.title}</span>
+                {choice.description ? (
+                  <span className={choiceDescriptionClass}>{choice.description}</span>
+                ) : null}
+              </Button>
+            ))}
+          </div>
+        ) : null}
+      </div>
 
       <textarea
         aria-label={input.question}
-        className={composerTextareaClass}
+        className={askUserTextareaClass}
         disabled={disabled}
         placeholder={input.placeholder ?? "输入你的回答…"}
         ref={textareaRef}

@@ -129,12 +129,15 @@ export const composerTextareaClass = cn(
   "field-sizing-content min-h-20 w-full resize-none border-0 bg-transparent px-1 py-0.5 text-chat leading-5 text-app-foreground outline-none placeholder:text-ctp-overlay0",
   "max-h-[50vh] overflow-y-auto",
 );
-/** ask_user 底部面板：tabs / 操作栏固定，中间题干区限高滚动。 */
+/** ask_user 底部面板 shell（tabs + 卡片 + 操作栏）。 */
 export const askUserPanelShellClass = cn("mx-auto flex min-h-0 w-full max-w-3xl flex-col gap-1");
-export const askUserPanelBodyClass = cn(
-  "max-h-[50vh] min-h-0 overflow-x-hidden overflow-y-auto",
+/** ask_user 卡片：限高 + 内部分区，滚动发生在题干区而非整卡。 */
+export const askUserCardShellClass = cn(composerShellClass, "max-h-[50vh] min-h-0 overflow-hidden");
+export const askUserPromptScrollClass = cn(
+  "min-h-0 flex-1 overflow-x-hidden overflow-y-auto",
   scrollEdgeMaskClass({ axis: "y", fade: "0.75rem" }),
 );
+export const askUserTextareaClass = cn(composerTextareaClass, "max-h-32 shrink-0");
 export const sendButtonClass = cn(
   "inline-flex size-6 shrink-0 items-center justify-center rounded-sm bg-transparent text-ctp-mauve transition-colors",
   panelHoverClass,
