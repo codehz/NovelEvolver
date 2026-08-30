@@ -1,0 +1,14 @@
+<resources>
+    <!-- Catppuccin Mocha — keep in sync with src/shared/theme/mocha.ts -->
+    <color name="ctp_mauve">#cba6f7</color>
+    <color name="ctp_text">#cdd6f4</color>
+    <color name="ctp_subtext0">#a6adc8</color>
+    <color name="ctp_surface0">#313244</color>
+    <color name="ctp_base">#1e1e2e</color>
+    <color name="ctp_crust">#11111b</color>
+
+    <color name="app_background">@color/ctp_base</color>
+    <color name="app_foreground">@color/ctp_text</color>
+    <color name="app_muted">@color/ctp_subtext0</color>
+    <color name="app_primary">@color/ctp_mauve</color>
+</resources>

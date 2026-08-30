@@ -5,6 +5,7 @@ Bare React Native app (`@react-native-community/cli`). **Expo is not used and mu
 - Native id: `com.novelevolver.mobile`
 - JS component name: `NovelEvolver` (`app.json`)
 - Domain types: `@novelevolver/domain`
+- Theme: Catppuccin Mocha JS tokens in `src/shared/theme/` (no NativeWind / Tailwind). Semantic roles match desktop `@theme` (`background` / `surface` / mauve accent). Flavor is pinned — do not follow system light mode.
 - Backend access: mobile-specific (local storage, HTTP, WebSocket — TBD; **not** capnweb RPC)
 
 ## Commands
