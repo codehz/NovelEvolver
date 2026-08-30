@@ -106,6 +106,7 @@ jobs:
         run: bun run build
 
       - name: Package
+        working-directory: apps/desktop
         run: bunx electron-builder ${{ matrix.builder_args }} --publish never
 
       - name: Upload artifacts
@@ -113,11 +114,11 @@ jobs:
         with:
           name: NovelEvolver-${{ matrix.platform }}-${{ github.sha }}
           path: |
-            release/*
-            !release/*-unpacked/**
-            !release/builder-effective-config.yaml
-            !release/builder-debug.yml
-            !release/*.blockmap
+            apps/desktop/release/*
+            !apps/desktop/release/*-unpacked/**
+            !apps/desktop/release/builder-effective-config.yaml
+            !apps/desktop/release/builder-debug.yml
+            !apps/desktop/release/*.blockmap
           if-no-files-found: error
           retention-days: 14
 

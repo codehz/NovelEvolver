@@ -4,14 +4,15 @@ import { fileURLToPath } from "node:url";
 
 import esbuild from "esbuild";
 
-const projectRoot = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
-const distDir = path.join(projectRoot, "dist-electron");
+const repoRoot = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
+const desktopRoot = path.join(repoRoot, "apps/desktop");
+const distDir = path.join(desktopRoot, "dist-electron");
 const watch = process.argv.includes("--watch");
 
 const alias = {
-  "#app": path.join(projectRoot, "src"),
-  "#shared": path.join(projectRoot, "shared"),
-  "#workbench": path.join(projectRoot, "src/features/project-workbench"),
+  "#app": path.join(desktopRoot, "src"),
+  "#shared": path.join(repoRoot, "packages/shared"),
+  "#workbench": path.join(desktopRoot, "src/features/project-workbench"),
 };
 
 function aliasPlugin() {
@@ -55,14 +56,14 @@ function resolvePath(filePath) {
 
 function createConfig(entryPoint, outfile) {
   return {
-    absWorkingDir: projectRoot,
+    absWorkingDir: desktopRoot,
     entryPoints: [entryPoint],
     outfile,
     bundle: true,
     platform: "node",
     format: "cjs",
     target: "node20",
-    tsconfig: path.join(projectRoot, "tsconfig.json"),
+    tsconfig: path.join(desktopRoot, "tsconfig.json"),
     sourcemap: true,
     packages: "bundle",
     external: ["electron"],

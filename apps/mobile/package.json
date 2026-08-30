@@ -1,0 +1,9 @@
+{
+  "name": "@novelevolver/mobile",
+  "version": "0.0.0",
+  "private": true,
+  "description": "NovelEvolver mobile app (React Native) — scaffold only",
+  "scripts": {
+    "lint": "echo \"@novelevolver/mobile: no sources yet\""
+  }
+}

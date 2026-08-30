@@ -10,8 +10,8 @@ description: 通过 Chrome DevTools Protocol 调试 NovelEvolver Electron 应用
 ## 1. 启动（两条命令，用 hub 管理）
 
 ```text
-1. vite dev server：hub start name=vite application=bun args=["run","dev:renderer"]
-2. Electron：hub start name=electron application=bunx args=["electron",".","--remote-debugging-port=9222"]
+1. vite dev server：hub start name=vite application=bun args=["run","--filter","@novelevolver/desktop","dev:renderer"] cwd=<repo>
+2. Electron：hub start name=electron application=bunx args=["electron",".","--remote-debugging-port=9222"] cwd=<repo>/apps/desktop
    env: NOVEL_EVOLVER_MOCK_AI=1   （mock AI 模式，faux provider）
    ready: { log: "DevTools listening", port: 9222, timeout: 60 }
 ```
@@ -20,7 +20,7 @@ description: 通过 Chrome DevTools Protocol 调试 NovelEvolver Electron 应用
 
 - vite 8 的 dev server 监听 IPv6 `::1`，readiness 的 `port` 探测（默认 127.0.0.1）会误报超时。验证用 `curl -s -o /dev/null -w "%{http_code}" http://localhost:5173/`，返回 200 即就绪，进程仍活着就继续。
 - 端口 9222 被占用时先 `hub stop electron` 再启动（残留实例会让新实例起不来或连到旧实例）。
-- 启动前确保 `dist-electron/main.js` 存在：改过 `electron/` 代码后先 `bun run build:electron`，否则跑的是旧 bundle。
+- 启动前确保 `apps/desktop/dist-electron/main.js` 存在：改过 `apps/desktop/electron/` 代码后先 `bun run --filter @novelevolver/desktop build:electron`（或根目录 `bun run build`），否则跑的是旧 bundle。
 
 ## 2. 连接与 tab 生命周期
 

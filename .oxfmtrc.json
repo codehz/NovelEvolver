@@ -12,6 +12,6 @@
     ]
   },
   "sortTailwindcss": {
-    "stylesheet": "./src/index.css"
+    "stylesheet": "./apps/desktop/src/index.css"
   }
 }

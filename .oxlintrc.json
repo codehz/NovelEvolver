@@ -1,6 +1,6 @@
 {
   "$schema": "./node_modules/oxlint/configuration_schema.json",
-  "ignorePatterns": ["dist/**", "dist-electron/**", "node_modules/**"],
+  "ignorePatterns": ["apps/desktop/dist/**", "apps/desktop/dist-electron/**", "node_modules/**"],
   "jsPlugins": ["oxlint-tailwindcss"],
   "options": {
     "typeAware": true,
@@ -8,7 +8,7 @@
   },
   "settings": {
     "tailwindcss": {
-      "entryPoint": "src/index.css"
+      "entryPoint": "apps/desktop/src/index.css"
     }
   },
   "rules": {
@@ -29,7 +29,7 @@
   },
   "overrides": [
     {
-      "files": ["src/**/*.ts", "src/**/*.tsx"],
+      "files": ["apps/desktop/src/**/*.ts", "apps/desktop/src/**/*.tsx"],
       "env": {
         "browser": true
       },
@@ -120,15 +120,19 @@
       }
     },
     {
-      "files": ["electron/**/*.ts", "tools/**/*.ts"],
+      "files": [
+        "apps/desktop/electron/**/*.ts",
+        "apps/desktop/tools/**/*.ts",
+        "packages/shared/**/*.ts"
+      ],
       "env": {
         "node": true
       }
     },
     {
       "files": [
-        "src/features/project-workbench/chrome/**/*.ts",
-        "src/features/project-workbench/chrome/**/*.tsx"
+        "apps/desktop/src/features/project-workbench/chrome/**/*.ts",
+        "apps/desktop/src/features/project-workbench/chrome/**/*.tsx"
       ],
       "rules": {
         "no-restricted-imports": [
@@ -245,8 +249,8 @@
     },
     {
       "files": [
-        "src/features/project-workbench/tree/**/*.ts",
-        "src/features/project-workbench/tree/**/*.tsx"
+        "apps/desktop/src/features/project-workbench/tree/**/*.ts",
+        "apps/desktop/src/features/project-workbench/tree/**/*.tsx"
       ],
       "rules": {
         "no-restricted-imports": [
@@ -363,8 +367,8 @@
     },
     {
       "files": [
-        "src/features/project-workbench/session/**/*.ts",
-        "src/features/project-workbench/session/**/*.tsx"
+        "apps/desktop/src/features/project-workbench/session/**/*.ts",
+        "apps/desktop/src/features/project-workbench/session/**/*.tsx"
       ],
       "rules": {
         "no-restricted-imports": [

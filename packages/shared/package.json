@@ -1,0 +1,12 @@
+{
+  "name": "@novelevolver/shared",
+  "version": "0.3.4",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./*": "./*"
+  },
+  "dependencies": {
+    "capnweb": "npm:@codehz/capnweb@0.10.0"
+  }
+}

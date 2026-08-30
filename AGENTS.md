@@ -14,9 +14,20 @@ This project is currently in **prototype development phase** — **no changes ne
 
 ## Project Structure & Module Organization
 
-`src/` contains the Vite renderer application (`main.tsx`, `index.css`). `electron/` contains the Electron main and preload processes. Build output goes to `dist/` for the renderer and `dist-electron/` for Electron; do not edit generated files directly. Root config files include `vite.config.ts`, `tsconfig.json`, `.oxlintrc.json`, `.oxfmtrc.json`, and `scripts/build-electron.mjs`. RPC contracts shared between renderer and Electron live in `shared/rpc/`.
+This repository is a **Bun workspace monorepo**:
 
-Renderer layout (`src/`):
+```
+apps/
+  desktop/          @novelevolver/desktop — Electron + Vite renderer
+  mobile/           @novelevolver/mobile — React Native scaffold (future)
+packages/
+  shared/           @novelevolver/shared — RPC contracts, DTOs, pure helpers
+scripts/            repo-level build helpers (electron bundle, fonts)
+```
+
+`apps/desktop/src/` contains the Vite renderer application (`main.tsx`, `index.css`). `apps/desktop/electron/` contains the Electron main and preload processes. Build output goes to `apps/desktop/dist/` for the renderer and `apps/desktop/dist-electron/` for Electron; do not edit generated files directly. Desktop config lives under `apps/desktop/` (`vite.config.ts`, `tsconfig.json`, `path-aliases.ts`, `electron-builder.yml`); repo-wide lint/format config stays at the root (`.oxlintrc.json`, `.oxfmtrc.json`, `scripts/build-electron.mjs`). RPC contracts shared between renderer, Electron, and future mobile live in `packages/shared/` (`@novelevolver/shared`).
+
+Renderer layout (`apps/desktop/src/`):
 
 - `app/` — bootstrap (`App.tsx`, `routes.tsx`)
 - `shell/` — global desktop chrome (`WindowFrame`, notifications, quick-pick)
@@ -46,7 +57,7 @@ Renderer layout (`src/`):
 - Layer bans: `chrome/**` must not import session/tree/domains; `tree/**` must not import session/chrome/domains; `session/**` must not import tree/chrome/domains.
 - Chrome internals still import via `#workbench/chrome` barrel only (not `chrome/layout|sidebar|statusbar|titlebar` subpaths).
 
-`electron/` layout (high level):
+`apps/desktop/electron/` layout (high level):
 
 - `main.ts`, `preload.ts` — bootstrap entrypoints
 - `lib/` — shared main-process utilities (e.g. `stream-publisher.ts`)
@@ -57,24 +68,24 @@ Renderer layout (`src/`):
 
 ### Path Aliases
 
-Three path aliases are configured in both `tsconfig.json` (`compilerOptions.paths`) and `path-aliases.ts` (`resolve.alias`, consumed by Vite):
+Three path aliases are configured in `apps/desktop/tsconfig.json` (`compilerOptions.paths`) and `apps/desktop/path-aliases.ts` (`resolve.alias`, consumed by Vite):
 
-- `#app/*` → `./src/*` — renderer root (`#app/app/App`, `#app/shared/lib/ui/cn`, `#app/features/project-list`, etc.)
-- `#shared/*` → `./shared/*` — IPC/RPC contracts shared with `electron/`
+- `#app/*` → `./src/*` (under `apps/desktop/`) — renderer root (`#app/app/App`, `#app/shared/lib/ui/cn`, `#app/features/project-list`, etc.)
+- `#shared/*` → `../../packages/shared/*` — IPC/RPC contracts (`@novelevolver/shared`)
 - `#workbench/*` → `./src/features/project-workbench/*` — workbench-internal cross-domain imports (`#workbench/tree/TreeBody`, `#workbench/editor/state/molecules`)
 
 **Rules:** Prefer aliases over deep relative paths (`../../../shared/lib/ui/cn` → `#app/shared/lib/ui/cn`). Keep single-dot relative imports within the same domain folder (e.g. `chrome/layout` importing `./WorkbenchLayout`, `rpc/server` importing `./transport`). Do not add a `#electron` alias — Electron internals stay as relative (`../db/app-database`, `./changes-ops`). Import workbench chrome via `#workbench/chrome` (barrel), not internal `chrome/layout/` / `chrome/sidebar/` subpaths. Use `#workbench/*` only inside `features/project-workbench/`; feature entrypoints export through `features/project-workbench/index.ts` for external consumers.
 
 ### Electron RPC
 
-Renderer ↔ main communication uses **capnweb** over `shared/rpc/transport.ts`. Contracts live in `shared/rpc/`; implementations live in `electron/rpc/{server,services,session,handles}/`. Branch workspace logic stays in `electron/worktree/session/` — RPC handles are thin delegates only.
+Renderer ↔ main communication uses **capnweb** over `packages/shared/rpc/transport.ts`. Contracts live in `packages/shared/rpc/`; implementations live in `apps/desktop/electron/rpc/{server,services,session,handles}/`. Branch workspace logic stays in `apps/desktop/electron/worktree/session/` — RPC handles are thin delegates only.
 
-- **Entry:** `electron/rpc/server/connect.ts` (`ElectronRpcServer`) owns per-`webContents` sessions; `electron/preload.ts` exposes `window.appRpcBridge`.
-- **Deps:** pass main-process dependencies through `RpcMainDeps` (`electron/rpc/server/deps.ts`). Never import `main.ts` from RPC code.
+- **Entry:** `apps/desktop/electron/rpc/server/connect.ts` (`ElectronRpcServer`) owns per-`webContents` sessions; `apps/desktop/electron/preload.ts` exposes `window.appRpcBridge`.
+- **Deps:** pass main-process dependencies through `RpcMainDeps` (`apps/desktop/electron/rpc/server/deps.ts`). Never import `main.ts` from RPC code.
 - **Types:** only live remote objects `extends RpcTarget` (root, services, sessions, handles). Snapshots/DTOs stay plain interfaces. Prefer sync signatures; add `Promise` only for dialogs, real async I/O, or stream subscriptions.
-- **Dispose:** resources opened on the server must implement `[Symbol.dispose]()` and chain from `AppRpcRootImpl` when `ElectronRpcServer.closeRecord()` runs. `electron/worktree/` must not import `electron/rpc/`; shared streaming helpers live in `electron/lib/`.
+- **Dispose:** resources opened on the server must implement `[Symbol.dispose]()` and chain from `AppRpcRootImpl` when `ElectronRpcServer.closeRecord()` runs. `apps/desktop/electron/worktree/` must not import `apps/desktop/electron/rpc/`; shared streaming helpers live in `apps/desktop/electron/lib/`.
 
-To add or change an RPC surface: update `shared/rpc/`, implement under `electron/rpc/`, wire into `AppRpcRootImpl` / `ElectronRpcServer.connect()` when needed, and keep domain logic out of handles.
+To add or change an RPC surface: update `packages/shared/rpc/`, implement under `apps/desktop/electron/rpc/`, wire into `AppRpcRootImpl` / `ElectronRpcServer.connect()` when needed, and keep domain logic out of handles.
 
 ## Build, Test, and Development Commands
 
@@ -83,19 +94,19 @@ Use Bun for local work because the repo is locked with `bun.lock`.
 - `bun install` installs dependencies.
 - `bun run dev` starts Vite, watches Electron with `scripts/build-electron.mjs`, and launches the desktop app.
 - `bun run build` builds both renderer and Electron bundles. If you see CSS warnings about `::highlight` (e.g. "Unknown pseudo class" or similar), these are false positives caused by lightningcss's incomplete support for the CSS `::highlight()` pseudo-element — they can be safely ignored.
-- `bun run pack` builds then runs `electron-builder --dir` for a local unpacked smoke binary under `release/`.
-- `bun run dist` builds then packages the **current host OS** defaults into `release/` (`dist:linux` / `dist:win` / `dist:mac` for explicit targets). Packaging is native-host only — no cross-compile. Config lives in `electron-builder.yml`. Prototype phase: **no code signing / notarization**. CI (`.github/workflows/package.yml`) packages Linux/Windows/macOS on `main`/PR and uploads workflow artifacts; pushing a tag matching `v*` also creates a GitHub Release with those packages attached (version comes from `package.json` on the tagged commit, typically via `npm version`; tags with `-` such as `v1.0.0-beta.1` are marked prerelease).
-- `bun run lint` is the **only** TypeScript validation gate: `oxlint` runs with `typeAware` and `typeCheck` (see `.oxlintrc.json`) on `src/`, `electron/`, and `shared/`, including compiler-style diagnostics. Renderer files must not import `electron` or `electron/` (enforced via `no-restricted-imports`). **Do not** add a `typecheck` script, `tsc --noEmit` npm script, or parallel CI step for standalone `tsc`; extend `.oxlintrc.json` if you need stricter checks. It may take a while to return results, so when invoking it from an agent or terminal tool, use a 5-second result wait timeout (`yield_time_ms`) rather than a shorter default.
+- `bun run pack` builds then runs `electron-builder --dir` for a local unpacked smoke binary under `apps/desktop/release/`.
+- `bun run dist` builds then packages the **current host OS** defaults into `apps/desktop/release/` (`dist:linux` / `dist:win` / `dist:mac` for explicit targets). Packaging is native-host only — no cross-compile. Config lives in `apps/desktop/electron-builder.yml`. Prototype phase: **no code signing / notarization**. CI (`.github/workflows/package.yml`) packages Linux/Windows/macOS on `main`/PR and uploads workflow artifacts; pushing a tag matching `v*` also creates a GitHub Release with those packages attached (version comes from `package.json` on the tagged commit, typically via `npm version`; tags with `-` such as `v1.0.0-beta.1` are marked prerelease).
+- `bun run lint` is the **only** TypeScript validation gate: `oxlint` runs with `typeAware` and `typeCheck` (see `.oxlintrc.json`) on `apps/desktop/src/`, `apps/desktop/electron/`, and `packages/shared/`, including compiler-style diagnostics. Renderer files must not import `electron` or `electron/` (enforced via `no-restricted-imports`). **Do not** add a `typecheck` script, `tsc --noEmit` npm script, or parallel CI step for standalone `tsc`; extend `.oxlintrc.json` if you need stricter checks. It may take a while to return results, so when invoking it from an agent or terminal tool, use a 5-second result wait timeout (`yield_time_ms`) rather than a shorter default.
 - `bun run lint:fix` applies safe lint fixes.
 - `bun run format` and `bun run format:check` run `oxfmt`.
 
 ## Coding Style & Naming Conventions
 
-Write TypeScript with 2-space indentation, semicolons, and double quotes, matching the current codebase. Use PascalCase for React components, camelCase for functions and variables, and descriptive RPC service/handle names. Keep renderer code in `src/`, Electron-only code in `electron/`, and prefer small local types over loosely typed objects. Let `oxlint` and `oxfmt` enforce import order and Tailwind class ordering.
+Write TypeScript with 2-space indentation, semicolons, and double quotes, matching the current codebase. Use PascalCase for React components, camelCase for functions and variables, and descriptive RPC service/handle names. Keep renderer code in `apps/desktop/src/`, Electron-only code in `apps/desktop/electron/`, and prefer small local types over loosely typed objects. Let `oxlint` and `oxfmt` enforce import order and Tailwind class ordering.
 
-### Frontend module conventions (`src/`)
+### Frontend module conventions (`apps/desktop/src/`)
 
-- **Named exports only.** Exception: Vite app entry may use `export default` (`src/app/App.tsx`).
+- **Named exports only.** Exception: Vite app entry may use `export default` (`apps/desktop/src/app/App.tsx`).
 - **File names:** `ComponentName.tsx`, `use-foo.ts` (hooks), `foo-bar.ts` (utils), `foo-chrome.ts` (**only** shared Tailwind class constants). Do not mix pure helpers and chrome class constants in the same file. Do **not** name React components `*Chrome.tsx` — that suffix is reserved for style-constant modules.
 - **Props:**
   - Always `type XxxProps = { ... }` next to the component. **Never** `interface XxxProps`.
@@ -123,7 +134,7 @@ Write TypeScript with 2-space indentation, semicolons, and double quotes, matchi
   - Shared interaction primitives (focus, hover, list highlight, overlay motion, popover surface) live in `#app/shared/lib/ui/interaction-chrome` — reuse them instead of re-copying the same utilities
   - Prefer importing chrome/helpers modules directly (`ai-chat-chrome`, `ai-chat-helpers`); do not add pure re-export barrels that only re-surface those modules
 
-### React performance habits (`src/`)
+### React performance habits (`apps/desktop/src/`)
 
 - **Default: no `memo`.** Use only for (a) layout shells with stable props (existing dock/frame pattern: `export const X = memo(function X(...))`), or (b) list leaves under proven high-frequency parent re-renders.
 - **Default: no `useCallback` / `useMemo`.** Use only when (a) passing to a `memo` child, (b) a stable identity is required by an effect/dependency array, or (c) the computation is clearly expensive (large tree projection, filtering).
@@ -132,7 +143,7 @@ Write TypeScript with 2-space indentation, semicolons, and double quotes, matchi
 
 ## Styling & Design Tokens
 
-The renderer uses **Tailwind CSS v4** with theme tokens defined in `src/index.css` under `@theme` (for example `app-*`, `titlebar-*`, `badge-*` colors, spacing, and typography). When designing UI:
+The renderer uses **Tailwind CSS v4** with theme tokens defined in `apps/desktop/src/index.css` under `@theme` (for example `app-*`, `titlebar-*`, `badge-*` colors, spacing, and typography). When designing UI:
 
 - Prefer **existing shared tokens** for app-wide roles (`text-app-foreground`, `bg-app-crust`, `bg-app-surface`, `h-titlebar`, `text-chat`, `text-chat-meta`, etc.) over raw hex values or one-off arbitrary sizes.
 - Do **not** add a new semantic **color** token unless that role is shared across multiple components or needs centralized theme control. If a color choice is local to one component or one narrow variant, use the underlying palette/theme utility directly instead of inventing a new alias.
@@ -140,7 +151,7 @@ The renderer uses **Tailwind CSS v4** with theme tokens defined in `src/index.cs
 - **Exception:** minimal global or component-scoped CSS is allowed only when integrating a **third-party component library** that cannot be styled via tokens/utilities, or for platform hooks (e.g. `-webkit-app-region`) already centralized in `index.css`.
 - Extend `@theme` with new named tokens only when the value represents a reusable semantic role, repeated state, or shared sizing/spacing primitive. Avoid one-to-one wrapper tokens that only rename a Catppuccin color for a single component.
 - **Tailwind class constants must use `cn()`:** Any module-level or local constant whose value is a Tailwind utility string (including a single short string) must be assigned via `cn("...")` or `cn("...", condition && "...")`, not a bare string literal. This lets `oxlint-tailwindcss` statically validate classes (unknown utilities, duplicates, conflicts, sort order, etc.). Inline `className="..."` on JSX is fine; the rule applies to extracted `*Class` / `*Classes` variables and similar reuse.
-- **Trust `bun run lint` for Tailwind after `@theme` / CSS changes:** The editor may show stale Tailwind diagnostics (e.g. “unknown class” for new theme tokens) because IDE Tailwind plugins do not always reload `src/index.css` immediately. Treat **`bun run lint`** (oxlint + `oxlint-tailwindcss`) as the authority; do not “fix” working theme utilities solely to clear editor squiggles.
+- **Trust `bun run lint` for Tailwind after `@theme` / CSS changes:** The editor may show stale Tailwind diagnostics (e.g. “unknown class” for new theme tokens) because IDE Tailwind plugins do not always reload `apps/desktop/src/index.css` immediately. Treat **`bun run lint`** (oxlint + `oxlint-tailwindcss`) as the authority; do not “fix” working theme utilities solely to clear editor squiggles.
 
 ### Interaction & visual semantics (locked)
 
@@ -170,7 +181,7 @@ Additional shape / type scale rules:
 - **Radius:** controls `rounded-sm`; panels/cards `rounded-lg`; pills/progress `rounded-full`. Do not mix radii for the same role.
 - **Accent:** chrome emphasis uses `badge-background` / existing semantic tokens. Decorative severity colors (info/warn/error) may stay raw `ctp-*`.
 - **Chat type scale:** body `text-chat`, meta/secondary `text-chat-meta` (theme tokens) — avoid `text-[0.8125rem]` / `text-[0.75rem]` arbitrary values.
-- **Custom `@theme --text-*` sizes must also be registered** in `src/shared/lib/ui/cn.ts` under `extendTailwindMerge` → `classGroups["font-size"]` (e.g. `2xs`, `chat`, `chat-meta`). Otherwise `cn()` treats them as text-color and drops them when merged with `text-app-foreground` / other `text-*` color utilities.
+- **Custom `@theme --text-*` sizes must also be registered** in `apps/desktop/src/shared/lib/ui/cn.ts` under `extendTailwindMerge` → `classGroups["font-size"]` (e.g. `2xs`, `chat`, `chat-meta`). Otherwise `cn()` treats them as text-color and drops them when merged with `text-app-foreground` / other `text-*` color utilities.
 - **Collapsible height motion** may keep the separate ease in `collapsibleHeightMotionClass`; do not use it for overlays.
 
 ## Testing Guidelines
@@ -196,7 +207,7 @@ Use native overflow utilities directly — **do not** reintroduce a shared `Scro
 - Flex remainder: `h-0 min-h-0 flex-1 overflow-y-auto` (parent is a definite-height flex column).
 - Parent already sized / inline height: `h-full min-h-0 overflow-y-auto`.
 - Self-clamped popover/picker: shell `max-h-* overflow-hidden` with fixed header/footer siblings and a `min-h-0 flex-1 overflow-y-auto` body; body-only clamp can use `max-h-* overflow-y-auto` alone.
-- Electron enables Blink `OverlayScrollbars` (`enableBlinkFeatures` in `electron/main.ts`) so the bar overlays content when supported. App-wide scrollbar **colors** live in `src/index.css`.
+- Electron enables Blink `OverlayScrollbars` (`enableBlinkFeatures` in `apps/desktop/electron/main.ts`) so the bar overlays content when supported. App-wide scrollbar **colors** live in `apps/desktop/src/index.css`.
 - Ad-hoc scrollports (CodeMirror `.cm-scroller`, horizontal tab rails) stay native overflow only.
 
 ## Fonts
@@ -206,7 +217,7 @@ UI and mono fonts are **full local files**, not npm subset packages (subsetting 
 - Source of truth: [scripts/fonts.manifest.json](scripts/fonts.manifest.json) + [scripts/ensure-fonts.mjs](scripts/ensure-fonts.mjs)
 - Pipeline: download official TTF zips → verify `sourceSha256` → convert with `wawoff2` (full font, **no subset**) → write WOFF2 and pin `sha256`
 - Output (gitignored): `vendor/fonts/` — MiSans VF + Maple Mono CN static faces as `.woff2` only
-- CSS: [src/fonts/faces.css](src/fonts/faces.css), imported from [src/index.css](src/index.css)
+- CSS: [apps/desktop/src/fonts/faces.css](apps/desktop/src/fonts/faces.css), imported from [apps/desktop/src/index.css](apps/desktop/src/index.css)
 - Commands: `bun run fonts:ensure` (also runs in `prepare`). Offline: `SKIP_FONTS=1`. Force refresh: `FONTS_FORCE=1`.
 - **Attribution**: This application uses the **MiSans** typeface (Xiaomi). Maple Mono CN is SIL OFL 1.1.
 
