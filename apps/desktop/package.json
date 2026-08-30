@@ -78,5 +78,6 @@
     "@codemirror/search": "$@codemirror/search",
     "@codemirror/state": "$@codemirror/state",
     "@codemirror/view": "$@codemirror/view"
-  }
+  },
+  "productName": "NovelEvolver"
 }

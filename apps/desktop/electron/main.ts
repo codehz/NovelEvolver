@@ -14,6 +14,14 @@ app.commandLine.appendSwitch("enable-features", "OverlayScrollbar");
 
 const isDev = !app.isPackaged;
 
+// Pin identity before `ready`. Electron derives userData and Linux
+// libsecret OSCrypt from `app.getName()` (`productName` / `name`). After
+// the monorepo that became `@novelevolver/desktop`, then `NovelEvolver`,
+// so old config and encrypted API keys / git secrets were unreachable.
+const APP_IDENTITY_NAME = "novelevolver";
+app.setName(APP_IDENTITY_NAME);
+app.setPath("userData", join(app.getPath("appData"), APP_IDENTITY_NAME));
+
 let appDb: AppDatabase | null = null;
 let aiModelsStore: AiModelsStore | null = null;
 let aiAgentsStore: AiAgentsStore | null = null;
