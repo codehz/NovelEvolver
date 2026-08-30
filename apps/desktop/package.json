@@ -7,11 +7,11 @@
   "scripts": {
     "dev": "NOVEL_EVOLVER_MOCK_AI=1 concurrently -k \"bun run dev:renderer\" \"bun run dev:electron\" \"bun run dev:start\"",
     "dev:renderer": "vite",
-    "dev:electron": "node ../../scripts/build-electron.mjs --watch",
+    "dev:electron": "node scripts/build-electron.mjs --watch",
     "dev:start": "wait-on tcp:5173 dist-electron/main.js && electron .",
     "build": "bun run build:renderer && bun run build:electron",
     "build:renderer": "vite build",
-    "build:electron": "node ../../scripts/build-electron.mjs",
+    "build:electron": "node scripts/build-electron.mjs",
     "pack": "bun run build && electron-builder --dir",
     "dist": "bun run build && electron-builder --publish never",
     "dist:linux": "bun run build && electron-builder --linux AppImage --publish never",

@@ -4,8 +4,8 @@ import { fileURLToPath } from "node:url";
 
 import esbuild from "esbuild";
 
-const repoRoot = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
-const desktopRoot = path.join(repoRoot, "apps/desktop");
+const desktopRoot = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
+const repoRoot = path.dirname(path.dirname(desktopRoot));
 const distDir = path.join(desktopRoot, "dist-electron");
 const watch = process.argv.includes("--watch");
 

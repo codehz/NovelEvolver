@@ -25,7 +25,7 @@ packages/
 scripts/            repo-level build helpers (electron bundle, fonts)
 ```
 
-`apps/desktop/src/` contains the Vite renderer application (`main.tsx`, `index.css`). `apps/desktop/electron/` contains the Electron main and preload processes. Build output goes to `apps/desktop/dist/` for the renderer and `apps/desktop/dist-electron/` for Electron; do not edit generated files directly. Desktop config lives under `apps/desktop/` (`vite.config.ts`, `tsconfig.json`, `path-aliases.ts`, `electron-builder.yml`); repo-wide lint/format config stays at the root (`.oxlintrc.json`, `.oxfmtrc.json`, `scripts/build-electron.mjs`). RPC contracts shared between renderer, Electron, and future mobile live in `packages/shared/` (`@novelevolver/shared`).
+`apps/desktop/src/` contains the Vite renderer application (`main.tsx`, `index.css`). `apps/desktop/electron/` contains the Electron main and preload processes. Build output goes to `apps/desktop/dist/` for the renderer and `apps/desktop/dist-electron/` for Electron; do not edit generated files directly. Desktop config lives under `apps/desktop/` (`vite.config.ts`, `tsconfig.json`, `path-aliases.ts`, `electron-builder.yml`, `scripts/build-electron.mjs`); repo-wide lint/format config stays at the root (`.oxlintrc.json`, `.oxfmtrc.json`). RPC contracts shared between renderer, Electron, and future mobile live in `packages/shared/` (`@novelevolver/shared`).
 
 Renderer layout (`apps/desktop/src/`):
 
@@ -92,7 +92,7 @@ To add or change an RPC surface: update `packages/shared/rpc/`, implement under 
 Use Bun for local work because the repo is locked with `bun.lock`.
 
 - `bun install` installs dependencies.
-- `bun run dev` starts Vite, watches Electron with `scripts/build-electron.mjs`, and launches the desktop app.
+- `bun run dev` starts Vite, watches Electron with `apps/desktop/scripts/build-electron.mjs`, and launches the desktop app.
 - `bun run build` builds both renderer and Electron bundles. If you see CSS warnings about `::highlight` (e.g. "Unknown pseudo class" or similar), these are false positives caused by lightningcss's incomplete support for the CSS `::highlight()` pseudo-element — they can be safely ignored.
 - `bun run pack` builds then runs `electron-builder --dir` for a local unpacked smoke binary under `apps/desktop/release/`.
 - `bun run dist` builds then packages the **current host OS** defaults into `apps/desktop/release/` (`dist:linux` / `dist:win` / `dist:mac` for explicit targets). Packaging is native-host only — no cross-compile. Config lives in `apps/desktop/electron-builder.yml`. Prototype phase: **no code signing / notarization**. CI (`.github/workflows/package.yml`) packages Linux/Windows/macOS on `main`/PR and uploads workflow artifacts; pushing a tag matching `v*` also creates a GitHub Release with those packages attached (version comes from `package.json` on the tagged commit, typically via `npm version`; tags with `-` such as `v1.0.0-beta.1` are marked prerelease).
