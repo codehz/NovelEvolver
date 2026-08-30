@@ -63,10 +63,16 @@ jobs:
         include:
           - os: ubuntu-latest
             platform: linux
-            builder_args: --linux AppImage
+            builder_args: --linux AppImage --x64
+          - os: ubuntu-24.04-arm
+            platform: linux-arm64
+            builder_args: --linux AppImage --arm64
           - os: windows-latest
             platform: windows
-            builder_args: --win nsis portable
+            builder_args: --win nsis portable --x64
+          - os: windows-11-arm
+            platform: windows-arm64
+            builder_args: --win nsis portable --arm64
           - os: macos-latest
             platform: macos
             builder_args: --mac dmg
