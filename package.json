@@ -35,6 +35,13 @@
     "typescript": "^6.0.3",
     "wawoff2": "^2.0.1"
   },
+  "optionalDependencies": {
+    "@oxlint/binding-darwin-arm64": "1.75.0",
+    "@oxlint/binding-darwin-x64": "1.75.0",
+    "@oxlint/binding-linux-x64-gnu": "1.75.0",
+    "@oxlint/binding-linux-x64-musl": "1.75.0",
+    "@oxlint/binding-win32-x64-msvc": "1.75.0"
+  },
   "lint-staged": {
     "*": "oxfmt --write --no-error-on-unmatched-pattern"
   }
