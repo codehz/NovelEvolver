@@ -9,6 +9,7 @@
   ],
   "scripts": {
     "dev": "bun run --filter @novelevolver/desktop dev",
+    "dev:mobile": "bun run --filter @novelevolver/mobile start",
     "build": "bun run --filter @novelevolver/desktop build",
     "pack": "bun run --filter @novelevolver/desktop pack",
     "dist": "bun run --filter @novelevolver/desktop dist",
