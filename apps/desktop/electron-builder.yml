@@ -1,5 +1,7 @@
 appId: app.codehz.novelevolver
 productName: NovelEvolver
+# Scoped workspace name (@novelevolver/desktop) is not safe for Linux AppImage paths.
+executableName: NovelEvolver
 asar: true
 # Main/preload are esbuild-bundled; renderer is Vite-built. No runtime node_modules needed.
 npmRebuild: false
