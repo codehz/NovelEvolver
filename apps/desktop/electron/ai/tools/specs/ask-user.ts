@@ -1,10 +1,6 @@
 import type { ToolCallItem } from "@codehz/ai";
 
-import type {
-  AiChatInteractionAnswer,
-  AskUserChoice,
-  AskUserOpenInteraction,
-} from "#shared/rpc/ai/index";
+import type { AiChatInteractionAnswer, AskUserChoice, AskUserOpenInteraction } from "#domain/ai";
 
 import { parseNonEmptyString, parseToolArgs } from "../parse";
 import { rejectedToolResult, successToolResult } from "../result";

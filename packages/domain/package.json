@@ -1,0 +1,9 @@
+{
+  "name": "@novelevolver/domain",
+  "version": "0.3.4",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./*": "./*"
+  }
+}

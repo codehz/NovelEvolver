@@ -1,7 +1,7 @@
 import { cn } from "#app/shared/lib/ui/cn";
-import type { EntityKind, LeafEntityKind } from "#shared/rpc/worktree/index";
-import type { WorktreeSearchHit } from "#shared/rpc/worktree/index";
-import type { ManuscriptTreeNode, ResourceTreeNode } from "#shared/rpc/worktree/index";
+import type { EntityKind, LeafEntityKind } from "#domain/worktree";
+import type { WorktreeSearchHit } from "#domain/worktree";
+import type { ManuscriptTreeNode, ResourceTreeNode } from "#domain/worktree";
 
 /** 内容树行图标统一尺寸（16px）与收缩。 */
 export const contentTreeIconLayoutClass = cn("shrink-0 text-base");

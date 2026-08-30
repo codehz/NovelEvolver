@@ -3,7 +3,7 @@ import { useAtomValue, useSetAtom } from "jotai";
 import { useEffect } from "react";
 
 import { consumeRpcSubscription } from "#app/shared/lib/rpc/app-rpc-react";
-import type { ChangesEvent } from "#shared/rpc/worktree/index";
+import type { ChangesEvent } from "#domain/worktree";
 
 import { useWorktreeChanges } from "../workspace-handles";
 import {

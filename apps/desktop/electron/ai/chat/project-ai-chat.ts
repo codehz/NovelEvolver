@@ -9,9 +9,9 @@ import type {
   AiConversationSearchOptions,
   AiConversationStatus,
   AiConversationSummary,
-} from "#shared/rpc/ai/index";
-import { MOCK_AI_MODEL_ID } from "#shared/rpc/ai/index";
-import { BUILTIN_AI_AGENT_ID, type AiReasoningLevel } from "#shared/rpc/services/index";
+} from "#domain/ai";
+import { MOCK_AI_MODEL_ID } from "#domain/ai";
+import { BUILTIN_AI_AGENT_ID, type AiReasoningLevel } from "#domain/settings/ai-settings";
 
 import type { AiChatRepository, AiConversationRecord } from "../../db/repositories/ai-chat-repo";
 import { RpcStreamPublisher } from "../../lib/stream-publisher";

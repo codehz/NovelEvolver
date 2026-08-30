@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
 
 import { cn } from "#app/shared/lib/ui/cn";
-import type { FileChangeStatus } from "#shared/rpc/worktree/index";
+import type { FileChangeStatus } from "#domain/worktree";
 
 export type TreeRowChangeKind = "folder" | "chapter" | "file";
 

@@ -123,7 +123,8 @@
       "files": [
         "apps/desktop/electron/**/*.ts",
         "apps/desktop/tools/**/*.ts",
-        "packages/shared/**/*.ts"
+        "packages/domain/**/*.ts",
+        "packages/desktop-rpc/**/*.ts"
       ],
       "env": {
         "node": true
@@ -358,7 +359,7 @@
                   "#workbench/chrome/**",
                   "**/features/project-workbench/chrome/**"
                 ],
-                "message": "tree/ is pure view kernel: do not import session, chrome, or domain modules. Depend on #app/shared and #shared DTOs only."
+                "message": "tree/ is pure view kernel: do not import session, chrome, or domain modules. Depend on #app/shared and #domain DTOs only."
               }
             ]
           }

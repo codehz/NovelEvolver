@@ -8,7 +8,7 @@ import {
 } from "#app/shared/lib/ui/interaction-chrome";
 import { bindScrollEdgeMask, scrollEdgeMaskClass } from "#app/shared/lib/ui/scroll-edge-mask";
 import { AppTooltip, Button, DisclosureChevron } from "#app/shared/ui";
-import type { WorktreeSearchHit } from "#shared/rpc/worktree/index";
+import type { WorktreeSearchHit } from "#domain/worktree";
 import { activateOnEnterSpace } from "#workbench/lib/activate-on-enter-space";
 import { contentEntityIconClass, contentFolderIconClass } from "#workbench/tree/content-tree-icons";
 import type { TreeRowLayout } from "#workbench/tree/tree-row-layout";

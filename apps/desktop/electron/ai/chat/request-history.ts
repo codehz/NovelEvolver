@@ -1,6 +1,6 @@
 import type { InputItem } from "@codehz/ai";
 
-import type { AiChatAssistantPart } from "#shared/rpc/ai/index";
+import type { AiChatAssistantPart } from "#domain/ai";
 
 /**
  * 去掉 history 末尾连续的模型产物，停在 user message 或 tool_result。

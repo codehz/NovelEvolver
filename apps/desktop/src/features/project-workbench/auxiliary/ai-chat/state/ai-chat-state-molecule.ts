@@ -1,8 +1,8 @@
 import { molecule, use } from "bunshi/react";
 import { atom } from "jotai";
 
-import { createInitialAiChatSnapshot } from "#shared/rpc/ai/index";
-import type { AiChatMessage, AiChatSnapshot } from "#shared/rpc/ai/index";
+import { createInitialAiChatSnapshot } from "#domain/ai";
+import type { AiChatMessage, AiChatSnapshot } from "#domain/ai";
 import { projectIdScope } from "#workbench/session/project-scope";
 
 export type AiChatTransportState = {

@@ -11,7 +11,7 @@ import {
 } from "react";
 
 import { consumeRpcSubscription } from "#app/shared/lib/rpc/app-rpc-react";
-import { applyAiChatEvent, createInitialAiChatSnapshot } from "#shared/rpc/ai/index";
+import { applyAiChatEvent, createInitialAiChatSnapshot } from "#domain/ai";
 import type {
   AiChatInteractionAnswer,
   AiChatSelectableAgent,
@@ -20,8 +20,8 @@ import type {
   AiChatSnapshot,
   AiConversationSearchHit,
   AiConversationSearchOptions,
-} from "#shared/rpc/ai/index";
-import type { AiReasoningLevel } from "#shared/rpc/services/index";
+} from "#domain/ai";
+import type { AiReasoningLevel } from "#domain/settings/ai-settings";
 import {
   useAiActiveChat,
   useAiCatalog,

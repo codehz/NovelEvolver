@@ -1,8 +1,8 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname } from "node:path";
 
-import type { AiRuntimePolicySnapshot, AiRuntimePolicyWrite } from "#shared/rpc/services/index";
-import { DEFAULT_AI_RUNTIME_POLICY, normalizeAiRuntimePolicy } from "#shared/rpc/services/index";
+import type { AiRuntimePolicySnapshot, AiRuntimePolicyWrite } from "#domain/settings/ai-settings";
+import { DEFAULT_AI_RUNTIME_POLICY, normalizeAiRuntimePolicy } from "#domain/settings/ai-settings";
 
 const FILE_VERSION = 1 as const;
 

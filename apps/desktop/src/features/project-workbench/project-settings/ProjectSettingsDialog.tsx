@@ -1,7 +1,7 @@
 import { Dialog } from "@base-ui/react/dialog";
 
 import { Button } from "#app/shared/ui";
-import type { ProjectMetadata } from "#shared/project";
+import type { ProjectMetadata } from "#domain/project";
 
 import {
   projectSettingsBackdropClass,

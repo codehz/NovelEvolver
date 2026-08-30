@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { DragEvent as ReactDragEvent } from "react";
 
 import { cn } from "#app/shared/lib/ui/cn";
-import type { ManuscriptTreeNode } from "#shared/rpc/worktree/index";
+import type { ManuscriptTreeNode } from "#domain/worktree";
 import { SidebarHeaderActionButton, SidebarHeaderActions } from "#workbench/chrome";
 import { runTreeRowContextMenu } from "#workbench/tree/run-tree-row-context-menu";
 import type { TreeResolvedDrop } from "#workbench/tree/tree-drag";

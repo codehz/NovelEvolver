@@ -1,5 +1,5 @@
 import type { ContextMenuItem } from "#app/shared/lib/context-menu";
-import type { AiConversationSearchHit, AiConversationSummary } from "#shared/rpc/ai/index";
+import type { AiConversationSearchHit, AiConversationSummary } from "#domain/ai";
 
 import { groupConversationsByActivity } from "./group-conversations";
 

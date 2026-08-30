@@ -1,16 +1,15 @@
 import { RpcTarget } from "capnweb";
 
+import type { HistoryHandle } from "#desktop-rpc/worktree/history-handle";
+import type { ChangeTextComparisonTarget, ChangesSnapshot } from "#domain/worktree/changes";
 import type {
-  ChangeTextComparisonTarget,
-  ChangesSnapshot,
   CommitChangeTextComparison,
   CommitChangesSnapshot,
   CommitSummary,
   HistoryEntry,
   HistoryEntryContent,
-  HistoryHandle,
   HistoryTarget,
-} from "#shared/rpc/worktree/index";
+} from "#domain/worktree/history";
 
 import type { WorktreeSession } from "../../worktree/session";
 

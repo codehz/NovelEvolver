@@ -1,4 +1,4 @@
-import type { ResourceTreeNode, ResourceTreeSnapshot } from "#shared/rpc/worktree/index";
+import type { ResourceTreeNode, ResourceTreeSnapshot } from "#domain/worktree";
 
 type ResourceTreeMetadata = {
   parentById: Map<string, string>;

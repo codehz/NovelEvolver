@@ -13,7 +13,7 @@ import type {
   HistoryTarget,
   ManuscriptTreeSnapshot,
   ResourceTreeSnapshot,
-} from "#shared/rpc/worktree/index";
+} from "#domain/worktree";
 
 import type { WorktreeJournalEntryRecord } from "../../db/repositories/worktree-repo";
 import { readTextFromTree } from "../git/diff-utils";

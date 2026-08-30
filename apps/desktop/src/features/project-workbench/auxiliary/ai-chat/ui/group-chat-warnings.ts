@@ -1,4 +1,4 @@
-import type { AiChatMessage, AiChatWarning } from "#shared/rpc/ai/index";
+import type { AiChatMessage, AiChatWarning } from "#domain/ai";
 
 export type GroupedChatWarnings = {
   warningsByMessageId: Map<string, AiChatWarning[]>;

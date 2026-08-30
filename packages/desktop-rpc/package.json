@@ -1,0 +1,13 @@
+{
+  "name": "@novelevolver/desktop-rpc",
+  "version": "0.3.4",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./*": "./*"
+  },
+  "dependencies": {
+    "@novelevolver/domain": "workspace:*",
+    "capnweb": "npm:@codehz/capnweb@0.10.0"
+  }
+}

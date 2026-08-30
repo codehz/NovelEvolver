@@ -1,8 +1,8 @@
 import type { SHA1 } from "nano-git";
 import type { Repository } from "nano-git/repository/core";
 
-import type { ChangesEvent } from "#shared/rpc/worktree/index";
-import type { ManuscriptTreeSnapshot, ResourceTreeSnapshot } from "#shared/rpc/worktree/index";
+import type { ChangesEvent } from "#domain/worktree";
+import type { ManuscriptTreeSnapshot, ResourceTreeSnapshot } from "#domain/worktree";
 
 import type { WorktreeRepository } from "../../db/repositories/worktree-repo";
 import { RpcStreamPublisher } from "../../lib/stream-publisher";

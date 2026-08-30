@@ -3,7 +3,7 @@ import {
   quickPickApi,
   type QuickPickListItem,
 } from "#app/shared/lib/quick-pick";
-import type { MockAiScenarioSummary } from "#shared/rpc/ai/index";
+import type { MockAiScenarioSummary } from "#domain/ai";
 
 function toListItem(scenario: MockAiScenarioSummary): QuickPickListItem {
   const traits = [scenario.toolMode === "integrated" ? "真实工具" : "模拟工具"];

@@ -1,8 +1,8 @@
 import type { RpcPromise } from "capnweb";
 
-import type { BranchWorkspace } from "#shared/rpc/session/index";
-import type { HistoryTarget } from "#shared/rpc/worktree/index";
-import type { WorktreeTreeSnapshot } from "#shared/rpc/worktree/index";
+import type { BranchWorkspace } from "#desktop-rpc/session";
+import type { HistoryTarget } from "#domain/worktree";
+import type { WorktreeTreeSnapshot } from "#domain/worktree";
 
 import type {
   WorkbenchEditorDocument,

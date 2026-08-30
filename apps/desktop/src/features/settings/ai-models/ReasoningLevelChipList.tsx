@@ -4,8 +4,8 @@ import { ToggleGroup } from "@base-ui/react/toggle-group";
 
 import { cn } from "#app/shared/lib/ui/cn";
 import { disabledSurfaceClass } from "#app/shared/lib/ui/interaction-chrome";
-import type { AiReasoningLevel } from "#shared/rpc/services/index";
-import { AI_REASONING_LEVEL_LABELS, AI_REASONING_LEVELS } from "#shared/rpc/services/index";
+import type { AiReasoningLevel } from "#domain/settings/ai-settings";
+import { AI_REASONING_LEVEL_LABELS, AI_REASONING_LEVELS } from "#domain/settings/ai-settings";
 
 import {
   settingsChipClass,

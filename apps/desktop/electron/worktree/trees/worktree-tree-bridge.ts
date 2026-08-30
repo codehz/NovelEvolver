@@ -1,10 +1,10 @@
-import { normalizeResourceNameInput } from "#shared/resource-library-path";
+import { normalizeResourceNameInput } from "#domain/resource-library-path";
 import type {
   FileChangeStatus,
   ManuscriptTreeNode,
   ManuscriptTreeSnapshot,
   ResourceTreeSnapshot,
-} from "#shared/rpc/worktree/index";
+} from "#domain/worktree";
 
 import { createEmptyOutline, validateOutline } from "../manuscript/outline";
 import { assertValidResourceRelativePath } from "../resources/paths";

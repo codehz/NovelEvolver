@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 
-import type { CommitChangesSnapshot } from "#shared/rpc/worktree/index";
+import type { CommitChangesSnapshot } from "#domain/worktree";
 import { useHistory } from "#workbench/session/workspace-handles";
 
 export type CommitChangesCacheEntry =

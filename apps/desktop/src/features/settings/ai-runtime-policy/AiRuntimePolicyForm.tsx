@@ -5,8 +5,8 @@ import { useMemo, type Ref } from "react";
 
 import { cn } from "#app/shared/lib/ui/cn";
 import { AppTooltip, Button } from "#app/shared/ui";
-import type { AiRuntimePolicySnapshot, AiRuntimePolicyWrite } from "#shared/rpc/services/index";
-import { AI_RUNTIME_POLICY_LIMITS, DEFAULT_AI_RUNTIME_POLICY } from "#shared/rpc/services/index";
+import type { AiRuntimePolicySnapshot, AiRuntimePolicyWrite } from "#domain/settings/ai-settings";
+import { AI_RUNTIME_POLICY_LIMITS, DEFAULT_AI_RUNTIME_POLICY } from "#domain/settings/ai-settings";
 
 import {
   settingsFieldControlCellClass,

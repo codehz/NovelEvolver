@@ -1,6 +1,6 @@
 import type { RefObject } from "react";
 
-import type { FileChangeStatus, ManuscriptTreeNode } from "#shared/rpc/worktree/index";
+import type { FileChangeStatus, ManuscriptTreeNode } from "#domain/worktree";
 import { manuscriptTreeNodeIconClass } from "#workbench/tree/content-tree-icons";
 import {
   TreeChangeStatusBadge,

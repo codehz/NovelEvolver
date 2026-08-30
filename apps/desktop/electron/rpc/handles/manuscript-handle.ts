@@ -1,11 +1,11 @@
 import { RpcTarget } from "capnweb";
 
+import type { ManuscriptHandle } from "#desktop-rpc/worktree/manuscript-handle";
 import type {
   ExternalImportEntry,
-  ManuscriptHandle,
   ManuscriptImportResult,
   WorktreeNodeIdResult,
-} from "#shared/rpc/worktree/index";
+} from "#domain/worktree/manuscript";
 
 import type { WorktreeSession } from "../../worktree/session";
 

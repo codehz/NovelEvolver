@@ -2,7 +2,7 @@ import { useState, type FormEvent, type KeyboardEvent } from "react";
 
 import { cn } from "#app/shared/lib/ui/cn";
 import { Button } from "#app/shared/ui";
-import type { AiChatUserMessage } from "#shared/rpc/ai/index";
+import type { AiChatUserMessage } from "#domain/ai";
 
 import {
   userMessageBubbleClass,

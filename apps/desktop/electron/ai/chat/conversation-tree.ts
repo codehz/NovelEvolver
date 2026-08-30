@@ -1,12 +1,12 @@
 import type { InputItem } from "@codehz/ai";
 
-import { cloneAiChatMessage } from "#shared/rpc/ai/index";
+import { cloneAiChatMessage } from "#domain/ai";
 import type {
   AiChatAssistantMessage,
   AiChatMessage,
   AiChatMessageBranch,
   AiChatUserMessage,
-} from "#shared/rpc/ai/index";
+} from "#domain/ai";
 
 /** Tree node: UI message + structural links + model-history segment for this node. */
 export type ConversationMessageNode = {

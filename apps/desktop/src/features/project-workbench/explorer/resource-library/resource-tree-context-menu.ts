@@ -1,5 +1,5 @@
 import type { ContextMenuItem } from "#app/shared/lib/context-menu";
-import type { ResourceTreeNode } from "#shared/rpc/worktree/index";
+import type { ResourceTreeNode } from "#domain/worktree";
 
 export type ResourceTreeContextAction = "open" | "new-file" | "new-folder" | "rename" | "delete";
 

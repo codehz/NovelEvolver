@@ -1,4 +1,4 @@
-import type { AiChatSlashRef } from "#shared/rpc/ai/index";
+import type { AiChatSlashRef } from "#domain/ai";
 
 /**
  * Expand a menu-confirmed slash ref + remainder into model-facing user text.

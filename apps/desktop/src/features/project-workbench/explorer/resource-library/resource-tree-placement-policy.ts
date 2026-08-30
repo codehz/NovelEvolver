@@ -1,4 +1,4 @@
-import type { ResourceTreeNode, ResourceTreeSnapshot } from "#shared/rpc/worktree/index";
+import type { ResourceTreeNode, ResourceTreeSnapshot } from "#domain/worktree";
 import type { TreeResolvedDrop, TreeRowHoverZone } from "#workbench/tree/tree-drag";
 import type { TreeRowDomData } from "#workbench/tree/tree-row-dom";
 import { TREE_ROW_HEIGHT_PX } from "#workbench/tree/tree-row-motion";

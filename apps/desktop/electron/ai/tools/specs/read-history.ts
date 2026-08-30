@@ -1,4 +1,4 @@
-import type { HistoryEntry } from "#shared/rpc/worktree/index";
+import type { HistoryEntry } from "#domain/worktree";
 
 import {
   parseDocumentDomain,

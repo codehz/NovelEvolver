@@ -1,6 +1,6 @@
 import type { ToolCallItem } from "@codehz/ai";
 
-import type { AiChatMessageUsage } from "#shared/rpc/ai/index";
+import type { AiChatMessageUsage } from "#domain/ai";
 
 export type SubagentRunStatus = "completed" | "failed" | "needs_user" | "aborted";
 

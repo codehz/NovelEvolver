@@ -3,7 +3,7 @@ import type { KeyboardEvent, ReactNode } from "react";
 import { cn } from "#app/shared/lib/ui/cn";
 import { rowHoverClass } from "#app/shared/lib/ui/interaction-chrome";
 import { Button, AppTooltip } from "#app/shared/ui";
-import type { Change } from "#shared/rpc/worktree/index";
+import type { Change } from "#domain/worktree";
 import { ChangeStatsBadge } from "#workbench/lib/ChangeStatsBadge";
 import { contentEntityIconClass } from "#workbench/tree/content-tree-icons";
 import type { TreeRowLayout } from "#workbench/tree/tree-row-layout";

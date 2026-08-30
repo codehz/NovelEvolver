@@ -1,6 +1,6 @@
 import { memo } from "react";
 
-import type { AiChatMessage } from "#shared/rpc/ai/index";
+import type { AiChatMessage } from "#domain/ai";
 
 import { AiAssistantMessageBlock } from "./AiAssistantMessageBlock";
 import { AiUserMessageBlock } from "./AiUserMessageBlock";

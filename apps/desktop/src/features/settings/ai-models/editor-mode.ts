@@ -1,4 +1,4 @@
-import type { AiModelConfigPublic, AiProviderConfigPublic } from "#shared/rpc/services/index";
+import type { AiModelConfigPublic, AiProviderConfigPublic } from "#domain/settings/ai-settings";
 
 export type EditorMode =
   | { type: "closed" }

@@ -8,7 +8,7 @@ import {
   cloneAiChatAssistantPartPatch,
   cloneAiChatMessagePatch,
   cloneAiToolView,
-} from "#shared/rpc/ai/index";
+} from "#domain/ai";
 import type {
   AiChatAssistantMessage,
   AiChatAssistantPart,
@@ -26,12 +26,12 @@ import type {
   AiConversationActivity,
   AiConversationSummary,
   AiChatSelectableModelKind,
-} from "#shared/rpc/ai/index";
+} from "#domain/ai";
 import {
   BUILTIN_AI_AGENT_ID,
   isAiReasoningLevel,
   type AiReasoningLevel,
-} from "#shared/rpc/services/index";
+} from "#domain/settings/ai-settings";
 
 import type {
   AiChatRepository,

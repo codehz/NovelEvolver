@@ -4,7 +4,7 @@ import type {
   AiModelConfigWrite,
   AiProviderConfigPublic,
   AiProviderConfigWrite,
-} from "#shared/rpc/services/index";
+} from "#domain/settings/ai-settings";
 
 import { settingsPanelSectionClass } from "../settings-chrome";
 import type { SettingsFormHandle } from "../settings-leave-guard";

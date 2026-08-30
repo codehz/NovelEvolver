@@ -1,5 +1,5 @@
-import { MOCK_AI_MODEL_ID, type AiChatSelectableModel } from "#shared/rpc/ai/index";
-import type { AiModelsSettingsSnapshot, AiReasoningLevel } from "#shared/rpc/services/index";
+import { MOCK_AI_MODEL_ID, type AiChatSelectableModel } from "#domain/ai";
+import type { AiModelsSettingsSnapshot, AiReasoningLevel } from "#domain/settings/ai-settings";
 
 export type ResolveAiModelsSnapshot = () => AiModelsSettingsSnapshot;
 

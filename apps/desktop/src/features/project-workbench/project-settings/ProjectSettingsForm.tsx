@@ -19,7 +19,7 @@ import { projectDisplayName } from "#app/shared/lib/project-display-name";
 import {
   getHttpsRemoteUrlValidationError,
   normalizeHttpsRemoteUrl,
-} from "#shared/rpc/session/index";
+} from "#domain/git/https-remote-url";
 
 import { projectSettingsReadonlyValueClass } from "./project-settings-chrome";
 

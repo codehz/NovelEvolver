@@ -1,4 +1,4 @@
-import type { AiProviderConfigPublic } from "#shared/rpc/services/index";
+import type { AiProviderConfigPublic } from "#domain/settings/ai-settings";
 
 import { settingsStatusBadgeClass } from "../settings-chrome";
 import { SettingsRailItem, settingsRailItemMetaLineClass } from "../SettingsRailItem";

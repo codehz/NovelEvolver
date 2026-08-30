@@ -1,6 +1,6 @@
 import type { AIClient, ReasoningLevel } from "@codehz/ai";
 
-import type { AiChatSelectableModelKind } from "#shared/rpc/ai/index";
+import type { AiChatSelectableModelKind } from "#domain/ai";
 
 export type AiBackendSession = {
   adapterKind: AiChatSelectableModelKind;

@@ -44,7 +44,8 @@
         "@iconify/json": "^2.2.504",
         "@iconify/utils": "^3.1.4",
         "@lezer/highlight": "^1.2.3",
-        "@novelevolver/shared": "workspace:*",
+        "@novelevolver/desktop-rpc": "workspace:*",
+        "@novelevolver/domain": "workspace:*",
         "@streamdown/cjk": "^1.0.3",
         "bunshi": "^2.2.0",
         "capnweb": "npm:@codehz/capnweb@0.10.0",
@@ -83,12 +84,17 @@
       "name": "@novelevolver/mobile",
       "version": "0.0.0",
     },
-    "packages/shared": {
-      "name": "@novelevolver/shared",
+    "packages/desktop-rpc": {
+      "name": "@novelevolver/desktop-rpc",
       "version": "0.3.4",
       "dependencies": {
+        "@novelevolver/domain": "workspace:*",
         "capnweb": "npm:@codehz/capnweb@0.10.0",
       },
+    },
+    "packages/domain": {
+      "name": "@novelevolver/domain",
+      "version": "0.3.4",
     },
   },
   "packages": {
@@ -274,9 +280,11 @@
 
     "@novelevolver/desktop": ["@novelevolver/desktop@workspace:apps/desktop"],
 
-    "@novelevolver/mobile": ["@novelevolver/mobile@workspace:apps/mobile"],
+    "@novelevolver/desktop-rpc": ["@novelevolver/desktop-rpc@workspace:packages/desktop-rpc"],
 
-    "@novelevolver/shared": ["@novelevolver/shared@workspace:packages/shared"],
+    "@novelevolver/domain": ["@novelevolver/domain@workspace:packages/domain"],
+
+    "@novelevolver/mobile": ["@novelevolver/mobile@workspace:apps/mobile"],
 
     "@oxc-project/types": ["@oxc-project/types@0.139.0", "", {}, "sha512-r9gHphtCs+1M7J0pw6Sn/hh/Wpa/iQrOOkrNAlVLF/gHq+/CJmHIWKKUUhdWjcD6CIa8idarspCsASiXCXvFUw=="],
 

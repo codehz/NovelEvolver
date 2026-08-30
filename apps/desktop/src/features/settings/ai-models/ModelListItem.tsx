@@ -1,7 +1,7 @@
 import { cn } from "#app/shared/lib/ui/cn";
 import { Button } from "#app/shared/ui";
-import type { AiModelConfigPublic } from "#shared/rpc/services/index";
-import { isLowMaxOutputTokensForNovelAgent } from "#shared/rpc/services/index";
+import type { AiModelConfigPublic } from "#domain/settings/ai-settings";
+import { isLowMaxOutputTokensForNovelAgent } from "#domain/settings/ai-settings";
 
 import {
   settingsGhostActionClass,

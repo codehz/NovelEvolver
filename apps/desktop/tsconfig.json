@@ -5,7 +5,10 @@
     "types": ["vite/client", "node", "bun"],
     "paths": {
       "#app/*": ["./src/*"],
-      "#shared/*": ["../../packages/shared/*"],
+      "#domain/ai": ["../../packages/domain/ai/index.ts"],
+      "#domain/worktree": ["../../packages/domain/worktree/index.ts"],
+      "#domain/*": ["../../packages/domain/*"],
+      "#desktop-rpc/*": ["../../packages/desktop-rpc/*"],
       "#workbench/*": ["./src/features/project-workbench/*"]
     }
   },

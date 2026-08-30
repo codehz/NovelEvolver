@@ -1,10 +1,7 @@
 import { RpcTarget } from "capnweb";
 
-import type {
-  MockAiControlHandle,
-  MockAiScenarioSummary,
-  RunMockAiScenarioRequest,
-} from "#shared/rpc/ai/index";
+import type { MockAiControlHandle } from "#desktop-rpc/ai/mock-ai-handle";
+import type { MockAiScenarioSummary, RunMockAiScenarioRequest } from "#domain/ai/mock";
 
 import type { ProjectAiChatController } from "../../ai/chat/project-ai-chat";
 import { listMockScenarios } from "../../ai/mock/scenario-registry";

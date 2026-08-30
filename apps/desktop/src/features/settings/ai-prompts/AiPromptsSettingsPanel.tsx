@@ -4,7 +4,7 @@ import { confirmDialogApi } from "#app/shared/lib/confirm-dialog";
 import { settingsService } from "#app/shared/lib/rpc/app-rpc";
 import { createAsyncLoader, useAsyncLoader } from "#app/shared/lib/ui/async-loader";
 import { Button } from "#app/shared/ui";
-import type { AiPromptConfigWrite } from "#shared/rpc/services/index";
+import type { AiPromptConfigWrite } from "#domain/settings/ai-settings";
 
 import {
   settingsDualPaneDetailTitleRowClass,

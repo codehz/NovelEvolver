@@ -12,9 +12,9 @@ import type {
   AiChatSelectableModelKind,
   AiSubagentToolView,
   AiToolViewFocus,
-} from "#shared/rpc/ai/index";
-import { MOCK_AI_MODEL_ID } from "#shared/rpc/ai/index";
-import type { AiReasoningLevel } from "#shared/rpc/services/index";
+} from "#domain/ai";
+import { MOCK_AI_MODEL_ID } from "#domain/ai";
+import type { AiReasoningLevel } from "#domain/settings/ai-settings";
 
 import type { AiAgentRuntimeConfig } from "../../../settings/ai-agents-store";
 import type { AiModelRuntimeConfig } from "../../../settings/ai-models-store";

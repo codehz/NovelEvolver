@@ -3,7 +3,7 @@ import type { MouseEvent as ReactMouseEvent } from "react";
 import { cn } from "#app/shared/lib/ui/cn";
 import { rowHoverClass } from "#app/shared/lib/ui/interaction-chrome";
 import { AppTooltip, DisclosureChevron } from "#app/shared/ui";
-import type { CommitSummary } from "#shared/rpc/worktree/index";
+import type { CommitSummary } from "#domain/worktree";
 import { activateOnEnterSpace } from "#workbench/lib/activate-on-enter-space";
 import { formatCommitTime } from "#workbench/lib/format-history-time";
 import type { TreeRowLayout } from "#workbench/tree/tree-row-layout";

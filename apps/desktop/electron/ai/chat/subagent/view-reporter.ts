@@ -1,4 +1,4 @@
-import type { AiSubagentToolView, AiSubagentViewStep, AiToolViewFocus } from "#shared/rpc/ai/index";
+import type { AiSubagentToolView, AiSubagentViewStep, AiToolViewFocus } from "#domain/ai";
 
 import type { SubagentArtifacts, SubagentRunStatus } from "./result";
 import {

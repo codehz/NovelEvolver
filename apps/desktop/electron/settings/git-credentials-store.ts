@@ -8,8 +8,8 @@ import type {
   GitCredentialConfigPublic,
   GitCredentialConfigWrite,
   GitCredentialsSettingsSnapshot,
-} from "#shared/rpc/services/index";
-import { normalizeGitCredentialHost } from "#shared/rpc/services/index";
+} from "#domain/settings/ai-settings";
+import { normalizeGitCredentialHost } from "#domain/settings/ai-settings";
 
 const FILE_VERSION = 1 as const;
 

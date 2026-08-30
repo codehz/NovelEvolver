@@ -3,7 +3,7 @@ import type {
   ManuscriptTreeSnapshot,
   ResourceTreeNode,
   ResourceTreeSnapshot,
-} from "#shared/rpc/worktree/index";
+} from "#domain/worktree";
 
 import { cloneOutline } from "../manuscript/outline";
 import type { ManuscriptSnapshotState } from "../snapshots/manuscript";

@@ -9,7 +9,7 @@ import {
   type AIRequest,
 } from "@codehz/ai";
 
-import { isAiPromptCacheConfigured } from "#shared/rpc/services/index";
+import { isAiPromptCacheConfigured } from "#domain/settings/ai-settings";
 
 import type { AiModelRuntimeConfig } from "../../settings/ai-models-store";
 import { DEFAULT_AI_SYSTEM_PROMPT } from "../default-system-prompt";

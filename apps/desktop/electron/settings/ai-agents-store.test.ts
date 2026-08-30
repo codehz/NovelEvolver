@@ -3,14 +3,14 @@ import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
-import type { AiAgentConfigPublic, AiAgentConfigWrite } from "#shared/rpc/services/index";
+import type { AiAgentConfigPublic, AiAgentConfigWrite } from "#domain/settings/ai-settings";
 import {
   BUILTIN_AI_AGENT_ID,
   BUILTIN_AI_AGENT_IDS,
   BUILTIN_BRAINSTORM_ID,
   BUILTIN_CONSISTENCY_REVIEWER_ID,
   BUILTIN_ROLEPLAY_ID,
-} from "#shared/rpc/services/index";
+} from "#domain/settings/ai-settings";
 
 import { AiAgentsStore } from "./ai-agents-store";
 import type { AiModelsStore } from "./ai-models-store";

@@ -1,4 +1,4 @@
-import type { AiSubagentToolView, AiToolView } from "#shared/rpc/ai/index";
+import type { AiSubagentToolView, AiToolView } from "#domain/ai";
 
 import { toolActionLabel } from "./presenter-format";
 

@@ -1,5 +1,5 @@
 import { MarkdownStream } from "#app/shared/ui/MarkdownStream";
-import type { AiSubagentToolView } from "#shared/rpc/ai/index";
+import type { AiSubagentToolView } from "#domain/ai";
 
 import { assistantMessageBodyClass } from "../ui/ai-chat-chrome";
 import { stripMarkdownPreview } from "../ui/strip-markdown-preview";

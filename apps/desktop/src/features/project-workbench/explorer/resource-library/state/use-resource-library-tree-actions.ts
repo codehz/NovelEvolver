@@ -4,14 +4,14 @@ import { useCallback, useRef } from "react";
 
 import { confirmDialogApi } from "#app/shared/lib/confirm-dialog";
 import { notificationApi } from "#app/shared/lib/notifications";
-import { normalizeResourceNameInput } from "#shared/resource-library-path";
+import { normalizeResourceNameInput } from "#domain/resource-library-path";
 import type {
   ResourceImportCreated,
   ResourceImportEntry,
   ResourceImportSkip,
   ResourceImportSkipReason,
   ResourceTreeSnapshot,
-} from "#shared/rpc/worktree/index";
+} from "#domain/worktree";
 import { useWorkbenchEditorActions } from "#workbench/editor/use-workbench-editor-actions";
 import { useResourceLibrary } from "#workbench/session/workspace-handles";
 

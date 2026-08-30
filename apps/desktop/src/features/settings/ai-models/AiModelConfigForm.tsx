@@ -11,7 +11,7 @@ import type {
   AiPromptCacheMode,
   AiProviderConfigPublic,
   AiReasoningLevel,
-} from "#shared/rpc/services/index";
+} from "#domain/settings/ai-settings";
 import {
   AI_PROMPT_CACHE_MODE_LABELS,
   AI_PROMPT_CACHE_MODES,
@@ -19,7 +19,7 @@ import {
   DEFAULT_AI_MODEL_MAX_OUTPUT_TOKENS,
   isLowMaxOutputTokensForNovelAgent,
   isToollessAdapterKind,
-} from "#shared/rpc/services/index";
+} from "#domain/settings/ai-settings";
 
 import {
   settingsCheckboxLabelClass,

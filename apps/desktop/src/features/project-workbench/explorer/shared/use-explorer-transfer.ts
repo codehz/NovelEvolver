@@ -2,7 +2,7 @@ import { useMolecule } from "bunshi/react";
 import { useSetAtom } from "jotai";
 import { useCallback } from "react";
 
-import type { WorktreeTransferInput, WorktreeTransferResult } from "#shared/rpc/worktree/index";
+import type { WorktreeTransferInput, WorktreeTransferResult } from "#domain/worktree";
 import { useWorkbenchEditorActions } from "#workbench/editor/use-workbench-editor-actions";
 import { useBranchWorkspace } from "#workbench/session/workspace-handles";
 

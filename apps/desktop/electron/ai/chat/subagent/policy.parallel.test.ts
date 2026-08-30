@@ -5,7 +5,7 @@ import type { ToolCallItem } from "@codehz/ai";
 import {
   BUILTIN_CHAPTER_WRITER_ID,
   BUILTIN_CONSISTENCY_REVIEWER_ID,
-} from "#shared/rpc/services/index";
+} from "#domain/settings/ai-settings";
 
 import type { AiAgentRuntimeConfig } from "../../../settings/ai-agents-store";
 import {

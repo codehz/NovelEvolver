@@ -1,5 +1,6 @@
 import { RpcTarget } from "capnweb";
 
+import type { SettingsService } from "#desktop-rpc/services/settings-service";
 import type {
   AiAgentConfigWrite,
   AiAgentsSettingsSnapshot,
@@ -12,8 +13,7 @@ import type {
   AiRuntimePolicyWrite,
   GitCredentialConfigWrite,
   GitCredentialsSettingsSnapshot,
-  SettingsService,
-} from "#shared/rpc/services/index";
+} from "#domain/settings/ai-settings";
 
 import type { RpcMainDeps } from "../server/deps";
 

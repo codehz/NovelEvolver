@@ -1,12 +1,8 @@
 import { RpcTarget } from "capnweb";
 
-import type {
-  AiActiveChatHandle,
-  AiChatEvent,
-  AiChatInteractionAnswer,
-  AiChatSendMessageInput,
-} from "#shared/rpc/ai/index";
-import type { AiReasoningLevel } from "#shared/rpc/services/index";
+import type { AiActiveChatHandle } from "#desktop-rpc/ai/handles";
+import type { AiChatEvent, AiChatInteractionAnswer, AiChatSendMessageInput } from "#domain/ai/chat";
+import type { AiReasoningLevel } from "#domain/settings/ai-settings";
 
 import type { ProjectAiChatController } from "../../ai/chat/project-ai-chat";
 

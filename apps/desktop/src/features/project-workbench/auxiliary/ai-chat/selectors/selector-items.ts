@@ -1,4 +1,4 @@
-import type { AiChatSelectableAgent, AiChatSelectableModel } from "#shared/rpc/ai/index";
+import type { AiChatSelectableAgent, AiChatSelectableModel } from "#domain/ai";
 
 export type AiChatSelectorItem = {
   id: string;

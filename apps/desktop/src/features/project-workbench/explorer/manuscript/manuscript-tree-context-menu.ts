@@ -1,5 +1,5 @@
 import type { ContextMenuItem } from "#app/shared/lib/context-menu";
-import type { ManuscriptTreeNode } from "#shared/rpc/worktree/index";
+import type { ManuscriptTreeNode } from "#domain/worktree";
 
 export type ManuscriptTreeContextAction =
   | "open"

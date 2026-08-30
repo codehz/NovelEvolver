@@ -1,7 +1,7 @@
 import { molecule, use } from "bunshi/react";
 import { atom } from "jotai";
 
-import type { WorktreeDomain } from "#shared/rpc/worktree/index";
+import type { WorktreeDomain } from "#domain/worktree";
 import { branchNameScope } from "#workbench/session/branch-scope";
 import { projectIdScope } from "#workbench/session/project-scope";
 import type { TreeDropPreview } from "#workbench/tree/tree-drag";

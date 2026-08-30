@@ -1,4 +1,4 @@
-import type { ResourceTreeNode, ResourceTreeSnapshot } from "#shared/rpc/worktree/index";
+import type { ResourceTreeNode, ResourceTreeSnapshot } from "#domain/worktree";
 
 export const RESOURCE_ROOT_ID = "root";
 

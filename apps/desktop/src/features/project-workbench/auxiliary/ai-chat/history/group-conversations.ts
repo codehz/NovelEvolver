@@ -1,4 +1,4 @@
-import type { AiConversationSummary } from "#shared/rpc/ai/index";
+import type { AiConversationSummary } from "#domain/ai";
 
 export type ConversationTimeGroupId = "today" | "yesterday" | "last7days" | "earlier";
 

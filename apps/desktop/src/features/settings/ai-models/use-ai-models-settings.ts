@@ -7,7 +7,7 @@ import type {
   AiModelConfigPublic,
   AiModelConfigWrite,
   AiProviderConfigWrite,
-} from "#shared/rpc/services/index";
+} from "#domain/settings/ai-settings";
 
 import { settingsErrorMessage } from "../settings-error";
 import type { SettingsFormHandle } from "../settings-leave-guard";

@@ -5,7 +5,7 @@ import {
   iconButtonHoverClass,
 } from "#app/shared/lib/ui/interaction-chrome";
 import { Button } from "#app/shared/ui";
-import type { ProjectMetadata } from "#shared/project";
+import type { ProjectMetadata } from "#domain/project";
 
 import { formatLastOpened } from "./format-last-opened";
 

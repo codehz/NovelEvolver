@@ -1,10 +1,7 @@
 import type { ToolCallItem, ToolDefinition, ToolResultItem } from "@codehz/ai";
 
-import type {
-  AiChatInteractionAnswer,
-  AiChatOpenInteraction,
-  AiToolView,
-} from "#shared/rpc/ai/index";
+import type { AiToolView } from "#domain/ai/ai-tool-view";
+import type { AiChatInteractionAnswer, AiChatOpenInteraction } from "#domain/ai/chat";
 
 import type { WorktreeSession } from "../../worktree/session";
 

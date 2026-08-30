@@ -6,7 +6,7 @@ import type {
   ManuscriptTreeSnapshot,
   ResourceTreeNode,
   ResourceTreeSnapshot,
-} from "#shared/rpc/worktree/index";
+} from "#domain/worktree";
 import { manuscriptParentChain } from "#workbench/explorer/manuscript/manuscript-tree";
 import { manuscriptTreeMolecule } from "#workbench/explorer/manuscript/state/manuscript-tree-molecule";
 import { resourceParentChain } from "#workbench/explorer/resource-library/resource-tree";

@@ -1,4 +1,4 @@
-import type { TreeChildrenPatch } from "#shared/rpc/worktree/index";
+import type { TreeChildrenPatch } from "#domain/worktree";
 
 export type TreeSnapshotLike<TNode extends { childIds: string[] }> = {
   rootId: string;

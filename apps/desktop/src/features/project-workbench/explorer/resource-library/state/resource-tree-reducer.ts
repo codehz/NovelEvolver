@@ -1,8 +1,4 @@
-import type {
-  ResourceTreeDelta,
-  ResourceTreeNode,
-  ResourceTreeSnapshot,
-} from "#shared/rpc/worktree/index";
+import type { ResourceTreeDelta, ResourceTreeNode, ResourceTreeSnapshot } from "#domain/worktree";
 import { applyResourceTreeDelta } from "#workbench/session/changes-feed/worktree-tree-state";
 import type { TreeResolvedDrop } from "#workbench/tree/tree-drag";
 

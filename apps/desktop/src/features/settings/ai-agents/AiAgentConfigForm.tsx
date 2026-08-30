@@ -10,7 +10,7 @@ import type {
   AiAgentTool,
   AiModelConfigPublic,
   AiProviderConfigPublic,
-} from "#shared/rpc/services/index";
+} from "#domain/settings/ai-settings";
 
 import {
   settingsCheckboxLabelClass,

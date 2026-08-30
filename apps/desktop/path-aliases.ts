@@ -7,6 +7,7 @@ const repoRoot = path.dirname(path.dirname(desktopRoot));
 /** Bundler resolve.alias — keep in sync with tsconfig `compilerOptions.paths`. */
 export const pathAlias = {
   "#app": path.join(desktopRoot, "src"),
-  "#shared": path.join(repoRoot, "packages/shared"),
+  "#domain": path.join(repoRoot, "packages/domain"),
+  "#desktop-rpc": path.join(repoRoot, "packages/desktop-rpc"),
   "#workbench": path.join(desktopRoot, "src/features/project-workbench"),
 } satisfies Record<string, string>;

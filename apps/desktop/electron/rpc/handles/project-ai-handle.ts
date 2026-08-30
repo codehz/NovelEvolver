@@ -5,7 +5,7 @@ import type {
   AiCatalogHandle,
   AiConversationsHandle,
   ProjectAi,
-} from "#shared/rpc/ai/index";
+} from "#desktop-rpc/ai/handles";
 
 import type { ProjectAiChatController } from "../../ai/chat/project-ai-chat";
 import { AiActiveChatHandleImpl } from "./ai-active-chat-handle";

@@ -1,4 +1,4 @@
-import type { AiChatWarning } from "#shared/rpc/ai/index";
+import type { AiChatWarning } from "#domain/ai";
 
 import { warningBannerClass } from "../ui/ai-chat-chrome";
 

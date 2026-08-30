@@ -1,4 +1,4 @@
-import type { HistoryTarget } from "#shared/rpc/worktree/index";
+import type { HistoryTarget } from "#domain/worktree";
 import { isMissingComparisonTargetError } from "#workbench/lib/comparison-errors";
 import { useManuscript, useResourceLibrary } from "#workbench/session/workspace-handles";
 

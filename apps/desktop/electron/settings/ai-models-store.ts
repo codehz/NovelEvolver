@@ -13,7 +13,7 @@ import type {
   AiProviderConfigPublic,
   AiProviderConfigWrite,
   AiReasoningLevel,
-} from "#shared/rpc/services/index";
+} from "#domain/settings/ai-settings";
 import {
   AI_ADAPTER_KINDS,
   AI_REASONING_LEVELS,
@@ -22,7 +22,7 @@ import {
   isAiReasoningLevel,
   isToollessAdapterKind,
   requiresAdapterBaseUrl,
-} from "#shared/rpc/services/index";
+} from "#domain/settings/ai-settings";
 
 const FILE_VERSION = 2 as const;
 

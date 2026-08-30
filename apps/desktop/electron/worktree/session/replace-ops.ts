@@ -5,7 +5,7 @@ import type {
   WorktreeReplaceQuery,
   WorktreeReplaceResult,
   WorktreeSearchScope,
-} from "#shared/rpc/worktree/index";
+} from "#domain/worktree";
 
 import type { JournalOperationCapture } from "../journal/journal-types";
 import { applyReplacements, compileNeedle } from "../replace";

@@ -1,4 +1,4 @@
-import type { Change, CommitSummary } from "#shared/rpc/worktree/index";
+import type { Change, CommitSummary } from "#domain/worktree";
 import {
   buildChangeRoots,
   collectChangeTreeFolderKeys,

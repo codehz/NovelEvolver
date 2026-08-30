@@ -1,12 +1,12 @@
-import { resourceBaseName, resourceParentPath } from "#shared/resource-library-path";
+import { resourceBaseName, resourceParentPath } from "#domain/resource-library-path";
 import type {
   ResourceImportCreated,
   ResourceImportEntry,
   ResourceImportResult,
   ResourceImportSkip,
   WorktreeNodeIdResult,
-} from "#shared/rpc/worktree/index";
-import { RESOURCE_IMPORT_MAX_FILE_BYTES } from "#shared/rpc/worktree/index";
+} from "#domain/worktree";
+import { RESOURCE_IMPORT_MAX_FILE_BYTES } from "#domain/worktree";
 
 import type { JournalOperationCapture } from "../journal/journal-types";
 import { RESOURCE_ROOT_ID } from "../resources/index";

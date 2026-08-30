@@ -1,11 +1,7 @@
 import type { SHA1 } from "nano-git";
 import { nanoid } from "nanoid";
 
-import type {
-  ManuscriptTreeNode,
-  ResourceTreeNode,
-  ResourceTreeSnapshot,
-} from "#shared/rpc/worktree/index";
+import type { ManuscriptTreeNode, ResourceTreeNode, ResourceTreeSnapshot } from "#domain/worktree";
 
 import { readTextFromTree } from "../git/diff-utils";
 import { parseResourceIndex, resourceTreeFromIndex } from "../resources/index";

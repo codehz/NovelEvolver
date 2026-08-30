@@ -4,7 +4,7 @@ import type {
   WorktreeSearchQuery,
   WorktreeSearchResult,
   WorktreeSearchScope,
-} from "#shared/rpc/worktree/index";
+} from "#domain/worktree";
 
 const DEFAULT_MAX_PER_DOMAIN = 100;
 const SNIPPET_CONTEXT_CHARS = 48;

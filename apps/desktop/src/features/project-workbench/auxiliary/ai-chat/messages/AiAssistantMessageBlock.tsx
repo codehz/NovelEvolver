@@ -1,6 +1,6 @@
 import { cn } from "#app/shared/lib/ui/cn";
 import { AppTooltip, Button } from "#app/shared/ui";
-import type { AiChatAssistantMessage } from "#shared/rpc/ai/index";
+import type { AiChatAssistantMessage } from "#domain/ai";
 
 import {
   assistantMessageBlockClass,

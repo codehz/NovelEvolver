@@ -10,7 +10,7 @@ import { useCallback, useEffect, useImperativeHandle, useRef, useState, type Ref
 
 import { cn } from "#app/shared/lib/ui/cn";
 import { disabledSurfaceClass } from "#app/shared/lib/ui/interaction-chrome";
-import type { AiChatSendMessageInput } from "#shared/rpc/ai/index";
+import type { AiChatSendMessageInput } from "#domain/ai";
 
 import { composerEditorHostClass } from "./composer-chrome";
 import { buildComposerSendPayload, isComposerStateEmpty } from "./composer-doc";

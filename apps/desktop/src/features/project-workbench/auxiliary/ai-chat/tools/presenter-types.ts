@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 
-import type { AiChatToolCall } from "#shared/rpc/ai/index";
+import type { AiChatToolCall } from "#domain/ai";
 
 export type JsonObject = Record<string, unknown>;
 

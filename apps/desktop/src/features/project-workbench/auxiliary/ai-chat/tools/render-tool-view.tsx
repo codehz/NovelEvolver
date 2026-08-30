@@ -1,4 +1,4 @@
-import type { AiChatToolCall, AiToolView } from "#shared/rpc/ai/index";
+import type { AiChatToolCall, AiToolView } from "#domain/ai";
 
 import {
   ActivityPathList,

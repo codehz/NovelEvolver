@@ -5,7 +5,7 @@ import type {
   AiChatMessagePart,
   AiChatReasoningPart,
   AiChatToolCall,
-} from "#shared/rpc/ai/index";
+} from "#domain/ai";
 
 import { describeWorkSummary } from "../ui/ai-chat-helpers";
 import {

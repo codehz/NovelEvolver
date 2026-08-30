@@ -2,7 +2,7 @@ import { useMolecule } from "bunshi/react";
 import { useAtomValue } from "jotai";
 import { useMemo } from "react";
 
-import type { ManuscriptTreeSnapshot, ResourceTreeSnapshot } from "#shared/rpc/worktree/index";
+import type { ManuscriptTreeSnapshot, ResourceTreeSnapshot } from "#domain/worktree";
 import { getManuscriptNodePath } from "#workbench/explorer/manuscript/manuscript-tree";
 import { manuscriptTreeMolecule } from "#workbench/explorer/manuscript/state/manuscript-tree-molecule";
 import { getResourceNodePath } from "#workbench/explorer/resource-library/resource-tree";

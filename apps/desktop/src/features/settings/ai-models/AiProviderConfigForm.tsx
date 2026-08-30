@@ -7,8 +7,8 @@ import type {
   AiAdapterKind,
   AiProviderConfigPublic,
   AiProviderConfigWrite,
-} from "#shared/rpc/services/index";
-import { requiresAdapterBaseUrl } from "#shared/rpc/services/index";
+} from "#domain/settings/ai-settings";
+import { requiresAdapterBaseUrl } from "#domain/settings/ai-settings";
 
 import {
   settingsCheckboxLabelClass,

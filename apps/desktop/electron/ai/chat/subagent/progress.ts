@@ -1,4 +1,4 @@
-import type { AiSubagentToolView } from "#shared/rpc/ai/index";
+import type { AiSubagentToolView } from "#domain/ai";
 
 import { MAX_SUBAGENT_TOOL_ROUNDS } from "./policy";
 

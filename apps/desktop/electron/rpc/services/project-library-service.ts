@@ -4,8 +4,8 @@ import { RpcTarget } from "capnweb";
 import { dialog, type BrowserWindow } from "electron";
 import { createSqliteRepository } from "nano-git/repository/sqlite";
 
-import type { ProjectMetadata } from "#shared/project";
-import type { ProjectLibraryService } from "#shared/rpc/services/index";
+import type { ProjectLibraryService } from "#desktop-rpc/services/project-library-service";
+import type { ProjectMetadata } from "#domain/project";
 
 import { ProjectsRepository } from "../../db/repositories/projects-repo";
 import { toProjectMetadata } from "../../projects/home-path";

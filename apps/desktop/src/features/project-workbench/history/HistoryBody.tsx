@@ -14,7 +14,7 @@ import { popupContextMenu } from "#app/shared/lib/shell/popup-context-menu";
 import { cn } from "#app/shared/lib/ui/cn";
 import { rowHoverClass } from "#app/shared/lib/ui/interaction-chrome";
 import { Button, DisclosureChevron } from "#app/shared/ui";
-import type { Change, CommitSummary } from "#shared/rpc/worktree/index";
+import type { Change, CommitSummary } from "#domain/worktree";
 import { SidebarHeaderActionButton, SidebarHeaderActions } from "#workbench/chrome";
 import { activateOnEnterSpace } from "#workbench/lib/activate-on-enter-space";
 import { ChangesDomainRow } from "#workbench/lib/ChangesDomainRow";

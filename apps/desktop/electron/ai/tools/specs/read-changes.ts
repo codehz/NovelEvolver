@@ -1,4 +1,4 @@
-import type { Change } from "#shared/rpc/worktree/index";
+import type { Change } from "#domain/worktree";
 
 import { parseScopeDomain, parseToolArgs } from "../parse";
 import type { ToolSpec } from "../types";

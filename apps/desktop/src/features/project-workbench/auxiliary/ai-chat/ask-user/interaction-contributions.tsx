@@ -1,6 +1,6 @@
 import type { ComponentType } from "react";
 
-import type { AiChatOpenInteraction, AskUserOpenInteraction } from "#shared/rpc/ai/index";
+import type { AiChatOpenInteraction, AskUserOpenInteraction } from "#domain/ai";
 
 import { AskUserComposer } from "./AskUserComposer";
 

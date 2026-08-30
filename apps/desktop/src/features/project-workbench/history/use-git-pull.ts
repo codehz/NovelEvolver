@@ -2,11 +2,11 @@ import { useCallback, useState } from "react";
 
 import { notificationApi } from "#app/shared/lib/notifications";
 import { isQuickPickDismissedError, quickPickApi } from "#app/shared/lib/quick-pick";
-import type { ProjectPullResult } from "#shared/rpc/session/index";
+import type { ProjectPullResult } from "#domain/git/branch";
 import {
   getHttpsRemoteUrlValidationError,
   normalizeHttpsRemoteUrl,
-} from "#shared/rpc/session/index";
+} from "#domain/git/https-remote-url";
 import { useProjectContext } from "#workbench/session/project-scope";
 
 async function promptRemoteUrl(initialValue = ""): Promise<string> {

@@ -1,5 +1,5 @@
 import { notificationApi } from "#app/shared/lib/notifications";
-import type { WorktreeTransferInput, WorktreeTransferResult } from "#shared/rpc/worktree/index";
+import type { WorktreeTransferInput, WorktreeTransferResult } from "#domain/worktree";
 import { flushPendingEditorAutosaves } from "#workbench/editor/editor-autosave-flush";
 import type { WorkbenchEditorTarget } from "#workbench/editor/state/types";
 

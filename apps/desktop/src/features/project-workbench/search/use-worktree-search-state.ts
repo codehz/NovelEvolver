@@ -4,7 +4,7 @@ import type {
   WorktreeReplaceQuery,
   WorktreeSearchHit,
   WorktreeSearchResult,
-} from "#shared/rpc/worktree/index";
+} from "#domain/worktree";
 import { usePrimaryViewActive } from "#workbench/chrome";
 import type { WorkbenchEditorNavigationRequest } from "#workbench/editor/state/types";
 import { useWorkbenchEditorActions } from "#workbench/editor/use-workbench-editor-actions";

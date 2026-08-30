@@ -1,5 +1,5 @@
 import { quickPickApi } from "#app/shared/lib/quick-pick";
-import type { BranchSummary } from "#shared/rpc/session/index";
+import type { BranchSummary } from "#domain/git/branch";
 
 import { getBranchNameValidationError, normalizeBranchNameInput } from "./branch-data";
 

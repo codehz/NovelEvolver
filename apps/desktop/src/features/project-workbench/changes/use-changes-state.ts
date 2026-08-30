@@ -3,7 +3,7 @@ import { useAtomValue, useSetAtom } from "jotai";
 import { useCallback, useState } from "react";
 
 import { confirmDialogApi } from "#app/shared/lib/confirm-dialog";
-import type { ChangesSnapshot } from "#shared/rpc/worktree/index";
+import type { ChangesSnapshot } from "#domain/worktree";
 import { worktreeChangesFeedMolecule } from "#workbench/session/changes-feed/worktree-changes-feed";
 import { useHistory, useWorktreeChanges } from "#workbench/session/workspace-handles";
 

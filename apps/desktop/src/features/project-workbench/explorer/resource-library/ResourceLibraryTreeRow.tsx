@@ -1,6 +1,6 @@
 import type { RefObject } from "react";
 
-import type { ResourceTreeNode } from "#shared/rpc/worktree/index";
+import type { ResourceTreeNode } from "#domain/worktree";
 import { resourceTreeNodeIconClass } from "#workbench/tree/content-tree-icons";
 import {
   TreeChangeStatusBadge,

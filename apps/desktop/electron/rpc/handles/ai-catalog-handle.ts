@@ -1,10 +1,7 @@
 import { RpcTarget } from "capnweb";
 
-import type {
-  AiCatalogHandle,
-  AiChatSelectableAgent,
-  AiChatSelectableModel,
-} from "#shared/rpc/ai/index";
+import type { AiCatalogHandle } from "#desktop-rpc/ai/handles";
+import type { AiChatSelectableAgent, AiChatSelectableModel } from "#domain/ai/chat";
 
 import type { ProjectAiChatController } from "../../ai/chat/project-ai-chat";
 

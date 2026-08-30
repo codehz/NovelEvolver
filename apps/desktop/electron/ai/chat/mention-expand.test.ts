@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 
-import type { AiChatMentionRef } from "#shared/rpc/ai/index";
+import type { AiChatMentionRef } from "#domain/ai";
 
 import { expandMentionsForModel, formatMentionForModel } from "./mention-expand";
 import { expandSlashForModel } from "./slash-expand";

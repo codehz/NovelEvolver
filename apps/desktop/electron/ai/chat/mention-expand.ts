@@ -1,4 +1,4 @@
-import type { AiChatMentionRef } from "#shared/rpc/ai/index";
+import type { AiChatMentionRef } from "#domain/ai";
 
 /** Structured inline ref the model can feed into read_document / read_structure. */
 export function formatMentionForModel(mention: AiChatMentionRef): string {

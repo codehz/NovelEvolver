@@ -1,5 +1,5 @@
 import { cn } from "#app/shared/lib/ui/cn";
-import type { HistoryTarget } from "#shared/rpc/worktree/index";
+import type { HistoryTarget } from "#domain/worktree";
 import { isMissingComparisonTargetError } from "#workbench/lib/comparison-errors";
 import { contentTreeIconLayoutClass } from "#workbench/tree/content-tree-icons";
 

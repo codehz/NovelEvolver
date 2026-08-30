@@ -4,7 +4,7 @@ import type {
   AiChatToolCall,
   AiChatWarning,
   AiChatSnapshot,
-} from "#shared/rpc/ai/index";
+} from "#domain/ai";
 
 import type { AssistantWorkStep } from "../messages/project-assistant-segments";
 import { isWorkSegmentLive } from "../messages/project-assistant-segments";

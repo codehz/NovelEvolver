@@ -22,7 +22,7 @@ import type {
   WorktreeSearchResult,
   WorktreeTransferInput,
   WorktreeTransferResult,
-} from "#shared/rpc/worktree/index";
+} from "#domain/worktree";
 
 import type { WorktreeRepository } from "../../db/repositories/worktree-repo";
 import type { ObjectDatabase } from "../git/diff-utils";

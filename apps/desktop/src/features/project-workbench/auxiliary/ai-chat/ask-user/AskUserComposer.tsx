@@ -7,7 +7,7 @@ import {
   rowHoverClass,
 } from "#app/shared/lib/ui/interaction-chrome";
 import { Button } from "#app/shared/ui";
-import type { AskUserOpenInteraction } from "#shared/rpc/ai/index";
+import type { AskUserOpenInteraction } from "#domain/ai";
 
 import {
   askUserCardShellClass,

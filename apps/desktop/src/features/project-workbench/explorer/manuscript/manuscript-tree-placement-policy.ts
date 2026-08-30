@@ -1,4 +1,4 @@
-import type { ManuscriptTreeNode, ManuscriptTreeSnapshot } from "#shared/rpc/worktree/index";
+import type { ManuscriptTreeNode, ManuscriptTreeSnapshot } from "#domain/worktree";
 import type { TreeResolvedDrop, TreeRowHoverZone } from "#workbench/tree/tree-drag";
 import type { TreeRowDomData } from "#workbench/tree/tree-row-dom";
 import { TREE_DROP_INDICATOR_HEIGHT_PX, TREE_ROW_HEIGHT_PX } from "#workbench/tree/tree-row-motion";

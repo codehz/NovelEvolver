@@ -7,8 +7,8 @@ import type {
   AiPromptConfigPublic,
   AiPromptConfigWrite,
   AiPromptsSettingsSnapshot,
-} from "#shared/rpc/services/index";
-import { isAiPromptSlug } from "#shared/rpc/services/index";
+} from "#domain/settings/ai-settings";
+import { isAiPromptSlug } from "#domain/settings/ai-settings";
 
 const FILE_VERSION = 1 as const;
 

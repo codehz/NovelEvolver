@@ -1,11 +1,7 @@
 import { molecule, use } from "bunshi/react";
 import { atom } from "jotai";
 
-import type {
-  ChangesEvent,
-  ChangesSnapshot,
-  WorktreeTreeSnapshot,
-} from "#shared/rpc/worktree/index";
+import type { ChangesEvent, ChangesSnapshot, WorktreeTreeSnapshot } from "#domain/worktree";
 
 import { branchNameScope } from "../branch-scope";
 import { projectIdScope } from "../project-scope";

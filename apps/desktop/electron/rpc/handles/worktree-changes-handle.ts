@@ -1,12 +1,12 @@
 import { RpcTarget } from "capnweb";
 
+import type { WorktreeChangesHandle } from "#desktop-rpc/worktree/worktree-changes-handle";
 import type {
   ChangeTextComparison,
   ChangeTextComparisonTarget,
   ChangesEvent,
   ChangesSnapshot,
-  WorktreeChangesHandle,
-} from "#shared/rpc/worktree/index";
+} from "#domain/worktree/changes";
 
 import type { WorktreeSession } from "../../worktree/session";
 

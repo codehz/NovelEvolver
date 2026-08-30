@@ -6,7 +6,7 @@ import { cn } from "#app/shared/lib/ui/cn";
 import type {
   GitCredentialConfigPublic,
   GitCredentialConfigWrite,
-} from "#shared/rpc/services/index";
+} from "#domain/settings/ai-settings";
 
 import {
   settingsCheckboxLabelClass,

@@ -1,5 +1,5 @@
 import { AppTooltip, Button } from "#app/shared/ui";
-import type { AiChatMessageBranch } from "#shared/rpc/ai/index";
+import type { AiChatMessageBranch } from "#domain/ai";
 
 import {
   messageActionButtonClass,

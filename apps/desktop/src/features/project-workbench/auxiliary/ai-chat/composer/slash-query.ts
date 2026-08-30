@@ -1,6 +1,6 @@
 import type { EditorState } from "@codemirror/state";
 
-import type { AiPromptConfigPublic } from "#shared/rpc/services/index";
+import type { AiPromptConfigPublic } from "#domain/settings/ai-settings";
 
 import { hasActivePromptChip } from "./prompt-chip-extension";
 

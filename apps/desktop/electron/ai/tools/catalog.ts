@@ -1,6 +1,6 @@
 import type { ToolDefinition, ToolResultItem } from "@codehz/ai";
 
-import type { AiChatInteractionAnswer, AiChatOpenInteraction } from "#shared/rpc/ai/index";
+import type { AiChatInteractionAnswer, AiChatOpenInteraction } from "#domain/ai";
 
 import { askUserSpec } from "./specs/ask-user";
 import { createDocumentSpec } from "./specs/create-document";

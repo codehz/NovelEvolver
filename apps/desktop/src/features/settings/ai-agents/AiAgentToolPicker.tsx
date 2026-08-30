@@ -2,7 +2,7 @@ import { CheckboxGroup } from "@base-ui/react/checkbox-group";
 
 import { cn } from "#app/shared/lib/ui/cn";
 import { Button } from "#app/shared/ui";
-import type { AiAgentTool } from "#shared/rpc/services/index";
+import type { AiAgentTool } from "#domain/settings/ai-settings";
 
 import {
   settingsToolCardBodyClass,

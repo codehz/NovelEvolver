@@ -1,4 +1,4 @@
-import type { ManuscriptTreeNode, ResourceTreeNode } from "#shared/rpc/worktree/index";
+import type { ManuscriptTreeNode, ResourceTreeNode } from "#domain/worktree";
 import type { TreeResolvedDrop } from "#workbench/tree/tree-drag";
 import { resolveHoverZone } from "#workbench/tree/tree-drag";
 import { findTreeRowDataAtPoint } from "#workbench/tree/tree-row-dom";

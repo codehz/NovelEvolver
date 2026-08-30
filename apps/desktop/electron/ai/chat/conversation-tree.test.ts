@@ -2,7 +2,7 @@ import { describe, expect, test } from "bun:test";
 
 import type { InputItem } from "@codehz/ai";
 
-import type { AiChatAssistantMessage, AiChatUserMessage } from "#shared/rpc/ai/index";
+import type { AiChatAssistantMessage, AiChatUserMessage } from "#domain/ai";
 
 import {
   addChildNode,

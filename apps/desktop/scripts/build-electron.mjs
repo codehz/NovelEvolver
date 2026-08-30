@@ -11,7 +11,8 @@ const watch = process.argv.includes("--watch");
 
 const alias = {
   "#app": path.join(desktopRoot, "src"),
-  "#shared": path.join(repoRoot, "packages/shared"),
+  "#domain": path.join(repoRoot, "packages/domain"),
+  "#desktop-rpc": path.join(repoRoot, "packages/desktop-rpc"),
   "#workbench": path.join(desktopRoot, "src/features/project-workbench"),
 };
 
@@ -49,7 +50,12 @@ function resolvePath(filePath) {
     path.join(filePath, "index.cts"),
   ];
 
-  const match = candidates.find((candidate) => fs.existsSync(candidate));
+  const match = candidates.find((candidate) => {
+    if (!fs.existsSync(candidate)) {
+      return false;
+    }
+    return fs.statSync(candidate).isFile();
+  });
 
   return match ?? filePath;
 }

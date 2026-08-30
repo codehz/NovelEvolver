@@ -1,7 +1,7 @@
 import { useMolecule } from "bunshi/react";
 import { useAtomValue } from "jotai";
 
-import type { WorktreeTreeSnapshot } from "#shared/rpc/worktree/index";
+import type { WorktreeTreeSnapshot } from "#domain/worktree";
 
 import { worktreeChangesFeedMolecule } from "./worktree-changes-feed";
 

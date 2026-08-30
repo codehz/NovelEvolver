@@ -2,8 +2,8 @@ import { Field } from "@base-ui/react/field";
 import { Form } from "@base-ui/react/form";
 import { useEffect, useImperativeHandle, useMemo, useRef, useState, type Ref } from "react";
 
-import type { AiPromptConfigPublic, AiPromptConfigWrite } from "#shared/rpc/services/index";
-import { AI_PROMPT_SLUG_PATTERN } from "#shared/rpc/services/index";
+import type { AiPromptConfigPublic, AiPromptConfigWrite } from "#domain/settings/ai-settings";
+import { AI_PROMPT_SLUG_PATTERN } from "#domain/settings/ai-settings";
 
 import {
   settingsFieldControlCellClass,

@@ -6,7 +6,7 @@ import {
   quickPickApi,
   type QuickPickListItem,
 } from "#app/shared/lib/quick-pick";
-import type { BranchSummary } from "#shared/rpc/session/index";
+import type { BranchSummary } from "#domain/git/branch";
 import { useWorkbenchEditorActions } from "#workbench/editor/use-workbench-editor-actions";
 import { useActiveBranchName, useSetActiveBranchAtom } from "#workbench/session/branch-scope";
 import { useProjectContext } from "#workbench/session/project-scope";

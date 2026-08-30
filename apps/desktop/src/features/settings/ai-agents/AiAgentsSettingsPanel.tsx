@@ -5,7 +5,7 @@ import { settingsService } from "#app/shared/lib/rpc/app-rpc";
 import { createAsyncLoader, useAsyncLoader } from "#app/shared/lib/ui/async-loader";
 import { cn } from "#app/shared/lib/ui/cn";
 import { Button } from "#app/shared/ui";
-import type { AiAgentConfigPublic, AiAgentConfigWrite } from "#shared/rpc/services/index";
+import type { AiAgentConfigPublic, AiAgentConfigWrite } from "#domain/settings/ai-settings";
 
 import {
   settingsDualPaneDetailTitleRowClass,

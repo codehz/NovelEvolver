@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 
 import { cn } from "#app/shared/lib/ui/cn";
-import type { AiChatMessage, AiChatSelectableModel } from "#shared/rpc/ai/index";
+import type { AiChatMessage, AiChatSelectableModel } from "#domain/ai";
 import { StatusBarItemInfo } from "#workbench/chrome";
 
 import { useAiChatActions, useAiChatStatusMeta } from "./state/use-ai-chat-state";

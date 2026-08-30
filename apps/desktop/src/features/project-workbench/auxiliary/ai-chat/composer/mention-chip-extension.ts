@@ -1,7 +1,7 @@
 import { StateEffect, StateField, type EditorState, type Transaction } from "@codemirror/state";
 import { Decoration, EditorView, WidgetType, type DecorationSet } from "@codemirror/view";
 
-import type { AiChatMentionRef } from "#shared/rpc/ai/index";
+import type { AiChatMentionRef } from "#domain/ai";
 
 import { findTokenMatches } from "./token-scan";
 

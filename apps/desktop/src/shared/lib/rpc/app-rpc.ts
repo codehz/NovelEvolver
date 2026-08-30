@@ -1,7 +1,7 @@
 import { RpcSession, type RpcStub } from "capnweb";
 
-import type { AppRpcRoot } from "#shared/rpc/root/index";
-import type { AppRpcTransportBridge } from "#shared/rpc/transport/index";
+import type { AppRpcRoot } from "#desktop-rpc/root/index";
+import type { AppRpcTransportBridge } from "#desktop-rpc/transport/index";
 
 import { RendererRpcTransport } from "./app-rpc-transport";
 

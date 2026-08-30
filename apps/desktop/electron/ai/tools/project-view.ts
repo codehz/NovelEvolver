@@ -1,4 +1,4 @@
-import type { AiToolView } from "#shared/rpc/ai/index";
+import type { AiToolView } from "#domain/ai";
 
 import {
   projectToolOutcome,

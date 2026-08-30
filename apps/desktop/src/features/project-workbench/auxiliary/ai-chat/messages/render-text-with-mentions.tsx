@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 
-import type { AiChatMentionRef } from "#shared/rpc/ai/index";
+import type { AiChatMentionRef } from "#domain/ai";
 
 import { userMentionChipClass } from "../ui/ai-chat-chrome";
 

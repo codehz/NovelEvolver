@@ -1,7 +1,7 @@
 import { molecule, use, useMolecule } from "bunshi/react";
 
 import { createAsyncLoader, useAsyncLoader } from "#app/shared/lib/ui/async-loader";
-import type { BranchSummary } from "#shared/rpc/session/index";
+import type { BranchSummary } from "#domain/git/branch";
 import { projectMolecule } from "#workbench/session/project-scope";
 
 export type BranchPickerSnapshot = {

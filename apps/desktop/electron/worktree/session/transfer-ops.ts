@@ -1,10 +1,10 @@
-import { resourceParentPath } from "#shared/resource-library-path";
+import { resourceParentPath } from "#domain/resource-library-path";
 import type {
   WorktreeTransferCreated,
   WorktreeTransferInput,
   WorktreeTransferResult,
-} from "#shared/rpc/worktree/index";
-import { EXTERNAL_IMPORT_MAX_FILE_BYTES } from "#shared/rpc/worktree/index";
+} from "#domain/worktree";
+import { EXTERNAL_IMPORT_MAX_FILE_BYTES } from "#domain/worktree";
 
 import type { JournalOperationCapture } from "../journal/journal-types";
 import {

@@ -6,13 +6,13 @@ import type {
   AiCatalogHandle,
   AiConversationsHandle,
   ProjectAi,
-} from "#shared/rpc/ai/index";
-import type { BranchWorkspace } from "#shared/rpc/session/index";
-import type { HistoryHandle } from "#shared/rpc/worktree/index";
-import type { ManuscriptHandle } from "#shared/rpc/worktree/index";
-import type { ResourceLibraryHandle } from "#shared/rpc/worktree/index";
-import type { WorktreeChangesHandle } from "#shared/rpc/worktree/index";
-import type { WorktreeSearchHandle } from "#shared/rpc/worktree/index";
+} from "#desktop-rpc/ai/handles";
+import type { BranchWorkspace } from "#desktop-rpc/session";
+import type { HistoryHandle } from "#desktop-rpc/worktree";
+import type { ManuscriptHandle } from "#desktop-rpc/worktree";
+import type { ResourceLibraryHandle } from "#desktop-rpc/worktree";
+import type { WorktreeChangesHandle } from "#desktop-rpc/worktree";
+import type { WorktreeSearchHandle } from "#desktop-rpc/worktree";
 
 import { branchNameScope } from "./branch-scope";
 import { projectMolecule } from "./project-scope";

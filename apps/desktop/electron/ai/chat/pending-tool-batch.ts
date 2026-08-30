@@ -4,7 +4,7 @@ import type {
   AiChatInteractionAnswer,
   AiChatMessageUsage,
   AiChatOpenInteraction,
-} from "#shared/rpc/ai/index";
+} from "#domain/ai";
 
 import {
   createOpenInteractionFromSerializable,

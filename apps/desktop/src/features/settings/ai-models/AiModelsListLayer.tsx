@@ -1,6 +1,6 @@
 import { cn } from "#app/shared/lib/ui/cn";
 import { Button } from "#app/shared/ui";
-import type { AiModelConfigPublic, AiProviderConfigPublic } from "#shared/rpc/services/index";
+import type { AiModelConfigPublic, AiProviderConfigPublic } from "#domain/settings/ai-settings";
 
 import {
   settingsDualPaneDetailTitleRowClass,

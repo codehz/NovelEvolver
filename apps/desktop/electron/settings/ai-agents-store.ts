@@ -8,7 +8,7 @@ import type {
   AiAgentConfigWrite,
   AiAgentsSettingsSnapshot,
   BuiltinAiAgentId,
-} from "#shared/rpc/services/index";
+} from "#domain/settings/ai-settings";
 import {
   BUILTIN_AI_AGENT_ID,
   BUILTIN_AI_AGENT_IDS,
@@ -17,7 +17,7 @@ import {
   BUILTIN_CONSISTENCY_REVIEWER_ID,
   BUILTIN_ROLEPLAY_ID,
   isBuiltinAiAgentId,
-} from "#shared/rpc/services/index";
+} from "#domain/settings/ai-settings";
 
 import { DEFAULT_AI_SYSTEM_PROMPT } from "../ai/default-system-prompt";
 import {

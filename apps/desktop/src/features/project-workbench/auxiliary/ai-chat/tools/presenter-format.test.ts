@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 
-import type { AiChatToolCall } from "#shared/rpc/ai/index";
+import type { AiChatToolCall } from "#domain/ai";
 
 import {
   contentWriteBodyFromArgs,

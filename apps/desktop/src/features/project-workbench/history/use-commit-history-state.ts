@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 
-import type { CommitSummary } from "#shared/rpc/worktree/index";
+import type { CommitSummary } from "#domain/worktree";
 import { useHistory } from "#workbench/session/workspace-handles";
 
 import { HISTORY_MAX_COMMITS } from "./constants";

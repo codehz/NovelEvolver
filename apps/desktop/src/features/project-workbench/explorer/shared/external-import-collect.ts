@@ -2,8 +2,8 @@ import type {
   ExternalImportEntry,
   ExternalImportSkip,
   ExternalImportSkipReason,
-} from "#shared/rpc/worktree/index";
-import { EXTERNAL_IMPORT_MAX_FILE_BYTES } from "#shared/rpc/worktree/index";
+} from "#domain/worktree";
+import { EXTERNAL_IMPORT_MAX_FILE_BYTES } from "#domain/worktree";
 
 export type ExternalImportCollectResult = {
   entries: ExternalImportEntry[];

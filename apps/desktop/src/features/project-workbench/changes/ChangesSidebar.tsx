@@ -1,6 +1,6 @@
 import { useState } from "react";
 
-import type { Change, CommitSummary } from "#shared/rpc/worktree/index";
+import type { Change, CommitSummary } from "#domain/worktree";
 import { useCreateBranchFromCommit } from "#workbench/branch/use-create-branch-from-commit";
 import { ChangesBody } from "#workbench/changes/ChangesBody";
 import {

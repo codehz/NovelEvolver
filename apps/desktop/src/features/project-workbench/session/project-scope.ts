@@ -4,7 +4,7 @@ import { RpcPromise } from "capnweb";
 
 import { workspaceService } from "#app/shared/lib/rpc/app-rpc";
 import { wrapDisposable } from "#app/shared/lib/rpc/rpc-utils";
-import { ProjectSession } from "#shared/rpc/session/index";
+import { ProjectSession } from "#desktop-rpc/session";
 
 export const projectIdScope = createScope<number>(-1);
 

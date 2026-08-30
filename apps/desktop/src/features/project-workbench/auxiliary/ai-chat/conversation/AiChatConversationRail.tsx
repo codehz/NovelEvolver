@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
 
 import { cn } from "#app/shared/lib/ui/cn";
-import type { AiChatSnapshot } from "#shared/rpc/ai/index";
+import type { AiChatSnapshot } from "#domain/ai";
 
 import { AiMessageBlock } from "../messages/AiMessageBlock";
 import { ChatScroller, findDivergentIndex, useChatScroller } from "../scroller";

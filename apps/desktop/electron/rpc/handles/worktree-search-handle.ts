@@ -1,12 +1,12 @@
 import { RpcTarget } from "capnweb";
 
+import type { WorktreeSearchHandle } from "#desktop-rpc/worktree/worktree-search-handle";
 import type {
   WorktreeReplaceQuery,
   WorktreeReplaceResult,
-  WorktreeSearchHandle,
   WorktreeSearchQuery,
   WorktreeSearchResult,
-} from "#shared/rpc/worktree/index";
+} from "#domain/worktree/search";
 
 import type { WorktreeSession } from "../../worktree/session";
 

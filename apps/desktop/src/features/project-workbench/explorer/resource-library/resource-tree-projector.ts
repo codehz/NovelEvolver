@@ -1,4 +1,4 @@
-import type { FileChangeStatus, ResourceTreeNode } from "#shared/rpc/worktree/index";
+import type { FileChangeStatus, ResourceTreeNode } from "#domain/worktree";
 import { buildSubtreeEndIndexArray, buildTreeRowIndexMap } from "#workbench/tree/tree-row-helpers";
 
 import { flattenResourceTree } from "./resource-tree";

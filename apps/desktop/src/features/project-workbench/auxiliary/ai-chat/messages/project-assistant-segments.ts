@@ -3,7 +3,7 @@ import type {
   AiChatMessagePart,
   AiChatReasoningPart,
   AiChatToolCall,
-} from "#shared/rpc/ai/index";
+} from "#domain/ai";
 
 /** Tool names that never join a Work segment — rendered as elevated cards. */
 export const ELEVATED_TOOL_NAMES = new Set(["run_subagent", "ask_user"]);

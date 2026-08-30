@@ -10,7 +10,7 @@ import type {
   ExternalImportSkipReason,
   ManuscriptImportCreated,
   ManuscriptTreeNode,
-} from "#shared/rpc/worktree/index";
+} from "#domain/worktree";
 import { useWorkbenchEditorActions } from "#workbench/editor/use-workbench-editor-actions";
 import { useManuscript } from "#workbench/session/workspace-handles";
 

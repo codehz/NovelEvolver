@@ -2,7 +2,7 @@ import { useCallback } from "react";
 
 import { confirmDialogApi } from "#app/shared/lib/confirm-dialog";
 import { notificationApi } from "#app/shared/lib/notifications";
-import type { CommitSummary, HistoryEntry, HistoryTarget } from "#shared/rpc/worktree/index";
+import type { CommitSummary, HistoryEntry, HistoryTarget } from "#domain/worktree";
 import { useHistory } from "#workbench/session/workspace-handles";
 
 export function useRestoreFromHistory() {

@@ -21,11 +21,12 @@ apps/
   desktop/          @novelevolver/desktop — Electron + Vite renderer
   mobile/           @novelevolver/mobile — React Native scaffold (future)
 packages/
-  shared/           @novelevolver/shared — RPC contracts, DTOs, pure helpers
+  domain/           @novelevolver/domain — cross-platform DTOs, pure helpers (zero deps)
+  desktop-rpc/      @novelevolver/desktop-rpc — capnweb IPC contracts (desktop only)
 scripts/            repo-level build helpers (electron bundle, fonts)
 ```
 
-`apps/desktop/src/` contains the Vite renderer application (`main.tsx`, `index.css`). `apps/desktop/electron/` contains the Electron main and preload processes. Build output goes to `apps/desktop/dist/` for the renderer and `apps/desktop/dist-electron/` for Electron; do not edit generated files directly. Desktop config lives under `apps/desktop/` (`vite.config.ts`, `tsconfig.json`, `path-aliases.ts`, `electron-builder.yml`, `scripts/build-electron.mjs`); repo-wide lint/format config stays at the root (`.oxlintrc.json`, `.oxfmtrc.json`). RPC contracts shared between renderer, Electron, and future mobile live in `packages/shared/` (`@novelevolver/shared`).
+`apps/desktop/src/` contains the Vite renderer application (`main.tsx`, `index.css`). `apps/desktop/electron/` contains the Electron main and preload processes. Build output goes to `apps/desktop/dist/` for the renderer and `apps/desktop/dist-electron/` for Electron; do not edit generated files directly. Desktop config lives under `apps/desktop/` (`vite.config.ts`, `tsconfig.json`, `path-aliases.ts`, `electron-builder.yml`, `scripts/build-electron.mjs`); repo-wide lint/format config stays at the root (`.oxlintrc.json`, `.oxfmtrc.json`). Cross-platform domain types live in `packages/domain/` (`@novelevolver/domain`); desktop capnweb IPC contracts live in `packages/desktop-rpc/` (`@novelevolver/desktop-rpc`).
 
 Renderer layout (`apps/desktop/src/`):
 
@@ -40,16 +41,16 @@ Renderer layout (`apps/desktop/src/`):
 - **Domain plane**: `editor/` (`state/`, `contributions/`, `panes/`, status contribution e.g. caret), `explorer/` (`ExplorerSidebar` + `shared/` / `manuscript/` / `resource-library/`), `changes/` (`ChangesSidebar` + list UI), `search/` (`SearchSidebar` + query/results), `history/`, `auxiliary/ai-chat/` (panel + AI status contribution), `branch/` (**UX only**: switcher, status item — not the RPC handle bus).
 - **View kernel**: `chrome/` (layout shell barrel only — includes chrome sidebar/statusbar primitives under `chrome/sidebar` / `chrome/statusbar`), `tree/` (list/drag primitives only — no feed/domain imports).
 - **Composition root**: `ProjectWorkbench.tsx` + `composition/` (e.g. `WorkbenchStatusBar`) — only place that assembles primary views / editor / auxiliary / status contributions from domain public entries.
-- **Misc**: `lib/` is workbench-local micro-utils and **shared cross-domain helpers** that are not owned by a single domain (e.g. change-tree projector, shared change-list row chrome). Do **not** reintroduce top-level `sidebar/` or `statusbar/` business host folders. Do **not** reintroduce a renderer `worktree/` domain — feed/snapshot live under `session/changes-feed/`; `#shared/rpc/worktree` and `electron/worktree/` are RPC/backend names only.
+- **Misc**: `lib/` is workbench-local micro-utils and **shared cross-domain helpers** that are not owned by a single domain (e.g. change-tree projector, shared change-list row chrome). Do **not** reintroduce top-level `sidebar/` or `statusbar/` business host folders. Do **not** reintroduce a renderer `worktree/` domain — feed/snapshot live under `session/changes-feed/`; `#domain/worktree` DTOs and `electron/worktree/` backend are separate concerns.
 
 **Boundary freeze (tree vs session data plane):**
 
-- `tree/` = pure view kernel (rows, drag, motion, icons). May depend on `#app/shared` and `#shared` DTO types only. **Must not** import `session/` or any domain.
-- `session/changes-feed/` = data plane (changes feed molecule, tree snapshot/revision, delta apply). May depend on session scopes/handles and `#shared` only. **Must not** import `tree/` or domain UI.
+- `tree/` = pure view kernel (rows, drag, motion, icons). May depend on `#app/shared` and `#domain` DTO types only. **Must not** import `session/` or any domain.
+- `session/changes-feed/` = data plane (changes feed molecule, tree snapshot/revision, delta apply). May depend on session scopes/handles and `#domain` only. **Must not** import `tree/` or domain UI.
 - Domains may import both `tree` (UI) and `session` (data). Shared pure helpers used by multiple domains belong in `lib/`, not inside one domain's folder.
 - Explorer `createContentTreeMolecule` stays a domain factory over session scopes; do not push feed logic into `tree/`.
 
-**Dependency direction (non-negotiable):** composition → domain → session → view kernel / `#app/shared` / `#shared`. Domains must not import other domains' internals; cross-domain traffic uses narrow ports (`openEditorTarget`, `revealInTree`, status item exports) or `lib/` shared helpers. Do **not** add new RPC handles or molecules under `branch/` — that belongs in `session/`. Primary view sections and status items live in their domain (or thin composition assembly); chrome only provides shell primitives.
+**Dependency direction (non-negotiable):** composition → domain → session → view kernel / `#app/shared` / `#domain`. Domains must not import other domains' internals; cross-domain traffic uses narrow ports (`openEditorTarget`, `revealInTree`, status item exports) or `lib/` shared helpers. Do **not** add new RPC handles or molecules under `branch/` — that belongs in `session/`. Primary view sections and status items live in their domain (or thin composition assembly); chrome only provides shell primitives. Renderer UI imports `#domain/*` for DTOs; RPC client code imports `#desktop-rpc/*` for capnweb handles.
 
 **Lint guards (`.oxlintrc.json`, renderer):**
 
@@ -71,21 +72,22 @@ Renderer layout (`apps/desktop/src/`):
 Three path aliases are configured in `apps/desktop/tsconfig.json` (`compilerOptions.paths`) and `apps/desktop/path-aliases.ts` (`resolve.alias`, consumed by Vite):
 
 - `#app/*` → `./src/*` (under `apps/desktop/`) — renderer root (`#app/app/App`, `#app/shared/lib/ui/cn`, `#app/features/project-list`, etc.)
-- `#shared/*` → `../../packages/shared/*` — IPC/RPC contracts (`@novelevolver/shared`)
+- `#domain/*` → `../../packages/domain/*` — cross-platform DTOs and pure helpers (`@novelevolver/domain`)
+- `#desktop-rpc/*` → `../../packages/desktop-rpc/*` — capnweb IPC contracts (`@novelevolver/desktop-rpc`, desktop only)
 - `#workbench/*` → `./src/features/project-workbench/*` — workbench-internal cross-domain imports (`#workbench/tree/TreeBody`, `#workbench/editor/state/molecules`)
 
 **Rules:** Prefer aliases over deep relative paths (`../../../shared/lib/ui/cn` → `#app/shared/lib/ui/cn`). Keep single-dot relative imports within the same domain folder (e.g. `chrome/layout` importing `./WorkbenchLayout`, `rpc/server` importing `./transport`). Do not add a `#electron` alias — Electron internals stay as relative (`../db/app-database`, `./changes-ops`). Import workbench chrome via `#workbench/chrome` (barrel), not internal `chrome/layout/` / `chrome/sidebar/` subpaths. Use `#workbench/*` only inside `features/project-workbench/`; feature entrypoints export through `features/project-workbench/index.ts` for external consumers.
 
 ### Electron RPC
 
-Renderer ↔ main communication uses **capnweb** over `packages/shared/rpc/transport.ts`. Contracts live in `packages/shared/rpc/`; implementations live in `apps/desktop/electron/rpc/{server,services,session,handles}/`. Branch workspace logic stays in `apps/desktop/electron/worktree/session/` — RPC handles are thin delegates only.
+Renderer ↔ main communication uses **capnweb** over `packages/desktop-rpc/transport/`. Domain DTOs live in `packages/domain/`; capnweb handle interfaces live in `packages/desktop-rpc/`; implementations live in `apps/desktop/electron/rpc/{server,services,session,handles}/`. Branch workspace logic stays in `apps/desktop/electron/worktree/session/` — RPC handles are thin delegates only.
 
 - **Entry:** `apps/desktop/electron/rpc/server/connect.ts` (`ElectronRpcServer`) owns per-`webContents` sessions; `apps/desktop/electron/preload.ts` exposes `window.appRpcBridge`.
 - **Deps:** pass main-process dependencies through `RpcMainDeps` (`apps/desktop/electron/rpc/server/deps.ts`). Never import `main.ts` from RPC code.
 - **Types:** only live remote objects `extends RpcTarget` (root, services, sessions, handles). Snapshots/DTOs stay plain interfaces. Prefer sync signatures; add `Promise` only for dialogs, real async I/O, or stream subscriptions.
 - **Dispose:** resources opened on the server must implement `[Symbol.dispose]()` and chain from `AppRpcRootImpl` when `ElectronRpcServer.closeRecord()` runs. `apps/desktop/electron/worktree/` must not import `apps/desktop/electron/rpc/`; shared streaming helpers live in `apps/desktop/electron/lib/`.
 
-To add or change an RPC surface: update `packages/shared/rpc/`, implement under `apps/desktop/electron/rpc/`, wire into `AppRpcRootImpl` / `ElectronRpcServer.connect()` when needed, and keep domain logic out of handles.
+To add or change an RPC surface: update domain DTOs in `packages/domain/` when needed, add or change capnweb handle interfaces in `packages/desktop-rpc/`, implement under `apps/desktop/electron/rpc/`, wire into `AppRpcRootImpl` / `ElectronRpcServer.connect()` when needed, and keep domain logic out of handles.
 
 ## Build, Test, and Development Commands
 
@@ -96,7 +98,7 @@ Use Bun for local work because the repo is locked with `bun.lock`.
 - `bun run build` builds both renderer and Electron bundles. If you see CSS warnings about `::highlight` (e.g. "Unknown pseudo class" or similar), these are false positives caused by lightningcss's incomplete support for the CSS `::highlight()` pseudo-element — they can be safely ignored.
 - `bun run pack` builds then runs `electron-builder --dir` for a local unpacked smoke binary under `apps/desktop/release/`.
 - `bun run dist` builds then packages the **current host OS** defaults into `apps/desktop/release/` (`dist:linux` / `dist:win` / `dist:mac` for explicit targets). Packaging is native-host only — no cross-compile. Config lives in `apps/desktop/electron-builder.yml`. Prototype phase: **no code signing / notarization**. CI (`.github/workflows/package.yml`) packages Linux/Windows/macOS on `main`/PR and uploads workflow artifacts; pushing a tag matching `v*` also creates a GitHub Release with those packages attached (version comes from `package.json` on the tagged commit, typically via `npm version`; tags with `-` such as `v1.0.0-beta.1` are marked prerelease).
-- `bun run lint` is the **only** TypeScript validation gate: `oxlint` runs with `typeAware` and `typeCheck` (see `.oxlintrc.json`) on `apps/desktop/src/`, `apps/desktop/electron/`, and `packages/shared/`, including compiler-style diagnostics. Renderer files must not import `electron` or `electron/` (enforced via `no-restricted-imports`). **Do not** add a `typecheck` script, `tsc --noEmit` npm script, or parallel CI step for standalone `tsc`; extend `.oxlintrc.json` if you need stricter checks. It may take a while to return results, so when invoking it from an agent or terminal tool, use a 5-second result wait timeout (`yield_time_ms`) rather than a shorter default.
+- `bun run lint` is the **only** TypeScript validation gate: `oxlint` runs with `typeAware` and `typeCheck` (see `.oxlintrc.json`) on `apps/desktop/src/`, `apps/desktop/electron/`, `packages/domain/`, and `packages/desktop-rpc/`, including compiler-style diagnostics. Renderer files must not import `electron` or `electron/` (enforced via `no-restricted-imports`). **Do not** add a `typecheck` script, `tsc --noEmit` npm script, or parallel CI step for standalone `tsc`; extend `.oxlintrc.json` if you need stricter checks. It may take a while to return results, so when invoking it from an agent or terminal tool, use a 5-second result wait timeout (`yield_time_ms`) rather than a shorter default.
 - `bun run lint:fix` applies safe lint fixes.
 - `bun run format` and `bun run format:check` run `oxfmt`.
 
@@ -116,7 +118,8 @@ Write TypeScript with 2-space indentation, semicolons, and double quotes, matchi
   - Extending native elements: `type XxxProps = ComponentPropsWithRef<"button"> & { ... }` (still a `type`, still named `XxxProps`).
 - **Import paths:**
   - `#app/*` — cross-feature / shared renderer code
-  - `#shared/*` — RPC contracts and DTOs
+  - `#domain/*` — cross-platform DTOs and pure helpers
+  - `#desktop-rpc/*` — capnweb IPC contracts (desktop renderer RPC client + Electron only)
   - `#workbench/*` — workbench **cross-domain** imports (required when leaving the current top-level workbench domain)
   - `./` or same-domain `../sibling-in-domain` — only within the same top-level domain folder (`editor/`, `changes/`, `auxiliary/ai-chat/`, `chrome/` including its layout/sidebar/statusbar/titlebar subfolders, `explorer/` including manuscript/resource-library/shared, etc.)
   - Do **not** use relative `../other-domain/...` to reach a **different** top-level workbench domain; switch to `#workbench/other-domain/...`.

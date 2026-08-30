@@ -11,7 +11,7 @@ import {
 import { confirmDialogApi } from "#app/shared/lib/confirm-dialog";
 import { consumeRpcSubscription } from "#app/shared/lib/rpc/app-rpc-react";
 import { popupContextMenu } from "#app/shared/lib/shell/popup-context-menu";
-import type { AiConversationSearchHit, AiConversationSummary } from "#shared/rpc/ai/index";
+import type { AiConversationSearchHit, AiConversationSummary } from "#domain/ai";
 import { useAiConversations } from "#workbench/session/workspace-handles";
 
 import { useSelectorListNavigation } from "../selectors/use-selector-list-navigation";

@@ -1,6 +1,6 @@
 import type { EditorState } from "@codemirror/state";
 
-import type { AiChatMentionRef } from "#shared/rpc/ai/index";
+import type { AiChatMentionRef } from "#domain/ai";
 
 import { mentionChipEndsAt, rangeOverlapsMentionChip } from "./mention-chip-extension";
 import { promptChipEndsAt } from "./prompt-chip-extension";

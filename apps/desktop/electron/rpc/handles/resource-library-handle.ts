@@ -1,11 +1,11 @@
 import { RpcTarget } from "capnweb";
 
+import type { ResourceLibraryHandle } from "#desktop-rpc/worktree/resource-library-handle";
 import type {
   ResourceImportEntry,
   ResourceImportResult,
-  ResourceLibraryHandle,
   WorktreeNodeIdResult,
-} from "#shared/rpc/worktree/index";
+} from "#domain/worktree/resource-library";
 
 import type { WorktreeSession } from "../../worktree/session";
 

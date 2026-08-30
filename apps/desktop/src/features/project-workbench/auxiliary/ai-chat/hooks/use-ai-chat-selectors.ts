@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 
-import type { AiChatSelectableAgent, AiChatSelectableModel } from "#shared/rpc/ai/index";
-import type { AiReasoningLevel } from "#shared/rpc/services/index";
-import { AI_REASONING_LEVEL_LABELS, AI_REASONING_LEVELS } from "#shared/rpc/services/index";
+import type { AiChatSelectableAgent, AiChatSelectableModel } from "#domain/ai";
+import type { AiReasoningLevel } from "#domain/settings/ai-settings";
+import { AI_REASONING_LEVEL_LABELS, AI_REASONING_LEVELS } from "#domain/settings/ai-settings";
 
 import { toAgentSelectorItems, toModelSelectorItems, type AiChatSelectorItem } from "../selectors";
 import { useAiChatActions, useAiChatLoading, useAiChatSnapshot } from "../state/use-ai-chat-state";
