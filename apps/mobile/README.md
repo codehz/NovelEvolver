@@ -4,9 +4,26 @@ Expo (SDK 57) React Native app in the Bun monorepo.
 
 ## Stack
 
-- **UI:** Expo managed workflow + React Native
+- **UI:** Expo managed workflow + React Native + [NativeWind v5](https://www.nativewind.dev/v5) (Tailwind CSS v4)
+- **Theme:** `@novelevolver/theme` — Catppuccin Mocha tokens (`catppuccin-mocha.css`) + app semantic tokens in `global.css`
 - **Domain:** `@novelevolver/domain` (workspace package)
 - **Lint:** local ESLint via `eslint-config-expo` (not included in root `bun run lint`)
+
+### Styling
+
+- Entry CSS: `global.css` (Tailwind v4 `@import` + `@theme`)
+- PostCSS: `postcss.config.mjs` with `@tailwindcss/postcss`
+- Metro: `metro.config.js` wraps config with `withNativewind`
+- Import `global.css` from `App.tsx` (not `index.ts`) so Fast Refresh works
+- Import `global.css` from `App.tsx` (not `index.ts`) so Fast Refresh works
+- Utility helper: `src/shared/lib/cn.ts` (`clsx` + `tailwind-merge`)
+- TypeScript: `nativewind-env.d.ts` (auto-maintained by NativeWind / react-native-css)
+
+After dependency or CSS changes, clear Metro cache:
+
+```bash
+bun run start -- --clear
+```
 
 ## Prerequisites
 

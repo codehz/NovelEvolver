@@ -22,6 +22,7 @@ apps/
   mobile/           @novelevolver/mobile — React Native scaffold (future)
 packages/
   domain/           @novelevolver/domain — cross-platform DTOs, pure helpers (zero deps)
+  theme/            @novelevolver/theme — shared Catppuccin / app design tokens (CSS)
   desktop-rpc/      @novelevolver/desktop-rpc — capnweb IPC contracts (desktop only)
 scripts/            repo-level build helpers (electron bundle, fonts)
 ```

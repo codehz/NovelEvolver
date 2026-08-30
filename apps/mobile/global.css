@@ -1,0 +1,36 @@
+@import "tailwindcss/theme.css" layer(theme);
+@import "tailwindcss/preflight.css" layer(base);
+@import "tailwindcss/utilities.css";
+
+@import "nativewind/theme";
+@import "@novelevolver/theme/catppuccin-mocha.css";
+
+@theme {
+  --font-display: system-ui, sans-serif;
+  --font-sans: var(--font-display);
+  --font-app: var(--font-display);
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+
+  --text-chat: 0.8125rem;
+  --text-chat-meta: 0.75rem;
+
+  --color-app-background: var(--color-ctp-base);
+  --color-app-foreground: var(--color-ctp-text);
+  --color-app-muted: var(--color-ctp-subtext0);
+  --color-app-surface: var(--color-ctp-mantle);
+  --color-app-crust: var(--color-ctp-crust);
+  --color-background: var(--color-app-background);
+  --color-foreground: var(--color-app-foreground);
+  --color-muted-foreground: var(--color-ctp-subtext0);
+  --color-primary: var(--color-ctp-mauve);
+  --color-primary-foreground: var(--color-ctp-crust);
+  --color-border: var(--color-ctp-surface0);
+  --color-badge-background: var(--color-ctp-mauve);
+  --color-badge-foreground: var(--color-ctp-crust);
+}
+
+@layer base {
+  :root {
+    color-scheme: dark;
+  }
+}

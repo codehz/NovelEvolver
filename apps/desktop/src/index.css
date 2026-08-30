@@ -1,5 +1,5 @@
 @import "tailwindcss";
-@import "@catppuccin/tailwindcss/mocha.css";
+@import "@novelevolver/theme/catppuccin-mocha.css";
 @import "./fonts/faces.css";
 @import "slot-text/style.css";
 @import "streamdown/styles.css";
