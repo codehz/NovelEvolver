@@ -11,6 +11,7 @@ import type {
   AiModelConfigPublic,
   AiProviderConfigPublic,
 } from "#domain/settings/ai-settings";
+import { AI_AGENT_DESCRIPTION_MAX_LENGTH } from "#domain/settings/ai-settings";
 
 import {
   settingsCheckboxLabelClass,
@@ -56,8 +57,7 @@ type FormState = {
   textOnlyMode: boolean;
 };
 
-/** Keep in sync with `AI_AGENT_DESCRIPTION_MAX_LENGTH` in electron/settings. */
-const DESCRIPTION_MAX_LENGTH = 500;
+const DESCRIPTION_MAX_LENGTH = AI_AGENT_DESCRIPTION_MAX_LENGTH;
 
 type AiAgentConfigFormProps = {
   tools: AiAgentTool[];

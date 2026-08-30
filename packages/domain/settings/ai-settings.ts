@@ -16,6 +16,10 @@ export const AI_ADAPTER_KINDS: readonly AiAdapterKind[] = [
   "gemini",
 ] as const;
 
+export function isAiAdapterKind(value: unknown): value is AiAdapterKind {
+  return typeof value === "string" && (AI_ADAPTER_KINDS as readonly string[]).includes(value);
+}
+
 /** Adapter kinds that require an explicit provider base URL (no library default). */
 export function requiresAdapterBaseUrl(kind: AiAdapterKind): boolean {
   return kind === "delta-completions";
@@ -240,6 +244,9 @@ export type BuiltinAiAgentId = (typeof BUILTIN_AI_AGENT_IDS)[number];
 export function isBuiltinAiAgentId(id: string): id is BuiltinAiAgentId {
   return (BUILTIN_AI_AGENT_IDS as readonly string[]).includes(id);
 }
+
+/** Max chars for agent description (settings UI + store normalize; multi-line OK). */
+export const AI_AGENT_DESCRIPTION_MAX_LENGTH = 500;
 
 export type AiAgentTool = {
   name: string;

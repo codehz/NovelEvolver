@@ -1,6 +1,7 @@
 import type { ToolDefinition, ToolResultItem } from "@codehz/ai";
 
 import type { AiChatInteractionAnswer, AiChatOpenInteraction } from "#domain/ai";
+import { AI_SETTINGS_TOOL_NAMES } from "#domain/settings/ai-tool-catalog";
 
 import { askUserSpec } from "./specs/ask-user";
 import { createDocumentSpec } from "./specs/create-document";
@@ -39,6 +40,16 @@ export const TOOL_SPECS = [
   readHistorySpec,
   readHistoryEntrySpec,
 ] as const satisfies readonly ToolSpec[];
+
+type DomainToolName = (typeof AI_SETTINGS_TOOL_NAMES)[number];
+type SpecToolName = (typeof TOOL_SPECS)[number]["name"];
+type _ToolNamesMatch = DomainToolName extends SpecToolName
+  ? SpecToolName extends DomainToolName
+    ? true
+    : never
+  : never;
+const _assertToolNamesMatch: _ToolNamesMatch = true;
+void _assertToolNamesMatch;
 
 export type AI_TOOL_NAMES = (typeof TOOL_SPECS)[number]["name"];
 

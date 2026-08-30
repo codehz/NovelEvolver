@@ -2,69 +2,54 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname } from "node:path";
 
 import type { AiRuntimePolicySnapshot, AiRuntimePolicyWrite } from "#domain/settings/ai-settings";
-import { DEFAULT_AI_RUNTIME_POLICY, normalizeAiRuntimePolicy } from "#domain/settings/ai-settings";
+import {
+  AI_RUNTIME_POLICY_STATE_VERSION,
+  AiRuntimePolicyState,
+  parseAiRuntimePolicyState,
+} from "#domain/settings/stores/ai-runtime-policy-state";
 
-const FILE_VERSION = 1 as const;
-
-type StoredFile = {
-  version: typeof FILE_VERSION;
-} & AiRuntimePolicySnapshot;
-
-function toStored(policy: AiRuntimePolicySnapshot): StoredFile {
-  return {
-    version: FILE_VERSION,
-    ...policy,
-  };
-}
-
-/**
- * Persists global AI runtime budgets (tool loops + subagent focus injection).
- * Missing / corrupt files fall back to `DEFAULT_AI_RUNTIME_POLICY`.
- */
 export class AiRuntimePolicyStore {
   readonly #filePath: string;
-  #data: StoredFile;
+  readonly #state: AiRuntimePolicyState;
 
   constructor(filePath: string) {
     this.#filePath = filePath;
-    this.#data = this.#load();
+    this.#state = new AiRuntimePolicyState(this.#load());
   }
 
   getSnapshot(): AiRuntimePolicySnapshot {
-    return {
-      maxToolRounds: this.#data.maxToolRounds,
-      maxSubagentToolRounds: this.#data.maxSubagentToolRounds,
-      maxParallelReadOnlySubagents: this.#data.maxParallelReadOnlySubagents,
-      maxParentSummaryChars: this.#data.maxParentSummaryChars,
-      maxFocusTargets: this.#data.maxFocusTargets,
-      maxFocusContentChars: this.#data.maxFocusContentChars,
-    };
+    return this.#state.getSnapshot();
   }
 
   setPolicy(input: AiRuntimePolicyWrite): AiRuntimePolicySnapshot {
-    if (input == null || typeof input !== "object") {
-      throw new Error("运行策略不能为空。");
-    }
-    const next = normalizeAiRuntimePolicy(input);
-    this.#data = toStored(next);
+    const snapshot = this.#state.setPolicy(input);
     this.#persist();
-    return this.getSnapshot();
+    return snapshot;
   }
 
-  #load(): StoredFile {
+  #load(): AiRuntimePolicySnapshot {
     if (!existsSync(this.#filePath)) {
-      return toStored(DEFAULT_AI_RUNTIME_POLICY);
+      return parseAiRuntimePolicyState(null);
     }
     try {
-      const parsed = JSON.parse(readFileSync(this.#filePath, "utf8")) as Partial<StoredFile>;
-      return toStored(normalizeAiRuntimePolicy(parsed));
+      const parsed = JSON.parse(readFileSync(this.#filePath, "utf8")) as {
+        version?: unknown;
+      } & Record<string, unknown>;
+      if (parsed.version !== AI_RUNTIME_POLICY_STATE_VERSION) {
+        return parseAiRuntimePolicyState(null);
+      }
+      return parseAiRuntimePolicyState(parsed);
     } catch {
-      return toStored(DEFAULT_AI_RUNTIME_POLICY);
+      return parseAiRuntimePolicyState(null);
     }
   }
 
   #persist(): void {
     mkdirSync(dirname(this.#filePath), { recursive: true });
-    writeFileSync(this.#filePath, `${JSON.stringify(this.#data, null, 2)}\n`, "utf8");
+    writeFileSync(
+      this.#filePath,
+      `${JSON.stringify({ version: AI_RUNTIME_POLICY_STATE_VERSION, ...this.#state.serialize() }, null, 2)}\n`,
+      "utf8",
+    );
   }
 }

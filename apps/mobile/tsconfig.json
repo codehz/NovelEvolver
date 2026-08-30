@@ -1,7 +1,10 @@
 {
   "extends": "@react-native/typescript-config",
   "compilerOptions": {
-    "types": []
+    "types": [],
+    "paths": {
+      "@novelevolver/domain/*": ["../../packages/domain/*"]
+    }
   },
   "include": ["src", "index.js", "metro.config.js", "babel.config.js"],
   "exclude": ["**/node_modules", "**/Pods", "android", "ios"]
