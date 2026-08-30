@@ -1,10 +1,8 @@
-import { createDrawerNavigator } from "@react-navigation/drawer";
 import { createStaticNavigation, DarkTheme, type Theme } from "@react-navigation/native";
 import {
   createNativeStackNavigator,
   createNativeStackScreen,
 } from "@react-navigation/native-stack";
-import { useWindowDimensions } from "react-native";
 
 import { HomeScreen } from "../features/home/HomeScreen";
 import { AgentEditor, AiAgentsList } from "../features/settings/ai-agents/AiAgentsPanel";
@@ -19,11 +17,16 @@ import {
   SETTINGS_RAIL_WIDTH,
   WIDE_SETTINGS_BREAKPOINT,
 } from "../features/settings/settings-chrome";
-import { useSettingsDirty, useSettingsEditorOpen } from "../features/settings/settings-leave-guard";
-import { SettingsDrawerContent } from "../features/settings/SettingsDrawerContent";
+import {
+  requestSettingsLeave,
+  useSettingsDirty,
+  useSettingsEditorOpen,
+} from "../features/settings/settings-leave-guard";
 import { SettingsHeaderButton } from "../features/settings/SettingsHeaderButton";
 import { SettingsListHeaderLeft } from "../features/settings/SettingsListHeaderLeft";
-import { color, fontSize, wash } from "../shared/theme";
+import { SettingsMasterPane } from "../features/settings/SettingsMasterPane";
+import { color, fontSize } from "../shared/theme";
+import { createSplitNavigator } from "./split-navigator";
 
 const navigationTheme: Theme = {
   ...DarkTheme,
@@ -151,15 +154,13 @@ const AiRuntimePolicyStack = createNativeStackNavigator({
   },
 });
 
-const SettingsDrawer = createDrawerNavigator({
-  defaultStatus: "open",
-  drawerContent: (props) => <SettingsDrawerContent {...props} />,
+const SettingsSplit = createSplitNavigator({
+  master: (props) => <SettingsMasterPane {...props} />,
+  breakpoint: WIDE_SETTINGS_BREAKPOINT,
+  masterWidth: SETTINGS_RAIL_WIDTH,
+  onLeaveDetail: requestSettingsLeave,
   screenOptions: {
-    headerShown: false,
     popToTopOnBlur: true,
-    drawerActiveTintColor: color.accent,
-    drawerInactiveTintColor: color.foreground,
-    drawerActiveBackgroundColor: color.background,
   },
   screens: {
     "ai-models": AiModelsStack,
@@ -168,25 +169,10 @@ const SettingsDrawer = createDrawerNavigator({
     "ai-runtime-policy": AiRuntimePolicyStack,
   },
 }).with(({ Navigator }) => {
-  const { width } = useWindowDimensions();
-  const wide = width >= WIDE_SETTINGS_BREAKPOINT;
   const dirty = useSettingsDirty();
   const editorOpen = useSettingsEditorOpen();
 
-  return (
-    <Navigator
-      backBehavior={wide ? "none" : "firstRoute"}
-      screenOptions={{
-        drawerType: wide ? "permanent" : "front",
-        drawerStyle: {
-          backgroundColor: color.surface,
-          width: wide ? SETTINGS_RAIL_WIDTH : "100%",
-        },
-        overlayColor: wide ? "transparent" : wash.backdrop,
-        swipeEnabled: !wide && !dirty && !editorOpen,
-      }}
-    />
-  );
+  return <Navigator swipeEnabled={!dirty && !editorOpen} />;
 });
 
 const RootStack = createNativeStackNavigator({
@@ -196,7 +182,7 @@ const RootStack = createNativeStackNavigator({
   },
   screens: {
     Home: HomeScreen,
-    Settings: SettingsDrawer,
+    Settings: SettingsSplit,
   },
 });
 

@@ -25,6 +25,11 @@ export const settingsStyles = StyleSheet.create({
     fontSize: fontSize.sm,
     fontWeight: "600",
   },
+  rail: {
+    backgroundColor: color.surface,
+    borderRightWidth: StyleSheet.hairlineWidth,
+    borderRightColor: color.border,
+  },
   railLabel: {
     color: color.muted,
     fontSize: fontSize.xxs,
