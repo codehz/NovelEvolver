@@ -1,16 +1,33 @@
 # NovelEvolver Mobile
 
-Placeholder workspace for the future React Native app.
+Bare React Native app (`@react-native-community/cli`). **Expo is not used and must not be added.**
 
-## Planned layout
+- Native id: `com.novelevolver.mobile`
+- JS component name: `NovelEvolver` (`app.json`)
+- Domain types: `@novelevolver/domain`
+- Backend access: mobile-specific (local storage, HTTP, WebSocket — TBD; **not** capnweb RPC)
 
-- UI: React Native (Expo or bare workflow TBD)
-- Domain types: `@novelevolver/domain` (`packages/domain`) — DTOs, feed event shapes, pure helpers
-- Backend access: mobile-specific API layer (local storage, HTTP, WebSocket — TBD; **not** capnweb RPC)
+## Commands
 
-## Next steps (when starting mobile)
+From the repository root:
 
-1. Initialize React Native / Expo in this directory
-2. Add `@novelevolver/domain` as a workspace dependency
-3. Introduce a mobile `api/` module that exposes domain-shaped operations for the chosen transport
-4. Extract platform-agnostic UI logic (reducers, projectors) into shared packages as needed
+```sh
+bun install
+bun run mobile          # Metro
+bun run mobile:android  # debug APK / emulator
+bun run mobile:ios      # Xcode / simulator (macOS)
+```
+
+Or from this package:
+
+```sh
+bun run start
+bun run android
+bun run ios
+```
+
+iOS pods (macOS):
+
+```sh
+cd ios && bundle install && bundle exec pod install
+```

@@ -1,6 +1,13 @@
 {
   "$schema": "./node_modules/oxlint/configuration_schema.json",
-  "ignorePatterns": ["apps/desktop/dist/**", "apps/desktop/dist-electron/**", "node_modules/**"],
+  "ignorePatterns": [
+    "apps/desktop/dist/**",
+    "apps/desktop/dist-electron/**",
+    "apps/mobile/android/**",
+    "apps/mobile/ios/**",
+    "apps/mobile/vendor/**",
+    "node_modules/**"
+  ],
   "jsPlugins": ["oxlint-tailwindcss"],
   "options": {
     "typeAware": true,

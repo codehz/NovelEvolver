@@ -2,8 +2,33 @@
   "name": "@novelevolver/mobile",
   "version": "0.0.0",
   "private": true,
-  "description": "NovelEvolver mobile app (React Native) — scaffold only",
+  "description": "NovelEvolver mobile app (React Native, Community CLI — not Expo)",
   "scripts": {
-    "lint": "echo \"@novelevolver/mobile: no sources yet\""
+    "start": "react-native start",
+    "android": "react-native run-android",
+    "ios": "react-native run-ios"
+  },
+  "dependencies": {
+    "@novelevolver/domain": "workspace:*",
+    "react": "19.2.3",
+    "react-native": "0.87.1",
+    "react-native-safe-area-context": "^5.5.2"
+  },
+  "devDependencies": {
+    "@babel/core": "^7.25.2",
+    "@babel/preset-env": "^7.25.3",
+    "@babel/runtime": "^7.25.0",
+    "@react-native-community/cli": "20.2.0",
+    "@react-native-community/cli-platform-android": "20.2.0",
+    "@react-native-community/cli-platform-ios": "20.2.0",
+    "@react-native/babel-preset": "0.87.1",
+    "@react-native/codegen": "0.87.1",
+    "@react-native/gradle-plugin": "0.87.1",
+    "@react-native/metro-config": "0.87.1",
+    "@react-native/typescript-config": "0.87.1",
+    "@types/react": "^19.2.0"
+  },
+  "engines": {
+    "node": ">= 22.11.0"
   }
 }

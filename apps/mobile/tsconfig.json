@@ -1,0 +1,8 @@
+{
+  "extends": "@react-native/typescript-config",
+  "compilerOptions": {
+    "types": []
+  },
+  "include": ["src", "index.js", "metro.config.js", "babel.config.js"],
+  "exclude": ["**/node_modules", "**/Pods", "android", "ios"]
+}
