@@ -10,6 +10,7 @@ import { getMobileSettings } from "../../../shared/settings/session";
 import { SettingsTextField } from "../fields";
 import { settingsStyles } from "../settings-chrome";
 import { setSettingsDirty } from "../settings-leave-guard";
+import { useSettingsLeaveGuard } from "../use-settings-leave-guard";
 
 const FIELDS: readonly {
   key: keyof AiRuntimePolicySnapshot;
@@ -49,6 +50,7 @@ const FIELDS: readonly {
 ];
 
 export function AiRuntimePolicyPanel() {
+  useSettingsLeaveGuard();
   const session = getMobileSettings();
   const [baseline, setBaseline] = useState(() => session.policy.getSnapshot());
   const [form, setForm] = useState<Record<keyof AiRuntimePolicySnapshot, string>>(() =>
@@ -67,8 +69,8 @@ export function AiRuntimePolicyPanel() {
 
   return (
     <View style={settingsStyles.detail}>
-      <View style={settingsStyles.header}>
-        <Text style={settingsStyles.headerTitle}>AI 运行策略</Text>
+      {error ? <Text style={settingsStyles.error}>{error}</Text> : null}
+      <ScrollView contentContainerStyle={settingsStyles.form}>
         <Pressable
           style={settingsStyles.headerAction}
           onPress={() => {
@@ -77,9 +79,6 @@ export function AiRuntimePolicyPanel() {
         >
           <Text style={settingsStyles.headerActionLabel}>恢复默认</Text>
         </Pressable>
-      </View>
-      {error ? <Text style={settingsStyles.error}>{error}</Text> : null}
-      <ScrollView contentContainerStyle={settingsStyles.form}>
         {FIELDS.map((field) => (
           <SettingsTextField
             key={field.key}

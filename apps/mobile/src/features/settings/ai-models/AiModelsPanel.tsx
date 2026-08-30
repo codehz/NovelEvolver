@@ -14,75 +14,35 @@ import {
   isToollessAdapterKind,
   requiresAdapterBaseUrl,
 } from "@novelevolver/domain/settings/ai-settings";
-import { useEffect, useState, type ReactNode } from "react";
+import { useFocusEffect, useNavigation, type StaticScreenProps } from "@react-navigation/native";
+import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
+import { useCallback, useEffect, useState, type ReactNode } from "react";
 import { Pressable, ScrollView, Text, View } from "react-native";
 
+import type { AiModelsStackParamList } from "../../../app/navigation-types";
 import { getMobileSettings } from "../../../shared/settings/session";
 import { AI_ADAPTER_OPTIONS } from "../ai-adapter-labels";
 import { SettingsChoiceField, SettingsSwitchField, SettingsTextField } from "../fields";
 import { settingsStyles } from "../settings-chrome";
-import { requestSettingsLeave, setSettingsDirty } from "../settings-leave-guard";
+import { setSettingsDirty } from "../settings-leave-guard";
+import { useSettingsLeaveGuard } from "../use-settings-leave-guard";
 
-type Editor =
-  | { type: "closed" }
-  | { type: "create-provider" }
-  | { type: "edit-provider"; id: string }
-  | { type: "create-model"; providerId: string }
-  | { type: "edit-model"; id: string };
-
-export function AiModelsPanel() {
+export function AiModelsList() {
+  const navigation = useNavigation<NativeStackNavigationProp<AiModelsStackParamList>>();
   const [tick, setTick] = useState(0);
-  const [editor, setEditor] = useState<Editor>({ type: "closed" });
   const [error, setError] = useState<string | null>(null);
   const session = getMobileSettings();
   const snapshot = session.models.getSnapshot();
-
-  const refresh = () => {
-    setTick((value) => value + 1);
-  };
   void tick;
 
-  const openEditor = async (next: Editor) => {
-    if (!(await requestSettingsLeave())) {
-      return;
-    }
-    setError(null);
-    setEditor(next);
-  };
-
-  if (editor.type !== "closed") {
-    return (
-      <AiModelsEditor
-        editor={editor}
-        error={error}
-        providers={snapshot.providers}
-        models={snapshot.models}
-        onBack={() => {
-          void openEditor({ type: "closed" });
-        }}
-        onError={setError}
-        onSaved={() => {
-          setError(null);
-          setEditor({ type: "closed" });
-          refresh();
-        }}
-      />
-    );
-  }
+  useFocusEffect(
+    useCallback(() => {
+      setTick((value) => value + 1);
+    }, []),
+  );
 
   return (
     <View style={settingsStyles.detail}>
-      <View style={settingsStyles.header}>
-        <Text style={settingsStyles.headerTitle}>AI 模型</Text>
-        <Pressable
-          style={settingsStyles.headerAction}
-          onPress={() => {
-            void openEditor({ type: "create-provider" });
-          }}
-        >
-          <Text style={settingsStyles.headerActionLabel}>添加供应商</Text>
-        </Pressable>
-      </View>
       {error ? <Text style={settingsStyles.error}>{error}</Text> : null}
       <ScrollView style={settingsStyles.list}>
         {snapshot.providers.length === 0 ? (
@@ -95,7 +55,7 @@ export function AiModelsPanel() {
                 <Pressable
                   style={settingsStyles.row}
                   onPress={() => {
-                    void openEditor({ type: "edit-provider", id: provider.id });
+                    navigation.navigate("ProviderEditor", { id: provider.id });
                   }}
                 >
                   <Text style={settingsStyles.rowTitle}>{provider.name}</Text>
@@ -109,14 +69,14 @@ export function AiModelsPanel() {
                     key={model.id}
                     style={[settingsStyles.row, { paddingLeft: 28 }]}
                     onPress={() => {
-                      void openEditor({ type: "edit-model", id: model.id });
+                      navigation.navigate("ModelEditor", { id: model.id });
                     }}
                     onLongPress={() => {
                       try {
                         session.setDefaultModel(
                           snapshot.defaultModelId === model.id ? null : model.id,
                         );
-                        refresh();
+                        setTick((value) => value + 1);
                       } catch (caught) {
                         setError(caught instanceof Error ? caught.message : String(caught));
                       }
@@ -132,7 +92,7 @@ export function AiModelsPanel() {
                 <Pressable
                   style={settingsStyles.row}
                   onPress={() => {
-                    void openEditor({ type: "create-model", providerId: provider.id });
+                    navigation.navigate("ModelEditor", { providerId: provider.id });
                   }}
                 >
                   <Text style={settingsStyles.headerActionLabel}>添加模型</Text>
@@ -146,61 +106,59 @@ export function AiModelsPanel() {
   );
 }
 
-type AiModelsEditorProps = {
-  editor: Exclude<Editor, { type: "closed" }>;
-  error: string | null;
-  providers: AiProviderConfigPublic[];
-  models: AiModelConfigPublic[];
-  onBack: () => void;
-  onError: (message: string | null) => void;
-  onSaved: () => void;
-};
+type ProviderEditorProps = StaticScreenProps<{ id?: string }>;
 
-function AiModelsEditor({
-  editor,
-  error,
-  providers,
-  models,
-  onBack,
-  onError,
-  onSaved,
-}: AiModelsEditorProps) {
-  const isProvider = editor.type === "create-provider" || editor.type === "edit-provider";
+export function ProviderEditor({ route }: ProviderEditorProps) {
+  useSettingsLeaveGuard({ editor: true });
+  const navigation = useNavigation();
+  const [error, setError] = useState<string | null>(null);
+  const snapshot = getMobileSettings().models.getSnapshot();
+  const editor =
+    route.params.id == null
+      ? ({ type: "create-provider" } as const)
+      : ({ type: "edit-provider", id: route.params.id } as const);
+
   return (
     <View style={settingsStyles.detail}>
-      <View style={settingsStyles.header}>
-        <Pressable style={settingsStyles.headerAction} onPress={onBack}>
-          <Text style={settingsStyles.headerActionLabel}>返回</Text>
-        </Pressable>
-        <Text style={settingsStyles.headerTitle}>{editorTitle(editor)}</Text>
-      </View>
       {error ? <Text style={settingsStyles.error}>{error}</Text> : null}
-      {isProvider ? (
-        <ProviderForm editor={editor} providers={providers} onError={onError} onSaved={onSaved} />
-      ) : (
-        <ModelForm
-          editor={editor}
-          providers={providers}
-          models={models}
-          onError={onError}
-          onSaved={onSaved}
-        />
-      )}
+      <ProviderForm
+        editor={editor}
+        providers={snapshot.providers}
+        onError={setError}
+        onSaved={() => {
+          navigation.goBack();
+        }}
+      />
     </View>
   );
 }
 
-function editorTitle(editor: Exclude<Editor, { type: "closed" }>): string {
-  switch (editor.type) {
-    case "create-provider":
-      return "添加供应商";
-    case "edit-provider":
-      return "编辑供应商";
-    case "create-model":
-      return "添加模型";
-    case "edit-model":
-      return "编辑模型";
-  }
+type ModelEditorProps = StaticScreenProps<{ id?: string; providerId?: string }>;
+
+export function ModelEditor({ route }: ModelEditorProps) {
+  useSettingsLeaveGuard({ editor: true });
+  const navigation = useNavigation();
+  const [error, setError] = useState<string | null>(null);
+  const snapshot = getMobileSettings().models.getSnapshot();
+  const editor =
+    route.params.id == null
+      ? ({ type: "create-model", providerId: route.params.providerId ?? "" } as const)
+      : ({ type: "edit-model", id: route.params.id } as const);
+
+  return (
+    <View style={settingsStyles.detail}>
+      {error ? <Text style={settingsStyles.error}>{error}</Text> : null}
+      <ModelForm
+        editor={editor}
+        providers={snapshot.providers}
+        models={snapshot.models}
+        onError={setError}
+        onSaved={() => {
+          navigation.goBack();
+        }}
+      />
+    </View>
+  );
 }
 
 type ProviderFormProps = {

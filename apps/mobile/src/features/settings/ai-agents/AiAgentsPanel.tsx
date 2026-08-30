@@ -1,72 +1,38 @@
 import { AI_AGENT_DESCRIPTION_MAX_LENGTH } from "@novelevolver/domain/settings/ai-settings";
 import type { AiAgentConfigPublic } from "@novelevolver/domain/settings/ai-settings";
-import { useEffect, useState } from "react";
+import { useFocusEffect, useNavigation, type StaticScreenProps } from "@react-navigation/native";
+import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
+import { useCallback, useEffect, useState } from "react";
 import { Pressable, ScrollView, Text, View } from "react-native";
 
+import type { AiAgentsStackParamList } from "../../../app/navigation-types";
 import { getMobileSettings } from "../../../shared/settings/session";
 import { SettingsSwitchField, SettingsTextField } from "../fields";
 import { settingsStyles } from "../settings-chrome";
-import { requestSettingsLeave, setSettingsDirty } from "../settings-leave-guard";
+import { setSettingsDirty } from "../settings-leave-guard";
+import { useSettingsLeaveGuard } from "../use-settings-leave-guard";
 
-type Editor = { type: "closed" } | { type: "create" } | { type: "edit"; id: string };
-
-export function AiAgentsPanel() {
+export function AiAgentsList() {
+  const navigation = useNavigation<NativeStackNavigationProp<AiAgentsStackParamList>>();
   const [tick, setTick] = useState(0);
-  const [editor, setEditor] = useState<Editor>({ type: "closed" });
-  const [error, setError] = useState<string | null>(null);
-  const session = getMobileSettings();
-  const snapshot = session.agents.getSnapshot();
+  const snapshot = getMobileSettings().agents.getSnapshot();
   void tick;
 
-  const openEditor = async (next: Editor) => {
-    if (!(await requestSettingsLeave())) {
-      return;
-    }
-    setError(null);
-    setEditor(next);
-  };
-
-  if (editor.type !== "closed") {
-    const initial =
-      editor.type === "edit" ? snapshot.agents.find((agent) => agent.id === editor.id) : null;
-    return (
-      <AgentForm
-        initial={initial ?? null}
-        error={error}
-        onBack={() => {
-          void openEditor({ type: "closed" });
-        }}
-        onError={setError}
-        onSaved={() => {
-          setError(null);
-          setEditor({ type: "closed" });
-          setTick((value) => value + 1);
-        }}
-      />
-    );
-  }
+  useFocusEffect(
+    useCallback(() => {
+      setTick((value) => value + 1);
+    }, []),
+  );
 
   return (
     <View style={settingsStyles.detail}>
-      <View style={settingsStyles.header}>
-        <Text style={settingsStyles.headerTitle}>AI Agent</Text>
-        <Pressable
-          style={settingsStyles.headerAction}
-          onPress={() => {
-            void openEditor({ type: "create" });
-          }}
-        >
-          <Text style={settingsStyles.headerActionLabel}>添加</Text>
-        </Pressable>
-      </View>
-      {error ? <Text style={settingsStyles.error}>{error}</Text> : null}
       <ScrollView style={settingsStyles.list}>
         {snapshot.agents.map((agent) => (
           <Pressable
             key={agent.id}
             style={settingsStyles.row}
             onPress={() => {
-              void openEditor({ type: "edit", id: agent.id });
+              navigation.navigate("AgentEditor", { id: agent.id });
             }}
           >
             <Text style={settingsStyles.rowTitle}>{agent.name}</Text>
@@ -81,15 +47,38 @@ export function AiAgentsPanel() {
   );
 }
 
+type AgentEditorProps = StaticScreenProps<{ id?: string }>;
+
+export function AgentEditor({ route }: AgentEditorProps) {
+  useSettingsLeaveGuard({ editor: true });
+  const navigation = useNavigation();
+  const [error, setError] = useState<string | null>(null);
+  const snapshot = getMobileSettings().agents.getSnapshot();
+  const initial =
+    route.params.id == null
+      ? null
+      : (snapshot.agents.find((agent) => agent.id === route.params.id) ?? null);
+
+  return (
+    <AgentForm
+      initial={initial}
+      error={error}
+      onError={setError}
+      onSaved={() => {
+        navigation.goBack();
+      }}
+    />
+  );
+}
+
 type AgentFormProps = {
   initial: AiAgentConfigPublic | null;
   error: string | null;
-  onBack: () => void;
   onError: (message: string | null) => void;
   onSaved: () => void;
 };
 
-function AgentForm({ initial, error, onBack, onError, onSaved }: AgentFormProps) {
+function AgentForm({ initial, error, onError, onSaved }: AgentFormProps) {
   const session = getMobileSettings();
   const models = session.models.getSnapshot();
   const tools = session.agents.getSnapshot().tools;
@@ -117,12 +106,6 @@ function AgentForm({ initial, error, onBack, onError, onSaved }: AgentFormProps)
 
   return (
     <View style={settingsStyles.detail}>
-      <View style={settingsStyles.header}>
-        <Pressable style={settingsStyles.headerAction} onPress={onBack}>
-          <Text style={settingsStyles.headerActionLabel}>返回</Text>
-        </Pressable>
-        <Text style={settingsStyles.headerTitle}>{initial ? initial.name : "添加 Agent"}</Text>
-      </View>
       {error ? <Text style={settingsStyles.error}>{error}</Text> : null}
       <ScrollView contentContainerStyle={settingsStyles.form}>
         <SettingsTextField label="名称" value={name} onChangeText={setName} editable={!builtin} />

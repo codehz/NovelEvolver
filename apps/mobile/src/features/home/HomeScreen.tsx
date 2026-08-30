@@ -1,18 +1,23 @@
+import { useNavigation } from "@react-navigation/native";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { color, fontSize, radius, space, wash } from "../../shared/theme";
 
-type HomeScreenProps = {
-  onOpenSettings: () => void;
-};
+export function HomeScreen() {
+  const navigation = useNavigation();
 
-export function HomeScreen({ onOpenSettings }: HomeScreenProps) {
   return (
     <SafeAreaView style={styles.safeArea}>
       <View style={styles.topBar}>
         <View style={styles.topBarSpacer} />
-        <Pressable style={styles.gear} onPress={onOpenSettings} accessibilityLabel="打开设置">
+        <Pressable
+          style={styles.gear}
+          onPress={() => {
+            navigation.navigate("Settings");
+          }}
+          accessibilityLabel="打开设置"
+        >
           <Text style={styles.gearLabel}>设置</Text>
         </Pressable>
       </View>

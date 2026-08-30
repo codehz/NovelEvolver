@@ -3,26 +3,12 @@ import { StyleSheet } from "react-native";
 import { color, fontSize, radius, space, wash } from "../../shared/theme";
 
 export const WIDE_SETTINGS_BREAKPOINT = 768;
+export const SETTINGS_RAIL_WIDTH = 220;
 
 export const settingsStyles = StyleSheet.create({
   root: {
     flex: 1,
     backgroundColor: color.background,
-  },
-  header: {
-    minHeight: 52,
-    flexDirection: "row",
-    alignItems: "center",
-    gap: space[2],
-    paddingHorizontal: space[3],
-    borderBottomWidth: 1,
-    borderBottomColor: color.border,
-  },
-  headerTitle: {
-    flex: 1,
-    color: color.foreground,
-    fontSize: fontSize.md,
-    fontWeight: "600",
   },
   headerAction: {
     borderRadius: radius.control,
@@ -38,16 +24,6 @@ export const settingsStyles = StyleSheet.create({
     color: color.error,
     fontSize: fontSize.sm,
     fontWeight: "600",
-  },
-  dualPane: {
-    flex: 1,
-    flexDirection: "row",
-  },
-  rail: {
-    width: 220,
-    borderRightWidth: 1,
-    borderRightColor: color.border,
-    backgroundColor: color.surface,
   },
   railLabel: {
     color: color.muted,
