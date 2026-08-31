@@ -1,4 +1,4 @@
-import { useSyncExternalStore } from "react";
+import { useEffect, useSyncExternalStore } from "react";
 
 type ConfirmLeave = () => Promise<boolean>;
 
@@ -24,6 +24,16 @@ export function setSettingsDirty(next: boolean): void {
   }
   dirty = next;
   emit(dirtyListeners);
+}
+
+/** Bind a form's computed dirty flag to the leave guard. */
+export function useSettingsFormDirty(nextDirty: boolean): void {
+  useEffect(() => {
+    setSettingsDirty(nextDirty);
+    return () => {
+      setSettingsDirty(false);
+    };
+  }, [nextDirty]);
 }
 
 export function subscribeSettingsDirty(onStoreChange: () => void): () => void {

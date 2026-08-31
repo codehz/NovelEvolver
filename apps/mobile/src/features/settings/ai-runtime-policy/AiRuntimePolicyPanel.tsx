@@ -3,13 +3,13 @@ import {
   AI_RUNTIME_POLICY_LIMITS,
   DEFAULT_AI_RUNTIME_POLICY,
 } from "@novelevolver/domain/settings/ai-settings";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Pressable, ScrollView, Text, View } from "react-native";
 
 import { getMobileSettings } from "../../../shared/settings/session";
 import { SettingsTextField } from "../fields";
 import { settingsStyles } from "../settings-chrome";
-import { setSettingsDirty } from "../settings-leave-guard";
+import { setSettingsDirty, useSettingsFormDirty } from "../settings-leave-guard";
 import { useSettingsLeaveGuard } from "../use-settings-leave-guard";
 
 const FIELDS: readonly {
@@ -59,13 +59,7 @@ export function AiRuntimePolicyPanel() {
   const [error, setError] = useState<string | null>(null);
 
   const dirty = FIELDS.some((field) => form[field.key] !== String(baseline[field.key]));
-
-  useEffect(() => {
-    setSettingsDirty(dirty);
-    return () => {
-      setSettingsDirty(false);
-    };
-  }, [dirty]);
+  useSettingsFormDirty(dirty);
 
   return (
     <View style={settingsStyles.detail}>

@@ -1,14 +1,14 @@
 import type { AiPromptConfigPublic } from "@novelevolver/domain/settings/ai-settings";
 import { useFocusEffect, useNavigation, type StaticScreenProps } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useState } from "react";
 import { Pressable, ScrollView, Text, View } from "react-native";
 
 import type { AiPromptsStackParamList } from "../../../app/navigation-types";
 import { getMobileSettings } from "../../../shared/settings/session";
 import { SettingsTextField } from "../fields";
 import { settingsStyles } from "../settings-chrome";
-import { setSettingsDirty } from "../settings-leave-guard";
+import { setSettingsDirty, useSettingsFormDirty } from "../settings-leave-guard";
 import { useSettingsLeaveGuard } from "../use-settings-leave-guard";
 
 export function AiPromptsList() {
@@ -83,13 +83,12 @@ function PromptForm({ initial, error, onError, onSaved }: PromptFormProps) {
   const [title, setTitle] = useState(initial?.title ?? "");
   const [slug, setSlug] = useState(initial?.slug ?? "");
   const [prompt, setPrompt] = useState(initial?.prompt ?? "");
+  const dirty =
+    title !== (initial?.title ?? "") ||
+    slug !== (initial?.slug ?? "") ||
+    prompt !== (initial?.prompt ?? "");
 
-  useEffect(() => {
-    setSettingsDirty(true);
-    return () => {
-      setSettingsDirty(false);
-    };
-  }, []);
+  useSettingsFormDirty(dirty);
 
   return (
     <View style={settingsStyles.detail}>

@@ -2,14 +2,14 @@ import { AI_AGENT_DESCRIPTION_MAX_LENGTH } from "@novelevolver/domain/settings/a
 import type { AiAgentConfigPublic } from "@novelevolver/domain/settings/ai-settings";
 import { useFocusEffect, useNavigation, type StaticScreenProps } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useState } from "react";
 import { Pressable, ScrollView, Text, View } from "react-native";
 
 import type { AiAgentsStackParamList } from "../../../app/navigation-types";
 import { getMobileSettings } from "../../../shared/settings/session";
 import { SettingsSwitchField, SettingsTextField } from "../fields";
 import { settingsStyles } from "../settings-chrome";
-import { setSettingsDirty } from "../settings-leave-guard";
+import { setSettingsDirty, useSettingsFormDirty } from "../settings-leave-guard";
 import { useSettingsLeaveGuard } from "../use-settings-leave-guard";
 
 export function AiAgentsList() {
@@ -91,13 +91,19 @@ function AgentForm({ initial, error, onError, onSaved }: AgentFormProps) {
   const [userSelectable, setUserSelectable] = useState(initial?.userSelectable ?? true);
   const [subagentEligible, setSubagentEligible] = useState(initial?.subagentEligible ?? false);
   const [textOnlyMode, setTextOnlyMode] = useState(initial?.textOnlyMode ?? false);
+  const baselineTools = initial?.availableToolNames ?? [];
+  const dirty =
+    name !== (initial?.name ?? "") ||
+    description !== (initial?.description ?? "") ||
+    systemPrompt !== (initial?.systemPrompt ?? "") ||
+    defaultModelId !== (initial?.defaultModelId ?? "") ||
+    availableToolNames.length !== baselineTools.length ||
+    availableToolNames.some((tool) => !baselineTools.includes(tool)) ||
+    userSelectable !== (initial?.userSelectable ?? true) ||
+    subagentEligible !== (initial?.subagentEligible ?? false) ||
+    textOnlyMode !== (initial?.textOnlyMode ?? false);
 
-  useEffect(() => {
-    setSettingsDirty(true);
-    return () => {
-      setSettingsDirty(false);
-    };
-  }, []);
+  useSettingsFormDirty(dirty);
 
   const modelOptions = [
     { value: "", label: "继承默认模型" },

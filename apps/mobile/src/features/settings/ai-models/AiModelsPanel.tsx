@@ -16,7 +16,7 @@ import {
 } from "@novelevolver/domain/settings/ai-settings";
 import { useFocusEffect, useNavigation, type StaticScreenProps } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
-import { useCallback, useEffect, useState, type ReactNode } from "react";
+import { useCallback, useState, type ReactNode } from "react";
 import { Pressable, ScrollView, Text, View } from "react-native";
 
 import type { AiModelsStackParamList } from "../../../app/navigation-types";
@@ -24,7 +24,7 @@ import { getMobileSettings } from "../../../shared/settings/session";
 import { AI_ADAPTER_OPTIONS } from "../ai-adapter-labels";
 import { SettingsChoiceField, SettingsSwitchField, SettingsTextField } from "../fields";
 import { settingsStyles } from "../settings-chrome";
-import { setSettingsDirty } from "../settings-leave-guard";
+import { setSettingsDirty, useSettingsFormDirty } from "../settings-leave-guard";
 import { useSettingsLeaveGuard } from "../use-settings-leave-guard";
 
 export function AiModelsList() {
@@ -185,12 +185,7 @@ function ProviderForm({ editor, providers, onError, onSaved }: ProviderFormProps
     apiKey !== "" ||
     clearApiKey;
 
-  useEffect(() => {
-    setSettingsDirty(dirty);
-    return () => {
-      setSettingsDirty(false);
-    };
-  }, [dirty]);
+  useSettingsFormDirty(dirty);
 
   return (
     <ScrollView contentContainerStyle={settingsStyles.form}>
@@ -306,13 +301,23 @@ function ModelForm({ editor, providers, models, onError, onSaved }: ModelFormPro
 
   const provider = providers.find((item) => item.id === providerId);
   const toolless = provider ? isToollessAdapterKind(provider.kind) : false;
+  const baselineLevels = initial?.availableReasoningLevels ?? [];
+  const dirty =
+    providerId !== defaultProviderId ||
+    name !== (initial?.name ?? "") ||
+    model !== (initial?.model ?? "") ||
+    maxOutputTokens !== String(initial?.maxOutputTokens ?? DEFAULT_AI_MODEL_MAX_OUTPUT_TOKENS) ||
+    contextLength !== (initial?.contextLength != null ? String(initial.contextLength) : "") ||
+    availableReasoningLevels.length !== baselineLevels.length ||
+    availableReasoningLevels.some((level) => !baselineLevels.includes(level)) ||
+    defaultReasoningLevel !== (initial?.defaultReasoningLevel ?? null) ||
+    temperature !== (initial?.temperature != null ? String(initial.temperature) : "") ||
+    cacheMode !== (initial?.cache.mode ?? "") ||
+    cacheKey !== (initial?.cache.key ?? "") ||
+    cacheTtl !== (initial?.cache.ttl ?? "") ||
+    supportsTools !== (initial?.supportsTools ?? true);
 
-  useEffect(() => {
-    setSettingsDirty(true);
-    return () => {
-      setSettingsDirty(false);
-    };
-  }, []);
+  useSettingsFormDirty(dirty);
 
   return (
     <ScrollView contentContainerStyle={settingsStyles.form}>
