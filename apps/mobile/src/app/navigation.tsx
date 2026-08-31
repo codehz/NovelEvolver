@@ -216,7 +216,7 @@ const RootStack = createNativeStackNavigator({
     }),
     Chapter: createNativeStackScreen({
       screen: ChapterEditorScreen,
-      options: { headerShown: true, title: "章节", headerBackTitle: "目录" },
+      options: { headerShown: false },
     }),
     Settings: SettingsSplit,
     Confirm: createNativeStackScreen({

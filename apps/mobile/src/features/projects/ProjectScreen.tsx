@@ -1,8 +1,10 @@
 import type { ManuscriptNode } from "@novelevolver/domain/worktree";
+import { Header } from "@react-navigation/elements";
 import { useNavigation, useRoute } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { useEffect, useState } from "react";
-import { Alert, Pressable, SafeAreaView, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 import type { RootStackParamList } from "../../app/navigation-types";
 import {
@@ -12,6 +14,9 @@ import {
   shareNpk,
 } from "../../shared/files/mobile-file-bridge";
 import { color, fontFamily, fontSize, radius, space, wash } from "../../shared/theme";
+import { settingsStyles } from "../settings/settings-chrome";
+import { SettingsHeaderBackButton } from "../settings/SettingsHeaderBackButton";
+import { SettingsHeaderButton } from "../settings/SettingsHeaderButton";
 import { InputPrompt } from "./InputPrompt";
 import { useProjectManager } from "./ProjectManagerProvider";
 
@@ -74,7 +79,7 @@ export function ProjectScreen() {
 
   if (opened === null) {
     return (
-      <SafeAreaView style={styles.safeArea}>
+      <SafeAreaView edges={["top", "bottom"]} style={styles.safeArea}>
         <View style={styles.center}>
           <Text style={styles.text}>正在打开项目…</Text>
         </View>
@@ -142,44 +147,51 @@ export function ProjectScreen() {
     );
 
   return (
-    <SafeAreaView style={styles.safeArea}>
-      <View style={styles.header}>
-        <Pressable onPress={() => navigation.goBack()}>
-          <Text style={styles.headerButton}>返回</Text>
-        </Pressable>
-        <Text style={styles.headerTitle} numberOfLines={1}>
-          {opened.record.displayName}
-        </Text>
-        <View style={styles.headerActions}>
-          <Pressable
-            onPress={() =>
-              setPrompt({
-                title: "重命名项目",
-                confirmLabel: "保存",
-                onConfirm: (name) => {
-                  try {
-                    const updated = manager.renameProject(projectId, name);
-                    setOpened((current) =>
-                      current === null ? current : { ...current, record: updated },
-                    );
-                    setPrompt(null);
-                  } catch (error) {
-                    Alert.alert(
-                      "重命名失败",
-                      error instanceof Error ? error.message : String(error),
-                    );
-                  }
-                },
-              })
-            }
-          >
-            <Text style={styles.headerButton}>改名</Text>
-          </Pressable>
-          <Pressable onPress={exportProject}>
-            <Text style={styles.headerButton}>导出</Text>
-          </Pressable>
-        </View>
-      </View>
+    <SafeAreaView edges={["bottom"]} style={styles.safeArea}>
+      <Header
+        title={opened.record.displayName}
+        headerTintColor={color.accent}
+        headerTitleStyle={styles.headerTitle}
+        headerStyle={styles.header}
+        headerShadowVisible={false}
+        headerLeftContainerStyle={settingsStyles.headerLeftContainer}
+        headerLeft={(props) => (
+          <SettingsHeaderBackButton {...props} onPress={() => navigation.goBack()} />
+        )}
+        headerRight={() => (
+          <>
+            <SettingsHeaderButton
+              label="改名"
+              onPress={() =>
+                setPrompt({
+                  title: "重命名项目",
+                  confirmLabel: "保存",
+                  onConfirm: (name) => {
+                    try {
+                      const updated = manager.renameProject(projectId, name);
+                      setOpened((current) =>
+                        current === null ? current : { ...current, record: updated },
+                      );
+                      setPrompt(null);
+                    } catch (error) {
+                      Alert.alert(
+                        "重命名失败",
+                        error instanceof Error ? error.message : String(error),
+                      );
+                    }
+                  },
+                })
+              }
+            />
+            <SettingsHeaderButton
+              label="导出"
+              onPress={() => {
+                void exportProject();
+              }}
+            />
+          </>
+        )}
+      />
       <View style={styles.toolbar}>
         <Pressable
           style={styles.primaryButton}
@@ -326,28 +338,14 @@ export function ProjectScreen() {
 const styles = StyleSheet.create({
   safeArea: { flex: 1, backgroundColor: color.background },
   header: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingHorizontal: space[4],
-    paddingVertical: space[3],
+    backgroundColor: color.background,
     borderBottomWidth: 1,
     borderBottomColor: color.border,
   },
   headerTitle: {
-    flex: 1,
     color: color.foreground,
     fontFamily: fontFamily.sans,
     fontSize: fontSize.md,
-    fontWeight: "600",
-    textAlign: "center",
-    marginHorizontal: space[2],
-  },
-  headerActions: { flexDirection: "row", alignItems: "center", gap: space[3] },
-  headerButton: {
-    color: color.accent,
-    fontFamily: fontFamily.sans,
-    fontSize: fontSize.sm,
     fontWeight: "600",
   },
   toolbar: { flexDirection: "row", flexWrap: "wrap", gap: space[2], padding: space[3] },
