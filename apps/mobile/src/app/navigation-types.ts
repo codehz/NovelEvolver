@@ -1,16 +1,17 @@
-export type ConfirmParams = {
-  title: string;
-  message: string;
-  confirmLabel: string;
-};
+import type {
+  OverlayAlertParams,
+  OverlayConfirmParams,
+  OverlayPromptParams,
+} from "../shared/ui/OverlayHost";
 
 export type RootStackParamList = {
   Home: undefined;
   Settings: undefined;
-  CreateProject: undefined;
   Project: { projectId: string };
   Chapter: { projectId: string; nodeId: string };
-  Confirm: ConfirmParams;
+  Alert: OverlayAlertParams;
+  Confirm: OverlayConfirmParams;
+  Prompt: OverlayPromptParams;
 };
 
 export type AiModelsStackParamList = {

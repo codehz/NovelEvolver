@@ -13,7 +13,6 @@ import {
 import IconAdd from "~icons/codicon/add";
 
 import { ChapterEditorScreen } from "../features/projects/ChapterEditorScreen";
-import { CreateProjectScreen } from "../features/projects/CreateProjectScreen";
 import { ProjectListScreen } from "../features/projects/ProjectListScreen";
 import { ProjectScreen } from "../features/projects/ProjectScreen";
 import { AgentEditor, AiAgentsList } from "../features/settings/ai-agents/AiAgentsPanel";
@@ -24,7 +23,6 @@ import {
 } from "../features/settings/ai-models/AiModelsPanel";
 import { AiPromptsList, PromptEditor } from "../features/settings/ai-prompts/AiPromptsPanel";
 import { AiRuntimePolicyPanel } from "../features/settings/ai-runtime-policy/AiRuntimePolicyPanel";
-import { ConfirmScreen } from "../features/settings/ConfirmHost";
 import {
   SETTINGS_RAIL_WIDTH,
   WIDE_SETTINGS_BREAKPOINT,
@@ -39,6 +37,7 @@ import { SettingsHeaderButton } from "../features/settings/SettingsHeaderButton"
 import { SettingsListHeaderLeft } from "../features/settings/SettingsListHeaderLeft";
 import { SettingsMasterPane } from "../features/settings/SettingsMasterPane";
 import { color, fontFamily, fontSize } from "../shared/theme";
+import { AlertScreen, ConfirmScreen, PromptScreen } from "../shared/ui/OverlayHost";
 import { navigationRef } from "./navigation-ref";
 import { createSplitNavigator } from "./split-navigator";
 
@@ -199,6 +198,14 @@ const SettingsSplit = createSplitNavigator({
   return <Navigator swipeEnabled={!dirty && !editorOpen} />;
 });
 
+const overlayScreenOptions = {
+  headerShown: false,
+  presentation: "transparentModal",
+  animation: "none",
+  gestureEnabled: false,
+  contentStyle: { backgroundColor: "transparent" },
+} satisfies NativeStackNavigationOptions;
+
 const RootStack = createNativeStackNavigator({
   screenOptions: {
     headerShown: false,
@@ -206,10 +213,6 @@ const RootStack = createNativeStackNavigator({
   },
   screens: {
     Home: ProjectListScreen,
-    CreateProject: createNativeStackScreen({
-      screen: CreateProjectScreen,
-      options: { headerShown: false },
-    }),
     Project: createNativeStackScreen({
       screen: ProjectScreen,
       options: { headerShown: false },
@@ -219,15 +222,17 @@ const RootStack = createNativeStackNavigator({
       options: { headerShown: false },
     }),
     Settings: SettingsSplit,
+    Alert: createNativeStackScreen({
+      screen: AlertScreen,
+      options: overlayScreenOptions,
+    }),
     Confirm: createNativeStackScreen({
       screen: ConfirmScreen,
-      options: {
-        headerShown: false,
-        presentation: "transparentModal",
-        animation: "none",
-        gestureEnabled: false,
-        contentStyle: { backgroundColor: "transparent" },
-      },
+      options: overlayScreenOptions,
+    }),
+    Prompt: createNativeStackScreen({
+      screen: PromptScreen,
+      options: overlayScreenOptions,
     }),
   },
 });

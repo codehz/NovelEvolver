@@ -3,7 +3,7 @@ import { Header } from "@react-navigation/elements";
 import { useNavigation, useRoute } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { useEffect, useState } from "react";
-import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import type { RootStackParamList } from "../../app/navigation-types";
@@ -14,10 +14,10 @@ import {
   shareNpk,
 } from "../../shared/files/mobile-file-bridge";
 import { color, fontFamily, fontSize, radius, space, wash } from "../../shared/theme";
+import { useOverlay } from "../../shared/ui/OverlayHost";
 import { settingsStyles } from "../settings/settings-chrome";
 import { SettingsHeaderBackButton } from "../settings/SettingsHeaderBackButton";
 import { SettingsHeaderButton } from "../settings/SettingsHeaderButton";
-import { InputPrompt } from "./InputPrompt";
 import { useProjectManager } from "./ProjectManagerProvider";
 
 function flattenNodes(outline: { rootId: string; nodes: Record<string, ManuscriptNode> }) {
@@ -37,10 +37,13 @@ function flattenNodes(outline: { rootId: string; nodes: Record<string, Manuscrip
   return result;
 }
 
-type PromptState = { title: string; confirmLabel: string; onConfirm(value: string): void } | null;
+function errorMessage(error: unknown): string {
+  return error instanceof Error ? error.message : String(error);
+}
 
 export function ProjectScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+  const overlay = useOverlay();
   const route = useRoute();
   const projectId = (route.params as RootStackParamList["Project"]).projectId;
   const manager = useProjectManager();
@@ -48,7 +51,6 @@ export function ProjectScreen() {
     manager.opened?.record.id === projectId ? manager.opened : null,
   );
   const [revision, setRevision] = useState(0);
-  const [prompt, setPrompt] = useState<PromptState>(null);
 
   useEffect(() => {
     let active = true;
@@ -70,12 +72,14 @@ export function ProjectScreen() {
         if (active) setOpened(result);
       })
       .catch((error) => {
-        if (active) Alert.alert("打开失败", error instanceof Error ? error.message : String(error));
+        if (active) {
+          void overlay.alert({ title: "打开失败", message: errorMessage(error) });
+        }
       });
     return () => {
       active = false;
     };
-  }, [manager, projectId]);
+  }, [manager, overlay, projectId]);
 
   if (opened === null) {
     return (
@@ -97,23 +101,99 @@ export function ProjectScreen() {
     opened.worktree.moveNode(node.id, parentId, index + direction);
     update();
   };
-  const commit = (message: string) => {
+  const renameProject = async () => {
+    const name = await overlay.prompt({
+      title: "重命名项目",
+      initialValue: opened.record.displayName,
+      confirmLabel: "保存",
+    });
+    if (name === null) return;
+    try {
+      const updated = manager.renameProject(projectId, name);
+      setOpened((current) => (current === null ? current : { ...current, record: updated }));
+    } catch (error) {
+      await overlay.alert({ title: "重命名失败", message: errorMessage(error) });
+    }
+  };
+  const commitWorktree = async () => {
+    const message = await overlay.prompt({
+      title: "提交当前 worktree",
+      placeholder: "提交说明",
+      confirmLabel: "提交",
+    });
+    if (message === null) return;
     try {
       opened.worktree.commit(message);
-      setPrompt(null);
       update();
-      Alert.alert("提交完成", "当前 worktree 已写入 Git。");
+      await overlay.alert({ title: "提交完成", message: "当前 worktree 已写入 Git。" });
     } catch (error) {
-      Alert.alert("提交失败", error instanceof Error ? error.message : String(error));
+      await overlay.alert({ title: "提交失败", message: errorMessage(error) });
+    }
+  };
+  const createFolder = async () => {
+    const name = await overlay.prompt({
+      title: "新建文件夹",
+      placeholder: "文件夹名称",
+      confirmLabel: "创建",
+    });
+    if (name === null) return;
+    try {
+      opened.worktree.createFolder(outline.rootId, name);
+      update();
+    } catch (error) {
+      await overlay.alert({ title: "创建失败", message: errorMessage(error) });
+    }
+  };
+  const createChapter = async () => {
+    const name = await overlay.prompt({
+      title: "新建章节",
+      placeholder: "章节名称",
+      confirmLabel: "创建",
+    });
+    if (name === null) return;
+    try {
+      const id = opened.worktree.createChapter(outline.rootId, name);
+      update();
+      navigation.navigate("Chapter", { projectId, nodeId: id });
+    } catch (error) {
+      await overlay.alert({ title: "创建失败", message: errorMessage(error) });
+    }
+  };
+  const renameNode = async (node: ManuscriptNode) => {
+    const name = await overlay.prompt({
+      title: "重命名",
+      initialValue: node.title,
+      confirmLabel: "保存",
+    });
+    if (name === null) return;
+    try {
+      opened.worktree.renameNode(node.id, name);
+      update();
+    } catch (error) {
+      await overlay.alert({ title: "重命名失败", message: errorMessage(error) });
+    }
+  };
+  const deleteNode = async (node: ManuscriptNode) => {
+    const confirmed = await overlay.confirm({
+      title: "删除节点？",
+      message: `将递归删除“${node.title}”及其子项。`,
+      confirmLabel: "删除",
+    });
+    if (!confirmed) return;
+    try {
+      opened.worktree.deleteNode(node.id);
+      update();
+    } catch (error) {
+      await overlay.alert({ title: "删除失败", message: errorMessage(error) });
     }
   };
   const exportProject = async () => {
     if (!opened.worktree.hasCommit) {
-      Alert.alert("无法导出", "项目尚无提交，请先提交内容。");
+      await overlay.alert({ title: "无法导出", message: "项目尚无提交，请先提交内容。" });
       return;
     }
     if (opened.worktree.hasChanges) {
-      Alert.alert("无法导出", "存在未提交修改，请先提交。");
+      await overlay.alert({ title: "无法导出", message: "存在未提交修改，请先提交。" });
       return;
     }
     try {
@@ -122,29 +202,23 @@ export function ProjectScreen() {
       await copyPath(opened.repositoryPath, output);
       await shareNpk(output, `${opened.record.displayName}.npk`);
     } catch (error) {
-      Alert.alert("导出失败", error instanceof Error ? error.message : String(error));
+      await overlay.alert({ title: "导出失败", message: errorMessage(error) });
     }
   };
-  const deleteProject = () =>
-    Alert.alert(
-      "删除项目？",
-      `将删除“${opened.record.displayName}”的本地仓库和草稿。外部文件不会被删除。`,
-      [
-        { text: "取消", style: "cancel" },
-        {
-          text: "删除",
-          style: "destructive",
-          onPress: () => {
-            void manager
-              .deleteProject(projectId)
-              .then(() => navigation.popToTop())
-              .catch((error) => {
-                Alert.alert("删除失败", error instanceof Error ? error.message : String(error));
-              });
-          },
-        },
-      ],
-    );
+  const deleteProject = async () => {
+    const confirmed = await overlay.confirm({
+      title: "删除项目？",
+      message: `将删除“${opened.record.displayName}”的本地仓库和草稿。外部文件不会被删除。`,
+      confirmLabel: "删除",
+    });
+    if (!confirmed) return;
+    try {
+      await manager.deleteProject(projectId);
+      navigation.popToTop();
+    } catch (error) {
+      await overlay.alert({ title: "删除失败", message: errorMessage(error) });
+    }
+  };
 
   return (
     <SafeAreaView edges={["bottom"]} style={styles.safeArea}>
@@ -162,26 +236,9 @@ export function ProjectScreen() {
           <>
             <SettingsHeaderButton
               label="改名"
-              onPress={() =>
-                setPrompt({
-                  title: "重命名项目",
-                  confirmLabel: "保存",
-                  onConfirm: (name) => {
-                    try {
-                      const updated = manager.renameProject(projectId, name);
-                      setOpened((current) =>
-                        current === null ? current : { ...current, record: updated },
-                      );
-                      setPrompt(null);
-                    } catch (error) {
-                      Alert.alert(
-                        "重命名失败",
-                        error instanceof Error ? error.message : String(error),
-                      );
-                    }
-                  },
-                })
-              }
+              onPress={() => {
+                void renameProject();
+              }}
             />
             <SettingsHeaderButton
               label="导出"
@@ -195,54 +252,34 @@ export function ProjectScreen() {
       <View style={styles.toolbar}>
         <Pressable
           style={styles.primaryButton}
-          onPress={() =>
-            setPrompt({ title: "提交当前 worktree", confirmLabel: "提交", onConfirm: commit })
-          }
+          onPress={() => {
+            void commitWorktree();
+          }}
         >
           <Text style={styles.primaryText}>提交</Text>
         </Pressable>
         <Pressable
           style={styles.secondaryButton}
-          onPress={() =>
-            setPrompt({
-              title: "新建文件夹",
-              confirmLabel: "创建",
-              onConfirm: (name) => {
-                try {
-                  opened.worktree.createFolder(outline.rootId, name);
-                  setPrompt(null);
-                  update();
-                } catch (error) {
-                  Alert.alert("创建失败", error instanceof Error ? error.message : String(error));
-                }
-              },
-            })
-          }
+          onPress={() => {
+            void createFolder();
+          }}
         >
           <Text style={styles.secondaryText}>文件夹</Text>
         </Pressable>
         <Pressable
           style={styles.secondaryButton}
-          onPress={() =>
-            setPrompt({
-              title: "新建章节",
-              confirmLabel: "创建",
-              onConfirm: (name) => {
-                try {
-                  const id = opened.worktree.createChapter(outline.rootId, name);
-                  setPrompt(null);
-                  update();
-                  navigation.navigate("Chapter", { projectId, nodeId: id });
-                } catch (error) {
-                  Alert.alert("创建失败", error instanceof Error ? error.message : String(error));
-                }
-              },
-            })
-          }
+          onPress={() => {
+            void createChapter();
+          }}
         >
           <Text style={styles.secondaryText}>章节</Text>
         </Pressable>
-        <Pressable style={styles.dangerButton} onPress={deleteProject}>
+        <Pressable
+          style={styles.dangerButton}
+          onPress={() => {
+            void deleteProject();
+          }}
+        >
           <Text style={styles.dangerText}>删除</Text>
         </Pressable>
       </View>
@@ -269,24 +306,9 @@ export function ProjectScreen() {
                 <Text style={styles.nodeTitle}>{node.title}</Text>
               </Pressable>
               <Pressable
-                onPress={() =>
-                  setPrompt({
-                    title: "重命名",
-                    confirmLabel: "保存",
-                    onConfirm: (name) => {
-                      try {
-                        opened.worktree.renameNode(node.id, name);
-                        setPrompt(null);
-                        update();
-                      } catch (error) {
-                        Alert.alert(
-                          "重命名失败",
-                          error instanceof Error ? error.message : String(error),
-                        );
-                      }
-                    },
-                  })
-                }
+                onPress={() => {
+                  void renameNode(node);
+                }}
               >
                 <Text style={styles.actionText}>改名</Text>
               </Pressable>
@@ -297,26 +319,9 @@ export function ProjectScreen() {
                 <Text style={styles.actionText}>↓</Text>
               </Pressable>
               <Pressable
-                onPress={() =>
-                  Alert.alert("删除节点？", `将递归删除“${node.title}”及其子项。`, [
-                    { text: "取消", style: "cancel" },
-                    {
-                      text: "删除",
-                      style: "destructive",
-                      onPress: () => {
-                        try {
-                          opened.worktree.deleteNode(node.id);
-                          update();
-                        } catch (error) {
-                          Alert.alert(
-                            "删除失败",
-                            error instanceof Error ? error.message : String(error),
-                          );
-                        }
-                      },
-                    },
-                  ])
-                }
+                onPress={() => {
+                  void deleteNode(node);
+                }}
               >
                 <Text style={styles.dangerText}>删</Text>
               </Pressable>
@@ -324,13 +329,6 @@ export function ProjectScreen() {
           ))
         )}
       </ScrollView>
-      <InputPrompt
-        visible={prompt !== null}
-        title={prompt?.title ?? ""}
-        confirmLabel={prompt?.confirmLabel ?? "确认"}
-        onCancel={() => setPrompt(null)}
-        onConfirm={(value) => prompt?.onConfirm(value)}
-      />
     </SafeAreaView>
   );
 }

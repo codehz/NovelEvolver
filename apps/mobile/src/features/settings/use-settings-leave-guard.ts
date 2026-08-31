@@ -1,12 +1,31 @@
 import { useNavigation, usePreventRemove } from "@react-navigation/native";
-import { useEffect } from "react";
+import { useEffect, type ReactNode } from "react";
 import { BackHandler } from "react-native";
 
+import { useConfirm } from "../../shared/ui/OverlayHost";
 import {
   beginSettingsEditor,
   requestSettingsLeave,
+  setSettingsLeaveConfirm,
   useSettingsDirty,
 } from "./settings-leave-guard";
+
+type SettingsLeaveBinderProps = {
+  children: ReactNode;
+};
+
+export function SettingsLeaveBinder({ children }: SettingsLeaveBinderProps): ReactNode {
+  const confirm = useConfirm();
+
+  useEffect(() => {
+    setSettingsLeaveConfirm(() => confirm());
+    return () => {
+      setSettingsLeaveConfirm(null);
+    };
+  }, [confirm]);
+
+  return children;
+}
 
 type UseSettingsLeaveGuardOptions = {
   editor?: boolean;

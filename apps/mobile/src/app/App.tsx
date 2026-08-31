@@ -3,7 +3,8 @@ import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 
 import { ProjectManagerProvider } from "../features/projects/ProjectManagerProvider";
-import { ConfirmHost } from "../features/settings/ConfirmHost";
+import { SettingsLeaveBinder } from "../features/settings/use-settings-leave-guard";
+import { OverlayHost } from "../shared/ui/OverlayHost";
 import { RootNavigation } from "./navigation";
 
 export function App() {
@@ -12,9 +13,11 @@ export function App() {
       <SafeAreaProvider>
         <StatusBar barStyle="light-content" />
         <ProjectManagerProvider>
-          <ConfirmHost>
-            <RootNavigation />
-          </ConfirmHost>
+          <OverlayHost>
+            <SettingsLeaveBinder>
+              <RootNavigation />
+            </SettingsLeaveBinder>
+          </OverlayHost>
         </ProjectManagerProvider>
       </SafeAreaProvider>
     </GestureHandlerRootView>

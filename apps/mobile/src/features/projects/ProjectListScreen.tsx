@@ -1,19 +1,44 @@
 import { useNavigation } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { useState } from "react";
-import { Alert, Pressable, StyleSheet, Text, View } from "react-native";
+import { Pressable, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import type { RootStackParamList } from "../../app/navigation-types";
 import { pickNpkDocument } from "../../shared/files/mobile-file-bridge";
 import { color, fontFamily, fontSize, radius, space, wash } from "../../shared/theme";
+import { useOverlay } from "../../shared/ui/OverlayHost";
 import { ProjectConflictError } from "./git/repository-manager";
 import { useProjectManager } from "./ProjectManagerProvider";
 
+function errorMessage(error: unknown): string {
+  return error instanceof Error ? error.message : String(error);
+}
+
 export function ProjectListScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+  const overlay = useOverlay();
   const manager = useProjectManager();
   const [busy, setBusy] = useState(false);
+
+  const createProject = async () => {
+    if (busy) return;
+    const name = await overlay.prompt({
+      title: "新建项目",
+      placeholder: "项目名称",
+      confirmLabel: "创建",
+    });
+    if (name === null) return;
+    setBusy(true);
+    try {
+      const opened = await manager.createEmpty(name);
+      navigation.navigate("Project", { projectId: opened.record.id });
+    } catch (error) {
+      await overlay.alert({ title: "创建失败", message: errorMessage(error) });
+    } finally {
+      setBusy(false);
+    }
+  };
 
   const importProject = async () => {
     if (busy) return;
@@ -26,22 +51,17 @@ export function ProjectListScreen() {
         opened = await manager.importProject(picked.uri, picked.fileName);
       } catch (error) {
         if (!(error instanceof ProjectConflictError)) throw error;
-        const confirmed = await new Promise<boolean>((resolve) => {
-          Alert.alert(
-            "覆盖本地项目？",
-            `“${error.existing.displayName}”的 Git 仓库和草稿将被替换。`,
-            [
-              { text: "取消", style: "cancel", onPress: () => resolve(false) },
-              { text: "覆盖", style: "destructive", onPress: () => resolve(true) },
-            ],
-          );
+        const confirmed = await overlay.confirm({
+          title: "覆盖本地项目？",
+          message: `“${error.existing.displayName}”的 Git 仓库和草稿将被替换。`,
+          confirmLabel: "覆盖",
         });
         if (!confirmed) return;
         opened = await manager.importProject(picked.uri, picked.fileName, true);
       }
       navigation.navigate("Project", { projectId: opened.record.id });
     } catch (error) {
-      Alert.alert("导入失败", error instanceof Error ? error.message : String(error));
+      await overlay.alert({ title: "导入失败", message: errorMessage(error) });
     } finally {
       setBusy(false);
     }
@@ -61,12 +81,20 @@ export function ProjectListScreen() {
       <View style={styles.actions}>
         <Pressable
           style={styles.primaryButton}
-          onPress={() => navigation.navigate("CreateProject")}
+          onPress={() => {
+            void createProject();
+          }}
           disabled={busy}
         >
           <Text style={styles.primaryText}>新建项目</Text>
         </Pressable>
-        <Pressable style={styles.secondaryButton} onPress={importProject} disabled={busy}>
+        <Pressable
+          style={styles.secondaryButton}
+          onPress={() => {
+            void importProject();
+          }}
+          disabled={busy}
+        >
           <Text style={styles.secondaryText}>{busy ? "处理中…" : "导入 .npk"}</Text>
         </Pressable>
       </View>
