@@ -12,7 +12,10 @@ import {
 } from "@react-navigation/native-stack";
 import IconAdd from "~icons/codicon/add";
 
-import { HomeScreen } from "../features/home/HomeScreen";
+import { ChapterEditorScreen } from "../features/projects/ChapterEditorScreen";
+import { CreateProjectScreen } from "../features/projects/CreateProjectScreen";
+import { ProjectListScreen } from "../features/projects/ProjectListScreen";
+import { ProjectScreen } from "../features/projects/ProjectScreen";
 import { AgentEditor, AiAgentsList } from "../features/settings/ai-agents/AiAgentsPanel";
 import {
   AiModelsList,
@@ -202,7 +205,19 @@ const RootStack = createNativeStackNavigator({
     contentStyle: { backgroundColor: color.background },
   },
   screens: {
-    Home: HomeScreen,
+    Home: ProjectListScreen,
+    CreateProject: createNativeStackScreen({
+      screen: CreateProjectScreen,
+      options: { headerShown: false },
+    }),
+    Project: createNativeStackScreen({
+      screen: ProjectScreen,
+      options: { headerShown: false },
+    }),
+    Chapter: createNativeStackScreen({
+      screen: ChapterEditorScreen,
+      options: { headerShown: true, title: "章节", headerBackTitle: "目录" },
+    }),
     Settings: SettingsSplit,
     Confirm: createNativeStackScreen({
       screen: ConfirmScreen,

@@ -7,6 +7,9 @@ export type ConfirmParams = {
 export type RootStackParamList = {
   Home: undefined;
   Settings: undefined;
+  CreateProject: undefined;
+  Project: { projectId: string };
+  Chapter: { projectId: string; nodeId: string };
   Confirm: ConfirmParams;
 };
 
