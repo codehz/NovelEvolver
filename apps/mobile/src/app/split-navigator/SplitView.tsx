@@ -180,9 +180,13 @@ export function SplitView({
   if (layout === "wide") {
     return (
       <SplitContext.Provider value={contextValue}>
-        <View style={styles.wideRoot}>
-          <View style={[styles.wideMaster, { width: masterWidth }]}>{masterElement}</View>
-          <View style={styles.wideDetail}>{scenes}</View>
+        <View style={styles.wideRoot} collapsable={false}>
+          <View style={[styles.wideMaster, { width: masterWidth }]} collapsable={false}>
+            {masterElement}
+          </View>
+          <View style={styles.wideDetail} collapsable={false}>
+            {scenes}
+          </View>
         </View>
       </SplitContext.Provider>
     );
@@ -220,13 +224,20 @@ const styles = StyleSheet.create({
   wideRoot: {
     flex: 1,
     flexDirection: "row",
+    overflow: "hidden",
   },
   wideMaster: {
     flexShrink: 0,
+    // Native-stack transitions paint in the detail pane and overflow left;
+    // keep the rail above them so the outgoing screen slides under it.
+    zIndex: 2,
+    elevation: 8,
   },
   wideDetail: {
     flex: 1,
     minWidth: 0,
+    zIndex: 0,
+    overflow: "hidden",
   },
   compactRoot: {
     flex: 1,
@@ -242,6 +253,7 @@ const styles = StyleSheet.create({
   },
   scenes: {
     flex: 1,
+    overflow: "hidden",
   },
   scene: {
     ...StyleSheet.absoluteFill,
