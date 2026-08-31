@@ -37,6 +37,7 @@ export function SettingsMasterPane(props: SplitMasterComponentProps) {
         headerStyle={wide ? masterHeaderWideStyle : masterHeaderStyle}
         headerTitleAlign={wide ? "left" : undefined}
         headerShadowVisible={false}
+        headerLeftContainerStyle={wide ? undefined : settingsStyles.headerLeftContainer}
         headerLeft={
           wide
             ? undefined
@@ -50,21 +51,26 @@ export function SettingsMasterPane(props: SplitMasterComponentProps) {
               )
         }
       />
-      <Text style={settingsStyles.railLabel}>分类</Text>
+      <Text style={[settingsStyles.railLabel, !wide && settingsStyles.compactSectionLabel]}>
+        分类
+      </Text>
       <ScrollView>
         {SETTINGS_CATEGORIES.map((category) => {
           const selected = highlightSelection && category.id === focused;
           return (
             <Pressable
               key={category.id}
-              style={[settingsStyles.railItem, selected && settingsStyles.railItemSelected]}
+              style={[
+                wide ? settingsStyles.railItem : settingsStyles.row,
+                selected && settingsStyles.railItemSelected,
+              ]}
               onPress={() => {
                 void selectCategory(category.id);
               }}
             >
               <Text
                 style={[
-                  settingsStyles.railItemTitle,
+                  wide ? settingsStyles.railItemTitle : settingsStyles.rowTitle,
                   selected && settingsStyles.railItemTitleSelected,
                 ]}
               >

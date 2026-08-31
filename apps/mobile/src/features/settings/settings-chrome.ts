@@ -22,6 +22,10 @@ export const settingsStyles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
   },
+  /** JS Header has no native Toolbar inset; keep the 40dp back control off the screen edge. */
+  headerLeftContainer: {
+    paddingStart: space[4],
+  },
   headerAction: {
     borderRadius: radius.control,
     paddingHorizontal: space[2],
@@ -60,6 +64,9 @@ export const settingsStyles = StyleSheet.create({
   railItem: {
     paddingHorizontal: space[3],
     paddingVertical: space[3],
+  },
+  compactSectionLabel: {
+    paddingHorizontal: space[4],
   },
   railItemSelected: {
     backgroundColor: wash.accentSoft,
