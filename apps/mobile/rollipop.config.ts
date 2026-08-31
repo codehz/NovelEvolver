@@ -1,7 +1,10 @@
 import { createRequire } from "node:module";
 import path from "node:path";
 
+import { transform as svgrTransform } from "@svgr/core";
 import { defineConfig } from "rollipop";
+import Icons from "unplugin-icons/rolldown";
+import type { CustomCompiler } from "unplugin-icons/types";
 
 const require = createRequire(path.join(process.cwd(), "package.json"));
 const rollipopRequire = createRequire(require.resolve("rollipop/package.json"));
@@ -10,8 +13,38 @@ const reactNativeRoot = path.dirname(require.resolve("react-native/package.json"
 const reanimatedRoot = path.dirname(require.resolve("react-native-reanimated/package.json"));
 const workletsRoot = path.dirname(require.resolve("react-native-worklets/package.json"));
 
+function iconComponentName(collection: string, icon: string): string {
+  return `${collection}-${icon}`.replace(/(?:^|-)([a-z0-9])/g, (_, char: string) =>
+    char.toUpperCase(),
+  );
+}
+
+const reactNativeIconCompiler: CustomCompiler = {
+  extension: "jsx",
+  compiler: async (svg, collection, icon) =>
+    svgrTransform(
+      svg,
+      {
+        native: true,
+        plugins: ["@svgr/plugin-jsx"],
+        jsxRuntime: "automatic",
+        prettier: false,
+        svgo: false,
+        icon: 16,
+      },
+      { componentName: iconComponentName(collection, icon) },
+    ),
+};
+
 export default defineConfig({
   entry: "index.js",
+  plugins: [
+    Icons({
+      compiler: reactNativeIconCompiler,
+      jsx: "react",
+      scale: 1,
+    }),
+  ],
   // Bun's isolated store lives outside the app tree, so Rolldown cannot
   // discover apps/mobile/tsconfig.json from dependency files.
   tsconfig: false,

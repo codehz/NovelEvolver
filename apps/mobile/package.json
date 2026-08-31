@@ -21,6 +21,7 @@
     "react-native-reanimated": "^4.6.0",
     "react-native-safe-area-context": "^5.5.2",
     "react-native-screens": "^4.27.0",
+    "react-native-svg": "^15.15.5",
     "react-native-worklets": "^0.12.1"
   },
   "devDependencies": {
@@ -28,6 +29,7 @@
     "@babel/plugin-transform-react-jsx": "^8.0.0",
     "@babel/preset-env": "^7.25.3",
     "@babel/runtime": "^7.25.0",
+    "@iconify-json/codicon": "^1.2.71",
     "@react-native-community/cli": "20.2.0",
     "@react-native-community/cli-platform-android": "20.2.0",
     "@react-native-community/cli-platform-ios": "20.2.0",
@@ -36,9 +38,12 @@
     "@react-native/gradle-plugin": "0.87.1",
     "@react-native/js-polyfills": "0.87.1",
     "@react-native/typescript-config": "0.87.1",
+    "@svgr/core": "^8.1.0",
+    "@svgr/plugin-jsx": "^8.1.0",
     "@swc/helpers": "^0.5.23",
     "@types/react": "^19.2.0",
-    "rollipop": "1.0.0-alpha.29"
+    "rollipop": "1.0.0-alpha.29",
+    "unplugin-icons": "^23.0.1"
   },
   "engines": {
     "node": ">= 22.12.0"

@@ -10,6 +10,7 @@ import {
   type NativeStackNavigationOptions,
   type NativeStackNavigationProp,
 } from "@react-navigation/native-stack";
+import IconAdd from "~icons/codicon/add";
 
 import { HomeScreen } from "../features/home/HomeScreen";
 import { AgentEditor, AiAgentsList } from "../features/settings/ai-agents/AiAgentsPanel";
@@ -113,6 +114,7 @@ const AiAgentsStack = createNativeStackNavigator({
         headerRight: () => (
           <SettingsHeaderButton
             label="添加"
+            Icon={IconAdd}
             onPress={() => {
               navigation.navigate("AgentEditor", {});
             }}
@@ -140,6 +142,7 @@ const AiPromptsStack = createNativeStackNavigator({
         headerRight: () => (
           <SettingsHeaderButton
             label="添加"
+            Icon={IconAdd}
             onPress={() => {
               navigation.navigate("PromptEditor", {});
             }}

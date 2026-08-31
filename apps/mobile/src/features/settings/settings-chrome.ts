@@ -27,6 +27,13 @@ export const settingsStyles = StyleSheet.create({
     paddingHorizontal: space[2],
     paddingVertical: space[1],
   },
+  headerIconAction: {
+    width: 32,
+    height: 32,
+    borderRadius: radius.control,
+    justifyContent: "center",
+    alignItems: "center",
+  },
   headerActionLabel: {
     color: color.accent,
     fontSize: fontSize.sm,
