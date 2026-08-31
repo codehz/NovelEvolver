@@ -2,7 +2,8 @@ import type {
   AiProjectStructure,
   AiProjectStructureManuscriptNode,
   AiProjectStructureResourceNode,
-} from "../../../worktree/session";
+} from "@novelevolver/worktree";
+
 import { parseDocumentTarget, parseToolArgs } from "../parse";
 import type { ToolSpec } from "../types";
 

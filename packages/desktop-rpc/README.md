@@ -33,9 +33,9 @@ AppRpcRoot
 ### 依赖方向
 
 - Renderer 只依赖 `#desktop-rpc/*` 契约与 DTO。
-- 实现放在 `electron/rpc/{server,services,session,handles}/`；domain 逻辑在 `electron/worktree/`、
+- 实现放在 `electron/rpc/{server,services,session,handles}/`；domain 逻辑在 `@novelevolver/worktree`、
   `electron/ai/` 等，**不进** handle（handle 只做薄委托）。
-- `electron/worktree/` 不得 import `electron/rpc/`；共享流工具在 `electron/lib/`。
+- `@novelevolver/worktree` 不得 import `electron/rpc/`；共享流工具在 `electron/lib/`（AI/window）或包内 publisher（worktree 变更流）。
 
 ### 同步优先
 

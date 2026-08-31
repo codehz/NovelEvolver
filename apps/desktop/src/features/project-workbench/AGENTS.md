@@ -10,7 +10,7 @@ Renderer UI: `#domain/*` DTOs. RPC clients: `#desktop-rpc/*` handles. Chrome: `#
 - **Domain:** `editor/` (`state/`, `contributions/`, `panes/`, status e.g. caret), `explorer/` (`ExplorerSidebar` + `shared/` / `manuscript/` / `resource-library/`), `changes/`, `search/`, `history/`, `auxiliary/ai-chat/`, `branch/` (**UX only**: switcher, status item — not the RPC handle bus).
 - **View kernel:** `chrome/` (layout shell barrel; sidebar/statusbar primitives under `chrome/sidebar` / `chrome/statusbar`), `tree/` (list/drag only — no feed/domain imports).
 - **Composition:** `ProjectWorkbench.tsx` + `composition/` — **only** place that assembles primary views / editor / auxiliary / status contributions.
-- **Misc:** `lib/` = workbench-local micro-utils and **shared cross-domain helpers** (change-tree projector, change-list row chrome). Do **not** reintroduce top-level `sidebar/` or `statusbar/` hosts. Do **not** reintroduce a renderer `worktree/` domain — feed/snapshot live under `session/changes-feed/`; `#domain/worktree` DTOs and `electron/worktree/` are separate.
+- **Misc:** `lib/` = workbench-local micro-utils and **shared cross-domain helpers** (change-tree projector, change-list row chrome). Do **not** reintroduce top-level `sidebar/` or `statusbar/` hosts. Do **not** reintroduce a renderer `worktree/` domain — feed/snapshot live under `session/changes-feed/`; `#domain/worktree` DTOs and `@novelevolver/worktree` (Electron main) are separate.
 
 Do **not** add RPC handles or molecules under `branch/` — that belongs in `session/`. Primary views and status items live in their domain (or thin composition assembly); chrome only provides shell primitives.
 

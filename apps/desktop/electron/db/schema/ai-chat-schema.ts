@@ -3,7 +3,7 @@ import type { DatabaseSync } from "node:sqlite";
 /**
  * AI 会话历史 schema。
  *
- * 依赖 projects 表已存在（由 initProjectsSchema 先建），ai_conversation.project_id
+ * 依赖 projects 表已存在（由 `@novelevolver/worktree` initAppState 先建），ai_conversation.project_id
  * 通过 FK + ON DELETE CASCADE 引用 projects(id)，删项目时会话记录原子级联清理。
  */
 export function initAiChatSchema(db: DatabaseSync): void {

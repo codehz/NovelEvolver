@@ -1,9 +1,8 @@
 import type { ToolCallItem, ToolDefinition, ToolResultItem } from "@codehz/ai";
+import type { WorktreeSession } from "@novelevolver/worktree";
 
 import type { AiToolView } from "#domain/ai/ai-tool-view";
 import type { AiChatInteractionAnswer, AiChatOpenInteraction } from "#domain/ai/chat";
-
-import type { WorktreeSession } from "../../worktree/session";
 
 export type ResolveWorktree = () => WorktreeSession;
 

@@ -91,20 +91,19 @@ export function ProjectScreen() {
     );
   }
 
-  const outline = opened.worktree.outline;
+  const outline = opened.worktree.getManuscriptOutline();
   const nodes = flattenNodes(outline);
   const update = () => {
-    opened.worktree.flush();
     setRevision((value) => value + 1);
   };
   const move = (node: ManuscriptNode, parentId: string, index: number, direction: -1 | 1) => {
-    opened.worktree.moveNode(node.id, parentId, index + direction);
+    opened.worktree.moveManuscriptNode(node.id, parentId, index + direction);
     update();
   };
   const renameProject = async () => {
     const name = await overlay.prompt({
       title: "重命名项目",
-      initialValue: opened.record.displayName,
+      initialValue: opened.record.displayName ?? "",
       confirmLabel: "保存",
     });
     if (name === null) return;
@@ -123,7 +122,10 @@ export function ProjectScreen() {
     });
     if (message === null) return;
     try {
-      opened.worktree.commit(message);
+      opened.worktree.commitChanges(message, {
+        name: "NovelEvolver",
+        email: "app@novel-evolver.local",
+      });
       update();
       await overlay.alert({ title: "提交完成", message: "当前 worktree 已写入 Git。" });
     } catch (error) {
@@ -138,7 +140,7 @@ export function ProjectScreen() {
     });
     if (name === null) return;
     try {
-      opened.worktree.createFolder(outline.rootId, name);
+      opened.worktree.createManuscriptFolder(outline.rootId, name);
       update();
     } catch (error) {
       await overlay.alert({ title: "创建失败", message: errorMessage(error) });
@@ -152,9 +154,9 @@ export function ProjectScreen() {
     });
     if (name === null) return;
     try {
-      const id = opened.worktree.createChapter(outline.rootId, name);
+      const { nodeId } = opened.worktree.createManuscriptChapter(outline.rootId, name);
       update();
-      navigation.navigate("Chapter", { projectId, nodeId: id });
+      navigation.navigate("Chapter", { projectId, nodeId });
     } catch (error) {
       await overlay.alert({ title: "创建失败", message: errorMessage(error) });
     }
@@ -167,7 +169,7 @@ export function ProjectScreen() {
     });
     if (name === null) return;
     try {
-      opened.worktree.renameNode(node.id, name);
+      opened.worktree.renameManuscriptNode(node.id, name);
       update();
     } catch (error) {
       await overlay.alert({ title: "重命名失败", message: errorMessage(error) });
@@ -181,18 +183,18 @@ export function ProjectScreen() {
     });
     if (!confirmed) return;
     try {
-      opened.worktree.deleteNode(node.id);
+      opened.worktree.deleteManuscriptNode(node.id);
       update();
     } catch (error) {
       await overlay.alert({ title: "删除失败", message: errorMessage(error) });
     }
   };
   const exportProject = async () => {
-    if (!opened.worktree.hasCommit) {
+    if (!opened.worktree.hasCommittedTip()) {
       await overlay.alert({ title: "无法导出", message: "项目尚无提交，请先提交内容。" });
       return;
     }
-    if (opened.worktree.hasChanges) {
+    if (opened.worktree.hasPendingChanges()) {
       await overlay.alert({ title: "无法导出", message: "存在未提交修改，请先提交。" });
       return;
     }
@@ -200,7 +202,7 @@ export function ProjectScreen() {
       await ensureDirectory(appFiles.cache);
       const output = `${appFiles.cache}/${opened.record.id}.npk`;
       await copyPath(opened.repositoryPath, output);
-      await shareNpk(output, `${opened.record.displayName}.npk`);
+      await shareNpk(output, `${opened.record.displayName ?? "project"}.npk`);
     } catch (error) {
       await overlay.alert({ title: "导出失败", message: errorMessage(error) });
     }
@@ -208,7 +210,7 @@ export function ProjectScreen() {
   const deleteProject = async () => {
     const confirmed = await overlay.confirm({
       title: "删除项目？",
-      message: `将删除“${opened.record.displayName}”的本地仓库和草稿。外部文件不会被删除。`,
+      message: `将删除“${opened.record.displayName ?? "未命名项目"}”的本地仓库和草稿。外部文件不会被删除。`,
       confirmLabel: "删除",
     });
     if (!confirmed) return;
@@ -223,7 +225,7 @@ export function ProjectScreen() {
   return (
     <SafeAreaView edges={["bottom"]} style={styles.safeArea}>
       <Header
-        title={opened.record.displayName}
+        title={opened.record.displayName ?? "未命名项目"}
         headerTintColor={color.accent}
         headerTitleStyle={styles.headerTitle}
         headerStyle={styles.header}

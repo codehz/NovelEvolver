@@ -2,7 +2,8 @@ import type {
   AiProjectStructureManuscriptNode,
   AiProjectStructureResourceNode,
   WorktreeSession,
-} from "../../../worktree/session";
+} from "@novelevolver/worktree";
+
 import { computeTextStats, type TextStats } from "../../tools/text-stats";
 import { MAX_FOCUS_CONTENT_CHARS, MAX_FOCUS_TARGETS } from "./policy";
 

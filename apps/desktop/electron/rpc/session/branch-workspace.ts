@@ -1,3 +1,4 @@
+import type { WorktreeSession } from "@novelevolver/worktree";
 import { RpcTarget } from "capnweb";
 
 import type { BranchWorkspace } from "#desktop-rpc/session";
@@ -8,7 +9,6 @@ import type { WorktreeChangesHandle } from "#desktop-rpc/worktree";
 import type { WorktreeSearchHandle } from "#desktop-rpc/worktree";
 import type { WorktreeTransferInput, WorktreeTransferResult } from "#domain/worktree";
 
-import type { WorktreeSession } from "../../worktree/session";
 import { HistoryHandleImpl } from "../handles/history-handle";
 import { ManuscriptHandleImpl } from "../handles/manuscript-handle";
 import { ResourceLibraryHandleImpl } from "../handles/resource-library-handle";

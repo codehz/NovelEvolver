@@ -1,40 +1,42 @@
 import { Database } from "@novelevolver/mobile-sqlite";
+import { WorktreeSession, type ProjectDbRecord } from "@novelevolver/worktree";
 import type { Repository } from "nano-git/repository/core";
 
 import {
   appFiles,
-  copyPath,
   copyPickedDocument,
   ensureDirectory,
   removePath,
 } from "../../../shared/files/mobile-file-bridge";
-import {
-  createProjectRecord,
-  findProjectBySourceUri,
-  readProjectCatalog,
-  removeProjectRecord,
-  type MobileProjectRecord,
-  upsertProjectRecord,
-} from "../catalog/project-catalog";
-import { WorktreeSession } from "../worktree/worktree-session";
+import { getMobileAppState } from "./app-state";
 import { openMobileRepository } from "./nano-git-sqlite";
 
 export type OpenedProject = {
-  record: MobileProjectRecord;
+  record: ProjectDbRecord;
   repository: Repository;
   repositoryDb: Database;
-  worktreeDb: Database;
   worktree: WorktreeSession;
   repositoryPath: string;
   close(): void;
 };
 
-function projectDirectory(id: string): string {
+const REPO_FILE = "repository.npk";
+const SQLITE_ROOT = "novelevolver";
+
+function sqliteLocation(id: number): string {
+  return `${SQLITE_ROOT}/${id}`;
+}
+
+function sqliteRelativePath(id: number): string {
+  return `${sqliteLocation(id)}/${REPO_FILE}`;
+}
+
+function sqliteAbsoluteDir(id: number): string {
   return `${appFiles.root}/${id}`;
 }
 
-function repositoryPath(record: MobileProjectRecord): string {
-  return `${projectDirectory(record.id)}/${record.repositoryFileName}`;
+function sqliteAbsoluteFile(id: number): string {
+  return `${sqliteAbsoluteDir(id)}/${REPO_FILE}`;
 }
 
 function normalizeDisplayName(value: string): string {
@@ -47,12 +49,11 @@ function displayNameFromFile(fileName: string): string {
   return normalizeDisplayName(fileName.replace(/\.npk$/i, "") || "未命名项目");
 }
 
-async function closeDatabases(
-  repositoryDb: Database | null,
-  worktreeDb: Database | null,
-): Promise<void> {
-  worktreeDb?.close();
-  repositoryDb?.close();
+function toOpenedRecord(record: ProjectDbRecord): ProjectDbRecord {
+  return {
+    ...record,
+    displayName: record.displayName ?? displayNameFromFile(record.path),
+  };
 }
 
 async function removeIfPresent(path: string): Promise<void> {
@@ -63,12 +64,26 @@ async function removeIfPresent(path: string): Promise<void> {
   }
 }
 
+function openWorktree(repo: Repository, projectId: number, branchName: string): WorktreeSession {
+  return new WorktreeSession(
+    getMobileAppState().worktrees,
+    repo.objects,
+    repo,
+    projectId,
+    branchName,
+  );
+}
+
+function openProjectRepository(id: number, readonly = false) {
+  return openMobileRepository(REPO_FILE, sqliteLocation(id), readonly);
+}
+
 export class ProjectRepositoryManager {
   #opened: OpenedProject | null = null;
-  #opening: { projectId: string; promise: Promise<OpenedProject> } | null = null;
+  #opening: { projectId: number; promise: Promise<OpenedProject> } | null = null;
 
-  get records(): MobileProjectRecord[] {
-    return readProjectCatalog();
+  get records(): ProjectDbRecord[] {
+    return getMobileAppState().projects.list().map(toOpenedRecord);
   }
 
   get opened(): OpenedProject | null {
@@ -76,27 +91,37 @@ export class ProjectRepositoryManager {
   }
 
   async createEmpty(displayName: string): Promise<OpenedProject> {
-    const record = createProjectRecord(normalizeDisplayName(displayName), null);
+    const name = normalizeDisplayName(displayName);
+    const { projects } = getMobileAppState();
+    const pendingKey = `pending:${Date.now()}`;
+    let record: ProjectDbRecord | null = null;
     let repositoryDb: Database | null = null;
-    let worktreeDb: Database | null = null;
     try {
-      await ensureDirectory(projectDirectory(record.id));
-      const opened = openMobileRepository(record.repositoryFileName, projectDirectory(record.id));
+      record = projects.upsertByPath(pendingKey, Date.now());
+      projects.setDisplayName(record.id, name);
+      await ensureDirectory(sqliteAbsoluteDir(record.id));
+      const opened = openProjectRepository(record.id);
       repositoryDb = opened.db;
-      if (opened.repo.getCurrentBranch() !== "main") {
-        opened.close();
-        repositoryDb = null;
+      const branchName = opened.repo.getCurrentBranch();
+      if (branchName !== "main") {
         throw new Error("无法初始化 main 分支");
       }
-      worktreeDb = Database.open(record.worktreeFileName, {
-        location: projectDirectory(record.id),
-      });
-      const worktree = WorktreeSession.open(worktreeDb, opened.repo);
-      upsertProjectRecord(record);
-      return this.#setOpened(record, opened.repo, repositoryDb, worktreeDb, worktree);
+      projects.setPath(record.id, sqliteRelativePath(record.id));
+      const stored = projects.getById(record.id);
+      if (stored === null) throw new Error("创建项目后无法读取记录");
+      const worktree = openWorktree(opened.repo, stored.id, branchName);
+      return this.#setOpened(
+        toOpenedRecord({ ...stored, displayName: name }),
+        opened.repo,
+        repositoryDb,
+        worktree,
+      );
     } catch (error) {
-      await closeDatabases(repositoryDb, worktreeDb);
-      await removeIfPresent(projectDirectory(record.id));
+      repositoryDb?.close();
+      if (record !== null) {
+        await removeIfPresent(sqliteAbsoluteDir(record.id));
+        projects.removeById(record.id);
+      }
       throw error;
     }
   }
@@ -106,48 +131,52 @@ export class ProjectRepositoryManager {
     fileName: string,
     confirmed = false,
   ): Promise<OpenedProject> {
-    const candidate = createProjectRecord(displayNameFromFile(fileName), sourceUri);
-    const directory = projectDirectory(candidate.id);
-    const staging = `${appFiles.cache}/${candidate.id}.npk`;
+    const { projects } = getMobileAppState();
+    const displayName = displayNameFromFile(fileName);
+    const pendingKey = `import:${Date.now()}`;
+    let record: ProjectDbRecord | null = null;
     let repositoryDb: Database | null = null;
-    let worktreeDb: Database | null = null;
     try {
-      await ensureDirectory(directory);
-      await copyPickedDocument({ uri: sourceUri, fileName }, staging);
-      const validation = openMobileRepository(`${candidate.id}.npk`, appFiles.cache);
-      try {
-        const branch = validation.repo.getCurrentBranch();
-        if (branch === null || branch === "") {
-          throw new Error("项目没有可编辑的当前分支");
-        }
-      } finally {
-        validation.close();
-      }
-
-      const existing = findProjectBySourceUri(sourceUri);
+      const existing = projects.getByRemoteUrl(sourceUri);
       if (existing !== null && !confirmed) {
-        throw new ProjectConflictError(existing);
+        throw new ProjectConflictError(toOpenedRecord(existing));
       }
       if (existing !== null) {
         await this.delete(existing.id, false);
       }
-      await copyPath(staging, repositoryPath(candidate));
-      await removeIfPresent(staging);
-      const opened = openMobileRepository(candidate.repositoryFileName, directory);
+
+      record = projects.upsertByPath(pendingKey, Date.now());
+      projects.setDisplayName(record.id, displayName);
+      projects.setRemoteUrl(record.id, sourceUri);
+      await ensureDirectory(sqliteAbsoluteDir(record.id));
+      await copyPickedDocument({ uri: sourceUri, fileName }, sqliteAbsoluteFile(record.id));
+      const opened = openProjectRepository(record.id);
       repositoryDb = opened.db;
-      worktreeDb = Database.open(candidate.worktreeFileName, { location: directory });
-      const worktree = WorktreeSession.open(worktreeDb, opened.repo);
-      upsertProjectRecord(candidate);
-      return this.#setOpened(candidate, opened.repo, repositoryDb, worktreeDb, worktree);
+      const branchName = opened.repo.getCurrentBranch();
+      if (branchName === null || branchName === "") {
+        throw new Error("项目没有可编辑的当前分支");
+      }
+      projects.setPath(record.id, sqliteRelativePath(record.id));
+      const stored = projects.getById(record.id);
+      if (stored === null) throw new Error("导入项目后无法读取记录");
+      const worktree = openWorktree(opened.repo, stored.id, branchName);
+      return this.#setOpened(
+        toOpenedRecord({ ...stored, displayName }),
+        opened.repo,
+        repositoryDb,
+        worktree,
+      );
     } catch (error) {
-      await closeDatabases(repositoryDb, worktreeDb);
-      await removeIfPresent(staging);
-      await removeIfPresent(directory);
+      repositoryDb?.close();
+      if (record !== null) {
+        await removeIfPresent(sqliteAbsoluteDir(record.id));
+        projects.removeById(record.id);
+      }
       throw error;
     }
   }
 
-  open(record: MobileProjectRecord): Promise<OpenedProject> {
+  open(record: ProjectDbRecord): Promise<OpenedProject> {
     const opening = this.#opening;
     if (opening !== null) {
       if (opening.projectId === record.id) return opening.promise;
@@ -164,21 +193,22 @@ export class ProjectRepositoryManager {
     return promise;
   }
 
-  async #openRecord(record: MobileProjectRecord): Promise<OpenedProject> {
-    const directory = projectDirectory(record.id);
-    await ensureDirectory(directory);
+  async #openRecord(record: ProjectDbRecord): Promise<OpenedProject> {
+    await ensureDirectory(sqliteAbsoluteDir(record.id));
     let repositoryDb: Database | null = null;
-    let worktreeDb: Database | null = null;
     try {
-      const opened = openMobileRepository(record.repositoryFileName, directory);
+      const opened = openProjectRepository(record.id);
       repositoryDb = opened.db;
-      worktreeDb = Database.open(record.worktreeFileName, { location: directory });
-      const worktree = WorktreeSession.open(worktreeDb, opened.repo);
-      const updated = { ...record, lastOpenedAt: Date.now() };
-      upsertProjectRecord(updated);
-      return this.#setOpened(updated, opened.repo, repositoryDb, worktreeDb, worktree);
+      const branchName = opened.repo.getCurrentBranch();
+      if (branchName === null || branchName === "") {
+        throw new Error("项目没有可编辑的当前分支");
+      }
+      const worktree = openWorktree(opened.repo, record.id, branchName);
+      const stored = getMobileAppState().projects.touchById(record.id, Date.now());
+      if (stored === null) throw new Error("项目不存在");
+      return this.#setOpened(toOpenedRecord(stored), opened.repo, repositoryDb, worktree);
     } catch (error) {
-      await closeDatabases(repositoryDb, worktreeDb);
+      repositoryDb?.close();
       throw error;
     }
   }
@@ -187,18 +217,20 @@ export class ProjectRepositoryManager {
     if (this.#opening?.promise === promise) this.#opening = null;
   }
 
-  async delete(id: string, updateCatalog = true): Promise<void> {
+  async delete(id: number, updateCatalog = true): Promise<void> {
     if (this.#opened?.record.id === id) this.close();
-    const record = readProjectCatalog().find((item) => item.id === id);
-    if (record !== undefined) await removePath(projectDirectory(record.id));
-    if (updateCatalog) removeProjectRecord(id);
+    const { projects } = getMobileAppState();
+    await removeIfPresent(sqliteAbsoluteDir(id));
+    if (updateCatalog) projects.removeById(id);
   }
 
-  rename(id: string, displayName: string): MobileProjectRecord {
-    const record = readProjectCatalog().find((item) => item.id === id);
-    if (record === undefined) throw new Error("项目不存在");
-    const updated = { ...record, displayName: normalizeDisplayName(displayName) };
-    upsertProjectRecord(updated);
+  rename(id: number, displayName: string): ProjectDbRecord {
+    const { projects } = getMobileAppState();
+    const name = normalizeDisplayName(displayName);
+    projects.setDisplayName(id, name);
+    const record = projects.getById(id);
+    if (record === null) throw new Error("项目不存在");
+    const updated = toOpenedRecord(record);
     if (this.#opened?.record.id === id) this.#opened = { ...this.#opened, record: updated };
     return updated;
   }
@@ -209,10 +241,9 @@ export class ProjectRepositoryManager {
   }
 
   #setOpened(
-    record: MobileProjectRecord,
+    record: ProjectDbRecord,
     repository: Repository,
     repositoryDb: Database,
-    worktreeDb: Database,
     worktree: WorktreeSession,
   ): OpenedProject {
     this.close();
@@ -220,11 +251,10 @@ export class ProjectRepositoryManager {
       record,
       repository,
       repositoryDb,
-      worktreeDb,
       worktree,
-      repositoryPath: repositoryPath(record),
+      repositoryPath: sqliteAbsoluteFile(record.id),
       close: () => {
-        worktree.close();
+        worktree[Symbol.dispose]();
         repositoryDb.close();
       },
     };
@@ -236,8 +266,8 @@ export class ProjectRepositoryManager {
 export class ProjectConflictError extends Error {
   readonly name = "ProjectConflictError";
 
-  constructor(readonly existing: MobileProjectRecord) {
-    super(`项目已存在：${existing.displayName}`);
+  constructor(readonly existing: ProjectDbRecord) {
+    super(`项目已存在：${existing.displayName ?? existing.path}`);
   }
 }
 

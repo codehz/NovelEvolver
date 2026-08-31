@@ -1,4 +1,5 @@
-import type { WorktreeSession } from "../../../worktree/session";
+import type { WorktreeSession } from "@novelevolver/worktree";
+
 import { parseDocumentDomain, parseNonEmptyString } from "../../tools/parse";
 import {
   computeTextStats,

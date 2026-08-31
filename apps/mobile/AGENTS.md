@@ -8,8 +8,9 @@ Bare React Native (Community CLI + [Rollipop](https://rollipop.dev)). **Do not a
 - Rollipop uses standard Node resolution — workspace packages resolve without Metro `watchFolders` / asset URL rewrites
 - Iconify: on-demand `unplugin-icons` (`import IconAdd from "~icons/codicon/add"`), compiled to `react-native-svg` in `rollipop.config.ts`
 - Theme: Catppuccin Mocha JS tokens in `src/shared/theme/` (no NativeWind / Tailwind). Semantic roles match desktop `@theme`. Flavor is pinned — do not follow system light mode
-- Backend: mobile-specific (MMKV, HTTP, WebSocket — TBD). **Not** capnweb / `desktop-rpc`
+- Backend: mobile-specific (MMKV for settings, SQLite app-state + nano-git for projects). **Not** capnweb / `desktop-rpc`
 - Settings: local MMKV (`novelevolver-settings`); domain store logic from `@novelevolver/domain`
+- Projects / worktree drafts: `@novelevolver/worktree` on a mobile `app-state.db` (not MMKV)
 - Overlays: root-stack `transparentModal` via `OverlayHost` (`useOverlay`); not `Alert.alert` / `Modal`
 
 Human-oriented notes: [README.md](README.md).

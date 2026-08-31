@@ -1,4 +1,4 @@
-import type { WorktreeSession } from "../../worktree/session";
+import type { WorktreeSession } from "@novelevolver/worktree";
 
 export function findCreatedNodePath(
   worktree: WorktreeSession,

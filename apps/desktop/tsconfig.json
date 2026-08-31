@@ -8,6 +8,9 @@
       "#domain/ai": ["../../packages/domain/ai/index.ts"],
       "#domain/worktree": ["../../packages/domain/worktree/index.ts"],
       "#domain/*": ["../../packages/domain/*"],
+      "@novelevolver/domain/worktree": ["../../packages/domain/worktree/index.ts"],
+      "@novelevolver/domain/*": ["../../packages/domain/*"],
+      "@novelevolver/worktree": ["../../packages/worktree/src/index.ts"],
       "#desktop-rpc/*": ["../../packages/desktop-rpc/*"],
       "#workbench/*": ["./src/features/project-workbench/*"]
     }

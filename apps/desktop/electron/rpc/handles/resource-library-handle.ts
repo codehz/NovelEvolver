@@ -1,3 +1,4 @@
+import type { WorktreeSession } from "@novelevolver/worktree";
 import { RpcTarget } from "capnweb";
 
 import type { ResourceLibraryHandle } from "#desktop-rpc/worktree/resource-library-handle";
@@ -6,8 +7,6 @@ import type {
   ResourceImportResult,
   WorktreeNodeIdResult,
 } from "#domain/worktree/resource-library";
-
-import type { WorktreeSession } from "../../worktree/session";
 
 export class ResourceLibraryHandleImpl extends RpcTarget implements ResourceLibraryHandle {
   readonly #session: WorktreeSession;

@@ -1,3 +1,4 @@
+import type { WorktreeSession } from "@novelevolver/worktree";
 import { RpcTarget } from "capnweb";
 
 import type { HistoryHandle } from "#desktop-rpc/worktree/history-handle";
@@ -10,8 +11,6 @@ import type {
   HistoryEntryContent,
   HistoryTarget,
 } from "#domain/worktree/history";
-
-import type { WorktreeSession } from "../../worktree/session";
 
 export class HistoryHandleImpl extends RpcTarget implements HistoryHandle {
   readonly #session: WorktreeSession;

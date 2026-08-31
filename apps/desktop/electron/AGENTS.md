@@ -6,15 +6,14 @@
 
 - `lib/` — shared main-process utilities (e.g. `stream-publisher.ts`)
 - `projects/` — project-library presentation helpers
-- `db/` — SQLite (`app-state.db`)
+- `db/` — SQLite (`app-state.db`); worktree/projects tables via `@novelevolver/worktree`
 - `rpc/` — capnweb server (`server/`), services, session objects, handles
-- `worktree/` — branch workspace domain (`session/`, `snapshots/`, `trees/`, `journal/`, …)
 
-No `#electron` alias — imports stay relative. `worktree/` must **not** import `rpc/`; shared streaming helpers live in `lib/`.
+No `#electron` alias — imports stay relative. Shared streaming helpers live in `lib/`.
 
 ## RPC
 
-Handles are thin delegates. Domain logic stays in `worktree/session/` (and similar), not in handles.
+Handles are thin delegates. Domain logic stays in `@novelevolver/worktree`, not in handles.
 
 - **Entry:** `rpc/server/connect.ts` (`ElectronRpcServer`) owns per-`webContents` sessions. `preload.ts` exposes `window.appRpcBridge`.
 - **Deps:** pass main-process dependencies through `RpcMainDeps` (`rpc/server/deps.ts`). Never import `main.ts` from RPC code.

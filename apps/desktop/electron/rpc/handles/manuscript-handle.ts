@@ -1,3 +1,4 @@
+import type { WorktreeSession } from "@novelevolver/worktree";
 import { RpcTarget } from "capnweb";
 
 import type { ManuscriptHandle } from "#desktop-rpc/worktree/manuscript-handle";
@@ -6,8 +7,6 @@ import type {
   ManuscriptImportResult,
   WorktreeNodeIdResult,
 } from "#domain/worktree/manuscript";
-
-import type { WorktreeSession } from "../../worktree/session";
 
 export class ManuscriptHandleImpl extends RpcTarget implements ManuscriptHandle {
   readonly #session: WorktreeSession;

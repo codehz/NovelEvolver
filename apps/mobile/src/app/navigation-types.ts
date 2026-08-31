@@ -7,8 +7,8 @@ import type {
 export type RootStackParamList = {
   Home: undefined;
   Settings: undefined;
-  Project: { projectId: string };
-  Chapter: { projectId: string; nodeId: string };
+  Project: { projectId: number };
+  Chapter: { projectId: number; nodeId: string };
   Alert: OverlayAlertParams;
   Confirm: OverlayConfirmParams;
   Prompt: OverlayPromptParams;

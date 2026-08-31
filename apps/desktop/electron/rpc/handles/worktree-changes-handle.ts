@@ -1,3 +1,4 @@
+import type { WorktreeSession } from "@novelevolver/worktree";
 import { RpcTarget } from "capnweb";
 
 import type { WorktreeChangesHandle } from "#desktop-rpc/worktree/worktree-changes-handle";
@@ -7,8 +8,6 @@ import type {
   ChangesEvent,
   ChangesSnapshot,
 } from "#domain/worktree/changes";
-
-import type { WorktreeSession } from "../../worktree/session";
 
 export class WorktreeChangesHandleImpl extends RpcTarget implements WorktreeChangesHandle {
   readonly #session: WorktreeSession;

@@ -1,0 +1,18 @@
+{
+  "name": "@novelevolver/worktree",
+  "version": "0.3.4",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./*": "./src/*"
+  },
+  "dependencies": {
+    "@novelevolver/domain": "workspace:*",
+    "nano-git": "^0.13.0",
+    "nanoid": "^6.0.0"
+  },
+  "peerDependencies": {
+    "nano-git": "^0.13.0"
+  }
+}

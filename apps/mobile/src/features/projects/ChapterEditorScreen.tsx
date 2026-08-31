@@ -2,7 +2,7 @@ import { Header } from "@react-navigation/elements";
 import { useNavigation, useRoute } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { useEffect, useState } from "react";
-import { AppState, StyleSheet, Text, TextInput, View } from "react-native";
+import { StyleSheet, Text, TextInput, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import type { RootStackParamList } from "../../app/navigation-types";
@@ -17,26 +17,8 @@ export function ChapterEditorScreen() {
   const { projectId, nodeId } = route.params as RootStackParamList["Chapter"];
   const manager = useProjectManager();
   const opened = manager.opened?.record.id === projectId ? manager.opened : null;
-  const node = opened?.worktree.outline.nodes[nodeId];
+  const node = opened?.worktree.getManuscriptOutline().nodes[nodeId];
   const [content, setContent] = useState(() => opened?.worktree.readChapter(nodeId) ?? "");
-
-  useEffect(() => {
-    if (opened === null || node?.type !== "chapter") return;
-    const timer = setTimeout(() => opened.worktree.flush(), 500);
-    return () => clearTimeout(timer);
-  }, [content, node?.type, opened]);
-
-  useEffect(() => {
-    if (opened === null) return;
-    const onStateChange = (state: string) => {
-      if (state === "background" || state === "inactive") opened.worktree.flush();
-    };
-    const subscription = AppState.addEventListener("change", onStateChange);
-    return () => {
-      opened.worktree.flush();
-      subscription.remove();
-    };
-  }, [opened]);
 
   useEffect(() => {
     if (opened !== null) setContent(opened.worktree.readChapter(nodeId));
@@ -72,7 +54,7 @@ export function ChapterEditorScreen() {
         )}
         headerRight={() => (
           <Text style={styles.status}>
-            {opened.worktree.hasChanges ? "有未提交修改" : "已提交"}
+            {opened.worktree.hasPendingChanges() ? "有未提交修改" : "已提交"}
           </Text>
         )}
       />
@@ -85,9 +67,6 @@ export function ChapterEditorScreen() {
         textAlignVertical="top"
         style={styles.editor}
         selectionColor={color.accent}
-        onBlur={() => {
-          opened.worktree.flush();
-        }}
       />
     </SafeAreaView>
   );

@@ -1,12 +1,12 @@
 import { existsSync } from "node:fs";
 
+import { ProjectsRepository } from "@novelevolver/worktree";
 import { RpcTarget } from "capnweb";
 import { dialog, type BrowserWindow } from "electron";
 
 import type { ProjectLibraryService } from "#desktop-rpc/services/project-library-service";
 import type { ProjectMetadata } from "#domain/project";
 
-import { ProjectsRepository } from "../../db/repositories/projects-repo";
 import { openSqliteGitRepository } from "../../lib/nano-git-sqlite";
 import { toProjectMetadata } from "../../projects/home-path";
 import type { RpcMainDeps } from "../server/deps";
@@ -18,8 +18,7 @@ export class ProjectLibraryServiceImpl extends RpcTarget implements ProjectLibra
   constructor(window: BrowserWindow, deps: RpcMainDeps) {
     super();
     this.#window = window;
-    const db = deps.getAppDb().db;
-    this.#projects = new ProjectsRepository(db);
+    this.#projects = new ProjectsRepository(deps.getAppDb().port);
   }
 
   get recentProjects(): ProjectMetadata[] {

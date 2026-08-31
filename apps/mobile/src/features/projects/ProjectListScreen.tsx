@@ -111,7 +111,7 @@ export function ProjectListScreen() {
               style={styles.row}
               onPress={() => navigation.navigate("Project", { projectId: record.id })}
             >
-              <Text style={styles.rowTitle}>{record.displayName}</Text>
+              <Text style={styles.rowTitle}>{record.displayName ?? "未命名项目"}</Text>
               <Text style={styles.rowMeta}>{new Date(record.lastOpenedAt).toLocaleString()}</Text>
             </Pressable>
           ))

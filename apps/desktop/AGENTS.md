@@ -8,9 +8,10 @@ Before editing UI, main process, or workbench, also read:
 
 - [src/AGENTS.md](src/AGENTS.md) — renderer
 - [src/features/project-workbench/AGENTS.md](src/features/project-workbench/AGENTS.md) — workbench
-- [electron/AGENTS.md](electron/AGENTS.md) — RPC / worktree
+- [electron/AGENTS.md](electron/AGENTS.md) — RPC
 - [../../packages/desktop-rpc/AGENTS.md](../../packages/desktop-rpc/AGENTS.md) — IPC contracts
 - [../../packages/domain/AGENTS.md](../../packages/domain/AGENTS.md) — DTOs
+- [../../packages/worktree/AGENTS.md](../../packages/worktree/AGENTS.md) — shared worktree session
 
 ## Path aliases
 

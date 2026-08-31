@@ -1,3 +1,9 @@
+import {
+  ProjectsRepository,
+  WorktreeRepository,
+  WorktreeSession,
+  type ProjectDbRecord,
+} from "@novelevolver/worktree";
 import { RpcTarget } from "capnweb";
 import type { SHA1 } from "nano-git";
 import type { Repository } from "nano-git/repository/core";
@@ -12,15 +18,12 @@ import { normalizeGitCredentialHost } from "#domain/settings/ai-settings";
 
 import { ProjectAiChatController } from "../../ai/chat/project-ai-chat";
 import type { AiChatRepository } from "../../db/repositories/ai-chat-repo";
-import type { ProjectDbRecord, ProjectsRepository } from "../../db/repositories/projects-repo";
-import type { WorktreeRepository } from "../../db/repositories/worktree-repo";
 import { openSqliteGitRepository } from "../../lib/nano-git-sqlite";
 import { toProjectMetadata } from "../../projects/home-path";
 import type { AiAgentsStore } from "../../settings/ai-agents-store";
 import type { AiModelsStore } from "../../settings/ai-models-store";
 import type { AiRuntimePolicyStore } from "../../settings/ai-runtime-policy-store";
 import type { GitCredentialsStore } from "../../settings/git-credentials-store";
-import { WorktreeSession } from "../../worktree/session";
 import { MockAiControlHandleImpl } from "../handles/mock-ai-control-handle";
 import { ProjectAiHandleImpl } from "../handles/project-ai-handle";
 import { BranchWorkspaceImpl } from "./branch-workspace";

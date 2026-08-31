@@ -1,6 +1,7 @@
 import { describe, expect, test } from "bun:test";
 
-import type { WorktreeSession } from "../../../worktree/session";
+import type { WorktreeSession } from "@novelevolver/worktree";
+
 import {
   captureSubagentOutputTarget,
   parseOptionalOutputTarget,

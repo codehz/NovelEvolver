@@ -1,3 +1,4 @@
+import type { WorktreeSession } from "@novelevolver/worktree";
 import { RpcTarget } from "capnweb";
 
 import type { WorktreeSearchHandle } from "#desktop-rpc/worktree/worktree-search-handle";
@@ -7,8 +8,6 @@ import type {
   WorktreeSearchQuery,
   WorktreeSearchResult,
 } from "#domain/worktree/search";
-
-import type { WorktreeSession } from "../../worktree/session";
 
 export class WorktreeSearchHandleImpl extends RpcTarget implements WorktreeSearchHandle {
   readonly #session: WorktreeSession;

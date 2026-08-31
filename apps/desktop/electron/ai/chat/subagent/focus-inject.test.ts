@@ -4,7 +4,8 @@ import type {
   AiProjectStructureDomain,
   AiProjectStructureTarget,
   WorktreeSession,
-} from "../../../worktree/session";
+} from "@novelevolver/worktree";
+
 import {
   formatFocusSnapshotsForPrompt,
   resolveFocusSnapshots,

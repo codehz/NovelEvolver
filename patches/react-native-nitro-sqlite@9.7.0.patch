@@ -1,0 +1,21 @@
+diff --git a/cpp/operations.cpp b/cpp/operations.cpp
+index ae61dc650bfb3e8e436d5f6c052aa822e68a5547..aed0b056433ae081bd2014c7e287f3e00dd8a596 100644
+--- a/cpp/operations.cpp
++++ b/cpp/operations.cpp
+@@ -138,7 +138,15 @@ void bindStatement(sqlite3_stmt* statement, const SQLiteQueryParams& values) {
+       sqlite3_bind_text(statement, sqliteIndex, stringValue.c_str(), stringValue.length(), SQLITE_TRANSIENT);
+     } else if (std::holds_alternative<std::shared_ptr<ArrayBuffer>>(value)) {
+       const auto arrayBufferValue = std::get<std::shared_ptr<ArrayBuffer>>(value);
+-      sqlite3_bind_blob(statement, sqliteIndex, arrayBufferValue->data(), arrayBufferValue->size(), SQLITE_STATIC);
++      const void* blob = arrayBufferValue->data();
++      const int size = static_cast<int>(arrayBufferValue->size());
++      // sqlite3_bind_blob(NULL, ...) is always SQL NULL, even when n == 0.
++      // Empty ArrayBuffers typically have a null data pointer.
++      static const char kEmptyBlob = 0;
++      if (size == 0) {
++        blob = &kEmptyBlob;
++      }
++      sqlite3_bind_blob(statement, sqliteIndex, blob, size, SQLITE_TRANSIENT);
+     }
+   }
+ }

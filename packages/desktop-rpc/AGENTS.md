@@ -4,7 +4,7 @@ capnweb IPC **contracts** (desktop only). Domain DTOs: `@novelevolver/domain`. I
 
 Use the nearest domain barrel (`#desktop-rpc/transport`, `#desktop-rpc/worktree`, …) for cross-package imports.
 
-**Not for mobile.** Changing a surface: DTOs in `packages/domain/` if needed → handle interfaces here → impl under `electron/rpc/` → wire `AppRpcRootImpl` / `connect()` → keep domain logic out of handles.
+**Not for mobile.** Changing a surface: DTOs in `packages/domain/` if needed → handle interfaces here → impl under `electron/rpc/` (session engine in `@novelevolver/worktree`) → wire `AppRpcRootImpl` / `connect()` → keep domain logic out of handles.
 
 ## Contract rules
 

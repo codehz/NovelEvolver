@@ -46,6 +46,7 @@
         "@lezer/highlight": "^1.2.3",
         "@novelevolver/desktop-rpc": "workspace:*",
         "@novelevolver/domain": "workspace:*",
+        "@novelevolver/worktree": "workspace:*",
         "@streamdown/cjk": "^1.0.3",
         "bunshi": "^2.2.0",
         "capnweb": "npm:@codehz/capnweb@0.10.0",
@@ -53,7 +54,7 @@
         "foxact": "^0.3.8",
         "jotai": "^2.20.2",
         "motion": "^12.42.2",
-        "nano-git": "^0.12.0",
+        "nano-git": "^0.13.0",
         "nanoid": "^6.0.0",
         "partial-json": "^0.1.7",
         "react": "^19.2.8",
@@ -86,6 +87,7 @@
       "dependencies": {
         "@novelevolver/domain": "workspace:*",
         "@novelevolver/mobile-sqlite": "workspace:*",
+        "@novelevolver/worktree": "workspace:*",
         "@react-native-documents/picker": "^12.0.2",
         "@react-navigation/core": "^7.21.13",
         "@react-navigation/elements": "^2.9.40",
@@ -154,8 +156,21 @@
         "react-native-nitro-sqlite": ">=9.7.0",
       },
     },
+    "packages/worktree": {
+      "name": "@novelevolver/worktree",
+      "version": "0.3.4",
+      "dependencies": {
+        "@novelevolver/domain": "workspace:*",
+        "nano-git": "^0.13.0",
+        "nanoid": "^6.0.0",
+      },
+      "peerDependencies": {
+        "nano-git": "^0.13.0",
+      },
+    },
   },
   "patchedDependencies": {
+    "react-native-nitro-sqlite@9.7.0": "patches/react-native-nitro-sqlite@9.7.0.patch",
     "react-native@0.87.1": "patches/react-native@0.87.1.patch",
   },
   "packages": {
@@ -644,6 +659,8 @@
     "@novelevolver/mobile": ["@novelevolver/mobile@workspace:apps/mobile"],
 
     "@novelevolver/mobile-sqlite": ["@novelevolver/mobile-sqlite@workspace:packages/mobile-sqlite"],
+
+    "@novelevolver/worktree": ["@novelevolver/worktree@workspace:packages/worktree"],
 
     "@oxc-project/types": ["@oxc-project/types@0.139.0", "", {}, "sha512-r9gHphtCs+1M7J0pw6Sn/hh/Wpa/iQrOOkrNAlVLF/gHq+/CJmHIWKKUUhdWjcD6CIa8idarspCsASiXCXvFUw=="],
 
@@ -1989,7 +2006,7 @@
 
     "mute-stream": ["mute-stream@3.0.0", "", {}, "sha512-dkEJPVvun4FryqBmZ5KhDo0K9iDXAwn08tMLDinNdRBNPcYEDiWYysLcc6k3mjTMlbP9KyylvRpd4wFtwrT9rw=="],
 
-    "nano-git": ["nano-git@0.12.0", "", { "peerDependencies": { "typescript": "^7.0.2" } }, "sha512-TBh3A6C/q/2ghViiXcg12iccbQfG4ww8darEaXcXPDU9/QiFvezZEGBmNEGcLLY6PstxDvM02DSznW74qX1Kkw=="],
+    "nano-git": ["nano-git@0.13.0", "", { "peerDependencies": { "typescript": "^7.0.2" } }, "sha512-LZR25c0OwupaTI1HuccP8M+TGJDfctOx9PhPyBGYfIbcMg/0xV/7hdOKC2sS885q+1inHK4A0Ql2NANsNeBhVQ=="],
 
     "nanoid": ["nanoid@6.0.0", "", { "bin": { "nanoid": "bin/nanoid.js" } }, "sha512-mkUH+rPkwU2qPadJ0oJZOjeZ5Mxn8Q1UhevwkTRWNuUZzyia3h4rhzK39hxaHTk0o2OxB8W2SQ6A8k23ZDi1pQ=="],
 
@@ -2870,8 +2887,6 @@
     "@jest/types/chalk": ["chalk@4.1.2", "", { "dependencies": { "ansi-styles": "^4.1.0", "supports-color": "^7.1.0" } }, "sha512-oKnbhFyRIXpUuez8iBMmyEa4nbj4IOQyuhc/wy9kY7/WVPcwIO9VA668Pu8RkO7+0G76SLROeyw9CpQ061i4mA=="],
 
     "@malept/flatpak-bundler/fs-extra": ["fs-extra@9.1.0", "", { "dependencies": { "at-least-node": "^1.0.0", "graceful-fs": "^4.2.0", "jsonfile": "^6.0.1", "universalify": "^2.0.0" } }, "sha512-hcg3ZmepS30/7BSFqRvoo3DOMQu7IjqxO5nCDt+zM9XWjb33Wg7ziNT+Qvqbuc3+gWpzO02JubVyk2G4Zvo1OQ=="],
-
-    "@novelevolver/mobile/nano-git": ["nano-git@0.13.0", "", { "peerDependencies": { "typescript": "^7.0.2" } }, "sha512-LZR25c0OwupaTI1HuccP8M+TGJDfctOx9PhPyBGYfIbcMg/0xV/7hdOKC2sS885q+1inHK4A0Ql2NANsNeBhVQ=="],
 
     "@novelevolver/mobile/react": ["react@19.2.3", "", {}, "sha512-Ku/hhYbVjOQnXDZFv2+RibmLFGwFdeeKHFcOTlrt7xplBnya5OGn/hIRDsqDiSUcfORsDC7MPxwork8jBwsIWA=="],
 

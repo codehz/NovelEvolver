@@ -132,7 +132,8 @@
         "apps/desktop/electron/**/*.ts",
         "apps/desktop/tools/**/*.ts",
         "packages/domain/**/*.ts",
-        "packages/desktop-rpc/**/*.ts"
+        "packages/desktop-rpc/**/*.ts",
+        "packages/worktree/**/*.ts"
       ],
       "env": {
         "node": true
