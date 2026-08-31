@@ -1,14 +1,7 @@
 import { type ParamListBase, StackActions } from "@react-navigation/native";
 import { useEffect, useRef, useState, type ReactNode } from "react";
-import { StyleSheet, useWindowDimensions, View } from "react-native";
-import { GestureDetector, usePanGesture } from "react-native-gesture-handler";
-import Animated, {
-  Easing,
-  runOnJS,
-  useAnimatedStyle,
-  useSharedValue,
-  withTiming,
-} from "react-native-reanimated";
+import { Platform, StyleSheet, useWindowDimensions, View } from "react-native";
+import { ScreenStack, ScreenStackItem } from "react-native-screens";
 
 import { SplitContext } from "./SplitContext";
 import { SplitActions } from "./SplitRouter";
@@ -18,14 +11,12 @@ import type {
   SplitMasterComponentProps,
   SplitNavigationHelpers,
   SplitNavigationState,
+  SplitPane,
 } from "./types";
 
 const DEFAULT_BREAKPOINT = 768;
 const DEFAULT_MASTER_WIDTH = 220;
-const PANE_TIMING = {
-  duration: 320,
-  easing: Easing.bezier(0.32, 0.72, 0, 1),
-};
+const HIDDEN_HEADER = { hidden: true };
 
 type SplitViewProps = {
   state: SplitNavigationState<ParamListBase>;
@@ -94,55 +85,6 @@ export function SplitView({
     }
   }, [layout, pane, navigation]);
 
-  const progress = useSharedValue(pane === "detail" ? 1 : 0);
-  const paneWidth = useSharedValue(width);
-  const skipTimingRef = useRef(true);
-
-  useEffect(() => {
-    paneWidth.value = width;
-  }, [paneWidth, width]);
-
-  useEffect(() => {
-    const target = pane === "detail" ? 1 : 0;
-    if (skipTimingRef.current) {
-      skipTimingRef.current = false;
-      progress.value = target;
-      return;
-    }
-    progress.value = withTiming(target, PANE_TIMING);
-  }, [pane, progress]);
-
-  const compactStyle = useAnimatedStyle(() => ({
-    width: paneWidth.value * 2,
-    transform: [{ translateX: -progress.value * paneWidth.value }],
-  }));
-
-  const panEnabled = layout === "compact" && pane === "detail" && swipeEnabled;
-  const pan = usePanGesture({
-    enabled: panEnabled,
-    activeOffsetX: 16,
-    failOffsetY: [-20, 20],
-    onUpdate: (event) => {
-      "worklet";
-      const next = 1 - event.translationX / paneWidth.value;
-      progress.value = Math.min(1, Math.max(0, next));
-    },
-    onDeactivate: (event) => {
-      "worklet";
-      if (event.canceled) {
-        progress.value = withTiming(1, PANE_TIMING);
-        return;
-      }
-      const shouldMaster = progress.value < 0.55 || event.velocityX > 700;
-      if (shouldMaster) {
-        progress.value = withTiming(0, PANE_TIMING);
-        runOnJS(showMaster)();
-      } else {
-        progress.value = withTiming(1, PANE_TIMING);
-      }
-    },
-  });
-
   const masterElement = master({
     state,
     navigation,
@@ -194,29 +136,64 @@ export function SplitView({
 
   return (
     <SplitContext.Provider value={contextValue}>
-      <GestureDetector gesture={pan}>
-        <View style={styles.compactRoot}>
-          <Animated.View style={[styles.compactTrack, compactStyle]} collapsable={false}>
-            <View
-              style={[styles.compactPane, { width }]}
-              pointerEvents={pane === "master" ? "auto" : "none"}
-              accessibilityElementsHidden={pane !== "master"}
-              importantForAccessibility={pane === "master" ? "auto" : "no-hide-descendants"}
-            >
-              {masterElement}
-            </View>
-            <View
-              style={[styles.compactPane, { width }]}
-              pointerEvents={pane === "detail" ? "auto" : "none"}
-              accessibilityElementsHidden={pane !== "detail"}
-              importantForAccessibility={pane === "detail" ? "auto" : "no-hide-descendants"}
-            >
-              {scenes}
-            </View>
-          </Animated.View>
-        </View>
-      </GestureDetector>
+      <CompactSplitPanes
+        masterElement={masterElement}
+        scenes={scenes}
+        pane={pane}
+        swipeEnabled={swipeEnabled}
+        showMaster={showMaster}
+      />
     </SplitContext.Provider>
+  );
+}
+
+type CompactSplitPanesProps = {
+  masterElement: ReactNode;
+  scenes: ReactNode;
+  pane: SplitPane;
+  swipeEnabled: boolean;
+  showMaster: () => void;
+};
+
+function CompactSplitPanes({
+  masterElement,
+  scenes,
+  pane,
+  swipeEnabled,
+  showMaster,
+}: CompactSplitPanesProps) {
+  const [ready, setReady] = useState(false);
+
+  useEffect(() => {
+    setReady(true);
+  }, []);
+
+  return (
+    <ScreenStack style={styles.compactRoot}>
+      <ScreenStackItem
+        screenId="split-master"
+        activityState={2}
+        style={StyleSheet.absoluteFill}
+        headerConfig={HIDDEN_HEADER}
+      >
+        {masterElement}
+      </ScreenStackItem>
+      {pane === "detail" ? (
+        <ScreenStackItem
+          screenId="split-detail"
+          activityState={2}
+          style={StyleSheet.absoluteFill}
+          headerConfig={HIDDEN_HEADER}
+          stackAnimation={ready ? "default" : "none"}
+          gestureEnabled={Platform.OS === "ios" && swipeEnabled}
+          nativeBackButtonDismissalEnabled={false}
+          onDismissed={showMaster}
+          contentStyle={styles.flex}
+        >
+          {scenes}
+        </ScreenStackItem>
+      ) : null}
+    </ScreenStack>
   );
 }
 
@@ -241,15 +218,9 @@ const styles = StyleSheet.create({
   },
   compactRoot: {
     flex: 1,
-    overflow: "hidden",
   },
-  compactTrack: {
+  flex: {
     flex: 1,
-    flexDirection: "row",
-  },
-  compactPane: {
-    flexShrink: 0,
-    height: "100%",
   },
   scenes: {
     flex: 1,
