@@ -15,6 +15,8 @@ const workletsRoot = path.dirname(require.resolve("react-native-worklets/package
 const gestureHandlerRoot = path.dirname(
   require.resolve("react-native-gesture-handler/package.json"),
 );
+const cryptoStubPath = path.join(process.cwd(), "src/shared/node-compat/crypto.ts");
+const zlibStubPath = path.join(process.cwd(), "src/shared/node-compat/zlib.ts");
 
 function iconComponentName(collection: string, icon: string): string {
   return `${collection}-${icon}`.replace(/(?:^|-)([a-z0-9])/g, (_, char: string) =>
@@ -76,6 +78,24 @@ export default defineConfig({
       },
     ],
   },
+  // Built-ins are externalized before Rollipop's array alias plugin runs.
+  // Inject these into Rolldown's native alias table so nano-git's imports are
+  // replaced in dependency modules as well as application modules.
+  rolldownOptions: (options) => ({
+    ...options,
+    input: {
+      ...options.input,
+      resolve: {
+        ...options.input?.resolve,
+        alias: {
+          "node:crypto": cryptoStubPath,
+          crypto: cryptoStubPath,
+          "node:zlib": zlibStubPath,
+          zlib: zlibStubPath,
+        },
+      },
+    },
+  }),
   reactNative: {
     // RN 0.87 moved this off Libraries/Image/AssetRegistry.js.
     assetRegistryPath: "react-native/asset-registry",

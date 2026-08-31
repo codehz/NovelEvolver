@@ -15,12 +15,17 @@
   "dependencies": {
     "@novelevolver/domain": "workspace:*",
     "@novelevolver/mobile-sqlite": "workspace:*",
+    "@react-native-documents/picker": "^12.0.2",
     "@react-navigation/core": "^7.21.13",
     "@react-navigation/elements": "^2.9.40",
     "@react-navigation/native": "^7.3.18",
     "@react-navigation/native-stack": "^7.18.10",
+    "buffer": "^6.0.3",
+    "nano-git": "^0.13.0",
+    "pako": "^2.1.0",
     "react": "19.2.3",
     "react-native": "0.87.1",
+    "react-native-file-access": "^4.0.3",
     "react-native-gesture-handler": "^3.2.1",
     "react-native-mmkv": "3.3.3",
     "react-native-nitro-modules": "^0.37.1",
@@ -28,6 +33,7 @@
     "react-native-reanimated": "^4.6.0",
     "react-native-safe-area-context": "^5.5.2",
     "react-native-screens": "^4.27.0",
+    "react-native-share": "^12.3.1",
     "react-native-svg": "^15.15.5",
     "react-native-worklets": "^0.12.1"
   },
@@ -49,11 +55,20 @@
     "@svgr/core": "^8.1.0",
     "@svgr/plugin-jsx": "^8.1.0",
     "@swc/helpers": "^0.5.23",
+    "@types/pako": "^2.0.3",
     "@types/react": "^19.2.0",
     "rollipop": "1.0.0-alpha.29",
     "unplugin-icons": "^23.0.1"
   },
   "engines": {
     "node": ">= 22.12.0"
+  },
+  "codegenConfig": {
+    "name": "NativeSha1Spec",
+    "type": "modules",
+    "jsSrcsDir": "src/native",
+    "android": {
+      "javaPackageName": "com.novelevolver.mobile"
+    }
   }
 }
