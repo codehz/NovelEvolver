@@ -1,4 +1,4 @@
-import { Header, HeaderBackButton } from "@react-navigation/elements";
+import { Header } from "@react-navigation/elements";
 import { Pressable, ScrollView, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
@@ -7,6 +7,7 @@ import { color, fontSize } from "../../shared/theme";
 import { SETTINGS_CATEGORIES, type SettingsCategoryId } from "./categories";
 import { settingsStyles } from "./settings-chrome";
 import { requestSettingsLeave } from "./settings-leave-guard";
+import { SettingsHeaderBackButton } from "./SettingsHeaderBackButton";
 
 export function SettingsMasterPane(props: SplitMasterComponentProps) {
   const wide = props.layout === "wide";
@@ -40,7 +41,7 @@ export function SettingsMasterPane(props: SplitMasterComponentProps) {
           wide
             ? undefined
             : (headerLeftProps) => (
-                <HeaderBackButton
+                <SettingsHeaderBackButton
                   {...headerLeftProps}
                   onPress={() => {
                     props.navigation.goBack();

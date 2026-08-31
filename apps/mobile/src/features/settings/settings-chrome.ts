@@ -10,6 +10,18 @@ export const settingsStyles = StyleSheet.create({
     flex: 1,
     backgroundColor: color.background,
   },
+  headerBack: {
+    marginVertical: 0,
+    marginHorizontal: 0,
+    marginStart: 0,
+    marginEnd: space[4],
+    width: 40,
+    height: 40,
+    paddingHorizontal: 0,
+    borderRadius: 20,
+    justifyContent: "center",
+    alignItems: "center",
+  },
   headerAction: {
     borderRadius: radius.control,
     paddingHorizontal: space[2],

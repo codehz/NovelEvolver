@@ -1,12 +1,13 @@
-import { HeaderBackButton, type HeaderBackButtonProps } from "@react-navigation/elements";
+import type { HeaderBackButtonProps } from "@react-navigation/elements";
 import { useNavigation } from "@react-navigation/native";
 
 import { requestSettingsLeave } from "./settings-leave-guard";
+import { SettingsHeaderBackButton } from "./SettingsHeaderBackButton";
 
 export function SettingsListHeaderLeft(props: HeaderBackButtonProps) {
   const navigation = useNavigation();
   return (
-    <HeaderBackButton
+    <SettingsHeaderBackButton
       {...props}
       onPress={() => {
         void requestSettingsLeave().then((ok) => {

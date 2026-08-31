@@ -1,7 +1,14 @@
-import { createStaticNavigation, DarkTheme, type Theme } from "@react-navigation/native";
+import {
+  createStaticNavigation,
+  DarkTheme,
+  type ParamListBase,
+  type Theme,
+} from "@react-navigation/native";
 import {
   createNativeStackNavigator,
   createNativeStackScreen,
+  type NativeStackNavigationOptions,
+  type NativeStackNavigationProp,
 } from "@react-navigation/native-stack";
 
 import { HomeScreen } from "../features/home/HomeScreen";
@@ -22,6 +29,7 @@ import {
   useSettingsDirty,
   useSettingsEditorOpen,
 } from "../features/settings/settings-leave-guard";
+import { SettingsHeaderBackButton } from "../features/settings/SettingsHeaderBackButton";
 import { SettingsHeaderButton } from "../features/settings/SettingsHeaderButton";
 import { SettingsListHeaderLeft } from "../features/settings/SettingsListHeaderLeft";
 import { SettingsMasterPane } from "../features/settings/SettingsMasterPane";
@@ -41,7 +49,11 @@ const navigationTheme: Theme = {
   },
 };
 
-const stackScreenOptions = {
+const stackScreenOptions = ({
+  navigation,
+}: {
+  navigation: NativeStackNavigationProp<ParamListBase>;
+}): NativeStackNavigationOptions => ({
   headerStyle: { backgroundColor: color.background },
   headerTintColor: color.accent,
   headerTitleStyle: {
@@ -50,9 +62,12 @@ const stackScreenOptions = {
     fontWeight: "600" as const,
   },
   headerShadowVisible: false,
-  headerBackButtonDisplayMode: "minimal" as const,
+  headerBackButtonDisplayMode: "minimal",
   contentStyle: { backgroundColor: color.background },
-};
+  headerLeft: (props) => (
+    <SettingsHeaderBackButton {...props} onPress={() => navigation.goBack()} />
+  ),
+});
 
 const AiModelsStack = createNativeStackNavigator({
   screenOptions: stackScreenOptions,
