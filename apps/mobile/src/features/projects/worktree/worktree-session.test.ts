@@ -58,6 +58,7 @@ describe("WorktreeSession", () => {
 
     const worktreeDb = new BunDatabase(worktreePath);
     const session = WorktreeSession.open(worktreeDb as unknown as Database, repository);
+    expect(session.warning).toBeNull();
     const folderId = session.createFolder("root", "第一幕");
     const chapterId = session.createChapter(folderId, "开场");
     session.writeChapter(chapterId, "正文");

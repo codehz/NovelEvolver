@@ -137,7 +137,12 @@ function parseStoredState(value: unknown): StoredState {
   };
 }
 
+function ensureSchema(db: Database): void {
+  db.run("CREATE TABLE IF NOT EXISTS worktree_meta (key TEXT PRIMARY KEY, value TEXT NOT NULL)");
+}
+
 function stateFromRows(db: Database): StoredState | null {
+  ensureSchema(db);
   const row = db
     .query<{ value: string }>("SELECT value FROM worktree_meta WHERE key = 'state'")
     .get();
@@ -147,7 +152,7 @@ function stateFromRows(db: Database): StoredState | null {
 
 function persist(db: Database, state: StoredState): void {
   db.transaction(() => {
-    db.run("CREATE TABLE IF NOT EXISTS worktree_meta (key TEXT PRIMARY KEY, value TEXT NOT NULL)");
+    ensureSchema(db);
     db.run(
       "INSERT OR REPLACE INTO worktree_meta (key, value) VALUES (?, ?)",
       "state",
