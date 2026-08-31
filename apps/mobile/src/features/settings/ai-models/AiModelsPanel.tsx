@@ -86,7 +86,7 @@ export function AiModelsList() {
                       {model.name}
                       {snapshot.defaultModelId === model.id ? " · 默认" : ""}
                     </Text>
-                    <Text style={settingsStyles.rowMeta}>{model.model}</Text>
+                    <Text style={settingsStyles.technical}>{model.model}</Text>
                   </Pressable>
                 ))}
                 <Pressable
@@ -205,6 +205,7 @@ function ProviderForm({ editor, providers, onError, onSaved }: ProviderFormProps
         }
         value={baseUrl}
         onChangeText={setBaseUrl}
+        monospace
         keyboardType="url"
         placeholder="https://"
       />
@@ -213,6 +214,7 @@ function ProviderForm({ editor, providers, onError, onSaved }: ProviderFormProps
         hint={initial?.hasApiKey ? "已保存密钥。填写则替换，或勾选清除。" : "明文保存在本机。"}
         value={apiKey}
         onChangeText={setApiKey}
+        monospace
         secureTextEntry
         editable={!clearApiKey}
       />
@@ -328,7 +330,7 @@ function ModelForm({ editor, providers, models, onError, onSaved }: ModelFormPro
         onChange={setProviderId}
       />
       <SettingsTextField label="显示名称" value={name} onChangeText={setName} />
-      <SettingsTextField label="模型 ID" value={model} onChangeText={setModel} />
+      <SettingsTextField label="模型 ID" value={model} onChangeText={setModel} monospace />
       <SettingsTextField
         label="最大输出 token"
         value={maxOutputTokens}
@@ -402,7 +404,7 @@ function ModelForm({ editor, providers, models, onError, onSaved }: ModelFormPro
         ]}
         onChange={setCacheMode}
       />
-      <SettingsTextField label="Cache key" value={cacheKey} onChangeText={setCacheKey} />
+      <SettingsTextField label="Cache key" value={cacheKey} onChangeText={setCacheKey} monospace />
       <SettingsTextField label="Cache TTL" value={cacheTtl} onChangeText={setCacheTtl} />
       <SettingsSwitchField
         label="支持工具调用"

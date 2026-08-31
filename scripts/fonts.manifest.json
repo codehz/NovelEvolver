@@ -10,6 +10,7 @@
         {
           "from": "MiSans/可变字体/MiSansVF.ttf",
           "to": "misans/MiSansVF.woff2",
+          "nativeTo": "native/misans/MiSansVF.ttf",
           "sourceSha256": "0ddef90648998900175cfdca9a6f087a2544c182f130b0ad4f7e94a03a115e79",
           "sha256": "9d91083765212186237804f9bf8758c94b6f55468665d68d269f0889da8edbe6"
         }
@@ -25,12 +26,14 @@
         {
           "from": "MapleMono-CN-Regular.ttf",
           "to": "maple-mono/MapleMono-CN-Regular.woff2",
+          "nativeTo": "native/maple-mono/MapleMono-CN-Regular.ttf",
           "sourceSha256": "0fcc5139bfd5ab14ff989bb7dfd5236d0cafc10e60b9828569e6883613ab4085",
           "sha256": "9d0bafedf39748fe264d454790b311e5ccbac7c4ec827795ef8a5846a969b8df"
         },
         {
           "from": "MapleMono-CN-Bold.ttf",
           "to": "maple-mono/MapleMono-CN-Bold.woff2",
+          "nativeTo": "native/maple-mono/MapleMono-CN-Bold.ttf",
           "sourceSha256": "ca79870485fb382e01f4e70edb08bccd3cf1dbdf74b82023fdf2f0c95db55725",
           "sha256": "978b7bf979f39ffb5f421f9b0c179d63f48f25c1a0e98245cba4d51677fd8f4e"
         }

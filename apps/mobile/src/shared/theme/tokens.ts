@@ -48,6 +48,12 @@ export const wash = {
   dangerSoft: withAlpha(mocha.red, 0.1),
 } as const;
 
+/** Font families registered by the native mobile projects. */
+export const fontFamily = {
+  sans: "MiSans",
+  mono: "Maple Mono CN",
+} as const;
+
 /** Type scale in dp, matching desktop rem at 16px root. */
 export const fontSize = {
   xxs: 11,
@@ -82,6 +88,7 @@ export const theme = {
   mocha,
   color,
   wash,
+  fontFamily,
   fontSize,
   radius,
   space,

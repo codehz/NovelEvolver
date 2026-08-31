@@ -27,6 +27,7 @@ type TextFieldProps = {
   onChangeText: (value: string) => void;
   placeholder?: string;
   secureTextEntry?: boolean;
+  monospace?: boolean;
   multiline?: boolean;
   editable?: boolean;
   keyboardType?: "default" | "numeric" | "url";
@@ -40,6 +41,7 @@ export function SettingsTextField({
   onChangeText,
   placeholder,
   secureTextEntry,
+  monospace = false,
   multiline,
   editable = true,
   keyboardType = "default",
@@ -48,7 +50,11 @@ export function SettingsTextField({
   return (
     <SettingsField label={label} hint={hint}>
       <TextInput
-        style={[settingsStyles.input, multiline ? settingsStyles.textarea : null]}
+        style={[
+          settingsStyles.input,
+          monospace && settingsStyles.inputMono,
+          multiline ? settingsStyles.textarea : null,
+        ]}
         value={value}
         onChangeText={onChangeText}
         placeholder={placeholder}

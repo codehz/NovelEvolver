@@ -16,10 +16,13 @@ From the repository root:
 
 ```sh
 bun install
-bun run mobile          # Rollipop dev server
-bun run mobile:android  # debug APK / emulator
-bun run mobile:ios      # Xcode / simulator (macOS)
+bun run mobile:fonts     # ensure and link native MiSans / Maple Mono assets
+bun run mobile            # Rollipop dev server
+bun run mobile:android    # debug APK / emulator
+bun run mobile:ios        # Xcode / simulator (macOS)
 ```
+
+`bun run mobile`, `mobile:android`, and `mobile:ios` ensure and link the fonts automatically. The native TTF files are generated under the ignored `vendor/fonts/native/` cache; run `bun run mobile:fonts` again after deleting that cache or when refreshing the font manifest.
 
 Or from this package:
 

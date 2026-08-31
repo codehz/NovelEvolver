@@ -1,6 +1,6 @@
 import { StyleSheet } from "react-native";
 
-import { color, fontSize, radius, space, wash } from "../../shared/theme";
+import { color, fontFamily, fontSize, radius, space, wash } from "../../shared/theme";
 
 export const WIDE_SETTINGS_BREAKPOINT = 768;
 export const SETTINGS_RAIL_WIDTH = 220;
@@ -40,11 +40,13 @@ export const settingsStyles = StyleSheet.create({
   },
   headerActionLabel: {
     color: color.accent,
+    fontFamily: fontFamily.sans,
     fontSize: fontSize.sm,
     fontWeight: "600",
   },
   headerDangerLabel: {
     color: color.error,
+    fontFamily: fontFamily.sans,
     fontSize: fontSize.sm,
     fontWeight: "600",
   },
@@ -55,6 +57,7 @@ export const settingsStyles = StyleSheet.create({
   },
   railLabel: {
     color: color.muted,
+    fontFamily: fontFamily.sans,
     fontSize: fontSize.xxs,
     fontWeight: "600",
     paddingHorizontal: space[3],
@@ -73,6 +76,7 @@ export const settingsStyles = StyleSheet.create({
   },
   railItemTitle: {
     color: color.foreground,
+    fontFamily: fontFamily.sans,
     fontSize: fontSize.sm,
   },
   railItemTitleSelected: {
@@ -95,20 +99,29 @@ export const settingsStyles = StyleSheet.create({
   },
   rowTitle: {
     color: color.foreground,
+    fontFamily: fontFamily.sans,
     fontSize: fontSize.sm,
     fontWeight: "600",
   },
   rowMeta: {
     color: color.muted,
+    fontFamily: fontFamily.sans,
+    fontSize: fontSize.xxs,
+  },
+  technical: {
+    color: color.muted,
+    fontFamily: fontFamily.mono,
     fontSize: fontSize.xxs,
   },
   empty: {
     color: color.muted,
+    fontFamily: fontFamily.sans,
     fontSize: fontSize.sm,
     padding: space[4],
   },
   error: {
     color: color.error,
+    fontFamily: fontFamily.sans,
     fontSize: fontSize.xs,
     paddingHorizontal: space[4],
     paddingTop: space[2],
@@ -122,10 +135,12 @@ export const settingsStyles = StyleSheet.create({
   },
   fieldLabel: {
     color: color.muted,
+    fontFamily: fontFamily.sans,
     fontSize: fontSize.xs,
   },
   fieldHint: {
     color: color.overlayMuted,
+    fontFamily: fontFamily.sans,
     fontSize: fontSize.xxs,
   },
   input: {
@@ -134,9 +149,13 @@ export const settingsStyles = StyleSheet.create({
     backgroundColor: color.field,
     borderRadius: radius.control,
     color: color.foreground,
+    fontFamily: fontFamily.sans,
     fontSize: fontSize.sm,
     paddingHorizontal: space[3],
     paddingVertical: space[2],
+  },
+  inputMono: {
+    fontFamily: fontFamily.mono,
   },
   textarea: {
     minHeight: 120,
@@ -166,6 +185,7 @@ export const settingsStyles = StyleSheet.create({
   },
   chipLabel: {
     color: color.muted,
+    fontFamily: fontFamily.sans,
     fontSize: fontSize.xxs,
   },
   chipLabelSelected: {
@@ -183,6 +203,7 @@ export const settingsStyles = StyleSheet.create({
   },
   optionLabel: {
     color: color.foreground,
+    fontFamily: fontFamily.sans,
     fontSize: fontSize.sm,
   },
   badge: {
@@ -194,6 +215,7 @@ export const settingsStyles = StyleSheet.create({
   },
   badgeLabel: {
     color: color.muted,
+    fontFamily: fontFamily.sans,
     fontSize: fontSize.xxs,
   },
 });

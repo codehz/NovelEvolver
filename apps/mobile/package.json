@@ -4,8 +4,12 @@
   "private": true,
   "description": "NovelEvolver mobile app (React Native, Community CLI — not Expo)",
   "scripts": {
+    "fonts:link": "node ../../scripts/ensure-fonts.mjs && node ../../scripts/link-mobile-fonts.mjs",
+    "prestart": "bun run fonts:link",
     "start": "react-native start",
+    "preandroid": "bun run fonts:link",
     "android": "react-native run-android",
+    "preios": "bun run fonts:link",
     "ios": "react-native run-ios"
   },
   "dependencies": {
@@ -31,6 +35,7 @@
     "@babel/runtime": "^7.25.0",
     "@iconify-json/codicon": "^1.2.71",
     "@react-native-community/cli": "20.2.0",
+    "@react-native-community/cli-link-assets": "^20.2.0",
     "@react-native-community/cli-platform-android": "20.2.0",
     "@react-native-community/cli-platform-ios": "20.2.0",
     "@react-native/babel-preset": "0.87.1",

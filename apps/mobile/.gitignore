@@ -63,7 +63,9 @@ yarn-error.log
 # Rollipop cache / generated bundles
 .rollipop/
 
-# testing
+# Generated native font binaries; source files live in vendor/fonts/native/
+android/app/src/main/res/font/*.ttf
+
 /coverage
 
 # Yarn

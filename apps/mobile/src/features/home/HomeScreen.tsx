@@ -2,7 +2,7 @@ import { useNavigation } from "@react-navigation/native";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
-import { color, fontSize, radius, space, wash } from "../../shared/theme";
+import { color, fontFamily, fontSize, radius, space, wash } from "../../shared/theme";
 
 export function HomeScreen() {
   const navigation = useNavigation();
@@ -54,6 +54,7 @@ const styles = StyleSheet.create({
   },
   gearLabel: {
     color: color.accent,
+    fontFamily: fontFamily.sans,
     fontSize: fontSize.sm,
     fontWeight: "600",
   },
@@ -65,11 +66,13 @@ const styles = StyleSheet.create({
   },
   title: {
     color: color.foreground,
+    fontFamily: fontFamily.sans,
     fontSize: fontSize.xl,
     fontWeight: "600",
   },
   subtitle: {
     color: color.muted,
+    fontFamily: fontFamily.sans,
     fontSize: fontSize.sm,
   },
   chip: {
@@ -81,6 +84,7 @@ const styles = StyleSheet.create({
   },
   chipText: {
     color: color.accent,
+    fontFamily: fontFamily.sans,
     fontSize: fontSize.xxs,
     fontWeight: "600",
   },

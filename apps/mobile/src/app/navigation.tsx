@@ -35,7 +35,7 @@ import { SettingsHeaderBackButton } from "../features/settings/SettingsHeaderBac
 import { SettingsHeaderButton } from "../features/settings/SettingsHeaderButton";
 import { SettingsListHeaderLeft } from "../features/settings/SettingsListHeaderLeft";
 import { SettingsMasterPane } from "../features/settings/SettingsMasterPane";
-import { color, fontSize } from "../shared/theme";
+import { color, fontFamily, fontSize } from "../shared/theme";
 import { navigationRef } from "./navigation-ref";
 import { createSplitNavigator } from "./split-navigator";
 
@@ -61,6 +61,7 @@ const stackScreenOptions = ({
   headerTintColor: color.accent,
   headerTitleStyle: {
     color: color.foreground,
+    fontFamily: fontFamily.sans,
     fontSize: fontSize.md,
     fontWeight: "600" as const,
   },

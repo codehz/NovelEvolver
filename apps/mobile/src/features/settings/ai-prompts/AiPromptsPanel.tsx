@@ -38,7 +38,7 @@ export function AiPromptsList() {
               }}
             >
               <Text style={settingsStyles.rowTitle}>{prompt.title}</Text>
-              <Text style={settingsStyles.rowMeta}>/{prompt.slug}</Text>
+              <Text style={settingsStyles.technical}>/{prompt.slug}</Text>
             </Pressable>
           ))
         )}
@@ -100,6 +100,7 @@ function PromptForm({ initial, error, onError, onSaved }: PromptFormProps) {
           hint="小写字母开头，仅含 a-z、0-9、_、-。"
           value={slug}
           onChangeText={setSlug}
+          monospace
         />
         <SettingsTextField label="内容" value={prompt} onChangeText={setPrompt} multiline />
         <Pressable

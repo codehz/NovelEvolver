@@ -10,6 +10,7 @@
   "scripts": {
     "dev": "bun run --filter @novelevolver/desktop dev",
     "mobile": "bun run --filter @novelevolver/mobile start",
+    "mobile:fonts": "bun run --filter @novelevolver/mobile fonts:link",
     "mobile:android": "bun run --filter @novelevolver/mobile android",
     "mobile:ios": "bun run --filter @novelevolver/mobile ios",
     "build": "bun run --filter @novelevolver/desktop build",

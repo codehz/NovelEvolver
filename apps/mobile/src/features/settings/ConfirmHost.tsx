@@ -11,7 +11,7 @@ import Animated, {
 
 import { navigationRef } from "../../app/navigation-ref";
 import type { ConfirmParams } from "../../app/navigation-types";
-import { color, fontSize, radius, space, wash } from "../../shared/theme";
+import { color, fontFamily, fontSize, radius, space, wash } from "../../shared/theme";
 import { setSettingsLeaveConfirm } from "./settings-leave-guard";
 
 type ConfirmFn = (request?: Partial<ConfirmParams>) => Promise<boolean>;
@@ -183,11 +183,13 @@ const styles = StyleSheet.create({
   },
   title: {
     color: color.foreground,
+    fontFamily: fontFamily.sans,
     fontSize: fontSize.md,
     fontWeight: "600",
   },
   message: {
     color: color.muted,
+    fontFamily: fontFamily.sans,
     fontSize: fontSize.sm,
   },
   actions: {
@@ -202,6 +204,7 @@ const styles = StyleSheet.create({
   },
   secondaryLabel: {
     color: color.foreground,
+    fontFamily: fontFamily.sans,
     fontSize: fontSize.sm,
   },
   danger: {
@@ -212,6 +215,7 @@ const styles = StyleSheet.create({
   },
   dangerLabel: {
     color: color.error,
+    fontFamily: fontFamily.sans,
     fontSize: fontSize.sm,
     fontWeight: "600",
   },

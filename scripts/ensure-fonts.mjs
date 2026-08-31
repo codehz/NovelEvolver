@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 /**
  * Download full local fonts into vendor/fonts (gitignored), convert TTF → WOFF2.
+ * Native TTF copies are kept under vendor/fonts/native for React Native linking.
  *
  * Env:
  *   SKIP_FONTS=1     skip entirely
@@ -141,7 +142,7 @@ function formatBytes(bytes) {
  *   url: string;
  *   zipSha256: string;
  *   githubMirrorEnv?: string;
- *   extracts: Array<{ from: string; to: string; sourceSha256: string; sha256: string }>;
+ *   extracts: Array<{ from: string; to: string; nativeTo?: string; sourceSha256: string; sha256: string }>;
  * }} pkg
  * @param {string} outputDir
  */
@@ -149,6 +150,7 @@ async function ensurePackage(pkg, outputDir) {
   const targets = pkg.extracts.map((item) => ({
     ...item,
     abs: path.join(outputDir, item.to),
+    nativeAbs: item.nativeTo ? path.join(outputDir, item.nativeTo) : null,
   }));
 
   if (!force) {
@@ -156,11 +158,14 @@ async function ensurePackage(pkg, outputDir) {
       if (!item.sha256) {
         return false;
       }
-      if (!existsSync(item.abs)) {
+      if (!existsSync(item.abs) || (item.nativeAbs && !existsSync(item.nativeAbs))) {
         return false;
       }
       try {
         assertSha256(sha256File(item.abs), item.sha256, item.to);
+        if (item.nativeAbs) {
+          assertSha256(sha256File(item.nativeAbs), item.sourceSha256, item.nativeTo);
+        }
         return true;
       } catch {
         return false;
@@ -185,6 +190,11 @@ async function ensurePackage(pkg, outputDir) {
       assertSha256(sha256File(tempTtf), item.sourceSha256, `${item.from} (source ttf)`);
 
       const ttfBytes = readFileSync(tempTtf);
+      if (item.nativeAbs) {
+        mkdirSync(path.dirname(item.nativeAbs), { recursive: true });
+        writeFileSync(item.nativeAbs, ttfBytes);
+        assertSha256(sha256File(item.nativeAbs), item.sourceSha256, item.nativeTo);
+      }
       const woff2Bytes = Buffer.from(await compress(ttfBytes));
       mkdirSync(path.dirname(item.abs), { recursive: true });
       writeFileSync(item.abs, woff2Bytes);
@@ -200,6 +210,9 @@ async function ensurePackage(pkg, outputDir) {
       console.log(
         `[fonts] ${pkg.name}: wrote ${item.to} (${formatBytes(ttfBytes.length)} → ${formatBytes(woff2Bytes.length)})`,
       );
+      if (item.nativeTo) {
+        console.log(`[fonts] ${pkg.name}: wrote ${item.nativeTo} (native source copy)`);
+      }
     }
   } finally {
     rmSync(workDir, { recursive: true, force: true });
