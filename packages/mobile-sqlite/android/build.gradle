@@ -1,0 +1,78 @@
+buildscript {
+  ext.getExtOrDefault = { prop, fallback ->
+    rootProject.ext.has(prop) ? rootProject.ext.get(prop) : fallback
+  }
+
+  repositories {
+    google()
+    mavenCentral()
+  }
+
+  dependencies {
+    classpath "com.android.tools.build:gradle:8.7.2"
+    classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:${getExtOrDefault('kotlinVersion', '2.2.0')}"
+  }
+}
+
+apply plugin: "com.android.library"
+apply plugin: "kotlin-android"
+apply plugin: "com.facebook.react"
+
+// Gradle 9 removed Project.exec. Run at configuration time so sqlite3.c
+// exists before CMake evaluates CMakeLists.txt.
+def sqliteEnsure = providers.exec {
+  workingDir = file("..")
+  commandLine "node", "scripts/ensure-sqlite.mjs"
+}
+logger.lifecycle(sqliteEnsure.standardOutput.asText.get().trim())
+if (sqliteEnsure.result.get().exitValue != 0) {
+  throw new GradleException(sqliteEnsure.standardError.asText.get().trim())
+}
+
+def reactNativeArchitectures() {
+  def value = rootProject.getProperties().get("reactNativeArchitectures")
+  return value ? value.split(",") : ["arm64-v8a", "x86_64"]
+}
+
+android {
+  namespace "com.novelevolver.mobilesqlite"
+  compileSdk getExtOrDefault("compileSdkVersion", 37)
+  ndkVersion getExtOrDefault("ndkVersion", "27.1.12297006")
+
+  defaultConfig {
+    minSdk getExtOrDefault("minSdkVersion", 24)
+    targetSdk getExtOrDefault("targetSdkVersion", 36)
+
+    externalNativeBuild {
+      cmake {
+        arguments "-DANDROID_STL=c++_static", "-DANDROID_SUPPORT_FLEXIBLE_PAGE_SIZES=ON"
+        abiFilters(*reactNativeArchitectures())
+      }
+    }
+  }
+
+  externalNativeBuild {
+    cmake {
+      path "CMakeLists.txt"
+    }
+  }
+
+  compileOptions {
+    sourceCompatibility JavaVersion.VERSION_17
+    targetCompatibility JavaVersion.VERSION_17
+  }
+
+  lint {
+    disable "GradleCompatible"
+  }
+}
+
+dependencies {
+  implementation "com.facebook.react:react-android"
+}
+
+react {
+  jsRootDir = file("../src/")
+  libraryName = "NativeSqliteSpec"
+  codegenJavaPackageName = "com.novelevolver.mobilesqlite"
+}

@@ -12,3 +12,7 @@ UI/mono fonts are **full local files**, not npm subset packages (subsetting drop
 - CSS: `apps/desktop/src/fonts/faces.css`, imported from `apps/desktop/src/index.css`
 - Commands: `bun run fonts:ensure` (also in `prepare`); mobile runs `bun run mobile:fonts` before native builds. Offline: `SKIP_FONTS=1`. Force refresh: `FONTS_FORCE=1`
 - Attribution: **MiSans** (Xiaomi). Maple Mono CN is SIL OFL 1.1
+
+## SQLite amalgamation
+
+Pinned official SQLite sources for `@novelevolver/mobile-sqlite`. Manifest and downloader live in that package (`sqlite.manifest.json`, `scripts/ensure-sqlite.mjs`). Output is gitignored `packages/mobile-sqlite/cpp/sqlite/sqlite3.{c,h}`. `bun run sqlite:ensure`; native Android/iOS builds also fetch it. Offline: `SKIP_SQLITE=1`. Force refresh: `SQLITE_FORCE=1`.

@@ -2,8 +2,19 @@
   "name": "@novelevolver/mobile-sqlite",
   "version": "0.0.0",
   "private": true,
-  "description": "Expo-free SQLite adapter for the NovelEvolver mobile app",
+  "description": "Bundled SQLite Turbo Module for the NovelEvolver mobile app",
+  "files": [
+    "android",
+    "cpp",
+    "ios",
+    "scripts",
+    "src",
+    "sqlite.manifest.json",
+    "NovelEvolverMobileSqlite.podspec",
+    "react-native.config.cjs"
+  ],
   "type": "module",
+  "react-native": "./src/index.ts",
   "exports": {
     ".": {
       "types": "./src/index.ts",
@@ -11,11 +22,19 @@
       "default": "./src/index.ts"
     }
   },
-  "dependencies": {},
+  "scripts": {
+    "sqlite:ensure": "node ./scripts/ensure-sqlite.mjs"
+  },
   "peerDependencies": {
     "react": ">=19.2.0",
-    "react-native": ">=0.87.0",
-    "react-native-nitro-modules": ">=0.37.0",
-    "react-native-nitro-sqlite": ">=9.7.0"
+    "react-native": ">=0.87.0"
+  },
+  "codegenConfig": {
+    "name": "NativeSqliteSpec",
+    "type": "modules",
+    "jsSrcsDir": "src",
+    "android": {
+      "javaPackageName": "com.novelevolver.mobilesqlite"
+    }
   }
 }

@@ -32,7 +32,7 @@ export function initProjectsSchema(db: DatabasePort): void {
  * 依赖 projects 表已存在（由 initProjectsSchema 先建），worktree.project_id
  * 通过 FK + ON DELETE CASCADE 引用 projects(id)。
  *
- * 每条 SQL 单独 exec：Nitro SQLite 等驱动一次只能跑一条语句。
+ * 每条 SQL 单独 exec：部分驱动（含移动端 SQLite 模块）一次只能跑一条语句。
  */
 export function initWorktreeSchema(db: DatabasePort): void {
   execAll(db, [

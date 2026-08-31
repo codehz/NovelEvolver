@@ -10,7 +10,7 @@ Bare React Native (Community CLI + [Rollipop](https://rollipop.dev)). **Do not a
 - Theme: Catppuccin Mocha JS tokens in `src/shared/theme/` (no NativeWind / Tailwind). Semantic roles match desktop `@theme`. Flavor is pinned — do not follow system light mode
 - Backend: mobile-specific (MMKV for settings, SQLite app-state + nano-git for projects). **Not** capnweb / `desktop-rpc`
 - Settings: local MMKV (`novelevolver-settings`); domain store logic from `@novelevolver/domain`
-- Projects / worktree drafts: `@novelevolver/worktree` on a mobile `app-state.db` (not MMKV)
+- Projects / worktree drafts: `@novelevolver/worktree` on a mobile `app-state.db` (not MMKV), via `@novelevolver/mobile-sqlite`
 - Overlays: root-stack `transparentModal` via `OverlayHost` (`useOverlay`); not `Alert.alert` / `Modal`
 
 Human-oriented notes: [README.md](README.md).

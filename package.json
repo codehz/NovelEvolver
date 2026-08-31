@@ -25,6 +25,7 @@
     "format:check": "oxfmt --check .",
     "test": "bun test",
     "fonts:ensure": "node scripts/ensure-fonts.mjs",
+    "sqlite:ensure": "node packages/mobile-sqlite/scripts/ensure-sqlite.mjs",
     "prepare": "node scripts/ensure-fonts.mjs && husky"
   },
   "devDependencies": {
@@ -50,7 +51,6 @@
     "*": "oxfmt --write --no-error-on-unmatched-pattern"
   },
   "patchedDependencies": {
-    "react-native@0.87.1": "patches/react-native@0.87.1.patch",
-    "react-native-nitro-sqlite@9.7.0": "patches/react-native-nitro-sqlite@9.7.0.patch"
+    "react-native@0.87.1": "patches/react-native@0.87.1.patch"
   }
 }

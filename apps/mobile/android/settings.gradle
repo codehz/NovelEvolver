@@ -1,6 +1,28 @@
 pluginManagement { includeBuild("../node_modules/@react-native/gradle-plugin") }
 plugins { id("com.facebook.react.settings") }
-extensions.configure(com.facebook.react.ReactSettingsExtension){ ex -> ex.autolinkLibrariesFromCommand() }
+
+// RN's default autolink cache only hashes yarn.lock / package-lock.json /
+// this app's package.json and react-native.config.js. This repo uses bun.lock,
+// and workspace native modules live outside the app tree, so those defaults
+// keep a stale autolinking.json after a JS-only package grows an android/ dir.
+extensions.configure(com.facebook.react.ReactSettingsExtension) { ex ->
+  def mobileRoot = file("..")
+  def repoRoot = file("../..")
+  ex.autolinkLibrariesFromCommand(
+    ["npx", "@react-native-community/cli", "config"],
+    mobileRoot,
+    files(
+      new File(mobileRoot, "package.json"),
+      new File(mobileRoot, "react-native.config.js"),
+      new File(repoRoot, "bun.lock"),
+      new File(repoRoot, "packages/mobile-sqlite/package.json"),
+      new File(repoRoot, "packages/mobile-sqlite/react-native.config.cjs"),
+      new File(repoRoot, "packages/mobile-sqlite/android/build.gradle"),
+      new File(repoRoot, "packages/mobile-sqlite/NovelEvolverMobileSqlite.podspec"),
+    ),
+  )
+}
+
 rootProject.name = "NovelEvolver"
 include ":app"
 includeBuild("../node_modules/@react-native/gradle-plugin")

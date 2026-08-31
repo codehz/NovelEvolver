@@ -12,6 +12,7 @@ This is a **Bun workspace monorepo**. Root `AGENTS.md` is the always-on index. *
 | [packages/domain/AGENTS.md](packages/domain/AGENTS.md)                                                         | Cross-platform DTOs                         |
 | [packages/desktop-rpc/AGENTS.md](packages/desktop-rpc/AGENTS.md)                                               | capnweb IPC contracts                       |
 | [packages/worktree/AGENTS.md](packages/worktree/AGENTS.md)                                                     | Shared worktree session / app-state SQL     |
+| [packages/mobile-sqlite/AGENTS.md](packages/mobile-sqlite/AGENTS.md)                                           | Mobile SQLite Turbo Module / amalgamation   |
 | [scripts/AGENTS.md](scripts/AGENTS.md)                                                                         | Fonts and repo-level build helpers          |
 
 ## Compatibility (prototype)
@@ -26,6 +27,7 @@ apps/mobile/        @novelevolver/mobile — bare React Native (no Expo / Metro)
 packages/domain/    @novelevolver/domain — DTOs, pure helpers (zero deps)
 packages/desktop-rpc/  @novelevolver/desktop-rpc — capnweb contracts (desktop only)
 packages/worktree/     @novelevolver/worktree — shared worktree session + app-state SQL
+packages/mobile-sqlite/ @novelevolver/mobile-sqlite — mobile SQLite Turbo Module
 scripts/            repo-level helpers (electron bundle, fonts)
 ```
 
@@ -42,6 +44,7 @@ Use Bun (`bun.lock`).
 - `bun run lint` — **only** TypeScript gate (`oxlint` `typeAware` + `typeCheck`). Do **not** add a `typecheck` / `tsc --noEmit` script or CI step. Agent/terminal: wait ≥5s for results. CSS `::highlight` warnings from lightningcss are false positives.
 - `bun run lint:fix` / `bun run format` / `bun run format:check`
 - `bun run fonts:ensure` — see [scripts/AGENTS.md](scripts/AGENTS.md)
+- `bun run sqlite:ensure` — download pinned SQLite amalgamation for mobile native builds
 
 ## Shared style
 

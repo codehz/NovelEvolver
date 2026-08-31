@@ -1,0 +1,5 @@
+# Downloaded by scripts/ensure-sqlite.mjs (see sqlite.manifest.json).
+sqlite3.c
+sqlite3.h
+sqlite3ext.h
+shell.c

@@ -1,159 +1,49 @@
-import { NitroSQLite, NitroSQLiteError, open, type SQLiteValue } from "react-native-nitro-sqlite";
+import {
+  decodeResult,
+  encodeParams,
+  type QueryRow,
+  type QueryResult,
+  type SqlValue,
+} from "./codec";
+import NativeSqlite from "./NativeSqlite";
 
-export type SQLQueryBinding =
-  | string
-  | bigint
-  | ArrayBufferView
-  | number
-  | boolean
-  | null
-  | Record<string, string | bigint | ArrayBufferView | number | boolean | null>;
-
-export type SQLQueryBindings = SQLQueryBinding[];
+export type { QueryRow, QueryResult, SqlValue };
 
 export type DatabaseOptions = {
   readonly?: boolean;
-  create?: boolean;
-  readwrite?: boolean;
-  safeIntegers?: boolean;
-  strict?: boolean;
   location?: string;
 };
 
 export type Changes = {
   changes: number;
-  lastInsertRowid: number | bigint;
+  lastInsertRowid: number;
 };
 
 export class SQLiteError extends Error {
   readonly name = "SQLiteError";
-  readonly errno = 0;
-  readonly byteOffset = -1;
-  readonly code?: string;
 
   constructor(cause: unknown) {
     const message = cause instanceof Error ? cause.message : String(cause);
     super(message);
-    this.code = undefined;
     this.cause = cause;
   }
-}
-
-function unsupported(feature: string): never {
-  throw new TypeError(`${feature} is not supported by @novelevolver/mobile-sqlite`);
-}
-
-function toArrayBuffer(value: ArrayBufferView | ArrayBuffer): ArrayBuffer {
-  if (value instanceof ArrayBuffer) {
-    return value;
-  }
-
-  return value.buffer.slice(value.byteOffset, value.byteOffset + value.byteLength) as ArrayBuffer;
-}
-
-function convertBinding(value: SQLQueryBinding): SQLiteValue {
-  if (typeof value === "bigint") {
-    unsupported("bigint bindings");
-  }
-  if (value instanceof ArrayBuffer || ArrayBuffer.isView(value)) {
-    return toArrayBuffer(value);
-  }
-  if (value !== null && typeof value === "object") {
-    unsupported("named bindings");
-  }
-  return value;
-}
-
-function normalizeBindings(bindings: SQLQueryBinding[]): SQLiteValue[] {
-  if (bindings.length === 1 && Array.isArray(bindings[0])) {
-    return normalizeBindings(bindings[0]);
-  }
-  return bindings.map(convertBinding);
-}
-
-function countParameters(sql: string): number {
-  let count = 0;
-  let index = 0;
-
-  while (index < sql.length) {
-    const current = sql[index];
-    const next = sql[index + 1];
-
-    if (current === "'" || current === '"' || current === "`") {
-      const quote = current;
-      index += 1;
-      while (index < sql.length) {
-        if (sql[index] === quote) {
-          if (sql[index + 1] === quote && quote !== "`") {
-            index += 2;
-            continue;
-          }
-          index += 1;
-          break;
-        }
-        index += 1;
-      }
-      continue;
-    }
-
-    if (current === "-" && next === "-") {
-      index += 2;
-      while (index < sql.length && sql[index] !== "\n") {
-        index += 1;
-      }
-      continue;
-    }
-
-    if (current === "/" && next === "*") {
-      index += 2;
-      while (index < sql.length) {
-        if (sql[index] === "*" && sql[index + 1] === "/") {
-          index += 2;
-          break;
-        }
-        index += 1;
-      }
-      continue;
-    }
-
-    if (current === "?") {
-      count += 1;
-      index += 1;
-      while (/\d/.test(sql[index] ?? "")) {
-        index += 1;
-      }
-      continue;
-    }
-
-    index += 1;
-  }
-
-  return count;
 }
 
 function wrapError(error: unknown): unknown {
   if (error instanceof SQLiteError) {
     return error;
   }
-  if (error instanceof NitroSQLiteError) {
-    return new SQLiteError(error);
-  }
-  return error;
+  return new SQLiteError(error);
 }
 
-type NitroConnection = ReturnType<typeof open>;
-
-export class Statement<
-  ReturnType extends Record<string, SQLiteValue> = Record<string, SQLiteValue>,
-> {
-  readonly native = null;
-  #connection: NitroConnection;
+export class Statement<Row extends QueryRow = QueryRow> {
+  #connectionId: number;
   #sql: string;
-  #bound: SQLQueryBinding[];
+  #bound: SqlValue[];
   #finalized = false;
 
-  constructor(connection: NitroConnection, sql: string, initialBindings: SQLQueryBinding[] = []) {
-    this.#connection = connection;
+  constructor(connectionId: number, sql: string, initialBindings: SqlValue[] = []) {
+    this.#connectionId = connectionId;
     this.#sql = sql;
     this.#bound = initialBindings;
   }
@@ -164,82 +54,39 @@ export class Statement<
     }
   }
 
-  #bindings(params: SQLQueryBinding[]): SQLiteValue[] {
+  #execute(params: SqlValue[]): QueryResult {
+    this.#ensureOpen();
     const bindings = params.length > 0 ? params : this.#bound;
     if (params.length > 0) {
-      this.#bound = params;
+      this.#bound = bindings;
     }
-    return normalizeBindings(bindings);
-  }
-
-  #execute(params: SQLQueryBinding[]): {
-    results: ReturnType[];
-    rowsAffected: number;
-    insertId?: number;
-  } {
-    this.#ensureOpen();
     try {
-      const result = this.#connection.execute<ReturnType>(this.#sql, this.#bindings(params));
-      return {
-        results: result.results as ReturnType[],
-        rowsAffected: result.rowsAffected,
-        insertId: result.insertId,
-      };
+      return decodeResult(
+        NativeSqlite.execute(this.#connectionId, this.#sql, encodeParams(bindings)),
+      );
     } catch (error) {
       throw wrapError(error);
     }
   }
 
-  all(...params: SQLQueryBinding[]): ReturnType[] {
-    return this.#execute(params).results;
+  all(...params: SqlValue[]): Row[] {
+    return this.#execute(params).rows as Row[];
   }
 
-  get(...params: SQLQueryBinding[]): ReturnType | null {
-    return this.#execute(params).results[0] ?? null;
+  get(...params: SqlValue[]): Row | null {
+    return (this.#execute(params).rows[0] as Row | undefined) ?? null;
   }
 
-  iterate(...params: SQLQueryBinding[]): IterableIterator<ReturnType> {
-    return this.all(...params)[Symbol.iterator]();
-  }
-
-  run(...params: SQLQueryBinding[]): Changes {
+  run(...params: SqlValue[]): Changes {
     const result = this.#execute(params);
     return {
       changes: result.rowsAffected,
-      lastInsertRowid: result.insertId ?? 0,
+      lastInsertRowid: result.insertId,
     };
-  }
-
-  values(
-    ...params: SQLQueryBinding[]
-  ): Array<Array<string | number | boolean | Uint8Array | null>> {
-    return this.all(...params).map(
-      (row) => Object.values(row) as Array<string | number | boolean | Uint8Array | null>,
-    );
-  }
-
-  get columnNames(): string[] {
-    return [];
-  }
-
-  get paramsCount(): number {
-    return countParameters(this.#sql);
-  }
-
-  get columnTypes(): Array<"INTEGER" | "FLOAT" | "TEXT" | "BLOB" | "NULL" | null> {
-    return this.columnNames.map(() => null);
-  }
-
-  get declaredTypes(): Array<string | null> {
-    return this.columnNames.map(() => null);
   }
 
   finalize(): void {
     this.#finalized = true;
-  }
-
-  [Symbol.iterator](): IterableIterator<ReturnType> {
-    return this.iterate();
   }
 
   [Symbol.dispose](): void {
@@ -249,9 +96,8 @@ export class Statement<
 
 function resolveDatabaseName(filename: string): string {
   if (filename === ":memory:") {
-    return `:memory:${Math.random().toString(36).slice(2)}`;
+    return filename;
   }
-
   const normalized = filename.replaceAll("\\", "/");
   if (normalized.includes("/") || normalized.startsWith(".")) {
     throw new TypeError(
@@ -261,61 +107,33 @@ function resolveDatabaseName(filename: string): string {
   return normalized;
 }
 
-function normalizeOptions(options: number | DatabaseOptions | undefined): {
-  readonly: boolean;
-  location?: string;
-} {
-  if (options === undefined) {
-    return { readonly: false };
-  }
-  if (typeof options === "number") {
-    return {
-      readonly: (options & constants.SQLITE_OPEN_READONLY) !== 0,
-    };
-  }
-  if (options.create === false && options.readonly !== true) {
-    unsupported("DatabaseOptions.create=false without readonly");
-  }
-  if (options.safeIntegers) {
-    unsupported("DatabaseOptions.safeIntegers");
-  }
-  return {
-    readonly: options.readonly ?? false,
-    location: options.location,
-  };
-}
-
 export class Database {
-  static open(filename: string, options?: number | DatabaseOptions): Database {
+  static open(filename: string, options?: DatabaseOptions): Database {
     return new Database(filename, options);
   }
 
-  #connection: NitroConnection;
+  #connectionId: number;
   #queries = new Map<string, Statement>();
-  #statements = new Set<{ finalize(): void }>();
+  #statements = new Set<Statement>();
   #savepointId = 0;
   #closed = false;
-  #memoryDatabase = false;
   #transactionDepth = 0;
   readonly filename: string;
 
-  constructor(filename = ":memory:", options?: number | DatabaseOptions) {
-    const normalized = normalizeOptions(options);
-    this.#memoryDatabase = filename === ":memory:";
+  constructor(filename = ":memory:", options?: DatabaseOptions) {
     this.filename = filename;
-
     try {
-      const name = resolveDatabaseName(filename);
-      this.#connection = open({ name, location: normalized.location });
-      if (normalized.readonly) {
-        this.#connection.execute("PRAGMA query_only = ON");
-      }
+      this.#connectionId = NativeSqlite.open(
+        resolveDatabaseName(filename),
+        options?.location ?? "",
+        options?.readonly ?? false,
+      );
     } catch (error) {
       throw wrapError(error);
     }
   }
 
-  run(sql: string, ...bindings: SQLQueryBinding[]): Changes {
+  run(sql: string, ...bindings: SqlValue[]): Changes {
     const statement = this.prepare(sql);
     try {
       return statement.run(...bindings);
@@ -324,31 +142,29 @@ export class Database {
     }
   }
 
-  exec(sql: string, ...bindings: SQLQueryBinding[]): Changes {
-    return this.run(sql, ...bindings);
+  exec(sql: string): void {
+    this.run(sql);
   }
 
-  query<ReturnType extends Record<string, SQLiteValue> = Record<string, SQLiteValue>>(
-    sql: string,
-  ): Statement<ReturnType> {
+  query<Row extends QueryRow = QueryRow>(sql: string): Statement<Row> {
     this.#ensureOpen();
-    let statement = this.#queries.get(sql) as Statement<ReturnType> | undefined;
+    let statement = this.#queries.get(sql) as Statement<Row> | undefined;
     if (statement === undefined) {
-      statement = new Statement<ReturnType>(this.#connection, sql);
+      statement = new Statement<Row>(this.#connectionId, sql);
       this.#queries.set(sql, statement);
       this.#statements.add(statement);
     }
     return statement;
   }
 
-  prepare<ReturnType extends Record<string, SQLiteValue> = Record<string, SQLiteValue>>(
+  prepare<Row extends QueryRow = QueryRow>(
     sql: string,
-    params?: SQLQueryBinding[] | SQLQueryBinding,
-  ): Statement<ReturnType> {
+    params?: SqlValue[] | SqlValue,
+  ): Statement<Row> {
     this.#ensureOpen();
-    const initialBindings: SQLQueryBinding[] =
+    const initialBindings: SqlValue[] =
       params === undefined ? [] : Array.isArray(params) ? params : [params];
-    const statement = new Statement<ReturnType>(this.#connection, sql, initialBindings);
+    const statement = new Statement<Row>(this.#connectionId, sql, initialBindings);
     this.#statements.add(statement);
     return statement;
   }
@@ -373,17 +189,17 @@ export class Database {
       const finish = nested ? `RELEASE SAVEPOINT ${savepoint}` : "COMMIT";
       const revert = nested ? `ROLLBACK TO SAVEPOINT ${savepoint}` : "ROLLBACK";
 
-      this.#connection.execute(start);
+      this.exec(start);
       this.#transactionDepth += 1;
       try {
         const result = insideTransaction(...args);
-        this.#connection.execute(finish);
+        this.exec(finish);
         return result;
       } catch (error) {
         try {
-          this.#connection.execute(revert);
+          this.exec(revert);
           if (nested) {
-            this.#connection.execute(`RELEASE SAVEPOINT ${savepoint}`);
+            this.exec(`RELEASE SAVEPOINT ${savepoint}`);
           }
         } catch {
           // Preserve the original error if rollback also fails.
@@ -411,11 +227,7 @@ export class Database {
     }
     this.#statements.clear();
     this.#queries.clear();
-    if (this.#memoryDatabase) {
-      this.#connection.delete();
-    } else {
-      this.#connection.close();
-    }
+    NativeSqlite.close(this.#connectionId);
   }
 
   [Symbol.dispose](): void {
@@ -428,14 +240,3 @@ export class Database {
     }
   }
 }
-
-export const constants = {
-  SQLITE_OPEN_READONLY: 0x00000001,
-  SQLITE_OPEN_READWRITE: 0x00000002,
-  SQLITE_OPEN_CREATE: 0x00000004,
-};
-
-export const native = NitroSQLite.native;
-
-export { open };
-export default Database;

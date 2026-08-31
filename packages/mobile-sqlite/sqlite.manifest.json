@@ -1,0 +1,18 @@
+{
+  "version": "3.53.4",
+  "url": "https://www.sqlite.org/2026/sqlite-amalgamation-3530400.zip",
+  "zipSha3_256": "628a44cfe82c66aed1ccbbe85a562d2e33ebe64b3288981ed76285612227934e",
+  "outputDir": "cpp/sqlite",
+  "extracts": [
+    {
+      "from": "sqlite-amalgamation-3530400/sqlite3.c",
+      "to": "sqlite3.c",
+      "sha3_256": "67f423e9ebbbdc473cbc4772c872ee6b89f31fde4ed0279a5c25d5f65c043a16"
+    },
+    {
+      "from": "sqlite-amalgamation-3530400/sqlite3.h",
+      "to": "sqlite3.h",
+      "sha3_256": "89d0de498b1012938bb78dc18b68fea52e26f7f7b6db6347d126a2e58b86a05c"
+    }
+  ]
+}

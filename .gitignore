@@ -36,4 +36,8 @@ bun.lockb
 # Local full fonts (downloaded by scripts/ensure-fonts.mjs)
 vendor/fonts/
 
+# SQLite amalgamation (downloaded by packages/mobile-sqlite/scripts/ensure-sqlite.mjs)
+packages/mobile-sqlite/cpp/sqlite/sqlite3.c
+packages/mobile-sqlite/cpp/sqlite/sqlite3.h
+
 .claude/plans

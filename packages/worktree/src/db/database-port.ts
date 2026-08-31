@@ -11,7 +11,7 @@ export type SqlStatement = {
 };
 
 export type DatabasePort = {
-  /** Execute one SQL statement. Drivers such as Nitro SQLite reject batches. */
+  /** Execute one SQL statement. Drivers such as the mobile SQLite module reject batches. */
   exec(sql: string): void;
   prepare(sql: string): SqlStatement;
 };
