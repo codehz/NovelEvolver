@@ -80,14 +80,7 @@ export function ProjectListScreen() {
             <Pressable
               key={record.id}
               style={styles.row}
-              onPress={async () => {
-                try {
-                  await manager.openProject(record);
-                  navigation.navigate("Project", { projectId: record.id });
-                } catch (error) {
-                  Alert.alert("打开失败", error instanceof Error ? error.message : String(error));
-                }
-              }}
+              onPress={() => navigation.navigate("Project", { projectId: record.id })}
             >
               <Text style={styles.rowTitle}>{record.displayName}</Text>
               <Text style={styles.rowMeta}>{new Date(record.lastOpenedAt).toLocaleString()}</Text>

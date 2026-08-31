@@ -65,6 +65,7 @@ async function removeIfPresent(path: string): Promise<void> {
 
 export class ProjectRepositoryManager {
   #opened: OpenedProject | null = null;
+  #opening: { projectId: string; promise: Promise<OpenedProject> } | null = null;
 
   get records(): MobileProjectRecord[] {
     return readProjectCatalog();
@@ -146,7 +147,24 @@ export class ProjectRepositoryManager {
     }
   }
 
-  async open(record: MobileProjectRecord): Promise<OpenedProject> {
+  open(record: MobileProjectRecord): Promise<OpenedProject> {
+    const opening = this.#opening;
+    if (opening !== null) {
+      if (opening.projectId === record.id) return opening.promise;
+      return opening.promise.catch(() => undefined).then(() => this.open(record));
+    }
+    if (this.#opened?.record.id === record.id) return Promise.resolve(this.#opened);
+
+    const promise = this.#openRecord(record);
+    this.#opening = { projectId: record.id, promise };
+    void promise.then(
+      () => this.#clearOpening(promise),
+      () => this.#clearOpening(promise),
+    );
+    return promise;
+  }
+
+  async #openRecord(record: MobileProjectRecord): Promise<OpenedProject> {
     const directory = projectDirectory(record.id);
     await ensureDirectory(directory);
     let repositoryDb: Database | null = null;
@@ -163,6 +181,10 @@ export class ProjectRepositoryManager {
       await closeDatabases(repositoryDb, worktreeDb);
       throw error;
     }
+  }
+
+  #clearOpening(promise: Promise<OpenedProject>): void {
+    if (this.#opening?.promise === promise) this.#opening = null;
   }
 
   async delete(id: string, updateCatalog = true): Promise<void> {
