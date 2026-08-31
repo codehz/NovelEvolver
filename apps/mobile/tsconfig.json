@@ -6,6 +6,6 @@
       "@novelevolver/domain/*": ["../../packages/domain/*"]
     }
   },
-  "include": ["src", "index.js", "metro.config.js", "babel.config.js"],
+  "include": ["src", "index.js", "rollipop.config.ts", "rollipop-env.d.ts", "babel.config.js"],
   "exclude": ["**/node_modules", "**/Pods", "android", "ios"]
 }

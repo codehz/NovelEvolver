@@ -1,0 +1,26 @@
+diff --git a/node_modules/react-native/rn-get-polyfills.js b/rn-get-polyfills.js
+new file mode 100644
+index 0000000000000000000000000000000000000000..bad70fdb687531d5ca5793d1957fa0c670d6de25
+--- /dev/null
++++ b/rn-get-polyfills.js
+@@ -0,0 +1,20 @@
++"use strict";
++
++const fs = require("node:fs");
++const { createRequire } = require("node:module");
++const path = require("node:path");
++
++function findAppRoot() {
++  let dir = process.cwd();
++  while (dir !== path.dirname(dir)) {
++    if (fs.existsSync(path.join(dir, "rollipop.config.ts"))) {
++      return dir;
++    }
++    dir = path.dirname(dir);
++  }
++  return process.cwd();
++}
++
++module.exports = createRequire(path.join(findAppRoot(), "package.json"))(
++  "@react-native/js-polyfills",
++);

@@ -26,7 +26,7 @@ packages/
 scripts/            repo-level build helpers (electron bundle, fonts)
 ```
 
-`apps/mobile/` is a **bare React Native** app (Community CLI + Metro). Do **not** add Expo (`expo`, `expo-router`, `expo-*`). Native projects live in `android/` and `ios/`; JS entry is `index.js`; UI lives under `src/`. Domain DTOs use `@novelevolver/domain` (no `#app` / `#domain` path aliases).
+`apps/mobile/` is a **bare React Native** app (Community CLI + [Rollipop](https://rollipop.dev) bundler). Do **not** add Expo (`expo`, `expo-router`, `expo-*`) or Metro. Native projects live in `android/` and `ios/`; JS entry is `index.js`; bundler config is `rollipop.config.ts`; UI lives under `src/`. Domain DTOs use `@novelevolver/domain` (no `#app` / `#domain` path aliases). Rollipop uses standard Node module resolution, so workspace packages resolve without Metro `watchFolders` / asset URL rewrites.
 
 `apps/desktop/src/` contains the Vite renderer application (`main.tsx`, `index.css`). `apps/desktop/electron/` contains the Electron main and preload processes. Build output goes to `apps/desktop/dist/` for the renderer and `apps/desktop/dist-electron/` for Electron; do not edit generated files directly. Desktop config lives under `apps/desktop/` (`vite.config.ts`, `tsconfig.json`, `path-aliases.ts`, `electron-builder.yml`, `scripts/build-electron.mjs`); repo-wide lint/format config stays at the root (`.oxlintrc.json`, `.oxfmtrc.json`). Cross-platform domain types live in `packages/domain/` (`@novelevolver/domain`); desktop capnweb IPC contracts live in `packages/desktop-rpc/` (`@novelevolver/desktop-rpc`).
 

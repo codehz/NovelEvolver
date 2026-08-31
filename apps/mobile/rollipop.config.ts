@@ -1,0 +1,94 @@
+import { createRequire } from "node:module";
+import path from "node:path";
+
+import { defineConfig } from "rollipop";
+
+const require = createRequire(path.join(process.cwd(), "package.json"));
+const rollipopRequire = createRequire(require.resolve("rollipop/package.json"));
+const rnBabelRequire = createRequire(require.resolve("@react-native/babel-preset"));
+const reactNativeRoot = path.dirname(require.resolve("react-native/package.json"));
+const reanimatedRoot = path.dirname(require.resolve("react-native-reanimated/package.json"));
+const workletsRoot = path.dirname(require.resolve("react-native-worklets/package.json"));
+
+export default defineConfig({
+  entry: "index.js",
+  // Bun's isolated store lives outside the app tree, so Rolldown cannot
+  // discover apps/mobile/tsconfig.json from dependency files.
+  tsconfig: false,
+  resolve: {
+    alias: [
+      {
+        // RN 0.87 internals still deep-import src/private, which is not in
+        // package.json exports. Metro's Haste allowed this; Node resolution does not.
+        find: /^react-native\/src\/private\/(.+)/,
+        replacement: path.join(reactNativeRoot, "src/private/$1"),
+      },
+      {
+        // Prefer precompiled JS. The `react-native` package field points at
+        // TypeScript `src/`, which the Worklets Babel plugin cannot print
+        // under Babel 8.
+        find: /^react-native-reanimated$/,
+        replacement: path.join(reanimatedRoot, "lib/module/index.js"),
+      },
+      {
+        find: /^react-native-worklets$/,
+        replacement: path.join(workletsRoot, "lib/module/index.js"),
+      },
+    ],
+  },
+  reactNative: {
+    // RN 0.87 moved this off Libraries/Image/AssetRegistry.js.
+    assetRegistryPath: "react-native/asset-registry",
+  },
+  transform: {
+    // RN 0.87 Flow (match / component syntax) is beyond fast-flow-transform.
+    // Hermes Babel parser + Babel 8 plugins handle those files instead.
+    flow: {
+      filter: {
+        id: { include: /\.jsx?$/, exclude: /node_modules[/\\]react-native[/\\]/ },
+        code: /@flow/,
+      },
+    },
+    babel: {
+      rules: [
+        {
+          filter: {
+            id: /node_modules[/\\]react-native[/\\].*\.jsx?$/,
+            code: /@flow/,
+          },
+          options: {
+            plugins: [
+              [
+                rollipopRequire.resolve("babel-plugin-syntax-hermes-parser"),
+                { parseLangTypes: "flow", reactRuntimeTarget: "19" },
+              ],
+              rnBabelRequire.resolve("babel-plugin-transform-flow-enums"),
+              rollipopRequire.resolve("@babel/plugin-transform-flow-strip-types"),
+              [require.resolve("@babel/plugin-transform-react-jsx"), { runtime: "automatic" }],
+            ],
+          },
+        },
+        {
+          filter: {
+            id: { include: /\.[cm]?[jt]sx?$/, exclude: /node_modules/ },
+          },
+          options: {
+            parserOpts: { plugins: ["jsx", "typescript"] },
+            plugins: [require.resolve("react-native-worklets/plugin")],
+          },
+        },
+        {
+          // Transform `'worklet'` directives in the precompiled packages.
+          // Metro did this via babel.config.js; skipping it leaves Reanimated's
+          // barrel half-evaluated so `import { Easing }` reads undefined.
+          filter: {
+            id: /node_modules[/\\]react-native-(?:reanimated|worklets)[/\\]lib[/\\].*\.js$/,
+          },
+          options: {
+            plugins: [require.resolve("react-native-worklets/plugin")],
+          },
+        },
+      ],
+    },
+  },
+});

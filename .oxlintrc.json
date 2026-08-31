@@ -6,6 +6,7 @@
     "apps/mobile/android/**",
     "apps/mobile/ios/**",
     "apps/mobile/vendor/**",
+    "apps/mobile/.rollipop/**",
     "node_modules/**"
   ],
   "jsPlugins": ["oxlint-tailwindcss"],

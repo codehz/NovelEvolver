@@ -25,6 +25,7 @@
   },
   "devDependencies": {
     "@babel/core": "^7.25.2",
+    "@babel/plugin-transform-react-jsx": "^8.0.0",
     "@babel/preset-env": "^7.25.3",
     "@babel/runtime": "^7.25.0",
     "@react-native-community/cli": "20.2.0",
@@ -33,11 +34,13 @@
     "@react-native/babel-preset": "0.87.1",
     "@react-native/codegen": "0.87.1",
     "@react-native/gradle-plugin": "0.87.1",
-    "@react-native/metro-config": "0.87.1",
+    "@react-native/js-polyfills": "0.87.1",
     "@react-native/typescript-config": "0.87.1",
-    "@types/react": "^19.2.0"
+    "@swc/helpers": "^0.5.23",
+    "@types/react": "^19.2.0",
+    "rollipop": "1.0.0-alpha.29"
   },
   "engines": {
-    "node": ">= 22.11.0"
+    "node": ">= 22.12.0"
   }
 }
