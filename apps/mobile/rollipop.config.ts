@@ -12,6 +12,9 @@ const rnBabelRequire = createRequire(require.resolve("@react-native/babel-preset
 const reactNativeRoot = path.dirname(require.resolve("react-native/package.json"));
 const reanimatedRoot = path.dirname(require.resolve("react-native-reanimated/package.json"));
 const workletsRoot = path.dirname(require.resolve("react-native-worklets/package.json"));
+const gestureHandlerRoot = path.dirname(
+  require.resolve("react-native-gesture-handler/package.json"),
+);
 
 function iconComponentName(collection: string, icon: string): string {
   return `${collection}-${icon}`.replace(/(?:^|-)([a-z0-9])/g, (_, char: string) =>
@@ -67,6 +70,10 @@ export default defineConfig({
         find: /^react-native-worklets$/,
         replacement: path.join(workletsRoot, "lib/module/index.js"),
       },
+      {
+        find: /^react-native-gesture-handler$/,
+        replacement: path.join(gestureHandlerRoot, "lib/module/index.js"),
+      },
     ],
   },
   reactNative: {
@@ -113,9 +120,10 @@ export default defineConfig({
         {
           // Transform `'worklet'` directives in the precompiled packages.
           // Metro did this via babel.config.js; skipping it leaves Reanimated's
-          // barrel half-evaluated so `import { Easing }` reads undefined.
+          // barrel half-evaluated so `import { Easing }` reads undefined, and
+          // RNGH's UI-runtime gesture `callback` / `scheduleOnUI` cleanup throw.
           filter: {
-            id: /node_modules[/\\]react-native-(?:reanimated|worklets)[/\\]lib[/\\].*\.js$/,
+            id: /node_modules[/\\]react-native-(?:reanimated|worklets|gesture-handler)[/\\]lib[/\\].*\.js$/,
           },
           options: {
             plugins: [require.resolve("react-native-worklets/plugin")],
