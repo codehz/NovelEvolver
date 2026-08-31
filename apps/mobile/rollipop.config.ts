@@ -96,6 +96,11 @@ export default defineConfig({
       },
     },
   }),
+  // Fast Refresh / HMR does not actually apply updates on this stack
+  // (RN 0.87 + Rollipop alpha). Disable it rather than pay the fix cost.
+  dev: {
+    hmr: false,
+  },
   reactNative: {
     // RN 0.87 moved this off Libraries/Image/AssetRegistry.js.
     assetRegistryPath: "react-native/asset-registry",
