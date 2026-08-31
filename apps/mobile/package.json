@@ -14,6 +14,7 @@
   },
   "dependencies": {
     "@novelevolver/domain": "workspace:*",
+    "@novelevolver/mobile-sqlite": "workspace:*",
     "@react-navigation/core": "^7.21.13",
     "@react-navigation/elements": "^2.9.40",
     "@react-navigation/native": "^7.3.18",
@@ -22,6 +23,8 @@
     "react-native": "0.87.1",
     "react-native-gesture-handler": "^3.2.1",
     "react-native-mmkv": "3.3.3",
+    "react-native-nitro-modules": "^0.37.1",
+    "react-native-nitro-sqlite": "^9.7.0",
     "react-native-reanimated": "^4.6.0",
     "react-native-safe-area-context": "^5.5.2",
     "react-native-screens": "^4.27.0",

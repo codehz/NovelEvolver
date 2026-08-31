@@ -1,0 +1,21 @@
+{
+  "name": "@novelevolver/mobile-sqlite",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Expo-free SQLite adapter for the NovelEvolver mobile app",
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./src/index.ts",
+      "react-native": "./src/index.ts",
+      "default": "./src/index.ts"
+    }
+  },
+  "dependencies": {},
+  "peerDependencies": {
+    "react": ">=19.2.0",
+    "react-native": ">=0.87.0",
+    "react-native-nitro-modules": ">=0.37.0",
+    "react-native-nitro-sqlite": ">=9.7.0"
+  }
+}
