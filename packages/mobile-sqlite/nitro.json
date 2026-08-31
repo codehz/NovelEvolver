@@ -1,0 +1,31 @@
+{
+  "$schema": "https://nitro.margelo.com/nitro.schema.json",
+  "cxxNamespace": ["mobilesqlite"],
+  "ios": {
+    "iosModuleName": "NovelEvolverMobileSqlite"
+  },
+  "android": {
+    "androidNamespace": ["mobilesqlite"],
+    "androidCxxLibName": "NovelEvolverMobileSqlite"
+  },
+  "autolinking": {
+    "NativeSqlite": {
+      "all": {
+        "language": "c++",
+        "implementationClassName": "HybridNativeSqlite"
+      }
+    },
+    "NativeSqlitePlatform": {
+      "ios": {
+        "language": "swift",
+        "implementationClassName": "HybridNativeSqlitePlatform"
+      },
+      "android": {
+        "language": "kotlin",
+        "implementationClassName": "HybridNativeSqlitePlatform"
+      }
+    }
+  },
+  "ignorePaths": ["**/node_modules"],
+  "gitAttributesGeneratedFlag": true
+}

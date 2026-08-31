@@ -7,6 +7,7 @@
     "apps/mobile/ios/**",
     "apps/mobile/vendor/**",
     "apps/mobile/.rollipop/**",
+    "packages/mobile-sqlite/nitrogen/**",
     "node_modules/**"
   ],
   "jsPlugins": ["oxlint-tailwindcss"],

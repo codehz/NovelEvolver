@@ -14,9 +14,36 @@ buildscript {
   }
 }
 
+def reactNativeArchitectures() {
+  def value = rootProject.getProperties().get("reactNativeArchitectures")
+  return value ? value.split(",") : ["arm64-v8a", "x86_64"]
+}
+
+def isNewArchitectureEnabled() {
+  return rootProject.hasProperty("newArchEnabled") && rootProject.getProperty("newArchEnabled") == "true"
+}
+
 apply plugin: "com.android.library"
-apply plugin: "kotlin-android"
-apply plugin: "com.facebook.react"
+apply plugin: "org.jetbrains.kotlin.android"
+apply from: "../nitrogen/generated/android/NovelEvolverMobileSqlite+autolinking.gradle"
+apply from: "./fix-prefab.gradle"
+
+if (isNewArchitectureEnabled()) {
+  apply plugin: "com.facebook.react"
+}
+
+def getExtOrDefault(name, fallback = null) {
+  if (rootProject.ext.has(name)) {
+    return rootProject.ext.get(name)
+  }
+  def propertyName = "NovelEvolverMobileSqlite_" + name
+  return project.hasProperty(propertyName) ? project.property(propertyName) : fallback
+}
+
+def getExtOrIntegerDefault(name, fallback) {
+  def value = getExtOrDefault(name, fallback)
+  return value instanceof Integer ? value : value.toInteger()
+}
 
 // Gradle 9 removed Project.exec. Run at configuration time so sqlite3.c
 // exists before CMake evaluates CMakeLists.txt.
@@ -29,24 +56,31 @@ if (sqliteEnsure.result.get().exitValue != 0) {
   throw new GradleException(sqliteEnsure.standardError.asText.get().trim())
 }
 
-def reactNativeArchitectures() {
-  def value = rootProject.getProperties().get("reactNativeArchitectures")
-  return value ? value.split(",") : ["arm64-v8a", "x86_64"]
-}
-
 android {
-  namespace "com.novelevolver.mobilesqlite"
-  compileSdk getExtOrDefault("compileSdkVersion", 37)
+  namespace "com.margelo.nitro.mobilesqlite"
+
   ndkVersion getExtOrDefault("ndkVersion", "27.1.12297006")
+  compileSdkVersion getExtOrIntegerDefault("compileSdkVersion", 37)
 
   defaultConfig {
-    minSdk getExtOrDefault("minSdkVersion", 24)
-    targetSdk getExtOrDefault("targetSdkVersion", 36)
+    minSdkVersion getExtOrIntegerDefault("minSdkVersion", 24)
+    targetSdkVersion getExtOrIntegerDefault("targetSdkVersion", 36)
+    buildConfigField "boolean", "IS_NEW_ARCHITECTURE_ENABLED", isNewArchitectureEnabled().toString()
 
     externalNativeBuild {
       cmake {
-        arguments "-DANDROID_STL=c++_static", "-DANDROID_SUPPORT_FLEXIBLE_PAGE_SIZES=ON"
+        cppFlags "-frtti -fexceptions -Wall -Wextra -fstack-protector-all"
+        arguments "-DANDROID_STL=c++_shared", "-DANDROID_SUPPORT_FLEXIBLE_PAGE_SIZES=ON"
         abiFilters(*reactNativeArchitectures())
+
+        buildTypes {
+          debug {
+            cppFlags "-O1 -g"
+          }
+          release {
+            cppFlags "-O2"
+          }
+        }
       }
     }
   }
@@ -57,22 +91,60 @@ android {
     }
   }
 
-  compileOptions {
-    sourceCompatibility JavaVersion.VERSION_17
-    targetCompatibility JavaVersion.VERSION_17
+  packagingOptions {
+    excludes = [
+      "META-INF",
+      "META-INF/**",
+      "**/libc++_shared.so",
+      "**/libNitroModules.so",
+      "**/libfbjni.so",
+      "**/libjsi.so",
+      "**/libfolly_json.so",
+      "**/libfolly_runtime.so",
+      "**/libglog.so",
+      "**/libhermes.so",
+      "**/libhermes-executor-debug.so",
+      "**/libhermes_executor.so",
+      "**/libreactnative.so",
+      "**/libreactnativejni.so",
+      "**/libturbomodulejsijni.so",
+      "**/libreact_nativemodule_core.so",
+      "**/libjscexecutor.so",
+    ]
+  }
+
+  buildFeatures {
+    buildConfig true
+    prefab true
+  }
+
+  buildTypes {
+    release {
+      minifyEnabled false
+    }
   }
 
   lint {
     disable "GradleCompatible"
   }
+
+  compileOptions {
+    sourceCompatibility JavaVersion.VERSION_17
+    targetCompatibility JavaVersion.VERSION_17
+  }
+
+  kotlinOptions {
+    jvmTarget = "17"
+  }
+}
+
+repositories {
+  mavenCentral()
+  google()
 }
 
 dependencies {
-  implementation "com.facebook.react:react-android"
-}
-
-react {
-  jsRootDir = file("../src/")
-  libraryName = "NativeSqliteSpec"
-  codegenJavaPackageName = "com.novelevolver.mobilesqlite"
+  //noinspection GradleDynamicVersion
+  implementation "com.facebook.react:react-native:+"
+  implementation project(":react-native-nitro-modules")
 }

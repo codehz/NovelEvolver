@@ -1,13 +1,22 @@
+import { NitroModules } from "react-native-nitro-modules";
+
+import type { NativeSqlite } from "./NativeSqlite.nitro";
 import {
-  decodeResult,
-  encodeParams,
+  fromNativeResult,
+  toNativeParams,
   type QueryRow,
   type QueryResult,
   type SqlValue,
-} from "./codec";
-import NativeSqlite from "./NativeSqlite";
+} from "./values";
 
 export type { QueryRow, QueryResult, SqlValue };
+
+let nativeSqlite: NativeSqlite | undefined;
+
+function getNativeSqlite(): NativeSqlite {
+  nativeSqlite ??= NitroModules.createHybridObject<NativeSqlite>("NativeSqlite");
+  return nativeSqlite;
+}
 
 export type DatabaseOptions = {
   readonly?: boolean;
@@ -61,8 +70,8 @@ export class Statement<Row extends QueryRow = QueryRow> {
       this.#bound = bindings;
     }
     try {
-      return decodeResult(
-        NativeSqlite.execute(this.#connectionId, this.#sql, encodeParams(bindings)),
+      return fromNativeResult(
+        getNativeSqlite().execute(this.#connectionId, this.#sql, toNativeParams(bindings)),
       );
     } catch (error) {
       throw wrapError(error);
@@ -123,7 +132,7 @@ export class Database {
   constructor(filename = ":memory:", options?: DatabaseOptions) {
     this.filename = filename;
     try {
-      this.#connectionId = NativeSqlite.open(
+      this.#connectionId = getNativeSqlite().open(
         resolveDatabaseName(filename),
         options?.location ?? "",
         options?.readonly ?? false,
@@ -227,7 +236,7 @@ export class Database {
     }
     this.#statements.clear();
     this.#queries.clear();
-    NativeSqlite.close(this.#connectionId);
+    getNativeSqlite().close(this.#connectionId);
   }
 
   [Symbol.dispose](): void {

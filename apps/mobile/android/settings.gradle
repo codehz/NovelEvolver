@@ -17,6 +17,7 @@ extensions.configure(com.facebook.react.ReactSettingsExtension) { ex ->
       new File(repoRoot, "bun.lock"),
       new File(repoRoot, "packages/mobile-sqlite/package.json"),
       new File(repoRoot, "packages/mobile-sqlite/react-native.config.cjs"),
+      new File(repoRoot, "packages/mobile-sqlite/nitro.json"),
       new File(repoRoot, "packages/mobile-sqlite/android/build.gradle"),
       new File(repoRoot, "packages/mobile-sqlite/NovelEvolverMobileSqlite.podspec"),
     ),

@@ -2,13 +2,15 @@
   "name": "@novelevolver/mobile-sqlite",
   "version": "0.0.0",
   "private": true,
-  "description": "Bundled SQLite Turbo Module for the NovelEvolver mobile app",
+  "description": "Bundled SQLite Nitro Module for the NovelEvolver mobile app",
   "files": [
     "android",
     "cpp",
     "ios",
+    "nitrogen",
     "scripts",
     "src",
+    "nitro.json",
     "sqlite.manifest.json",
     "NovelEvolverMobileSqlite.podspec",
     "react-native.config.cjs"
@@ -23,18 +25,16 @@
     }
   },
   "scripts": {
-    "sqlite:ensure": "node ./scripts/ensure-sqlite.mjs"
+    "sqlite:ensure": "node ./scripts/ensure-sqlite.mjs",
+    "specs": "nitrogen --logLevel=\"debug\""
+  },
+  "devDependencies": {
+    "nitrogen": "^0.37.1",
+    "react-native-nitro-modules": "^0.37.1"
   },
   "peerDependencies": {
     "react": ">=19.2.0",
-    "react-native": ">=0.87.0"
-  },
-  "codegenConfig": {
-    "name": "NativeSqliteSpec",
-    "type": "modules",
-    "jsSrcsDir": "src",
-    "android": {
-      "javaPackageName": "com.novelevolver.mobilesqlite"
-    }
+    "react-native": ">=0.87.0",
+    "react-native-nitro-modules": "^0.37.1"
   }
 }
