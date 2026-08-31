@@ -1,3 +1,15 @@
+export type ConfirmParams = {
+  title: string;
+  message: string;
+  confirmLabel: string;
+};
+
+export type RootStackParamList = {
+  Home: undefined;
+  Settings: undefined;
+  Confirm: ConfirmParams;
+};
+
 export type AiModelsStackParamList = {
   List: undefined;
   ProviderEditor: { id?: string };

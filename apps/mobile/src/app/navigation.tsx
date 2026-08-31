@@ -21,6 +21,7 @@ import {
 } from "../features/settings/ai-models/AiModelsPanel";
 import { AiPromptsList, PromptEditor } from "../features/settings/ai-prompts/AiPromptsPanel";
 import { AiRuntimePolicyPanel } from "../features/settings/ai-runtime-policy/AiRuntimePolicyPanel";
+import { ConfirmScreen } from "../features/settings/ConfirmHost";
 import {
   SETTINGS_RAIL_WIDTH,
   WIDE_SETTINGS_BREAKPOINT,
@@ -35,6 +36,7 @@ import { SettingsHeaderButton } from "../features/settings/SettingsHeaderButton"
 import { SettingsListHeaderLeft } from "../features/settings/SettingsListHeaderLeft";
 import { SettingsMasterPane } from "../features/settings/SettingsMasterPane";
 import { color, fontSize } from "../shared/theme";
+import { navigationRef } from "./navigation-ref";
 import { createSplitNavigator } from "./split-navigator";
 
 const navigationTheme: Theme = {
@@ -201,6 +203,16 @@ const RootStack = createNativeStackNavigator({
   screens: {
     Home: HomeScreen,
     Settings: SettingsSplit,
+    Confirm: createNativeStackScreen({
+      screen: ConfirmScreen,
+      options: {
+        headerShown: false,
+        presentation: "transparentModal",
+        animation: "none",
+        gestureEnabled: false,
+        contentStyle: { backgroundColor: "transparent" },
+      },
+    }),
   },
 });
 
@@ -213,5 +225,5 @@ declare module "@react-navigation/core" {
 const Navigation = createStaticNavigation(RootStack);
 
 export function RootNavigation() {
-  return <Navigation theme={navigationTheme} />;
+  return <Navigation ref={navigationRef} theme={navigationTheme} />;
 }
