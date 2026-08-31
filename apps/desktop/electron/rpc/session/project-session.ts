@@ -1,6 +1,6 @@
 import { RpcTarget } from "capnweb";
 import type { SHA1 } from "nano-git";
-import { createSqliteRepository } from "nano-git/repository/sqlite";
+import type { Repository } from "nano-git/repository/core";
 
 import type { ProjectAi } from "#desktop-rpc/ai/handles";
 import type { MockAiControlHandle } from "#desktop-rpc/ai/mock-ai-handle";
@@ -14,6 +14,7 @@ import { ProjectAiChatController } from "../../ai/chat/project-ai-chat";
 import type { AiChatRepository } from "../../db/repositories/ai-chat-repo";
 import type { ProjectDbRecord, ProjectsRepository } from "../../db/repositories/projects-repo";
 import type { WorktreeRepository } from "../../db/repositories/worktree-repo";
+import { openSqliteGitRepository } from "../../lib/nano-git-sqlite";
 import { toProjectMetadata } from "../../projects/home-path";
 import type { AiAgentsStore } from "../../settings/ai-agents-store";
 import type { AiModelsStore } from "../../settings/ai-models-store";
@@ -39,7 +40,8 @@ type BranchWorkspaceEntry = {
  */
 export class ProjectSessionImpl extends RpcTarget implements ProjectSession {
   readonly #projectId: number;
-  readonly #repo: ReturnType<typeof createSqliteRepository>;
+  readonly #opened: ReturnType<typeof openSqliteGitRepository>;
+  readonly #repo: Repository;
   readonly #worktrees: WorktreeRepository;
   readonly #projects: ProjectsRepository;
   readonly #getGitCredentialsStore: () => GitCredentialsStore;
@@ -66,7 +68,8 @@ export class ProjectSessionImpl extends RpcTarget implements ProjectSession {
   ) {
     super();
     this.#projectId = projectId;
-    this.#repo = createSqliteRepository(repoPath);
+    this.#opened = openSqliteGitRepository(repoPath);
+    this.#repo = this.#opened.repo;
     this.#worktrees = worktrees;
     this.#projects = projects;
     this.#getGitCredentialsStore = getGitCredentialsStore;
@@ -408,7 +411,7 @@ export class ProjectSessionImpl extends RpcTarget implements ProjectSession {
       entry.workspace[Symbol.dispose]();
     }
     this.#branchWorkspaces.clear();
-    this.#repo[Symbol.dispose]();
+    this.#opened[Symbol.dispose]();
   }
 }
 

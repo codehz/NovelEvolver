@@ -2,12 +2,12 @@ import { existsSync } from "node:fs";
 
 import { RpcTarget } from "capnweb";
 import { dialog, type BrowserWindow } from "electron";
-import { createSqliteRepository } from "nano-git/repository/sqlite";
 
 import type { ProjectLibraryService } from "#desktop-rpc/services/project-library-service";
 import type { ProjectMetadata } from "#domain/project";
 
 import { ProjectsRepository } from "../../db/repositories/projects-repo";
+import { openSqliteGitRepository } from "../../lib/nano-git-sqlite";
 import { toProjectMetadata } from "../../projects/home-path";
 import type { RpcMainDeps } from "../server/deps";
 
@@ -65,7 +65,7 @@ export class ProjectLibraryServiceImpl extends RpcTarget implements ProjectLibra
       throw new Error("该路径已存在项目文件，请选择其他位置或文件名");
     }
 
-    using _repo = createSqliteRepository(path);
+    using _opened = openSqliteGitRepository(path);
 
     return toProjectMetadata(this.#projects.upsertByPath(path, Date.now()));
   }
