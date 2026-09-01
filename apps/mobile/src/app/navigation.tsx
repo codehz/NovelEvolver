@@ -12,7 +12,6 @@ import {
 } from "@react-navigation/native-stack";
 import IconAdd from "~icons/codicon/add";
 
-import { ChapterEditorScreen } from "../features/projects/ChapterEditorScreen";
 import { ProjectListScreen } from "../features/projects/ProjectListScreen";
 import { ProjectScreen } from "../features/projects/ProjectScreen";
 import { AgentEditor, AiAgentsList } from "../features/settings/ai-agents/AiAgentsPanel";
@@ -215,10 +214,6 @@ const RootStack = createNativeStackNavigator({
     Home: ProjectListScreen,
     Project: createNativeStackScreen({
       screen: ProjectScreen,
-      options: { headerShown: false },
-    }),
-    Chapter: createNativeStackScreen({
-      screen: ChapterEditorScreen,
       options: { headerShown: false },
     }),
     Settings: SettingsSplit,

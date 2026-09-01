@@ -8,10 +8,15 @@ export type RootStackParamList = {
   Home: undefined;
   Settings: undefined;
   Project: { projectId: number };
-  Chapter: { projectId: number; nodeId: string };
   Alert: OverlayAlertParams;
   Confirm: OverlayConfirmParams;
   Prompt: OverlayPromptParams;
+};
+
+export type ProjectTabParamList = {
+  Project: undefined;
+  Editor: undefined;
+  AI: undefined;
 };
 
 export type AiModelsStackParamList = {

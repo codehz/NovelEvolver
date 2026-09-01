@@ -100,6 +100,7 @@ function ManuscriptTreeRowSlot({
 
 type ManuscriptTreeListProps = {
   outline: ManuscriptOutline;
+  selectedNodeId: string | null;
   onOpenChapter: (nodeId: string) => void;
   onRename: (node: ManuscriptNode) => void;
   onDelete: (node: ManuscriptNode) => void;
@@ -108,6 +109,7 @@ type ManuscriptTreeListProps = {
 
 export function ManuscriptTreeList({
   outline,
+  selectedNodeId,
   onOpenChapter,
   onRename,
   onDelete,
@@ -373,6 +375,7 @@ export function ManuscriptTreeList({
               >
                 <ManuscriptTreeRow
                   row={row}
+                  selected={selectedNodeId === row.id}
                   ghost={slot.ghost}
                   swipeEnabled={draggingId === null || draggingId === row.id}
                   dragEnabled={draggingId === null || draggingId === row.id}

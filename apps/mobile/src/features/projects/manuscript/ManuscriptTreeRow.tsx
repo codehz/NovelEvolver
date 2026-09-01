@@ -14,7 +14,7 @@ import IconFolder from "~icons/codicon/folder";
 import IconFolderOpened from "~icons/codicon/folder-opened";
 import IconTrash from "~icons/codicon/trash";
 
-import { color, fontFamily, fontSize, radius, space } from "../../../shared/theme";
+import { color, fontFamily, fontSize, radius, space, wash } from "../../../shared/theme";
 import { OVERLAY_TIMING } from "../../../shared/ui/overlay-chrome";
 import type { ManuscriptVisibleRow } from "./manuscript-tree-flatten";
 
@@ -51,6 +51,7 @@ type ManuscriptTreeRowContentProps = {
   type: ManuscriptVisibleRow["type"];
   depth: number;
   expanded: boolean;
+  selected?: boolean;
 };
 
 export function ManuscriptTreeRowContent({
@@ -58,11 +59,18 @@ export function ManuscriptTreeRowContent({
   type,
   depth,
   expanded,
+  selected = false,
 }: ManuscriptTreeRowContentProps) {
   const Icon = type === "folder" ? (expanded ? IconFolderOpened : IconFolder) : IconBook;
   const iconColor = type === "folder" ? color.accent : color.info;
   return (
-    <View style={[styles.row, { paddingLeft: space[3] + depth * space[4] }]}>
+    <View
+      style={[
+        styles.row,
+        selected ? styles.rowSelected : undefined,
+        { paddingLeft: space[3] + depth * space[4] },
+      ]}
+    >
       <Icon width={18} height={18} color={iconColor} />
       <Text style={styles.title} numberOfLines={1}>
         {title}
@@ -146,6 +154,7 @@ function ManuscriptTreeRowActions({
 
 type ManuscriptTreeRowProps = {
   row: ManuscriptVisibleRow;
+  selected: boolean;
   ghost: boolean;
   swipeEnabled: boolean;
   dragEnabled: boolean;
@@ -160,6 +169,7 @@ type ManuscriptTreeRowProps = {
 
 export function ManuscriptTreeRow({
   row,
+  selected,
   ghost,
   swipeEnabled,
   dragEnabled,
@@ -273,6 +283,7 @@ export function ManuscriptTreeRow({
           }}
           accessibilityRole="button"
           accessibilityLabel={row.title}
+          accessibilityState={{ selected }}
         >
           <Animated.View style={ghostStyle}>
             <ManuscriptTreeRowContent
@@ -280,6 +291,7 @@ export function ManuscriptTreeRow({
               type={row.type}
               depth={row.depth}
               expanded={row.expanded}
+              selected={selected}
             />
           </Animated.View>
         </Pressable>
@@ -296,6 +308,9 @@ const styles = StyleSheet.create({
     gap: space[2],
     paddingRight: space[3],
     backgroundColor: color.background,
+  },
+  rowSelected: {
+    backgroundColor: wash.accentSoft,
   },
   preview: {
     height: MANUSCRIPT_TREE_PREVIEW_HEIGHT,

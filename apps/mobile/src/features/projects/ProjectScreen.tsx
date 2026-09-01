@@ -1,9 +1,9 @@
-import type { ManuscriptNode } from "@novelevolver/domain/worktree";
+import type { ManuscriptNode, ManuscriptOutline } from "@novelevolver/domain/worktree";
 import { Header } from "@react-navigation/elements";
 import { useNavigation, useRoute } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { useEffect, useState } from "react";
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import { StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import type { RootStackParamList } from "../../app/navigation-types";
@@ -13,27 +13,39 @@ import {
   ensureDirectory,
   shareNpk,
 } from "../../shared/files/mobile-file-bridge";
-import { color, fontFamily, fontSize, radius, space, wash } from "../../shared/theme";
+import { color, fontFamily, fontSize } from "../../shared/theme";
 import { useOverlay } from "../../shared/ui/OverlayHost";
 import { settingsStyles } from "../settings/settings-chrome";
 import { SettingsHeaderBackButton } from "../settings/SettingsHeaderBackButton";
 import { SettingsHeaderButton } from "../settings/SettingsHeaderButton";
-import { ManuscriptTreeList } from "./manuscript/ManuscriptTreeList";
 import { useProjectManager } from "./ProjectManagerProvider";
+import { ProjectWorkspace } from "./ProjectWorkspace";
 
 function errorMessage(error: unknown): string {
   return error instanceof Error ? error.message : String(error);
 }
 
+function containsManuscriptNode(
+  outline: ManuscriptOutline,
+  ancestorId: string,
+  targetId: string,
+): boolean {
+  if (ancestorId === targetId) return true;
+  const node = outline.nodes[ancestorId];
+  if (node?.type !== "folder") return false;
+  return node.children.some((childId) => containsManuscriptNode(outline, childId, targetId));
+}
+
 export function ProjectScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
-  const overlay = useOverlay();
   const route = useRoute();
+  const overlay = useOverlay();
   const projectId = (route.params as RootStackParamList["Project"]).projectId;
   const manager = useProjectManager();
   const [opened, setOpened] = useState(
     manager.opened?.record.id === projectId ? manager.opened : null,
   );
+  const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
   const [, setRevision] = useState(0);
 
   useEffect(() => {
@@ -125,19 +137,21 @@ export function ProjectScreen() {
       await overlay.alert({ title: "创建失败", message: errorMessage(error) });
     }
   };
-  const createChapter = async () => {
+  const createChapter = async (): Promise<boolean> => {
     const name = await overlay.prompt({
       title: "新建章节",
       placeholder: "章节名称",
       confirmLabel: "创建",
     });
-    if (name === null) return;
+    if (name === null) return false;
     try {
       const { nodeId } = opened.worktree.createManuscriptChapter(outline.rootId, name);
       update();
-      navigation.navigate("Chapter", { projectId, nodeId });
+      setSelectedNodeId(nodeId);
+      return true;
     } catch (error) {
       await overlay.alert({ title: "创建失败", message: errorMessage(error) });
+      return false;
     }
   };
   const renameNode = async (node: ManuscriptNode) => {
@@ -163,6 +177,9 @@ export function ProjectScreen() {
     if (!confirmed) return;
     try {
       opened.worktree.deleteManuscriptNode(node.id);
+      if (containsManuscriptNode(outline, node.id, selectedNodeId ?? "")) {
+        setSelectedNodeId(null);
+      }
       update();
     } catch (error) {
       await overlay.alert({ title: "删除失败", message: errorMessage(error) });
@@ -238,48 +255,12 @@ export function ProjectScreen() {
           </>
         )}
       />
-      <View style={styles.toolbar}>
-        <Pressable
-          style={styles.primaryButton}
-          onPress={() => {
-            void commitWorktree();
-          }}
-        >
-          <Text style={styles.primaryText}>提交</Text>
-        </Pressable>
-        <Pressable
-          style={styles.secondaryButton}
-          onPress={() => {
-            void createFolder();
-          }}
-        >
-          <Text style={styles.secondaryText}>文件夹</Text>
-        </Pressable>
-        <Pressable
-          style={styles.secondaryButton}
-          onPress={() => {
-            void createChapter();
-          }}
-        >
-          <Text style={styles.secondaryText}>章节</Text>
-        </Pressable>
-        <Pressable
-          style={styles.dangerButton}
-          onPress={() => {
-            void deleteProject();
-          }}
-        >
-          <Text style={styles.dangerText}>删除</Text>
-        </Pressable>
-      </View>
-      {opened.worktree.warning !== null && (
-        <Text style={styles.warning}>{opened.worktree.warning}</Text>
-      )}
-      <ManuscriptTreeList
+      <ProjectWorkspace
+        opened={opened}
         outline={outline}
-        onOpenChapter={(nodeId) => {
-          navigation.navigate("Chapter", { projectId, nodeId });
-        }}
+        selectedNodeId={selectedNodeId}
+        warning={opened.worktree.warning}
+        onOpenChapter={setSelectedNodeId}
         onRename={(node) => {
           void renameNode(node);
         }}
@@ -287,6 +268,16 @@ export function ProjectScreen() {
           void deleteNode(node);
         }}
         onMove={moveNode}
+        onCommit={() => {
+          void commitWorktree();
+        }}
+        onCreateFolder={() => {
+          void createFolder();
+        }}
+        onCreateChapter={createChapter}
+        onDeleteProject={() => {
+          void deleteProject();
+        }}
       />
     </SafeAreaView>
   );
@@ -305,40 +296,6 @@ const styles = StyleSheet.create({
     fontSize: fontSize.md,
     fontWeight: "600",
   },
-  toolbar: { flexDirection: "row", flexWrap: "wrap", gap: space[2], padding: space[3] },
-  primaryButton: {
-    borderRadius: radius.control,
-    backgroundColor: color.accent,
-    paddingHorizontal: space[3],
-    paddingVertical: space[2],
-  },
-  primaryText: {
-    color: color.primaryForeground,
-    fontFamily: fontFamily.sans,
-    fontSize: fontSize.sm,
-    fontWeight: "600",
-  },
-  secondaryButton: {
-    borderRadius: radius.control,
-    backgroundColor: color.field,
-    paddingHorizontal: space[3],
-    paddingVertical: space[2],
-  },
-  secondaryText: { color: color.foreground, fontFamily: fontFamily.sans, fontSize: fontSize.sm },
-  dangerButton: {
-    borderRadius: radius.control,
-    backgroundColor: wash.dangerSoft,
-    paddingHorizontal: space[3],
-    paddingVertical: space[2],
-  },
-  warning: {
-    color: color.warning,
-    fontFamily: fontFamily.sans,
-    fontSize: fontSize.xs,
-    paddingHorizontal: space[3],
-    paddingBottom: space[2],
-  },
-  dangerText: { color: color.error, fontFamily: fontFamily.sans, fontSize: fontSize.sm },
   center: { flex: 1, alignItems: "center", justifyContent: "center" },
   text: { color: color.muted, fontFamily: fontFamily.sans, fontSize: fontSize.sm },
 });
