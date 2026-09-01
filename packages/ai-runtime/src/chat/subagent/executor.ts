@@ -15,6 +15,7 @@ import type {
 import { MOCK_AI_MODEL_ID } from "@novelevolver/domain/ai";
 import type { AiReasoningLevel } from "@novelevolver/domain/settings/ai-settings";
 
+import { createAbortError, isAbortError } from "../../abort-error";
 import {
   addMessageUsage,
   contentBlockToDisplayText,
@@ -136,13 +137,6 @@ function resolveSubagentPolicy(partial?: Partial<SubagentRuntimePolicy>): Subage
   };
 }
 
-function isAbortError(error: unknown): boolean {
-  if (error instanceof DOMException && error.name === "AbortError") {
-    return true;
-  }
-  return error instanceof Error && error.name === "AbortError";
-}
-
 function emptyArtifacts(): SubagentArtifacts {
   return { touched_node_ids: [], wrote: false };
 }
@@ -204,7 +198,7 @@ async function consumeStreamWithProgress(
   async function* observeProgress(): AsyncGenerator<AIStreamEvent> {
     for await (const event of stream) {
       if (signal.aborted) {
-        throw new DOMException("AI generation stopped by user.", "AbortError");
+        throw createAbortError();
       }
 
       if (event.type === "message.delta") {

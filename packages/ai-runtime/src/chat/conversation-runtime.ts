@@ -30,6 +30,7 @@ import {
   type AiConversationRecord,
 } from "@novelevolver/worktree";
 
+import { createAbortError, isAbortError } from "../abort-error";
 import { addMessageUsage, joinContentBlocksText, toErrorMessage } from "../ai-utils";
 import type { AiBackendSession } from "../backend/ai-backend-session";
 import { createAiBackendSession } from "../backend/create-ai-backend";
@@ -117,13 +118,6 @@ export type AiConversationRuntimeOptions = {
 
 export function shouldProcessToolCalls(response: Pick<AIResponse, "toolCalls">): boolean {
   return response.toolCalls.length > 0;
-}
-
-function isAbortError(error: unknown): boolean {
-  if (error instanceof DOMException && error.name === "AbortError") {
-    return true;
-  }
-  return error instanceof Error && error.name === "AbortError";
 }
 
 export class AiConversationRuntime {
@@ -723,7 +717,7 @@ export class AiConversationRuntime {
 
       while (true) {
         if (signal.aborted) {
-          throw new DOMException("AI generation stopped by user.", "AbortError");
+          throw createAbortError();
         }
 
         const streamStartPartCount = this.#state.countAssistantParts(context.assistantMessageId);
@@ -771,7 +765,7 @@ export class AiConversationRuntime {
         }
 
         if (signal.aborted) {
-          throw new DOMException("AI generation stopped by user.", "AbortError");
+          throw createAbortError();
         }
 
         toolRoundCount += 1;
