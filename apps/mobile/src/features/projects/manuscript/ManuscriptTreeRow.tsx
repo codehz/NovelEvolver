@@ -44,7 +44,6 @@ type ManuscriptTreeRowContentProps = {
   type: ManuscriptVisibleRow["type"];
   depth: number;
   expanded: boolean;
-  highlighted?: boolean;
 };
 
 export function ManuscriptTreeRowContent({
@@ -52,18 +51,11 @@ export function ManuscriptTreeRowContent({
   type,
   depth,
   expanded,
-  highlighted = false,
 }: ManuscriptTreeRowContentProps) {
   const Icon = type === "folder" ? (expanded ? IconFolderOpened : IconFolder) : IconBook;
   const iconColor = type === "folder" ? color.accent : color.info;
   return (
-    <View
-      style={[
-        styles.row,
-        { paddingLeft: space[3] + depth * space[4] },
-        highlighted && styles.highlighted,
-      ]}
-    >
+    <View style={[styles.row, { paddingLeft: space[3] + depth * space[4] }]}>
       <Icon width={18} height={18} color={iconColor} />
       <Text style={styles.title} numberOfLines={1}>
         {title}
@@ -150,7 +142,6 @@ function ManuscriptTreeRowActions({
 type ManuscriptTreeRowProps = {
   row: ManuscriptVisibleRow;
   hidden: boolean;
-  highlighted: boolean;
   swipeEnabled: boolean;
   dragEnabled: boolean;
   onPress: () => void;
@@ -165,7 +156,6 @@ type ManuscriptTreeRowProps = {
 export function ManuscriptTreeRow({
   row,
   hidden,
-  highlighted,
   swipeEnabled,
   dragEnabled,
   onPress,
@@ -280,7 +270,6 @@ export function ManuscriptTreeRow({
               type={row.type}
               depth={row.depth}
               expanded={row.expanded}
-              highlighted={highlighted}
             />
           </View>
         </Pressable>
@@ -297,9 +286,6 @@ const styles = StyleSheet.create({
     gap: space[2],
     paddingRight: space[3],
     backgroundColor: color.background,
-  },
-  highlighted: {
-    backgroundColor: color.field,
   },
   hidden: {
     opacity: 0,

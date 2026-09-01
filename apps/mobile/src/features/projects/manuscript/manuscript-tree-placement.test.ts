@@ -146,7 +146,15 @@ describe("resolveManuscriptDrop", () => {
     const drop = dropAt(outline, "chapter003", 3, "inside");
     expect(drop?.commit).toBe(true);
     expect(drop?.target).toEqual({ kind: "into", parentId: "folderb002" });
-    expect(drop?.preview.kind).toBe("into");
+    expect(drop?.preview).toEqual({ kind: "highlight", startIndex: 3, endIndex: 3 });
+  });
+
+  test("highlights the visible subtree when dropping into an expanded folder", () => {
+    const outline = sampleOutline();
+    const drop = dropAt(outline, "chapter003", 0, "inside");
+    expect(drop?.commit).toBe(true);
+    expect(drop?.target).toEqual({ kind: "into", parentId: "foldera001" });
+    expect(drop?.preview).toEqual({ kind: "highlight", startIndex: 0, endIndex: 2 });
   });
 
   test("moves a nested chapter out to root by dropping after a root sibling", () => {

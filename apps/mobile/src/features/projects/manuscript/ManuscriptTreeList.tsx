@@ -24,6 +24,7 @@ import {
   resolveManuscriptDrop,
   type ManuscriptResolvedDrop,
 } from "./manuscript-tree-placement";
+import { ManuscriptDropIndicator } from "./ManuscriptDropIndicator";
 import {
   MANUSCRIPT_TREE_PREVIEW_ANCHOR_X,
   MANUSCRIPT_TREE_PREVIEW_HEIGHT,
@@ -33,7 +34,6 @@ import {
   type ManuscriptDragPointer,
 } from "./ManuscriptTreeRow";
 
-const INSERT_INDICATOR_HEIGHT = 3;
 const AUTO_SCROLL_EDGE = 52;
 const AUTO_SCROLL_STEP = 16;
 const ROW_ENTER_Y_OFFSET = 6;
@@ -350,7 +350,6 @@ export function ManuscriptTreeList({
                 <ManuscriptTreeRow
                   row={row}
                   hidden={slot.hidden}
-                  highlighted={drop?.preview.kind === "into" && drop.preview.folderId === row.id}
                   swipeEnabled={draggingId === null || draggingId === row.id}
                   dragEnabled={draggingId === null || draggingId === row.id}
                   onPress={() => {
@@ -388,20 +387,7 @@ export function ManuscriptTreeList({
               </ManuscriptTreeRowSlot>
             );
           })}
-          {drop?.preview.kind === "insert" ? (
-            <View
-              pointerEvents="none"
-              style={[
-                styles.indicator,
-                {
-                  top:
-                    manuscriptRowSlotY(drop.preview.visualIndex, MANUSCRIPT_TREE_ROW_HEIGHT) -
-                    INSERT_INDICATOR_HEIGHT / 2,
-                  left: space[3] + drop.preview.depth * space[4],
-                },
-              ]}
-            />
-          ) : null}
+          <ManuscriptDropIndicator preview={drop?.preview ?? null} />
         </View>
       </ScrollView>
       <View pointerEvents="none" style={StyleSheet.absoluteFill}>
@@ -445,13 +431,6 @@ const styles = StyleSheet.create({
     fontSize: fontSize.sm,
     textAlign: "center",
     padding: space[6],
-  },
-  indicator: {
-    position: "absolute",
-    right: space[3],
-    height: INSERT_INDICATOR_HEIGHT,
-    borderRadius: INSERT_INDICATOR_HEIGHT,
-    backgroundColor: color.accent,
   },
   previewWrap: {
     position: "absolute",

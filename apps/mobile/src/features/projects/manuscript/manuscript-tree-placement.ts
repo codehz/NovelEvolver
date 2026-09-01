@@ -16,7 +16,7 @@ export type ManuscriptMoveTarget =
 
 export type ManuscriptDropPreview =
   | { kind: "insert"; visualIndex: number; depth: number }
-  | { kind: "into"; folderId: string; visualIndex: number; depth: number };
+  | { kind: "highlight"; startIndex: number; endIndex: number };
 
 export type ManuscriptResolvedDrop = {
   preview: ManuscriptDropPreview;
@@ -163,20 +163,14 @@ function resolveManuscriptDropCore(
     );
   };
 
-  const resolveInto = (rowIndex: number, folderId: string) => {
-    const visualIndex = isExpandedFolderWithVisibleChildren(rowIndex, folderId)
-      ? (subtreeEndIndexes[rowIndex] ?? rowIndex) + 1
-      : rowIndex + 1;
-    return {
-      preview: {
-        kind: "into" as const,
-        folderId,
-        visualIndex,
-        depth: getInsertDepth(folderId),
-      },
-      target: { kind: "into" as const, parentId: folderId },
-    };
-  };
+  const resolveInto = (rowIndex: number, folderId: string) => ({
+    preview: {
+      kind: "highlight" as const,
+      startIndex: rowIndex,
+      endIndex: subtreeEndIndexes[rowIndex] ?? rowIndex,
+    },
+    target: { kind: "into" as const, parentId: folderId },
+  });
 
   if (hoveredRowIndex === null) {
     return {
