@@ -1,5 +1,8 @@
 import { asBytes } from "../../native/sha1";
 import { sha1Native } from "../../native/sha1-native";
+import { randomUUID } from "./crypto-global";
+
+export { randomUUID };
 
 type HashInput = string | Uint8Array | ArrayBuffer;
 type Hash = {
@@ -41,5 +44,5 @@ export function createHash(algorithm: string): Hash {
   };
 }
 
-const cryptoStub = { createHash };
+const cryptoStub = { createHash, randomUUID };
 export default cryptoStub;

@@ -1,4 +1,5 @@
 import "./src/shared/node-compat/buffer";
+import "./src/shared/node-compat/crypto-global";
 import { AppRegistry } from "react-native";
 import "react-native-gesture-handler";
 
