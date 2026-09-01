@@ -156,7 +156,20 @@ export default defineConfig({
           },
           options: {
             parserOpts: { plugins: ["jsx", "typescript"] },
-            plugins: [require.resolve("react-native-worklets/plugin")],
+            plugins: [
+              // Hermes parses neither `async function*` nor `for await`.
+              require.resolve("@babel/plugin-transform-async-generator-functions"),
+              require.resolve("react-native-worklets/plugin"),
+            ],
+          },
+        },
+        {
+          filter: {
+            id: /node_modules[/\\](?:@novelevolver[/\\]ai-runtime|@codehz[/\\]ai)[/\\].*\.[cm]?[jt]sx?$/,
+          },
+          options: {
+            parserOpts: { plugins: ["jsx", "typescript"] },
+            plugins: [require.resolve("@babel/plugin-transform-async-generator-functions")],
           },
         },
         {
