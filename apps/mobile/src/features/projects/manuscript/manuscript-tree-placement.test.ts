@@ -5,6 +5,8 @@ import type { ManuscriptOutline } from "@novelevolver/domain/worktree";
 
 import { flattenVisibleManuscriptRows, visualManuscriptRowSlots } from "./manuscript-tree-flatten";
 import {
+  manuscriptTreeActionCenterX,
+  manuscriptTreeActionTooltipPlacement,
   manuscriptTreeDragZoneKey,
   resolveManuscriptTreeDragZone,
 } from "./manuscript-tree-gesture";
@@ -125,6 +127,44 @@ describe("resolveManuscriptTreeDragZone", () => {
     expect(manuscriptTreeDragZoneKey({ kind: "action", action: "rename" })).toBe("action:rename");
     expect(manuscriptTreeDragZoneKey({ kind: "inside" })).toBe("inside");
     expect(manuscriptTreeDragZoneKey(null)).toBe("");
+  });
+});
+
+describe("manuscriptTreeActionCenterX", () => {
+  const layout = {
+    listWidth: 320,
+    actionWidth: 64,
+    actionGap: 8,
+    actionRightMargin: 8,
+  };
+
+  test("centers on rename and delete buttons", () => {
+    expect(manuscriptTreeActionCenterX({ action: "rename", ...layout })).toBe(208);
+    expect(manuscriptTreeActionCenterX({ action: "delete", ...layout })).toBe(280);
+  });
+});
+
+describe("manuscriptTreeActionTooltipPlacement", () => {
+  test("keeps the tooltip above when the source row has room", () => {
+    expect(
+      manuscriptTreeActionTooltipPlacement({
+        rowTop: 96,
+        rowHeight: ROW_HEIGHT,
+        tooltipHeight: 28,
+        gap: 4,
+      }),
+    ).toEqual({ top: 64, side: "above" });
+  });
+
+  test("flips below when the source row is at the clipped top edge", () => {
+    expect(
+      manuscriptTreeActionTooltipPlacement({
+        rowTop: 0,
+        rowHeight: ROW_HEIGHT,
+        tooltipHeight: 28,
+        gap: 4,
+      }),
+    ).toEqual({ top: 52, side: "below" });
   });
 });
 

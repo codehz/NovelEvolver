@@ -22,6 +22,7 @@ import {
 import {
   manuscriptTreeDragZoneKey,
   resolveManuscriptTreeDragZone,
+  type ManuscriptTreeDragAction,
   type ManuscriptTreeDragZone,
 } from "./manuscript-tree-gesture";
 import {
@@ -37,6 +38,7 @@ import {
   MANUSCRIPT_TREE_PREVIEW_ANCHOR_X,
   MANUSCRIPT_TREE_PREVIEW_HEIGHT,
   MANUSCRIPT_TREE_ROW_HEIGHT,
+  ManuscriptTreeActionTooltip,
   ManuscriptTreeDragPreview,
   ManuscriptTreeRow,
   type ManuscriptDragPointer,
@@ -165,6 +167,14 @@ export function ManuscriptTreeList({
   const latestRef = useRef({ outline, rows, onMove, onRename, onDelete });
   latestRef.current = { outline, rows, onMove, onRename, onDelete };
   const [dragZone, setDragZone] = useState<ManuscriptTreeDragZone | null>(null);
+  const [actionHover, setActionHover] = useState<{
+    action: ManuscriptTreeDragAction;
+    rowTop: number;
+  } | null>(null);
+  const actionHoverRef = useRef<{
+    action: ManuscriptTreeDragAction;
+    rowTop: number;
+  } | null>(null);
   const overlayY = useSharedValue(0);
   const overlayX = useSharedValue(0);
   const overlayProgress = useSharedValue(0);
@@ -288,6 +298,18 @@ export function ManuscriptTreeList({
       if (nextZone.kind === "outside") overlayProgress.value = withTiming(1, OVERLAY_TIMING);
       else overlayProgress.value = withTiming(0, OVERLAY_TIMING);
     }
+    const nextHover =
+      nextZone.kind === "action"
+        ? { action: nextZone.action, rowTop: sourceRowTop(sourceId) }
+        : null;
+    const previousHover = actionHoverRef.current;
+    if (
+      previousHover?.action !== nextHover?.action ||
+      previousHover?.rowTop !== nextHover?.rowTop
+    ) {
+      actionHoverRef.current = nextHover;
+      setActionHover(nextHover);
+    }
     if (nextZone.kind === "outside") applyDrop(sourceId, pointer);
     else clearDrop();
   };
@@ -383,6 +405,8 @@ export function ManuscriptTreeList({
     dropRef.current = null;
     setDragZone(null);
     setDrop(null);
+    actionHoverRef.current = null;
+    setActionHover(null);
     const source = latestRef.current.outline.nodes[sourceId];
     if (source !== undefined && zone?.kind === "action") {
       if (zone.action === "rename") latestRef.current.onRename(source);
@@ -476,7 +500,7 @@ export function ManuscriptTreeList({
           <ManuscriptDropIndicator preview={drop?.preview ?? null} />
         </View>
       </ScrollView>
-      <View pointerEvents="none" style={StyleSheet.absoluteFill}>
+      <View pointerEvents="none" style={styles.overlayLayer}>
         <Animated.View pointerEvents="none" style={[styles.previewWrap, overlayStyle]}>
           {preview !== null ? (
             <Animated.View pointerEvents="none" style={overlayScaleStyle}>
@@ -488,6 +512,11 @@ export function ManuscriptTreeList({
             </Animated.View>
           ) : null}
         </Animated.View>
+        <ManuscriptTreeActionTooltip
+          action={actionHover?.action ?? null}
+          rowTop={actionHover?.rowTop ?? 0}
+          listWidth={listFrameRef.current.width}
+        />
       </View>
     </View>
   );
@@ -522,5 +551,14 @@ const styles = StyleSheet.create({
     position: "absolute",
     left: 0,
     top: 0,
+  },
+  overlayLayer: {
+    position: "absolute",
+    left: 0,
+    right: 0,
+    top: 0,
+    bottom: 0,
+    zIndex: 8,
+    elevation: 12,
   },
 });

@@ -54,3 +54,38 @@ export function manuscriptTreeDragZoneKey(zone: ManuscriptTreeDragZone | null): 
   if (zone === null) return "";
   return zone.kind === "action" ? `${zone.kind}:${zone.action}` : zone.kind;
 }
+
+export function manuscriptTreeActionCenterX({
+  action,
+  listWidth,
+  actionWidth,
+  actionGap,
+  actionRightMargin,
+}: {
+  action: ManuscriptTreeDragAction;
+  listWidth: number;
+  actionWidth: number;
+  actionGap: number;
+  actionRightMargin: number;
+}): number {
+  const actionEnd = listWidth - actionRightMargin;
+  if (action === "delete") return actionEnd - actionWidth / 2;
+  return actionEnd - actionWidth * 1.5 - actionGap;
+}
+
+export function manuscriptTreeActionTooltipPlacement({
+  rowTop,
+  rowHeight,
+  tooltipHeight,
+  gap,
+}: {
+  rowTop: number;
+  rowHeight: number;
+  tooltipHeight: number;
+  gap: number;
+}): { top: number; side: "above" | "below" } {
+  if (rowTop >= tooltipHeight + gap) {
+    return { top: rowTop - gap - tooltipHeight, side: "above" };
+  }
+  return { top: rowTop + rowHeight + gap, side: "below" };
+}

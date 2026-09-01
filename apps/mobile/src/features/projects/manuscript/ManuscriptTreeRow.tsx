@@ -16,7 +16,11 @@ import IconTrash from "~icons/codicon/trash";
 import { color, fontFamily, fontSize, radius, space, wash } from "../../../shared/theme";
 import { OVERLAY_TIMING } from "../../../shared/ui/overlay-chrome";
 import type { ManuscriptVisibleRow } from "./manuscript-tree-flatten";
-import type { ManuscriptTreeDragAction } from "./manuscript-tree-gesture";
+import {
+  manuscriptTreeActionCenterX,
+  manuscriptTreeActionTooltipPlacement,
+  type ManuscriptTreeDragAction,
+} from "./manuscript-tree-gesture";
 
 export const MANUSCRIPT_TREE_ROW_HEIGHT = 48;
 export const MANUSCRIPT_TREE_PREVIEW_HEIGHT = 36;
@@ -28,6 +32,14 @@ export const MANUSCRIPT_TREE_ACTION_GAP = space[1];
 export const MANUSCRIPT_TREE_ACTION_RIGHT_MARGIN = space[2];
 export const MANUSCRIPT_TREE_ACTION_AREA_WIDTH =
   MANUSCRIPT_TREE_ACTION_WIDTH * 2 + MANUSCRIPT_TREE_ACTION_GAP;
+export const MANUSCRIPT_TREE_ACTION_TOOLTIP_GAP = space[1];
+export const MANUSCRIPT_TREE_ACTION_TOOLTIP_WRAP_WIDTH = 72;
+export const MANUSCRIPT_TREE_ACTION_TOOLTIP_HEIGHT = space[1] * 2 + fontSize.xs + 2;
+
+const ACTION_TOOLTIP_LABELS: Record<ManuscriptTreeDragAction, string> = {
+  rename: "改名",
+  delete: "删除",
+};
 
 export type ManuscriptDragPointer = {
   x: number;
@@ -117,6 +129,69 @@ type ManuscriptTreeRowActionsProps = {
   activeAction: ManuscriptTreeDragAction | null;
   visible: boolean;
 };
+
+type ManuscriptTreeActionTooltipProps = {
+  action: ManuscriptTreeDragAction | null;
+  rowTop: number;
+  listWidth: number;
+};
+
+export function ManuscriptTreeActionTooltip({
+  action,
+  rowTop,
+  listWidth,
+}: ManuscriptTreeActionTooltipProps) {
+  const visible = action !== null && listWidth > 0;
+  const lastRef = useRef({
+    action: "rename" as ManuscriptTreeDragAction,
+    rowTop: 0,
+    listWidth: 0,
+  });
+  if (visible) {
+    lastRef.current = { action, rowTop, listWidth };
+  }
+  const shown = lastRef.current;
+  const opacity = useSharedValue(0);
+  opacity.value = withTiming(visible ? 1 : 0, OVERLAY_TIMING);
+  const fadeStyle = useAnimatedStyle(() => ({ opacity: opacity.value }));
+  const centerX = manuscriptTreeActionCenterX({
+    action: shown.action,
+    listWidth: shown.listWidth,
+    actionWidth: MANUSCRIPT_TREE_ACTION_WIDTH,
+    actionGap: MANUSCRIPT_TREE_ACTION_GAP,
+    actionRightMargin: MANUSCRIPT_TREE_ACTION_RIGHT_MARGIN,
+  });
+  const placement = manuscriptTreeActionTooltipPlacement({
+    rowTop: shown.rowTop,
+    rowHeight: MANUSCRIPT_TREE_ROW_HEIGHT,
+    tooltipHeight: MANUSCRIPT_TREE_ACTION_TOOLTIP_HEIGHT,
+    gap: MANUSCRIPT_TREE_ACTION_TOOLTIP_GAP,
+  });
+  return (
+    <Animated.View
+      pointerEvents="none"
+      style={[
+        styles.tooltipWrap,
+        fadeStyle,
+        {
+          left: centerX - MANUSCRIPT_TREE_ACTION_TOOLTIP_WRAP_WIDTH / 2,
+          top: placement.top,
+        },
+      ]}
+    >
+      <View style={styles.tooltipBubble}>
+        <Text
+          style={[
+            styles.tooltipLabel,
+            shown.action === "delete" ? styles.tooltipLabelDanger : undefined,
+          ]}
+        >
+          {ACTION_TOOLTIP_LABELS[shown.action]}
+        </Text>
+      </View>
+    </Animated.View>
+  );
+}
 
 function ManuscriptTreeRowActions({ activeAction, visible }: ManuscriptTreeRowActionsProps) {
   const actionsOpacity = useSharedValue(0);
@@ -339,5 +414,34 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     borderRadius: radius.panel,
+  },
+  tooltipWrap: {
+    position: "absolute",
+    width: MANUSCRIPT_TREE_ACTION_TOOLTIP_WRAP_WIDTH,
+    alignItems: "center",
+    zIndex: 8,
+    elevation: 12,
+  },
+  tooltipBubble: {
+    backgroundColor: color.crust,
+    paddingHorizontal: space[2],
+    paddingVertical: space[1],
+    borderRadius: radius.md,
+    borderWidth: 1,
+    borderColor: color.border,
+    elevation: 12,
+    shadowColor: color.crust,
+    shadowOpacity: 0.45,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 4 },
+  },
+  tooltipLabel: {
+    color: color.foreground,
+    fontFamily: fontFamily.sans,
+    fontSize: fontSize.xs,
+    fontWeight: "600",
+  },
+  tooltipLabelDanger: {
+    color: color.error,
   },
 });
