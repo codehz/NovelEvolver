@@ -8,18 +8,39 @@ import IconFolder from "~icons/codicon/folder";
 import IconFolderOpened from "~icons/codicon/folder-opened";
 import IconTrash from "~icons/codicon/trash";
 
-import { color, fontFamily, fontSize, space } from "../../../shared/theme";
+import { color, fontFamily, fontSize, radius, space } from "../../../shared/theme";
 import type { ManuscriptVisibleRow } from "./manuscript-tree-flatten";
 
 export const MANUSCRIPT_TREE_ROW_HEIGHT = 48;
+export const MANUSCRIPT_TREE_PREVIEW_HEIGHT = 36;
 const ACTION_WIDTH = 72;
+
+export type ManuscriptDragPointer = {
+  x: number;
+  y: number;
+  absoluteX: number;
+  absoluteY: number;
+};
+
+function pointerFromEvent(event: {
+  x: number;
+  y: number;
+  absoluteX: number;
+  absoluteY: number;
+}): ManuscriptDragPointer {
+  return {
+    x: event.x,
+    y: event.y,
+    absoluteX: event.absoluteX,
+    absoluteY: event.absoluteY,
+  };
+}
 
 type ManuscriptTreeRowContentProps = {
   title: string;
   type: ManuscriptVisibleRow["type"];
   depth: number;
   expanded: boolean;
-  dimmed?: boolean;
   highlighted?: boolean;
 };
 
@@ -28,7 +49,6 @@ export function ManuscriptTreeRowContent({
   type,
   depth,
   expanded,
-  dimmed = false,
   highlighted = false,
 }: ManuscriptTreeRowContentProps) {
   const Icon = type === "folder" ? (expanded ? IconFolderOpened : IconFolder) : IconBook;
@@ -39,7 +59,6 @@ export function ManuscriptTreeRowContent({
         styles.row,
         { paddingLeft: space[3] + depth * space[4] },
         highlighted && styles.highlighted,
-        dimmed && styles.dimmed,
       ]}
     >
       <Icon width={18} height={18} color={iconColor} />
@@ -50,24 +69,47 @@ export function ManuscriptTreeRowContent({
   );
 }
 
+type ManuscriptTreeDragPreviewProps = {
+  title: string;
+  type: ManuscriptVisibleRow["type"];
+  expanded: boolean;
+};
+
+export function ManuscriptTreeDragPreview({
+  title,
+  type,
+  expanded,
+}: ManuscriptTreeDragPreviewProps) {
+  const Icon = type === "folder" ? (expanded ? IconFolderOpened : IconFolder) : IconBook;
+  const iconColor = type === "folder" ? color.accent : color.info;
+  return (
+    <View pointerEvents="none" style={styles.preview}>
+      <Icon width={16} height={16} color={iconColor} />
+      <Text style={styles.previewTitle} numberOfLines={1}>
+        {title}
+      </Text>
+    </View>
+  );
+}
+
 type ManuscriptTreeRowProps = {
   row: ManuscriptVisibleRow;
-  dimmed: boolean;
+  hidden: boolean;
   highlighted: boolean;
   swipeEnabled: boolean;
   dragEnabled: boolean;
   onPress: () => void;
   onRename: () => void;
   onDelete: () => void;
-  onDragActivate: (absoluteY: number) => void;
-  onDragUpdate: (absoluteY: number) => void;
+  onDragActivate: (pointer: ManuscriptDragPointer) => void;
+  onDragUpdate: (pointer: ManuscriptDragPointer) => void;
   onDragEnd: () => void;
   onSwipeOpen: (close: () => void) => void;
 };
 
 export function ManuscriptTreeRow({
   row,
-  dimmed,
+  hidden,
   highlighted,
   swipeEnabled,
   dragEnabled,
@@ -82,22 +124,58 @@ export function ManuscriptTreeRow({
   const swipeableRef = useRef<SwipeableMethods>(null);
   const swipeOpenRef = useRef(false);
   const suppressPressRef = useRef(false);
+  const dragEnabledRef = useRef(dragEnabled);
+  const onDragActivateRef = useRef(onDragActivate);
+  const onDragUpdateRef = useRef(onDragUpdate);
+  const onDragEndRef = useRef(onDragEnd);
+  const lastPointerRef = useRef<ManuscriptDragPointer>({
+    x: 0,
+    y: 0,
+    absoluteX: 0,
+    absoluteY: 0,
+  });
+  dragEnabledRef.current = dragEnabled;
+  onDragActivateRef.current = onDragActivate;
+  onDragUpdateRef.current = onDragUpdate;
+  onDragEndRef.current = onDragEnd;
+  const rememberPointer = (event: {
+    x: number;
+    y: number;
+    absoluteX: number;
+    absoluteY: number;
+  }) => {
+    lastPointerRef.current = pointerFromEvent(event);
+  };
   const pan = usePanGesture({
     runOnJS: true,
-    enabled: dragEnabled,
     activateAfterLongPress: 400,
     failOffsetX: [-20, 20],
     maxPointers: 1,
+    onTouchesDown: (event) => {
+      const touch = event.changedTouches[0] ?? event.allTouches[0];
+      if (touch !== undefined) rememberPointer(touch);
+    },
+    onTouchesMove: (event) => {
+      const touch = event.changedTouches[0] ?? event.allTouches[0];
+      if (touch === undefined) return;
+      rememberPointer(touch);
+      onDragUpdateRef.current(lastPointerRef.current);
+    },
     onActivate: (event) => {
+      if (!dragEnabledRef.current) return;
       suppressPressRef.current = true;
       swipeableRef.current?.close();
-      onDragActivate(event.absoluteY);
+      if (event.absoluteX !== 0 || event.absoluteY !== 0) {
+        rememberPointer(event);
+      }
+      onDragActivateRef.current(lastPointerRef.current);
     },
     onUpdate: (event) => {
-      onDragUpdate(event.absoluteY);
+      rememberPointer(event);
+      onDragUpdateRef.current(lastPointerRef.current);
     },
     onFinalize: () => {
-      onDragEnd();
+      onDragEndRef.current();
     },
   });
 
@@ -160,14 +238,15 @@ export function ManuscriptTreeRow({
           accessibilityRole="button"
           accessibilityLabel={row.title}
         >
-          <ManuscriptTreeRowContent
-            title={row.title}
-            type={row.type}
-            depth={row.depth}
-            expanded={row.expanded}
-            dimmed={dimmed}
-            highlighted={highlighted}
-          />
+          <View style={hidden ? styles.hidden : undefined}>
+            <ManuscriptTreeRowContent
+              title={row.title}
+              type={row.type}
+              depth={row.depth}
+              expanded={row.expanded}
+              highlighted={highlighted}
+            />
+          </View>
         </Pressable>
       </GestureDetector>
     </Swipeable>
@@ -188,8 +267,31 @@ const styles = StyleSheet.create({
   highlighted: {
     backgroundColor: color.field,
   },
-  dimmed: {
-    opacity: 0.4,
+  hidden: {
+    opacity: 0,
+  },
+  preview: {
+    height: MANUSCRIPT_TREE_PREVIEW_HEIGHT,
+    maxWidth: 280,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: space[2],
+    paddingHorizontal: space[3],
+    borderRadius: radius.panel,
+    backgroundColor: color.surface,
+    borderWidth: 1,
+    borderColor: color.border,
+    elevation: 6,
+    shadowColor: color.crust,
+    shadowOpacity: 0.4,
+    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 6 },
+  },
+  previewTitle: {
+    flexShrink: 1,
+    color: color.foreground,
+    fontFamily: fontFamily.sans,
+    fontSize: fontSize.sm,
   },
   title: {
     flex: 1,

@@ -2,10 +2,17 @@ import type { ManuscriptNode, ManuscriptOutline } from "@novelevolver/domain/wor
 import { useRef, useState, type ComponentRef } from "react";
 import { StyleSheet, Text, View } from "react-native";
 import { ScrollView } from "react-native-gesture-handler";
-import Animated, { useAnimatedStyle, useSharedValue } from "react-native-reanimated";
+import Animated, {
+  interpolate,
+  runOnJS,
+  useAnimatedStyle,
+  useSharedValue,
+  withTiming,
+} from "react-native-reanimated";
 
 import { color, fontFamily, fontSize, space } from "../../../shared/theme";
-import { flattenVisibleManuscriptRows } from "./manuscript-tree-flatten";
+import { OVERLAY_TIMING } from "../../../shared/ui/overlay-chrome";
+import { flattenVisibleManuscriptRows, type ManuscriptVisibleRow } from "./manuscript-tree-flatten";
 import {
   dropKey,
   resolveManuscriptDrop,
@@ -13,8 +20,9 @@ import {
 } from "./manuscript-tree-placement";
 import {
   MANUSCRIPT_TREE_ROW_HEIGHT,
+  ManuscriptTreeDragPreview,
   ManuscriptTreeRow,
-  ManuscriptTreeRowContent,
+  type ManuscriptDragPointer,
 } from "./ManuscriptTreeRow";
 
 const INSERT_INDICATOR_HEIGHT = 3;
@@ -46,33 +54,78 @@ export function ManuscriptTreeList({
   const draggingRef = useRef(false);
   const draggingIdRef = useRef<string | null>(null);
   const fingerYRef = useRef(0);
+  const pointerRef = useRef<ManuscriptDragPointer>({
+    x: 0,
+    y: 0,
+    absoluteX: 0,
+    absoluteY: 0,
+  });
   const scrollYRef = useRef(0);
   const maxScrollRef = useRef(0);
-  const listFrameRef = useRef({ pageY: 0, height: 0 });
+  const listFrameRef = useRef({ pageX: 0, pageY: 0, height: 0 });
   const dropRef = useRef<ManuscriptResolvedDrop | null>(null);
   const autoScrollRaf = useRef<number | null>(null);
+  const previewGenRef = useRef(0);
   const latestRef = useRef({ outline, rows, onMove });
   latestRef.current = { outline, rows, onMove };
   const overlayY = useSharedValue(0);
-  const overlayVisible = useSharedValue(0);
-  const draggingRow = draggingId === null ? undefined : rows.find((row) => row.id === draggingId);
-  const overlayStyle = useAnimatedStyle(() => ({
-    opacity: overlayVisible.value,
-    transform: [{ translateY: overlayY.value }],
-  }));
+  const overlayX = useSharedValue(0);
+  const overlayProgress = useSharedValue(0);
+  const previewWidth = useSharedValue(0);
+  const previewHeight = useSharedValue(MANUSCRIPT_TREE_ROW_HEIGHT);
+  const [preview, setPreview] = useState<{
+    title: string;
+    type: ManuscriptVisibleRow["type"];
+    expanded: boolean;
+  } | null>(null);
+  const overlayStyle = useAnimatedStyle(() => {
+    const scale = interpolate(overlayProgress.value, [0, 1], [1, 0.88]);
+    return {
+      opacity: overlayProgress.value,
+      transform: [
+        { translateX: overlayX.value - previewWidth.value / 2 },
+        { translateY: overlayY.value - previewHeight.value / 2 },
+        { scale },
+      ],
+    };
+  });
+  const pointerInViewport = (sourceId: string, pointer: ManuscriptDragPointer) => {
+    const frame = listFrameRef.current;
+    if (pointer.absoluteY !== 0 || pointer.absoluteX !== 0) {
+      return {
+        x: pointer.absoluteX - frame.pageX,
+        y: pointer.absoluteY - frame.pageY,
+      };
+    }
+    const index = latestRef.current.rows.findIndex((row) => row.id === sourceId);
+    const localY = Number.isFinite(pointer.y) ? pointer.y : MANUSCRIPT_TREE_ROW_HEIGHT / 2;
+    const localX = Number.isFinite(pointer.x) ? pointer.x : space[4];
+    const y =
+      index >= 0 ? index * MANUSCRIPT_TREE_ROW_HEIGHT - scrollYRef.current + localY : localY;
+    return { x: localX, y };
+  };
+  const placePreview = (sourceId: string, pointer: ManuscriptDragPointer) => {
+    const point = pointerInViewport(sourceId, pointer);
+    overlayX.value = point.x;
+    overlayY.value = point.y;
+    fingerYRef.current = frameFingerY(point.y);
+  };
+  const frameFingerY = (viewportY: number) => listFrameRef.current.pageY + viewportY;
+  const clearPreview = (generation: number) => {
+    if (previewGenRef.current === generation) setPreview(null);
+  };
 
   const measureList = () => {
-    listRef.current?.measureInWindow((_x, y, _width, height) => {
-      listFrameRef.current = { pageY: y, height };
+    listRef.current?.measureInWindow((x, y, _width, height) => {
+      listFrameRef.current = { pageX: x, pageY: y, height };
     });
   };
 
-  const applyDrop = (absoluteY: number) => {
+  const applyDrop = (sourceId: string, pointer: ManuscriptDragPointer) => {
     const { outline: currentOutline, rows: currentRows } = latestRef.current;
-    const sourceId = draggingIdRef.current;
-    const source = sourceId === null ? undefined : currentOutline.nodes[sourceId];
-    if (sourceId === null || source === undefined) return;
-    const pointerContentY = scrollYRef.current + absoluteY - listFrameRef.current.pageY;
+    const source = currentOutline.nodes[sourceId];
+    if (source === undefined) return;
+    const pointerContentY = pointerInViewport(sourceId, pointer).y + scrollYRef.current;
     const next = resolveManuscriptDrop({
       outline: currentOutline,
       rows: currentRows,
@@ -108,38 +161,59 @@ export function ManuscriptTreeList({
         scrollYRef.current = next;
         scrollRef.current?.scrollTo({ y: next, animated: false });
       }
-      applyDrop(y);
+      const sourceId = draggingIdRef.current;
+      if (sourceId !== null) {
+        placePreview(sourceId, pointerRef.current);
+        applyDrop(sourceId, pointerRef.current);
+      }
       autoScrollRaf.current = requestAnimationFrame(loop);
     };
     autoScrollRaf.current = requestAnimationFrame(loop);
   };
 
-  const handleDragActivate = (sourceId: string, absoluteY: number) => {
+  const handleDragActivate = (sourceId: string, pointer: ManuscriptDragPointer) => {
     closeOpenSwipeRef.current?.();
     closeOpenSwipeRef.current = null;
     draggingRef.current = true;
     draggingIdRef.current = sourceId;
-    fingerYRef.current = absoluteY;
+    pointerRef.current = pointer;
     dropRef.current = null;
+    const sourceRow = latestRef.current.rows.find((row) => row.id === sourceId);
+    previewGenRef.current += 1;
     setDraggingId(sourceId);
     setDrop(null);
-    overlayY.value = absoluteY - listFrameRef.current.pageY - MANUSCRIPT_TREE_ROW_HEIGHT / 2;
-    overlayVisible.value = 1;
-    measureList();
+    if (sourceRow !== undefined) {
+      setPreview({
+        title: sourceRow.title,
+        type: sourceRow.type,
+        expanded: sourceRow.expanded,
+      });
+    }
+    placePreview(sourceId, pointer);
+    overlayProgress.value = withTiming(1, OVERLAY_TIMING);
+    listRef.current?.measureInWindow((x, y, _width, height) => {
+      listFrameRef.current = { pageX: x, pageY: y, height };
+      if (draggingIdRef.current === sourceId) placePreview(sourceId, pointer);
+    });
     startAutoScroll();
   };
 
-  const handleDragUpdate = (absoluteY: number) => {
-    fingerYRef.current = absoluteY;
-    overlayY.value = absoluteY - listFrameRef.current.pageY - MANUSCRIPT_TREE_ROW_HEIGHT / 2;
-    applyDrop(absoluteY);
+  const handleDragUpdate = (pointer: ManuscriptDragPointer) => {
+    const sourceId = draggingIdRef.current;
+    if (sourceId === null) return;
+    pointerRef.current = pointer;
+    placePreview(sourceId, pointer);
+    applyDrop(sourceId, pointer);
   };
 
   const handleDragEnd = () => {
     if (!draggingRef.current) return;
     draggingRef.current = false;
     stopAutoScroll();
-    overlayVisible.value = 0;
+    const generation = previewGenRef.current;
+    overlayProgress.value = withTiming(0, OVERLAY_TIMING, (finished) => {
+      if (finished) runOnJS(clearPreview)(generation);
+    });
     const resolved = dropRef.current;
     const sourceId = draggingIdRef.current;
     draggingIdRef.current = null;
@@ -160,10 +234,9 @@ export function ManuscriptTreeList({
   }
 
   return (
-    <View ref={listRef} style={styles.list} onLayout={measureList}>
+    <View ref={listRef} collapsable={false} style={styles.list} onLayout={measureList}>
       <ScrollView
         ref={scrollRef}
-        scrollEnabled={draggingId === null}
         onScroll={(event) => {
           scrollYRef.current = event.nativeEvent.contentOffset.y;
         }}
@@ -181,9 +254,9 @@ export function ManuscriptTreeList({
               <ManuscriptTreeRow
                 key={row.id}
                 row={row}
-                dimmed={draggingId === row.id}
+                hidden={draggingId === row.id}
                 highlighted={drop?.preview.kind === "into" && drop.preview.folderId === row.id}
-                swipeEnabled={draggingId === null}
+                swipeEnabled={draggingId === null || draggingId === row.id}
                 dragEnabled={draggingId === null || draggingId === row.id}
                 onPress={() => {
                   if (row.type === "folder") {
@@ -205,8 +278,8 @@ export function ManuscriptTreeList({
                 onDelete={() => {
                   onDelete(node);
                 }}
-                onDragActivate={(absoluteY) => {
-                  handleDragActivate(row.id, absoluteY);
+                onDragActivate={(pointer) => {
+                  handleDragActivate(row.id, pointer);
                 }}
                 onDragUpdate={handleDragUpdate}
                 onDragEnd={handleDragEnd}
@@ -235,16 +308,23 @@ export function ManuscriptTreeList({
           ) : null}
         </View>
       </ScrollView>
-      {draggingRow !== undefined ? (
-        <Animated.View pointerEvents="none" style={[styles.ghost, overlayStyle]}>
-          <ManuscriptTreeRowContent
-            title={draggingRow.title}
-            type={draggingRow.type}
-            depth={draggingRow.depth}
-            expanded={draggingRow.expanded}
-          />
+      <View pointerEvents="none" style={StyleSheet.absoluteFill}>
+        <Animated.View
+          style={[styles.previewWrap, overlayStyle]}
+          onLayout={(event) => {
+            previewWidth.value = event.nativeEvent.layout.width;
+            previewHeight.value = event.nativeEvent.layout.height;
+          }}
+        >
+          {preview !== null ? (
+            <ManuscriptTreeDragPreview
+              title={preview.title}
+              type={preview.type}
+              expanded={preview.expanded}
+            />
+          ) : null}
         </Animated.View>
-      ) : null}
+      </View>
     </View>
   );
 }
@@ -271,15 +351,9 @@ const styles = StyleSheet.create({
     borderRadius: INSERT_INDICATOR_HEIGHT,
     backgroundColor: color.accent,
   },
-  ghost: {
+  previewWrap: {
     position: "absolute",
     left: 0,
-    right: 0,
     top: 0,
-    elevation: 4,
-    shadowColor: color.crust,
-    shadowOpacity: 0.35,
-    shadowRadius: 8,
-    shadowOffset: { width: 0, height: 4 },
   },
 });
