@@ -38,6 +38,7 @@ function ProjectTabsView({
       initialRouteName="Project"
       screenOptions={{
         headerShown: false,
+        animation: "shift",
         tabBarActiveTintColor: color.accent,
         tabBarInactiveTintColor: color.muted,
         tabBarHideOnKeyboard: true,
