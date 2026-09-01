@@ -6,6 +6,8 @@
  * kind-specific. Full document content must not appear here.
  */
 
+import { cloneJson } from "../clone-json";
+
 export type AiToolViewFocus = {
   domain: "manuscript" | "resource";
   id: string;
@@ -160,5 +162,5 @@ export type AiToolView =
 
 /** Deep clone for snapshot/event isolation (plain JSON data). */
 export function cloneAiToolView(view: AiToolView): AiToolView {
-  return structuredClone(view);
+  return cloneJson(view);
 }

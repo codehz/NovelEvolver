@@ -6,6 +6,7 @@ import type {
   AiChatMessageBranch,
   AiChatUserMessage,
 } from "@novelevolver/domain/ai";
+import { cloneJson } from "@novelevolver/domain/clone-json";
 
 /** Tree node: UI message + structural links + model-history segment for this node. */
 export type ConversationMessageNode = {
@@ -46,8 +47,8 @@ export function createEmptyConversationTree(): ConversationTree {
 }
 
 export function cloneInputItems(items: readonly InputItem[]): InputItem[] {
-  // InputItem is a plain JSON-serializable union; structuredClone is safest for nested content.
-  return structuredClone(items) as InputItem[];
+  // InputItem is a plain JSON-serializable union; cloneJson avoids structuredClone (Hermes).
+  return cloneJson(items as InputItem[]);
 }
 
 export function getChildren(
