@@ -15,4 +15,4 @@ Callers inject:
 - `AiChatRepository` + `ResolveWorktree` (`() => WorktreeSession`)
 - `AiModelsPort` / `AiAgentsPort` / `AiRuntimePolicyPort` (settings stores)
 
-Do not import Electron, React, or capnweb. Use `nanoid` instead of `node:crypto`.
+Do not import Electron, React, or capnweb. Use `nanoid/non-secure` instead of `node:crypto` / Web Crypto.

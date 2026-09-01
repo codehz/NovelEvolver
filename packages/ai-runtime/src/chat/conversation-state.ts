@@ -35,7 +35,7 @@ import type {
   AiConversationRecord,
   AiConversationSummaryRecord,
 } from "@novelevolver/worktree";
-import { nanoid } from "nanoid";
+import { nanoid } from "nanoid/non-secure";
 
 import { contentBlockToDisplayText, joinContentBlocksText } from "../ai-utils";
 import {
