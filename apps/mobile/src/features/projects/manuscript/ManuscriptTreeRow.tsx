@@ -2,6 +2,7 @@ import { useRef } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { GestureDetector, usePanGesture } from "react-native-gesture-handler";
 import Swipeable, { type SwipeableMethods } from "react-native-gesture-handler/ReanimatedSwipeable";
+import Animated, { useAnimatedStyle, type SharedValue } from "react-native-reanimated";
 import IconBook from "~icons/codicon/book";
 import IconEdit from "~icons/codicon/edit";
 import IconFolder from "~icons/codicon/folder";
@@ -95,6 +96,54 @@ export function ManuscriptTreeDragPreview({
         {title}
       </Text>
     </View>
+  );
+}
+
+type ManuscriptTreeRowActionsProps = {
+  progress: SharedValue<number>;
+  hidden: boolean;
+  onRename: () => void;
+  onDelete: () => void;
+  methods: SwipeableMethods;
+};
+
+function ManuscriptTreeRowActions({
+  progress,
+  hidden,
+  onRename,
+  onDelete,
+  methods,
+}: ManuscriptTreeRowActionsProps) {
+  const style = useAnimatedStyle(() => ({
+    opacity: progress.value <= 0 ? 0 : 1,
+  }));
+  return (
+    <Animated.View style={[styles.actions, hidden && styles.hidden, style]}>
+      <Pressable
+        style={styles.renameAction}
+        onPress={() => {
+          methods.close();
+          onRename();
+        }}
+        accessibilityRole="button"
+        accessibilityLabel="改名"
+      >
+        <IconEdit width={18} height={18} color={color.primaryForeground} />
+        <Text style={styles.actionLabel}>改名</Text>
+      </Pressable>
+      <Pressable
+        style={styles.deleteAction}
+        onPress={() => {
+          methods.close();
+          onDelete();
+        }}
+        accessibilityRole="button"
+        accessibilityLabel="删除"
+      >
+        <IconTrash width={18} height={18} color={color.primaryForeground} />
+        <Text style={styles.actionLabel}>删除</Text>
+      </Pressable>
+    </Animated.View>
   );
 }
 
@@ -199,33 +248,14 @@ export function ManuscriptTreeRow({
       onSwipeableClose={() => {
         swipeOpenRef.current = false;
       }}
-      renderRightActions={(_progress, _translation, methods) => (
-        <View style={[styles.actions, hidden && styles.hidden]}>
-          <Pressable
-            style={styles.renameAction}
-            onPress={() => {
-              methods.close();
-              onRename();
-            }}
-            accessibilityRole="button"
-            accessibilityLabel="改名"
-          >
-            <IconEdit width={18} height={18} color={color.primaryForeground} />
-            <Text style={styles.actionLabel}>改名</Text>
-          </Pressable>
-          <Pressable
-            style={styles.deleteAction}
-            onPress={() => {
-              methods.close();
-              onDelete();
-            }}
-            accessibilityRole="button"
-            accessibilityLabel="删除"
-          >
-            <IconTrash width={18} height={18} color={color.primaryForeground} />
-            <Text style={styles.actionLabel}>删除</Text>
-          </Pressable>
-        </View>
+      renderRightActions={(progress, _translation, methods) => (
+        <ManuscriptTreeRowActions
+          progress={progress}
+          hidden={hidden}
+          methods={methods}
+          onRename={onRename}
+          onDelete={onDelete}
+        />
       )}
     >
       <GestureDetector gesture={pan}>
