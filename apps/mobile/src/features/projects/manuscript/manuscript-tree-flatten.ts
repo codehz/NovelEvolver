@@ -75,6 +75,46 @@ export function packRowsExcludingSource<T extends { id: string; depth: number }>
   return rows.filter((_, index) => index < range.start || index >= range.start + range.count);
 }
 
+export function manuscriptRowSlotY(index: number, rowHeight: number): number {
+  return index * rowHeight;
+}
+
+export type ManuscriptVisualRowSlot = {
+  id: string;
+  y: number;
+  hidden: boolean;
+};
+
+export function visualManuscriptRowSlots(
+  rows: readonly { id: string; depth: number }[],
+  draggingId: string | null,
+  rowHeight: number,
+): { slots: ManuscriptVisualRowSlot[]; slotCount: number } {
+  const range = draggingId === null ? null : sourceSubtreeRange(rows, draggingId);
+  if (range === null) {
+    return {
+      slots: rows.map((row, index) => ({
+        id: row.id,
+        y: manuscriptRowSlotY(index, rowHeight),
+        hidden: false,
+      })),
+      slotCount: rows.length,
+    };
+  }
+  const slots: ManuscriptVisualRowSlot[] = [];
+  let packedIndex = 0;
+  for (const [index, row] of rows.entries()) {
+    const hidden = index >= range.start && index < range.start + range.count;
+    if (hidden) {
+      slots.push({ id: row.id, y: manuscriptRowSlotY(index, rowHeight), hidden: true });
+      continue;
+    }
+    slots.push({ id: row.id, y: manuscriptRowSlotY(packedIndex, rowHeight), hidden: false });
+    packedIndex += 1;
+  }
+  return { slots, slotCount: packedIndex };
+}
+
 export function buildSubtreeEndIndexes(rows: readonly { depth: number }[]): number[] {
   const endIndexes = rows.map((_, index) => index);
   const openIndexes: number[] = [];

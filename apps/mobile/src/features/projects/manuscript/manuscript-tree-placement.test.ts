@@ -3,7 +3,11 @@ import { describe, expect, test } from "bun:test";
 
 import type { ManuscriptOutline } from "@novelevolver/domain/worktree";
 
-import { flattenVisibleManuscriptRows, packRowsExcludingSource } from "./manuscript-tree-flatten";
+import {
+  flattenVisibleManuscriptRows,
+  packRowsExcludingSource,
+  visualManuscriptRowSlots,
+} from "./manuscript-tree-flatten";
 import {
   resolveHoverZone,
   resolveManuscriptDrop,
@@ -65,6 +69,43 @@ describe("resolveHoverZone", () => {
     expect(resolveHoverZone(ROW_HEIGHT * 0.24, ROW_HEIGHT)).toBe("before");
     expect(resolveHoverZone(ROW_HEIGHT * 0.5, ROW_HEIGHT)).toBe("inside");
     expect(resolveHoverZone(ROW_HEIGHT * 0.76, ROW_HEIGHT)).toBe("after");
+  });
+});
+
+describe("visualManuscriptRowSlots", () => {
+  test("idle slots are index times row height", () => {
+    const rows = flattenVisibleManuscriptRows(sampleOutline());
+    const { slots, slotCount } = visualManuscriptRowSlots(rows, null, ROW_HEIGHT);
+    expect(slotCount).toBe(rows.length);
+    expect(slots.map((slot) => slot.y)).toEqual(rows.map((_, index) => index * ROW_HEIGHT));
+    expect(slots.every((slot) => slot.hidden === false)).toBe(true);
+  });
+
+  test("dragging a folder packs remaining rows and freezes the source subtree", () => {
+    const rows = flattenVisibleManuscriptRows(sampleOutline());
+    const { slots, slotCount } = visualManuscriptRowSlots(rows, "foldera001", ROW_HEIGHT);
+    expect(slotCount).toBe(2);
+    expect(slots.find((slot) => slot.id === "foldera001")).toEqual({
+      id: "foldera001",
+      y: 0,
+      hidden: true,
+    });
+    expect(slots.find((slot) => slot.id === "chapter001")).toEqual({
+      id: "chapter001",
+      y: ROW_HEIGHT,
+      hidden: true,
+    });
+    expect(slots.find((slot) => slot.id === "chapter002")?.hidden).toBe(true);
+    expect(slots.find((slot) => slot.id === "chapter003")).toEqual({
+      id: "chapter003",
+      y: 0,
+      hidden: false,
+    });
+    expect(slots.find((slot) => slot.id === "folderb002")).toEqual({
+      id: "folderb002",
+      y: ROW_HEIGHT,
+      hidden: false,
+    });
   });
 });
 
