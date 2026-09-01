@@ -1,12 +1,11 @@
 import { useRef } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { GestureDetector, usePanGesture } from "react-native-gesture-handler";
-import Swipeable, { type SwipeableMethods } from "react-native-gesture-handler/ReanimatedSwipeable";
 import Animated, {
+  interpolateColor,
   useAnimatedStyle,
   useSharedValue,
   withTiming,
-  type SharedValue,
 } from "react-native-reanimated";
 import IconBook from "~icons/codicon/book";
 import IconEdit from "~icons/codicon/edit";
@@ -17,13 +16,18 @@ import IconTrash from "~icons/codicon/trash";
 import { color, fontFamily, fontSize, radius, space, wash } from "../../../shared/theme";
 import { OVERLAY_TIMING } from "../../../shared/ui/overlay-chrome";
 import type { ManuscriptVisibleRow } from "./manuscript-tree-flatten";
+import type { ManuscriptTreeDragAction } from "./manuscript-tree-gesture";
 
 export const MANUSCRIPT_TREE_ROW_HEIGHT = 48;
 export const MANUSCRIPT_TREE_PREVIEW_HEIGHT = 36;
 export const MANUSCRIPT_TREE_PREVIEW_ICON = 16;
 export const MANUSCRIPT_TREE_PREVIEW_ANCHOR_X = 1 + space[3] + MANUSCRIPT_TREE_PREVIEW_ICON / 2;
 export const MANUSCRIPT_TREE_GHOST_OPACITY = 0.4;
-const ACTION_WIDTH = 72;
+export const MANUSCRIPT_TREE_ACTION_WIDTH = 64;
+export const MANUSCRIPT_TREE_ACTION_GAP = space[1];
+export const MANUSCRIPT_TREE_ACTION_RIGHT_MARGIN = space[2];
+export const MANUSCRIPT_TREE_ACTION_AREA_WIDTH =
+  MANUSCRIPT_TREE_ACTION_WIDTH * 2 + MANUSCRIPT_TREE_ACTION_GAP;
 
 export type ManuscriptDragPointer = {
   x: number;
@@ -68,7 +72,10 @@ export function ManuscriptTreeRowContent({
       style={[
         styles.row,
         selected ? styles.rowSelected : undefined,
-        { paddingLeft: space[3] + depth * space[4] },
+        {
+          paddingLeft: space[3] + depth * space[4],
+          paddingRight: space[3],
+        },
       ]}
     >
       <Icon width={18} height={18} color={iconColor} />
@@ -107,47 +114,60 @@ export function ManuscriptTreeDragPreview({
 }
 
 type ManuscriptTreeRowActionsProps = {
-  progress: SharedValue<number>;
-  onRename: () => void;
-  onDelete: () => void;
-  methods: SwipeableMethods;
+  activeAction: ManuscriptTreeDragAction | null;
+  visible: boolean;
 };
 
-function ManuscriptTreeRowActions({
-  progress,
-  onRename,
-  onDelete,
-  methods,
-}: ManuscriptTreeRowActionsProps) {
-  const style = useAnimatedStyle(() => ({
-    opacity: progress.value <= 0 ? 0 : 1,
+function ManuscriptTreeRowActions({ activeAction, visible }: ManuscriptTreeRowActionsProps) {
+  const actionsOpacity = useSharedValue(0);
+  const renameProgress = useSharedValue(0);
+  const deleteProgress = useSharedValue(0);
+  actionsOpacity.value = withTiming(visible ? 1 : 0, OVERLAY_TIMING);
+  renameProgress.value = withTiming(activeAction === "rename" ? 1 : 0, OVERLAY_TIMING);
+  deleteProgress.value = withTiming(activeAction === "delete" ? 1 : 0, OVERLAY_TIMING);
+  const actionsStyle = useAnimatedStyle(() => ({ opacity: actionsOpacity.value }));
+  const renameStyle = useAnimatedStyle(() => ({
+    backgroundColor: interpolateColor(
+      renameProgress.value,
+      [0, 1],
+      [wash.accentSoft, color.accent],
+    ),
+  }));
+  const deleteStyle = useAnimatedStyle(() => ({
+    backgroundColor: interpolateColor(deleteProgress.value, [0, 1], [wash.dangerSoft, color.error]),
   }));
   return (
-    <Animated.View style={[styles.actions, style]}>
-      <Pressable
-        style={styles.renameAction}
-        onPress={() => {
-          methods.close();
-          onRename();
-        }}
-        accessibilityRole="button"
-        accessibilityLabel="改名"
-      >
-        <IconEdit width={18} height={18} color={color.primaryForeground} />
-        <Text style={styles.actionLabel}>改名</Text>
-      </Pressable>
-      <Pressable
-        style={styles.deleteAction}
-        onPress={() => {
-          methods.close();
-          onDelete();
-        }}
-        accessibilityRole="button"
-        accessibilityLabel="删除"
-      >
-        <IconTrash width={18} height={18} color={color.primaryForeground} />
-        <Text style={styles.actionLabel}>删除</Text>
-      </Pressable>
+    <Animated.View pointerEvents="none" style={[styles.actions, actionsStyle]}>
+      <Animated.View style={[styles.action, renameStyle]}>
+        <IconEdit
+          width={18}
+          height={18}
+          color={activeAction === "rename" ? color.primaryForeground : color.accent}
+        />
+        <Text
+          style={[
+            styles.actionLabel,
+            { color: activeAction === "rename" ? color.primaryForeground : color.accent },
+          ]}
+        >
+          改名
+        </Text>
+      </Animated.View>
+      <Animated.View style={[styles.action, deleteStyle]}>
+        <IconTrash
+          width={18}
+          height={18}
+          color={activeAction === "delete" ? color.primaryForeground : color.error}
+        />
+        <Text
+          style={[
+            styles.actionLabel,
+            { color: activeAction === "delete" ? color.primaryForeground : color.error },
+          ]}
+        >
+          删除
+        </Text>
+      </Animated.View>
     </Animated.View>
   );
 }
@@ -156,33 +176,27 @@ type ManuscriptTreeRowProps = {
   row: ManuscriptVisibleRow;
   selected: boolean;
   ghost: boolean;
-  swipeEnabled: boolean;
+  actionsVisible: boolean;
+  activeAction: ManuscriptTreeDragAction | null;
   dragEnabled: boolean;
   onPress: () => void;
-  onRename: () => void;
-  onDelete: () => void;
   onDragActivate: (pointer: ManuscriptDragPointer) => void;
   onDragUpdate: (pointer: ManuscriptDragPointer) => void;
-  onDragEnd: () => void;
-  onSwipeOpen: (close: () => void) => void;
+  onDragEnd: (pointer: ManuscriptDragPointer) => void;
 };
 
 export function ManuscriptTreeRow({
   row,
   selected,
   ghost,
-  swipeEnabled,
+  actionsVisible,
+  activeAction,
   dragEnabled,
   onPress,
-  onRename,
-  onDelete,
   onDragActivate,
   onDragUpdate,
   onDragEnd,
-  onSwipeOpen,
 }: ManuscriptTreeRowProps) {
-  const swipeableRef = useRef<SwipeableMethods>(null);
-  const swipeOpenRef = useRef(false);
   const suppressPressRef = useRef(false);
   const dragEnabledRef = useRef(dragEnabled);
   const onDragActivateRef = useRef(onDragActivate);
@@ -215,7 +229,6 @@ export function ManuscriptTreeRow({
   const pan = usePanGesture({
     runOnJS: true,
     activateAfterLongPress: 400,
-    failOffsetX: [-20, 20],
     maxPointers: 1,
     onTouchesDown: (event) => {
       const touch = event.changedTouches[0] ?? event.allTouches[0];
@@ -230,7 +243,6 @@ export function ManuscriptTreeRow({
     onActivate: (event) => {
       if (!dragEnabledRef.current) return;
       suppressPressRef.current = true;
-      swipeableRef.current?.close();
       if (event.absoluteX !== 0 || event.absoluteY !== 0) {
         rememberPointer(event);
       }
@@ -240,43 +252,22 @@ export function ManuscriptTreeRow({
       rememberPointer(event);
       onDragUpdateRef.current(lastPointerRef.current);
     },
-    onFinalize: () => {
-      onDragEndRef.current();
+    onFinalize: (event) => {
+      if (event.absoluteX !== 0 || event.absoluteY !== 0) {
+        rememberPointer(event);
+      }
+      onDragEndRef.current(lastPointerRef.current);
     },
   });
 
   return (
-    <Swipeable
-      ref={swipeableRef}
-      enabled={swipeEnabled}
-      overshootRight={false}
-      overshootFriction={8}
-      rightThreshold={40}
-      onSwipeableOpen={() => {
-        swipeOpenRef.current = true;
-        onSwipeOpen(() => swipeableRef.current?.close());
-      }}
-      onSwipeableClose={() => {
-        swipeOpenRef.current = false;
-      }}
-      renderRightActions={(progress, _translation, methods) => (
-        <ManuscriptTreeRowActions
-          progress={progress}
-          methods={methods}
-          onRename={onRename}
-          onDelete={onDelete}
-        />
-      )}
-    >
+    <View style={styles.container}>
       <GestureDetector gesture={pan}>
         <Pressable
+          style={styles.rowPressable}
           onPress={() => {
             if (suppressPressRef.current) {
               suppressPressRef.current = false;
-              return;
-            }
-            if (swipeOpenRef.current) {
-              swipeableRef.current?.close();
               return;
             }
             onPress();
@@ -296,17 +287,24 @@ export function ManuscriptTreeRow({
           </Animated.View>
         </Pressable>
       </GestureDetector>
-    </Swipeable>
+      <ManuscriptTreeRowActions activeAction={activeAction} visible={actionsVisible} />
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    position: "relative",
+  },
+  rowPressable: {
+    flex: 1,
+  },
   row: {
     height: MANUSCRIPT_TREE_ROW_HEIGHT,
     flexDirection: "row",
     alignItems: "center",
     gap: space[2],
-    paddingRight: space[3],
     backgroundColor: color.background,
   },
   rowSelected: {
@@ -342,25 +340,25 @@ const styles = StyleSheet.create({
     fontSize: fontSize.md,
   },
   actions: {
+    position: "absolute",
+    top: 0,
+    right: MANUSCRIPT_TREE_ACTION_RIGHT_MARGIN,
+    bottom: 0,
     flexDirection: "row",
-    width: ACTION_WIDTH * 2,
+    alignItems: "center",
+    gap: MANUSCRIPT_TREE_ACTION_GAP,
+    width: MANUSCRIPT_TREE_ACTION_AREA_WIDTH,
   },
-  renameAction: {
-    width: ACTION_WIDTH,
-    backgroundColor: color.accent,
+  action: {
+    width: MANUSCRIPT_TREE_ACTION_WIDTH,
+    height: MANUSCRIPT_TREE_ROW_HEIGHT - space[2],
+    flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
     gap: space[1],
-  },
-  deleteAction: {
-    width: ACTION_WIDTH,
-    backgroundColor: color.error,
-    alignItems: "center",
-    justifyContent: "center",
-    gap: space[1],
+    borderRadius: radius.panel,
   },
   actionLabel: {
-    color: color.primaryForeground,
     fontFamily: fontFamily.sans,
     fontSize: fontSize.xs,
     fontWeight: "600",

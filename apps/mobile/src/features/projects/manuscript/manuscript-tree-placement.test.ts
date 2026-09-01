@@ -5,6 +5,10 @@ import type { ManuscriptOutline } from "@novelevolver/domain/worktree";
 
 import { flattenVisibleManuscriptRows, visualManuscriptRowSlots } from "./manuscript-tree-flatten";
 import {
+  manuscriptTreeDragZoneKey,
+  resolveManuscriptTreeDragZone,
+} from "./manuscript-tree-gesture";
+import {
   resolveHoverZone,
   resolveManuscriptDrop,
   type ManuscriptHoverZone,
@@ -65,6 +69,62 @@ describe("resolveHoverZone", () => {
     expect(resolveHoverZone(ROW_HEIGHT * 0.24, ROW_HEIGHT)).toBe("before");
     expect(resolveHoverZone(ROW_HEIGHT * 0.5, ROW_HEIGHT)).toBe("inside");
     expect(resolveHoverZone(ROW_HEIGHT * 0.76, ROW_HEIGHT)).toBe("after");
+  });
+});
+
+describe("resolveManuscriptTreeDragZone", () => {
+  const input = {
+    rowTop: ROW_HEIGHT * 2,
+    rowHeight: ROW_HEIGHT,
+    listWidth: 320,
+    actionWidth: 64,
+    actionGap: 8,
+    actionRightMargin: 8,
+  };
+
+  test("shows rename and delete zones at the right edge of the source row", () => {
+    expect(resolveManuscriptTreeDragZone({ ...input, x: 167, y: input.rowTop + 24 })).toEqual({
+      kind: "inside",
+    });
+    expect(resolveManuscriptTreeDragZone({ ...input, x: 200, y: input.rowTop + 24 })).toEqual({
+      kind: "action",
+      action: "rename",
+    });
+    expect(resolveManuscriptTreeDragZone({ ...input, x: 244, y: input.rowTop + 24 })).toEqual({
+      kind: "inside",
+    });
+    expect(resolveManuscriptTreeDragZone({ ...input, x: 270, y: input.rowTop + 24 })).toEqual({
+      kind: "action",
+      action: "delete",
+    });
+    expect(resolveManuscriptTreeDragZone({ ...input, x: 315, y: input.rowTop + 24 })).toEqual({
+      kind: "inside",
+    });
+  });
+
+  test("treats every direction outside the source row as outside", () => {
+    expect(resolveManuscriptTreeDragZone({ ...input, x: 100, y: input.rowTop - 1 })).toEqual({
+      kind: "outside",
+    });
+    expect(
+      resolveManuscriptTreeDragZone({ ...input, x: 100, y: input.rowTop + ROW_HEIGHT }),
+    ).toEqual({
+      kind: "outside",
+    });
+    expect(resolveManuscriptTreeDragZone({ ...input, x: -1, y: input.rowTop + 24 })).toEqual({
+      kind: "outside",
+    });
+    expect(
+      resolveManuscriptTreeDragZone({ ...input, x: input.listWidth, y: input.rowTop + 24 }),
+    ).toEqual({
+      kind: "outside",
+    });
+  });
+
+  test("keeps zone keys stable for state transitions", () => {
+    expect(manuscriptTreeDragZoneKey({ kind: "action", action: "rename" })).toBe("action:rename");
+    expect(manuscriptTreeDragZoneKey({ kind: "inside" })).toBe("inside");
+    expect(manuscriptTreeDragZoneKey(null)).toBe("");
   });
 });
 

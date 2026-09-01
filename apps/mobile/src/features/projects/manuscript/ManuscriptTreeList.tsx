@@ -20,12 +20,20 @@ import {
   type ManuscriptVisibleRow,
 } from "./manuscript-tree-flatten";
 import {
+  manuscriptTreeDragZoneKey,
+  resolveManuscriptTreeDragZone,
+  type ManuscriptTreeDragZone,
+} from "./manuscript-tree-gesture";
+import {
   dropKey,
   resolveManuscriptDrop,
   type ManuscriptResolvedDrop,
 } from "./manuscript-tree-placement";
 import { ManuscriptDropIndicator } from "./ManuscriptDropIndicator";
 import {
+  MANUSCRIPT_TREE_ACTION_GAP,
+  MANUSCRIPT_TREE_ACTION_RIGHT_MARGIN,
+  MANUSCRIPT_TREE_ACTION_WIDTH,
   MANUSCRIPT_TREE_PREVIEW_ANCHOR_X,
   MANUSCRIPT_TREE_PREVIEW_HEIGHT,
   MANUSCRIPT_TREE_ROW_HEIGHT,
@@ -137,7 +145,6 @@ export function ManuscriptTreeList({
   }
   const scrollRef = useRef<ComponentRef<typeof ScrollView>>(null);
   const listRef = useRef<ComponentRef<typeof View>>(null);
-  const closeOpenSwipeRef = useRef<(() => void) | null>(null);
   const draggingRef = useRef(false);
   const draggingIdRef = useRef<string | null>(null);
   const fingerYRef = useRef(0);
@@ -149,13 +156,15 @@ export function ManuscriptTreeList({
   });
   const scrollYRef = useRef(0);
   const maxScrollRef = useRef(0);
-  const listFrameRef = useRef({ pageX: 0, pageY: 0, height: 0 });
+  const listFrameRef = useRef({ pageX: 0, pageY: 0, width: 0, height: 0 });
+  const dragZoneRef = useRef<ManuscriptTreeDragZone | null>(null);
   const dropRef = useRef<ManuscriptResolvedDrop | null>(null);
   const autoScrollRaf = useRef<number | null>(null);
   const previewGenRef = useRef(0);
   const appearingClearRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const latestRef = useRef({ outline, rows, onMove });
-  latestRef.current = { outline, rows, onMove };
+  const latestRef = useRef({ outline, rows, onMove, onRename, onDelete });
+  latestRef.current = { outline, rows, onMove, onRename, onDelete };
+  const [dragZone, setDragZone] = useState<ManuscriptTreeDragZone | null>(null);
   const overlayY = useSharedValue(0);
   const overlayX = useSharedValue(0);
   const overlayProgress = useSharedValue(0);
@@ -191,6 +200,25 @@ export function ManuscriptTreeList({
         : localY;
     return { x: localX, y };
   };
+  const sourceRowTop = (sourceId: string) => {
+    const index = latestRef.current.rows.findIndex((row) => row.id === sourceId);
+    return index >= 0
+      ? manuscriptRowSlotY(index, MANUSCRIPT_TREE_ROW_HEIGHT) - scrollYRef.current
+      : 0;
+  };
+  const resolveDragZone = (sourceId: string, pointer: ManuscriptDragPointer) => {
+    const point = pointerInViewport(sourceId, pointer);
+    return resolveManuscriptTreeDragZone({
+      x: point.x,
+      y: point.y,
+      rowTop: sourceRowTop(sourceId),
+      rowHeight: MANUSCRIPT_TREE_ROW_HEIGHT,
+      listWidth: listFrameRef.current.width,
+      actionWidth: MANUSCRIPT_TREE_ACTION_WIDTH,
+      actionGap: MANUSCRIPT_TREE_ACTION_GAP,
+      actionRightMargin: MANUSCRIPT_TREE_ACTION_RIGHT_MARGIN,
+    });
+  };
   const placePreview = (sourceId: string, pointer: ManuscriptDragPointer) => {
     const point = pointerInViewport(sourceId, pointer);
     overlayX.value = point.x;
@@ -212,16 +240,18 @@ export function ManuscriptTreeList({
   };
   useEffect(
     () => () => {
-      if (appearingClearRef.current === null) return;
-      clearTimeout(appearingClearRef.current);
+      stopAutoScroll();
+      if (appearingClearRef.current !== null) clearTimeout(appearingClearRef.current);
     },
     [],
   );
 
   const measureList = () => {
-    listRef.current?.measureInWindow((x, y, _width, height) => {
-      listFrameRef.current = { pageX: x, pageY: y, height };
+    listRef.current?.measureInWindow((x, y, width, height) => {
+      listFrameRef.current = { pageX: x, pageY: y, width, height };
       maxScrollRef.current = Math.max(0, contentHeight - height);
+      const sourceId = draggingIdRef.current;
+      if (sourceId !== null) updateDragZone(sourceId, pointerRef.current);
     });
   };
 
@@ -241,6 +271,25 @@ export function ManuscriptTreeList({
     if (dropKey(next) === dropKey(dropRef.current)) return;
     dropRef.current = next;
     setDrop(next);
+  };
+
+  const clearDrop = () => {
+    if (dropRef.current === null) return;
+    dropRef.current = null;
+    setDrop(null);
+  };
+
+  const updateDragZone = (sourceId: string, pointer: ManuscriptDragPointer) => {
+    const nextZone = resolveDragZone(sourceId, pointer);
+    const previousZone = dragZoneRef.current;
+    dragZoneRef.current = nextZone;
+    if (manuscriptTreeDragZoneKey(previousZone) !== manuscriptTreeDragZoneKey(nextZone)) {
+      setDragZone(nextZone);
+      if (nextZone.kind === "outside") overlayProgress.value = withTiming(1, OVERLAY_TIMING);
+      else overlayProgress.value = withTiming(0, OVERLAY_TIMING);
+    }
+    if (nextZone.kind === "outside") applyDrop(sourceId, pointer);
+    else clearDrop();
   };
 
   const stopAutoScroll = () => {
@@ -268,7 +317,7 @@ export function ManuscriptTreeList({
       const sourceId = draggingIdRef.current;
       if (sourceId !== null) {
         placePreview(sourceId, pointerRef.current);
-        applyDrop(sourceId, pointerRef.current);
+        updateDragZone(sourceId, pointerRef.current);
       }
       autoScrollRaf.current = requestAnimationFrame(loop);
     };
@@ -276,17 +325,17 @@ export function ManuscriptTreeList({
   };
 
   const handleDragActivate = (sourceId: string, pointer: ManuscriptDragPointer) => {
-    closeOpenSwipeRef.current?.();
-    closeOpenSwipeRef.current = null;
     draggingRef.current = true;
     draggingIdRef.current = sourceId;
     pointerRef.current = pointer;
+    dragZoneRef.current = null;
     dropRef.current = null;
     const sourceRow = latestRef.current.rows.find((row) => row.id === sourceId);
     previewGenRef.current += 1;
     cancelAppearingClear();
     setAppearingIds({});
     setDraggingId(sourceId);
+    setDragZone(null);
     setDrop(null);
     if (sourceRow !== undefined) {
       setPreview({
@@ -296,10 +345,13 @@ export function ManuscriptTreeList({
       });
     }
     placePreview(sourceId, pointer);
-    overlayProgress.value = withTiming(1, OVERLAY_TIMING);
-    listRef.current?.measureInWindow((x, y, _width, height) => {
-      listFrameRef.current = { pageX: x, pageY: y, height };
-      if (draggingIdRef.current === sourceId) placePreview(sourceId, pointer);
+    updateDragZone(sourceId, pointer);
+    listRef.current?.measureInWindow((x, y, width, height) => {
+      listFrameRef.current = { pageX: x, pageY: y, width, height };
+      if (draggingIdRef.current === sourceId) {
+        placePreview(sourceId, pointerRef.current);
+        updateDragZone(sourceId, pointerRef.current);
+      }
     });
     startAutoScroll();
   };
@@ -309,39 +361,51 @@ export function ManuscriptTreeList({
     if (sourceId === null) return;
     pointerRef.current = pointer;
     placePreview(sourceId, pointer);
-    applyDrop(sourceId, pointer);
+    updateDragZone(sourceId, pointer);
   };
 
-  const handleDragEnd = () => {
+  const handleDragEnd = (pointer: ManuscriptDragPointer) => {
     if (!draggingRef.current) return;
+    const sourceId = draggingIdRef.current;
+    if (sourceId === null) return;
+    pointerRef.current = pointer;
+    updateDragZone(sourceId, pointer);
+    const zone = dragZoneRef.current;
+    const resolved = dropRef.current;
     draggingRef.current = false;
     stopAutoScroll();
     const generation = previewGenRef.current;
     overlayProgress.value = withTiming(0, OVERLAY_TIMING, (finished) => {
       if (finished) runOnJS(clearPreview)(generation);
     });
-    const resolved = dropRef.current;
-    const sourceId = draggingIdRef.current;
     draggingIdRef.current = null;
+    dragZoneRef.current = null;
     dropRef.current = null;
+    setDragZone(null);
     setDrop(null);
-    if (sourceId !== null && resolved?.commit === true) {
-      const range = sourceSubtreeRange(latestRef.current.rows, sourceId);
-      const nextAppearing: Record<string, true> = {};
-      if (range === null) {
-        nextAppearing[sourceId] = true;
-      } else {
-        for (let index = range.start; index < range.start + range.count; index += 1) {
-          const id = latestRef.current.rows[index]?.id;
-          if (id !== undefined) nextAppearing[id] = true;
+    const source = latestRef.current.outline.nodes[sourceId];
+    if (source !== undefined && zone?.kind === "action") {
+      if (zone.action === "rename") latestRef.current.onRename(source);
+      else latestRef.current.onDelete(source);
+    } else if (zone?.kind === "outside") {
+      if (resolved?.commit === true) {
+        const range = sourceSubtreeRange(latestRef.current.rows, sourceId);
+        const nextAppearing: Record<string, true> = {};
+        if (range === null) {
+          nextAppearing[sourceId] = true;
+        } else {
+          for (let index = range.start; index < range.start + range.count; index += 1) {
+            const id = latestRef.current.rows[index]?.id;
+            if (id !== undefined) nextAppearing[id] = true;
+          }
         }
+        setAppearingIds(nextAppearing);
+        cancelAppearingClear();
+        appearingClearRef.current = setTimeout(clearAppearingIds, OVERLAY_TIMING.duration);
+        const move = latestRef.current.onMove;
+        if (resolved.target.kind === "into") move(sourceId, resolved.target.parentId);
+        else move(sourceId, resolved.target.parentId, resolved.target.index);
       }
-      setAppearingIds(nextAppearing);
-      cancelAppearingClear();
-      appearingClearRef.current = setTimeout(clearAppearingIds, OVERLAY_TIMING.duration);
-      const move = latestRef.current.onMove;
-      if (resolved.target.kind === "into") move(sourceId, resolved.target.parentId);
-      else move(sourceId, resolved.target.parentId, resolved.target.index);
     }
     setDraggingId(null);
   };
@@ -356,6 +420,8 @@ export function ManuscriptTreeList({
         ref={scrollRef}
         onScroll={(event) => {
           scrollYRef.current = event.nativeEvent.contentOffset.y;
+          const sourceId = draggingIdRef.current;
+          if (sourceId !== null) updateDragZone(sourceId, pointerRef.current);
         }}
         scrollEventThrottle={16}
         contentContainerStyle={styles.content}
@@ -365,6 +431,10 @@ export function ManuscriptTreeList({
             const node = outline.nodes[row.id];
             const slot = slots[index];
             if (node === undefined || slot === undefined) return null;
+            const isDraggingRow = draggingId === row.id;
+            const actionsVisible =
+              isDraggingRow && dragZone !== null && dragZone.kind !== "outside";
+            const activeAction = dragZone?.kind === "action" ? dragZone.action : null;
             return (
               <ManuscriptTreeRowSlot
                 key={row.id}
@@ -377,7 +447,8 @@ export function ManuscriptTreeList({
                   row={row}
                   selected={selectedNodeId === row.id}
                   ghost={slot.ghost}
-                  swipeEnabled={draggingId === null || draggingId === row.id}
+                  actionsVisible={actionsVisible}
+                  activeAction={isDraggingRow ? activeAction : null}
                   dragEnabled={draggingId === null || draggingId === row.id}
                   onPress={() => {
                     if (row.type === "folder") {
@@ -393,23 +464,11 @@ export function ManuscriptTreeList({
                     }
                     onOpenChapter(row.id);
                   }}
-                  onRename={() => {
-                    onRename(node);
-                  }}
-                  onDelete={() => {
-                    onDelete(node);
-                  }}
                   onDragActivate={(pointer) => {
                     handleDragActivate(row.id, pointer);
                   }}
                   onDragUpdate={handleDragUpdate}
                   onDragEnd={handleDragEnd}
-                  onSwipeOpen={(close) => {
-                    if (closeOpenSwipeRef.current !== close) {
-                      closeOpenSwipeRef.current?.();
-                    }
-                    closeOpenSwipeRef.current = close;
-                  }}
                 />
               </ManuscriptTreeRowSlot>
             );
