@@ -194,7 +194,7 @@ export function ManuscriptTreeRow({
         swipeOpenRef.current = false;
       }}
       renderRightActions={(_progress, _translation, methods) => (
-        <View style={styles.actions}>
+        <View style={[styles.actions, hidden && styles.hidden]}>
           <Pressable
             style={styles.renameAction}
             onPress={() => {

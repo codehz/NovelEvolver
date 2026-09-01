@@ -78,17 +78,14 @@ export function ManuscriptTreeList({
     type: ManuscriptVisibleRow["type"];
     expanded: boolean;
   } | null>(null);
-  const overlayStyle = useAnimatedStyle(() => {
-    const scale = interpolate(overlayProgress.value, [0, 1], [1, 0.88]);
-    return {
-      opacity: overlayProgress.value,
-      transform: [
-        { translateX: overlayX.value - previewWidth.value / 2 },
-        { translateY: overlayY.value - previewHeight.value / 2 },
-        { scale },
-      ],
-    };
-  });
+  const overlayStyle = useAnimatedStyle(() => ({
+    opacity: overlayProgress.value,
+    left: overlayX.value - previewWidth.value / 2,
+    top: overlayY.value - previewHeight.value / 2,
+  }));
+  const overlayScaleStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: interpolate(overlayProgress.value, [0, 1], [1, 0.88]) }],
+  }));
   const pointerInViewport = (sourceId: string, pointer: ManuscriptDragPointer) => {
     const frame = listFrameRef.current;
     if (pointer.absoluteY !== 0 || pointer.absoluteX !== 0) {
@@ -310,6 +307,7 @@ export function ManuscriptTreeList({
       </ScrollView>
       <View pointerEvents="none" style={StyleSheet.absoluteFill}>
         <Animated.View
+          pointerEvents="none"
           style={[styles.previewWrap, overlayStyle]}
           onLayout={(event) => {
             previewWidth.value = event.nativeEvent.layout.width;
@@ -317,11 +315,13 @@ export function ManuscriptTreeList({
           }}
         >
           {preview !== null ? (
-            <ManuscriptTreeDragPreview
-              title={preview.title}
-              type={preview.type}
-              expanded={preview.expanded}
-            />
+            <Animated.View pointerEvents="none" style={overlayScaleStyle}>
+              <ManuscriptTreeDragPreview
+                title={preview.title}
+                type={preview.type}
+                expanded={preview.expanded}
+              />
+            </Animated.View>
           ) : null}
         </Animated.View>
       </View>
