@@ -1,5 +1,5 @@
 import type { ManuscriptNode, ManuscriptOutline } from "@novelevolver/domain/worktree";
-import { useRef, useState, type ComponentRef, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ComponentRef, type ReactNode } from "react";
 import { StyleSheet, Text, View } from "react-native";
 import { ScrollView } from "react-native-gesture-handler";
 import Animated, {
@@ -40,49 +40,53 @@ const ROW_ENTER_Y_OFFSET = 6;
 
 type ManuscriptTreeRowSlotProps = {
   y: number;
-  appear: boolean;
-  hidden: boolean;
+  enter: boolean;
+  fade: boolean;
   pointerEvents: "auto" | "none";
   children: ReactNode;
 };
 
 function ManuscriptTreeRowSlot({
   y,
-  appear,
-  hidden,
+  enter,
+  fade,
   pointerEvents,
   children,
 }: ManuscriptTreeRowSlotProps) {
   const shift = useSharedValue(y);
   const opacity = useSharedValue(1);
   const mountedRef = useRef(false);
-  const appearedRef = useRef(false);
+  const enteredRef = useRef(false);
+  const fadedRef = useRef(false);
   const yRef = useRef(y);
-  const hiddenRef = useRef(hidden);
-  if (hidden) {
-    opacity.value = 0;
-    appearedRef.current = false;
-  } else if (appear) {
+  if (fade) {
     shift.value = y;
-    if (!appearedRef.current) {
+    if (!fadedRef.current) {
+      opacity.value = 0;
+      opacity.value = withTiming(1, OVERLAY_TIMING);
+      fadedRef.current = true;
+    }
+  } else if (enter) {
+    shift.value = y;
+    if (!enteredRef.current) {
       opacity.value = 0;
       opacity.value = withTiming(1, OVERLAY_TIMING);
       if (!mountedRef.current) {
         shift.value = y - ROW_ENTER_Y_OFFSET;
         shift.value = withTiming(y, OVERLAY_TIMING);
       }
-      appearedRef.current = true;
+      enteredRef.current = true;
     }
   } else if (!mountedRef.current) {
     shift.value = y;
     opacity.value = 1;
-  } else {
-    if (hiddenRef.current) opacity.value = withTiming(1, OVERLAY_TIMING);
-    if (yRef.current !== y) shift.value = withTiming(y, OVERLAY_TIMING);
+  } else if (yRef.current !== y) {
+    shift.value = withTiming(y, OVERLAY_TIMING);
   }
+  if (!fade) fadedRef.current = false;
+  if (!enter) enteredRef.current = false;
   mountedRef.current = true;
   yRef.current = y;
-  hiddenRef.current = hidden;
   const style = useAnimatedStyle(() => ({
     transform: [{ translateY: shift.value }],
     opacity: opacity.value,
@@ -147,6 +151,7 @@ export function ManuscriptTreeList({
   const dropRef = useRef<ManuscriptResolvedDrop | null>(null);
   const autoScrollRaf = useRef<number | null>(null);
   const previewGenRef = useRef(0);
+  const appearingClearRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const latestRef = useRef({ outline, rows, onMove });
   latestRef.current = { outline, rows, onMove };
   const overlayY = useSharedValue(0);
@@ -194,6 +199,22 @@ export function ManuscriptTreeList({
   const clearPreview = (generation: number) => {
     if (previewGenRef.current === generation) setPreview(null);
   };
+  const clearAppearingIds = () => {
+    appearingClearRef.current = null;
+    setAppearingIds({});
+  };
+  const cancelAppearingClear = () => {
+    if (appearingClearRef.current === null) return;
+    clearTimeout(appearingClearRef.current);
+    appearingClearRef.current = null;
+  };
+  useEffect(
+    () => () => {
+      if (appearingClearRef.current === null) return;
+      clearTimeout(appearingClearRef.current);
+    },
+    [],
+  );
 
   const measureList = () => {
     listRef.current?.measureInWindow((x, y, _width, height) => {
@@ -261,6 +282,7 @@ export function ManuscriptTreeList({
     dropRef.current = null;
     const sourceRow = latestRef.current.rows.find((row) => row.id === sourceId);
     previewGenRef.current += 1;
+    cancelAppearingClear();
     setAppearingIds({});
     setDraggingId(sourceId);
     setDrop(null);
@@ -313,6 +335,8 @@ export function ManuscriptTreeList({
         }
       }
       setAppearingIds(nextAppearing);
+      cancelAppearingClear();
+      appearingClearRef.current = setTimeout(clearAppearingIds, OVERLAY_TIMING.duration);
       const move = latestRef.current.onMove;
       if (resolved.target.kind === "into") move(sourceId, resolved.target.parentId);
       else move(sourceId, resolved.target.parentId, resolved.target.index);
@@ -343,13 +367,13 @@ export function ManuscriptTreeList({
               <ManuscriptTreeRowSlot
                 key={row.id}
                 y={slot.y}
-                hidden={slot.hidden}
                 pointerEvents={draggingId !== null && draggingId !== row.id ? "none" : "auto"}
-                appear={appearingIds[row.id] === true || enterIds.has(row.id)}
+                enter={enterIds.has(row.id)}
+                fade={appearingIds[row.id] === true}
               >
                 <ManuscriptTreeRow
                   row={row}
-                  hidden={slot.hidden}
+                  ghost={slot.ghost}
                   swipeEnabled={draggingId === null || draggingId === row.id}
                   dragEnabled={draggingId === null || draggingId === row.id}
                   onPress={() => {

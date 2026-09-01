@@ -66,15 +66,6 @@ export function sourceSubtreeRange(
   return { start, count: end - start + 1 };
 }
 
-export function packRowsExcludingSource<T extends { id: string; depth: number }>(
-  rows: readonly T[],
-  sourceId: string,
-): T[] {
-  const range = sourceSubtreeRange(rows, sourceId);
-  if (range === null) return [...rows];
-  return rows.filter((_, index) => index < range.start || index >= range.start + range.count);
-}
-
 export function manuscriptRowSlotY(index: number, rowHeight: number): number {
   return index * rowHeight;
 }
@@ -82,7 +73,7 @@ export function manuscriptRowSlotY(index: number, rowHeight: number): number {
 export type ManuscriptVisualRowSlot = {
   id: string;
   y: number;
-  hidden: boolean;
+  ghost: boolean;
 };
 
 export function visualManuscriptRowSlots(
@@ -91,28 +82,14 @@ export function visualManuscriptRowSlots(
   rowHeight: number,
 ): { slots: ManuscriptVisualRowSlot[]; slotCount: number } {
   const range = draggingId === null ? null : sourceSubtreeRange(rows, draggingId);
-  if (range === null) {
-    return {
-      slots: rows.map((row, index) => ({
-        id: row.id,
-        y: manuscriptRowSlotY(index, rowHeight),
-        hidden: false,
-      })),
-      slotCount: rows.length,
-    };
-  }
-  const slots: ManuscriptVisualRowSlot[] = [];
-  let packedIndex = 0;
-  for (const [index, row] of rows.entries()) {
-    const hidden = index >= range.start && index < range.start + range.count;
-    if (hidden) {
-      slots.push({ id: row.id, y: manuscriptRowSlotY(index, rowHeight), hidden: true });
-      continue;
-    }
-    slots.push({ id: row.id, y: manuscriptRowSlotY(packedIndex, rowHeight), hidden: false });
-    packedIndex += 1;
-  }
-  return { slots, slotCount: packedIndex };
+  return {
+    slots: rows.map((row, index) => ({
+      id: row.id,
+      y: manuscriptRowSlotY(index, rowHeight),
+      ghost: range !== null && index >= range.start && index < range.start + range.count,
+    })),
+    slotCount: rows.length,
+  };
 }
 
 export function buildSubtreeEndIndexes(rows: readonly { depth: number }[]): number[] {

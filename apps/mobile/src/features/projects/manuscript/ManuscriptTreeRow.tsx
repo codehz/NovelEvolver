@@ -2,7 +2,12 @@ import { useRef } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { GestureDetector, usePanGesture } from "react-native-gesture-handler";
 import Swipeable, { type SwipeableMethods } from "react-native-gesture-handler/ReanimatedSwipeable";
-import Animated, { useAnimatedStyle, type SharedValue } from "react-native-reanimated";
+import Animated, {
+  useAnimatedStyle,
+  useSharedValue,
+  withTiming,
+  type SharedValue,
+} from "react-native-reanimated";
 import IconBook from "~icons/codicon/book";
 import IconEdit from "~icons/codicon/edit";
 import IconFolder from "~icons/codicon/folder";
@@ -10,12 +15,14 @@ import IconFolderOpened from "~icons/codicon/folder-opened";
 import IconTrash from "~icons/codicon/trash";
 
 import { color, fontFamily, fontSize, radius, space } from "../../../shared/theme";
+import { OVERLAY_TIMING } from "../../../shared/ui/overlay-chrome";
 import type { ManuscriptVisibleRow } from "./manuscript-tree-flatten";
 
 export const MANUSCRIPT_TREE_ROW_HEIGHT = 48;
 export const MANUSCRIPT_TREE_PREVIEW_HEIGHT = 36;
 export const MANUSCRIPT_TREE_PREVIEW_ICON = 16;
 export const MANUSCRIPT_TREE_PREVIEW_ANCHOR_X = 1 + space[3] + MANUSCRIPT_TREE_PREVIEW_ICON / 2;
+export const MANUSCRIPT_TREE_GHOST_OPACITY = 0.4;
 const ACTION_WIDTH = 72;
 
 export type ManuscriptDragPointer = {
@@ -93,7 +100,6 @@ export function ManuscriptTreeDragPreview({
 
 type ManuscriptTreeRowActionsProps = {
   progress: SharedValue<number>;
-  hidden: boolean;
   onRename: () => void;
   onDelete: () => void;
   methods: SwipeableMethods;
@@ -101,7 +107,6 @@ type ManuscriptTreeRowActionsProps = {
 
 function ManuscriptTreeRowActions({
   progress,
-  hidden,
   onRename,
   onDelete,
   methods,
@@ -110,7 +115,7 @@ function ManuscriptTreeRowActions({
     opacity: progress.value <= 0 ? 0 : 1,
   }));
   return (
-    <Animated.View style={[styles.actions, hidden && styles.hidden, style]}>
+    <Animated.View style={[styles.actions, style]}>
       <Pressable
         style={styles.renameAction}
         onPress={() => {
@@ -141,7 +146,7 @@ function ManuscriptTreeRowActions({
 
 type ManuscriptTreeRowProps = {
   row: ManuscriptVisibleRow;
-  hidden: boolean;
+  ghost: boolean;
   swipeEnabled: boolean;
   dragEnabled: boolean;
   onPress: () => void;
@@ -155,7 +160,7 @@ type ManuscriptTreeRowProps = {
 
 export function ManuscriptTreeRow({
   row,
-  hidden,
+  ghost,
   swipeEnabled,
   dragEnabled,
   onPress,
@@ -179,6 +184,12 @@ export function ManuscriptTreeRow({
     absoluteX: 0,
     absoluteY: 0,
   });
+  const ghostOpacity = useSharedValue(1);
+  const ghostRef = useRef(ghost);
+  if (ghost) ghostOpacity.value = withTiming(MANUSCRIPT_TREE_GHOST_OPACITY, OVERLAY_TIMING);
+  else if (ghostRef.current) ghostOpacity.value = withTiming(1, OVERLAY_TIMING);
+  ghostRef.current = ghost;
+  const ghostStyle = useAnimatedStyle(() => ({ opacity: ghostOpacity.value }));
   dragEnabledRef.current = dragEnabled;
   onDragActivateRef.current = onDragActivate;
   onDragUpdateRef.current = onDragUpdate;
@@ -241,7 +252,6 @@ export function ManuscriptTreeRow({
       renderRightActions={(progress, _translation, methods) => (
         <ManuscriptTreeRowActions
           progress={progress}
-          hidden={hidden}
           methods={methods}
           onRename={onRename}
           onDelete={onDelete}
@@ -264,14 +274,14 @@ export function ManuscriptTreeRow({
           accessibilityRole="button"
           accessibilityLabel={row.title}
         >
-          <View style={hidden ? styles.hidden : undefined}>
+          <Animated.View style={ghostStyle}>
             <ManuscriptTreeRowContent
               title={row.title}
               type={row.type}
               depth={row.depth}
               expanded={row.expanded}
             />
-          </View>
+          </Animated.View>
         </Pressable>
       </GestureDetector>
     </Swipeable>
@@ -286,9 +296,6 @@ const styles = StyleSheet.create({
     gap: space[2],
     paddingRight: space[3],
     backgroundColor: color.background,
-  },
-  hidden: {
-    opacity: 0,
   },
   preview: {
     height: MANUSCRIPT_TREE_PREVIEW_HEIGHT,
