@@ -34,9 +34,17 @@ export function ExplorerDomainSelect({
         accessibilityLabel={currentLabel}
         accessibilityState={{ expanded: open }}
       >
-        <Text style={styles.triggerLabel} numberOfLines={1}>
-          {currentLabel}
-        </Text>
+        <View>
+          {OPTIONS.map((option) => (
+            <Text
+              key={option.value}
+              style={[styles.triggerLabel, option.value === value ? undefined : styles.widthProbe]}
+              numberOfLines={1}
+            >
+              {option.label}
+            </Text>
+          ))}
+        </View>
         <IconChevronDown width={16} height={16} color={color.muted} />
       </Pressable>
       {open ? (
@@ -56,6 +64,7 @@ export function ExplorerDomainSelect({
               >
                 <Text
                   style={[styles.optionLabel, selected ? styles.optionLabelSelected : undefined]}
+                  numberOfLines={1}
                 >
                   {option.label}
                 </Text>
@@ -72,8 +81,12 @@ const styles = StyleSheet.create({
   wrap: {
     position: "relative",
     zIndex: 4,
-    minWidth: 0,
-    flexShrink: 1,
+    flexShrink: 0,
+  },
+  widthProbe: {
+    height: 0,
+    overflow: "hidden",
+    opacity: 0,
   },
   trigger: {
     flexDirection: "row",
