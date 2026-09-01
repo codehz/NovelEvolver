@@ -1,7 +1,10 @@
 import type { ManuscriptNode, ManuscriptOutline } from "@novelevolver/domain/worktree";
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import { StyleSheet, Text, View } from "react-native";
+import IconNewFile from "~icons/codicon/new-file";
+import IconNewFolder from "~icons/codicon/new-folder";
 
-import { color, fontFamily, fontSize, radius, space, wash } from "../../shared/theme";
+import { color, fontFamily, fontSize, space } from "../../shared/theme";
+import { SettingsHeaderButton } from "../settings/SettingsHeaderButton";
 import { ManuscriptTreeList } from "./manuscript/ManuscriptTreeList";
 
 export type ProjectManuscriptPaneProps = {
@@ -12,10 +15,8 @@ export type ProjectManuscriptPaneProps = {
   onRename: (node: ManuscriptNode) => void;
   onDelete: (node: ManuscriptNode) => void;
   onMove: (sourceId: string, parentId: string, index?: number) => void;
-  onCommit: () => void;
   onCreateFolder: () => void;
   onCreateChapter: () => Promise<boolean>;
-  onDeleteProject: () => void;
 };
 
 export function ProjectManuscriptPane({
@@ -26,30 +27,26 @@ export function ProjectManuscriptPane({
   onRename,
   onDelete,
   onMove,
-  onCommit,
   onCreateFolder,
   onCreateChapter,
-  onDeleteProject,
 }: ProjectManuscriptPaneProps) {
   return (
     <View style={styles.root}>
       <View style={styles.paneHeader}>
-        <Text style={styles.paneTitle}>正文</Text>
-        <Text style={styles.paneHint}>目录</Text>
-      </View>
-      <View style={styles.toolbar}>
-        <Pressable style={styles.primaryButton} onPress={onCommit}>
-          <Text style={styles.primaryText}>提交</Text>
-        </Pressable>
-        <Pressable style={styles.secondaryButton} onPress={onCreateFolder}>
-          <Text style={styles.secondaryText}>文件夹</Text>
-        </Pressable>
-        <Pressable style={styles.secondaryButton} onPress={onCreateChapter}>
-          <Text style={styles.secondaryText}>章节</Text>
-        </Pressable>
-        <Pressable style={styles.dangerButton} onPress={onDeleteProject}>
-          <Text style={styles.dangerText}>删除</Text>
-        </Pressable>
+        <View style={styles.paneTitleGroup}>
+          <Text style={styles.paneTitle}>正文</Text>
+          <Text style={styles.paneHint}>目录</Text>
+        </View>
+        <View style={styles.paneActions}>
+          <SettingsHeaderButton
+            Icon={IconNewFile}
+            label="新建章节"
+            onPress={() => {
+              void onCreateChapter();
+            }}
+          />
+          <SettingsHeaderButton Icon={IconNewFolder} label="新建文件夹" onPress={onCreateFolder} />
+        </View>
       </View>
       {warning !== null ? <Text style={styles.warning}>{warning}</Text> : null}
       <ManuscriptTreeList
@@ -72,11 +69,18 @@ const styles = StyleSheet.create({
   },
   paneHeader: {
     flexDirection: "row",
-    alignItems: "baseline",
+    alignItems: "center",
     gap: space[2],
     paddingHorizontal: space[4],
     paddingTop: space[3],
     paddingBottom: space[2],
+  },
+  paneTitleGroup: {
+    flex: 1,
+    minWidth: 0,
+    flexDirection: "row",
+    alignItems: "baseline",
+    gap: space[2],
   },
   paneTitle: {
     color: color.foreground,
@@ -89,46 +93,10 @@ const styles = StyleSheet.create({
     fontFamily: fontFamily.sans,
     fontSize: fontSize.xs,
   },
-  toolbar: {
+  paneActions: {
     flexDirection: "row",
-    flexWrap: "wrap",
-    gap: space[2],
-    paddingHorizontal: space[3],
-    paddingBottom: space[3],
-  },
-  primaryButton: {
-    borderRadius: radius.control,
-    backgroundColor: color.accent,
-    paddingHorizontal: space[3],
-    paddingVertical: space[2],
-  },
-  primaryText: {
-    color: color.primaryForeground,
-    fontFamily: fontFamily.sans,
-    fontSize: fontSize.sm,
-    fontWeight: "600",
-  },
-  secondaryButton: {
-    borderRadius: radius.control,
-    backgroundColor: color.field,
-    paddingHorizontal: space[3],
-    paddingVertical: space[2],
-  },
-  secondaryText: {
-    color: color.foreground,
-    fontFamily: fontFamily.sans,
-    fontSize: fontSize.sm,
-  },
-  dangerButton: {
-    borderRadius: radius.control,
-    backgroundColor: wash.dangerSoft,
-    paddingHorizontal: space[3],
-    paddingVertical: space[2],
-  },
-  dangerText: {
-    color: color.error,
-    fontFamily: fontFamily.sans,
-    fontSize: fontSize.sm,
+    alignItems: "center",
+    flexShrink: 0,
   },
   warning: {
     color: color.warning,

@@ -105,24 +105,6 @@ export function ProjectScreen() {
       await overlay.alert({ title: "重命名失败", message: errorMessage(error) });
     }
   };
-  const commitWorktree = async () => {
-    const message = await overlay.prompt({
-      title: "提交当前 worktree",
-      placeholder: "提交说明",
-      confirmLabel: "提交",
-    });
-    if (message === null) return;
-    try {
-      opened.worktree.commitChanges(message, {
-        name: "NovelEvolver",
-        email: "app@novel-evolver.local",
-      });
-      update();
-      await overlay.alert({ title: "提交完成", message: "当前 worktree 已写入 Git。" });
-    } catch (error) {
-      await overlay.alert({ title: "提交失败", message: errorMessage(error) });
-    }
-  };
   const createFolder = async () => {
     const name = await overlay.prompt({
       title: "新建文件夹",
@@ -211,20 +193,6 @@ export function ProjectScreen() {
       await overlay.alert({ title: "导出失败", message: errorMessage(error) });
     }
   };
-  const deleteProject = async () => {
-    const confirmed = await overlay.confirm({
-      title: "删除项目？",
-      message: `将删除“${opened.record.displayName ?? "未命名项目"}”的本地仓库和草稿。外部文件不会被删除。`,
-      confirmLabel: "删除",
-    });
-    if (!confirmed) return;
-    try {
-      await manager.deleteProject(projectId);
-      navigation.popToTop();
-    } catch (error) {
-      await overlay.alert({ title: "删除失败", message: errorMessage(error) });
-    }
-  };
 
   return (
     <SafeAreaView edges={["bottom"]} style={styles.safeArea}>
@@ -268,16 +236,10 @@ export function ProjectScreen() {
           void deleteNode(node);
         }}
         onMove={moveNode}
-        onCommit={() => {
-          void commitWorktree();
-        }}
         onCreateFolder={() => {
           void createFolder();
         }}
         onCreateChapter={createChapter}
-        onDeleteProject={() => {
-          void deleteProject();
-        }}
       />
     </SafeAreaView>
   );
