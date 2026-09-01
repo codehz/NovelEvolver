@@ -1,14 +1,14 @@
 import { Field } from "@base-ui/react/field";
 import { Form } from "@base-ui/react/form";
-import { useEffect, useImperativeHandle, useMemo, useRef, useState, type Ref } from "react";
-
-import { cn } from "#app/shared/lib/ui/cn";
 import type {
   AiAdapterKind,
   AiProviderConfigPublic,
   AiProviderConfigWrite,
-} from "#domain/settings/ai-settings";
-import { requiresAdapterBaseUrl } from "#domain/settings/ai-settings";
+} from "@novelevolver/domain/settings/ai-settings";
+import { requiresAdapterBaseUrl } from "@novelevolver/domain/settings/ai-settings";
+import { useEffect, useImperativeHandle, useMemo, useRef, useState, type Ref } from "react";
+
+import { cn } from "#app/shared/lib/ui/cn";
 
 import {
   settingsCheckboxLabelClass,

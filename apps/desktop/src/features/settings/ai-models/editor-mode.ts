@@ -1,4 +1,7 @@
-import type { AiModelConfigPublic, AiProviderConfigPublic } from "#domain/settings/ai-settings";
+import type {
+  AiModelConfigPublic,
+  AiProviderConfigPublic,
+} from "@novelevolver/domain/settings/ai-settings";
 
 export type EditorMode =
   | { type: "closed" }

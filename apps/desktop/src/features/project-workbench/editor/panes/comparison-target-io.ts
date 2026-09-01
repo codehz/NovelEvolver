@@ -1,6 +1,10 @@
-import type { HistoryTarget } from "#domain/worktree";
-import { isMissingComparisonTargetError } from "#workbench/lib/comparison-errors";
-import { useManuscript, useResourceLibrary } from "#workbench/session/workspace-handles";
+import type { HistoryTarget } from "@novelevolver/domain/worktree";
+
+import { isMissingComparisonTargetError } from "#app/features/project-workbench/lib/comparison-errors";
+import {
+  useManuscript,
+  useResourceLibrary,
+} from "#app/features/project-workbench/session/workspace-handles";
 
 export function readComparisonTargetCurrentContent(
   target: HistoryTarget,

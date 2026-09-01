@@ -1,7 +1,6 @@
+import type { WorktreeTreeSnapshot } from "@novelevolver/domain/worktree";
 import { useMolecule } from "bunshi/react";
 import { useAtomValue } from "jotai";
-
-import type { WorktreeTreeSnapshot } from "#domain/worktree";
 
 import { worktreeChangesFeedMolecule } from "./worktree-changes-feed";
 

@@ -1,8 +1,7 @@
+import type { WorkspaceService } from "@novelevolver/desktop-rpc/services/workspace-service";
 import { ProjectsRepository, WorktreeRepository } from "@novelevolver/worktree";
 import { RpcTarget } from "capnweb";
 import type { BrowserWindow } from "electron";
-
-import type { WorkspaceService } from "#desktop-rpc/services/workspace-service";
 
 import { AiChatRepository } from "../../db/repositories/ai-chat-repo";
 import type { RpcMainDeps } from "../server/deps";

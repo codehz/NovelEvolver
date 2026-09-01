@@ -1,11 +1,14 @@
+import type { BranchSummary } from "@novelevolver/domain/git/branch";
+import type { CommitSummary } from "@novelevolver/domain/worktree";
 import { useCallback } from "react";
 
+import { useWorkbenchEditorActions } from "#app/features/project-workbench/editor/use-workbench-editor-actions";
+import {
+  useActiveBranchName,
+  useSetActiveBranchAtom,
+} from "#app/features/project-workbench/session/branch-scope";
+import { useProjectContext } from "#app/features/project-workbench/session/project-scope";
 import { isQuickPickDismissedError } from "#app/shared/lib/quick-pick";
-import type { BranchSummary } from "#domain/git/branch";
-import type { CommitSummary } from "#domain/worktree";
-import { useWorkbenchEditorActions } from "#workbench/editor/use-workbench-editor-actions";
-import { useActiveBranchName, useSetActiveBranchAtom } from "#workbench/session/branch-scope";
-import { useProjectContext } from "#workbench/session/project-scope";
 
 import { createBranchAndSwitch } from "./branch-actions";
 import { useBranchPickerSnapshot } from "./branch-data";

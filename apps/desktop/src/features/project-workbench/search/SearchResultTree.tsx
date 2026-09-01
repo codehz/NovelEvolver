@@ -1,6 +1,22 @@
+import type { WorktreeSearchHit } from "@novelevolver/domain/worktree";
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import type { ReactNode, Ref } from "react";
 
+import { activateOnEnterSpace } from "#app/features/project-workbench/lib/activate-on-enter-space";
+import {
+  contentEntityIconClass,
+  contentFolderIconClass,
+} from "#app/features/project-workbench/tree/content-tree-icons";
+import type { TreeRowLayout } from "#app/features/project-workbench/tree/tree-row-layout";
+import {
+  getTreeRowPaddingLeft,
+  TREE_ROW_CONTENT_GAP_PX,
+  TREE_ROW_DISCLOSURE_WIDTH_PX,
+  TREE_ROW_HEIGHT_PX,
+  treeRowDisclosureSpacerClass,
+} from "#app/features/project-workbench/tree/tree-row-motion";
+import { TreeBody, type TreeBodyStatus } from "#app/features/project-workbench/tree/TreeBody";
+import { TreeMotionRow } from "#app/features/project-workbench/tree/TreeMotionRow";
 import { cn } from "#app/shared/lib/ui/cn";
 import {
   controlFocusVisibleClass,
@@ -8,19 +24,6 @@ import {
 } from "#app/shared/lib/ui/interaction-chrome";
 import { bindScrollEdgeMask, scrollEdgeMaskClass } from "#app/shared/lib/ui/scroll-edge-mask";
 import { AppTooltip, Button, DisclosureChevron } from "#app/shared/ui";
-import type { WorktreeSearchHit } from "#domain/worktree";
-import { activateOnEnterSpace } from "#workbench/lib/activate-on-enter-space";
-import { contentEntityIconClass, contentFolderIconClass } from "#workbench/tree/content-tree-icons";
-import type { TreeRowLayout } from "#workbench/tree/tree-row-layout";
-import {
-  getTreeRowPaddingLeft,
-  TREE_ROW_CONTENT_GAP_PX,
-  TREE_ROW_DISCLOSURE_WIDTH_PX,
-  TREE_ROW_HEIGHT_PX,
-  treeRowDisclosureSpacerClass,
-} from "#workbench/tree/tree-row-motion";
-import { TreeBody, type TreeBodyStatus } from "#workbench/tree/TreeBody";
-import { TreeMotionRow } from "#workbench/tree/TreeMotionRow";
 
 import {
   collectSearchTreeFolderKeys,

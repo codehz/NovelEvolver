@@ -1,15 +1,14 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname } from "node:path";
 
-import { safeStorage } from "electron";
-import { nanoid } from "nanoid";
-
 import type {
   GitCredentialConfigPublic,
   GitCredentialConfigWrite,
   GitCredentialsSettingsSnapshot,
-} from "#domain/settings/ai-settings";
-import { normalizeGitCredentialHost } from "#domain/settings/ai-settings";
+} from "@novelevolver/domain/settings/ai-settings";
+import { normalizeGitCredentialHost } from "@novelevolver/domain/settings/ai-settings";
+import { safeStorage } from "electron";
+import { nanoid } from "nanoid";
 
 const FILE_VERSION = 1 as const;
 

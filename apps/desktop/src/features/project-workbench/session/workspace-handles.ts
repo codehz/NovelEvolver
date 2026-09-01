@@ -1,18 +1,17 @@
-import { molecule, use, useMolecule } from "bunshi/react";
-import type { RpcPromise } from "capnweb";
-
 import type {
   AiActiveChatHandle,
   AiCatalogHandle,
   AiConversationsHandle,
   ProjectAi,
-} from "#desktop-rpc/ai/handles";
-import type { BranchWorkspace } from "#desktop-rpc/session";
-import type { HistoryHandle } from "#desktop-rpc/worktree";
-import type { ManuscriptHandle } from "#desktop-rpc/worktree";
-import type { ResourceLibraryHandle } from "#desktop-rpc/worktree";
-import type { WorktreeChangesHandle } from "#desktop-rpc/worktree";
-import type { WorktreeSearchHandle } from "#desktop-rpc/worktree";
+} from "@novelevolver/desktop-rpc/ai/handles";
+import type { BranchWorkspace } from "@novelevolver/desktop-rpc/session";
+import type { HistoryHandle } from "@novelevolver/desktop-rpc/worktree";
+import type { ManuscriptHandle } from "@novelevolver/desktop-rpc/worktree";
+import type { ResourceLibraryHandle } from "@novelevolver/desktop-rpc/worktree";
+import type { WorktreeChangesHandle } from "@novelevolver/desktop-rpc/worktree";
+import type { WorktreeSearchHandle } from "@novelevolver/desktop-rpc/worktree";
+import { molecule, use, useMolecule } from "bunshi/react";
+import type { RpcPromise } from "capnweb";
 
 import { branchNameScope } from "./branch-scope";
 import { projectMolecule } from "./project-scope";

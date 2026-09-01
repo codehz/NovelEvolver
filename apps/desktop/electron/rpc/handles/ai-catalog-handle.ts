@@ -1,7 +1,6 @@
+import type { AiCatalogHandle } from "@novelevolver/desktop-rpc/ai/handles";
+import type { AiChatSelectableAgent, AiChatSelectableModel } from "@novelevolver/domain/ai/chat";
 import { RpcTarget } from "capnweb";
-
-import type { AiCatalogHandle } from "#desktop-rpc/ai/handles";
-import type { AiChatSelectableAgent, AiChatSelectableModel } from "#domain/ai/chat";
 
 import type { ProjectAiChatController } from "../../ai/chat/project-ai-chat";
 

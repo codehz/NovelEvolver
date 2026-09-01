@@ -1,14 +1,16 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname } from "node:path";
 
-import { nanoid } from "nanoid";
-
-import type { AiPromptConfigWrite, AiPromptsSettingsSnapshot } from "#domain/settings/ai-settings";
+import type {
+  AiPromptConfigWrite,
+  AiPromptsSettingsSnapshot,
+} from "@novelevolver/domain/settings/ai-settings";
 import {
   AI_PROMPTS_STATE_VERSION,
   AiPromptsState,
   parseAiPromptsState,
-} from "#domain/settings/stores/ai-prompts-state";
+} from "@novelevolver/domain/settings/stores/ai-prompts-state";
+import { nanoid } from "nanoid";
 
 export class AiPromptsStore {
   readonly #filePath: string;

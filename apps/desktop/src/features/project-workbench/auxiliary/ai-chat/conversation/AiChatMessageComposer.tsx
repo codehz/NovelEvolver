@@ -1,7 +1,7 @@
+import type { AiReasoningLevel } from "@novelevolver/domain/settings/ai-settings";
 import type { RefObject, SubmitEvent } from "react";
 
 import { Button, AppTooltip } from "#app/shared/ui";
-import type { AiReasoningLevel } from "#domain/settings/ai-settings";
 
 import { ComposerEditor, type ComposerEditorHandle } from "../composer/ComposerEditor";
 import {

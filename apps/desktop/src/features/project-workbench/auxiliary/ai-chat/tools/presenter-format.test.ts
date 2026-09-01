@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 
-import type { AiChatToolCall } from "#domain/ai";
+import type { AiChatToolCall } from "@novelevolver/domain/ai";
 
 import {
   contentWriteBodyFromArgs,

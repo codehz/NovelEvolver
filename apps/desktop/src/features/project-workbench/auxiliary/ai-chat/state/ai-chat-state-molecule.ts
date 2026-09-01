@@ -1,9 +1,9 @@
+import { createInitialAiChatSnapshot } from "@novelevolver/domain/ai";
+import type { AiChatMessage, AiChatSnapshot } from "@novelevolver/domain/ai";
 import { molecule, use } from "bunshi/react";
 import { atom } from "jotai";
 
-import { createInitialAiChatSnapshot } from "#domain/ai";
-import type { AiChatMessage, AiChatSnapshot } from "#domain/ai";
-import { projectIdScope } from "#workbench/session/project-scope";
+import { projectIdScope } from "#app/features/project-workbench/session/project-scope";
 
 export type AiChatTransportState = {
   loading: boolean;

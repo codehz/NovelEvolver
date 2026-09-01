@@ -1,16 +1,16 @@
-import { useMolecule } from "bunshi/react";
-import { useAtomValue } from "jotai";
-
 import type {
   ManuscriptTreeNode,
   ManuscriptTreeSnapshot,
   ResourceTreeNode,
   ResourceTreeSnapshot,
-} from "#domain/worktree";
-import { manuscriptParentChain } from "#workbench/explorer/manuscript/manuscript-tree";
-import { manuscriptTreeMolecule } from "#workbench/explorer/manuscript/state/manuscript-tree-molecule";
-import { resourceParentChain } from "#workbench/explorer/resource-library/resource-tree";
-import { resourceLibraryTreeMolecule } from "#workbench/explorer/resource-library/state/resource-tree-molecule";
+} from "@novelevolver/domain/worktree";
+import { useMolecule } from "bunshi/react";
+import { useAtomValue } from "jotai";
+
+import { manuscriptParentChain } from "#app/features/project-workbench/explorer/manuscript/manuscript-tree";
+import { manuscriptTreeMolecule } from "#app/features/project-workbench/explorer/manuscript/state/manuscript-tree-molecule";
+import { resourceParentChain } from "#app/features/project-workbench/explorer/resource-library/resource-tree";
+import { resourceLibraryTreeMolecule } from "#app/features/project-workbench/explorer/resource-library/state/resource-tree-molecule";
 
 import type {
   ComparisonWorkbenchEditorTab,

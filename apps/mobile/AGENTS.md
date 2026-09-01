@@ -4,7 +4,7 @@ Bare React Native (Community CLI + [Rollipop](https://rollipop.dev)). **Do not a
 
 - Native projects: `android/`, `ios/`
 - JS entry: `index.js`; bundler: `rollipop.config.ts`; UI: `src/`
-- Domain DTOs: `@novelevolver/domain` (no `#app` / `#domain` path aliases)
+- Domain DTOs: `@novelevolver/domain` (workspace package; no `#app` path alias)
 - Rollipop uses standard Node resolution — workspace packages resolve without Metro `watchFolders` / asset URL rewrites
 - Iconify: on-demand `unplugin-icons` (`import IconAdd from "~icons/codicon/add"`), compiled to `react-native-svg` in `rollipop.config.ts`
 - Theme: Catppuccin Mocha JS tokens in `src/shared/theme/` (no NativeWind / Tailwind). Semantic roles match desktop `@theme`. Flavor is pinned — do not follow system light mode

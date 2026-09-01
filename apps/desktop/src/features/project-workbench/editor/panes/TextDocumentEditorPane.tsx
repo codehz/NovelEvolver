@@ -2,8 +2,11 @@ import { useMolecule } from "bunshi/react";
 import { useAtomValue, useSetAtom } from "jotai";
 import { useCallback, useRef, useState } from "react";
 
+import {
+  PlainTextEditor,
+  type PlainTextEditorHandle,
+} from "#app/features/project-workbench/editor/PlainTextEditor";
 import { useOneShotRequestConsumer } from "#app/shared/lib/ui/one-shot-request";
-import { PlainTextEditor, type PlainTextEditorHandle } from "#workbench/editor/PlainTextEditor";
 
 import { getWorkbenchEditorTabTargetKey } from "../contributions/registry";
 import { editorTabMolecule, workbenchEditorMolecule } from "../state/molecules";

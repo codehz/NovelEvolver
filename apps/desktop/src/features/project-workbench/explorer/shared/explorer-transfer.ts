@@ -1,7 +1,8 @@
+import type { WorktreeTransferInput, WorktreeTransferResult } from "@novelevolver/domain/worktree";
+
+import { flushPendingEditorAutosaves } from "#app/features/project-workbench/editor/editor-autosave-flush";
+import type { WorkbenchEditorTarget } from "#app/features/project-workbench/editor/state/types";
 import { notificationApi } from "#app/shared/lib/notifications";
-import type { WorktreeTransferInput, WorktreeTransferResult } from "#domain/worktree";
-import { flushPendingEditorAutosaves } from "#workbench/editor/editor-autosave-flush";
-import type { WorkbenchEditorTarget } from "#workbench/editor/state/types";
 
 export async function runExplorerTransfer(options: {
   transfer: (input: WorktreeTransferInput) => Promise<WorktreeTransferResult>;

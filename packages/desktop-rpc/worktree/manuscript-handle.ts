@@ -1,10 +1,9 @@
-import type { RpcTarget } from "capnweb";
-
 import type {
   ExternalImportEntry,
   ManuscriptImportResult,
   WorktreeNodeIdResult,
-} from "#domain/worktree/manuscript";
+} from "@novelevolver/domain/worktree/manuscript";
+import type { RpcTarget } from "capnweb";
 
 /**
  * Ordered manuscript tree under the branch worktree's `manuscript/` directory.

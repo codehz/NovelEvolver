@@ -1,8 +1,8 @@
+import type { AiChatMessage, AiChatSelectableModel } from "@novelevolver/domain/ai";
 import { useEffect, useState } from "react";
 
+import { StatusBarItemInfo } from "#app/features/project-workbench/chrome";
 import { cn } from "#app/shared/lib/ui/cn";
-import type { AiChatMessage, AiChatSelectableModel } from "#domain/ai";
-import { StatusBarItemInfo } from "#workbench/chrome";
 
 import { useAiChatActions, useAiChatStatusMeta } from "./state/use-ai-chat-state";
 import {

@@ -1,5 +1,6 @@
+import type { AiChatMessageBranch } from "@novelevolver/domain/ai";
+
 import { AppTooltip, Button } from "#app/shared/ui";
-import type { AiChatMessageBranch } from "#domain/ai";
 
 import {
   messageActionButtonClass,

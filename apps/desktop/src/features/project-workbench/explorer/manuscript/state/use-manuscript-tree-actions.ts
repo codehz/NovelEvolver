@@ -1,18 +1,18 @@
-import { useMolecule } from "bunshi/react";
-import { useSetAtom, useStore } from "jotai";
-import { useCallback } from "react";
-
-import { confirmDialogApi } from "#app/shared/lib/confirm-dialog";
-import { notificationApi } from "#app/shared/lib/notifications";
 import type {
   ExternalImportEntry,
   ExternalImportSkip,
   ExternalImportSkipReason,
   ManuscriptImportCreated,
   ManuscriptTreeNode,
-} from "#domain/worktree";
-import { useWorkbenchEditorActions } from "#workbench/editor/use-workbench-editor-actions";
-import { useManuscript } from "#workbench/session/workspace-handles";
+} from "@novelevolver/domain/worktree";
+import { useMolecule } from "bunshi/react";
+import { useSetAtom, useStore } from "jotai";
+import { useCallback } from "react";
+
+import { useWorkbenchEditorActions } from "#app/features/project-workbench/editor/use-workbench-editor-actions";
+import { useManuscript } from "#app/features/project-workbench/session/workspace-handles";
+import { confirmDialogApi } from "#app/shared/lib/confirm-dialog";
+import { notificationApi } from "#app/shared/lib/notifications";
 
 import { findManuscriptChildIndex, findManuscriptParentId } from "../manuscript-tree";
 import { manuscriptTreeMolecule } from "./manuscript-tree-molecule";

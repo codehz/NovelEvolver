@@ -1,13 +1,12 @@
-import type { WorktreeSession } from "@novelevolver/worktree";
-import { RpcTarget } from "capnweb";
-
-import type { WorktreeChangesHandle } from "#desktop-rpc/worktree/worktree-changes-handle";
+import type { WorktreeChangesHandle } from "@novelevolver/desktop-rpc/worktree/worktree-changes-handle";
 import type {
   ChangeTextComparison,
   ChangeTextComparisonTarget,
   ChangesEvent,
   ChangesSnapshot,
-} from "#domain/worktree/changes";
+} from "@novelevolver/domain/worktree/changes";
+import type { WorktreeSession } from "@novelevolver/worktree";
+import { RpcTarget } from "capnweb";
 
 export class WorktreeChangesHandleImpl extends RpcTarget implements WorktreeChangesHandle {
   readonly #session: WorktreeSession;

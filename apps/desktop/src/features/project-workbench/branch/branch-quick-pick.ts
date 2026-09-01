@@ -1,15 +1,18 @@
+import type { BranchSummary } from "@novelevolver/domain/git/branch";
 import { useCallback } from "react";
 
+import { useWorkbenchEditorActions } from "#app/features/project-workbench/editor/use-workbench-editor-actions";
+import {
+  useActiveBranchName,
+  useSetActiveBranchAtom,
+} from "#app/features/project-workbench/session/branch-scope";
+import { useProjectContext } from "#app/features/project-workbench/session/project-scope";
 import { confirmDialogApi } from "#app/shared/lib/confirm-dialog";
 import {
   isQuickPickDismissedError,
   quickPickApi,
   type QuickPickListItem,
 } from "#app/shared/lib/quick-pick";
-import type { BranchSummary } from "#domain/git/branch";
-import { useWorkbenchEditorActions } from "#workbench/editor/use-workbench-editor-actions";
-import { useActiveBranchName, useSetActiveBranchAtom } from "#workbench/session/branch-scope";
-import { useProjectContext } from "#workbench/session/project-scope";
 
 import { createBranchAndSwitch, deleteBranchByName, switchToBranch } from "./branch-actions";
 import { useBranchPickerSnapshot } from "./branch-data";

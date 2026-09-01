@@ -1,10 +1,10 @@
+import type { WorktreeDomain } from "@novelevolver/domain/worktree";
 import { molecule, use } from "bunshi/react";
 import { atom } from "jotai";
 
-import type { WorktreeDomain } from "#domain/worktree";
-import { branchNameScope } from "#workbench/session/branch-scope";
-import { projectIdScope } from "#workbench/session/project-scope";
-import type { TreeDropPreview } from "#workbench/tree/tree-drag";
+import { branchNameScope } from "#app/features/project-workbench/session/branch-scope";
+import { projectIdScope } from "#app/features/project-workbench/session/project-scope";
+import type { TreeDropPreview } from "#app/features/project-workbench/tree/tree-drag";
 
 export type ExplorerDomain = WorktreeDomain;
 

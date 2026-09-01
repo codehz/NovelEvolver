@@ -1,6 +1,5 @@
 import type { AIClient, ReasoningLevel } from "@codehz/ai";
-
-import type { AiChatSelectableModelKind } from "#domain/ai";
+import type { AiChatSelectableModelKind } from "@novelevolver/domain/ai";
 
 export type AiBackendSession = {
   adapterKind: AiChatSelectableModelKind;

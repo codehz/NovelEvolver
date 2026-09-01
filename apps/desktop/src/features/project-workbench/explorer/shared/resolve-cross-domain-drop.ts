@@ -1,7 +1,8 @@
-import type { ManuscriptTreeNode, ResourceTreeNode } from "#domain/worktree";
-import type { TreeResolvedDrop } from "#workbench/tree/tree-drag";
-import { resolveHoverZone } from "#workbench/tree/tree-drag";
-import { findTreeRowDataAtPoint } from "#workbench/tree/tree-row-dom";
+import type { ManuscriptTreeNode, ResourceTreeNode } from "@novelevolver/domain/worktree";
+
+import type { TreeResolvedDrop } from "#app/features/project-workbench/tree/tree-drag";
+import { resolveHoverZone } from "#app/features/project-workbench/tree/tree-drag";
+import { findTreeRowDataAtPoint } from "#app/features/project-workbench/tree/tree-row-dom";
 
 import { resolveExternalManuscriptDropTarget } from "../manuscript/manuscript-tree-placement-policy";
 import {

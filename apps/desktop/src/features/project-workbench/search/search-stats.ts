@@ -1,4 +1,4 @@
-import type { WorktreeSearchHit } from "#domain/worktree";
+import type { WorktreeSearchHit } from "@novelevolver/domain/worktree";
 
 export type SearchDomainStats = {
   /** 至少出现一条命中的条目数（章节/文件）。 */

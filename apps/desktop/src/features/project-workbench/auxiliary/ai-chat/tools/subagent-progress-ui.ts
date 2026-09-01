@@ -1,4 +1,4 @@
-import type { AiSubagentToolView, AiToolView } from "#domain/ai";
+import type { AiSubagentToolView, AiToolView } from "@novelevolver/domain/ai";
 
 import { toolActionLabel } from "./presenter-format";
 

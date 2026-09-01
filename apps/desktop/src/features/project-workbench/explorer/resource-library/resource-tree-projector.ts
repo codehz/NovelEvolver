@@ -1,5 +1,9 @@
-import type { FileChangeStatus, ResourceTreeNode } from "#domain/worktree";
-import { buildSubtreeEndIndexArray, buildTreeRowIndexMap } from "#workbench/tree/tree-row-helpers";
+import type { FileChangeStatus, ResourceTreeNode } from "@novelevolver/domain/worktree";
+
+import {
+  buildSubtreeEndIndexArray,
+  buildTreeRowIndexMap,
+} from "#app/features/project-workbench/tree/tree-row-helpers";
 
 import { flattenResourceTree } from "./resource-tree";
 import type { ResourceTreeEditingState, ResourceTreeState } from "./state/types";

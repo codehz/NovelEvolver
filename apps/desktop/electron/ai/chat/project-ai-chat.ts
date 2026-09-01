@@ -9,9 +9,12 @@ import type {
   AiConversationSearchOptions,
   AiConversationStatus,
   AiConversationSummary,
-} from "#domain/ai";
-import { MOCK_AI_MODEL_ID } from "#domain/ai";
-import { BUILTIN_AI_AGENT_ID, type AiReasoningLevel } from "#domain/settings/ai-settings";
+} from "@novelevolver/domain/ai";
+import { MOCK_AI_MODEL_ID } from "@novelevolver/domain/ai";
+import {
+  BUILTIN_AI_AGENT_ID,
+  type AiReasoningLevel,
+} from "@novelevolver/domain/settings/ai-settings";
 
 import type { AiChatRepository, AiConversationRecord } from "../../db/repositories/ai-chat-repo";
 import { RpcStreamPublisher } from "../../lib/stream-publisher";

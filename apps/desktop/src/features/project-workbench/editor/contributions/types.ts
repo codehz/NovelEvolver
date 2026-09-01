@@ -1,8 +1,7 @@
+import type { BranchWorkspace } from "@novelevolver/desktop-rpc/session";
+import type { HistoryTarget } from "@novelevolver/domain/worktree";
+import type { WorktreeTreeSnapshot } from "@novelevolver/domain/worktree";
 import type { RpcPromise } from "capnweb";
-
-import type { BranchWorkspace } from "#desktop-rpc/session";
-import type { HistoryTarget } from "#domain/worktree";
-import type { WorktreeTreeSnapshot } from "#domain/worktree";
 
 import type {
   WorkbenchEditorDocument,

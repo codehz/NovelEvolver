@@ -1,4 +1,7 @@
-import { SidebarHeaderActionButton, SidebarHeaderActions } from "#workbench/chrome";
+import {
+  SidebarHeaderActionButton,
+  SidebarHeaderActions,
+} from "#app/features/project-workbench/chrome";
 
 import { AiChatHistorySelector } from "../history/AiChatHistorySelector";
 import { useAiChatSessionActions } from "../hooks/use-ai-chat-session-actions";

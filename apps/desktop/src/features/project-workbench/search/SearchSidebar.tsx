@@ -1,9 +1,13 @@
 import { useState } from "react";
 
-import { SidebarHeaderActions, SidebarHeaderActionButton, ErrorRetryView } from "#workbench/chrome";
-import { SearchQueryBar } from "#workbench/search/SearchQueryBar";
-import { SearchResultTree } from "#workbench/search/SearchResultTree";
-import { useWorktreeSearchState } from "#workbench/search/use-worktree-search-state";
+import {
+  SidebarHeaderActions,
+  SidebarHeaderActionButton,
+  ErrorRetryView,
+} from "#app/features/project-workbench/chrome";
+import { SearchQueryBar } from "#app/features/project-workbench/search/SearchQueryBar";
+import { SearchResultTree } from "#app/features/project-workbench/search/SearchResultTree";
+import { useWorktreeSearchState } from "#app/features/project-workbench/search/use-worktree-search-state";
 
 export function SearchSidebar() {
   const {

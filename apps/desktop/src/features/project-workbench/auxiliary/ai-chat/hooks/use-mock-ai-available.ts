@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 
-import { useProjectContext } from "#workbench/session/project-scope";
+import { useProjectContext } from "#app/features/project-workbench/session/project-scope";
 
 export function useMockAiAvailable(): boolean {
   const project = useProjectContext();

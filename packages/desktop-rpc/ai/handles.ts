@@ -1,6 +1,4 @@
-import type { RpcTarget } from "capnweb";
-
-import type { RpcSubscriptionResult } from "#desktop-rpc/transport/stream";
+import type { RpcSubscriptionResult } from "@novelevolver/desktop-rpc/transport/stream";
 import type {
   AiChatEvent,
   AiChatInteractionAnswer,
@@ -10,8 +8,9 @@ import type {
   AiConversationDirectoryEvent,
   AiConversationSearchHit,
   AiConversationSearchOptions,
-} from "#domain/ai/chat";
-import type { AiReasoningLevel } from "#domain/settings/ai-settings";
+} from "@novelevolver/domain/ai/chat";
+import type { AiReasoningLevel } from "@novelevolver/domain/settings/ai-settings";
+import type { RpcTarget } from "capnweb";
 
 /**
  * Active conversation turn surface (State feed).

@@ -1,7 +1,6 @@
+import type { RpcSubscribeFn } from "@novelevolver/desktop-rpc/transport/index";
+import type { WindowState } from "@novelevolver/domain/window";
 import { useEffect, useRef, useState } from "react";
-
-import type { RpcSubscribeFn } from "#desktop-rpc/transport/index";
-import type { WindowState } from "#domain/window";
 
 import { windowService } from "./app-rpc";
 

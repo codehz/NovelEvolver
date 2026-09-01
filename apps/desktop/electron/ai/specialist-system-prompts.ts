@@ -3,4 +3,4 @@ export {
   CHAPTER_WRITER_SYSTEM_PROMPT,
   CONSISTENCY_REVIEWER_SYSTEM_PROMPT,
   ROLEPLAY_SYSTEM_PROMPT,
-} from "#domain/settings/ai-specialist-system-prompts";
+} from "@novelevolver/domain/settings/ai-specialist-system-prompts";

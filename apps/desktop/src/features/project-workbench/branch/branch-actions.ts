@@ -1,5 +1,6 @@
+import type { BranchSummary } from "@novelevolver/domain/git/branch";
+
 import { notificationApi } from "#app/shared/lib/notifications";
-import type { BranchSummary } from "#domain/git/branch";
 
 /** RpcPromise 兼容的分支操作面：方法返回值经 Promise.resolve 解包。 */
 export type BranchProjectClient = {

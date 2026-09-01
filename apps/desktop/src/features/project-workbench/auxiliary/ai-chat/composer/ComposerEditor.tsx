@@ -6,11 +6,11 @@ import {
 } from "@codemirror/commands";
 import { Compartment, EditorSelection, EditorState, Prec, type Extension } from "@codemirror/state";
 import { drawSelection, EditorView, keymap, placeholder as placeholderExt } from "@codemirror/view";
+import type { AiChatSendMessageInput } from "@novelevolver/domain/ai";
 import { useCallback, useEffect, useImperativeHandle, useRef, useState, type Ref } from "react";
 
 import { cn } from "#app/shared/lib/ui/cn";
 import { disabledSurfaceClass } from "#app/shared/lib/ui/interaction-chrome";
-import type { AiChatSendMessageInput } from "#domain/ai";
 
 import { composerEditorHostClass } from "./composer-chrome";
 import { buildComposerSendPayload, isComposerStateEmpty } from "./composer-doc";

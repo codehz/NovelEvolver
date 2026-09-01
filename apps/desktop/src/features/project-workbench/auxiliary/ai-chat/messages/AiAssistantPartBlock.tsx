@@ -1,5 +1,6 @@
+import type { AiChatMessagePart } from "@novelevolver/domain/ai";
+
 import { MarkdownStream } from "#app/shared/ui";
-import type { AiChatMessagePart } from "#domain/ai";
 
 import { assistantMessageBodyClass } from "../ui/ai-chat-chrome";
 

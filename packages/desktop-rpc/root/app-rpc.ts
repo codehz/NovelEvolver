@@ -1,9 +1,8 @@
+import type { ProjectLibraryService } from "@novelevolver/desktop-rpc/services/project-library-service";
+import type { SettingsService } from "@novelevolver/desktop-rpc/services/settings-service";
+import type { WindowService } from "@novelevolver/desktop-rpc/services/window-service";
+import type { WorkspaceService } from "@novelevolver/desktop-rpc/services/workspace-service";
 import type { RpcTarget } from "capnweb";
-
-import type { ProjectLibraryService } from "#desktop-rpc/services/project-library-service";
-import type { SettingsService } from "#desktop-rpc/services/settings-service";
-import type { WindowService } from "#desktop-rpc/services/window-service";
-import type { WorkspaceService } from "#desktop-rpc/services/workspace-service";
 
 export interface AppRpcRoot extends RpcTarget {
   readonly window: WindowService;

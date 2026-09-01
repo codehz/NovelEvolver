@@ -1,6 +1,6 @@
 # Domain (`@novelevolver/domain`)
 
-Cross-platform DTOs and pure helpers. **Zero runtime deps.** Import as `@novelevolver/domain/…` (mobile) or `#domain/…` (desktop renderer).
+Cross-platform DTOs and pure helpers. **Zero runtime deps.** Import as `@novelevolver/domain/…`.
 
 - Snapshots, deltas, query/result types stay **plain interfaces** — no `RpcTarget` / stubs
 - Shared feed primitives: `sync/feed.ts` (`SnapshotEvent`, `RpcDeltaEvent`)

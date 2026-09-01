@@ -1,8 +1,5 @@
 import { randomUUID } from "node:crypto";
 
-import { RpcSession } from "capnweb";
-import { BrowserWindow, type IpcMain, type IpcMainInvokeEvent } from "electron";
-
 import {
   APP_RPC_CONNECT_CHANNEL,
   APP_RPC_DISCONNECT_CHANNEL,
@@ -10,7 +7,9 @@ import {
   isAppRpcDisconnectFrame,
   type AppRpcConnectResult,
   type AppRpcFrame,
-} from "#desktop-rpc/transport/index";
+} from "@novelevolver/desktop-rpc/transport/index";
+import { RpcSession } from "capnweb";
+import { BrowserWindow, type IpcMain, type IpcMainInvokeEvent } from "electron";
 
 import { ProjectLibraryServiceImpl } from "../services/project-library-service";
 import { SettingsServiceImpl } from "../services/settings-service";

@@ -4,6 +4,8 @@
   "private": true,
   "type": "module",
   "exports": {
-    "./*": "./*"
+    "./ai": "./ai/index.ts",
+    "./worktree": "./worktree/index.ts",
+    "./*": "./*.ts"
   }
 }

@@ -1,4 +1,4 @@
-import type { WorktreeSearchHit } from "#domain/worktree";
+import type { WorktreeSearchHit } from "@novelevolver/domain/worktree";
 
 export type SearchPathTreeFolder = {
   type: "folder";

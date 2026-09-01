@@ -1,14 +1,14 @@
 import { useState } from "react";
 
-import { SidebarPaneStack } from "#workbench/chrome";
+import { SidebarPaneStack } from "#app/features/project-workbench/chrome";
 import {
   DEFAULT_HISTORY_BODY_HEIGHT,
   DEFAULT_MANUSCRIPT_BODY_HEIGHT,
   DEFAULT_REFERENCE_BODY_HEIGHT,
-} from "#workbench/explorer/constants";
-import { ManuscriptSectionBody } from "#workbench/explorer/manuscript/ManuscriptSection";
-import { ResourceLibrarySectionBody } from "#workbench/explorer/resource-library/ResourceLibrarySection";
-import { FileHistorySectionBody } from "#workbench/history/FileHistorySection";
+} from "#app/features/project-workbench/explorer/constants";
+import { ManuscriptSectionBody } from "#app/features/project-workbench/explorer/manuscript/ManuscriptSection";
+import { ResourceLibrarySectionBody } from "#app/features/project-workbench/explorer/resource-library/ResourceLibrarySection";
+import { FileHistorySectionBody } from "#app/features/project-workbench/history/FileHistorySection";
 
 type ExplorerSidebarProps = {
   projectLabel: string;

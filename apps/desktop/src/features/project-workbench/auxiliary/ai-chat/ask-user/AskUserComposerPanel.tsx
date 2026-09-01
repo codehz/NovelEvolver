@@ -1,8 +1,8 @@
+import type { AiChatOpenInteraction } from "@novelevolver/domain/ai";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
 import { cn } from "#app/shared/lib/ui/cn";
 import { Button, AppTooltip } from "#app/shared/ui";
-import type { AiChatOpenInteraction } from "#domain/ai";
 
 import { useAiChatActions } from "../state/use-ai-chat-state";
 import { askUserPanelShellClass, sendButtonClass, stopButtonClass } from "../ui/ai-chat-chrome";

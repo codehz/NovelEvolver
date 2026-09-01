@@ -1,9 +1,9 @@
+import type { ProjectMetadata } from "@novelevolver/domain/project";
 import { useEffect, useRef, useState } from "react";
 
+import { useProjectContext } from "#app/features/project-workbench/session/project-scope";
 import type { SettingsFormHandle } from "#app/features/settings/settings-leave-guard";
 import { confirmDialogApi } from "#app/shared/lib/confirm-dialog";
-import type { ProjectMetadata } from "#domain/project";
-import { useProjectContext } from "#workbench/session/project-scope";
 
 import type { ProjectSettingsFormValues } from "./ProjectSettingsForm";
 

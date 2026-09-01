@@ -1,4 +1,4 @@
-import type { AiToolView } from "#domain/ai";
+import type { AiToolView } from "@novelevolver/domain/ai";
 
 import {
   projectToolOutcome,

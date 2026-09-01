@@ -1,8 +1,8 @@
+import type { ManuscriptHandle } from "@novelevolver/desktop-rpc/worktree";
+import type { ResourceLibraryHandle } from "@novelevolver/desktop-rpc/worktree";
 import type { RpcPromise } from "capnweb";
 
-import type { ManuscriptHandle } from "#desktop-rpc/worktree";
-import type { ResourceLibraryHandle } from "#desktop-rpc/worktree";
-import type { PlainTextEditorHandle } from "#workbench/editor/PlainTextEditor";
+import type { PlainTextEditorHandle } from "#app/features/project-workbench/editor/PlainTextEditor";
 
 import type {
   ContentWorkbenchEditorTab,

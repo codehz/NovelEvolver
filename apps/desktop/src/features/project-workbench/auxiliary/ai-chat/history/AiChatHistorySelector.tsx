@@ -1,9 +1,12 @@
 import { Popover } from "@base-ui/react/popover";
 import { useCallback, useState } from "react";
 
+import {
+  sidebarHeaderActionClass,
+  sidebarHeaderIconClass,
+} from "#app/features/project-workbench/chrome";
 import { cn } from "#app/shared/lib/ui/cn";
 import { AppTooltip } from "#app/shared/ui";
-import { sidebarHeaderActionClass, sidebarHeaderIconClass } from "#workbench/chrome";
 
 import { historyPopoverPanelClass, historyPositionerClass } from "./ai-chat-history-chrome";
 import { AiChatHistoryPanel } from "./AiChatHistoryPanel";

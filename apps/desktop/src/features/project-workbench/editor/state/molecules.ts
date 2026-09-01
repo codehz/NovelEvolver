@@ -1,8 +1,8 @@
 import { createScope, molecule, use } from "bunshi";
 import { atom } from "jotai";
 
+import { projectIdScope } from "#app/features/project-workbench/session/project-scope";
 import { createOneShotRequestChannel } from "#app/shared/lib/ui/one-shot-request";
-import { projectIdScope } from "#workbench/session/project-scope";
 
 import {
   areWorkbenchEditorDocumentsEqual,

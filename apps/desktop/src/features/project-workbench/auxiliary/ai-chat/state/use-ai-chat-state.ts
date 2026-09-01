@@ -1,3 +1,14 @@
+import { applyAiChatEvent, createInitialAiChatSnapshot } from "@novelevolver/domain/ai";
+import type {
+  AiChatInteractionAnswer,
+  AiChatSelectableAgent,
+  AiChatSelectableModel,
+  AiChatSendMessageInput,
+  AiChatSnapshot,
+  AiConversationSearchHit,
+  AiConversationSearchOptions,
+} from "@novelevolver/domain/ai";
+import type { AiReasoningLevel } from "@novelevolver/domain/settings/ai-settings";
 import { useMolecule } from "bunshi/react";
 import { useAtomValue, useSetAtom, useStore } from "jotai";
 import {
@@ -10,23 +21,12 @@ import {
   type ReactNode,
 } from "react";
 
-import { consumeRpcSubscription } from "#app/shared/lib/rpc/app-rpc-react";
-import { applyAiChatEvent, createInitialAiChatSnapshot } from "#domain/ai";
-import type {
-  AiChatInteractionAnswer,
-  AiChatSelectableAgent,
-  AiChatSelectableModel,
-  AiChatSendMessageInput,
-  AiChatSnapshot,
-  AiConversationSearchHit,
-  AiConversationSearchOptions,
-} from "#domain/ai";
-import type { AiReasoningLevel } from "#domain/settings/ai-settings";
 import {
   useAiActiveChat,
   useAiCatalog,
   useAiConversations,
-} from "#workbench/session/workspace-handles";
+} from "#app/features/project-workbench/session/workspace-handles";
+import { consumeRpcSubscription } from "#app/shared/lib/rpc/app-rpc-react";
 
 import { stripHiddenAiChatWarningsFromSnapshot } from "../ui/ai-chat-helpers";
 import { aiChatStateMolecule, initialAiChatTransportState } from "./ai-chat-state-molecule";

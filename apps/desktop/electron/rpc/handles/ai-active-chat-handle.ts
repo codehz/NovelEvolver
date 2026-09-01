@@ -1,8 +1,11 @@
+import type { AiActiveChatHandle } from "@novelevolver/desktop-rpc/ai/handles";
+import type {
+  AiChatEvent,
+  AiChatInteractionAnswer,
+  AiChatSendMessageInput,
+} from "@novelevolver/domain/ai/chat";
+import type { AiReasoningLevel } from "@novelevolver/domain/settings/ai-settings";
 import { RpcTarget } from "capnweb";
-
-import type { AiActiveChatHandle } from "#desktop-rpc/ai/handles";
-import type { AiChatEvent, AiChatInteractionAnswer, AiChatSendMessageInput } from "#domain/ai/chat";
-import type { AiReasoningLevel } from "#domain/settings/ai-settings";
 
 import type { ProjectAiChatController } from "../../ai/chat/project-ai-chat";
 

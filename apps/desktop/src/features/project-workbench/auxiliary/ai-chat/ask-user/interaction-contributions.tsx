@@ -1,6 +1,5 @@
+import type { AiChatOpenInteraction, AskUserOpenInteraction } from "@novelevolver/domain/ai";
 import type { ComponentType } from "react";
-
-import type { AiChatOpenInteraction, AskUserOpenInteraction } from "#domain/ai";
 
 import { AskUserComposer } from "./AskUserComposer";
 

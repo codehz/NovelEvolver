@@ -1,6 +1,7 @@
+import type { AiChatAssistantMessage } from "@novelevolver/domain/ai";
+
 import { cn } from "#app/shared/lib/ui/cn";
 import { AppTooltip, Button } from "#app/shared/ui";
-import type { AiChatAssistantMessage } from "#domain/ai";
 
 import {
   assistantMessageBlockClass,

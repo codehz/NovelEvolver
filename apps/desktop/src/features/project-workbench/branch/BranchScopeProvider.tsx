@@ -1,1 +1,1 @@
-export { BranchScopeProvider } from "#workbench/session/BranchScopeProvider";
+export { BranchScopeProvider } from "#app/features/project-workbench/session/BranchScopeProvider";

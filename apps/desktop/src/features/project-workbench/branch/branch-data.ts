@@ -1,8 +1,8 @@
+import type { BranchSummary } from "@novelevolver/domain/git/branch";
 import { molecule, use, useMolecule } from "bunshi/react";
 
+import { projectMolecule } from "#app/features/project-workbench/session/project-scope";
 import { createAsyncLoader, useAsyncLoader } from "#app/shared/lib/ui/async-loader";
-import type { BranchSummary } from "#domain/git/branch";
-import { projectMolecule } from "#workbench/session/project-scope";
 
 export type BranchPickerSnapshot = {
   branches: BranchSummary[];

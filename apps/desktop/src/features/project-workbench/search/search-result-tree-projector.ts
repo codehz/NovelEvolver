@@ -1,4 +1,4 @@
-import type { WorktreeSearchHit } from "#domain/worktree";
+import type { WorktreeSearchHit } from "@novelevolver/domain/worktree";
 
 import type { SearchPathTreeLeaf, SearchPathTreeNode } from "./build-search-path-tree";
 

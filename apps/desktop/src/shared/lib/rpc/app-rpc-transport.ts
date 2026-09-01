@@ -1,11 +1,10 @@
-import type { RpcTransport } from "capnweb";
-
-import type { AppRpcTransportBridge } from "#desktop-rpc/transport/index";
+import type { AppRpcTransportBridge } from "@novelevolver/desktop-rpc/transport/index";
 import {
   isAppRpcDisconnectFrame,
   isAppRpcMessageFrame,
   type AppRpcFrame,
-} from "#desktop-rpc/transport/index";
+} from "@novelevolver/desktop-rpc/transport/index";
+import type { RpcTransport } from "capnweb";
 
 type Deferred<T> = {
   resolve: (value: T | PromiseLike<T>) => void;

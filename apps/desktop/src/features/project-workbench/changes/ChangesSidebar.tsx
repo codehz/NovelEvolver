@@ -1,18 +1,18 @@
+import type { Change, CommitSummary } from "@novelevolver/domain/worktree";
 import { useState } from "react";
 
-import type { Change, CommitSummary } from "#domain/worktree";
-import { useCreateBranchFromCommit } from "#workbench/branch/use-create-branch-from-commit";
-import { ChangesBody } from "#workbench/changes/ChangesBody";
+import { useCreateBranchFromCommit } from "#app/features/project-workbench/branch/use-create-branch-from-commit";
+import { ChangesBody } from "#app/features/project-workbench/changes/ChangesBody";
 import {
   CHANGES_PANEL_DEFAULT_BODY_HEIGHT,
   HISTORY_DEFAULT_BODY_HEIGHT,
-} from "#workbench/changes/constants";
-import { useChangesState } from "#workbench/changes/use-changes-state";
-import { SidebarPaneStack } from "#workbench/chrome";
-import { useWorkbenchEditorActions } from "#workbench/editor/use-workbench-editor-actions";
-import { HistoryBody } from "#workbench/history/HistoryBody";
-import { useCommitChangesState } from "#workbench/history/use-commit-changes-state";
-import { useCommitHistoryState } from "#workbench/history/use-commit-history-state";
+} from "#app/features/project-workbench/changes/constants";
+import { useChangesState } from "#app/features/project-workbench/changes/use-changes-state";
+import { SidebarPaneStack } from "#app/features/project-workbench/chrome";
+import { useWorkbenchEditorActions } from "#app/features/project-workbench/editor/use-workbench-editor-actions";
+import { HistoryBody } from "#app/features/project-workbench/history/HistoryBody";
+import { useCommitChangesState } from "#app/features/project-workbench/history/use-commit-changes-state";
+import { useCommitHistoryState } from "#app/features/project-workbench/history/use-commit-history-state";
 
 export function ChangesSidebar() {
   const {

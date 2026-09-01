@@ -1,4 +1,4 @@
-import type { AiChatToolCall, AiSubagentToolView } from "#domain/ai";
+import type { AiChatToolCall, AiSubagentToolView } from "@novelevolver/domain/ai";
 
 import { toolActionLabel, truncateText } from "../tools/presenter-format";
 import { getString, parseObject } from "../tools/presenter-parse";

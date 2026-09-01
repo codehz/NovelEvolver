@@ -1,26 +1,29 @@
+import type { Change } from "@novelevolver/domain/worktree";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
-import { cn } from "#app/shared/lib/ui/cn";
-import { DisclosureChevron } from "#app/shared/ui";
-import type { Change } from "#domain/worktree";
-import { activateOnEnterSpace } from "#workbench/lib/activate-on-enter-space";
+import { activateOnEnterSpace } from "#app/features/project-workbench/lib/activate-on-enter-space";
 import {
   buildChangeRoots,
   collectChangeTreeFolderKeys,
   flattenChangeTree,
   type ChangeFlatRow,
   type ChangeTreeFolderNode,
-} from "#workbench/lib/change-tree-projector";
-import { ChangesDomainRow } from "#workbench/lib/ChangesDomainRow";
-import { contentDomainIconClass, contentFolderIconClass } from "#workbench/tree/content-tree-icons";
-import { FlatTreeList } from "#workbench/tree/FlatTreeList";
-import type { TreeRowLayout } from "#workbench/tree/tree-row-layout";
+} from "#app/features/project-workbench/lib/change-tree-projector";
+import { ChangesDomainRow } from "#app/features/project-workbench/lib/ChangesDomainRow";
+import {
+  contentDomainIconClass,
+  contentFolderIconClass,
+} from "#app/features/project-workbench/tree/content-tree-icons";
+import { FlatTreeList } from "#app/features/project-workbench/tree/FlatTreeList";
+import type { TreeRowLayout } from "#app/features/project-workbench/tree/tree-row-layout";
 import {
   TREE_ROW_HEIGHT_PX,
   getTreeRowPaddingLeft,
   treeRowDisclosureSpacerClass,
-} from "#workbench/tree/tree-row-motion";
-import { TreeMotionRow } from "#workbench/tree/TreeMotionRow";
+} from "#app/features/project-workbench/tree/tree-row-motion";
+import { TreeMotionRow } from "#app/features/project-workbench/tree/TreeMotionRow";
+import { cn } from "#app/shared/lib/ui/cn";
+import { DisclosureChevron } from "#app/shared/ui";
 
 import { ChangeItemRow } from "./ChangeItemRow";
 

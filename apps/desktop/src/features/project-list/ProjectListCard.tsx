@@ -1,3 +1,5 @@
+import type { ProjectMetadata } from "@novelevolver/domain/project";
+
 import { resolveProjectDisplayName } from "#app/shared/lib/project-display-name";
 import { cn } from "#app/shared/lib/ui/cn";
 import {
@@ -5,7 +7,6 @@ import {
   iconButtonHoverClass,
 } from "#app/shared/lib/ui/interaction-chrome";
 import { Button } from "#app/shared/ui";
-import type { ProjectMetadata } from "#domain/project";
 
 import { formatLastOpened } from "./format-last-opened";
 

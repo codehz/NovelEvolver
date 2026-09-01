@@ -1,11 +1,11 @@
+import { AiContextStatusItem } from "#app/features/project-workbench/auxiliary/ai-chat/AiContextStatusItem";
+import { BranchStatusItem } from "#app/features/project-workbench/branch/BranchStatusItem";
+import { StatusBarItemButton } from "#app/features/project-workbench/chrome";
+import { CaretPositionIndicator } from "#app/features/project-workbench/editor/CaretPositionIndicator";
 import {
   StatusBarLeftPortalContent,
   StatusBarRightPortalContent,
 } from "#app/shared/lib/shell/statusbar-portal";
-import { AiContextStatusItem } from "#workbench/auxiliary/ai-chat/AiContextStatusItem";
-import { BranchStatusItem } from "#workbench/branch/BranchStatusItem";
-import { StatusBarItemButton } from "#workbench/chrome";
-import { CaretPositionIndicator } from "#workbench/editor/CaretPositionIndicator";
 
 const leftStaticItems = [{ id: "sync", label: "同步", icon: "icon-[codicon--sync]" }];
 

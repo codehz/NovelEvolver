@@ -3,11 +3,11 @@ import { ChangeSet, Compartment, EditorState, type Extension } from "@codemirror
 import { drawSelection, EditorView, keymap } from "@codemirror/view";
 import { useEffect, useLayoutEffect, useRef } from "react";
 
+import { editorHostClass } from "#app/features/project-workbench/editor/PlainTextEditor/codemirror-theme";
+import { plainTextEditorViewExtensions } from "#app/features/project-workbench/editor/PlainTextEditor/codemirror-view-extensions";
+import { editorFindExtensions } from "#app/features/project-workbench/editor/PlainTextEditor/editor-find-extensions";
+import { useEditorFind } from "#app/features/project-workbench/editor/PlainTextEditor/use-editor-find";
 import { cn } from "#app/shared/lib/ui/cn";
-import { editorHostClass } from "#workbench/editor/PlainTextEditor/codemirror-theme";
-import { plainTextEditorViewExtensions } from "#workbench/editor/PlainTextEditor/codemirror-view-extensions";
-import { editorFindExtensions } from "#workbench/editor/PlainTextEditor/editor-find-extensions";
-import { useEditorFind } from "#workbench/editor/PlainTextEditor/use-editor-find";
 
 const textComparisonRootClass = cn("relative min-h-0 min-w-0 flex-1");
 

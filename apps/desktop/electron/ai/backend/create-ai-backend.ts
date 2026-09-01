@@ -8,8 +8,7 @@ import {
   createAIClient,
   type AIRequest,
 } from "@codehz/ai";
-
-import { isAiPromptCacheConfigured } from "#domain/settings/ai-settings";
+import { isAiPromptCacheConfigured } from "@novelevolver/domain/settings/ai-settings";
 
 import type { AiModelRuntimeConfig } from "../../settings/ai-models-store";
 import { DEFAULT_AI_SYSTEM_PROMPT } from "../default-system-prompt";

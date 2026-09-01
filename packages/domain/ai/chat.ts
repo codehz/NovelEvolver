@@ -1,5 +1,5 @@
-import type { AiReasoningLevel } from "#domain/settings/ai-settings";
-import type { SnapshotEvent } from "#domain/sync/feed";
+import type { AiReasoningLevel } from "@novelevolver/domain/settings/ai-settings";
+import type { SnapshotEvent } from "@novelevolver/domain/sync/feed";
 
 import type { AiToolView } from "./ai-tool-view";
 

@@ -1,6 +1,5 @@
 import type { EditorState } from "@codemirror/state";
-
-import type { AiPromptConfigPublic } from "#domain/settings/ai-settings";
+import type { AiPromptConfigPublic } from "@novelevolver/domain/settings/ai-settings";
 
 import { hasActivePromptChip } from "./prompt-chip-extension";
 

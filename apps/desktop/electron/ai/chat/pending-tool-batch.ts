@@ -1,10 +1,9 @@
 import type { InputItem, ToolCallItem, ToolResultItem } from "@codehz/ai";
-
 import type {
   AiChatInteractionAnswer,
   AiChatMessageUsage,
   AiChatOpenInteraction,
-} from "#domain/ai";
+} from "@novelevolver/domain/ai";
 
 import {
   createOpenInteractionFromSerializable,

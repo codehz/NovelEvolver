@@ -1,4 +1,4 @@
-import type { AiChatToolCall } from "#domain/ai";
+import type { AiChatToolCall } from "@novelevolver/domain/ai";
 
 import { getNumber, getObject, getString } from "./presenter-parse";
 import type { JsonObject } from "./presenter-types";

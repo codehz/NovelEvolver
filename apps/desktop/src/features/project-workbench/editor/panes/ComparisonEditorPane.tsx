@@ -2,17 +2,17 @@ import { useMolecule } from "bunshi/react";
 import { useSetAtom } from "jotai";
 import { useCallback, useEffect, useRef, useState } from "react";
 
-import { confirmDialogApi } from "#app/shared/lib/confirm-dialog";
-import { notificationApi } from "#app/shared/lib/notifications";
-import { cn } from "#app/shared/lib/ui/cn";
-import { Button } from "#app/shared/ui";
-import { isNoChangeTextDiffError } from "#workbench/lib/comparison-errors";
+import { isNoChangeTextDiffError } from "#app/features/project-workbench/lib/comparison-errors";
 import {
   useHistory,
   useManuscript,
   useResourceLibrary,
   useWorktreeChanges,
-} from "#workbench/session/workspace-handles";
+} from "#app/features/project-workbench/session/workspace-handles";
+import { confirmDialogApi } from "#app/shared/lib/confirm-dialog";
+import { notificationApi } from "#app/shared/lib/notifications";
+import { cn } from "#app/shared/lib/ui/cn";
+import { Button } from "#app/shared/ui";
 
 import { workbenchEditorMolecule } from "../state/molecules";
 import type { ComparisonWorkbenchEditorTab, WorkbenchEditorTab } from "../state/types";

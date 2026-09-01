@@ -1,10 +1,7 @@
 {
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
-    "types": ["bun"],
-    "paths": {
-      "#domain/*": ["./*"]
-    }
+    "types": ["bun"]
   },
   "include": ["."]
 }

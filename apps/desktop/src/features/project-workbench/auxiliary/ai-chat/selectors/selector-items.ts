@@ -1,4 +1,4 @@
-import type { AiChatSelectableAgent, AiChatSelectableModel } from "#domain/ai";
+import type { AiChatSelectableAgent, AiChatSelectableModel } from "@novelevolver/domain/ai";
 
 export type AiChatSelectorItem = {
   id: string;

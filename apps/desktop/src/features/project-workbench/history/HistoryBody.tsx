@@ -1,3 +1,4 @@
+import type { Change, CommitSummary } from "@novelevolver/domain/worktree";
 import {
   useCallback,
   useEffect,
@@ -9,25 +10,30 @@ import {
   type ReactNode,
 } from "react";
 
+import {
+  SidebarHeaderActionButton,
+  SidebarHeaderActions,
+} from "#app/features/project-workbench/chrome";
+import { activateOnEnterSpace } from "#app/features/project-workbench/lib/activate-on-enter-space";
+import { ChangesDomainRow } from "#app/features/project-workbench/lib/ChangesDomainRow";
+import { ChangeStatsBadge } from "#app/features/project-workbench/lib/ChangeStatsBadge";
+import {
+  contentEntityIconClass,
+  contentFolderIconClass,
+} from "#app/features/project-workbench/tree/content-tree-icons";
+import { FlatTreeList } from "#app/features/project-workbench/tree/FlatTreeList";
+import type { TreeRowLayout } from "#app/features/project-workbench/tree/tree-row-layout";
+import {
+  TREE_ROW_HEIGHT_PX,
+  getTreeRowPaddingLeft,
+  treeRowDisclosureSpacerClass,
+} from "#app/features/project-workbench/tree/tree-row-motion";
+import { TreeMotionRow } from "#app/features/project-workbench/tree/TreeMotionRow";
 import { notificationApi } from "#app/shared/lib/notifications";
 import { popupContextMenu } from "#app/shared/lib/shell/popup-context-menu";
 import { cn } from "#app/shared/lib/ui/cn";
 import { rowHoverClass } from "#app/shared/lib/ui/interaction-chrome";
 import { Button, DisclosureChevron } from "#app/shared/ui";
-import type { Change, CommitSummary } from "#domain/worktree";
-import { SidebarHeaderActionButton, SidebarHeaderActions } from "#workbench/chrome";
-import { activateOnEnterSpace } from "#workbench/lib/activate-on-enter-space";
-import { ChangesDomainRow } from "#workbench/lib/ChangesDomainRow";
-import { ChangeStatsBadge } from "#workbench/lib/ChangeStatsBadge";
-import { contentEntityIconClass, contentFolderIconClass } from "#workbench/tree/content-tree-icons";
-import { FlatTreeList } from "#workbench/tree/FlatTreeList";
-import type { TreeRowLayout } from "#workbench/tree/tree-row-layout";
-import {
-  TREE_ROW_HEIGHT_PX,
-  getTreeRowPaddingLeft,
-  treeRowDisclosureSpacerClass,
-} from "#workbench/tree/tree-row-motion";
-import { TreeMotionRow } from "#workbench/tree/TreeMotionRow";
 
 import {
   buildHistoryChangeContextMenuItems,

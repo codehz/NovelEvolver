@@ -1,7 +1,7 @@
+import type { AiChatToolCall } from "@novelevolver/domain/ai";
 import type { ReactNode } from "react";
 
 import { cn } from "#app/shared/lib/ui/cn";
-import type { AiChatToolCall } from "#domain/ai";
 
 import { parseAskUserToolArguments } from "../tools/ask-user-prompt";
 import { maybeErrorTechnicalFields } from "../tools/presenter-detail";

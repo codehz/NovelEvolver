@@ -1,9 +1,9 @@
+import type { CommitSummary, HistoryEntry, HistoryTarget } from "@novelevolver/domain/worktree";
 import { useCallback } from "react";
 
+import { useHistory } from "#app/features/project-workbench/session/workspace-handles";
 import { confirmDialogApi } from "#app/shared/lib/confirm-dialog";
 import { notificationApi } from "#app/shared/lib/notifications";
-import type { CommitSummary, HistoryEntry, HistoryTarget } from "#domain/worktree";
-import { useHistory } from "#workbench/session/workspace-handles";
 
 export function useRestoreFromHistory() {
   const history = useHistory();

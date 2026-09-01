@@ -79,49 +79,49 @@
                   "**/features/project-workbench/chrome/sidebar/**",
                   "**/features/project-workbench/chrome/statusbar/**"
                 ],
-                "message": "Import workbench chrome via #workbench/chrome (barrel), not internal subpaths."
+                "message": "Import workbench chrome via #app/features/project-workbench/chrome (barrel), not internal subpaths."
               },
               {
                 "group": [
-                  "#workbench/worktree",
-                  "#workbench/worktree/**",
+                  "#app/features/project-workbench/worktree",
+                  "#app/features/project-workbench/worktree/**",
                   "**/features/project-workbench/worktree",
                   "**/features/project-workbench/worktree/**"
                 ],
-                "message": "Renderer worktree/ domain was removed; use #workbench/session/changes-feed for feed/snapshot data."
+                "message": "Renderer worktree/ domain was removed; use #app/features/project-workbench/session/changes-feed for feed/snapshot data."
               },
               {
                 "group": [
-                  "#workbench/state/molecules",
+                  "#app/features/project-workbench/state/molecules",
                   "**/features/project-workbench/state/molecules",
                   "**/features/project-workbench/state/**"
                 ],
-                "message": "Project scope lives in #workbench/session/project-scope; do not resurrect workbench/state/."
+                "message": "Project scope lives in #app/features/project-workbench/session/project-scope; do not resurrect workbench/state/."
               },
               {
                 "group": [
-                  "#workbench/sidebar",
-                  "#workbench/sidebar/**",
+                  "#app/features/project-workbench/sidebar",
+                  "#app/features/project-workbench/sidebar/**",
                   "**/features/project-workbench/sidebar",
                   "**/features/project-workbench/sidebar/**"
                 ],
-                "message": "Top-level sidebar/ business host was removed; primary views live in domain folders, chrome shell under #workbench/chrome."
+                "message": "Top-level sidebar/ business host was removed; primary views live in domain folders, chrome shell under #app/features/project-workbench/chrome."
               },
               {
                 "group": [
-                  "#workbench/statusbar",
-                  "#workbench/statusbar/**",
+                  "#app/features/project-workbench/statusbar",
+                  "#app/features/project-workbench/statusbar/**",
                   "**/features/project-workbench/statusbar",
                   "**/features/project-workbench/statusbar/**"
                 ],
-                "message": "Top-level statusbar/ business host was removed; status items live in domains, assembly in composition/, chrome primitives via #workbench/chrome."
+                "message": "Top-level statusbar/ business host was removed; status items live in domains, assembly in composition/, chrome primitives via #app/features/project-workbench/chrome."
               },
               {
                 "group": [
-                  "#workbench/branch/branch-scopes",
+                  "#app/features/project-workbench/branch/branch-scopes",
                   "**/features/project-workbench/branch/branch-scopes"
                 ],
-                "message": "branch-scopes handle bus was removed; import scopes/handles from #workbench/session/*."
+                "message": "branch-scopes handle bus was removed; import scopes/handles from #app/features/project-workbench/session/*."
               }
             ]
           }
@@ -177,64 +177,64 @@
               },
               {
                 "group": [
-                  "#workbench/worktree",
-                  "#workbench/worktree/**",
+                  "#app/features/project-workbench/worktree",
+                  "#app/features/project-workbench/worktree/**",
                   "**/features/project-workbench/worktree",
                   "**/features/project-workbench/worktree/**"
                 ],
-                "message": "Renderer worktree/ domain was removed; use #workbench/session/changes-feed for feed/snapshot data."
+                "message": "Renderer worktree/ domain was removed; use #app/features/project-workbench/session/changes-feed for feed/snapshot data."
               },
               {
                 "group": [
-                  "#workbench/state/molecules",
+                  "#app/features/project-workbench/state/molecules",
                   "**/features/project-workbench/state/molecules",
                   "**/features/project-workbench/state/**"
                 ],
-                "message": "Project scope lives in #workbench/session/project-scope; do not resurrect workbench/state/."
+                "message": "Project scope lives in #app/features/project-workbench/session/project-scope; do not resurrect workbench/state/."
               },
               {
                 "group": [
-                  "#workbench/sidebar",
-                  "#workbench/sidebar/**",
+                  "#app/features/project-workbench/sidebar",
+                  "#app/features/project-workbench/sidebar/**",
                   "**/features/project-workbench/sidebar",
                   "**/features/project-workbench/sidebar/**"
                 ],
-                "message": "Top-level sidebar/ business host was removed; primary views live in domain folders, chrome shell under #workbench/chrome."
+                "message": "Top-level sidebar/ business host was removed; primary views live in domain folders, chrome shell under #app/features/project-workbench/chrome."
               },
               {
                 "group": [
-                  "#workbench/statusbar",
-                  "#workbench/statusbar/**",
+                  "#app/features/project-workbench/statusbar",
+                  "#app/features/project-workbench/statusbar/**",
                   "**/features/project-workbench/statusbar",
                   "**/features/project-workbench/statusbar/**"
                 ],
-                "message": "Top-level statusbar/ business host was removed; status items live in domains, assembly in composition/, chrome primitives via #workbench/chrome."
+                "message": "Top-level statusbar/ business host was removed; status items live in domains, assembly in composition/, chrome primitives via #app/features/project-workbench/chrome."
               },
               {
                 "group": [
-                  "#workbench/branch/branch-scopes",
+                  "#app/features/project-workbench/branch/branch-scopes",
                   "**/features/project-workbench/branch/branch-scopes"
                 ],
-                "message": "branch-scopes handle bus was removed; import scopes/handles from #workbench/session/*."
+                "message": "branch-scopes handle bus was removed; import scopes/handles from #app/features/project-workbench/session/*."
               },
               {
                 "group": [
-                  "#workbench/auxiliary",
-                  "#workbench/auxiliary/**",
-                  "#workbench/branch",
-                  "#workbench/branch/**",
-                  "#workbench/changes",
-                  "#workbench/changes/**",
-                  "#workbench/composition",
-                  "#workbench/composition/**",
-                  "#workbench/editor",
-                  "#workbench/editor/**",
-                  "#workbench/explorer",
-                  "#workbench/explorer/**",
-                  "#workbench/history",
-                  "#workbench/history/**",
-                  "#workbench/search",
-                  "#workbench/search/**",
+                  "#app/features/project-workbench/auxiliary",
+                  "#app/features/project-workbench/auxiliary/**",
+                  "#app/features/project-workbench/branch",
+                  "#app/features/project-workbench/branch/**",
+                  "#app/features/project-workbench/changes",
+                  "#app/features/project-workbench/changes/**",
+                  "#app/features/project-workbench/composition",
+                  "#app/features/project-workbench/composition/**",
+                  "#app/features/project-workbench/editor",
+                  "#app/features/project-workbench/editor/**",
+                  "#app/features/project-workbench/explorer",
+                  "#app/features/project-workbench/explorer/**",
+                  "#app/features/project-workbench/history",
+                  "#app/features/project-workbench/history/**",
+                  "#app/features/project-workbench/search",
+                  "#app/features/project-workbench/search/**",
                   "**/features/project-workbench/auxiliary/**",
                   "**/features/project-workbench/branch/**",
                   "**/features/project-workbench/changes/**",
@@ -244,11 +244,11 @@
                   "**/features/project-workbench/history/**",
                   "**/features/project-workbench/search/**",
                   "**/features/project-workbench/ProjectWorkbench",
-                  "#workbench/session",
-                  "#workbench/session/**",
+                  "#app/features/project-workbench/session",
+                  "#app/features/project-workbench/session/**",
                   "**/features/project-workbench/session/**",
-                  "#workbench/tree",
-                  "#workbench/tree/**",
+                  "#app/features/project-workbench/tree",
+                  "#app/features/project-workbench/tree/**",
                   "**/features/project-workbench/tree/**"
                 ],
                 "message": "chrome/ is view-kernel shell only: do not import session, tree, or domain modules. Composition root wires domains."
@@ -295,64 +295,64 @@
               },
               {
                 "group": [
-                  "#workbench/worktree",
-                  "#workbench/worktree/**",
+                  "#app/features/project-workbench/worktree",
+                  "#app/features/project-workbench/worktree/**",
                   "**/features/project-workbench/worktree",
                   "**/features/project-workbench/worktree/**"
                 ],
-                "message": "Renderer worktree/ domain was removed; use #workbench/session/changes-feed for feed/snapshot data."
+                "message": "Renderer worktree/ domain was removed; use #app/features/project-workbench/session/changes-feed for feed/snapshot data."
               },
               {
                 "group": [
-                  "#workbench/state/molecules",
+                  "#app/features/project-workbench/state/molecules",
                   "**/features/project-workbench/state/molecules",
                   "**/features/project-workbench/state/**"
                 ],
-                "message": "Project scope lives in #workbench/session/project-scope; do not resurrect workbench/state/."
+                "message": "Project scope lives in #app/features/project-workbench/session/project-scope; do not resurrect workbench/state/."
               },
               {
                 "group": [
-                  "#workbench/sidebar",
-                  "#workbench/sidebar/**",
+                  "#app/features/project-workbench/sidebar",
+                  "#app/features/project-workbench/sidebar/**",
                   "**/features/project-workbench/sidebar",
                   "**/features/project-workbench/sidebar/**"
                 ],
-                "message": "Top-level sidebar/ business host was removed; primary views live in domain folders, chrome shell under #workbench/chrome."
+                "message": "Top-level sidebar/ business host was removed; primary views live in domain folders, chrome shell under #app/features/project-workbench/chrome."
               },
               {
                 "group": [
-                  "#workbench/statusbar",
-                  "#workbench/statusbar/**",
+                  "#app/features/project-workbench/statusbar",
+                  "#app/features/project-workbench/statusbar/**",
                   "**/features/project-workbench/statusbar",
                   "**/features/project-workbench/statusbar/**"
                 ],
-                "message": "Top-level statusbar/ business host was removed; status items live in domains, assembly in composition/, chrome primitives via #workbench/chrome."
+                "message": "Top-level statusbar/ business host was removed; status items live in domains, assembly in composition/, chrome primitives via #app/features/project-workbench/chrome."
               },
               {
                 "group": [
-                  "#workbench/branch/branch-scopes",
+                  "#app/features/project-workbench/branch/branch-scopes",
                   "**/features/project-workbench/branch/branch-scopes"
                 ],
-                "message": "branch-scopes handle bus was removed; import scopes/handles from #workbench/session/*."
+                "message": "branch-scopes handle bus was removed; import scopes/handles from #app/features/project-workbench/session/*."
               },
               {
                 "group": [
-                  "#workbench/auxiliary",
-                  "#workbench/auxiliary/**",
-                  "#workbench/branch",
-                  "#workbench/branch/**",
-                  "#workbench/changes",
-                  "#workbench/changes/**",
-                  "#workbench/composition",
-                  "#workbench/composition/**",
-                  "#workbench/editor",
-                  "#workbench/editor/**",
-                  "#workbench/explorer",
-                  "#workbench/explorer/**",
-                  "#workbench/history",
-                  "#workbench/history/**",
-                  "#workbench/search",
-                  "#workbench/search/**",
+                  "#app/features/project-workbench/auxiliary",
+                  "#app/features/project-workbench/auxiliary/**",
+                  "#app/features/project-workbench/branch",
+                  "#app/features/project-workbench/branch/**",
+                  "#app/features/project-workbench/changes",
+                  "#app/features/project-workbench/changes/**",
+                  "#app/features/project-workbench/composition",
+                  "#app/features/project-workbench/composition/**",
+                  "#app/features/project-workbench/editor",
+                  "#app/features/project-workbench/editor/**",
+                  "#app/features/project-workbench/explorer",
+                  "#app/features/project-workbench/explorer/**",
+                  "#app/features/project-workbench/history",
+                  "#app/features/project-workbench/history/**",
+                  "#app/features/project-workbench/search",
+                  "#app/features/project-workbench/search/**",
                   "**/features/project-workbench/auxiliary/**",
                   "**/features/project-workbench/branch/**",
                   "**/features/project-workbench/changes/**",
@@ -362,14 +362,14 @@
                   "**/features/project-workbench/history/**",
                   "**/features/project-workbench/search/**",
                   "**/features/project-workbench/ProjectWorkbench",
-                  "#workbench/session",
-                  "#workbench/session/**",
+                  "#app/features/project-workbench/session",
+                  "#app/features/project-workbench/session/**",
                   "**/features/project-workbench/session/**",
-                  "#workbench/chrome",
-                  "#workbench/chrome/**",
+                  "#app/features/project-workbench/chrome",
+                  "#app/features/project-workbench/chrome/**",
                   "**/features/project-workbench/chrome/**"
                 ],
-                "message": "tree/ is pure view kernel: do not import session, chrome, or domain modules. Depend on #app/shared and #domain DTOs only."
+                "message": "tree/ is pure view kernel: do not import session, chrome, or domain modules. Depend on #app/shared and @novelevolver/domain DTOs only."
               }
             ]
           }
@@ -413,64 +413,64 @@
               },
               {
                 "group": [
-                  "#workbench/worktree",
-                  "#workbench/worktree/**",
+                  "#app/features/project-workbench/worktree",
+                  "#app/features/project-workbench/worktree/**",
                   "**/features/project-workbench/worktree",
                   "**/features/project-workbench/worktree/**"
                 ],
-                "message": "Renderer worktree/ domain was removed; use #workbench/session/changes-feed for feed/snapshot data."
+                "message": "Renderer worktree/ domain was removed; use #app/features/project-workbench/session/changes-feed for feed/snapshot data."
               },
               {
                 "group": [
-                  "#workbench/state/molecules",
+                  "#app/features/project-workbench/state/molecules",
                   "**/features/project-workbench/state/molecules",
                   "**/features/project-workbench/state/**"
                 ],
-                "message": "Project scope lives in #workbench/session/project-scope; do not resurrect workbench/state/."
+                "message": "Project scope lives in #app/features/project-workbench/session/project-scope; do not resurrect workbench/state/."
               },
               {
                 "group": [
-                  "#workbench/sidebar",
-                  "#workbench/sidebar/**",
+                  "#app/features/project-workbench/sidebar",
+                  "#app/features/project-workbench/sidebar/**",
                   "**/features/project-workbench/sidebar",
                   "**/features/project-workbench/sidebar/**"
                 ],
-                "message": "Top-level sidebar/ business host was removed; primary views live in domain folders, chrome shell under #workbench/chrome."
+                "message": "Top-level sidebar/ business host was removed; primary views live in domain folders, chrome shell under #app/features/project-workbench/chrome."
               },
               {
                 "group": [
-                  "#workbench/statusbar",
-                  "#workbench/statusbar/**",
+                  "#app/features/project-workbench/statusbar",
+                  "#app/features/project-workbench/statusbar/**",
                   "**/features/project-workbench/statusbar",
                   "**/features/project-workbench/statusbar/**"
                 ],
-                "message": "Top-level statusbar/ business host was removed; status items live in domains, assembly in composition/, chrome primitives via #workbench/chrome."
+                "message": "Top-level statusbar/ business host was removed; status items live in domains, assembly in composition/, chrome primitives via #app/features/project-workbench/chrome."
               },
               {
                 "group": [
-                  "#workbench/branch/branch-scopes",
+                  "#app/features/project-workbench/branch/branch-scopes",
                   "**/features/project-workbench/branch/branch-scopes"
                 ],
-                "message": "branch-scopes handle bus was removed; import scopes/handles from #workbench/session/*."
+                "message": "branch-scopes handle bus was removed; import scopes/handles from #app/features/project-workbench/session/*."
               },
               {
                 "group": [
-                  "#workbench/auxiliary",
-                  "#workbench/auxiliary/**",
-                  "#workbench/branch",
-                  "#workbench/branch/**",
-                  "#workbench/changes",
-                  "#workbench/changes/**",
-                  "#workbench/composition",
-                  "#workbench/composition/**",
-                  "#workbench/editor",
-                  "#workbench/editor/**",
-                  "#workbench/explorer",
-                  "#workbench/explorer/**",
-                  "#workbench/history",
-                  "#workbench/history/**",
-                  "#workbench/search",
-                  "#workbench/search/**",
+                  "#app/features/project-workbench/auxiliary",
+                  "#app/features/project-workbench/auxiliary/**",
+                  "#app/features/project-workbench/branch",
+                  "#app/features/project-workbench/branch/**",
+                  "#app/features/project-workbench/changes",
+                  "#app/features/project-workbench/changes/**",
+                  "#app/features/project-workbench/composition",
+                  "#app/features/project-workbench/composition/**",
+                  "#app/features/project-workbench/editor",
+                  "#app/features/project-workbench/editor/**",
+                  "#app/features/project-workbench/explorer",
+                  "#app/features/project-workbench/explorer/**",
+                  "#app/features/project-workbench/history",
+                  "#app/features/project-workbench/history/**",
+                  "#app/features/project-workbench/search",
+                  "#app/features/project-workbench/search/**",
                   "**/features/project-workbench/auxiliary/**",
                   "**/features/project-workbench/branch/**",
                   "**/features/project-workbench/changes/**",
@@ -480,11 +480,11 @@
                   "**/features/project-workbench/history/**",
                   "**/features/project-workbench/search/**",
                   "**/features/project-workbench/ProjectWorkbench",
-                  "#workbench/tree",
-                  "#workbench/tree/**",
+                  "#app/features/project-workbench/tree",
+                  "#app/features/project-workbench/tree/**",
                   "**/features/project-workbench/tree/**",
-                  "#workbench/chrome",
-                  "#workbench/chrome/**",
+                  "#app/features/project-workbench/chrome",
+                  "#app/features/project-workbench/chrome/**",
                   "**/features/project-workbench/chrome/**"
                 ],
                 "message": "session/ is data plane only: do not import tree, chrome, or domain UI. Domains consume session; session must not depend upward."

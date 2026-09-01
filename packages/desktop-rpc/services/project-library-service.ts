@@ -1,6 +1,5 @@
+import type { ProjectMetadata } from "@novelevolver/domain/project";
 import type { RpcTarget } from "capnweb";
-
-import type { ProjectMetadata } from "#domain/project";
 
 export interface ProjectLibraryService extends RpcTarget {
   readonly recentProjects: ProjectMetadata[];

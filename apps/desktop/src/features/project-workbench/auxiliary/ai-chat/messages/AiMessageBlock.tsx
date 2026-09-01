@@ -1,6 +1,5 @@
+import type { AiChatMessage } from "@novelevolver/domain/ai";
 import { memo } from "react";
-
-import type { AiChatMessage } from "#domain/ai";
 
 import { AiAssistantMessageBlock } from "./AiAssistantMessageBlock";
 import { AiUserMessageBlock } from "./AiUserMessageBlock";

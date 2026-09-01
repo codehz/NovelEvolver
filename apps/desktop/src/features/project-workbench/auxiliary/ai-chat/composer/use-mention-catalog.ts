@@ -1,12 +1,12 @@
+import type { ManuscriptTreeSnapshot, ResourceTreeSnapshot } from "@novelevolver/domain/worktree";
 import { useMolecule } from "bunshi/react";
 import { useAtomValue } from "jotai";
 import { useMemo } from "react";
 
-import type { ManuscriptTreeSnapshot, ResourceTreeSnapshot } from "#domain/worktree";
-import { getManuscriptNodePath } from "#workbench/explorer/manuscript/manuscript-tree";
-import { manuscriptTreeMolecule } from "#workbench/explorer/manuscript/state/manuscript-tree-molecule";
-import { getResourceNodePath } from "#workbench/explorer/resource-library/resource-tree";
-import { resourceLibraryTreeMolecule } from "#workbench/explorer/resource-library/state/resource-tree-molecule";
+import { getManuscriptNodePath } from "#app/features/project-workbench/explorer/manuscript/manuscript-tree";
+import { manuscriptTreeMolecule } from "#app/features/project-workbench/explorer/manuscript/state/manuscript-tree-molecule";
+import { getResourceNodePath } from "#app/features/project-workbench/explorer/resource-library/resource-tree";
+import { resourceLibraryTreeMolecule } from "#app/features/project-workbench/explorer/resource-library/state/resource-tree-molecule";
 
 import { kindLabelFor, type MentionCatalogItem } from "./mention-query";
 

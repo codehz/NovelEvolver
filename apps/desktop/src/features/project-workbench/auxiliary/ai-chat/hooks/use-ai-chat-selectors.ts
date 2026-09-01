@@ -1,8 +1,10 @@
+import type { AiChatSelectableAgent, AiChatSelectableModel } from "@novelevolver/domain/ai";
+import type { AiReasoningLevel } from "@novelevolver/domain/settings/ai-settings";
+import {
+  AI_REASONING_LEVEL_LABELS,
+  AI_REASONING_LEVELS,
+} from "@novelevolver/domain/settings/ai-settings";
 import { useCallback, useEffect, useMemo, useState } from "react";
-
-import type { AiChatSelectableAgent, AiChatSelectableModel } from "#domain/ai";
-import type { AiReasoningLevel } from "#domain/settings/ai-settings";
-import { AI_REASONING_LEVEL_LABELS, AI_REASONING_LEVELS } from "#domain/settings/ai-settings";
 
 import { toAgentSelectorItems, toModelSelectorItems, type AiChatSelectorItem } from "../selectors";
 import { useAiChatActions, useAiChatLoading, useAiChatSnapshot } from "../state/use-ai-chat-state";

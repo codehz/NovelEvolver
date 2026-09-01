@@ -1,8 +1,8 @@
 import { useAtomValue } from "jotai";
 
+import { StatusBarItemButton } from "#app/features/project-workbench/chrome";
+import { useActiveBranchName } from "#app/features/project-workbench/session/branch-scope";
 import { quickPickOpenAtom } from "#app/shared/lib/quick-pick";
-import { StatusBarItemButton } from "#workbench/chrome";
-import { useActiveBranchName } from "#workbench/session/branch-scope";
 
 import { useBranchQuickPick } from "./branch-quick-pick";
 

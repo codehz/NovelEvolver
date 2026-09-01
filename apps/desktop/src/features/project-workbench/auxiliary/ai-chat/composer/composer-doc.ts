@@ -1,6 +1,9 @@
 import type { EditorState } from "@codemirror/state";
-
-import type { AiChatMentionRef, AiChatSendMessageInput, AiChatSlashRef } from "#domain/ai";
+import type {
+  AiChatMentionRef,
+  AiChatSendMessageInput,
+  AiChatSlashRef,
+} from "@novelevolver/domain/ai";
 
 import { collectMentionChips } from "./mention-chip-extension";
 import { getActivePromptChip } from "./prompt-chip-extension";

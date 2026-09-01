@@ -1,11 +1,10 @@
-import { RpcTarget } from "capnweb";
-
 import type {
   AiActiveChatHandle,
   AiCatalogHandle,
   AiConversationsHandle,
   ProjectAi,
-} from "#desktop-rpc/ai/handles";
+} from "@novelevolver/desktop-rpc/ai/handles";
+import { RpcTarget } from "capnweb";
 
 import type { ProjectAiChatController } from "../../ai/chat/project-ai-chat";
 import { AiActiveChatHandleImpl } from "./ai-active-chat-handle";

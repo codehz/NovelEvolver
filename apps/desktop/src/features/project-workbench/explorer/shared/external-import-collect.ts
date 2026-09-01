@@ -2,8 +2,8 @@ import type {
   ExternalImportEntry,
   ExternalImportSkip,
   ExternalImportSkipReason,
-} from "#domain/worktree";
-import { EXTERNAL_IMPORT_MAX_FILE_BYTES } from "#domain/worktree";
+} from "@novelevolver/domain/worktree";
+import { EXTERNAL_IMPORT_MAX_FILE_BYTES } from "@novelevolver/domain/worktree";
 
 export type ExternalImportCollectResult = {
   entries: ExternalImportEntry[];

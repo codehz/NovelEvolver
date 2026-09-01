@@ -1,3 +1,4 @@
+import type { AskUserOpenInteraction } from "@novelevolver/domain/ai";
 import { useEffect, useRef, type KeyboardEvent } from "react";
 
 import { cn } from "#app/shared/lib/ui/cn";
@@ -7,7 +8,6 @@ import {
   rowHoverClass,
 } from "#app/shared/lib/ui/interaction-chrome";
 import { Button } from "#app/shared/ui";
-import type { AskUserOpenInteraction } from "#domain/ai";
 
 import {
   askUserCardShellClass,

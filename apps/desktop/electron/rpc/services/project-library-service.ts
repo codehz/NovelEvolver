@@ -1,11 +1,10 @@
 import { existsSync } from "node:fs";
 
+import type { ProjectLibraryService } from "@novelevolver/desktop-rpc/services/project-library-service";
+import type { ProjectMetadata } from "@novelevolver/domain/project";
 import { ProjectsRepository } from "@novelevolver/worktree";
 import { RpcTarget } from "capnweb";
 import { dialog, type BrowserWindow } from "electron";
-
-import type { ProjectLibraryService } from "#desktop-rpc/services/project-library-service";
-import type { ProjectMetadata } from "#domain/project";
 
 import { openSqliteGitRepository } from "../../lib/nano-git-sqlite";
 import { toProjectMetadata } from "../../projects/home-path";

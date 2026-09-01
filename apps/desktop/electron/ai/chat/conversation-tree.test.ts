@@ -1,8 +1,7 @@
 import { describe, expect, test } from "bun:test";
 
 import type { InputItem } from "@codehz/ai";
-
-import type { AiChatAssistantMessage, AiChatUserMessage } from "#domain/ai";
+import type { AiChatAssistantMessage, AiChatUserMessage } from "@novelevolver/domain/ai";
 
 import {
   addChildNode,

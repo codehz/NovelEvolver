@@ -1,7 +1,7 @@
 import type {
   ManuscriptTreeNode as SharedManuscriptTreeNode,
   ManuscriptTreeSnapshot,
-} from "#domain/worktree";
+} from "@novelevolver/domain/worktree";
 
 type ManuscriptTreeMetadata = {
   parentById: Map<string, string>;

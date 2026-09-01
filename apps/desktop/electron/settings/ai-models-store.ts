@@ -1,21 +1,20 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname } from "node:path";
 
-import { safeStorage } from "electron";
-import { nanoid } from "nanoid";
-
 import type {
   AiModelConfigWrite,
   AiModelsSettingsSnapshot,
   AiProviderConfigWrite,
-} from "#domain/settings/ai-settings";
-import type { AiModelRuntimeConfig as DomainModelRuntimeConfig } from "#domain/settings/stores/ai-models-state";
+} from "@novelevolver/domain/settings/ai-settings";
+import type { AiModelRuntimeConfig as DomainModelRuntimeConfig } from "@novelevolver/domain/settings/stores/ai-models-state";
 import {
   AI_MODELS_STATE_VERSION,
   AiModelsState,
   parseAiModelsState,
   type AiModelsStateData,
-} from "#domain/settings/stores/ai-models-state";
+} from "@novelevolver/domain/settings/stores/ai-models-state";
+import { safeStorage } from "electron";
+import { nanoid } from "nanoid";
 
 export type AiModelRuntimeConfig = Omit<
   DomainModelRuntimeConfig,

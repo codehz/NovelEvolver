@@ -2,7 +2,7 @@ import type {
   PlainTextEditorCaretPosition,
   PlainTextEditorLogicalPosition,
   PlainTextEditorSelectionSnapshot,
-} from "#workbench/editor/PlainTextEditor";
+} from "#app/features/project-workbench/editor/PlainTextEditor";
 
 export type EditorCaretPosition = PlainTextEditorCaretPosition;
 export type EditorLogicalPosition = PlainTextEditorLogicalPosition;

@@ -1,12 +1,11 @@
-import type { RpcTarget } from "capnweb";
-
-import type { RpcSubscriptionResult } from "#desktop-rpc/transport/stream";
+import type { RpcSubscriptionResult } from "@novelevolver/desktop-rpc/transport/stream";
 import type {
   ChangeTextComparison,
   ChangeTextComparisonTarget,
   ChangesEvent,
   ChangesSnapshot,
-} from "#domain/worktree/changes";
+} from "@novelevolver/domain/worktree/changes";
+import type { RpcTarget } from "capnweb";
 
 export interface WorktreeChangesHandle extends RpcTarget {
   subscribeChanges(): RpcSubscriptionResult<ChangesEvent>;

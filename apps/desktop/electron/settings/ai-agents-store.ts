@@ -1,17 +1,19 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname } from "node:path";
 
-import { nanoid } from "nanoid";
-
-import { BUILTIN_AI_AGENT_SYSTEM_PROMPT } from "#domain/settings/ai-builtin-agents";
-import { AI_AGENT_DESCRIPTION_MAX_LENGTH } from "#domain/settings/ai-settings";
-import type { AiAgentConfigWrite, AiAgentsSettingsSnapshot } from "#domain/settings/ai-settings";
+import { BUILTIN_AI_AGENT_SYSTEM_PROMPT } from "@novelevolver/domain/settings/ai-builtin-agents";
+import { AI_AGENT_DESCRIPTION_MAX_LENGTH } from "@novelevolver/domain/settings/ai-settings";
+import type {
+  AiAgentConfigWrite,
+  AiAgentsSettingsSnapshot,
+} from "@novelevolver/domain/settings/ai-settings";
 import {
   AI_AGENTS_STATE_VERSION,
   AiAgentsState,
   parseAiAgentsState,
   type AiAgentRuntimeConfig,
-} from "#domain/settings/stores/ai-agents-state";
+} from "@novelevolver/domain/settings/stores/ai-agents-state";
+import { nanoid } from "nanoid";
 
 import type { AiModelsStore } from "./ai-models-store";
 

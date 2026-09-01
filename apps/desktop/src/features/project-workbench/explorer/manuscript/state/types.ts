@@ -1,4 +1,4 @@
-import type { ManuscriptTreeNode, ManuscriptTreeSnapshot } from "#domain/worktree";
+import type { ManuscriptTreeNode, ManuscriptTreeSnapshot } from "@novelevolver/domain/worktree";
 
 import type { TreeResolvedDrop } from "../../../tree/tree-drag";
 

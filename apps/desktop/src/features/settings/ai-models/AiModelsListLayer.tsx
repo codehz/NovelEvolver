@@ -1,6 +1,10 @@
+import type {
+  AiModelConfigPublic,
+  AiProviderConfigPublic,
+} from "@novelevolver/domain/settings/ai-settings";
+
 import { cn } from "#app/shared/lib/ui/cn";
 import { Button } from "#app/shared/ui";
-import type { AiModelConfigPublic, AiProviderConfigPublic } from "#domain/settings/ai-settings";
 
 import {
   settingsDualPaneDetailTitleRowClass,

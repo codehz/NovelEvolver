@@ -2,8 +2,8 @@ import { useMolecule } from "bunshi/react";
 import { useAtomValue, useSetAtom } from "jotai";
 import { useEffect, useRef } from "react";
 
-import { usePrimaryViewActive } from "#workbench/chrome";
-import { worktreeChangesFeedMolecule } from "#workbench/session/changes-feed/worktree-changes-feed";
+import { usePrimaryViewActive } from "#app/features/project-workbench/chrome";
+import { worktreeChangesFeedMolecule } from "#app/features/project-workbench/session/changes-feed/worktree-changes-feed";
 
 import { resourceLibraryTreeMolecule } from "./resource-tree-molecule";
 

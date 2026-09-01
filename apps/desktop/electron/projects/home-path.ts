@@ -1,9 +1,8 @@
 import { homedir } from "node:os";
 
+import { shortenHomePath } from "@novelevolver/domain/path-display";
+import type { ProjectMetadata } from "@novelevolver/domain/project";
 import { app } from "electron";
-
-import { shortenHomePath } from "#domain/path-display";
-import type { ProjectMetadata } from "#domain/project";
 
 let cachedHomeDir: string | null = null;
 

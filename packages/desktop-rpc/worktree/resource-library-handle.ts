@@ -1,10 +1,9 @@
-import type { RpcTarget } from "capnweb";
-
 import type {
   ResourceImportEntry,
   ResourceImportResult,
   WorktreeNodeIdResult,
-} from "#domain/worktree/resource-library";
+} from "@novelevolver/domain/worktree/resource-library";
+import type { RpcTarget } from "capnweb";
 
 /**
  * File operations under the branch worktree's `resources/` directory.

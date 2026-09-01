@@ -1,8 +1,7 @@
+import type { WindowService } from "@novelevolver/desktop-rpc/services/window-service";
+import type { WindowState } from "@novelevolver/domain/window";
 import { RpcTarget } from "capnweb";
 import type { BrowserWindow } from "electron";
-
-import type { WindowService } from "#desktop-rpc/services/window-service";
-import type { WindowState } from "#domain/window";
 
 import { RpcStreamPublisher } from "../../lib/stream-publisher";
 import type { RpcMainDeps } from "../server/deps";

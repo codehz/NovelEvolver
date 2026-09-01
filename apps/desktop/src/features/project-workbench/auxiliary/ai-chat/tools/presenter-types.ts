@@ -1,6 +1,5 @@
+import type { AiChatToolCall } from "@novelevolver/domain/ai";
 import type { ReactNode } from "react";
-
-import type { AiChatToolCall } from "#domain/ai";
 
 export type JsonObject = Record<string, unknown>;
 

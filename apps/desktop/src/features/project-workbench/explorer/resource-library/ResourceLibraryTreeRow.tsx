@@ -1,15 +1,15 @@
+import type { ResourceTreeNode } from "@novelevolver/domain/worktree";
 import type { RefObject } from "react";
 
-import type { ResourceTreeNode } from "#domain/worktree";
-import { resourceTreeNodeIconClass } from "#workbench/tree/content-tree-icons";
+import { resourceTreeNodeIconClass } from "#app/features/project-workbench/tree/content-tree-icons";
 import {
   TreeChangeStatusBadge,
   treeChangeStatusLabelClass,
-} from "#workbench/tree/tree-change-status";
-import type { TreeResolvedDrop } from "#workbench/tree/tree-drag";
-import type { TreeRowLayout } from "#workbench/tree/tree-row-layout";
-import { TreeRowShell } from "#workbench/tree/TreeRowShell";
-import type { TreeDropResolveInput } from "#workbench/tree/use-tree-row-pointer-drag";
+} from "#app/features/project-workbench/tree/tree-change-status";
+import type { TreeResolvedDrop } from "#app/features/project-workbench/tree/tree-drag";
+import type { TreeRowLayout } from "#app/features/project-workbench/tree/tree-row-layout";
+import { TreeRowShell } from "#app/features/project-workbench/tree/TreeRowShell";
+import type { TreeDropResolveInput } from "#app/features/project-workbench/tree/use-tree-row-pointer-drag";
 
 import type { ResourceRenderItem } from "./resource-tree-projector";
 import type { ResourceDropTarget } from "./state/types";

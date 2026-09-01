@@ -1,11 +1,10 @@
 import { describe, expect, test } from "bun:test";
 
 import type { ToolCallItem } from "@codehz/ai";
-
 import {
   BUILTIN_CHAPTER_WRITER_ID,
   BUILTIN_CONSISTENCY_REVIEWER_ID,
-} from "#domain/settings/ai-settings";
+} from "@novelevolver/domain/settings/ai-settings";
 
 import type { AiAgentRuntimeConfig } from "../../../settings/ai-agents-store";
 import {

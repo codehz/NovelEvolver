@@ -1,7 +1,6 @@
 import type { ToolCallItem, ToolResultItem } from "@codehz/ai";
 import { toolResultItem } from "@codehz/ai";
-
-import type { AiToolView } from "#domain/ai";
+import type { AiToolView } from "@novelevolver/domain/ai";
 
 import type { ToolExecutionResult, UserInputRequest } from "./types";
 

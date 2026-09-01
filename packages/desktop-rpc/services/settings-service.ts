@@ -1,5 +1,3 @@
-import type { RpcTarget } from "capnweb";
-
 import type {
   AiAgentConfigWrite,
   AiAgentsSettingsSnapshot,
@@ -12,7 +10,8 @@ import type {
   GitCredentialConfigWrite,
   GitCredentialsSettingsSnapshot,
   AiProviderConfigWrite,
-} from "#domain/settings/ai-settings";
+} from "@novelevolver/domain/settings/ai-settings";
+import type { RpcTarget } from "capnweb";
 
 export interface SettingsService extends RpcTarget {
   getAiModels(): AiModelsSettingsSnapshot;

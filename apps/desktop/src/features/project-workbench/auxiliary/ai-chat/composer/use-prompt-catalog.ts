@@ -1,7 +1,7 @@
+import type { AiPromptConfigPublic } from "@novelevolver/domain/settings/ai-settings";
 import { useCallback, useEffect, useRef, useState } from "react";
 
 import { settingsService } from "#app/shared/lib/rpc/app-rpc";
-import type { AiPromptConfigPublic } from "#domain/settings/ai-settings";
 
 import { toPromptSlashItems, type PromptSlashItem } from "./slash-query";
 

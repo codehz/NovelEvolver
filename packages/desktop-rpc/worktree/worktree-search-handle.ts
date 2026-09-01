@@ -1,11 +1,10 @@
-import type { RpcTarget } from "capnweb";
-
 import type {
   WorktreeReplaceQuery,
   WorktreeReplaceResult,
   WorktreeSearchQuery,
   WorktreeSearchResult,
-} from "#domain/worktree/search";
+} from "@novelevolver/domain/worktree/search";
+import type { RpcTarget } from "capnweb";
 
 /**
  * 当前分支 worktree 内的全文搜索（只读，不订阅）。

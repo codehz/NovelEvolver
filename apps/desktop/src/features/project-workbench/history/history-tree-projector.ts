@@ -1,11 +1,12 @@
-import type { Change, CommitSummary } from "#domain/worktree";
+import type { Change, CommitSummary } from "@novelevolver/domain/worktree";
+
 import {
   buildChangeRoots,
   collectChangeTreeFolderKeys,
   flattenChangeTree,
   type ChangeTreeFolderNode,
-} from "#workbench/lib/change-tree-projector";
-import { contentDomainIconClass } from "#workbench/tree/content-tree-icons";
+} from "#app/features/project-workbench/lib/change-tree-projector";
+import { contentDomainIconClass } from "#app/features/project-workbench/tree/content-tree-icons";
 
 import type { CommitChangesCacheEntry } from "./use-commit-changes-state";
 

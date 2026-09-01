@@ -2,7 +2,7 @@ import { useMolecule } from "bunshi/react";
 import { useAtom } from "jotai";
 import { useEffect } from "react";
 
-import { useWorktreeTreeSnapshot } from "#workbench/session/changes-feed/use-worktree-tree-snapshot";
+import { useWorktreeTreeSnapshot } from "#app/features/project-workbench/session/changes-feed/use-worktree-tree-snapshot";
 
 import { syncWorkbenchEditorTabWithTree } from "./editor-contributions";
 import { areWorkbenchEditorStatesEqual, normalizeWorkbenchEditorState } from "./editor-tab-manager";

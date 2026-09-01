@@ -4,7 +4,13 @@
   "private": true,
   "type": "module",
   "exports": {
-    "./*": "./*"
+    "./ai": "./ai/index.ts",
+    "./root": "./root/index.ts",
+    "./session": "./session/index.ts",
+    "./services": "./services/index.ts",
+    "./transport": "./transport/index.ts",
+    "./worktree": "./worktree/index.ts",
+    "./*": "./*.ts"
   },
   "dependencies": {
     "@novelevolver/domain": "workspace:*",

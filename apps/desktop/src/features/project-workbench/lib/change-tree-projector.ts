@@ -1,4 +1,4 @@
-import type { Change } from "#domain/worktree";
+import type { Change } from "@novelevolver/domain/worktree";
 
 export type ChangeTreeFolderNode = {
   type: "folder";

@@ -1,13 +1,13 @@
+import type {
+  AiModelConfigPublic,
+  AiModelConfigWrite,
+  AiProviderConfigWrite,
+} from "@novelevolver/domain/settings/ai-settings";
 import { useEffect, useMemo, useRef, useState } from "react";
 
 import { confirmDialogApi } from "#app/shared/lib/confirm-dialog";
 import { settingsService } from "#app/shared/lib/rpc/app-rpc";
 import { createAsyncLoader, useAsyncLoader } from "#app/shared/lib/ui/async-loader";
-import type {
-  AiModelConfigPublic,
-  AiModelConfigWrite,
-  AiProviderConfigWrite,
-} from "#domain/settings/ai-settings";
 
 import { settingsErrorMessage } from "../settings-error";
 import type { SettingsFormHandle } from "../settings-leave-guard";

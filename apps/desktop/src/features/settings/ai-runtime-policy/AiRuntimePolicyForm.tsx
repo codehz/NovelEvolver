@@ -1,12 +1,18 @@
 import { Field } from "@base-ui/react/field";
 import { Form } from "@base-ui/react/form";
 import { NumberField } from "@base-ui/react/number-field";
+import type {
+  AiRuntimePolicySnapshot,
+  AiRuntimePolicyWrite,
+} from "@novelevolver/domain/settings/ai-settings";
+import {
+  AI_RUNTIME_POLICY_LIMITS,
+  DEFAULT_AI_RUNTIME_POLICY,
+} from "@novelevolver/domain/settings/ai-settings";
 import { useMemo, type Ref } from "react";
 
 import { cn } from "#app/shared/lib/ui/cn";
 import { AppTooltip, Button } from "#app/shared/ui";
-import type { AiRuntimePolicySnapshot, AiRuntimePolicyWrite } from "#domain/settings/ai-settings";
-import { AI_RUNTIME_POLICY_LIMITS, DEFAULT_AI_RUNTIME_POLICY } from "#domain/settings/ai-settings";
 
 import {
   settingsFieldControlCellClass,

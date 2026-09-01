@@ -1,4 +1,4 @@
-import { BUILTIN_AI_AGENT_ID } from "#domain/settings/ai-settings";
+import { BUILTIN_AI_AGENT_ID } from "@novelevolver/domain/settings/ai-settings";
 
 import { cloneAiToolView } from "./ai-tool-view";
 import type {

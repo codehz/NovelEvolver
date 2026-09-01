@@ -6,15 +6,14 @@ import type {
   ToolDefinition,
 } from "@codehz/ai";
 import { collectStream } from "@codehz/ai";
-
 import type {
   AiChatMessageUsage,
   AiChatSelectableModelKind,
   AiSubagentToolView,
   AiToolViewFocus,
-} from "#domain/ai";
-import { MOCK_AI_MODEL_ID } from "#domain/ai";
-import type { AiReasoningLevel } from "#domain/settings/ai-settings";
+} from "@novelevolver/domain/ai";
+import { MOCK_AI_MODEL_ID } from "@novelevolver/domain/ai";
+import type { AiReasoningLevel } from "@novelevolver/domain/settings/ai-settings";
 
 import type { AiAgentRuntimeConfig } from "../../../settings/ai-agents-store";
 import type { AiModelRuntimeConfig } from "../../../settings/ai-models-store";

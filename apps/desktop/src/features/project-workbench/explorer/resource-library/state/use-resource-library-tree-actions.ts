@@ -1,19 +1,19 @@
-import { useMolecule } from "bunshi/react";
-import { useSetAtom, useStore } from "jotai";
-import { useCallback, useRef } from "react";
-
-import { confirmDialogApi } from "#app/shared/lib/confirm-dialog";
-import { notificationApi } from "#app/shared/lib/notifications";
-import { normalizeResourceNameInput } from "#domain/resource-library-path";
+import { normalizeResourceNameInput } from "@novelevolver/domain/resource-library-path";
 import type {
   ResourceImportCreated,
   ResourceImportEntry,
   ResourceImportSkip,
   ResourceImportSkipReason,
   ResourceTreeSnapshot,
-} from "#domain/worktree";
-import { useWorkbenchEditorActions } from "#workbench/editor/use-workbench-editor-actions";
-import { useResourceLibrary } from "#workbench/session/workspace-handles";
+} from "@novelevolver/domain/worktree";
+import { useMolecule } from "bunshi/react";
+import { useSetAtom, useStore } from "jotai";
+import { useCallback, useRef } from "react";
+
+import { useWorkbenchEditorActions } from "#app/features/project-workbench/editor/use-workbench-editor-actions";
+import { useResourceLibrary } from "#app/features/project-workbench/session/workspace-handles";
+import { confirmDialogApi } from "#app/shared/lib/confirm-dialog";
+import { notificationApi } from "#app/shared/lib/notifications";
 
 import { findResourceParentId } from "../resource-tree";
 import { resourceLibraryTreeMolecule } from "./resource-tree-molecule";

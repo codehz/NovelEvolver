@@ -1,4 +1,5 @@
 import { AutoTransition } from "@codehz/auto-transition";
+import type { WindowState } from "@novelevolver/domain/window";
 import { useAtomValue } from "jotai";
 import { ForwardedRef, type ReactNode } from "react";
 import { chromatic, type SlotOptions } from "slot-text";
@@ -18,7 +19,6 @@ import { ContextMenuHost } from "#app/shell/context-menu";
 import { NotificationBellButton, NotificationToastStack } from "#app/shell/notifications";
 import { QuickPickHost } from "#app/shell/quick-pick";
 import { SettingsHost } from "#app/shell/settings";
-import type { WindowState } from "#domain/window";
 
 const windowControlButtonClass = cn(
   "inline-flex size-7 shrink-0 items-center justify-center rounded-full border-0 bg-transparent p-0 text-titlebar-foreground transition-colors duration-150 hover:bg-ctp-text/8 focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-badge-background active:bg-ctp-text/8",

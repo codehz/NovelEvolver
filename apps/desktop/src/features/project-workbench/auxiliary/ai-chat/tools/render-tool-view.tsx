@@ -1,4 +1,4 @@
-import type { AiChatToolCall, AiToolView } from "#domain/ai";
+import type { AiChatToolCall, AiToolView } from "@novelevolver/domain/ai";
 
 import {
   ActivityPathList,

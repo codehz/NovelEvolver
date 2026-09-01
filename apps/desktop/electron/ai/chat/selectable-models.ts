@@ -1,5 +1,8 @@
-import { MOCK_AI_MODEL_ID, type AiChatSelectableModel } from "#domain/ai";
-import type { AiModelsSettingsSnapshot, AiReasoningLevel } from "#domain/settings/ai-settings";
+import { MOCK_AI_MODEL_ID, type AiChatSelectableModel } from "@novelevolver/domain/ai";
+import type {
+  AiModelsSettingsSnapshot,
+  AiReasoningLevel,
+} from "@novelevolver/domain/settings/ai-settings";
 
 export type ResolveAiModelsSnapshot = () => AiModelsSettingsSnapshot;
 

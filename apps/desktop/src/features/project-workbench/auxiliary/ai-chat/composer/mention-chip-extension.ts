@@ -1,7 +1,6 @@
 import { StateEffect, StateField, type EditorState, type Transaction } from "@codemirror/state";
 import { Decoration, EditorView, WidgetType, type DecorationSet } from "@codemirror/view";
-
-import type { AiChatMentionRef } from "#domain/ai";
+import type { AiChatMentionRef } from "@novelevolver/domain/ai";
 
 import { findTokenMatches } from "./token-scan";
 

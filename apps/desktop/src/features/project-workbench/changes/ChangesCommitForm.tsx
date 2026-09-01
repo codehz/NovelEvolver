@@ -1,7 +1,7 @@
+import { useActiveBranchName } from "#app/features/project-workbench/session/branch-scope";
 import { cn } from "#app/shared/lib/ui/cn";
 import { fieldSurfaceClass } from "#app/shared/lib/ui/interaction-chrome";
 import { Button } from "#app/shared/ui";
-import { useActiveBranchName } from "#workbench/session/branch-scope";
 
 type ChangesCommitFormProps = {
   commitMessage: string;

@@ -1,8 +1,8 @@
-import type { WorktreeSession } from "@novelevolver/worktree";
-import { RpcTarget } from "capnweb";
-
-import type { HistoryHandle } from "#desktop-rpc/worktree/history-handle";
-import type { ChangeTextComparisonTarget, ChangesSnapshot } from "#domain/worktree/changes";
+import type { HistoryHandle } from "@novelevolver/desktop-rpc/worktree/history-handle";
+import type {
+  ChangeTextComparisonTarget,
+  ChangesSnapshot,
+} from "@novelevolver/domain/worktree/changes";
 import type {
   CommitChangeTextComparison,
   CommitChangesSnapshot,
@@ -10,7 +10,9 @@ import type {
   HistoryEntry,
   HistoryEntryContent,
   HistoryTarget,
-} from "#domain/worktree/history";
+} from "@novelevolver/domain/worktree/history";
+import type { WorktreeSession } from "@novelevolver/worktree";
+import { RpcTarget } from "capnweb";
 
 export class HistoryHandleImpl extends RpcTarget implements HistoryHandle {
   readonly #session: WorktreeSession;

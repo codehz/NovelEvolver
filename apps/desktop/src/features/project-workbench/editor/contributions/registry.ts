@@ -1,5 +1,5 @@
-import type { HistoryTarget } from "#domain/worktree";
-import type { WorktreeTreeSnapshot } from "#domain/worktree";
+import type { HistoryTarget } from "@novelevolver/domain/worktree";
+import type { WorktreeTreeSnapshot } from "@novelevolver/domain/worktree";
 
 import type { WorkbenchEditorTab, WorkbenchEditorTarget } from "../state/types";
 import { comparisonEditorContribution } from "./comparison-target";

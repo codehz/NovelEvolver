@@ -1,6 +1,5 @@
 import type { AIResponse, ContentBlock } from "@codehz/ai";
-
-import type { AiChatMessageUsage, AiChatReasoningPart } from "#domain/ai";
+import type { AiChatMessageUsage, AiChatReasoningPart } from "@novelevolver/domain/ai";
 
 /**
  * 从 AIResponse 的 output 中提取纯文本内容。

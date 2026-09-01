@@ -1,13 +1,13 @@
+import type { CommitSummary } from "@novelevolver/domain/worktree";
 import type { MouseEvent as ReactMouseEvent } from "react";
 
+import { activateOnEnterSpace } from "#app/features/project-workbench/lib/activate-on-enter-space";
+import { formatCommitTime } from "#app/features/project-workbench/lib/format-history-time";
+import type { TreeRowLayout } from "#app/features/project-workbench/tree/tree-row-layout";
+import { TreeMotionRow } from "#app/features/project-workbench/tree/TreeMotionRow";
 import { cn } from "#app/shared/lib/ui/cn";
 import { rowHoverClass } from "#app/shared/lib/ui/interaction-chrome";
 import { AppTooltip, DisclosureChevron } from "#app/shared/ui";
-import type { CommitSummary } from "#domain/worktree";
-import { activateOnEnterSpace } from "#workbench/lib/activate-on-enter-space";
-import { formatCommitTime } from "#workbench/lib/format-history-time";
-import type { TreeRowLayout } from "#workbench/tree/tree-row-layout";
-import { TreeMotionRow } from "#workbench/tree/TreeMotionRow";
 
 const commitRowClass = cn(
   "cursor-pointer text-xs text-ctp-subtext1 outline-none",

@@ -1,4 +1,4 @@
-import type { AiChatMentionRef } from "#domain/ai";
+import type { AiChatMentionRef } from "@novelevolver/domain/ai";
 
 /** Structured inline ref the model can feed into read_document / read_structure. */
 export function formatMentionForModel(mention: AiChatMentionRef): string {

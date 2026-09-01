@@ -3,9 +3,12 @@ import { useAtom } from "jotai";
 import type { RefObject } from "react";
 import { useEffect, useRef } from "react";
 
-import type { PlainTextEditorHandle } from "#workbench/editor/PlainTextEditor";
-import { useWorktreeChangesRevision } from "#workbench/session/changes-feed/use-worktree-changes-revision";
-import { useManuscript, useResourceLibrary } from "#workbench/session/workspace-handles";
+import type { PlainTextEditorHandle } from "#app/features/project-workbench/editor/PlainTextEditor";
+import { useWorktreeChangesRevision } from "#app/features/project-workbench/session/changes-feed/use-worktree-changes-revision";
+import {
+  useManuscript,
+  useResourceLibrary,
+} from "#app/features/project-workbench/session/workspace-handles";
 
 import { syncWorkbenchEditorDocument } from "./editor-document-contributions";
 import { areWorkbenchEditorStatesEqual, normalizeWorkbenchEditorState } from "./editor-tab-manager";

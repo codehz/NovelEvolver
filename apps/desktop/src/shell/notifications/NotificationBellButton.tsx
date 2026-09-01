@@ -2,8 +2,8 @@ import { Popover } from "@base-ui/react/popover";
 import { useAtom, useAtomValue } from "jotai";
 import { useId } from "react";
 
+import { StatusBarItemButton } from "#app/features/project-workbench/chrome";
 import { activeNotificationsAtom, notificationCenterOpenAtom } from "#app/shared/lib/notifications";
-import { StatusBarItemButton } from "#workbench/chrome";
 
 import {
   notificationBellAnchorClass,

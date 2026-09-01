@@ -1,7 +1,6 @@
+import type { AppRpcRoot } from "@novelevolver/desktop-rpc/root/index";
+import type { AppRpcTransportBridge } from "@novelevolver/desktop-rpc/transport/index";
 import { RpcSession, type RpcStub } from "capnweb";
-
-import type { AppRpcRoot } from "#desktop-rpc/root/index";
-import type { AppRpcTransportBridge } from "#desktop-rpc/transport/index";
 
 import { RendererRpcTransport } from "./app-rpc-transport";
 

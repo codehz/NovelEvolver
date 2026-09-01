@@ -1,8 +1,8 @@
 import { CheckboxGroup } from "@base-ui/react/checkbox-group";
+import type { AiAgentTool } from "@novelevolver/domain/settings/ai-settings";
 
 import { cn } from "#app/shared/lib/ui/cn";
 import { Button } from "#app/shared/ui";
-import type { AiAgentTool } from "#domain/settings/ai-settings";
 
 import {
   settingsToolCardBodyClass,

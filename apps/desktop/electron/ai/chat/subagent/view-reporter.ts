@@ -1,4 +1,8 @@
-import type { AiSubagentToolView, AiSubagentViewStep, AiToolViewFocus } from "#domain/ai";
+import type {
+  AiSubagentToolView,
+  AiSubagentViewStep,
+  AiToolViewFocus,
+} from "@novelevolver/domain/ai";
 
 import type { SubagentArtifacts, SubagentRunStatus } from "./result";
 import {

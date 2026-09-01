@@ -4,21 +4,24 @@ import { Suspense, use, useMemo, useState } from "react";
 import { ErrorBoundary } from "react-error-boundary";
 import { Link, useParams } from "wouter";
 
+import { AiChatPanel } from "#app/features/project-workbench/auxiliary/ai-chat/AiChatPanel";
+import { AiChatStateProvider } from "#app/features/project-workbench/auxiliary/ai-chat/state/use-ai-chat-state";
+import { ChangesSidebar } from "#app/features/project-workbench/changes/ChangesSidebar";
+import { WorkbenchLayout, type WorkbenchPrimaryView } from "#app/features/project-workbench/chrome";
+import { WorkbenchStatusBar } from "#app/features/project-workbench/composition/WorkbenchStatusBar";
+import { EditorArea } from "#app/features/project-workbench/editor/EditorArea";
+import { ExplorerSidebar } from "#app/features/project-workbench/explorer/ExplorerSidebar";
+import { ProjectSettingsDialog } from "#app/features/project-workbench/project-settings";
+import { SearchSidebar } from "#app/features/project-workbench/search/SearchSidebar";
+import { BranchScopeProvider } from "#app/features/project-workbench/session/BranchScopeProvider";
+import {
+  projectIdScope,
+  projectMolecule,
+} from "#app/features/project-workbench/session/project-scope";
 import { resolveProjectDisplayName } from "#app/shared/lib/project-display-name";
 import { convertRpcPromise } from "#app/shared/lib/rpc/rpc-utils";
 import { useTitleBarTitle } from "#app/shared/lib/shell/titlebar-title";
 import { cn } from "#app/shared/lib/ui/cn";
-import { AiChatPanel } from "#workbench/auxiliary/ai-chat/AiChatPanel";
-import { AiChatStateProvider } from "#workbench/auxiliary/ai-chat/state/use-ai-chat-state";
-import { ChangesSidebar } from "#workbench/changes/ChangesSidebar";
-import { WorkbenchLayout, type WorkbenchPrimaryView } from "#workbench/chrome";
-import { WorkbenchStatusBar } from "#workbench/composition/WorkbenchStatusBar";
-import { EditorArea } from "#workbench/editor/EditorArea";
-import { ExplorerSidebar } from "#workbench/explorer/ExplorerSidebar";
-import { ProjectSettingsDialog } from "#workbench/project-settings";
-import { SearchSidebar } from "#workbench/search/SearchSidebar";
-import { BranchScopeProvider } from "#workbench/session/BranchScopeProvider";
-import { projectIdScope, projectMolecule } from "#workbench/session/project-scope";
 
 export function ProjectWorkbench() {
   const { projectId } = useParams<{ projectId: string }>();

@@ -1,4 +1,4 @@
-import type { ChangesEvent } from "#domain/worktree";
+import type { ChangesEvent } from "@novelevolver/domain/worktree";
 import type {
   ManuscriptTreeDelta,
   ManuscriptTreeSnapshot,
@@ -6,7 +6,7 @@ import type {
   ResourceTreeSnapshot,
   WorktreeTreeDeltaEvent,
   WorktreeTreeSnapshot,
-} from "#domain/worktree";
+} from "@novelevolver/domain/worktree";
 
 import { applyTreeDelta } from "./apply-tree-delta";
 

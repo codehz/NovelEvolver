@@ -1,3 +1,4 @@
+import type { HistoryEntry, HistoryTarget } from "@novelevolver/domain/worktree";
 import { useMolecule } from "bunshi/react";
 import { useAtomValue } from "jotai";
 import {
@@ -8,16 +9,15 @@ import {
   type MouseEvent as ReactMouseEvent,
 } from "react";
 
+import { getWorkbenchEditorTabHistoryTarget } from "#app/features/project-workbench/editor/contributions/registry";
+import { workbenchEditorMolecule } from "#app/features/project-workbench/editor/state/molecules";
+import { useWorkbenchEditorActions } from "#app/features/project-workbench/editor/use-workbench-editor-actions";
+import { formatHistoryTime } from "#app/features/project-workbench/lib/format-history-time";
+import { useWorktreeChangesRevision } from "#app/features/project-workbench/session/changes-feed/use-worktree-changes-revision";
+import { useHistory } from "#app/features/project-workbench/session/workspace-handles";
 import { notificationApi } from "#app/shared/lib/notifications";
 import { popupContextMenu } from "#app/shared/lib/shell/popup-context-menu";
 import { cn } from "#app/shared/lib/ui/cn";
-import type { HistoryEntry, HistoryTarget } from "#domain/worktree";
-import { getWorkbenchEditorTabHistoryTarget } from "#workbench/editor/contributions/registry";
-import { workbenchEditorMolecule } from "#workbench/editor/state/molecules";
-import { useWorkbenchEditorActions } from "#workbench/editor/use-workbench-editor-actions";
-import { formatHistoryTime } from "#workbench/lib/format-history-time";
-import { useWorktreeChangesRevision } from "#workbench/session/changes-feed/use-worktree-changes-revision";
-import { useHistory } from "#workbench/session/workspace-handles";
 
 import { buildFileHistoryEntryContextMenuItems } from "./history-commit-context-menu";
 import { useRestoreFromHistory } from "./use-restore-from-history";

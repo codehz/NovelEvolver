@@ -1,10 +1,9 @@
-import type { Ref } from "react";
-
 import type {
   AiModelConfigWrite,
   AiProviderConfigPublic,
   AiProviderConfigWrite,
-} from "#domain/settings/ai-settings";
+} from "@novelevolver/domain/settings/ai-settings";
+import type { Ref } from "react";
 
 import { settingsPanelSectionClass } from "../settings-chrome";
 import type { SettingsFormHandle } from "../settings-leave-guard";

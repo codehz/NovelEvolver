@@ -1,8 +1,11 @@
+import {
+  DEFAULT_AI_RUNTIME_POLICY,
+  type AiRuntimePolicyWrite,
+} from "@novelevolver/domain/settings/ai-settings";
 import { useEffect, useRef, useState } from "react";
 
 import { settingsService } from "#app/shared/lib/rpc/app-rpc";
 import { createAsyncLoader, useAsyncLoader } from "#app/shared/lib/ui/async-loader";
-import { DEFAULT_AI_RUNTIME_POLICY, type AiRuntimePolicyWrite } from "#domain/settings/ai-settings";
 
 import { settingsErrorMessage } from "../settings-error";
 import type { SettingsFormHandle } from "../settings-leave-guard";

@@ -1,5 +1,5 @@
-import type { HistoryEntryKind, HistoryTarget } from "#domain/worktree";
-import type { ChangeDomain, ChangeKind } from "#domain/worktree";
+import type { HistoryEntryKind, HistoryTarget } from "@novelevolver/domain/worktree";
+import type { ChangeDomain, ChangeKind } from "@novelevolver/domain/worktree";
 
 import type { EditorSelectionSnapshot } from "./editor-caret";
 

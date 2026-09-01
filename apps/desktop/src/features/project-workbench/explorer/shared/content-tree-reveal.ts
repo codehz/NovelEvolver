@@ -1,10 +1,10 @@
 import type { RefObject } from "react";
 
+import { queryTreeRowById } from "#app/features/project-workbench/tree/tree-row-dom";
 import {
   type OneShotRequestChannel,
   useOneShotRequestConsumer,
 } from "#app/shared/lib/ui/one-shot-request";
-import { queryTreeRowById } from "#workbench/tree/tree-row-dom";
 
 export function scrollContentTreeRowIntoView(
   listRef: RefObject<HTMLUListElement | null>,

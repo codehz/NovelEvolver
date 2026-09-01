@@ -1,5 +1,5 @@
-import type { AiAdapterKind } from "#domain/settings/ai-settings";
-import { AI_ADAPTER_KINDS } from "#domain/settings/ai-settings";
+import type { AiAdapterKind } from "@novelevolver/domain/settings/ai-settings";
+import { AI_ADAPTER_KINDS } from "@novelevolver/domain/settings/ai-settings";
 
 export const AI_ADAPTER_OPTIONS: readonly {
   value: AiAdapterKind;

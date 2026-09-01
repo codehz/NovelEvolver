@@ -1,7 +1,7 @@
+import type { FileChangeStatus } from "@novelevolver/domain/worktree";
 import type { ReactNode } from "react";
 
 import { cn } from "#app/shared/lib/ui/cn";
-import type { FileChangeStatus } from "#domain/worktree";
 
 export type TreeRowChangeKind = "folder" | "chapter" | "file";
 

@@ -1,6 +1,7 @@
-import type { RpcTarget } from "capnweb";
-
-import type { ChangeTextComparisonTarget, ChangesSnapshot } from "#domain/worktree/changes";
+import type {
+  ChangeTextComparisonTarget,
+  ChangesSnapshot,
+} from "@novelevolver/domain/worktree/changes";
 import type {
   CommitChangeTextComparison,
   CommitChangesSnapshot,
@@ -8,7 +9,8 @@ import type {
   HistoryEntry,
   HistoryEntryContent,
   HistoryTarget,
-} from "#domain/worktree/history";
+} from "@novelevolver/domain/worktree/history";
+import type { RpcTarget } from "capnweb";
 
 export interface HistoryHandle extends RpcTarget {
   listCommits(maxCount?: number): CommitSummary[];

@@ -1,4 +1,4 @@
-import { StatusBarItemInfo } from "#workbench/chrome";
+import { StatusBarItemInfo } from "#app/features/project-workbench/chrome";
 
 import { formatEditorCaretPosition } from "./state/editor-caret";
 import { useActiveTabCaretPosition } from "./use-active-tab-caret";

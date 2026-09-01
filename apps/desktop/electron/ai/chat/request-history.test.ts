@@ -1,8 +1,7 @@
 import { describe, expect, test } from "bun:test";
 
 import type { InputItem } from "@codehz/ai";
-
-import type { AiChatAssistantPart } from "#domain/ai";
+import type { AiChatAssistantPart } from "@novelevolver/domain/ai";
 
 import {
   countCommittedAssistantParts,

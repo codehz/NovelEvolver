@@ -2,8 +2,8 @@ import { AutoTransition } from "@codehz/auto-transition";
 import { useMolecule } from "bunshi/react";
 import { useAtomValue } from "jotai";
 
+import { TabBar } from "#app/features/project-workbench/editor/TabBar";
 import { cn } from "#app/shared/lib/ui/cn";
-import { TabBar } from "#workbench/editor/TabBar";
 
 import { editorBreadcrumbRowClass, editorPanelSurfaceClass } from "./editor-chrome";
 import { getWorkbenchEditorTabIconClass } from "./editor-contributions";

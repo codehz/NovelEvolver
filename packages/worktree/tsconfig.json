@@ -2,11 +2,7 @@
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
     "types": ["node", "bun"],
-    "lib": ["ES2023", "DOM", "ESNext.Disposable"],
-    "paths": {
-      "@novelevolver/domain/worktree": ["../domain/worktree/index.ts"],
-      "@novelevolver/domain/*": ["../domain/*"]
-    }
+    "lib": ["ES2023", "DOM", "ESNext.Disposable"]
   },
   "include": ["src"]
 }

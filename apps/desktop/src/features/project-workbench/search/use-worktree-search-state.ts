@@ -1,16 +1,16 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
-
 import type {
   WorktreeReplaceQuery,
   WorktreeSearchHit,
   WorktreeSearchResult,
-} from "#domain/worktree";
-import { usePrimaryViewActive } from "#workbench/chrome";
-import type { WorkbenchEditorNavigationRequest } from "#workbench/editor/state/types";
-import { useWorkbenchEditorActions } from "#workbench/editor/use-workbench-editor-actions";
-import { useWorktreeSearch } from "#workbench/session/workspace-handles";
-import { contentDomainIconClass } from "#workbench/tree/content-tree-icons";
-import type { TreeBodyStatus } from "#workbench/tree/TreeBody";
+} from "@novelevolver/domain/worktree";
+import { useCallback, useEffect, useMemo, useState } from "react";
+
+import { usePrimaryViewActive } from "#app/features/project-workbench/chrome";
+import type { WorkbenchEditorNavigationRequest } from "#app/features/project-workbench/editor/state/types";
+import { useWorkbenchEditorActions } from "#app/features/project-workbench/editor/use-workbench-editor-actions";
+import { useWorktreeSearch } from "#app/features/project-workbench/session/workspace-handles";
+import { contentDomainIconClass } from "#app/features/project-workbench/tree/content-tree-icons";
+import type { TreeBodyStatus } from "#app/features/project-workbench/tree/TreeBody";
 
 import { buildSearchPathTree } from "./build-search-path-tree";
 import { SEARCH_DEBOUNCE_MS, SEARCH_MAX_RESULTS_PER_DOMAIN } from "./constants";

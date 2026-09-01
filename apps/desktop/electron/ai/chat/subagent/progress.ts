@@ -1,4 +1,4 @@
-import type { AiSubagentToolView } from "#domain/ai";
+import type { AiSubagentToolView } from "@novelevolver/domain/ai";
 
 import { MAX_SUBAGENT_TOOL_ROUNDS } from "./policy";
 

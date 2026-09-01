@@ -1,6 +1,11 @@
-import type { ResourceTreeDelta, ResourceTreeNode, ResourceTreeSnapshot } from "#domain/worktree";
-import { applyResourceTreeDelta } from "#workbench/session/changes-feed/worktree-tree-state";
-import type { TreeResolvedDrop } from "#workbench/tree/tree-drag";
+import type {
+  ResourceTreeDelta,
+  ResourceTreeNode,
+  ResourceTreeSnapshot,
+} from "@novelevolver/domain/worktree";
+
+import { applyResourceTreeDelta } from "#app/features/project-workbench/session/changes-feed/worktree-tree-state";
+import type { TreeResolvedDrop } from "#app/features/project-workbench/tree/tree-drag";
 
 import { findResourceParentId } from "../resource-tree";
 import { isInvalidDropTarget } from "../resource-tree-placement-policy";

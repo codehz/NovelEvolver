@@ -1,8 +1,8 @@
+import type { AiConversationSummary } from "@novelevolver/domain/ai";
 import type { MouseEvent as ReactMouseEvent, RefObject } from "react";
 
 import { cn } from "#app/shared/lib/ui/cn";
 import { RelativeTime } from "#app/shared/ui";
-import type { AiConversationSummary } from "#domain/ai";
 
 import { SELECTOR_OPTION_INDEX_ATTR } from "../selectors/use-selector-list-navigation";
 import {

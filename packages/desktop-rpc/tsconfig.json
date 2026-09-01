@@ -1,10 +1,4 @@
 {
   "extends": "../../tsconfig.base.json",
-  "compilerOptions": {
-    "paths": {
-      "#domain/*": ["../domain/*"],
-      "#desktop-rpc/*": ["./*"]
-    }
-  },
   "include": ["."]
 }

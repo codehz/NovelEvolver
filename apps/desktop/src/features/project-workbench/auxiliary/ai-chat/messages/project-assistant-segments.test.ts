@@ -5,7 +5,7 @@ import type {
   AiChatMessagePart,
   AiChatReasoningPart,
   AiChatToolCall,
-} from "#domain/ai";
+} from "@novelevolver/domain/ai";
 
 import { describeWorkSummary } from "../ui/ai-chat-helpers";
 import {

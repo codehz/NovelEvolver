@@ -1,10 +1,10 @@
+import type { WorktreeTransferInput, WorktreeTransferResult } from "@novelevolver/domain/worktree";
 import { useMolecule } from "bunshi/react";
 import { useSetAtom } from "jotai";
 import { useCallback } from "react";
 
-import type { WorktreeTransferInput, WorktreeTransferResult } from "#domain/worktree";
-import { useWorkbenchEditorActions } from "#workbench/editor/use-workbench-editor-actions";
-import { useBranchWorkspace } from "#workbench/session/workspace-handles";
+import { useWorkbenchEditorActions } from "#app/features/project-workbench/editor/use-workbench-editor-actions";
+import { useBranchWorkspace } from "#app/features/project-workbench/session/workspace-handles";
 
 import { manuscriptTreeMolecule } from "../manuscript/state/manuscript-tree-molecule";
 import { resourceLibraryTreeMolecule } from "../resource-library/state/resource-tree-molecule";

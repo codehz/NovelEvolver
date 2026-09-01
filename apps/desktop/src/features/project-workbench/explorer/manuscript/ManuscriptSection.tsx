@@ -1,17 +1,20 @@
+import type { ManuscriptTreeNode } from "@novelevolver/domain/worktree";
 import { useMolecule } from "bunshi/react";
 import { useAtomValue, useSetAtom, useStore } from "jotai";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { DragEvent as ReactDragEvent } from "react";
 
+import {
+  SidebarHeaderActionButton,
+  SidebarHeaderActions,
+} from "#app/features/project-workbench/chrome";
+import { runTreeRowContextMenu } from "#app/features/project-workbench/tree/run-tree-row-context-menu";
+import type { TreeResolvedDrop } from "#app/features/project-workbench/tree/tree-drag";
+import { resolveHoverZone } from "#app/features/project-workbench/tree/tree-drag";
+import { findTreeRowDataAtPoint } from "#app/features/project-workbench/tree/tree-row-dom";
+import { TreeBody } from "#app/features/project-workbench/tree/TreeBody";
+import type { TreeDropResolveInput } from "#app/features/project-workbench/tree/use-tree-row-pointer-drag";
 import { cn } from "#app/shared/lib/ui/cn";
-import type { ManuscriptTreeNode } from "#domain/worktree";
-import { SidebarHeaderActionButton, SidebarHeaderActions } from "#workbench/chrome";
-import { runTreeRowContextMenu } from "#workbench/tree/run-tree-row-context-menu";
-import type { TreeResolvedDrop } from "#workbench/tree/tree-drag";
-import { resolveHoverZone } from "#workbench/tree/tree-drag";
-import { findTreeRowDataAtPoint } from "#workbench/tree/tree-row-dom";
-import { TreeBody } from "#workbench/tree/TreeBody";
-import type { TreeDropResolveInput } from "#workbench/tree/use-tree-row-pointer-drag";
 
 import { resourceLibraryTreeMolecule } from "../resource-library/state/resource-tree-molecule";
 import { useContentTreeReveal } from "../shared/content-tree-reveal";

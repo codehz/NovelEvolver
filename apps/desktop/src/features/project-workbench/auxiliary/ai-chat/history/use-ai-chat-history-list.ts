@@ -1,3 +1,4 @@
+import type { AiConversationSearchHit, AiConversationSummary } from "@novelevolver/domain/ai";
 import {
   useCallback,
   useEffect,
@@ -8,11 +9,10 @@ import {
   type MouseEvent as ReactMouseEvent,
 } from "react";
 
+import { useAiConversations } from "#app/features/project-workbench/session/workspace-handles";
 import { confirmDialogApi } from "#app/shared/lib/confirm-dialog";
 import { consumeRpcSubscription } from "#app/shared/lib/rpc/app-rpc-react";
 import { popupContextMenu } from "#app/shared/lib/shell/popup-context-menu";
-import type { AiConversationSearchHit, AiConversationSummary } from "#domain/ai";
-import { useAiConversations } from "#workbench/session/workspace-handles";
 
 import { useSelectorListNavigation } from "../selectors/use-selector-list-navigation";
 import { useAiChatActions, useAiChatConversationId } from "../state/use-ai-chat-state";

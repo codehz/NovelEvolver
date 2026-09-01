@@ -1,11 +1,14 @@
+import type { ChangesSnapshot } from "@novelevolver/domain/worktree";
 import { useMolecule } from "bunshi/react";
 import { useAtomValue, useSetAtom } from "jotai";
 import { useCallback, useState } from "react";
 
+import { worktreeChangesFeedMolecule } from "#app/features/project-workbench/session/changes-feed/worktree-changes-feed";
+import {
+  useHistory,
+  useWorktreeChanges,
+} from "#app/features/project-workbench/session/workspace-handles";
 import { confirmDialogApi } from "#app/shared/lib/confirm-dialog";
-import type { ChangesSnapshot } from "#domain/worktree";
-import { worktreeChangesFeedMolecule } from "#workbench/session/changes-feed/worktree-changes-feed";
-import { useHistory, useWorktreeChanges } from "#workbench/session/workspace-handles";
 
 import { APP_COMMIT_AUTHOR } from "./constants";
 

@@ -2,9 +2,10 @@ import type {
   ManuscriptTreeDelta,
   ManuscriptTreeNode,
   ManuscriptTreeSnapshot,
-} from "#domain/worktree";
-import { applyManuscriptTreeDelta } from "#workbench/session/changes-feed/worktree-tree-state";
-import type { TreeResolvedDrop } from "#workbench/tree/tree-drag";
+} from "@novelevolver/domain/worktree";
+
+import { applyManuscriptTreeDelta } from "#app/features/project-workbench/session/changes-feed/worktree-tree-state";
+import type { TreeResolvedDrop } from "#app/features/project-workbench/tree/tree-drag";
 
 import { findManuscriptParentId } from "../manuscript-tree";
 import { isValidManuscriptMoveTarget } from "../manuscript-tree-placement-policy";

@@ -1,5 +1,6 @@
+import type { AiConversationSearchHit, AiConversationSummary } from "@novelevolver/domain/ai";
+
 import type { ContextMenuItem } from "#app/shared/lib/context-menu";
-import type { AiConversationSearchHit, AiConversationSummary } from "#domain/ai";
 
 import { groupConversationsByActivity } from "./group-conversations";
 

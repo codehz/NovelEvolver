@@ -1,9 +1,9 @@
 import { Menu } from "@base-ui/react/menu";
+import type { AiReasoningLevel } from "@novelevolver/domain/settings/ai-settings";
+import { AI_REASONING_LEVEL_LABELS } from "@novelevolver/domain/settings/ai-settings";
 import { useCallback, useState } from "react";
 
 import { cn } from "#app/shared/lib/ui/cn";
-import type { AiReasoningLevel } from "#domain/settings/ai-settings";
-import { AI_REASONING_LEVEL_LABELS } from "#domain/settings/ai-settings";
 
 import { modelSelectorButtonClass, modelSelectorLabelClass } from "../ui/ai-chat-chrome";
 import {

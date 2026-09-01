@@ -1,7 +1,7 @@
+import type { CommitSummary } from "@novelevolver/domain/worktree";
 import { useCallback, useEffect, useState } from "react";
 
-import type { CommitSummary } from "#domain/worktree";
-import { useHistory } from "#workbench/session/workspace-handles";
+import { useHistory } from "#app/features/project-workbench/session/workspace-handles";
 
 import { HISTORY_MAX_COMMITS } from "./constants";
 

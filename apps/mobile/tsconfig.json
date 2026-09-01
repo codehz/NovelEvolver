@@ -1,10 +1,7 @@
 {
   "extends": "@react-native/typescript-config",
   "compilerOptions": {
-    "types": [],
-    "paths": {
-      "@novelevolver/domain/*": ["../../packages/domain/*"]
-    }
+    "types": []
   },
   "include": ["src", "index.js", "rollipop.config.ts", "rollipop-env.d.ts", "babel.config.js"],
   "exclude": ["**/node_modules", "**/Pods", "android", "ios"]

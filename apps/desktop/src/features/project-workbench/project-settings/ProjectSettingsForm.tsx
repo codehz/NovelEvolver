@@ -1,5 +1,9 @@
 import { Field } from "@base-ui/react/field";
 import { Form } from "@base-ui/react/form";
+import {
+  getHttpsRemoteUrlValidationError,
+  normalizeHttpsRemoteUrl,
+} from "@novelevolver/domain/git/https-remote-url";
 import { useMemo, type Ref } from "react";
 
 import {
@@ -16,10 +20,6 @@ import {
 import type { SettingsFormHandle } from "#app/features/settings/settings-leave-guard";
 import { useSettingsForm } from "#app/features/settings/use-settings-form";
 import { projectDisplayName } from "#app/shared/lib/project-display-name";
-import {
-  getHttpsRemoteUrlValidationError,
-  normalizeHttpsRemoteUrl,
-} from "#domain/git/https-remote-url";
 
 import { projectSettingsReadonlyValueClass } from "./project-settings-chrome";
 

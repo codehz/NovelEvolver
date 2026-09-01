@@ -1,4 +1,4 @@
-import type { AiProviderConfigPublic } from "#domain/settings/ai-settings";
+import type { AiProviderConfigPublic } from "@novelevolver/domain/settings/ai-settings";
 
 import { settingsStatusBadgeClass } from "../settings-chrome";
 import { SettingsRailItem, settingsRailItemMetaLineClass } from "../SettingsRailItem";

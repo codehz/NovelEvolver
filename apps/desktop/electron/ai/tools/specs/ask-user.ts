@@ -1,6 +1,9 @@
 import type { ToolCallItem } from "@codehz/ai";
-
-import type { AiChatInteractionAnswer, AskUserChoice, AskUserOpenInteraction } from "#domain/ai";
+import type {
+  AiChatInteractionAnswer,
+  AskUserChoice,
+  AskUserOpenInteraction,
+} from "@novelevolver/domain/ai";
 
 import { parseNonEmptyString, parseToolArgs } from "../parse";
 import { rejectedToolResult, successToolResult } from "../result";

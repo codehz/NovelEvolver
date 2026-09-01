@@ -1,9 +1,9 @@
 import { Collapsible } from "@base-ui/react/collapsible";
+import type { AiChatToolCall } from "@novelevolver/domain/ai";
 import { useState, type ReactNode } from "react";
 
 import { cn } from "#app/shared/lib/ui/cn";
 import { MarkdownStream } from "#app/shared/ui";
-import type { AiChatToolCall } from "#domain/ai";
 
 import { maybeErrorTechnicalFields } from "../tools/presenter-detail";
 import { toolIcon } from "../tools/presenter-format";

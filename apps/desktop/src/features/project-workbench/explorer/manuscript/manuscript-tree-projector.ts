@@ -2,8 +2,12 @@ import type {
   FileChangeStatus,
   ManuscriptTreeNode,
   ManuscriptTreeSnapshot,
-} from "#domain/worktree";
-import { buildSubtreeEndIndexArray, buildTreeRowIndexMap } from "#workbench/tree/tree-row-helpers";
+} from "@novelevolver/domain/worktree";
+
+import {
+  buildSubtreeEndIndexArray,
+  buildTreeRowIndexMap,
+} from "#app/features/project-workbench/tree/tree-row-helpers";
 
 import { flattenManuscriptTree } from "./manuscript-tree";
 import type { ManuscriptEditingState, ManuscriptTreeState } from "./state/types";

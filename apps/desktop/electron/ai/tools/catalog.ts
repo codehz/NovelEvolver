@@ -1,7 +1,6 @@
 import type { ToolDefinition, ToolResultItem } from "@codehz/ai";
-
-import type { AiChatInteractionAnswer, AiChatOpenInteraction } from "#domain/ai";
-import { AI_SETTINGS_TOOL_NAMES } from "#domain/settings/ai-tool-catalog";
+import type { AiChatInteractionAnswer, AiChatOpenInteraction } from "@novelevolver/domain/ai";
+import { AI_SETTINGS_TOOL_NAMES } from "@novelevolver/domain/settings/ai-tool-catalog";
 
 import { askUserSpec } from "./specs/ask-user";
 import { createDocumentSpec } from "./specs/create-document";

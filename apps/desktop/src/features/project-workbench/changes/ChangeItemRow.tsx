@@ -1,14 +1,14 @@
+import type { Change } from "@novelevolver/domain/worktree";
 import type { KeyboardEvent, ReactNode } from "react";
 
+import { ChangeStatsBadge } from "#app/features/project-workbench/lib/ChangeStatsBadge";
+import { contentEntityIconClass } from "#app/features/project-workbench/tree/content-tree-icons";
+import type { TreeRowLayout } from "#app/features/project-workbench/tree/tree-row-layout";
+import { treeRowDisclosureSpacerClass } from "#app/features/project-workbench/tree/tree-row-motion";
+import { TreeMotionRow } from "#app/features/project-workbench/tree/TreeMotionRow";
 import { cn } from "#app/shared/lib/ui/cn";
 import { rowHoverClass } from "#app/shared/lib/ui/interaction-chrome";
 import { Button, AppTooltip } from "#app/shared/ui";
-import type { Change } from "#domain/worktree";
-import { ChangeStatsBadge } from "#workbench/lib/ChangeStatsBadge";
-import { contentEntityIconClass } from "#workbench/tree/content-tree-icons";
-import type { TreeRowLayout } from "#workbench/tree/tree-row-layout";
-import { treeRowDisclosureSpacerClass } from "#workbench/tree/tree-row-motion";
-import { TreeMotionRow } from "#workbench/tree/TreeMotionRow";
 
 function changeKindIconClass(kind: Change["kind"]): string {
   return cn(

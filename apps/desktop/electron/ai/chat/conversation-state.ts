@@ -1,14 +1,13 @@
 import { randomUUID } from "node:crypto";
 
 import type { AIResponse, AIStreamEvent, InputItem, OutputItem } from "@codehz/ai";
-
 import {
   applyAiChatMessagePatch,
   cloneAiChatAssistantPart,
   cloneAiChatAssistantPartPatch,
   cloneAiChatMessagePatch,
   cloneAiToolView,
-} from "#domain/ai";
+} from "@novelevolver/domain/ai";
 import type {
   AiChatAssistantMessage,
   AiChatAssistantPart,
@@ -26,12 +25,12 @@ import type {
   AiConversationActivity,
   AiConversationSummary,
   AiChatSelectableModelKind,
-} from "#domain/ai";
+} from "@novelevolver/domain/ai";
 import {
   BUILTIN_AI_AGENT_ID,
   isAiReasoningLevel,
   type AiReasoningLevel,
-} from "#domain/settings/ai-settings";
+} from "@novelevolver/domain/settings/ai-settings";
 
 import type {
   AiChatRepository,

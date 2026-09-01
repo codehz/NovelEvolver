@@ -18,11 +18,11 @@ Workbench architecture: [features/project-workbench/AGENTS.md](features/project-
 - **Props:** `type XxxProps = { … }` above the component in the same file. **Never** `interface XxxProps`. Do **not** export Props unless another module imports the type. Do **not** put an anonymous inline props object on an **exported** component. Local children may inline when props are ≤2 simple fields. Native elements: `type XxxProps = ComponentPropsWithRef<"button"> & { … }`.
 - **Imports:**
   - `#app/*` — cross-feature / shared renderer
-  - `#domain/*` — DTOs
-  - `#desktop-rpc/*` — capnweb handles
-  - `#workbench/*` — workbench **cross-domain** (required when leaving the current top-level workbench domain)
+  - `@novelevolver/domain/*` — DTOs
+  - `@novelevolver/desktop-rpc/*` — capnweb handles
+  - `#app/features/project-workbench/*` — workbench **cross-domain** (required when leaving the current top-level workbench domain)
   - `./` or same-domain `../sibling` — only within one top-level domain (`editor/`, `changes/`, `auxiliary/ai-chat/`, `chrome/` including layout/sidebar/statusbar/titlebar, `explorer/` including manuscript/resource-library/shared, …)
-  - Do **not** `../other-domain/…` or `../../` across workbench domains — use `#workbench/other-domain/…`
+  - Do **not** `../other-domain/…` or `../../` across workbench domains — use `#app/features/project-workbench/other-domain/…`
   - Do **not** add empty / re-export-only stubs to shorten paths
 - **shared/ui:** public primitives from `#app/shared/ui` (barrel). Feature-local controls stay in the feature.
 - **Hooks / state (ownership, not folder symmetry):**

@@ -1,7 +1,6 @@
+import type { RpcSubscriptionResult } from "@novelevolver/desktop-rpc/transport/stream";
+import type { WindowState } from "@novelevolver/domain/window";
 import type { RpcTarget } from "capnweb";
-
-import type { RpcSubscriptionResult } from "#desktop-rpc/transport/stream";
-import type { WindowState } from "#domain/window";
 
 export interface WindowService extends RpcTarget {
   minimize(): void;

@@ -1,10 +1,10 @@
+import type { GitCredentialConfigWrite } from "@novelevolver/domain/settings/ai-settings";
 import { useEffect, useRef, useState } from "react";
 
 import { confirmDialogApi } from "#app/shared/lib/confirm-dialog";
 import { settingsService } from "#app/shared/lib/rpc/app-rpc";
 import { createAsyncLoader, useAsyncLoader } from "#app/shared/lib/ui/async-loader";
 import { Button } from "#app/shared/ui";
-import type { GitCredentialConfigWrite } from "#domain/settings/ai-settings";
 
 import {
   settingsDualPaneDetailTitleRowClass,

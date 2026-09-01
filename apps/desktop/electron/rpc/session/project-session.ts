@@ -1,3 +1,14 @@
+import type { ProjectAi } from "@novelevolver/desktop-rpc/ai/handles";
+import type { MockAiControlHandle } from "@novelevolver/desktop-rpc/ai/mock-ai-handle";
+import type { BranchWorkspace, ProjectSession } from "@novelevolver/desktop-rpc/session";
+import type {
+  BranchSummary,
+  ProjectPullResult,
+  ProjectPushResult,
+} from "@novelevolver/domain/git/branch";
+import { normalizeHttpsRemoteUrl } from "@novelevolver/domain/git/https-remote-url";
+import type { ProjectMetadata } from "@novelevolver/domain/project";
+import { normalizeGitCredentialHost } from "@novelevolver/domain/settings/ai-settings";
 import {
   ProjectsRepository,
   WorktreeRepository,
@@ -7,14 +18,6 @@ import {
 import { RpcTarget } from "capnweb";
 import type { SHA1 } from "nano-git";
 import type { Repository } from "nano-git/repository/core";
-
-import type { ProjectAi } from "#desktop-rpc/ai/handles";
-import type { MockAiControlHandle } from "#desktop-rpc/ai/mock-ai-handle";
-import type { BranchWorkspace, ProjectSession } from "#desktop-rpc/session";
-import type { BranchSummary, ProjectPullResult, ProjectPushResult } from "#domain/git/branch";
-import { normalizeHttpsRemoteUrl } from "#domain/git/https-remote-url";
-import type { ProjectMetadata } from "#domain/project";
-import { normalizeGitCredentialHost } from "#domain/settings/ai-settings";
 
 import { ProjectAiChatController } from "../../ai/chat/project-ai-chat";
 import type { AiChatRepository } from "../../db/repositories/ai-chat-repo";

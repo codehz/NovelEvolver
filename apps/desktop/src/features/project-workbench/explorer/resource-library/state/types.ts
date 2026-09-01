@@ -1,4 +1,4 @@
-import type { ResourceTreeNode, ResourceTreeSnapshot } from "#domain/worktree";
+import type { ResourceTreeNode, ResourceTreeSnapshot } from "@novelevolver/domain/worktree";
 
 import type { TreeResolvedDrop } from "../../../tree/tree-drag";
 

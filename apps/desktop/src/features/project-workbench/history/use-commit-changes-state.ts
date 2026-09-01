@@ -1,7 +1,7 @@
+import type { CommitChangesSnapshot } from "@novelevolver/domain/worktree";
 import { useCallback, useEffect, useRef, useState } from "react";
 
-import type { CommitChangesSnapshot } from "#domain/worktree";
-import { useHistory } from "#workbench/session/workspace-handles";
+import { useHistory } from "#app/features/project-workbench/session/workspace-handles";
 
 export type CommitChangesCacheEntry =
   | { status: "loading" }

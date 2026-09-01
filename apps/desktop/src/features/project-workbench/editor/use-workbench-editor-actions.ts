@@ -2,9 +2,9 @@ import { useMolecule } from "bunshi/react";
 import { useAtomValue, useSetAtom, useStore } from "jotai";
 import { useCallback, useRef } from "react";
 
+import { useWorktreeTreeSnapshot } from "#app/features/project-workbench/session/changes-feed/use-worktree-tree-snapshot";
+import { useBranchWorkspace } from "#app/features/project-workbench/session/workspace-handles";
 import { notificationApi } from "#app/shared/lib/notifications";
-import { useWorktreeTreeSnapshot } from "#workbench/session/changes-feed/use-worktree-tree-snapshot";
-import { useBranchWorkspace } from "#workbench/session/workspace-handles";
 
 import {
   getWorkbenchEditorTargetKey,

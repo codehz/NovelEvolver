@@ -1,7 +1,11 @@
-import type { ResourceTreeNode, ResourceTreeSnapshot } from "#domain/worktree";
-import type { TreeResolvedDrop, TreeRowHoverZone } from "#workbench/tree/tree-drag";
-import type { TreeRowDomData } from "#workbench/tree/tree-row-dom";
-import { TREE_ROW_HEIGHT_PX } from "#workbench/tree/tree-row-motion";
+import type { ResourceTreeNode, ResourceTreeSnapshot } from "@novelevolver/domain/worktree";
+
+import type {
+  TreeResolvedDrop,
+  TreeRowHoverZone,
+} from "#app/features/project-workbench/tree/tree-drag";
+import type { TreeRowDomData } from "#app/features/project-workbench/tree/tree-row-dom";
+import { TREE_ROW_HEIGHT_PX } from "#app/features/project-workbench/tree/tree-row-motion";
 
 import { isResourceDescendant } from "./resource-tree";
 import type { ResourceRenderProjection } from "./resource-tree-projector";

@@ -1,4 +1,4 @@
-import type { AiChatMessage, AiChatWarning } from "#domain/ai";
+import type { AiChatMessage, AiChatWarning } from "@novelevolver/domain/ai";
 
 export type GroupedChatWarnings = {
   warningsByMessageId: Map<string, AiChatWarning[]>;

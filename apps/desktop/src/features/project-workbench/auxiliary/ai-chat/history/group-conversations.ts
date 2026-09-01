@@ -1,4 +1,4 @@
-import type { AiConversationSummary } from "#domain/ai";
+import type { AiConversationSummary } from "@novelevolver/domain/ai";
 
 export type ConversationTimeGroupId = "today" | "yesterday" | "last7days" | "earlier";
 

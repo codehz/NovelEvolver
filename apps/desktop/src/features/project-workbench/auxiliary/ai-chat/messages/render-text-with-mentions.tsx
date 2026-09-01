@@ -1,6 +1,5 @@
+import type { AiChatMentionRef } from "@novelevolver/domain/ai";
 import type { ReactNode } from "react";
-
-import type { AiChatMentionRef } from "#domain/ai";
 
 import { userMentionChipClass } from "../ui/ai-chat-chrome";
 

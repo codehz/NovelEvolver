@@ -1,5 +1,6 @@
+import type { BranchSummary } from "@novelevolver/domain/git/branch";
+
 import { quickPickApi } from "#app/shared/lib/quick-pick";
-import type { BranchSummary } from "#domain/git/branch";
 
 import { getBranchNameValidationError, normalizeBranchNameInput } from "./branch-data";
 

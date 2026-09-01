@@ -1,12 +1,15 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname } from "node:path";
 
-import type { AiRuntimePolicySnapshot, AiRuntimePolicyWrite } from "#domain/settings/ai-settings";
+import type {
+  AiRuntimePolicySnapshot,
+  AiRuntimePolicyWrite,
+} from "@novelevolver/domain/settings/ai-settings";
 import {
   AI_RUNTIME_POLICY_STATE_VERSION,
   AiRuntimePolicyState,
   parseAiRuntimePolicyState,
-} from "#domain/settings/stores/ai-runtime-policy-state";
+} from "@novelevolver/domain/settings/stores/ai-runtime-policy-state";
 
 export class AiRuntimePolicyStore {
   readonly #filePath: string;

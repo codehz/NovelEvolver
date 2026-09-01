@@ -1,4 +1,4 @@
-import type { TreeChildrenPatch } from "#domain/worktree";
+import type { TreeChildrenPatch } from "@novelevolver/domain/worktree";
 
 export type TreeSnapshotLike<TNode extends { childIds: string[] }> = {
   rootId: string;

@@ -1,9 +1,12 @@
+import type { ProjectAi } from "@novelevolver/desktop-rpc/ai/handles";
+import type { MockAiControlHandle } from "@novelevolver/desktop-rpc/ai/mock-ai-handle";
+import type {
+  BranchSummary,
+  ProjectPullResult,
+  ProjectPushResult,
+} from "@novelevolver/domain/git/branch";
+import type { ProjectMetadata } from "@novelevolver/domain/project";
 import type { RpcTarget } from "capnweb";
-
-import type { ProjectAi } from "#desktop-rpc/ai/handles";
-import type { MockAiControlHandle } from "#desktop-rpc/ai/mock-ai-handle";
-import type { BranchSummary, ProjectPullResult, ProjectPushResult } from "#domain/git/branch";
-import type { ProjectMetadata } from "#domain/project";
 
 import type { BranchWorkspace } from "./branch-workspace";
 

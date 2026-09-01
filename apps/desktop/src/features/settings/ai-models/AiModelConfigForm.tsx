@@ -1,9 +1,6 @@
 import { Field } from "@base-ui/react/field";
 import { Form } from "@base-ui/react/form";
 import { NumberField } from "@base-ui/react/number-field";
-import { useEffect, useImperativeHandle, useMemo, useRef, useState, type Ref } from "react";
-
-import { cn } from "#app/shared/lib/ui/cn";
 import type {
   AiModelConfigPublic,
   AiModelConfigWrite,
@@ -11,7 +8,7 @@ import type {
   AiPromptCacheMode,
   AiProviderConfigPublic,
   AiReasoningLevel,
-} from "#domain/settings/ai-settings";
+} from "@novelevolver/domain/settings/ai-settings";
 import {
   AI_PROMPT_CACHE_MODE_LABELS,
   AI_PROMPT_CACHE_MODES,
@@ -19,7 +16,10 @@ import {
   DEFAULT_AI_MODEL_MAX_OUTPUT_TOKENS,
   isLowMaxOutputTokensForNovelAgent,
   isToollessAdapterKind,
-} from "#domain/settings/ai-settings";
+} from "@novelevolver/domain/settings/ai-settings";
+import { useEffect, useImperativeHandle, useMemo, useRef, useState, type Ref } from "react";
+
+import { cn } from "#app/shared/lib/ui/cn";
 
 import {
   settingsCheckboxLabelClass,

@@ -1,9 +1,11 @@
 import { Field } from "@base-ui/react/field";
 import { Form } from "@base-ui/react/form";
+import type {
+  AiPromptConfigPublic,
+  AiPromptConfigWrite,
+} from "@novelevolver/domain/settings/ai-settings";
+import { AI_PROMPT_SLUG_PATTERN } from "@novelevolver/domain/settings/ai-settings";
 import { useEffect, useImperativeHandle, useMemo, useRef, useState, type Ref } from "react";
-
-import type { AiPromptConfigPublic, AiPromptConfigWrite } from "#domain/settings/ai-settings";
-import { AI_PROMPT_SLUG_PATTERN } from "#domain/settings/ai-settings";
 
 import {
   settingsFieldControlCellClass,

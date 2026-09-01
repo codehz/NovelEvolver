@@ -1,12 +1,11 @@
 import type { InputItem } from "@codehz/ai";
-
-import { cloneAiChatMessage } from "#domain/ai";
+import { cloneAiChatMessage } from "@novelevolver/domain/ai";
 import type {
   AiChatAssistantMessage,
   AiChatMessage,
   AiChatMessageBranch,
   AiChatUserMessage,
-} from "#domain/ai";
+} from "@novelevolver/domain/ai";
 
 /** Tree node: UI message + structural links + model-history segment for this node. */
 export type ConversationMessageNode = {

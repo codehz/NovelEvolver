@@ -1,9 +1,9 @@
+import type { ChangesEvent } from "@novelevolver/domain/worktree";
 import { useMolecule } from "bunshi/react";
 import { useAtomValue, useSetAtom } from "jotai";
 import { useEffect } from "react";
 
 import { consumeRpcSubscription } from "#app/shared/lib/rpc/app-rpc-react";
-import type { ChangesEvent } from "#domain/worktree";
 
 import { useWorktreeChanges } from "../workspace-handles";
 import {

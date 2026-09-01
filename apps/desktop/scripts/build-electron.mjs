@@ -5,15 +5,11 @@ import { fileURLToPath } from "node:url";
 import esbuild from "esbuild";
 
 const desktopRoot = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
-const repoRoot = path.dirname(path.dirname(desktopRoot));
 const distDir = path.join(desktopRoot, "dist-electron");
 const watch = process.argv.includes("--watch");
 
 const alias = {
   "#app": path.join(desktopRoot, "src"),
-  "#domain": path.join(repoRoot, "packages/domain"),
-  "#desktop-rpc": path.join(repoRoot, "packages/desktop-rpc"),
-  "#workbench": path.join(desktopRoot, "src/features/project-workbench"),
 };
 
 function aliasPlugin() {

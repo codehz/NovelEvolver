@@ -2,9 +2,12 @@ import { useMolecule } from "bunshi/react";
 import { useAtomValue, useSetAtom } from "jotai";
 import { useCallback, useEffect, useRef } from "react";
 
+import type { PlainTextEditorHandle } from "#app/features/project-workbench/editor/PlainTextEditor";
+import {
+  useManuscript,
+  useResourceLibrary,
+} from "#app/features/project-workbench/session/workspace-handles";
 import { notificationApi } from "#app/shared/lib/notifications";
-import type { PlainTextEditorHandle } from "#workbench/editor/PlainTextEditor";
-import { useManuscript, useResourceLibrary } from "#workbench/session/workspace-handles";
 
 import { registerEditorAutosaveFlush } from "./editor-autosave-flush";
 import {

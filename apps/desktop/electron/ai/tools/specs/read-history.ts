@@ -1,4 +1,4 @@
-import type { HistoryEntry } from "#domain/worktree";
+import type { HistoryEntry } from "@novelevolver/domain/worktree";
 
 import {
   parseDocumentDomain,

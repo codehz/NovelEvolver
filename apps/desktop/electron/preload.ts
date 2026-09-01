@@ -1,12 +1,11 @@
-import { contextBridge, ipcRenderer } from "electron";
-
-import type { AppRpcTransportBridge } from "#desktop-rpc/transport/index";
+import type { AppRpcTransportBridge } from "@novelevolver/desktop-rpc/transport/index";
 import {
   APP_RPC_CONNECT_CHANNEL,
   APP_RPC_DISCONNECT_CHANNEL,
   APP_RPC_MESSAGE_CHANNEL,
   type AppRpcFrame,
-} from "#desktop-rpc/transport/index";
+} from "@novelevolver/desktop-rpc/transport/index";
+import { contextBridge, ipcRenderer } from "electron";
 
 const appRpcBridge: AppRpcTransportBridge = {
   connect: () => ipcRenderer.invoke(APP_RPC_CONNECT_CHANNEL),

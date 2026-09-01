@@ -1,6 +1,5 @@
+import type { MockAiScenarioSummary, RunMockAiScenarioRequest } from "@novelevolver/domain/ai/mock";
 import type { RpcTarget } from "capnweb";
-
-import type { MockAiScenarioSummary, RunMockAiScenarioRequest } from "#domain/ai/mock";
 
 export interface MockAiControlHandle extends RpcTarget {
   listScenarios(): MockAiScenarioSummary[];

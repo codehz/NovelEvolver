@@ -6,8 +6,7 @@ import type {
   ToolResultItem,
 } from "@codehz/ai";
 import { collectStream } from "@codehz/ai";
-
-import { cloneAiChatMessage, MOCK_AI_MODEL_ID } from "#domain/ai";
+import { cloneAiChatMessage, MOCK_AI_MODEL_ID } from "@novelevolver/domain/ai";
 import type {
   AiChatInteractionAnswer,
   AiChatMessageUsage,
@@ -18,13 +17,13 @@ import type {
   AiChatSnapshot,
   AiConversationStatus,
   AiConversationSummary,
-} from "#domain/ai";
+} from "@novelevolver/domain/ai";
 import {
   DEFAULT_AI_RUNTIME_POLICY,
   isAiReasoningLevel,
   type AiReasoningLevel,
   type AiRuntimePolicySnapshot,
-} from "#domain/settings/ai-settings";
+} from "@novelevolver/domain/settings/ai-settings";
 
 import type { AiChatRepository, AiConversationRecord } from "../../db/repositories/ai-chat-repo";
 import { RpcStreamPublisher } from "../../lib/stream-publisher";
