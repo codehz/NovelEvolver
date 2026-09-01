@@ -13,6 +13,8 @@ import type { ManuscriptVisibleRow } from "./manuscript-tree-flatten";
 
 export const MANUSCRIPT_TREE_ROW_HEIGHT = 48;
 export const MANUSCRIPT_TREE_PREVIEW_HEIGHT = 36;
+export const MANUSCRIPT_TREE_PREVIEW_ICON = 16;
+export const MANUSCRIPT_TREE_PREVIEW_ANCHOR_X = 1 + space[3] + MANUSCRIPT_TREE_PREVIEW_ICON / 2;
 const ACTION_WIDTH = 72;
 
 export type ManuscriptDragPointer = {
@@ -84,7 +86,11 @@ export function ManuscriptTreeDragPreview({
   const iconColor = type === "folder" ? color.accent : color.info;
   return (
     <View pointerEvents="none" style={styles.preview}>
-      <Icon width={16} height={16} color={iconColor} />
+      <Icon
+        width={MANUSCRIPT_TREE_PREVIEW_ICON}
+        height={MANUSCRIPT_TREE_PREVIEW_ICON}
+        color={iconColor}
+      />
       <Text style={styles.previewTitle} numberOfLines={1}>
         {title}
       </Text>
