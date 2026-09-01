@@ -3,9 +3,9 @@ import { describe, expect, it } from "bun:test";
 import { collectStream, toolResultItem } from "@codehz/ai";
 import type { InputItem, ToolCallItem } from "@codehz/ai";
 
-import type { AiAgentRuntimeConfig } from "../../settings/ai-agents-store";
 import { shouldProcessToolCalls } from "../chat/conversation-runtime";
 import { buildSubagentUserMessage, executeSubagentToolCall } from "../chat/subagent";
+import type { AiAgentRuntimeConfig } from "../ports";
 import type { ToolRunner } from "../tools";
 import { getMockScenario, listMockScenarios } from "./scenario-registry";
 import { createScenarioClient } from "./scenario-runner";

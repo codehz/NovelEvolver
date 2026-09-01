@@ -7,11 +7,11 @@ import IconFiles from "~icons/codicon/files";
 
 import type { ProjectTabParamList } from "../../app/navigation-types";
 import { color, fontFamily, fontSize } from "../../shared/theme";
+import { ProjectAiPane } from "./ai/ProjectAiPane";
 import type { EditorDocument } from "./editor/editor-document";
 import { ProjectEditorPane } from "./editor/ProjectEditorPane";
 import { ProjectExplorerPane, type ProjectExplorerPaneProps } from "./explorer/ProjectExplorerPane";
 import type { OpenedProject } from "./git/repository-manager";
-import { ProjectAiPlaceholderPane } from "./ProjectAiPlaceholderPane";
 
 export const PROJECT_WIDE_BREAKPOINT = 1024;
 const PROJECT_MANUSCRIPT_WIDTH = 256;
@@ -28,8 +28,10 @@ export type ProjectWorkspaceProps = Omit<
 > & {
   opened: OpenedProject;
   document: EditorDocument | null;
+  worktreeRevision: number;
   onOpenChapter: (nodeId: string) => void;
   onOpenResourceFile: (nodeId: string) => void;
+  onAiWorkspaceDirty: () => void;
 };
 
 const ProjectTabs = createBottomTabNavigator<ProjectTabParamList>();
@@ -57,8 +59,10 @@ function ProjectTabsView({
   document,
   chapter,
   resource,
+  worktreeRevision,
   onOpenChapter,
   onOpenResourceFile,
+  onAiWorkspaceDirty,
   ...explorerProps
 }: ProjectTabsProps) {
   return (
@@ -132,6 +136,7 @@ function ProjectTabsView({
             document={document}
             chapter={chapter}
             resource={resource}
+            worktreeRevision={worktreeRevision}
           />
         )}
       </ProjectTabs.Screen>
@@ -144,7 +149,7 @@ function ProjectTabsView({
           ),
         }}
       >
-        {ProjectAiPlaceholderPane}
+        {() => <ProjectAiPane opened={opened} onWorkspaceDirty={onAiWorkspaceDirty} />}
       </ProjectTabs.Screen>
     </ProjectTabs.Navigator>
   );
@@ -153,8 +158,10 @@ function ProjectTabsView({
 export function ProjectWorkspace({
   opened,
   document,
+  worktreeRevision,
   onOpenChapter,
   onOpenResourceFile,
+  onAiWorkspaceDirty,
   ...explorerProps
 }: ProjectWorkspaceProps) {
   const layout = useProjectLayout();
@@ -171,8 +178,10 @@ export function ProjectWorkspace({
           document={document}
           chapter={chapter}
           resource={resource}
+          worktreeRevision={worktreeRevision}
           onOpenChapter={onOpenChapter}
           onOpenResourceFile={onOpenResourceFile}
+          onAiWorkspaceDirty={onAiWorkspaceDirty}
           {...explorerProps}
         />
       </View>
@@ -194,10 +203,11 @@ export function ProjectWorkspace({
           document={document}
           chapter={chapter}
           resource={resource}
+          worktreeRevision={worktreeRevision}
         />
       </View>
       <View style={[styles.aiColumn, styles.columnBorderLeft]}>
-        <ProjectAiPlaceholderPane />
+        <ProjectAiPane opened={opened} onWorkspaceDirty={onAiWorkspaceDirty} />
       </View>
     </View>
   );

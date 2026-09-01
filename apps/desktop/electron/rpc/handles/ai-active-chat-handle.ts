@@ -1,3 +1,4 @@
+import type { ProjectAiChatController } from "@novelevolver/ai-runtime";
 import type { AiActiveChatHandle } from "@novelevolver/desktop-rpc/ai/handles";
 import type {
   AiChatEvent,
@@ -6,8 +7,6 @@ import type {
 } from "@novelevolver/domain/ai/chat";
 import type { AiReasoningLevel } from "@novelevolver/domain/settings/ai-settings";
 import { RpcTarget } from "capnweb";
-
-import type { ProjectAiChatController } from "../../ai/chat/project-ai-chat";
 
 export class AiActiveChatHandleImpl extends RpcTarget implements AiActiveChatHandle {
   readonly #chat: ProjectAiChatController;

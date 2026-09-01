@@ -24,11 +24,12 @@ import {
   type AiReasoningLevel,
   type AiRuntimePolicySnapshot,
 } from "@novelevolver/domain/settings/ai-settings";
-import type { AiChatRepository, AiConversationRecord } from "@novelevolver/worktree";
+import {
+  RpcStreamPublisher,
+  type AiChatRepository,
+  type AiConversationRecord,
+} from "@novelevolver/worktree";
 
-import { RpcStreamPublisher } from "../../lib/stream-publisher";
-import type { AiAgentRuntimeConfig } from "../../settings/ai-agents-store";
-import type { AiModelRuntimeConfig } from "../../settings/ai-models-store";
 import { addMessageUsage, joinContentBlocksText, toErrorMessage } from "../ai-utils";
 import type { AiBackendSession } from "../backend/ai-backend-session";
 import { createAiBackendSession } from "../backend/create-ai-backend";
@@ -36,6 +37,7 @@ import { toInputItem } from "../mock-adapter";
 import { getMockScenario } from "../mock/scenario-registry";
 import { createScenarioToolRunner } from "../mock/scenario-tool-runner";
 import type { MockScenarioPacing, MockScenarioPersistence } from "../mock/scenario-types";
+import type { AiAgentRuntimeConfig, AiModelRuntimeConfig } from "../ports";
 import {
   AI_TOOLS,
   AI_TOOLS_MAP,

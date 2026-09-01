@@ -11,6 +11,7 @@ Bare React Native (Community CLI + [Rollipop](https://rollipop.dev)). **Do not a
 - Backend: mobile-specific (MMKV for settings, SQLite app-state + nano-git for projects). **Not** capnweb / `desktop-rpc`
 - Settings: local MMKV (`novelevolver-settings`); domain store logic from `@novelevolver/domain`
 - Projects / worktree drafts: `@novelevolver/worktree` on a mobile `app-state.db` (not MMKV), via `@novelevolver/mobile-sqlite`
+- AI chat: `@novelevolver/ai-runtime` on the opened project's `AiChatRepository` + settings stores
 - Overlays: root-stack `transparentModal` via `OverlayHost` (`useOverlay`); not `Alert.alert` / `Modal`
 
 Human-oriented notes: [README.md](README.md).
@@ -32,6 +33,7 @@ src/
       manuscript/                  # manuscript tree
       resource/                    # resource tree
       git/                         # app-state sqlite + nano-git + repository manager
+      ai/                          # project AI chat (shared @novelevolver/ai-runtime)
     settings/          # MMKV settings
   shared/              # theme, overlays, files, node-compat
   native/              # Nitro modules

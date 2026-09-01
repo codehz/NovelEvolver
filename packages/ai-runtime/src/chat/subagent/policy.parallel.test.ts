@@ -6,7 +6,7 @@ import {
   BUILTIN_CONSISTENCY_REVIEWER_ID,
 } from "@novelevolver/domain/settings/ai-settings";
 
-import type { AiAgentRuntimeConfig } from "../../../settings/ai-agents-store";
+import type { AiAgentRuntimeConfig } from "../../ports";
 import {
   formatOutputTargetKey,
   isParallelEligibleSubagentCall,

@@ -3,8 +3,8 @@ import { describe, expect, test } from "bun:test";
 import type { ToolCallItem } from "@codehz/ai";
 import { createAIClient, MockAdapter, toolResultItem } from "@codehz/ai";
 
-import type { AiAgentRuntimeConfig } from "../../../settings/ai-agents-store";
 import type { AiBackendSession } from "../../backend/ai-backend-session";
+import type { AiAgentRuntimeConfig } from "../../ports";
 import { executeSubagentToolCall } from "./executor";
 
 function toolCall(args: unknown): ToolCallItem {

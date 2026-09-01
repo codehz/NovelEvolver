@@ -15,8 +15,6 @@ import type {
 import { MOCK_AI_MODEL_ID } from "@novelevolver/domain/ai";
 import type { AiReasoningLevel } from "@novelevolver/domain/settings/ai-settings";
 
-import type { AiAgentRuntimeConfig } from "../../../settings/ai-agents-store";
-import type { AiModelRuntimeConfig } from "../../../settings/ai-models-store";
 import {
   addMessageUsage,
   contentBlockToDisplayText,
@@ -27,6 +25,7 @@ import type { AiBackendSession } from "../../backend/ai-backend-session";
 import { createAiBackendSession } from "../../backend/create-ai-backend";
 import { toInputItem } from "../../mock-adapter";
 import type { MockScenarioPacing } from "../../mock/scenario-types";
+import type { AiAgentRuntimeConfig, AiModelRuntimeConfig } from "../../ports";
 import {
   createToolRunner,
   selectAiTools,

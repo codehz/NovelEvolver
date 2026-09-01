@@ -2,7 +2,7 @@ import type { AiAgentTool } from "./ai-settings";
 
 /**
  * Settings-facing tool catalog (name + description).
- * Electron tool implementations stay in `apps/desktop/electron/ai/tools`.
+ * Implementations live in `@novelevolver/ai-runtime` (`src/tools`).
  * Spec names must stay aligned with this list.
  */
 export const AI_SETTINGS_TOOL_NAMES = [

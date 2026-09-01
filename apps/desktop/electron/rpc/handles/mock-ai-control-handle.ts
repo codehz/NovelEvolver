@@ -1,9 +1,7 @@
+import { listMockScenarios, type ProjectAiChatController } from "@novelevolver/ai-runtime";
 import type { MockAiControlHandle } from "@novelevolver/desktop-rpc/ai/mock-ai-handle";
 import type { MockAiScenarioSummary, RunMockAiScenarioRequest } from "@novelevolver/domain/ai/mock";
 import { RpcTarget } from "capnweb";
-
-import type { ProjectAiChatController } from "../../ai/chat/project-ai-chat";
-import { listMockScenarios } from "../../ai/mock/scenario-registry";
 
 export class MockAiControlHandleImpl extends RpcTarget implements MockAiControlHandle {
   readonly #chat: ProjectAiChatController;

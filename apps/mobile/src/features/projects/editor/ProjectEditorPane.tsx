@@ -11,9 +11,16 @@ type ProjectEditorPaneProps = {
   document: EditorDocument | null;
   chapter: ManuscriptNode | undefined;
   resource: ResourceTreeNode | undefined;
+  worktreeRevision: number;
 };
 
-export function ProjectEditorPane({ opened, document, chapter, resource }: ProjectEditorPaneProps) {
+export function ProjectEditorPane({
+  opened,
+  document,
+  chapter,
+  resource,
+  worktreeRevision,
+}: ProjectEditorPaneProps) {
   const chapterId =
     document?.domain === "manuscript" && chapter?.type === "chapter" ? chapter.id : null;
   const resourceId =
@@ -38,7 +45,7 @@ export function ProjectEditorPane({ opened, document, chapter, resource }: Proje
         ? opened.worktree.readChapter(documentId)
         : opened.worktree.readResourceFile(documentId),
     );
-  }, [documentId, editingDomain, opened]);
+  }, [documentId, editingDomain, opened, worktreeRevision]);
 
   if (documentId === null || editingDomain === null) {
     return (

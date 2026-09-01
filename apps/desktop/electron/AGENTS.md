@@ -13,7 +13,7 @@ No `#electron` alias — imports stay relative. Shared streaming helpers live in
 
 ## RPC
 
-Handles are thin delegates. Domain logic stays in `@novelevolver/worktree`, not in handles.
+Handles are thin delegates. Domain logic stays in `@novelevolver/worktree` / `@novelevolver/ai-runtime`, not in handles.
 
 - **Entry:** `rpc/server/connect.ts` (`ElectronRpcServer`) owns per-`webContents` sessions. `preload.ts` exposes `window.appRpcBridge`.
 - **Deps:** pass main-process dependencies through `RpcMainDeps` (`rpc/server/deps.ts`). Never import `main.ts` from RPC code.

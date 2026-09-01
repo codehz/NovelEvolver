@@ -1,6 +1,6 @@
 import type { ToolCallItem } from "@codehz/ai";
 
-import type { AiAgentRuntimeConfig } from "../../../settings/ai-agents-store";
+import type { AiAgentRuntimeConfig } from "../../ports";
 import { parseRunSubagentArgs } from "./context";
 import type { SubagentOutputTarget } from "./output-write";
 import { summarizeSubagentCapability } from "./prompt-visibility";

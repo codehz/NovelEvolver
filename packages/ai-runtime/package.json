@@ -1,0 +1,16 @@
+{
+  "name": "@novelevolver/ai-runtime",
+  "version": "0.3.4",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./*": "./src/*"
+  },
+  "dependencies": {
+    "@codehz/ai": "0.9.1",
+    "@novelevolver/domain": "workspace:*",
+    "@novelevolver/worktree": "workspace:*",
+    "nanoid": "^6.0.0"
+  }
+}

@@ -1,5 +1,3 @@
-import { randomUUID } from "node:crypto";
-
 import type { AIResponse, AIStreamEvent, InputItem, OutputItem } from "@codehz/ai";
 import {
   applyAiChatMessagePatch,
@@ -37,6 +35,7 @@ import type {
   AiConversationRecord,
   AiConversationSummaryRecord,
 } from "@novelevolver/worktree";
+import { nanoid } from "nanoid";
 
 import { contentBlockToDisplayText, joinContentBlocksText } from "../ai-utils";
 import {
@@ -124,7 +123,7 @@ const WARNING_ID_PREFIX_PATTERN = /^(.*)-warning-\d+$/;
 
 function normalizeStoredWarning(entry: unknown): AiChatWarning {
   const raw = entry && typeof entry === "object" ? (entry as Record<string, unknown>) : {};
-  const id = typeof raw.id === "string" ? raw.id : randomUUID();
+  const id = typeof raw.id === "string" ? raw.id : nanoid();
   const message = typeof raw.message === "string" ? raw.message : "";
   const code = typeof raw.code === "string" ? raw.code : null;
   let messageId = typeof raw.messageId === "string" ? raw.messageId : "";
@@ -201,7 +200,7 @@ function normalizeStoredMentions(value: unknown): AiChatMentionRef[] {
 function normalizeStoredMessage(entry: unknown): AiChatMessage {
   if (entry == null || typeof entry !== "object") {
     return {
-      id: `ai-chat-legacy-${randomUUID()}`,
+      id: `ai-chat-legacy-${nanoid()}`,
       role: "user",
       text: "",
       slash: null,
@@ -218,7 +217,7 @@ function normalizeStoredMessage(entry: unknown): AiChatMessage {
     };
   }
   return {
-    id: typeof raw.id === "string" ? raw.id : `ai-chat-legacy-${randomUUID()}`,
+    id: typeof raw.id === "string" ? raw.id : `ai-chat-legacy-${nanoid()}`,
     role: "user",
     text: typeof raw.text === "string" ? raw.text : "",
     slash: normalizeStoredSlash(raw.slash),
@@ -519,7 +518,7 @@ export class AiConversationState {
 
     const now = Date.now();
     if (this.#conversationId === "") {
-      this.#conversationId = randomUUID();
+      this.#conversationId = nanoid();
     }
     if (this.#createdAt === 0) {
       this.#createdAt = now;
@@ -975,7 +974,7 @@ export class AiConversationState {
 
   #beginEmptyConversation(): void {
     const now = Date.now();
-    this.#conversationId = randomUUID();
+    this.#conversationId = nanoid();
     this.#title = EMPTY_TITLE;
     this.#titleCustomized = false;
     this.#createdAt = now;

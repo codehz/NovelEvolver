@@ -44,6 +44,7 @@
         "@iconify/json": "^2.2.504",
         "@iconify/utils": "^3.1.4",
         "@lezer/highlight": "^1.2.3",
+        "@novelevolver/ai-runtime": "workspace:*",
         "@novelevolver/desktop-rpc": "workspace:*",
         "@novelevolver/domain": "workspace:*",
         "@novelevolver/worktree": "workspace:*",
@@ -85,6 +86,8 @@
       "name": "@novelevolver/mobile",
       "version": "0.0.0",
       "dependencies": {
+        "@codehz/ai": "0.9.1",
+        "@novelevolver/ai-runtime": "workspace:*",
         "@novelevolver/domain": "workspace:*",
         "@novelevolver/mobile-sqlite": "workspace:*",
         "@novelevolver/worktree": "workspace:*",
@@ -132,6 +135,16 @@
         "@types/react": "^19.2.0",
         "rollipop": "1.0.0-alpha.29",
         "unplugin-icons": "^23.0.1",
+      },
+    },
+    "packages/ai-runtime": {
+      "name": "@novelevolver/ai-runtime",
+      "version": "0.3.4",
+      "dependencies": {
+        "@codehz/ai": "0.9.1",
+        "@novelevolver/domain": "workspace:*",
+        "@novelevolver/worktree": "workspace:*",
+        "nanoid": "^6.0.0",
       },
     },
     "packages/desktop-rpc": {
@@ -649,6 +662,8 @@
     "@nodelib/fs.stat": ["@nodelib/fs.stat@2.0.5", "", {}, "sha512-RkhPPp2zrqDAQA/2jNhnztcPAlv64XdhIp7a7454A5ovI7Bukxgt7MX7udwAu3zg1DcpPU0rz3VV1SeaqvY4+A=="],
 
     "@nodelib/fs.walk": ["@nodelib/fs.walk@1.2.8", "", { "dependencies": { "@nodelib/fs.scandir": "2.1.5", "fastq": "^1.6.0" } }, "sha512-oGB+UxlgWcgQkgwo8GcEGwemoTFt3FIO9ababBmaGwXIoBKZ+GTy0pP185beGg7Llih/NSHSV2XAs1lnznocSg=="],
+
+    "@novelevolver/ai-runtime": ["@novelevolver/ai-runtime@workspace:packages/ai-runtime"],
 
     "@novelevolver/desktop": ["@novelevolver/desktop@workspace:apps/desktop"],
 

@@ -4,6 +4,7 @@ import type {
   AiChatSelectableAgent,
   AiChatSelectableModel,
   AiChatSendMessageInput,
+  AiChatSnapshot,
   AiConversationDirectoryEvent,
   AiConversationSearchHit,
   AiConversationSearchOptions,
@@ -15,14 +16,15 @@ import {
   BUILTIN_AI_AGENT_ID,
   type AiReasoningLevel,
 } from "@novelevolver/domain/settings/ai-settings";
-import type { AiChatRepository, AiConversationRecord } from "@novelevolver/worktree";
+import {
+  RpcStreamPublisher,
+  type AiChatRepository,
+  type AiConversationRecord,
+} from "@novelevolver/worktree";
 
-import { RpcStreamPublisher } from "../../lib/stream-publisher";
-import type { AiAgentsStore } from "../../settings/ai-agents-store";
-import type { AiModelsStore } from "../../settings/ai-models-store";
-import type { AiRuntimePolicyStore } from "../../settings/ai-runtime-policy-store";
 import { getMockScenario } from "../mock/scenario-registry";
 import type { MockScenarioPacing, MockScenarioPersistence } from "../mock/scenario-types";
+import type { AiAgentsPort, AiModelsPort, AiRuntimePolicyPort } from "../ports";
 import { type ResolveWorktree } from "../tools";
 import { AiConversationRuntime, type AiConversationRuntimeOptions } from "./conversation-runtime";
 import { recordToConversationSummary } from "./conversation-state";
@@ -136,9 +138,9 @@ export type ProjectAiChatControllerOptions = {
   resolveWorktree: ResolveWorktree;
   clientLabel?: string;
   mockAiEnabled: boolean;
-  getAiModelsStore: () => AiModelsStore;
-  getAiAgentsStore: () => AiAgentsStore;
-  getAiRuntimePolicyStore: () => AiRuntimePolicyStore;
+  getAiModelsStore: () => AiModelsPort;
+  getAiAgentsStore: () => AiAgentsPort;
+  getAiRuntimePolicyStore: () => AiRuntimePolicyPort;
 };
 
 export class ProjectAiChatController {
@@ -148,11 +150,13 @@ export class ProjectAiChatController {
   >;
   readonly #repository: AiChatRepository;
   readonly #mockAiEnabled: boolean;
-  readonly #getAiModelsStore: () => AiModelsStore;
-  readonly #getAiAgentsStore: () => AiAgentsStore;
-  readonly #getAiRuntimePolicyStore: () => AiRuntimePolicyStore;
+  readonly #getAiModelsStore: () => AiModelsPort;
+  readonly #getAiAgentsStore: () => AiAgentsPort;
+  readonly #getAiRuntimePolicyStore: () => AiRuntimePolicyPort;
   readonly #publisher = new RpcStreamPublisher<AiChatEvent>();
   readonly #directoryPublisher = new RpcStreamPublisher<AiConversationDirectoryEvent>();
+  readonly #eventListeners = new Set<(event: AiChatEvent) => void>();
+  readonly #directoryListeners = new Set<(event: AiConversationDirectoryEvent) => void>();
   readonly #runtimes = new Map<string, AiConversationRuntime>();
   #activeConversationId = "";
   #activeRuntimeListenerCleanup: (() => void) | null = null;
@@ -198,6 +202,33 @@ export class ProjectAiChatController {
     return this.#directoryPublisher.subscribe({
       getInitialValue: () => this.#currentDirectoryEvent(),
     });
+  }
+
+  getSnapshot(): AiChatSnapshot {
+    return this.#getActiveRuntime().getSnapshot();
+  }
+
+  getDirectory(): AiConversationDirectoryEvent {
+    return this.#currentDirectoryEvent();
+  }
+
+  addEventListener(listener: (event: AiChatEvent) => void): () => void {
+    this.#eventListeners.add(listener);
+    listener({
+      kind: "snapshot",
+      snapshot: this.getSnapshot(),
+    });
+    return () => {
+      this.#eventListeners.delete(listener);
+    };
+  }
+
+  addDirectoryListener(listener: (event: AiConversationDirectoryEvent) => void): () => void {
+    this.#directoryListeners.add(listener);
+    listener(this.getDirectory());
+    return () => {
+      this.#directoryListeners.delete(listener);
+    };
   }
 
   sendMessage(input: AiChatSendMessageInput): void {
@@ -503,6 +534,8 @@ export class ProjectAiChatController {
     this.#disposed = true;
     this.#activeRuntimeListenerCleanup?.();
     this.#activeRuntimeListenerCleanup = null;
+    this.#eventListeners.clear();
+    this.#directoryListeners.clear();
 
     try {
       for (const runtime of this.#runtimes.values()) {
@@ -658,14 +691,14 @@ export class ProjectAiChatController {
       if (runtime.conversationId !== this.#activeConversationId) {
         return;
       }
-      this.#publisher.emit(event);
+      this.#emitActive(event);
       if (directoryRelevantActiveEvent(event)) {
         this.#emitDirectory();
       }
     });
 
     if (emitSnapshot) {
-      this.#publisher.emit({
+      this.#emitActive({
         kind: "snapshot",
         snapshot: runtime.getSnapshot(),
       });
@@ -681,8 +714,19 @@ export class ProjectAiChatController {
     };
   }
 
+  #emitActive(event: AiChatEvent): void {
+    this.#publisher.emit(event);
+    for (const listener of this.#eventListeners) {
+      listener(event);
+    }
+  }
+
   #emitDirectory(): void {
-    this.#directoryPublisher.emit(this.#currentDirectoryEvent());
+    const event = this.#currentDirectoryEvent();
+    this.#directoryPublisher.emit(event);
+    for (const listener of this.#directoryListeners) {
+      listener(event);
+    }
   }
 }
 

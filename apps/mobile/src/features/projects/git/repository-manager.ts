@@ -1,3 +1,4 @@
+import { ProjectAiChatController } from "@novelevolver/ai-runtime";
 import { Database } from "@novelevolver/mobile-sqlite";
 import { WorktreeSession, type ProjectDbRecord } from "@novelevolver/worktree";
 import type { Repository } from "nano-git/repository/core";
@@ -8,6 +9,7 @@ import {
   ensureDirectory,
   removePath,
 } from "../../../shared/files/mobile-file-bridge";
+import { getMobileSettings } from "../../../shared/settings/session";
 import { getMobileAppState } from "./app-state";
 import { openMobileRepository } from "./nano-git-sqlite";
 
@@ -17,6 +19,7 @@ export type OpenedProject = {
   repositoryDb: Database;
   worktree: WorktreeSession;
   repositoryPath: string;
+  aiChat: ProjectAiChatController;
   close(): void;
 };
 
@@ -253,11 +256,22 @@ export class ProjectRepositoryManager {
       repositoryDb,
       worktree,
       repositoryPath: sqliteAbsoluteFile(record.id),
+      aiChat: null as unknown as ProjectAiChatController,
       close: () => {
+        opened.aiChat[Symbol.dispose]();
         worktree[Symbol.dispose]();
         repositoryDb.close();
       },
     };
+    opened.aiChat = new ProjectAiChatController({
+      projectId: record.id,
+      repository: getMobileAppState().aiChat,
+      resolveWorktree: () => opened.worktree,
+      mockAiEnabled: __DEV__,
+      getAiModelsStore: () => getMobileSettings().models,
+      getAiAgentsStore: () => getMobileSettings().agents,
+      getAiRuntimePolicyStore: () => getMobileSettings().policy,
+    });
     this.#opened = opened;
     return opened;
   }

@@ -1,5 +1,5 @@
 /**
- * UI-only projection of a tool call. Produced by the Electron tool runner /
+ * UI-only projection of a tool call. Produced by the AI runtime tool runner /
  * subagent executor — never forwarded to the model as tool output.
  *
  * Collapsed activity row reads verb + subject + outcome; expand body is

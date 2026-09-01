@@ -12,6 +12,7 @@ Before editing UI, main process, or workbench, also read:
 - [../../packages/desktop-rpc/AGENTS.md](../../packages/desktop-rpc/AGENTS.md) — IPC contracts
 - [../../packages/domain/AGENTS.md](../../packages/domain/AGENTS.md) — DTOs
 - [../../packages/worktree/AGENTS.md](../../packages/worktree/AGENTS.md) — shared worktree session
+- [../../packages/ai-runtime/AGENTS.md](../../packages/ai-runtime/AGENTS.md) — shared AI conversation engine
 
 ## Imports
 
@@ -25,6 +26,7 @@ Cross-package imports use workspace names via each package’s `exports` — do 
 | `@novelevolver/domain/*`      | `@novelevolver/domain`      |
 | `@novelevolver/desktop-rpc/*` | `@novelevolver/desktop-rpc` |
 | `@novelevolver/worktree`      | `@novelevolver/worktree`    |
+| `@novelevolver/ai-runtime`    | `@novelevolver/ai-runtime`  |
 
 Prefer `#app/*` over deep relatives (`#app/shared/lib/ui/cn`). Keep single-dot relatives inside the same domain folder. **No `#electron` alias** — Electron stays relative (`../db/app-database`). `#app/features/project-workbench/*` only inside `features/project-workbench/`; external consumers import via `features/project-workbench/index.ts`. Import chrome via `#app/features/project-workbench/chrome` (barrel), not `chrome/layout|sidebar|statusbar|titlebar` subpaths.
 

@@ -134,7 +134,8 @@
         "apps/desktop/tools/**/*.ts",
         "packages/domain/**/*.ts",
         "packages/desktop-rpc/**/*.ts",
-        "packages/worktree/**/*.ts"
+        "packages/worktree/**/*.ts",
+        "packages/ai-runtime/**/*.ts"
       ],
       "env": {
         "node": true

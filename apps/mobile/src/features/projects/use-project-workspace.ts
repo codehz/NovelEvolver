@@ -34,7 +34,7 @@ export function useProjectWorkspace(projectId: number): ProjectWorkspaceModel | 
   const [selectedManuscriptId, setSelectedManuscriptId] = useState<string | null>(null);
   const [selectedResourceId, setSelectedResourceId] = useState<string | null>(null);
   const [editorDocument, setEditorDocument] = useState<EditorDocument | null>(null);
-  const [, setRevision] = useState(0);
+  const [revision, setRevision] = useState(0);
 
   const openChapter = (nodeId: string) => {
     setSelectedManuscriptId(nodeId);
@@ -274,6 +274,7 @@ export function useProjectWorkspace(projectId: number): ProjectWorkspaceModel | 
     selectedResourceId,
     warning: opened.worktree.warning,
     document: editorDocument,
+    worktreeRevision: revision,
     onOpenChapter: openChapter,
     onOpenResourceFile: openResourceFile,
     onRenameManuscript: (node) => {
@@ -298,6 +299,7 @@ export function useProjectWorkspace(projectId: number): ProjectWorkspaceModel | 
       void createResourceFolder();
     },
     onCreateResourceFile: createResourceFile,
+    onAiWorkspaceDirty: refresh,
     renameProject,
     exportProject,
   };

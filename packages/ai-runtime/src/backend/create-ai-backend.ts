@@ -10,12 +10,12 @@ import {
 } from "@codehz/ai";
 import { isAiPromptCacheConfigured } from "@novelevolver/domain/settings/ai-settings";
 
-import type { AiModelRuntimeConfig } from "../../settings/ai-models-store";
 import { DEFAULT_AI_SYSTEM_PROMPT } from "../default-system-prompt";
 import { AI_INSTRUCTIONS, AI_MODEL, createMockClient } from "../mock-adapter";
 import { getMockScenario } from "../mock/scenario-registry";
 import { MOCK_AI_INSTRUCTIONS, MOCK_AI_MODEL, createScenarioClient } from "../mock/scenario-runner";
 import type { MockScenarioPacing } from "../mock/scenario-types";
+import type { AiModelRuntimeConfig } from "../ports";
 import type { AiBackendSession } from "./ai-backend-session";
 
 export function createAiBackendSession(options: {

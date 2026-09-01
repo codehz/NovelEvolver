@@ -14,6 +14,8 @@
     "ios": "react-native run-ios"
   },
   "dependencies": {
+    "@codehz/ai": "0.9.1",
+    "@novelevolver/ai-runtime": "workspace:*",
     "@novelevolver/domain": "workspace:*",
     "@novelevolver/mobile-sqlite": "workspace:*",
     "@novelevolver/worktree": "workspace:*",
