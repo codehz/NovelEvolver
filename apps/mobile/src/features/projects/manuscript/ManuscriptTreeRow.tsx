@@ -23,7 +23,7 @@ export const MANUSCRIPT_TREE_PREVIEW_HEIGHT = 36;
 export const MANUSCRIPT_TREE_PREVIEW_ICON = 16;
 export const MANUSCRIPT_TREE_PREVIEW_ANCHOR_X = 1 + space[3] + MANUSCRIPT_TREE_PREVIEW_ICON / 2;
 export const MANUSCRIPT_TREE_GHOST_OPACITY = 0.4;
-export const MANUSCRIPT_TREE_ACTION_WIDTH = 64;
+export const MANUSCRIPT_TREE_ACTION_WIDTH = 40;
 export const MANUSCRIPT_TREE_ACTION_GAP = space[1];
 export const MANUSCRIPT_TREE_ACTION_RIGHT_MARGIN = space[2];
 export const MANUSCRIPT_TREE_ACTION_AREA_WIDTH =
@@ -144,14 +144,6 @@ function ManuscriptTreeRowActions({ activeAction, visible }: ManuscriptTreeRowAc
           height={18}
           color={activeAction === "rename" ? color.primaryForeground : color.accent}
         />
-        <Text
-          style={[
-            styles.actionLabel,
-            { color: activeAction === "rename" ? color.primaryForeground : color.accent },
-          ]}
-        >
-          改名
-        </Text>
       </Animated.View>
       <Animated.View style={[styles.action, deleteStyle]}>
         <IconTrash
@@ -159,14 +151,6 @@ function ManuscriptTreeRowActions({ activeAction, visible }: ManuscriptTreeRowAc
           height={18}
           color={activeAction === "delete" ? color.primaryForeground : color.error}
         />
-        <Text
-          style={[
-            styles.actionLabel,
-            { color: activeAction === "delete" ? color.primaryForeground : color.error },
-          ]}
-        >
-          删除
-        </Text>
       </Animated.View>
     </Animated.View>
   );
@@ -351,16 +335,9 @@ const styles = StyleSheet.create({
   },
   action: {
     width: MANUSCRIPT_TREE_ACTION_WIDTH,
-    height: MANUSCRIPT_TREE_ROW_HEIGHT - space[2],
-    flexDirection: "row",
+    height: MANUSCRIPT_TREE_ACTION_WIDTH,
     alignItems: "center",
     justifyContent: "center",
-    gap: space[1],
     borderRadius: radius.panel,
-  },
-  actionLabel: {
-    fontFamily: fontFamily.sans,
-    fontSize: fontSize.xs,
-    fontWeight: "600",
   },
 });
