@@ -10,17 +10,17 @@ import Animated, {
 
 import { color, space, withAlpha } from "../../../shared/theme";
 import { OVERLAY_TIMING } from "../../../shared/ui/overlay-chrome";
-import type { ManuscriptDropPreview } from "./manuscript-tree-placement";
-import { MANUSCRIPT_TREE_ROW_HEIGHT } from "./ManuscriptTreeRow";
+import type { ExplorerDropPreview } from "./explorer-tree-drop";
+import { EXPLORER_TREE_ROW_HEIGHT } from "./ExplorerTreeRow";
 
-export const MANUSCRIPT_DROP_INDICATOR_HEIGHT = 3;
+export const EXPLORER_DROP_INDICATOR_HEIGHT = 3;
 
 const INSERT_INSET = space[3];
 const INSERT_COLOR = color.accent;
 const HIGHLIGHT_COLOR = withAlpha(color.accent, 0.2);
 
-type ManuscriptDropIndicatorProps = {
-  preview: ManuscriptDropPreview | null;
+type ExplorerDropIndicatorProps = {
+  preview: ExplorerDropPreview | null;
 };
 
 type IndicatorGeom = {
@@ -31,19 +31,19 @@ type IndicatorGeom = {
   mode: number;
 };
 
-function previewGeom(preview: ManuscriptDropPreview): IndicatorGeom {
+function previewGeom(preview: ExplorerDropPreview): IndicatorGeom {
   if (preview.kind === "insert") {
     return {
-      top: preview.visualIndex * MANUSCRIPT_TREE_ROW_HEIGHT - MANUSCRIPT_DROP_INDICATOR_HEIGHT / 2,
-      height: MANUSCRIPT_DROP_INDICATOR_HEIGHT,
+      top: preview.visualIndex * EXPLORER_TREE_ROW_HEIGHT - EXPLORER_DROP_INDICATOR_HEIGHT / 2,
+      height: EXPLORER_DROP_INDICATOR_HEIGHT,
       left: INSERT_INSET + preview.depth * space[4],
       right: INSERT_INSET,
       mode: 0,
     };
   }
   return {
-    top: preview.startIndex * MANUSCRIPT_TREE_ROW_HEIGHT,
-    height: (preview.endIndex - preview.startIndex + 1) * MANUSCRIPT_TREE_ROW_HEIGHT,
+    top: preview.startIndex * EXPLORER_TREE_ROW_HEIGHT,
+    height: (preview.endIndex - preview.startIndex + 1) * EXPLORER_TREE_ROW_HEIGHT,
     left: 0,
     right: 0,
     mode: 1,
@@ -61,10 +61,10 @@ function sameGeom(a: IndicatorGeom | null, b: IndicatorGeom): boolean {
   );
 }
 
-export function ManuscriptDropIndicator({ preview }: ManuscriptDropIndicatorProps) {
+export function ExplorerDropIndicator({ preview }: ExplorerDropIndicatorProps) {
   const opacity = useSharedValue(0);
   const top = useSharedValue(0);
-  const height = useSharedValue(MANUSCRIPT_DROP_INDICATOR_HEIGHT);
+  const height = useSharedValue(EXPLORER_DROP_INDICATOR_HEIGHT);
   const left = useSharedValue(0);
   const right = useSharedValue(0);
   const mode = useSharedValue(0);
@@ -103,7 +103,7 @@ export function ManuscriptDropIndicator({ preview }: ManuscriptDropIndicatorProp
     height: height.value,
     left: left.value,
     right: right.value,
-    borderRadius: interpolate(mode.value, [0, 1], [MANUSCRIPT_DROP_INDICATOR_HEIGHT / 2, 0]),
+    borderRadius: interpolate(mode.value, [0, 1], [EXPLORER_DROP_INDICATOR_HEIGHT / 2, 0]),
     backgroundColor: interpolateColor(mode.value, [0, 1], [INSERT_COLOR, HIGHLIGHT_COLOR]),
   }));
 

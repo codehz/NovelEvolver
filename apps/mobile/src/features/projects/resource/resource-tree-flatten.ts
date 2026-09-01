@@ -1,6 +1,6 @@
 import type { ResourceTreeSnapshot } from "@novelevolver/domain/worktree";
 
-import type { ManuscriptVisibleRow } from "../manuscript/manuscript-tree-flatten";
+import type { ExplorerVisibleRow } from "../explorer/explorer-tree-flatten";
 
 export function collectResourceDescendantIds(tree: ResourceTreeSnapshot, id: string): string[] {
   const node = tree.nodes[id];
@@ -35,8 +35,8 @@ export function resourceCreateParentId(
 export function flattenVisibleResourceRows(
   tree: ResourceTreeSnapshot,
   collapsedIds: Record<string, true> = {},
-): ManuscriptVisibleRow[] {
-  const result: ManuscriptVisibleRow[] = [];
+): ExplorerVisibleRow[] {
+  const result: ExplorerVisibleRow[] = [];
   const walk = (parentId: string, depth: number) => {
     const parent = tree.nodes[parentId];
     if (parent?.type !== "folder") return;

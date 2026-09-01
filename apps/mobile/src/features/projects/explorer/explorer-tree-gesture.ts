@@ -1,11 +1,11 @@
-export type ManuscriptTreeDragAction = "rename" | "delete";
+export type ExplorerTreeDragAction = "rename" | "delete";
 
-export type ManuscriptTreeDragZone =
-  | { kind: "action"; action: ManuscriptTreeDragAction }
+export type ExplorerTreeDragZone =
+  | { kind: "action"; action: ExplorerTreeDragAction }
   | { kind: "inside" }
   | { kind: "outside" };
 
-type ManuscriptTreeDragZoneInput = {
+type ExplorerTreeDragZoneInput = {
   x: number;
   y: number;
   rowTop: number;
@@ -16,7 +16,7 @@ type ManuscriptTreeDragZoneInput = {
   actionRightMargin: number;
 };
 
-export function resolveManuscriptTreeDragZone({
+export function resolveExplorerTreeDragZone({
   x,
   y,
   rowTop,
@@ -25,7 +25,7 @@ export function resolveManuscriptTreeDragZone({
   actionWidth,
   actionGap,
   actionRightMargin,
-}: ManuscriptTreeDragZoneInput): ManuscriptTreeDragZone {
+}: ExplorerTreeDragZoneInput): ExplorerTreeDragZone {
   if (
     listWidth <= 0 ||
     actionWidth <= 0 ||
@@ -50,19 +50,19 @@ export function resolveManuscriptTreeDragZone({
   return { kind: "inside" };
 }
 
-export function manuscriptTreeDragZoneKey(zone: ManuscriptTreeDragZone | null): string {
+export function explorerTreeDragZoneKey(zone: ExplorerTreeDragZone | null): string {
   if (zone === null) return "";
   return zone.kind === "action" ? `${zone.kind}:${zone.action}` : zone.kind;
 }
 
-export function manuscriptTreeActionCenterX({
+export function explorerTreeActionCenterX({
   action,
   listWidth,
   actionWidth,
   actionGap,
   actionRightMargin,
 }: {
-  action: ManuscriptTreeDragAction;
+  action: ExplorerTreeDragAction;
   listWidth: number;
   actionWidth: number;
   actionGap: number;
@@ -73,7 +73,7 @@ export function manuscriptTreeActionCenterX({
   return actionEnd - actionWidth * 1.5 - actionGap;
 }
 
-export function manuscriptTreeActionTooltipPlacement({
+export function explorerTreeActionTooltipPlacement({
   rowTop,
   rowHeight,
   tooltipHeight,

@@ -28,7 +28,7 @@ src/
       use-project-workspace.ts     # opened session, selection, mutations
       ProjectManagerProvider.tsx
       editor/                      # document pane
-      explorer/                    # domain switch + tree host
+      explorer/                    # domain switch + shared tree kernel
       manuscript/                  # manuscript tree
       resource/                    # resource tree
       git/                         # app-state sqlite + nano-git + repository manager

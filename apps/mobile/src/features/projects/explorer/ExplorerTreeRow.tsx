@@ -16,33 +16,33 @@ import IconTrash from "~icons/codicon/trash";
 
 import { color, fontFamily, fontSize, radius, space, wash } from "../../../shared/theme";
 import { OVERLAY_TIMING } from "../../../shared/ui/overlay-chrome";
-import type { ManuscriptVisibleRow } from "./manuscript-tree-flatten";
+import type { ExplorerVisibleRow } from "./explorer-tree-flatten";
 import {
-  manuscriptTreeActionCenterX,
-  manuscriptTreeActionTooltipPlacement,
-  type ManuscriptTreeDragAction,
-} from "./manuscript-tree-gesture";
+  explorerTreeActionCenterX,
+  explorerTreeActionTooltipPlacement,
+  type ExplorerTreeDragAction,
+} from "./explorer-tree-gesture";
 
-export const MANUSCRIPT_TREE_ROW_HEIGHT = 48;
-export const MANUSCRIPT_TREE_PREVIEW_HEIGHT = 36;
-export const MANUSCRIPT_TREE_PREVIEW_ICON = 16;
-export const MANUSCRIPT_TREE_PREVIEW_ANCHOR_X = 1 + space[3] + MANUSCRIPT_TREE_PREVIEW_ICON / 2;
-export const MANUSCRIPT_TREE_GHOST_OPACITY = 0.4;
-export const MANUSCRIPT_TREE_ACTION_WIDTH = 40;
-export const MANUSCRIPT_TREE_ACTION_GAP = space[1];
-export const MANUSCRIPT_TREE_ACTION_RIGHT_MARGIN = space[2];
-export const MANUSCRIPT_TREE_ACTION_AREA_WIDTH =
-  MANUSCRIPT_TREE_ACTION_WIDTH * 2 + MANUSCRIPT_TREE_ACTION_GAP;
-export const MANUSCRIPT_TREE_ACTION_TOOLTIP_GAP = space[1];
-export const MANUSCRIPT_TREE_ACTION_TOOLTIP_WRAP_WIDTH = 72;
-export const MANUSCRIPT_TREE_ACTION_TOOLTIP_HEIGHT = space[1] * 2 + fontSize.xs + 2;
+export const EXPLORER_TREE_ROW_HEIGHT = 48;
+export const EXPLORER_TREE_PREVIEW_HEIGHT = 36;
+export const EXPLORER_TREE_PREVIEW_ICON = 16;
+export const EXPLORER_TREE_PREVIEW_ANCHOR_X = 1 + space[3] + EXPLORER_TREE_PREVIEW_ICON / 2;
+export const EXPLORER_TREE_GHOST_OPACITY = 0.4;
+export const EXPLORER_TREE_ACTION_WIDTH = 40;
+export const EXPLORER_TREE_ACTION_GAP = space[1];
+export const EXPLORER_TREE_ACTION_RIGHT_MARGIN = space[2];
+export const EXPLORER_TREE_ACTION_AREA_WIDTH =
+  EXPLORER_TREE_ACTION_WIDTH * 2 + EXPLORER_TREE_ACTION_GAP;
+export const EXPLORER_TREE_ACTION_TOOLTIP_GAP = space[1];
+export const EXPLORER_TREE_ACTION_TOOLTIP_WRAP_WIDTH = 72;
+export const EXPLORER_TREE_ACTION_TOOLTIP_HEIGHT = space[1] * 2 + fontSize.xs + 2;
 
-const ACTION_TOOLTIP_LABELS: Record<ManuscriptTreeDragAction, string> = {
+const ACTION_TOOLTIP_LABELS: Record<ExplorerTreeDragAction, string> = {
   rename: "改名",
   delete: "删除",
 };
 
-export type ManuscriptDragPointer = {
+export type ExplorerDragPointer = {
   x: number;
   y: number;
   absoluteX: number;
@@ -54,7 +54,7 @@ function pointerFromEvent(event: {
   y: number;
   absoluteX: number;
   absoluteY: number;
-}): ManuscriptDragPointer {
+}): ExplorerDragPointer {
   return {
     x: event.x,
     y: event.y,
@@ -63,27 +63,27 @@ function pointerFromEvent(event: {
   };
 }
 
-type ManuscriptTreeRowContentProps = {
+type ExplorerTreeRowContentProps = {
   title: string;
-  type: ManuscriptVisibleRow["type"];
+  type: ExplorerVisibleRow["type"];
   depth: number;
   expanded: boolean;
   selected?: boolean;
 };
 
-function rowIcon(type: ManuscriptVisibleRow["type"], expanded: boolean) {
+function rowIcon(type: ExplorerVisibleRow["type"], expanded: boolean) {
   if (type === "folder") return expanded ? IconFolderOpened : IconFolder;
   if (type === "file") return IconFile;
   return IconBook;
 }
 
-export function ManuscriptTreeRowContent({
+export function ExplorerTreeRowContent({
   title,
   type,
   depth,
   expanded,
   selected = false,
-}: ManuscriptTreeRowContentProps) {
+}: ExplorerTreeRowContentProps) {
   const Icon = rowIcon(type, expanded);
   const iconColor = type === "folder" ? color.accent : color.info;
   return (
@@ -105,24 +105,20 @@ export function ManuscriptTreeRowContent({
   );
 }
 
-type ManuscriptTreeDragPreviewProps = {
+type ExplorerTreeDragPreviewProps = {
   title: string;
-  type: ManuscriptVisibleRow["type"];
+  type: ExplorerVisibleRow["type"];
   expanded: boolean;
 };
 
-export function ManuscriptTreeDragPreview({
-  title,
-  type,
-  expanded,
-}: ManuscriptTreeDragPreviewProps) {
+export function ExplorerTreeDragPreview({ title, type, expanded }: ExplorerTreeDragPreviewProps) {
   const Icon = rowIcon(type, expanded);
   const iconColor = type === "folder" ? color.accent : color.info;
   return (
     <View pointerEvents="none" style={styles.preview}>
       <Icon
-        width={MANUSCRIPT_TREE_PREVIEW_ICON}
-        height={MANUSCRIPT_TREE_PREVIEW_ICON}
+        width={EXPLORER_TREE_PREVIEW_ICON}
+        height={EXPLORER_TREE_PREVIEW_ICON}
         color={iconColor}
       />
       <Text style={styles.previewTitle} numberOfLines={1}>
@@ -132,25 +128,25 @@ export function ManuscriptTreeDragPreview({
   );
 }
 
-type ManuscriptTreeRowActionsProps = {
-  activeAction: ManuscriptTreeDragAction | null;
+type ExplorerTreeRowActionsProps = {
+  activeAction: ExplorerTreeDragAction | null;
   visible: boolean;
 };
 
-type ManuscriptTreeActionTooltipProps = {
-  action: ManuscriptTreeDragAction | null;
+type ExplorerTreeActionTooltipProps = {
+  action: ExplorerTreeDragAction | null;
   rowTop: number;
   listWidth: number;
 };
 
-export function ManuscriptTreeActionTooltip({
+export function ExplorerTreeActionTooltip({
   action,
   rowTop,
   listWidth,
-}: ManuscriptTreeActionTooltipProps) {
+}: ExplorerTreeActionTooltipProps) {
   const visible = action !== null && listWidth > 0;
   const lastRef = useRef({
-    action: "rename" as ManuscriptTreeDragAction,
+    action: "rename" as ExplorerTreeDragAction,
     rowTop: 0,
     listWidth: 0,
   });
@@ -161,18 +157,18 @@ export function ManuscriptTreeActionTooltip({
   const opacity = useSharedValue(0);
   opacity.value = withTiming(visible ? 1 : 0, OVERLAY_TIMING);
   const fadeStyle = useAnimatedStyle(() => ({ opacity: opacity.value }));
-  const centerX = manuscriptTreeActionCenterX({
+  const centerX = explorerTreeActionCenterX({
     action: shown.action,
     listWidth: shown.listWidth,
-    actionWidth: MANUSCRIPT_TREE_ACTION_WIDTH,
-    actionGap: MANUSCRIPT_TREE_ACTION_GAP,
-    actionRightMargin: MANUSCRIPT_TREE_ACTION_RIGHT_MARGIN,
+    actionWidth: EXPLORER_TREE_ACTION_WIDTH,
+    actionGap: EXPLORER_TREE_ACTION_GAP,
+    actionRightMargin: EXPLORER_TREE_ACTION_RIGHT_MARGIN,
   });
-  const placement = manuscriptTreeActionTooltipPlacement({
+  const placement = explorerTreeActionTooltipPlacement({
     rowTop: shown.rowTop,
-    rowHeight: MANUSCRIPT_TREE_ROW_HEIGHT,
-    tooltipHeight: MANUSCRIPT_TREE_ACTION_TOOLTIP_HEIGHT,
-    gap: MANUSCRIPT_TREE_ACTION_TOOLTIP_GAP,
+    rowHeight: EXPLORER_TREE_ROW_HEIGHT,
+    tooltipHeight: EXPLORER_TREE_ACTION_TOOLTIP_HEIGHT,
+    gap: EXPLORER_TREE_ACTION_TOOLTIP_GAP,
   });
   return (
     <Animated.View
@@ -181,7 +177,7 @@ export function ManuscriptTreeActionTooltip({
         styles.tooltipWrap,
         fadeStyle,
         {
-          left: centerX - MANUSCRIPT_TREE_ACTION_TOOLTIP_WRAP_WIDTH / 2,
+          left: centerX - EXPLORER_TREE_ACTION_TOOLTIP_WRAP_WIDTH / 2,
           top: placement.top,
         },
       ]}
@@ -200,7 +196,7 @@ export function ManuscriptTreeActionTooltip({
   );
 }
 
-function ManuscriptTreeRowActions({ activeAction, visible }: ManuscriptTreeRowActionsProps) {
+function ExplorerTreeRowActions({ activeAction, visible }: ExplorerTreeRowActionsProps) {
   const actionsOpacity = useSharedValue(0);
   const renameProgress = useSharedValue(0);
   const deleteProgress = useSharedValue(0);
@@ -238,20 +234,20 @@ function ManuscriptTreeRowActions({ activeAction, visible }: ManuscriptTreeRowAc
   );
 }
 
-type ManuscriptTreeRowProps = {
-  row: ManuscriptVisibleRow;
+type ExplorerTreeRowProps = {
+  row: ExplorerVisibleRow;
   selected: boolean;
   ghost: boolean;
   actionsVisible: boolean;
-  activeAction: ManuscriptTreeDragAction | null;
+  activeAction: ExplorerTreeDragAction | null;
   dragEnabled: boolean;
   onPress: () => void;
-  onDragActivate: (pointer: ManuscriptDragPointer) => void;
-  onDragUpdate: (pointer: ManuscriptDragPointer) => void;
-  onDragEnd: (pointer: ManuscriptDragPointer) => void;
+  onDragActivate: (pointer: ExplorerDragPointer) => void;
+  onDragUpdate: (pointer: ExplorerDragPointer) => void;
+  onDragEnd: (pointer: ExplorerDragPointer) => void;
 };
 
-export function ManuscriptTreeRow({
+export function ExplorerTreeRow({
   row,
   selected,
   ghost,
@@ -262,13 +258,13 @@ export function ManuscriptTreeRow({
   onDragActivate,
   onDragUpdate,
   onDragEnd,
-}: ManuscriptTreeRowProps) {
+}: ExplorerTreeRowProps) {
   const suppressPressRef = useRef(false);
   const dragEnabledRef = useRef(dragEnabled);
   const onDragActivateRef = useRef(onDragActivate);
   const onDragUpdateRef = useRef(onDragUpdate);
   const onDragEndRef = useRef(onDragEnd);
-  const lastPointerRef = useRef<ManuscriptDragPointer>({
+  const lastPointerRef = useRef<ExplorerDragPointer>({
     x: 0,
     y: 0,
     absoluteX: 0,
@@ -276,7 +272,7 @@ export function ManuscriptTreeRow({
   });
   const ghostOpacity = useSharedValue(1);
   const ghostRef = useRef(ghost);
-  if (ghost) ghostOpacity.value = withTiming(MANUSCRIPT_TREE_GHOST_OPACITY, OVERLAY_TIMING);
+  if (ghost) ghostOpacity.value = withTiming(EXPLORER_TREE_GHOST_OPACITY, OVERLAY_TIMING);
   else if (ghostRef.current) ghostOpacity.value = withTiming(1, OVERLAY_TIMING);
   ghostRef.current = ghost;
   const ghostStyle = useAnimatedStyle(() => ({ opacity: ghostOpacity.value }));
@@ -343,7 +339,7 @@ export function ManuscriptTreeRow({
           accessibilityState={{ selected }}
         >
           <Animated.View style={ghostStyle}>
-            <ManuscriptTreeRowContent
+            <ExplorerTreeRowContent
               title={row.title}
               type={row.type}
               depth={row.depth}
@@ -353,7 +349,7 @@ export function ManuscriptTreeRow({
           </Animated.View>
         </Pressable>
       </GestureDetector>
-      <ManuscriptTreeRowActions activeAction={activeAction} visible={actionsVisible} />
+      <ExplorerTreeRowActions activeAction={activeAction} visible={actionsVisible} />
     </View>
   );
 }
@@ -367,7 +363,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   row: {
-    height: MANUSCRIPT_TREE_ROW_HEIGHT,
+    height: EXPLORER_TREE_ROW_HEIGHT,
     flexDirection: "row",
     alignItems: "center",
     gap: space[2],
@@ -377,7 +373,7 @@ const styles = StyleSheet.create({
     backgroundColor: wash.accentSoft,
   },
   preview: {
-    height: MANUSCRIPT_TREE_PREVIEW_HEIGHT,
+    height: EXPLORER_TREE_PREVIEW_HEIGHT,
     maxWidth: 280,
     flexDirection: "row",
     alignItems: "center",
@@ -408,23 +404,23 @@ const styles = StyleSheet.create({
   actions: {
     position: "absolute",
     top: 0,
-    right: MANUSCRIPT_TREE_ACTION_RIGHT_MARGIN,
+    right: EXPLORER_TREE_ACTION_RIGHT_MARGIN,
     bottom: 0,
     flexDirection: "row",
     alignItems: "center",
-    gap: MANUSCRIPT_TREE_ACTION_GAP,
-    width: MANUSCRIPT_TREE_ACTION_AREA_WIDTH,
+    gap: EXPLORER_TREE_ACTION_GAP,
+    width: EXPLORER_TREE_ACTION_AREA_WIDTH,
   },
   action: {
-    width: MANUSCRIPT_TREE_ACTION_WIDTH,
-    height: MANUSCRIPT_TREE_ACTION_WIDTH,
+    width: EXPLORER_TREE_ACTION_WIDTH,
+    height: EXPLORER_TREE_ACTION_WIDTH,
     alignItems: "center",
     justifyContent: "center",
     borderRadius: radius.panel,
   },
   tooltipWrap: {
     position: "absolute",
-    width: MANUSCRIPT_TREE_ACTION_TOOLTIP_WRAP_WIDTH,
+    width: EXPLORER_TREE_ACTION_TOOLTIP_WRAP_WIDTH,
     alignItems: "center",
     zIndex: 8,
     elevation: 12,

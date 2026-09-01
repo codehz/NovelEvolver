@@ -3,18 +3,9 @@ import { describe, expect, test } from "bun:test";
 
 import type { ManuscriptOutline } from "@novelevolver/domain/worktree";
 
-import { flattenVisibleManuscriptRows, visualManuscriptRowSlots } from "./manuscript-tree-flatten";
-import {
-  manuscriptTreeActionCenterX,
-  manuscriptTreeActionTooltipPlacement,
-  manuscriptTreeDragZoneKey,
-  resolveManuscriptTreeDragZone,
-} from "./manuscript-tree-gesture";
-import {
-  resolveHoverZone,
-  resolveManuscriptDrop,
-  type ManuscriptHoverZone,
-} from "./manuscript-tree-placement";
+import type { ExplorerHoverZone } from "../explorer/explorer-tree-drop";
+import { flattenVisibleManuscriptRows } from "./manuscript-tree-flatten";
+import { resolveManuscriptDrop } from "./manuscript-tree-placement";
 
 const ROW_HEIGHT = 48;
 
@@ -47,7 +38,7 @@ function dropAt(
   outline: ManuscriptOutline,
   sourceId: string,
   rowIndex: number,
-  zone: ManuscriptHoverZone,
+  zone: ExplorerHoverZone,
   collapsedIds: Record<string, true> = {},
 ) {
   const rows = flattenVisibleManuscriptRows(outline, collapsedIds);
@@ -64,150 +55,6 @@ function dropAt(
     rowHeight: ROW_HEIGHT,
   });
 }
-
-describe("resolveHoverZone", () => {
-  test("splits a row into before / inside / after", () => {
-    expect(resolveHoverZone(0, ROW_HEIGHT)).toBe("before");
-    expect(resolveHoverZone(ROW_HEIGHT * 0.24, ROW_HEIGHT)).toBe("before");
-    expect(resolveHoverZone(ROW_HEIGHT * 0.5, ROW_HEIGHT)).toBe("inside");
-    expect(resolveHoverZone(ROW_HEIGHT * 0.76, ROW_HEIGHT)).toBe("after");
-  });
-});
-
-describe("resolveManuscriptTreeDragZone", () => {
-  const input = {
-    rowTop: ROW_HEIGHT * 2,
-    rowHeight: ROW_HEIGHT,
-    listWidth: 320,
-    actionWidth: 64,
-    actionGap: 8,
-    actionRightMargin: 8,
-  };
-
-  test("shows rename and delete zones at the right edge of the source row", () => {
-    expect(resolveManuscriptTreeDragZone({ ...input, x: 167, y: input.rowTop + 24 })).toEqual({
-      kind: "inside",
-    });
-    expect(resolveManuscriptTreeDragZone({ ...input, x: 200, y: input.rowTop + 24 })).toEqual({
-      kind: "action",
-      action: "rename",
-    });
-    expect(resolveManuscriptTreeDragZone({ ...input, x: 244, y: input.rowTop + 24 })).toEqual({
-      kind: "inside",
-    });
-    expect(resolveManuscriptTreeDragZone({ ...input, x: 270, y: input.rowTop + 24 })).toEqual({
-      kind: "action",
-      action: "delete",
-    });
-    expect(resolveManuscriptTreeDragZone({ ...input, x: 315, y: input.rowTop + 24 })).toEqual({
-      kind: "inside",
-    });
-  });
-
-  test("treats every direction outside the source row as outside", () => {
-    expect(resolveManuscriptTreeDragZone({ ...input, x: 100, y: input.rowTop - 1 })).toEqual({
-      kind: "outside",
-    });
-    expect(
-      resolveManuscriptTreeDragZone({ ...input, x: 100, y: input.rowTop + ROW_HEIGHT }),
-    ).toEqual({
-      kind: "outside",
-    });
-    expect(resolveManuscriptTreeDragZone({ ...input, x: -1, y: input.rowTop + 24 })).toEqual({
-      kind: "outside",
-    });
-    expect(
-      resolveManuscriptTreeDragZone({ ...input, x: input.listWidth, y: input.rowTop + 24 }),
-    ).toEqual({
-      kind: "outside",
-    });
-  });
-
-  test("keeps zone keys stable for state transitions", () => {
-    expect(manuscriptTreeDragZoneKey({ kind: "action", action: "rename" })).toBe("action:rename");
-    expect(manuscriptTreeDragZoneKey({ kind: "inside" })).toBe("inside");
-    expect(manuscriptTreeDragZoneKey(null)).toBe("");
-  });
-});
-
-describe("manuscriptTreeActionCenterX", () => {
-  const layout = {
-    listWidth: 320,
-    actionWidth: 64,
-    actionGap: 8,
-    actionRightMargin: 8,
-  };
-
-  test("centers on rename and delete buttons", () => {
-    expect(manuscriptTreeActionCenterX({ action: "rename", ...layout })).toBe(208);
-    expect(manuscriptTreeActionCenterX({ action: "delete", ...layout })).toBe(280);
-  });
-});
-
-describe("manuscriptTreeActionTooltipPlacement", () => {
-  test("keeps the tooltip above when the source row has room", () => {
-    expect(
-      manuscriptTreeActionTooltipPlacement({
-        rowTop: 96,
-        rowHeight: ROW_HEIGHT,
-        tooltipHeight: 28,
-        gap: 4,
-      }),
-    ).toEqual({ top: 64, side: "above" });
-  });
-
-  test("flips below when the source row is at the clipped top edge", () => {
-    expect(
-      manuscriptTreeActionTooltipPlacement({
-        rowTop: 0,
-        rowHeight: ROW_HEIGHT,
-        tooltipHeight: 28,
-        gap: 4,
-      }),
-    ).toEqual({ top: 52, side: "below" });
-  });
-});
-
-describe("visualManuscriptRowSlots", () => {
-  test("idle slots are index times row height", () => {
-    const rows = flattenVisibleManuscriptRows(sampleOutline());
-    const { slots, slotCount } = visualManuscriptRowSlots(rows, null, ROW_HEIGHT);
-    expect(slotCount).toBe(rows.length);
-    expect(slots.map((slot) => slot.y)).toEqual(rows.map((_, index) => index * ROW_HEIGHT));
-    expect(slots.every((slot) => slot.ghost === false)).toBe(true);
-  });
-
-  test("dragging a folder keeps original slots and marks the source subtree as ghost", () => {
-    const rows = flattenVisibleManuscriptRows(sampleOutline());
-    const { slots, slotCount } = visualManuscriptRowSlots(rows, "foldera001", ROW_HEIGHT);
-    expect(slotCount).toBe(rows.length);
-    expect(slots.find((slot) => slot.id === "foldera001")).toEqual({
-      id: "foldera001",
-      y: 0,
-      ghost: true,
-    });
-    expect(slots.find((slot) => slot.id === "chapter001")).toEqual({
-      id: "chapter001",
-      y: ROW_HEIGHT,
-      ghost: true,
-    });
-    expect(slots.find((slot) => slot.id === "chapter002")).toEqual({
-      id: "chapter002",
-      y: ROW_HEIGHT * 2,
-      ghost: true,
-    });
-    expect(slots.find((slot) => slot.id === "chapter003")).toEqual({
-      id: "chapter003",
-      y: ROW_HEIGHT * 3,
-      ghost: false,
-    });
-    expect(slots.find((slot) => slot.id === "folderb002")).toEqual({
-      id: "folderb002",
-      y: ROW_HEIGHT * 4,
-      ghost: false,
-    });
-  });
-});
 
 describe("resolveManuscriptDrop", () => {
   test("reorders siblings when dropping before an earlier root item", () => {

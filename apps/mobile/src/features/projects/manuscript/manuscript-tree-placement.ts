@@ -1,41 +1,18 @@
 import type { ManuscriptNode, ManuscriptOutline } from "@novelevolver/domain/worktree";
 
 import {
+  type ExplorerHoverZone,
+  type ExplorerMoveTarget,
+  type ExplorerDropPreview,
+  type ExplorerResolvedDrop,
+  resolveHoverZone,
+} from "../explorer/explorer-tree-drop";
+import {
   buildSubtreeEndIndexes,
-  collectManuscriptDescendantIds,
-  findManuscriptParentId,
   sourceSubtreeRange,
-  type ManuscriptVisibleRow,
-} from "./manuscript-tree-flatten";
-
-export type ManuscriptHoverZone = "before" | "inside" | "after";
-
-export type ManuscriptMoveTarget =
-  | { kind: "into"; parentId: string }
-  | { kind: "insert"; parentId: string; index: number };
-
-export type ManuscriptDropPreview =
-  | { kind: "insert"; visualIndex: number; depth: number }
-  | { kind: "highlight"; startIndex: number; endIndex: number };
-
-export type ManuscriptResolvedDrop = {
-  preview: ManuscriptDropPreview;
-  target: ManuscriptMoveTarget;
-  commit: boolean;
-};
-
-export function resolveHoverZone(offsetY: number, rowHeight: number): ManuscriptHoverZone {
-  if (offsetY < rowHeight * 0.25) return "before";
-  if (offsetY > rowHeight * 0.75) return "after";
-  return "inside";
-}
-
-export function dropKey(drop: ManuscriptResolvedDrop | null): string {
-  if (drop === null) return "";
-  const prefix = drop.commit ? "move" : "restore";
-  if (drop.target.kind === "into") return `${prefix}:into:${drop.target.parentId}`;
-  return `${prefix}:insert:${drop.target.parentId}:${drop.target.index}`;
-}
+  type ExplorerVisibleRow,
+} from "../explorer/explorer-tree-flatten";
+import { collectManuscriptDescendantIds, findManuscriptParentId } from "./manuscript-tree-flatten";
 
 function getNodeDepth(outline: ManuscriptOutline, id: string): number {
   if (id === outline.rootId) return -1;
@@ -84,7 +61,7 @@ export function isValidManuscriptMoveTarget(
   outline: ManuscriptOutline,
   sourceId: string,
   sourceType: ManuscriptNode["type"],
-  target: ManuscriptMoveTarget,
+  target: ExplorerMoveTarget,
 ): boolean {
   if (target.kind === "into") {
     return canMoveIntoParent(outline, sourceId, sourceType, target.parentId);
@@ -108,13 +85,13 @@ export function isValidManuscriptMoveTarget(
 
 function resolveManuscriptDropCore(
   outline: ManuscriptOutline,
-  rows: readonly ManuscriptVisibleRow[],
+  rows: readonly ExplorerVisibleRow[],
   hoveredRowIndex: number | null,
-  hoverZone: ManuscriptHoverZone | null,
+  hoverZone: ExplorerHoverZone | null,
   offsetY: number,
   rowHeight: number,
   aboveList: boolean,
-): { preview: ManuscriptDropPreview; target: ManuscriptMoveTarget } | null {
+): { preview: ExplorerDropPreview; target: ExplorerMoveTarget } | null {
   const rootNode = outline.nodes[outline.rootId];
   if (rootNode?.type !== "folder") return null;
 
@@ -221,18 +198,18 @@ function resolveManuscriptDropCore(
 
 export function resolveManuscriptDrop(input: {
   outline: ManuscriptOutline;
-  rows: readonly ManuscriptVisibleRow[];
+  rows: readonly ExplorerVisibleRow[];
   sourceId: string;
   sourceType: ManuscriptNode["type"];
   pointerContentY: number;
   rowHeight: number;
-}): ManuscriptResolvedDrop | null {
+}): ExplorerResolvedDrop | null {
   const { outline, rows, sourceId, sourceType, pointerContentY, rowHeight } = input;
   if (rowHeight <= 0) return null;
   const range = sourceSubtreeRange(rows, sourceId);
 
   let hoveredRowIndex: number | null = null;
-  let hoverZone: ManuscriptHoverZone | null = null;
+  let hoverZone: ExplorerHoverZone | null = null;
   let offsetY = 0;
   let aboveList = false;
 

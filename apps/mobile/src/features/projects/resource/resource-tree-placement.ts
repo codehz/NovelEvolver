@@ -1,15 +1,15 @@
 import type { ResourceTreeNode, ResourceTreeSnapshot } from "@novelevolver/domain/worktree";
 
 import {
+  type ExplorerHoverZone,
+  type ExplorerResolvedDrop,
+  resolveHoverZone,
+} from "../explorer/explorer-tree-drop";
+import {
   buildSubtreeEndIndexes,
   sourceSubtreeRange,
-  type ManuscriptVisibleRow,
-} from "../manuscript/manuscript-tree-flatten";
-import {
-  resolveHoverZone,
-  type ManuscriptHoverZone,
-  type ManuscriptResolvedDrop,
-} from "../manuscript/manuscript-tree-placement";
+  type ExplorerVisibleRow,
+} from "../explorer/explorer-tree-flatten";
 import { collectResourceDescendantIds } from "./resource-tree-flatten";
 
 function canMoveIntoParent(
@@ -34,9 +34,9 @@ function canMoveIntoParent(
 }
 
 function folderHighlight(
-  rows: readonly ManuscriptVisibleRow[],
+  rows: readonly ExplorerVisibleRow[],
   folderId: string,
-): ManuscriptResolvedDrop["preview"] {
+): ExplorerResolvedDrop["preview"] {
   const startIndex = rows.findIndex((row) => row.id === folderId);
   if (startIndex < 0) {
     return { kind: "insert", visualIndex: rows.length, depth: 0 };
@@ -51,9 +51,9 @@ function folderHighlight(
 
 function resolveTargetParentId(
   tree: ResourceTreeSnapshot,
-  rows: readonly ManuscriptVisibleRow[],
+  rows: readonly ExplorerVisibleRow[],
   hoveredRowIndex: number | null,
-  hoverZone: ManuscriptHoverZone | null,
+  hoverZone: ExplorerHoverZone | null,
 ): string | null {
   if (hoveredRowIndex === null) {
     return tree.rootId;
@@ -78,18 +78,18 @@ function resolveTargetParentId(
 
 export function resolveResourceDrop(input: {
   tree: ResourceTreeSnapshot;
-  rows: readonly ManuscriptVisibleRow[];
+  rows: readonly ExplorerVisibleRow[];
   sourceId: string;
   pointerContentY: number;
   rowHeight: number;
-}): ManuscriptResolvedDrop | null {
+}): ExplorerResolvedDrop | null {
   const { tree, rows, sourceId, pointerContentY, rowHeight } = input;
   const source = tree.nodes[sourceId];
   if (source === undefined || rowHeight <= 0) return null;
   const range = sourceSubtreeRange(rows, sourceId);
 
   let hoveredRowIndex: number | null = null;
-  let hoverZone: ManuscriptHoverZone | null = null;
+  let hoverZone: ExplorerHoverZone | null = null;
   let aboveList = false;
 
   if (pointerContentY < 0) {

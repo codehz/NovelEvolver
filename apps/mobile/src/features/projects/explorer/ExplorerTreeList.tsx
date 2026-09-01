@@ -11,32 +11,32 @@ import Animated, {
 
 import { color, fontFamily, fontSize, space } from "../../../shared/theme";
 import { OVERLAY_TIMING } from "../../../shared/ui/overlay-chrome";
+import { dropKey, type ExplorerResolvedDrop } from "./explorer-tree-drop";
 import {
-  manuscriptRowSlotY,
+  explorerRowSlotY,
   sourceSubtreeRange,
-  visualManuscriptRowSlots,
-  type ManuscriptVisibleRow,
-} from "../manuscript/manuscript-tree-flatten";
+  visualExplorerRowSlots,
+  type ExplorerVisibleRow,
+} from "./explorer-tree-flatten";
 import {
-  manuscriptTreeDragZoneKey,
-  resolveManuscriptTreeDragZone,
-  type ManuscriptTreeDragAction,
-  type ManuscriptTreeDragZone,
-} from "../manuscript/manuscript-tree-gesture";
-import { dropKey, type ManuscriptResolvedDrop } from "../manuscript/manuscript-tree-placement";
-import { ManuscriptDropIndicator } from "../manuscript/ManuscriptDropIndicator";
+  explorerTreeDragZoneKey,
+  resolveExplorerTreeDragZone,
+  type ExplorerTreeDragAction,
+  type ExplorerTreeDragZone,
+} from "./explorer-tree-gesture";
+import { ExplorerDropIndicator } from "./ExplorerDropIndicator";
 import {
-  MANUSCRIPT_TREE_ACTION_GAP,
-  MANUSCRIPT_TREE_ACTION_RIGHT_MARGIN,
-  MANUSCRIPT_TREE_ACTION_WIDTH,
-  MANUSCRIPT_TREE_PREVIEW_ANCHOR_X,
-  MANUSCRIPT_TREE_PREVIEW_HEIGHT,
-  MANUSCRIPT_TREE_ROW_HEIGHT,
-  ManuscriptTreeActionTooltip,
-  ManuscriptTreeDragPreview,
-  ManuscriptTreeRow,
-  type ManuscriptDragPointer,
-} from "../manuscript/ManuscriptTreeRow";
+  EXPLORER_TREE_ACTION_GAP,
+  EXPLORER_TREE_ACTION_RIGHT_MARGIN,
+  EXPLORER_TREE_ACTION_WIDTH,
+  EXPLORER_TREE_PREVIEW_ANCHOR_X,
+  EXPLORER_TREE_PREVIEW_HEIGHT,
+  EXPLORER_TREE_ROW_HEIGHT,
+  ExplorerTreeActionTooltip,
+  ExplorerTreeDragPreview,
+  ExplorerTreeRow,
+  type ExplorerDragPointer,
+} from "./ExplorerTreeRow";
 
 const AUTO_SCROLL_EDGE = 52;
 const AUTO_SCROLL_STEP = 16;
@@ -103,7 +103,7 @@ function ExplorerTreeRowSlot({
 }
 
 export type ExplorerTreeListProps<TNode> = {
-  flatten: (collapsedIds: Record<string, true>) => ManuscriptVisibleRow[];
+  flatten: (collapsedIds: Record<string, true>) => ExplorerVisibleRow[];
   selectedNodeId: string | null;
   emptyText: string;
   getNode: (id: string) => TNode | undefined;
@@ -112,11 +112,11 @@ export type ExplorerTreeListProps<TNode> = {
   onDelete: (node: TNode) => void;
   onMove: (sourceId: string, parentId: string, index?: number) => void;
   resolveDrop: (input: {
-    rows: readonly ManuscriptVisibleRow[];
+    rows: readonly ExplorerVisibleRow[];
     sourceId: string;
     pointerContentY: number;
     rowHeight: number;
-  }) => ManuscriptResolvedDrop | null;
+  }) => ExplorerResolvedDrop | null;
 };
 
 export function ExplorerTreeList<TNode>({
@@ -133,13 +133,9 @@ export function ExplorerTreeList<TNode>({
   const [collapsedIds, setCollapsedIds] = useState<Record<string, true>>({});
   const [draggingId, setDraggingId] = useState<string | null>(null);
   const [appearingIds, setAppearingIds] = useState<Record<string, true>>({});
-  const [drop, setDrop] = useState<ManuscriptResolvedDrop | null>(null);
+  const [drop, setDrop] = useState<ExplorerResolvedDrop | null>(null);
   const rows = flatten(collapsedIds);
-  const { slots, slotCount } = visualManuscriptRowSlots(
-    rows,
-    draggingId,
-    MANUSCRIPT_TREE_ROW_HEIGHT,
-  );
+  const { slots, slotCount } = visualExplorerRowSlots(rows, draggingId, EXPLORER_TREE_ROW_HEIGHT);
   const seenKeysRef = useRef<Set<string> | null>(null);
   const enterIds = new Set<string>();
   if (seenKeysRef.current === null) {
@@ -155,7 +151,7 @@ export function ExplorerTreeList<TNode>({
   const draggingRef = useRef(false);
   const draggingIdRef = useRef<string | null>(null);
   const fingerYRef = useRef(0);
-  const pointerRef = useRef<ManuscriptDragPointer>({
+  const pointerRef = useRef<ExplorerDragPointer>({
     x: 0,
     y: 0,
     absoluteX: 0,
@@ -164,20 +160,20 @@ export function ExplorerTreeList<TNode>({
   const scrollYRef = useRef(0);
   const maxScrollRef = useRef(0);
   const listFrameRef = useRef({ pageX: 0, pageY: 0, width: 0, height: 0 });
-  const dragZoneRef = useRef<ManuscriptTreeDragZone | null>(null);
-  const dropRef = useRef<ManuscriptResolvedDrop | null>(null);
+  const dragZoneRef = useRef<ExplorerTreeDragZone | null>(null);
+  const dropRef = useRef<ExplorerResolvedDrop | null>(null);
   const autoScrollRaf = useRef<number | null>(null);
   const previewGenRef = useRef(0);
   const appearingClearRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const latestRef = useRef({ rows, getNode, onMove, onRename, onDelete, resolveDrop });
   latestRef.current = { rows, getNode, onMove, onRename, onDelete, resolveDrop };
-  const [dragZone, setDragZone] = useState<ManuscriptTreeDragZone | null>(null);
+  const [dragZone, setDragZone] = useState<ExplorerTreeDragZone | null>(null);
   const [actionHover, setActionHover] = useState<{
-    action: ManuscriptTreeDragAction;
+    action: ExplorerTreeDragAction;
     rowTop: number;
   } | null>(null);
   const actionHoverRef = useRef<{
-    action: ManuscriptTreeDragAction;
+    action: ExplorerTreeDragAction;
     rowTop: number;
   } | null>(null);
   const overlayY = useSharedValue(0);
@@ -185,20 +181,20 @@ export function ExplorerTreeList<TNode>({
   const overlayProgress = useSharedValue(0);
   const [preview, setPreview] = useState<{
     title: string;
-    type: ManuscriptVisibleRow["type"];
+    type: ExplorerVisibleRow["type"];
     expanded: boolean;
   } | null>(null);
   const overlayStyle = useAnimatedStyle(() => ({
     opacity: overlayProgress.value,
-    left: overlayX.value - MANUSCRIPT_TREE_PREVIEW_ANCHOR_X,
-    top: overlayY.value - MANUSCRIPT_TREE_PREVIEW_HEIGHT / 2,
+    left: overlayX.value - EXPLORER_TREE_PREVIEW_ANCHOR_X,
+    top: overlayY.value - EXPLORER_TREE_PREVIEW_HEIGHT / 2,
   }));
   const overlayScaleStyle = useAnimatedStyle(() => ({
     transform: [{ scale: interpolate(overlayProgress.value, [0, 1], [1, 0.88]) }],
   }));
-  const contentHeight = slotCount * MANUSCRIPT_TREE_ROW_HEIGHT + space[8];
+  const contentHeight = slotCount * EXPLORER_TREE_ROW_HEIGHT + space[8];
   maxScrollRef.current = Math.max(0, contentHeight - listFrameRef.current.height);
-  const pointerInViewport = (sourceId: string, pointer: ManuscriptDragPointer) => {
+  const pointerInViewport = (sourceId: string, pointer: ExplorerDragPointer) => {
     const frame = listFrameRef.current;
     if (pointer.absoluteY !== 0 || pointer.absoluteX !== 0) {
       return {
@@ -207,34 +203,32 @@ export function ExplorerTreeList<TNode>({
       };
     }
     const index = latestRef.current.rows.findIndex((row) => row.id === sourceId);
-    const localY = Number.isFinite(pointer.y) ? pointer.y : MANUSCRIPT_TREE_ROW_HEIGHT / 2;
+    const localY = Number.isFinite(pointer.y) ? pointer.y : EXPLORER_TREE_ROW_HEIGHT / 2;
     const localX = Number.isFinite(pointer.x) ? pointer.x : space[4];
     const y =
       index >= 0
-        ? manuscriptRowSlotY(index, MANUSCRIPT_TREE_ROW_HEIGHT) - scrollYRef.current + localY
+        ? explorerRowSlotY(index, EXPLORER_TREE_ROW_HEIGHT) - scrollYRef.current + localY
         : localY;
     return { x: localX, y };
   };
   const sourceRowTop = (sourceId: string) => {
     const index = latestRef.current.rows.findIndex((row) => row.id === sourceId);
-    return index >= 0
-      ? manuscriptRowSlotY(index, MANUSCRIPT_TREE_ROW_HEIGHT) - scrollYRef.current
-      : 0;
+    return index >= 0 ? explorerRowSlotY(index, EXPLORER_TREE_ROW_HEIGHT) - scrollYRef.current : 0;
   };
-  const resolveDragZone = (sourceId: string, pointer: ManuscriptDragPointer) => {
+  const resolveDragZone = (sourceId: string, pointer: ExplorerDragPointer) => {
     const point = pointerInViewport(sourceId, pointer);
-    return resolveManuscriptTreeDragZone({
+    return resolveExplorerTreeDragZone({
       x: point.x,
       y: point.y,
       rowTop: sourceRowTop(sourceId),
-      rowHeight: MANUSCRIPT_TREE_ROW_HEIGHT,
+      rowHeight: EXPLORER_TREE_ROW_HEIGHT,
       listWidth: listFrameRef.current.width,
-      actionWidth: MANUSCRIPT_TREE_ACTION_WIDTH,
-      actionGap: MANUSCRIPT_TREE_ACTION_GAP,
-      actionRightMargin: MANUSCRIPT_TREE_ACTION_RIGHT_MARGIN,
+      actionWidth: EXPLORER_TREE_ACTION_WIDTH,
+      actionGap: EXPLORER_TREE_ACTION_GAP,
+      actionRightMargin: EXPLORER_TREE_ACTION_RIGHT_MARGIN,
     });
   };
-  const placePreview = (sourceId: string, pointer: ManuscriptDragPointer) => {
+  const placePreview = (sourceId: string, pointer: ExplorerDragPointer) => {
     const point = pointerInViewport(sourceId, pointer);
     overlayX.value = point.x;
     overlayY.value = point.y;
@@ -270,13 +264,13 @@ export function ExplorerTreeList<TNode>({
     });
   };
 
-  const applyDrop = (sourceId: string, pointer: ManuscriptDragPointer) => {
+  const applyDrop = (sourceId: string, pointer: ExplorerDragPointer) => {
     const pointerContentY = pointerInViewport(sourceId, pointer).y + scrollYRef.current;
     const next = latestRef.current.resolveDrop({
       rows: latestRef.current.rows,
       sourceId,
       pointerContentY,
-      rowHeight: MANUSCRIPT_TREE_ROW_HEIGHT,
+      rowHeight: EXPLORER_TREE_ROW_HEIGHT,
     });
     if (dropKey(next) === dropKey(dropRef.current)) return;
     dropRef.current = next;
@@ -289,11 +283,11 @@ export function ExplorerTreeList<TNode>({
     setDrop(null);
   };
 
-  const updateDragZone = (sourceId: string, pointer: ManuscriptDragPointer) => {
+  const updateDragZone = (sourceId: string, pointer: ExplorerDragPointer) => {
     const nextZone = resolveDragZone(sourceId, pointer);
     const previousZone = dragZoneRef.current;
     dragZoneRef.current = nextZone;
-    if (manuscriptTreeDragZoneKey(previousZone) !== manuscriptTreeDragZoneKey(nextZone)) {
+    if (explorerTreeDragZoneKey(previousZone) !== explorerTreeDragZoneKey(nextZone)) {
       setDragZone(nextZone);
       if (nextZone.kind === "outside") overlayProgress.value = withTiming(1, OVERLAY_TIMING);
       else overlayProgress.value = withTiming(0, OVERLAY_TIMING);
@@ -346,7 +340,7 @@ export function ExplorerTreeList<TNode>({
     autoScrollRaf.current = requestAnimationFrame(loop);
   };
 
-  const handleDragActivate = (sourceId: string, pointer: ManuscriptDragPointer) => {
+  const handleDragActivate = (sourceId: string, pointer: ExplorerDragPointer) => {
     draggingRef.current = true;
     draggingIdRef.current = sourceId;
     pointerRef.current = pointer;
@@ -378,7 +372,7 @@ export function ExplorerTreeList<TNode>({
     startAutoScroll();
   };
 
-  const handleDragUpdate = (pointer: ManuscriptDragPointer) => {
+  const handleDragUpdate = (pointer: ExplorerDragPointer) => {
     const sourceId = draggingIdRef.current;
     if (sourceId === null) return;
     pointerRef.current = pointer;
@@ -386,7 +380,7 @@ export function ExplorerTreeList<TNode>({
     updateDragZone(sourceId, pointer);
   };
 
-  const handleDragEnd = (pointer: ManuscriptDragPointer) => {
+  const handleDragEnd = (pointer: ExplorerDragPointer) => {
     if (!draggingRef.current) return;
     const sourceId = draggingIdRef.current;
     if (sourceId === null) return;
@@ -450,7 +444,7 @@ export function ExplorerTreeList<TNode>({
         scrollEventThrottle={16}
         contentContainerStyle={styles.content}
       >
-        <View style={[styles.slots, { height: slotCount * MANUSCRIPT_TREE_ROW_HEIGHT }]}>
+        <View style={[styles.slots, { height: slotCount * EXPLORER_TREE_ROW_HEIGHT }]}>
           {rows.map((row, index) => {
             const node = getNode(row.id);
             const slot = slots[index];
@@ -467,7 +461,7 @@ export function ExplorerTreeList<TNode>({
                 enter={enterIds.has(row.id)}
                 fade={appearingIds[row.id] === true}
               >
-                <ManuscriptTreeRow
+                <ExplorerTreeRow
                   row={row}
                   selected={selectedNodeId === row.id}
                   ghost={slot.ghost}
@@ -497,14 +491,14 @@ export function ExplorerTreeList<TNode>({
               </ExplorerTreeRowSlot>
             );
           })}
-          <ManuscriptDropIndicator preview={drop?.preview ?? null} />
+          <ExplorerDropIndicator preview={drop?.preview ?? null} />
         </View>
       </ScrollView>
       <View pointerEvents="none" style={styles.overlayLayer}>
         <Animated.View pointerEvents="none" style={[styles.previewWrap, overlayStyle]}>
           {preview !== null ? (
             <Animated.View pointerEvents="none" style={overlayScaleStyle}>
-              <ManuscriptTreeDragPreview
+              <ExplorerTreeDragPreview
                 title={preview.title}
                 type={preview.type}
                 expanded={preview.expanded}
@@ -512,7 +506,7 @@ export function ExplorerTreeList<TNode>({
             </Animated.View>
           ) : null}
         </Animated.View>
-        <ManuscriptTreeActionTooltip
+        <ExplorerTreeActionTooltip
           action={actionHover?.action ?? null}
           rowTop={actionHover?.rowTop ?? 0}
           listWidth={listFrameRef.current.width}
@@ -538,7 +532,7 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     top: 0,
-    height: MANUSCRIPT_TREE_ROW_HEIGHT,
+    height: EXPLORER_TREE_ROW_HEIGHT,
   },
   emptyText: {
     color: color.muted,
