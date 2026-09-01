@@ -55,6 +55,26 @@ export function flattenVisibleManuscriptRows(
   return result;
 }
 
+export function sourceSubtreeRange(
+  rows: readonly { id: string; depth: number }[],
+  sourceId: string,
+): { start: number; count: number } | null {
+  const start = rows.findIndex((row) => row.id === sourceId);
+  if (start < 0) return null;
+  const ends = buildSubtreeEndIndexes(rows);
+  const end = ends[start] ?? start;
+  return { start, count: end - start + 1 };
+}
+
+export function packRowsExcludingSource<T extends { id: string; depth: number }>(
+  rows: readonly T[],
+  sourceId: string,
+): T[] {
+  const range = sourceSubtreeRange(rows, sourceId);
+  if (range === null) return [...rows];
+  return rows.filter((_, index) => index < range.start || index >= range.start + range.count);
+}
+
 export function buildSubtreeEndIndexes(rows: readonly { depth: number }[]): number[] {
   const endIndexes = rows.map((_, index) => index);
   const openIndexes: number[] = [];

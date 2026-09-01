@@ -4,6 +4,7 @@ import {
   buildSubtreeEndIndexes,
   collectManuscriptDescendantIds,
   findManuscriptParentId,
+  packRowsExcludingSource,
   type ManuscriptVisibleRow,
 } from "./manuscript-tree-flatten";
 
@@ -20,6 +21,7 @@ export type ManuscriptDropPreview =
 export type ManuscriptResolvedDrop = {
   preview: ManuscriptDropPreview;
   target: ManuscriptMoveTarget;
+  commit: boolean;
 };
 
 export function resolveHoverZone(offsetY: number, rowHeight: number): ManuscriptHoverZone {
@@ -30,8 +32,9 @@ export function resolveHoverZone(offsetY: number, rowHeight: number): Manuscript
 
 export function dropKey(drop: ManuscriptResolvedDrop | null): string {
   if (drop === null) return "";
-  if (drop.target.kind === "into") return `into:${drop.target.parentId}`;
-  return `insert:${drop.target.parentId}:${drop.target.index}`;
+  const prefix = drop.commit ? "move" : "restore";
+  if (drop.target.kind === "into") return `${prefix}:into:${drop.target.parentId}`;
+  return `${prefix}:insert:${drop.target.parentId}:${drop.target.index}`;
 }
 
 function getNodeDepth(outline: ManuscriptOutline, id: string): number {
@@ -101,6 +104,19 @@ export function isValidManuscriptMoveTarget(
   const sourceIndex = findChildIndex(outline, sourceParentId, sourceId);
   if (sourceIndex < 0) return false;
   return target.index !== sourceIndex && target.index !== sourceIndex + 1;
+}
+
+export function isManuscriptRestoreTarget(
+  outline: ManuscriptOutline,
+  sourceId: string,
+  target: ManuscriptMoveTarget,
+): boolean {
+  if (target.kind !== "insert") return false;
+  const sourceParentId = findManuscriptParentId(outline, sourceId);
+  if (sourceParentId === null || sourceParentId !== target.parentId) return false;
+  const sourceIndex = findChildIndex(outline, sourceParentId, sourceId);
+  if (sourceIndex < 0) return false;
+  return target.index === sourceIndex || target.index === sourceIndex + 1;
 }
 
 function resolveManuscriptDropCore(
@@ -232,6 +248,7 @@ export function resolveManuscriptDrop(input: {
 }): ManuscriptResolvedDrop | null {
   const { outline, rows, sourceId, sourceType, pointerContentY, rowHeight } = input;
   if (rowHeight <= 0) return null;
+  const packed = packRowsExcludingSource(rows, sourceId);
 
   let hoveredRowIndex: number | null = null;
   let hoverZone: ManuscriptHoverZone | null = null;
@@ -240,17 +257,17 @@ export function resolveManuscriptDrop(input: {
 
   if (pointerContentY < 0) {
     aboveList = true;
-  } else if (rows.length === 0 || pointerContentY >= rows.length * rowHeight) {
+  } else if (packed.length === 0 || pointerContentY >= packed.length * rowHeight) {
     aboveList = false;
   } else {
-    hoveredRowIndex = Math.min(rows.length - 1, Math.floor(pointerContentY / rowHeight));
+    hoveredRowIndex = Math.min(packed.length - 1, Math.floor(pointerContentY / rowHeight));
     offsetY = pointerContentY - hoveredRowIndex * rowHeight;
     hoverZone = resolveHoverZone(offsetY, rowHeight);
   }
 
   const resolved = resolveManuscriptDropCore(
     outline,
-    rows,
+    packed,
     hoveredRowIndex,
     hoverZone,
     offsetY,
@@ -258,6 +275,11 @@ export function resolveManuscriptDrop(input: {
     aboveList,
   );
   if (resolved === null) return null;
-  if (!isValidManuscriptMoveTarget(outline, sourceId, sourceType, resolved.target)) return null;
-  return resolved;
+  if (isValidManuscriptMoveTarget(outline, sourceId, sourceType, resolved.target)) {
+    return { ...resolved, commit: true };
+  }
+  if (isManuscriptRestoreTarget(outline, sourceId, resolved.target)) {
+    return { ...resolved, commit: false };
+  }
+  return null;
 }

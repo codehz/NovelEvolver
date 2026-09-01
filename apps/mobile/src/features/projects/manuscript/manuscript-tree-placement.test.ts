@@ -3,7 +3,7 @@ import { describe, expect, test } from "bun:test";
 
 import type { ManuscriptOutline } from "@novelevolver/domain/worktree";
 
-import { flattenVisibleManuscriptRows } from "./manuscript-tree-flatten";
+import { flattenVisibleManuscriptRows, packRowsExcludingSource } from "./manuscript-tree-flatten";
 import {
   resolveHoverZone,
   resolveManuscriptDrop,
@@ -40,7 +40,7 @@ function sampleOutline(): ManuscriptOutline {
 function dropAt(
   outline: ManuscriptOutline,
   sourceId: string,
-  rowIndex: number,
+  packedRowIndex: number,
   zone: ManuscriptHoverZone,
   collapsedIds: Record<string, true> = {},
 ) {
@@ -54,7 +54,7 @@ function dropAt(
     rows,
     sourceId,
     sourceType: source.type,
-    pointerContentY: rowIndex * ROW_HEIGHT + offset,
+    pointerContentY: packedRowIndex * ROW_HEIGHT + offset,
     rowHeight: ROW_HEIGHT,
   });
 }
@@ -68,49 +68,76 @@ describe("resolveHoverZone", () => {
   });
 });
 
+describe("packRowsExcludingSource", () => {
+  test("omits the source and its visible descendants", () => {
+    const rows = flattenVisibleManuscriptRows(sampleOutline());
+    expect(packRowsExcludingSource(rows, "foldera001").map((row) => row.id)).toEqual([
+      "chapter003",
+      "folderb002",
+    ]);
+    expect(packRowsExcludingSource(rows, "chapter003").map((row) => row.id)).toEqual([
+      "foldera001",
+      "chapter001",
+      "chapter002",
+      "folderb002",
+    ]);
+  });
+});
+
 describe("resolveManuscriptDrop", () => {
   test("reorders siblings when dropping before an earlier root item", () => {
     const outline = sampleOutline();
     const drop = dropAt(outline, "folderb002", 3, "before");
+    expect(drop?.commit).toBe(true);
     expect(drop?.target).toEqual({ kind: "insert", parentId: "root", index: 1 });
   });
 
-  test("rejects a no-op drop on the source row", () => {
+  test("shows a restore preview on the original packed gap", () => {
     const outline = sampleOutline();
-    expect(dropAt(outline, "chapter003", 3, "before")).toBeNull();
-    expect(dropAt(outline, "chapter003", 3, "after")).toBeNull();
+    const drop = dropAt(outline, "chapter003", 3, "before");
+    expect(drop?.commit).toBe(false);
+    expect(drop?.preview.kind).toBe("insert");
+    expect(drop?.target).toEqual({ kind: "insert", parentId: "root", index: 2 });
   });
 
   test("moves a chapter into a folder via the inside zone", () => {
     const outline = sampleOutline();
-    const drop = dropAt(outline, "chapter003", 4, "inside");
+    const drop = dropAt(outline, "chapter003", 3, "inside");
+    expect(drop?.commit).toBe(true);
     expect(drop?.target).toEqual({ kind: "into", parentId: "folderb002" });
     expect(drop?.preview.kind).toBe("into");
   });
 
   test("moves a nested chapter out to root by dropping after a root sibling", () => {
     const outline = sampleOutline();
-    const drop = dropAt(outline, "chapter001", 3, "after");
+    const drop = dropAt(outline, "chapter001", 2, "after");
+    expect(drop?.commit).toBe(true);
     expect(drop?.target).toEqual({ kind: "insert", parentId: "root", index: 2 });
   });
 
   test("inserts as the first child when dropping after an expanded folder with children", () => {
     const outline = sampleOutline();
     const drop = dropAt(outline, "chapter003", 0, "after");
+    expect(drop?.commit).toBe(true);
     expect(drop?.target).toEqual({ kind: "insert", parentId: "foldera001", index: 0 });
   });
 
   test("inserts as a sibling after a collapsed folder", () => {
     const outline = sampleOutline();
     const drop = dropAt(outline, "folderb002", 0, "after", { foldera001: true });
+    expect(drop?.commit).toBe(true);
     expect(drop?.target).toEqual({ kind: "insert", parentId: "root", index: 1 });
   });
 
-  test("rejects dropping a folder into itself or its descendants", () => {
+  test("does not target a dragged folder or its descendants", () => {
     const outline = sampleOutline();
-    expect(dropAt(outline, "foldera001", 0, "inside")).toBeNull();
-    expect(dropAt(outline, "foldera001", 1, "inside")).toBeNull();
-    expect(dropAt(outline, "foldera001", 0, "after")).toBeNull();
+    expect(dropAt(outline, "foldera001", 1, "inside")?.target).toEqual({
+      kind: "into",
+      parentId: "folderb002",
+    });
+    const restore = dropAt(outline, "foldera001", 0, "before");
+    expect(restore?.commit).toBe(false);
+    expect(restore?.target).toEqual({ kind: "insert", parentId: "root", index: 1 });
   });
 
   test("folds chapter inside-zone to before or after by pointer Y", () => {
@@ -129,7 +156,7 @@ describe("resolveManuscriptDrop", () => {
       rows,
       sourceId: "foldera001",
       sourceType: "folder",
-      pointerContentY: 3 * ROW_HEIGHT + ROW_HEIGHT * 0.6,
+      pointerContentY: ROW_HEIGHT * 0.6,
       rowHeight: ROW_HEIGHT,
     });
     expect(before?.target).toEqual({ kind: "insert", parentId: "root", index: 1 });

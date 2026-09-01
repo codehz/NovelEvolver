@@ -1,5 +1,5 @@
 import type { ManuscriptNode, ManuscriptOutline } from "@novelevolver/domain/worktree";
-import { useRef, useState, type ComponentRef } from "react";
+import { useRef, useState, type ComponentRef, type ReactNode } from "react";
 import { StyleSheet, Text, View } from "react-native";
 import { ScrollView } from "react-native-gesture-handler";
 import Animated, {
@@ -12,7 +12,11 @@ import Animated, {
 
 import { color, fontFamily, fontSize, space } from "../../../shared/theme";
 import { OVERLAY_TIMING } from "../../../shared/ui/overlay-chrome";
-import { flattenVisibleManuscriptRows, type ManuscriptVisibleRow } from "./manuscript-tree-flatten";
+import {
+  flattenVisibleManuscriptRows,
+  sourceSubtreeRange,
+  type ManuscriptVisibleRow,
+} from "./manuscript-tree-flatten";
 import {
   dropKey,
   resolveManuscriptDrop,
@@ -31,6 +35,42 @@ const INSERT_INDICATOR_HEIGHT = 3;
 const AUTO_SCROLL_EDGE = 52;
 const AUTO_SCROLL_STEP = 16;
 
+type ManuscriptTreeRowSlotProps = {
+  translateY: number;
+  animateShift: boolean;
+  pointerEvents: "auto" | "none";
+  appear: boolean;
+  children: ReactNode;
+};
+
+function ManuscriptTreeRowSlot({
+  translateY,
+  animateShift,
+  pointerEvents,
+  appear,
+  children,
+}: ManuscriptTreeRowSlotProps) {
+  const shift = useSharedValue(translateY);
+  const opacity = useSharedValue(1);
+  const appearedRef = useRef(false);
+  shift.value = animateShift ? withTiming(translateY, OVERLAY_TIMING) : translateY;
+  if (appear && !appearedRef.current) {
+    opacity.value = 0;
+    opacity.value = withTiming(1, OVERLAY_TIMING);
+  }
+  if (!appear) opacity.value = 1;
+  appearedRef.current = appear;
+  const style = useAnimatedStyle(() => ({
+    transform: [{ translateY: shift.value }],
+    opacity: opacity.value,
+  }));
+  return (
+    <Animated.View pointerEvents={pointerEvents} style={style}>
+      {children}
+    </Animated.View>
+  );
+}
+
 type ManuscriptTreeListProps = {
   outline: ManuscriptOutline;
   onOpenChapter: (nodeId: string) => void;
@@ -48,8 +88,10 @@ export function ManuscriptTreeList({
 }: ManuscriptTreeListProps) {
   const [collapsedIds, setCollapsedIds] = useState<Record<string, true>>({});
   const [draggingId, setDraggingId] = useState<string | null>(null);
+  const [appearingId, setAppearingId] = useState<string | null>(null);
   const [drop, setDrop] = useState<ManuscriptResolvedDrop | null>(null);
   const rows = flattenVisibleManuscriptRows(outline, collapsedIds);
+  const dragRange = draggingId === null ? null : sourceSubtreeRange(rows, draggingId);
   const scrollRef = useRef<ComponentRef<typeof ScrollView>>(null);
   const listRef = useRef<ComponentRef<typeof View>>(null);
   const closeOpenSwipeRef = useRef<(() => void) | null>(null);
@@ -177,6 +219,7 @@ export function ManuscriptTreeList({
     dropRef.current = null;
     const sourceRow = latestRef.current.rows.find((row) => row.id === sourceId);
     previewGenRef.current += 1;
+    setAppearingId(null);
     setDraggingId(sourceId);
     setDrop(null);
     if (sourceRow !== undefined) {
@@ -215,15 +258,14 @@ export function ManuscriptTreeList({
     const sourceId = draggingIdRef.current;
     draggingIdRef.current = null;
     dropRef.current = null;
-    setDraggingId(null);
     setDrop(null);
-    if (sourceId === null || resolved === null) return;
-    const move = latestRef.current.onMove;
-    if (resolved.target.kind === "into") {
-      move(sourceId, resolved.target.parentId);
-      return;
+    if (sourceId !== null && resolved?.commit === true) {
+      setAppearingId(sourceId);
+      const move = latestRef.current.onMove;
+      if (resolved.target.kind === "into") move(sourceId, resolved.target.parentId);
+      else move(sourceId, resolved.target.parentId, resolved.target.index);
     }
-    move(sourceId, resolved.target.parentId, resolved.target.index);
+    setDraggingId(null);
   };
 
   if (rows.length === 0) {
@@ -244,49 +286,64 @@ export function ManuscriptTreeList({
         contentContainerStyle={styles.content}
       >
         <View>
-          {rows.map((row) => {
+          {rows.map((row, index) => {
             const node = outline.nodes[row.id];
             if (node === undefined) return null;
+            const inSourceSubtree =
+              dragRange !== null &&
+              index >= dragRange.start &&
+              index < dragRange.start + dragRange.count;
+            const translateY =
+              dragRange !== null && index >= dragRange.start + dragRange.count
+                ? -dragRange.count * MANUSCRIPT_TREE_ROW_HEIGHT
+                : 0;
             return (
-              <ManuscriptTreeRow
+              <ManuscriptTreeRowSlot
                 key={row.id}
-                row={row}
-                hidden={draggingId === row.id}
-                highlighted={drop?.preview.kind === "into" && drop.preview.folderId === row.id}
-                swipeEnabled={draggingId === null || draggingId === row.id}
-                dragEnabled={draggingId === null || draggingId === row.id}
-                onPress={() => {
-                  if (row.type === "folder") {
-                    setCollapsedIds((current) => {
-                      if (current[row.id] === true) {
-                        const next = { ...current };
-                        delete next[row.id];
-                        return next;
-                      }
-                      return { ...current, [row.id]: true };
-                    });
-                    return;
-                  }
-                  onOpenChapter(row.id);
-                }}
-                onRename={() => {
-                  onRename(node);
-                }}
-                onDelete={() => {
-                  onDelete(node);
-                }}
-                onDragActivate={(pointer) => {
-                  handleDragActivate(row.id, pointer);
-                }}
-                onDragUpdate={handleDragUpdate}
-                onDragEnd={handleDragEnd}
-                onSwipeOpen={(close) => {
-                  if (closeOpenSwipeRef.current !== close) {
-                    closeOpenSwipeRef.current?.();
-                  }
-                  closeOpenSwipeRef.current = close;
-                }}
-              />
+                translateY={translateY}
+                animateShift={appearingId === null}
+                pointerEvents={draggingId !== null && draggingId !== row.id ? "none" : "auto"}
+                appear={appearingId === row.id}
+              >
+                <ManuscriptTreeRow
+                  row={row}
+                  hidden={inSourceSubtree}
+                  highlighted={drop?.preview.kind === "into" && drop.preview.folderId === row.id}
+                  swipeEnabled={draggingId === null || draggingId === row.id}
+                  dragEnabled={draggingId === null || draggingId === row.id}
+                  onPress={() => {
+                    if (row.type === "folder") {
+                      setCollapsedIds((current) => {
+                        if (current[row.id] === true) {
+                          const next = { ...current };
+                          delete next[row.id];
+                          return next;
+                        }
+                        return { ...current, [row.id]: true };
+                      });
+                      return;
+                    }
+                    onOpenChapter(row.id);
+                  }}
+                  onRename={() => {
+                    onRename(node);
+                  }}
+                  onDelete={() => {
+                    onDelete(node);
+                  }}
+                  onDragActivate={(pointer) => {
+                    handleDragActivate(row.id, pointer);
+                  }}
+                  onDragUpdate={handleDragUpdate}
+                  onDragEnd={handleDragEnd}
+                  onSwipeOpen={(close) => {
+                    if (closeOpenSwipeRef.current !== close) {
+                      closeOpenSwipeRef.current?.();
+                    }
+                    closeOpenSwipeRef.current = close;
+                  }}
+                />
+              </ManuscriptTreeRowSlot>
             );
           })}
           {drop?.preview.kind === "insert" ? (
