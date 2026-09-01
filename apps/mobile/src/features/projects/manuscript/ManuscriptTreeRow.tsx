@@ -9,6 +9,7 @@ import Animated, {
 } from "react-native-reanimated";
 import IconBook from "~icons/codicon/book";
 import IconEdit from "~icons/codicon/edit";
+import IconFile from "~icons/codicon/file";
 import IconFolder from "~icons/codicon/folder";
 import IconFolderOpened from "~icons/codicon/folder-opened";
 import IconTrash from "~icons/codicon/trash";
@@ -70,6 +71,12 @@ type ManuscriptTreeRowContentProps = {
   selected?: boolean;
 };
 
+function rowIcon(type: ManuscriptVisibleRow["type"], expanded: boolean) {
+  if (type === "folder") return expanded ? IconFolderOpened : IconFolder;
+  if (type === "file") return IconFile;
+  return IconBook;
+}
+
 export function ManuscriptTreeRowContent({
   title,
   type,
@@ -77,7 +84,7 @@ export function ManuscriptTreeRowContent({
   expanded,
   selected = false,
 }: ManuscriptTreeRowContentProps) {
-  const Icon = type === "folder" ? (expanded ? IconFolderOpened : IconFolder) : IconBook;
+  const Icon = rowIcon(type, expanded);
   const iconColor = type === "folder" ? color.accent : color.info;
   return (
     <View
@@ -109,7 +116,7 @@ export function ManuscriptTreeDragPreview({
   type,
   expanded,
 }: ManuscriptTreeDragPreviewProps) {
-  const Icon = type === "folder" ? (expanded ? IconFolderOpened : IconFolder) : IconBook;
+  const Icon = rowIcon(type, expanded);
   const iconColor = type === "folder" ? color.accent : color.info;
   return (
     <View pointerEvents="none" style={styles.preview}>

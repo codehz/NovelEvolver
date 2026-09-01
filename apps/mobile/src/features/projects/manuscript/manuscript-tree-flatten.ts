@@ -1,9 +1,11 @@
-import type { ManuscriptNode, ManuscriptOutline } from "@novelevolver/domain/worktree";
+import type { ManuscriptOutline } from "@novelevolver/domain/worktree";
+
+export type ExplorerRowType = "folder" | "chapter" | "file";
 
 export type ManuscriptVisibleRow = {
   id: string;
   title: string;
-  type: ManuscriptNode["type"];
+  type: ExplorerRowType;
   depth: number;
   expanded: boolean;
   parentId: string;

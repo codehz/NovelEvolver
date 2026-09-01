@@ -1,4 +1,10 @@
-import type { ManuscriptNode, ManuscriptOutline } from "@novelevolver/domain/worktree";
+import type {
+  ManuscriptNode,
+  ManuscriptOutline,
+  ResourceTreeNode,
+  ResourceTreeSnapshot,
+  WorktreeDomain,
+} from "@novelevolver/domain/worktree";
 import { Header } from "@react-navigation/elements";
 import { useNavigation, useRoute } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
@@ -36,6 +42,24 @@ function containsManuscriptNode(
   return node.children.some((childId) => containsManuscriptNode(outline, childId, targetId));
 }
 
+function containsResourceNode(
+  tree: ResourceTreeSnapshot,
+  ancestorId: string,
+  targetId: string,
+): boolean {
+  if (ancestorId === targetId) return true;
+  const node = tree.nodes[ancestorId];
+  if (node?.type !== "folder") return false;
+  return node.childIds.some((childId) => containsResourceNode(tree, childId, targetId));
+}
+
+function resourceCreateParentId(tree: ResourceTreeSnapshot, selectedId: string | null): string {
+  if (selectedId === null) return tree.rootId;
+  const node = tree.nodes[selectedId];
+  if (node?.type === "folder") return node.id;
+  return node?.parentId ?? tree.rootId;
+}
+
 export function ProjectScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const route = useRoute();
@@ -45,7 +69,9 @@ export function ProjectScreen() {
   const [opened, setOpened] = useState(
     manager.opened?.record.id === projectId ? manager.opened : null,
   );
-  const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
+  const [explorerDomain, setExplorerDomain] = useState<WorktreeDomain>("manuscript");
+  const [selectedManuscriptId, setSelectedManuscriptId] = useState<string | null>(null);
+  const [selectedResourceId, setSelectedResourceId] = useState<string | null>(null);
   const [, setRevision] = useState(0);
 
   useEffect(() => {
@@ -88,6 +114,7 @@ export function ProjectScreen() {
   }
 
   const outline = opened.worktree.getManuscriptOutline();
+  const resourceTree = opened.worktree.getResourceTree();
   const update = () => {
     setRevision((value) => value + 1);
   };
@@ -129,7 +156,44 @@ export function ProjectScreen() {
     try {
       const { nodeId } = opened.worktree.createManuscriptChapter(outline.rootId, name);
       update();
-      setSelectedNodeId(nodeId);
+      setSelectedManuscriptId(nodeId);
+      return true;
+    } catch (error) {
+      await overlay.alert({ title: "创建失败", message: errorMessage(error) });
+      return false;
+    }
+  };
+  const createResourceFolder = async () => {
+    const name = await overlay.prompt({
+      title: "新建文件夹",
+      placeholder: "文件夹名称",
+      confirmLabel: "创建",
+    });
+    if (name === null) return;
+    try {
+      opened.worktree.createResourceFolder(
+        resourceCreateParentId(resourceTree, selectedResourceId),
+        name,
+      );
+      update();
+    } catch (error) {
+      await overlay.alert({ title: "创建失败", message: errorMessage(error) });
+    }
+  };
+  const createResourceFile = async (): Promise<boolean> => {
+    const name = await overlay.prompt({
+      title: "新建文件",
+      placeholder: "文件名称",
+      confirmLabel: "创建",
+    });
+    if (name === null) return false;
+    try {
+      const { nodeId } = opened.worktree.createResourceFile(
+        resourceCreateParentId(resourceTree, selectedResourceId),
+        name,
+      );
+      update();
+      setSelectedResourceId(nodeId);
       return true;
     } catch (error) {
       await overlay.alert({ title: "创建失败", message: errorMessage(error) });
@@ -159,8 +223,8 @@ export function ProjectScreen() {
     if (!confirmed) return;
     try {
       opened.worktree.deleteManuscriptNode(node.id);
-      if (containsManuscriptNode(outline, node.id, selectedNodeId ?? "")) {
-        setSelectedNodeId(null);
+      if (containsManuscriptNode(outline, node.id, selectedManuscriptId ?? "")) {
+        setSelectedManuscriptId(null);
       }
       update();
     } catch (error) {
@@ -170,6 +234,45 @@ export function ProjectScreen() {
   const moveNode = (sourceId: string, parentId: string, index?: number) => {
     try {
       opened.worktree.moveManuscriptNode(sourceId, parentId, index);
+      update();
+    } catch (error) {
+      void overlay.alert({ title: "移动失败", message: errorMessage(error) });
+    }
+  };
+  const renameResource = async (node: ResourceTreeNode) => {
+    const name = await overlay.prompt({
+      title: "重命名",
+      initialValue: node.name,
+      confirmLabel: "保存",
+    });
+    if (name === null) return;
+    try {
+      opened.worktree.renameResourceNode(node.id, name);
+      update();
+    } catch (error) {
+      await overlay.alert({ title: "重命名失败", message: errorMessage(error) });
+    }
+  };
+  const deleteResource = async (node: ResourceTreeNode) => {
+    const confirmed = await overlay.confirm({
+      title: "删除节点？",
+      message: `将递归删除“${node.name}”及其子项。`,
+      confirmLabel: "删除",
+    });
+    if (!confirmed) return;
+    try {
+      opened.worktree.deleteResourceNode(node.id);
+      if (containsResourceNode(resourceTree, node.id, selectedResourceId ?? "")) {
+        setSelectedResourceId(null);
+      }
+      update();
+    } catch (error) {
+      await overlay.alert({ title: "删除失败", message: errorMessage(error) });
+    }
+  };
+  const moveResource = (sourceId: string, parentId: string) => {
+    try {
+      opened.worktree.moveResourceNode(sourceId, parentId);
       update();
     } catch (error) {
       void overlay.alert({ title: "移动失败", message: errorMessage(error) });
@@ -225,21 +328,37 @@ export function ProjectScreen() {
       />
       <ProjectWorkspace
         opened={opened}
+        domain={explorerDomain}
+        onDomainChange={setExplorerDomain}
         outline={outline}
-        selectedNodeId={selectedNodeId}
+        resourceTree={resourceTree}
+        selectedManuscriptId={selectedManuscriptId}
+        selectedResourceId={selectedResourceId}
         warning={opened.worktree.warning}
-        onOpenChapter={setSelectedNodeId}
-        onRename={(node) => {
+        onOpenChapter={setSelectedManuscriptId}
+        onOpenResourceFile={setSelectedResourceId}
+        onRenameManuscript={(node) => {
           void renameNode(node);
         }}
-        onDelete={(node) => {
+        onDeleteManuscript={(node) => {
           void deleteNode(node);
         }}
-        onMove={moveNode}
+        onMoveManuscript={moveNode}
+        onRenameResource={(node) => {
+          void renameResource(node);
+        }}
+        onDeleteResource={(node) => {
+          void deleteResource(node);
+        }}
+        onMoveResource={moveResource}
         onCreateFolder={() => {
           void createFolder();
         }}
         onCreateChapter={createChapter}
+        onCreateResourceFolder={() => {
+          void createResourceFolder();
+        }}
+        onCreateResourceFile={createResourceFile}
       />
     </SafeAreaView>
   );

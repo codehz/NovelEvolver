@@ -123,6 +123,8 @@ describe("WorktreeSession", () => {
     const folder = session.createManuscriptFolder("root", "第一幕");
     const chapter = session.createManuscriptChapter(folder.nodeId, "开场");
     session.writeChapter(chapter.nodeId, "正文");
+    const resourceFile = session.createResourceFile("root", "设定.md");
+    session.writeResourceFile(resourceFile.nodeId, "角色");
     expect(session.hasPendingChanges()).toBe(true);
 
     const reopened = new WorktreeSession(
@@ -137,6 +139,11 @@ describe("WorktreeSession", () => {
       type: "folder",
       title: "第一幕",
     });
+    expect(reopened.getResourceTree().nodes[resourceFile.nodeId]).toMatchObject({
+      type: "file",
+      name: "设定.md",
+    });
+    expect(reopened.readResourceFile(resourceFile.nodeId)).toBe("角色");
     expect(reopened.hasPendingChanges()).toBe(true);
     reopened.commitChanges("添加开场", author());
     expect(reopened.hasPendingChanges()).toBe(false);

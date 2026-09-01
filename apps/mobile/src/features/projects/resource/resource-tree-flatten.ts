@@ -1,0 +1,41 @@
+import type { ResourceTreeSnapshot } from "@novelevolver/domain/worktree";
+
+import type { ManuscriptVisibleRow } from "../manuscript/manuscript-tree-flatten";
+
+export function collectResourceDescendantIds(tree: ResourceTreeSnapshot, id: string): string[] {
+  const node = tree.nodes[id];
+  if (node === undefined || node.type === "file") return [];
+  const descendants: string[] = [];
+  for (const childId of node.childIds) {
+    descendants.push(childId, ...collectResourceDescendantIds(tree, childId));
+  }
+  return descendants;
+}
+
+export function flattenVisibleResourceRows(
+  tree: ResourceTreeSnapshot,
+  collapsedIds: Record<string, true> = {},
+): ManuscriptVisibleRow[] {
+  const result: ManuscriptVisibleRow[] = [];
+  const walk = (parentId: string, depth: number) => {
+    const parent = tree.nodes[parentId];
+    if (parent?.type !== "folder") return;
+    parent.childIds.forEach((id, index) => {
+      const node = tree.nodes[id];
+      if (node === undefined) return;
+      const expanded = node.type === "folder" && collapsedIds[node.id] !== true;
+      result.push({
+        id: node.id,
+        title: node.name,
+        type: node.type,
+        depth,
+        expanded,
+        parentId,
+        index,
+      });
+      if (node.type === "folder" && expanded) walk(node.id, depth + 1);
+    });
+  };
+  walk(tree.rootId, 0);
+  return result;
+}

@@ -14,6 +14,7 @@ import type {
   ManuscriptOutline,
   ResourceImportEntry,
   ResourceImportResult,
+  ResourceTreeSnapshot,
   WorktreeNodeIdResult,
   WorktreeReplaceQuery,
   WorktreeReplaceResult,
@@ -26,6 +27,7 @@ import type { Repository } from "nano-git/repository/core";
 
 import type { WorktreeRepository } from "../db/worktree-repo";
 import type { ObjectDatabase } from "../git/diff-utils";
+import { cloneResourceTreeSnapshot } from "../trees/tree-clone";
 import { manuscriptTreeToOutline } from "../trees/worktree-tree-bridge";
 import * as changesOps from "./changes-ops";
 import { currentChangesOnlySnapshot } from "./changes-snapshot";
@@ -164,6 +166,10 @@ export class WorktreeSession {
 
   getManuscriptOutline(): ManuscriptOutline {
     return manuscriptTreeToOutline(this.#state.manuscriptTree);
+  }
+
+  getResourceTree(): ResourceTreeSnapshot {
+    return cloneResourceTreeSnapshot(this.#state.resourceTree);
   }
 
   hasCommittedTip(): boolean {

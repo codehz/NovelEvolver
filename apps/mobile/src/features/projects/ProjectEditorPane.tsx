@@ -1,26 +1,46 @@
-import type { ManuscriptNode } from "@novelevolver/domain/worktree";
+import type {
+  ManuscriptNode,
+  ResourceTreeNode,
+  WorktreeDomain,
+} from "@novelevolver/domain/worktree";
 import { useEffect, useState } from "react";
 import { StyleSheet, Text, TextInput, View } from "react-native";
 
 import { color, fontFamily, fontSize, space } from "../../shared/theme";
 import type { OpenedProject } from "./git/repository-manager";
 
-type ChapterEditorPaneProps = {
+type ProjectEditorPaneProps = {
   opened: OpenedProject;
-  node: ManuscriptNode | undefined;
+  domain: WorktreeDomain;
+  chapter: ManuscriptNode | undefined;
+  resource: ResourceTreeNode | undefined;
 };
 
-export function ChapterEditorPane({ opened, node }: ChapterEditorPaneProps) {
-  const nodeId = node?.type === "chapter" ? node.id : null;
+export function ProjectEditorPane({ opened, domain, chapter, resource }: ProjectEditorPaneProps) {
+  const chapterId = chapter?.type === "chapter" ? chapter.id : null;
+  const resourceId = resource?.type === "file" ? resource.id : null;
+  const documentId = domain === "manuscript" ? chapterId : resourceId;
   const [content, setContent] = useState(() =>
-    nodeId === null ? "" : opened.worktree.readChapter(nodeId),
+    documentId === null
+      ? ""
+      : domain === "manuscript"
+        ? opened.worktree.readChapter(documentId)
+        : opened.worktree.readResourceFile(documentId),
   );
 
   useEffect(() => {
-    setContent(nodeId === null ? "" : opened.worktree.readChapter(nodeId));
-  }, [nodeId, opened]);
+    if (documentId === null) {
+      setContent("");
+      return;
+    }
+    setContent(
+      domain === "manuscript"
+        ? opened.worktree.readChapter(documentId)
+        : opened.worktree.readResourceFile(documentId),
+    );
+  }, [documentId, domain, opened]);
 
-  if (node?.type !== "chapter" || nodeId === null) {
+  if (domain === "manuscript" && (chapter?.type !== "chapter" || chapterId === null)) {
     return (
       <View style={styles.center}>
         <Text style={styles.placeholderTitle}>编辑器</Text>
@@ -28,10 +48,31 @@ export function ChapterEditorPane({ opened, node }: ChapterEditorPaneProps) {
       </View>
     );
   }
+  if (domain === "resource" && (resource?.type !== "file" || resourceId === null)) {
+    return (
+      <View style={styles.center}>
+        <Text style={styles.placeholderTitle}>编辑器</Text>
+        <Text style={styles.placeholderText}>请从资源库中选择一个文件。</Text>
+      </View>
+    );
+  }
+  if (documentId === null) {
+    return (
+      <View style={styles.center}>
+        <Text style={styles.placeholderTitle}>编辑器</Text>
+        <Text style={styles.placeholderText}>请选择要编辑的内容。</Text>
+      </View>
+    );
+  }
+
+  const title = domain === "manuscript" ? (chapter?.title ?? "") : (resource?.name ?? "");
+  const subtitle = domain === "manuscript" ? "章节正文" : "资源文件";
+  const placeholder = domain === "manuscript" ? "开始编辑章节正文…" : "开始编辑资源文件…";
 
   const updateContent = (value: string) => {
     setContent(value);
-    opened.worktree.writeChapter(nodeId, value);
+    if (domain === "manuscript") opened.worktree.writeChapter(documentId, value);
+    else opened.worktree.writeResourceFile(documentId, value);
   };
 
   return (
@@ -39,9 +80,9 @@ export function ChapterEditorPane({ opened, node }: ChapterEditorPaneProps) {
       <View style={styles.header}>
         <View style={styles.headerTitleWrap}>
           <Text style={styles.title} numberOfLines={1}>
-            {node.title}
+            {title}
           </Text>
-          <Text style={styles.subtitle}>章节正文</Text>
+          <Text style={styles.subtitle}>{subtitle}</Text>
         </View>
         <Text style={styles.status}>
           {opened.worktree.hasPendingChanges() ? "有未提交修改" : "已提交"}
@@ -51,7 +92,7 @@ export function ChapterEditorPane({ opened, node }: ChapterEditorPaneProps) {
         multiline
         value={content}
         onChangeText={updateContent}
-        placeholder="开始编辑章节正文…"
+        placeholder={placeholder}
         placeholderTextColor={color.placeholder}
         textAlignVertical="top"
         style={styles.editor}
