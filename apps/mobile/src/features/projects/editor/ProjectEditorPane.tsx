@@ -2,9 +2,9 @@ import type { ManuscriptNode, ResourceTreeNode } from "@novelevolver/domain/work
 import { useEffect, useState } from "react";
 import { StyleSheet, Text, TextInput, View } from "react-native";
 
-import { color, fontFamily, fontSize, space } from "../../shared/theme";
+import { color, fontFamily, fontSize, space } from "../../../shared/theme";
+import type { OpenedProject } from "../git/repository-manager";
 import type { EditorDocument } from "./editor-document";
-import type { OpenedProject } from "./git/repository-manager";
 
 type ProjectEditorPaneProps = {
   opened: OpenedProject;

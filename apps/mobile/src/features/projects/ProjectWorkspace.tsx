@@ -1,3 +1,4 @@
+import type { ManuscriptNode, ResourceTreeNode } from "@novelevolver/domain/worktree";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { StyleSheet, View, useWindowDimensions } from "react-native";
 import IconCommentDiscussion from "~icons/codicon/comment-discussion";
@@ -6,11 +7,11 @@ import IconFiles from "~icons/codicon/files";
 
 import type { ProjectTabParamList } from "../../app/navigation-types";
 import { color, fontFamily, fontSize } from "../../shared/theme";
-import type { EditorDocument } from "./editor-document";
+import type { EditorDocument } from "./editor/editor-document";
+import { ProjectEditorPane } from "./editor/ProjectEditorPane";
+import { ProjectExplorerPane, type ProjectExplorerPaneProps } from "./explorer/ProjectExplorerPane";
 import type { OpenedProject } from "./git/repository-manager";
 import { ProjectAiPlaceholderPane } from "./ProjectAiPlaceholderPane";
-import { ProjectEditorPane } from "./ProjectEditorPane";
-import { ProjectExplorerPane, type ProjectExplorerPaneProps } from "./ProjectExplorerPane";
 
 const PROJECT_WIDE_BREAKPOINT = 1024;
 const PROJECT_MANUSCRIPT_WIDTH = 256;
@@ -28,31 +29,33 @@ export type ProjectWorkspaceProps = Omit<
 
 const ProjectTabs = createBottomTabNavigator<ProjectTabParamList>();
 
-type ProjectTabsProps = ProjectWorkspaceProps;
+type EditorNodes = {
+  chapter: ManuscriptNode | undefined;
+  resource: ResourceTreeNode | undefined;
+};
 
 function resolveEditorNodes(
   document: EditorDocument | null,
   outline: ProjectExplorerPaneProps["outline"],
   resourceTree: ProjectExplorerPaneProps["resourceTree"],
-) {
+): EditorNodes {
   return {
     chapter: document?.domain === "manuscript" ? outline.nodes[document.id] : undefined,
     resource: document?.domain === "resource" ? resourceTree.nodes[document.id] : undefined,
   };
 }
 
+type ProjectTabsProps = ProjectWorkspaceProps & EditorNodes;
+
 function ProjectTabsView({
   opened,
   document,
+  chapter,
+  resource,
   onOpenChapter,
   onOpenResourceFile,
   ...explorerProps
 }: ProjectTabsProps) {
-  const { chapter, resource } = resolveEditorNodes(
-    document,
-    explorerProps.outline,
-    explorerProps.resourceTree,
-  );
   return (
     <ProjectTabs.Navigator
       initialRouteName="Project"
@@ -154,19 +157,14 @@ export function ProjectWorkspace({
     explorerProps.outline,
     explorerProps.resourceTree,
   );
-  const explorerPane = (
-    <ProjectExplorerPane
-      {...explorerProps}
-      onOpenChapter={onOpenChapter}
-      onOpenResourceFile={onOpenResourceFile}
-    />
-  );
   if (width < PROJECT_WIDE_BREAKPOINT) {
     return (
       <View style={styles.compact}>
         <ProjectTabsView
           opened={opened}
           document={document}
+          chapter={chapter}
+          resource={resource}
           onOpenChapter={onOpenChapter}
           onOpenResourceFile={onOpenResourceFile}
           {...explorerProps}
@@ -177,7 +175,13 @@ export function ProjectWorkspace({
 
   return (
     <View style={styles.wide}>
-      <View style={[styles.manuscriptColumn, styles.columnBorder]}>{explorerPane}</View>
+      <View style={[styles.manuscriptColumn, styles.columnBorder]}>
+        <ProjectExplorerPane
+          {...explorerProps}
+          onOpenChapter={onOpenChapter}
+          onOpenResourceFile={onOpenResourceFile}
+        />
+      </View>
       <View style={styles.editorColumn}>
         <ProjectEditorPane
           opened={opened}

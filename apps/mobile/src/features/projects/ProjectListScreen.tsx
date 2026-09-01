@@ -8,12 +8,9 @@ import type { RootStackParamList } from "../../app/navigation-types";
 import { pickNpkDocument } from "../../shared/files/mobile-file-bridge";
 import { color, fontFamily, fontSize, radius, space, wash } from "../../shared/theme";
 import { useOverlay } from "../../shared/ui/OverlayHost";
+import { errorMessage } from "./error-message";
 import { ProjectConflictError } from "./git/repository-manager";
 import { useProjectManager } from "./ProjectManagerProvider";
-
-function errorMessage(error: unknown): string {
-  return error instanceof Error ? error.message : String(error);
-}
 
 export function ProjectListScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();

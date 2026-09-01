@@ -15,6 +15,30 @@ Bare React Native (Community CLI + [Rollipop](https://rollipop.dev)). **Do not a
 
 Human-oriented notes: [README.md](README.md).
 
+## Source layout
+
+```
+src/
+  app/                 # root navigation, split navigator
+  features/
+    projects/          # local worktree projects (not desktop-rpc)
+      ProjectListScreen.tsx
+      ProjectScreen.tsx            # composition: header + workspace
+      ProjectWorkspace.tsx         # compact tabs / wide columns
+      use-project-workspace.ts     # opened session, selection, mutations
+      ProjectManagerProvider.tsx
+      editor/                      # document pane
+      explorer/                    # domain switch + tree host
+      manuscript/                  # manuscript tree
+      resource/                    # resource tree
+      git/                         # app-state sqlite + nano-git + repository manager
+    settings/          # MMKV settings
+  shared/              # theme, overlays, files, node-compat
+  native/              # Nitro modules
+```
+
+`ProjectScreen` is composition only. Worktree mutations and explorer/editor selection live in `use-project-workspace.ts`. Do not copy the desktop workbench layer graph here.
+
 ## Commands
 
 From repo root: `bun run mobile` / `mobile:android` / `mobile:ios`. From this package: `bun run start` / `android` / `ios`. iOS: `cd ios && bundle install && bundle exec pod install`.

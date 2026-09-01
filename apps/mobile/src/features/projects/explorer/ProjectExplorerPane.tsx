@@ -10,11 +10,11 @@ import { Pressable, StyleSheet, Text, View } from "react-native";
 import IconNewFile from "~icons/codicon/new-file";
 import IconNewFolder from "~icons/codicon/new-folder";
 
-import { color, fontFamily, fontSize, space } from "../../shared/theme";
-import { SettingsHeaderButton } from "../settings/SettingsHeaderButton";
-import { ExplorerDomainSelect } from "./explorer/ExplorerDomainSelect";
-import { ManuscriptTreeList } from "./manuscript/ManuscriptTreeList";
-import { ResourceTreeList } from "./resource/ResourceTreeList";
+import { color, fontFamily, fontSize, space } from "../../../shared/theme";
+import { SettingsHeaderButton } from "../../settings/SettingsHeaderButton";
+import { ManuscriptTreeList } from "../manuscript/ManuscriptTreeList";
+import { ResourceTreeList } from "../resource/ResourceTreeList";
+import { ExplorerDomainSelect } from "./ExplorerDomainSelect";
 
 export type ProjectExplorerPaneProps = {
   domain: WorktreeDomain;

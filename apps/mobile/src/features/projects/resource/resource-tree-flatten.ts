@@ -12,6 +12,26 @@ export function collectResourceDescendantIds(tree: ResourceTreeSnapshot, id: str
   return descendants;
 }
 
+export function containsResourceNode(
+  tree: ResourceTreeSnapshot,
+  ancestorId: string,
+  targetId: string,
+): boolean {
+  return (
+    ancestorId === targetId || collectResourceDescendantIds(tree, ancestorId).includes(targetId)
+  );
+}
+
+export function resourceCreateParentId(
+  tree: ResourceTreeSnapshot,
+  selectedId: string | null,
+): string {
+  if (selectedId === null) return tree.rootId;
+  const node = tree.nodes[selectedId];
+  if (node?.type === "folder") return node.id;
+  return node?.parentId ?? tree.rootId;
+}
+
 export function flattenVisibleResourceRows(
   tree: ResourceTreeSnapshot,
   collapsedIds: Record<string, true> = {},

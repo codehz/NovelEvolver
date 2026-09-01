@@ -29,6 +29,17 @@ export function collectManuscriptDescendantIds(outline: ManuscriptOutline, id: s
   return descendants;
 }
 
+export function containsManuscriptNode(
+  outline: ManuscriptOutline,
+  ancestorId: string,
+  targetId: string,
+): boolean {
+  return (
+    ancestorId === targetId ||
+    collectManuscriptDescendantIds(outline, ancestorId).includes(targetId)
+  );
+}
+
 export function flattenVisibleManuscriptRows(
   outline: ManuscriptOutline,
   collapsedIds: Record<string, true> = {},
