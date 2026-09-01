@@ -76,6 +76,23 @@ export default defineConfig({
         find: /^react-native-gesture-handler$/,
         replacement: path.join(gestureHandlerRoot, "lib/module/index.js"),
       },
+      {
+        // Subpath packages set `react-native` to TypeScript `src/`. Loading
+        // that after the compiled main entry re-registers
+        // RNGestureHandlerDetector and crashes at startup.
+        find: /^react-native-gesture-handler\/ReanimatedSwipeable$/,
+        replacement: path.join(
+          gestureHandlerRoot,
+          "lib/module/components/ReanimatedSwipeable/index.js",
+        ),
+      },
+      {
+        find: /^react-native-gesture-handler\/ReanimatedDrawerLayout$/,
+        replacement: path.join(
+          gestureHandlerRoot,
+          "lib/module/components/ReanimatedDrawerLayout.js",
+        ),
+      },
     ],
   },
   // Built-ins are externalized before Rollipop's array alias plugin runs.

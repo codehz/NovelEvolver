@@ -3,7 +3,7 @@ import { Header } from "@react-navigation/elements";
 import { useNavigation, useRoute } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { useEffect, useState } from "react";
-import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Pressable, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import type { RootStackParamList } from "../../app/navigation-types";
@@ -18,24 +18,8 @@ import { useOverlay } from "../../shared/ui/OverlayHost";
 import { settingsStyles } from "../settings/settings-chrome";
 import { SettingsHeaderBackButton } from "../settings/SettingsHeaderBackButton";
 import { SettingsHeaderButton } from "../settings/SettingsHeaderButton";
+import { ManuscriptTreeList } from "./manuscript/ManuscriptTreeList";
 import { useProjectManager } from "./ProjectManagerProvider";
-
-function flattenNodes(outline: { rootId: string; nodes: Record<string, ManuscriptNode> }) {
-  const result: Array<{ node: ManuscriptNode; depth: number; parentId: string; index: number }> =
-    [];
-  const walk = (parentId: string, depth: number) => {
-    const parent = outline.nodes[parentId];
-    if (parent?.type !== "folder") return;
-    parent.children.forEach((id, index) => {
-      const node = outline.nodes[id];
-      if (node === undefined) return;
-      result.push({ node, depth, parentId, index });
-      if (node.type === "folder") walk(node.id, depth + 1);
-    });
-  };
-  walk(outline.rootId, 0);
-  return result;
-}
 
 function errorMessage(error: unknown): string {
   return error instanceof Error ? error.message : String(error);
@@ -50,7 +34,7 @@ export function ProjectScreen() {
   const [opened, setOpened] = useState(
     manager.opened?.record.id === projectId ? manager.opened : null,
   );
-  const [revision, setRevision] = useState(0);
+  const [, setRevision] = useState(0);
 
   useEffect(() => {
     let active = true;
@@ -92,13 +76,8 @@ export function ProjectScreen() {
   }
 
   const outline = opened.worktree.getManuscriptOutline();
-  const nodes = flattenNodes(outline);
   const update = () => {
     setRevision((value) => value + 1);
-  };
-  const move = (node: ManuscriptNode, parentId: string, index: number, direction: -1 | 1) => {
-    opened.worktree.moveManuscriptNode(node.id, parentId, index + direction);
-    update();
   };
   const renameProject = async () => {
     const name = await overlay.prompt({
@@ -187,6 +166,14 @@ export function ProjectScreen() {
       update();
     } catch (error) {
       await overlay.alert({ title: "删除失败", message: errorMessage(error) });
+    }
+  };
+  const moveNode = (sourceId: string, parentId: string, index?: number) => {
+    try {
+      opened.worktree.moveManuscriptNode(sourceId, parentId, index);
+      update();
+    } catch (error) {
+      void overlay.alert({ title: "移动失败", message: errorMessage(error) });
     }
   };
   const exportProject = async () => {
@@ -288,49 +275,19 @@ export function ProjectScreen() {
       {opened.worktree.warning !== null && (
         <Text style={styles.warning}>{opened.worktree.warning}</Text>
       )}
-      <ScrollView contentContainerStyle={styles.tree} key={revision}>
-        {nodes.length === 0 ? (
-          <Text style={styles.emptyText}>空 manuscript。使用上方按钮创建文件夹或章节。</Text>
-        ) : (
-          nodes.map(({ node, depth, parentId, index }) => (
-            <View
-              key={node.id}
-              style={[styles.nodeRow, { paddingLeft: space[3] + depth * space[4] }]}
-            >
-              <Pressable
-                style={styles.nodeMain}
-                onPress={() =>
-                  node.type === "chapter" &&
-                  navigation.navigate("Chapter", { projectId, nodeId: node.id })
-                }
-              >
-                <Text style={styles.nodeIcon}>{node.type === "folder" ? "▾" : "·"}</Text>
-                <Text style={styles.nodeTitle}>{node.title}</Text>
-              </Pressable>
-              <Pressable
-                onPress={() => {
-                  void renameNode(node);
-                }}
-              >
-                <Text style={styles.actionText}>改名</Text>
-              </Pressable>
-              <Pressable onPress={() => move(node, parentId, index, -1)} disabled={index === 0}>
-                <Text style={[styles.actionText, index === 0 && styles.disabled]}>↑</Text>
-              </Pressable>
-              <Pressable onPress={() => move(node, parentId, index, 1)}>
-                <Text style={styles.actionText}>↓</Text>
-              </Pressable>
-              <Pressable
-                onPress={() => {
-                  void deleteNode(node);
-                }}
-              >
-                <Text style={styles.dangerText}>删</Text>
-              </Pressable>
-            </View>
-          ))
-        )}
-      </ScrollView>
+      <ManuscriptTreeList
+        outline={outline}
+        onOpenChapter={(nodeId) => {
+          navigation.navigate("Chapter", { projectId, nodeId });
+        }}
+        onRename={(node) => {
+          void renameNode(node);
+        }}
+        onDelete={(node) => {
+          void deleteNode(node);
+        }}
+        onMove={moveNode}
+      />
     </SafeAreaView>
   );
 }
@@ -382,28 +339,6 @@ const styles = StyleSheet.create({
     paddingBottom: space[2],
   },
   dangerText: { color: color.error, fontFamily: fontFamily.sans, fontSize: fontSize.sm },
-  tree: { paddingBottom: space[8] },
-  nodeRow: {
-    minHeight: 48,
-    flexDirection: "row",
-    alignItems: "center",
-    gap: space[2],
-    borderBottomWidth: 1,
-    borderBottomColor: color.border,
-    paddingRight: space[3],
-  },
-  nodeMain: { flex: 1, flexDirection: "row", alignItems: "center", gap: space[2] },
-  nodeIcon: { color: color.accent, fontSize: fontSize.md, width: 16, textAlign: "center" },
-  nodeTitle: { color: color.foreground, fontFamily: fontFamily.sans, fontSize: fontSize.md },
-  actionText: { color: color.accent, fontFamily: fontFamily.sans, fontSize: fontSize.xs },
-  disabled: { color: color.placeholder },
-  emptyText: {
-    color: color.muted,
-    fontFamily: fontFamily.sans,
-    fontSize: fontSize.sm,
-    textAlign: "center",
-    padding: space[6],
-  },
   center: { flex: 1, alignItems: "center", justifyContent: "center" },
   text: { color: color.muted, fontFamily: fontFamily.sans, fontSize: fontSize.sm },
 });
