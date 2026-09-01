@@ -1,9 +1,8 @@
 import type { WorkspaceService } from "@novelevolver/desktop-rpc/services/workspace-service";
-import { ProjectsRepository, WorktreeRepository } from "@novelevolver/worktree";
+import { AiChatRepository, ProjectsRepository, WorktreeRepository } from "@novelevolver/worktree";
 import { RpcTarget } from "capnweb";
 import type { BrowserWindow } from "electron";
 
-import { AiChatRepository } from "../../db/repositories/ai-chat-repo";
 import type { RpcMainDeps } from "../server/deps";
 import { ProjectSessionImpl } from "../session/project-session";
 
@@ -24,7 +23,7 @@ export class WorkspaceServiceImpl extends RpcTarget implements WorkspaceService 
     const appDb = deps.getAppDb();
     this.#projects = new ProjectsRepository(appDb.port);
     this.#worktrees = new WorktreeRepository(appDb.port);
-    this.#aiChat = new AiChatRepository(appDb.db);
+    this.#aiChat = new AiChatRepository(appDb.port);
     this.#mockAiEnabled = deps.mockAiEnabled;
     this.#getAiModelsStore = deps.getAiModelsStore;
     this.#getAiAgentsStore = deps.getAiAgentsStore;

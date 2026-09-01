@@ -1,6 +1,7 @@
-import type { DatabaseSync } from "node:sqlite";
+import type { AiConversationStatus } from "@novelevolver/domain/ai/chat";
+import { BUILTIN_AI_AGENT_ID } from "@novelevolver/domain/settings/ai-settings";
 
-export type AiConversationStatus = "active" | "archived";
+import type { DatabasePort, SqlValue } from "./database-port";
 
 export type AiConversationListStatusFilter = AiConversationStatus | "all";
 
@@ -104,7 +105,7 @@ function rowToSummary(row: AiConversationSummaryRow): AiConversationSummaryRecor
     adapterKind: row.adapter_kind,
     model: row.model,
     selectedModelId: row.selected_model_id ?? "",
-    selectedAgentId: row.selected_agent_id ?? "builtin-writing-assistant",
+    selectedAgentId: row.selected_agent_id ?? BUILTIN_AI_AGENT_ID,
     selectedReasoningLevel: toSelectedReasoningLevel(row.selected_reasoning_level),
     scenarioId: row.scenario_id,
     hasPendingToolBatch:
@@ -151,13 +152,12 @@ function escapeLikePattern(value: string): string {
 /**
  * ai_conversation 表的 query 接口。
  *
- * 不负责建表（schema 由 initAiChatSchema 在 AppDatabase 启动时执行），
- * 也不持有自己的连接，构造时注入共享 DatabaseSync 句柄。
+ * 不负责建表（schema 由 initAppState 执行），也不持有自己的连接。
  */
 export class AiChatRepository {
-  readonly #db: DatabaseSync;
+  readonly #db: DatabasePort;
 
-  constructor(db: DatabaseSync) {
+  constructor(db: DatabasePort) {
     this.#db = db;
   }
 
@@ -166,7 +166,7 @@ export class AiChatRepository {
     options?: { status?: AiConversationListStatusFilter },
   ): AiConversationSummaryRecord[] {
     const status = options?.status ?? "active";
-    const params: Array<number | string> = [projectId];
+    const params: SqlValue[] = [projectId];
     const statusClause = statusWhereClause(status);
     if (status !== "all") {
       params.push(status);
@@ -186,22 +186,6 @@ export class AiChatRepository {
     return rows.map(rowToSummary);
   }
 
-  /** Full records for active conversations (legacy callers / runtime load). */
-  listByProject(projectId: number): AiConversationRecord[] {
-    const rows = this.#db
-      .prepare(
-        `
-        SELECT ${FULL_COLUMNS}
-        FROM ai_conversation
-        WHERE project_id = ? AND status = 'active'
-        ORDER BY updated_at DESC
-        `,
-      )
-      .all(projectId) as AiConversationRow[];
-
-    return rows.map(rowToRecord);
-  }
-
   searchByProject(
     projectId: number,
     query: string,
@@ -213,7 +197,7 @@ export class AiChatRepository {
     }
 
     const like = `%${escapeLikePattern(normalized)}%`;
-    const params: Array<number | string> = [projectId, like, like];
+    const params: SqlValue[] = [projectId, like, like];
     const statusClause = options?.includeArchived ? "" : " AND status = 'active'";
 
     const rows = this.#db
@@ -245,7 +229,7 @@ export class AiChatRepository {
         LIMIT 1
         `,
       )
-      .get(projectId) as AiConversationRow | undefined;
+      .get(projectId) as AiConversationRow | undefined | null;
 
     return row ? rowToRecord(row) : null;
   }
@@ -259,7 +243,7 @@ export class AiChatRepository {
         WHERE project_id = ? AND id = ?
         `,
       )
-      .get(projectId, id) as AiConversationRow | undefined;
+      .get(projectId, id) as AiConversationRow | undefined | null;
 
     return row ? rowToRecord(row) : null;
   }
@@ -329,7 +313,7 @@ export class AiChatRepository {
         `,
       )
       .run(projectId, id);
-    return Number(result.changes ?? 0) > 0;
+    return result.changes > 0;
   }
 
   setStatus(projectId: number, id: string, status: AiConversationStatus): boolean {
@@ -343,7 +327,7 @@ export class AiChatRepository {
         `,
       )
       .run(status, now, now, projectId, id);
-    return Number(result.changes ?? 0) > 0;
+    return result.changes > 0;
   }
 
   updateTitle(projectId: number, id: string, title: string, titleCustomized: boolean): boolean {
@@ -357,6 +341,6 @@ export class AiChatRepository {
         `,
       )
       .run(title, titleCustomized ? 1 : 0, now, now, projectId, id);
-    return Number(result.changes ?? 0) > 0;
+    return result.changes > 0;
   }
 }

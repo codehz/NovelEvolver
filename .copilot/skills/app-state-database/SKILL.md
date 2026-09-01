@@ -11,35 +11,27 @@ NovelEvolver 的应用状态持久化由一个 **SQLite 数据库**（`app-state
 
 ## 文件位置
 
-| 文件                   | 路径                                                                                  |
-| ---------------------- | ------------------------------------------------------------------------------------- |
-| 数据库容器             | `electron/db/app-database.ts`                                                         |
-| Projects Schema + Repo | `electron/db/schema/projects-schema.ts` + `electron/db/repositories/projects-repo.ts` |
-| Worktree Schema + Repo | `electron/db/schema/worktree-schema.ts` + `electron/db/repositories/worktree-repo.ts` |
-| AI Chat Schema + Repo  | `electron/db/schema/ai-chat-schema.ts` + `electron/db/repositories/ai-chat-repo.ts`   |
-| 数据库初始化           | `electron/main.ts`（`new AppDatabase(join(userData, "app-state.db"))`)                |
-| 仓库记忆               | `/memories/repo/app-state-database.md`                                                |
+| 文件           | 路径                                                                                                  |
+| -------------- | ----------------------------------------------------------------------------------------------------- |
+| 数据库容器     | `apps/desktop/electron/db/app-database.ts`                                                            |
+| Schema + Repos | `packages/worktree/src/db/`（`schema.ts`、`projects-repo.ts`、`worktree-repo.ts`、`ai-chat-repo.ts`） |
+| 数据库初始化   | `apps/desktop/electron/main.ts`（`new AppDatabase(join(userData, "app-state.db"))`)                   |
+| 仓库记忆       | `/memories/repo/app-state-database.md`                                                                |
 
 ## 架构设计
 
 ### AppDatabase 容器
 
-`electron/db/app-database.ts`
+`apps/desktop/electron/db/app-database.ts`
 
 - 封装单个 `DatabaseSync` 实例，全局共享一份连接。
 - 启动时开启 `PRAGMA foreign_keys = ON`、`PRAGMA journal_mode = WAL`、`PRAGMA busy_timeout = 5000`。
-- 按以下顺序初始化 schema（依赖 FK 约束，顺序不可变）：
-  1. `initProjectsSchema(db)` — 先建，worktree 和 ai_conversation 通过 FK 引用它
-  2. `initWorktreeSchema(db)` — 依赖 projects(id)
-  3. `initAiChatSchema(db)` — 依赖 projects(id)
+- 调用 `@novelevolver/worktree` 的 `initAppState`（`initProjectsSchema` → `initWorktreeSchema` → `initAiChatSchema`）。
 - 提供 `transaction<T>(operation: () => T)` 执行 `BEGIN IMMEDIATE` 事务，跨 repo 写入可放在同一事务中。
 
 ### Repository 模式
 
-每个表模块分为两部分：
-
-- **`schema/*.ts`** — 建表 DDL（`init*Schema(db)`），不负责查询。
-- **`repositories/*.ts`** — 查询接口（`*Repository` 类），构造时注入共享 `DatabaseSync` 句柄，不自行 open 连接。
+Schema DDL 在 `packages/worktree/src/db/schema.ts`；查询接口在同目录 `*-repo.ts`，构造时注入共享 `DatabasePort`，不自行 open 连接。
 
 所有 SQL Row 类型用 `snake_case` 匹配数据库列名，Record 类型用 `camelCase` 匹配 JS/TS 约定，通过 `rowToRecord` 系列函数转换。
 
@@ -282,7 +274,7 @@ CREATE INDEX IF NOT EXISTS idx_ai_conversation_project_active
 
 **兼容性补丁**：`initAiChatSchema` 启动时检测列是否存在，不存在则 `ALTER TABLE ADD COLUMN`（`scenario_id`、`warnings_json`、`selected_model_id`）。
 
-**查询**：`listByProject` / `getLatestByProject` 过滤 `status = 'active'`，按 `last_active_at DESC` 排序。
+**查询**：`listSummariesByProject` / `getLatestByProject` 过滤 `status = 'active'`，按 `updated_at DESC` 排序。
 
 ---
 
@@ -377,10 +369,10 @@ ORDER BY last_active_at DESC;
 
 ## 修改 Schema 指南
 
-1. **Schema 变更**：修改 `electron/db/schema/*.ts` 中的 `CREATE TABLE` 语句（添加 `IF NOT EXISTS` 保证幂等）。
-2. **新增列**：在 schema 文件中通过 `ALTER TABLE ADD COLUMN` 添加（参考 `ai-chat-schema.ts` 中的兼容性补丁模式）。
-3. **新增表**：在对应的 `init*Schema` 中添加 `CREATE TABLE IF NOT EXISTS`，必要时在 `AppDatabase` 构造器中按 FK 依赖顺序调用。
-4. **Repository 更新**：在对应 `repositories/*.ts` 中添加新方法和 SQL Row/Record 类型。
+1. **Schema 变更**：修改 `packages/worktree/src/db/schema.ts` 中的 `CREATE TABLE` 语句（添加 `IF NOT EXISTS` 保证幂等）。
+2. **新增列**：在 schema 文件中通过 `ALTER TABLE ADD COLUMN` 添加（参考 `initAiChatSchema` 中的兼容性补丁模式）。
+3. **新增表**：在对应的 `init*Schema` 中添加 `CREATE TABLE IF NOT EXISTS`，并在 `initAppState` 中按 FK 依赖顺序调用。
+4. **Repository 更新**：在对应 `packages/worktree/src/db/*-repo.ts` 中添加新方法和 SQL Row/Record 类型。
 5. **命名约定**：SQL 列名用 `snake_case`，TS Record 属性用 `camelCase`，Row 类型用 `*SqlRow`，Record 类型用 `*Record`。
 6. **原型阶段**：不需要 migration 路径，schema 可暴力变更（见 AGENTS.md 兼容性策略）。
 

@@ -3,16 +3,14 @@ import { DatabaseSync } from "node:sqlite";
 import { initAppState, type DatabasePort } from "@novelevolver/worktree";
 
 import { asNodeSqlitePort } from "./node-sqlite-port";
-import { initAiChatSchema } from "./schema/ai-chat-schema";
 
 /**
  * 单一 App 状态数据库容器。
  *
  * 物理上合并 projects.db 与 worktrees.db 为一个 SQLite 文件，使跨模块
- * 外键（worktree.project_id -> projects.id）真正生效，并提供统一事务。
+ * 外键（worktree.project_id / ai_conversation.project_id -> projects.id）真正生效，并提供统一事务。
  *
- * projects / worktree 表由 `@novelevolver/worktree` 的 initAppState 建立；
- * AI chat 表仍由本进程 schema 初始化。
+ * projects / worktree / ai_conversation 表由 `@novelevolver/worktree` 的 initAppState 建立。
  */
 export class AppDatabase {
   readonly #db: DatabaseSync;
@@ -26,7 +24,6 @@ export class AppDatabase {
     this.port = asNodeSqlitePort(this.#db);
 
     initAppState(this.port);
-    initAiChatSchema(this.#db);
   }
 
   get db(): DatabaseSync {

@@ -15,8 +15,8 @@ import {
   BUILTIN_AI_AGENT_ID,
   type AiReasoningLevel,
 } from "@novelevolver/domain/settings/ai-settings";
+import type { AiChatRepository, AiConversationRecord } from "@novelevolver/worktree";
 
-import type { AiChatRepository, AiConversationRecord } from "../../db/repositories/ai-chat-repo";
 import { RpcStreamPublisher } from "../../lib/stream-publisher";
 import type { AiAgentsStore } from "../../settings/ai-agents-store";
 import type { AiModelsStore } from "../../settings/ai-models-store";

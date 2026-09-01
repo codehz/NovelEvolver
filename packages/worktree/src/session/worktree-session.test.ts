@@ -87,6 +87,7 @@ describe("WorktreeSession", () => {
         "worktree",
         "worktree_blob",
         "worktree_journal_entry",
+        "ai_conversation",
       ]),
     );
   });

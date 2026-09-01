@@ -1,5 +1,6 @@
 import { Database } from "@novelevolver/mobile-sqlite";
 import {
+  AiChatRepository,
   initAppState,
   ProjectsRepository,
   WorktreeRepository,
@@ -13,6 +14,7 @@ export type MobileAppState = {
   port: DatabasePort;
   projects: ProjectsRepository;
   worktrees: WorktreeRepository;
+  aiChat: AiChatRepository;
 };
 
 let appState: MobileAppState | null = null;
@@ -32,6 +34,7 @@ export function getMobileAppState(): MobileAppState {
       port,
       projects: new ProjectsRepository(port),
       worktrees: new WorktreeRepository(port),
+      aiChat: new AiChatRepository(port),
     };
     return appState;
   } catch (error) {

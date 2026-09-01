@@ -1,6 +1,18 @@
 export type { DatabasePort, SqlRunResult, SqlStatement, SqlValue } from "./db/database-port";
-export { initAppState, initProjectsSchema, initWorktreeSchema } from "./db/schema";
+export {
+  initAppState,
+  initAiChatSchema,
+  initProjectsSchema,
+  initWorktreeSchema,
+} from "./db/schema";
 export { ProjectsRepository, type ProjectDbRecord } from "./db/projects-repo";
+export {
+  AiChatRepository,
+  type AiConversationListStatusFilter,
+  type AiConversationRecord,
+  type AiConversationSearchRecord,
+  type AiConversationSummaryRecord,
+} from "./db/ai-chat-repo";
 export {
   WorktreeRepository,
   type ManuscriptNodeCommittedRow,

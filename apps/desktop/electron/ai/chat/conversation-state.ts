@@ -23,6 +23,7 @@ import type {
   AiChatUserMessage,
   AiChatWarning,
   AiConversationActivity,
+  AiConversationStatus,
   AiConversationSummary,
   AiChatSelectableModelKind,
 } from "@novelevolver/domain/ai";
@@ -31,13 +32,12 @@ import {
   isAiReasoningLevel,
   type AiReasoningLevel,
 } from "@novelevolver/domain/settings/ai-settings";
-
 import type {
   AiChatRepository,
   AiConversationRecord,
-  AiConversationStatus,
   AiConversationSummaryRecord,
-} from "../../db/repositories/ai-chat-repo";
+} from "@novelevolver/worktree";
+
 import { contentBlockToDisplayText, joinContentBlocksText } from "../ai-utils";
 import {
   addChildNode,

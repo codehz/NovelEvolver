@@ -5,7 +5,7 @@ Shared branch workspace engine for desktop and mobile. DTOs stay in `@novelevolv
 ## Owns
 
 - `WorktreeSession` (manuscript / resource / changes / history / search / replace)
-- `initAppState` (`projects` + worktree SQL) and the matching repositories
+- `initAppState` (`projects` + worktree + `ai_conversation` SQL) and the matching repositories
 - Outline helpers; `validateOutline` is re-exported from `@novelevolver/domain/worktree`
 
 ## Ports

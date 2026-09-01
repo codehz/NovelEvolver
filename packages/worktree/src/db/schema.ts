@@ -1,3 +1,5 @@
+import { BUILTIN_AI_AGENT_ID } from "@novelevolver/domain/settings/ai-settings";
+
 import type { DatabasePort } from "./database-port";
 
 function execAll(db: DatabasePort, statements: readonly string[]): void {
@@ -153,21 +155,74 @@ export function initWorktreeSchema(db: DatabasePort): void {
       ON worktree_journal_entry(project_id, branch_name, group_key, updated_at DESC)`,
   ]);
 
-  ensureCurrentContentRevisionColumn(db, "manuscript_node_current");
-  ensureCurrentContentRevisionColumn(db, "resource_node_current");
+  ensureColumn(db, "manuscript_node_current", "content_revision", "INTEGER NOT NULL DEFAULT 0");
+  ensureColumn(db, "resource_node_current", "content_revision", "INTEGER NOT NULL DEFAULT 0");
+}
+
+/**
+ * AI 会话历史。按 project 作用域持久化（不绑 branch），删项目时 FK CASCADE 清理。
+ *
+ * 依赖 projects 表已存在（由 initProjectsSchema 先建）。
+ */
+export function initAiChatSchema(db: DatabasePort): void {
+  execAll(db, [
+    `CREATE TABLE IF NOT EXISTS ai_conversation (
+      id TEXT NOT NULL,
+      project_id INTEGER NOT NULL,
+      title TEXT NOT NULL,
+      title_customized INTEGER NOT NULL DEFAULT 0,
+      status TEXT NOT NULL DEFAULT 'active',
+      created_at INTEGER NOT NULL,
+      updated_at INTEGER NOT NULL,
+      last_active_at INTEGER NOT NULL,
+      adapter_kind TEXT NOT NULL,
+      model TEXT NOT NULL,
+      selected_model_id TEXT NOT NULL DEFAULT '',
+      selected_agent_id TEXT NOT NULL DEFAULT '${BUILTIN_AI_AGENT_ID}',
+      selected_reasoning_level TEXT,
+      scenario_id TEXT,
+      messages_json TEXT NOT NULL,
+      history_json TEXT NOT NULL,
+      pending_tool_batch_json TEXT,
+      warnings_json TEXT NOT NULL DEFAULT '[]',
+      error_message TEXT,
+      continue_assistant_id TEXT,
+      PRIMARY KEY (id),
+      FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE
+    )`,
+    `DROP INDEX IF EXISTS idx_ai_conversation_project_active`,
+    `CREATE INDEX IF NOT EXISTS idx_ai_conversation_project_updated
+      ON ai_conversation(project_id, updated_at DESC)`,
+  ]);
+
+  ensureColumn(db, "ai_conversation", "scenario_id", "TEXT");
+  ensureColumn(db, "ai_conversation", "warnings_json", "TEXT NOT NULL DEFAULT '[]'");
+  ensureColumn(db, "ai_conversation", "selected_model_id", "TEXT NOT NULL DEFAULT ''");
+  ensureColumn(
+    db,
+    "ai_conversation",
+    "selected_agent_id",
+    `TEXT NOT NULL DEFAULT '${BUILTIN_AI_AGENT_ID}'`,
+  );
+  ensureColumn(db, "ai_conversation", "title_customized", "INTEGER NOT NULL DEFAULT 0");
+  ensureColumn(db, "ai_conversation", "selected_reasoning_level", "TEXT");
+  ensureColumn(db, "ai_conversation", "continue_assistant_id", "TEXT");
 }
 
 export function initAppState(db: DatabasePort): void {
   initProjectsSchema(db);
   initWorktreeSchema(db);
+  initAiChatSchema(db);
 }
 
-function ensureCurrentContentRevisionColumn(
+function ensureColumn(
   db: DatabasePort,
-  tableName: "manuscript_node_current" | "resource_node_current",
+  tableName: string,
+  columnName: string,
+  definition: string,
 ): void {
   const columns = db.prepare(`PRAGMA table_info(${tableName})`).all() as { name: string }[];
-  if (!columns.some((column) => column.name === "content_revision")) {
-    db.exec(`ALTER TABLE ${tableName} ADD COLUMN content_revision INTEGER NOT NULL DEFAULT 0`);
+  if (!columns.some((column) => column.name === columnName)) {
+    db.exec(`ALTER TABLE ${tableName} ADD COLUMN ${columnName} ${definition}`);
   }
 }

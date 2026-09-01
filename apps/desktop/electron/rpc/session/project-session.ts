@@ -13,6 +13,7 @@ import {
   ProjectsRepository,
   WorktreeRepository,
   WorktreeSession,
+  type AiChatRepository,
   type ProjectDbRecord,
 } from "@novelevolver/worktree";
 import { RpcTarget } from "capnweb";
@@ -20,7 +21,6 @@ import type { SHA1 } from "nano-git";
 import type { Repository } from "nano-git/repository/core";
 
 import { ProjectAiChatController } from "../../ai/chat/project-ai-chat";
-import type { AiChatRepository } from "../../db/repositories/ai-chat-repo";
 import { openSqliteGitRepository } from "../../lib/nano-git-sqlite";
 import { toProjectMetadata } from "../../projects/home-path";
 import type { AiAgentsStore } from "../../settings/ai-agents-store";

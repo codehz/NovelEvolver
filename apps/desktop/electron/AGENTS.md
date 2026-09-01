@@ -6,7 +6,7 @@
 
 - `lib/` — shared main-process utilities (e.g. `stream-publisher.ts`)
 - `projects/` — project-library presentation helpers
-- `db/` — SQLite (`app-state.db`); worktree/projects tables via `@novelevolver/worktree`
+- `db/` — SQLite (`app-state.db`) container + `DatabasePort` adapter; schema/repos live in `@novelevolver/worktree`
 - `rpc/` — capnweb server (`server/`), services, session objects, handles
 
 No `#electron` alias — imports stay relative. Shared streaming helpers live in `lib/`.

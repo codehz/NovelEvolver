@@ -24,8 +24,8 @@ import {
   type AiReasoningLevel,
   type AiRuntimePolicySnapshot,
 } from "@novelevolver/domain/settings/ai-settings";
+import type { AiChatRepository, AiConversationRecord } from "@novelevolver/worktree";
 
-import type { AiChatRepository, AiConversationRecord } from "../../db/repositories/ai-chat-repo";
 import { RpcStreamPublisher } from "../../lib/stream-publisher";
 import type { AiAgentRuntimeConfig } from "../../settings/ai-agents-store";
 import type { AiModelRuntimeConfig } from "../../settings/ai-models-store";
