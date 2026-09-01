@@ -13,9 +13,14 @@ import { ProjectExplorerPane, type ProjectExplorerPaneProps } from "./explorer/P
 import type { OpenedProject } from "./git/repository-manager";
 import { ProjectAiPlaceholderPane } from "./ProjectAiPlaceholderPane";
 
-const PROJECT_WIDE_BREAKPOINT = 1024;
+export const PROJECT_WIDE_BREAKPOINT = 1024;
 const PROJECT_MANUSCRIPT_WIDTH = 256;
 const PROJECT_AI_WIDTH = 288;
+
+export function useProjectLayout(): "compact" | "wide" {
+  const { width } = useWindowDimensions();
+  return width < PROJECT_WIDE_BREAKPOINT ? "compact" : "wide";
+}
 
 export type ProjectWorkspaceProps = Omit<
   ProjectExplorerPaneProps,
@@ -58,7 +63,8 @@ function ProjectTabsView({
 }: ProjectTabsProps) {
   return (
     <ProjectTabs.Navigator
-      initialRouteName="Project"
+      initialRouteName="Explorer"
+      backBehavior="firstRoute"
       screenOptions={{
         headerShown: false,
         animation: "shift",
@@ -77,7 +83,7 @@ function ProjectTabsView({
       }}
     >
       <ProjectTabs.Screen
-        name="Project"
+        name="Explorer"
         options={{
           title: "项目",
           tabBarIcon: ({ color: iconColor, size }) => (
@@ -151,13 +157,13 @@ export function ProjectWorkspace({
   onOpenResourceFile,
   ...explorerProps
 }: ProjectWorkspaceProps) {
-  const { width } = useWindowDimensions();
+  const layout = useProjectLayout();
   const { chapter, resource } = resolveEditorNodes(
     document,
     explorerProps.outline,
     explorerProps.resourceTree,
   );
-  if (width < PROJECT_WIDE_BREAKPOINT) {
+  if (layout === "compact") {
     return (
       <View style={styles.compact}>
         <ProjectTabsView

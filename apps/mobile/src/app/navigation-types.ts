@@ -14,7 +14,7 @@ export type RootStackParamList = {
 };
 
 export type ProjectTabParamList = {
-  Project: undefined;
+  Explorer: undefined;
   Editor: undefined;
   AI: undefined;
 };

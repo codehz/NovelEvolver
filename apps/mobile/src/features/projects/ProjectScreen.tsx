@@ -1,5 +1,11 @@
 import { Header } from "@react-navigation/elements";
-import { useNavigation, useRoute } from "@react-navigation/native";
+import {
+  TabActions,
+  useNavigation,
+  useNavigationState,
+  usePreventRemove,
+  useRoute,
+} from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -9,7 +15,7 @@ import { color, fontFamily, fontSize } from "../../shared/theme";
 import { settingsStyles } from "../settings/settings-chrome";
 import { SettingsHeaderBackButton } from "../settings/SettingsHeaderBackButton";
 import { SettingsHeaderButton } from "../settings/SettingsHeaderButton";
-import { ProjectWorkspace } from "./ProjectWorkspace";
+import { ProjectWorkspace, useProjectLayout } from "./ProjectWorkspace";
 import { useProjectWorkspace } from "./use-project-workspace";
 
 export function ProjectScreen() {
@@ -17,6 +23,21 @@ export function ProjectScreen() {
   const route = useRoute();
   const projectId = (route.params as RootStackParamList["Project"]).projectId;
   const workspace = useProjectWorkspace(projectId);
+  const layout = useProjectLayout();
+  const nestedTab = useNavigationState((state) => {
+    const projectRoute = state.routes.find((item) => item.name === "Project");
+    return projectRoute?.state?.type === "tab" ? projectRoute.state : undefined;
+  });
+  const currentTab = nestedTab?.routes[nestedTab.index ?? 0]?.name;
+  usePreventRemove(layout === "compact" && currentTab != null && currentTab !== "Explorer", () => {
+    if (nestedTab?.key == null) {
+      return;
+    }
+    navigation.dispatch({
+      ...TabActions.jumpTo("Explorer"),
+      target: nestedTab.key,
+    });
+  });
 
   if (workspace === null) {
     return (
