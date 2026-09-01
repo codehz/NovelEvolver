@@ -24,6 +24,7 @@ import { useOverlay } from "../../shared/ui/OverlayHost";
 import { settingsStyles } from "../settings/settings-chrome";
 import { SettingsHeaderBackButton } from "../settings/SettingsHeaderBackButton";
 import { SettingsHeaderButton } from "../settings/SettingsHeaderButton";
+import type { EditorDocument } from "./editor-document";
 import { useProjectManager } from "./ProjectManagerProvider";
 import { ProjectWorkspace } from "./ProjectWorkspace";
 
@@ -72,7 +73,27 @@ export function ProjectScreen() {
   const [explorerDomain, setExplorerDomain] = useState<WorktreeDomain>("manuscript");
   const [selectedManuscriptId, setSelectedManuscriptId] = useState<string | null>(null);
   const [selectedResourceId, setSelectedResourceId] = useState<string | null>(null);
+  const [editorDocument, setEditorDocument] = useState<EditorDocument | null>(null);
   const [, setRevision] = useState(0);
+
+  const openChapter = (nodeId: string) => {
+    setSelectedManuscriptId(nodeId);
+    setEditorDocument({ domain: "manuscript", id: nodeId });
+  };
+  const openResourceFile = (nodeId: string) => {
+    setSelectedResourceId(nodeId);
+    setEditorDocument({ domain: "resource", id: nodeId });
+  };
+  const clearEditorIfInSubtree = (
+    domain: WorktreeDomain,
+    ancestorId: string,
+    contains: (ancestorId: string, targetId: string) => boolean,
+  ) => {
+    setEditorDocument((current) => {
+      if (current === null || current.domain !== domain) return current;
+      return contains(ancestorId, current.id) ? null : current;
+    });
+  };
 
   useEffect(() => {
     let active = true;
@@ -156,7 +177,7 @@ export function ProjectScreen() {
     try {
       const { nodeId } = opened.worktree.createManuscriptChapter(outline.rootId, name);
       update();
-      setSelectedManuscriptId(nodeId);
+      openChapter(nodeId);
       return true;
     } catch (error) {
       await overlay.alert({ title: "创建失败", message: errorMessage(error) });
@@ -193,7 +214,7 @@ export function ProjectScreen() {
         name,
       );
       update();
-      setSelectedResourceId(nodeId);
+      openResourceFile(nodeId);
       return true;
     } catch (error) {
       await overlay.alert({ title: "创建失败", message: errorMessage(error) });
@@ -226,6 +247,9 @@ export function ProjectScreen() {
       if (containsManuscriptNode(outline, node.id, selectedManuscriptId ?? "")) {
         setSelectedManuscriptId(null);
       }
+      clearEditorIfInSubtree("manuscript", node.id, (ancestorId, targetId) =>
+        containsManuscriptNode(outline, ancestorId, targetId),
+      );
       update();
     } catch (error) {
       await overlay.alert({ title: "删除失败", message: errorMessage(error) });
@@ -265,6 +289,9 @@ export function ProjectScreen() {
       if (containsResourceNode(resourceTree, node.id, selectedResourceId ?? "")) {
         setSelectedResourceId(null);
       }
+      clearEditorIfInSubtree("resource", node.id, (ancestorId, targetId) =>
+        containsResourceNode(resourceTree, ancestorId, targetId),
+      );
       update();
     } catch (error) {
       await overlay.alert({ title: "删除失败", message: errorMessage(error) });
@@ -335,8 +362,9 @@ export function ProjectScreen() {
         selectedManuscriptId={selectedManuscriptId}
         selectedResourceId={selectedResourceId}
         warning={opened.worktree.warning}
-        onOpenChapter={setSelectedManuscriptId}
-        onOpenResourceFile={setSelectedResourceId}
+        document={editorDocument}
+        onOpenChapter={openChapter}
+        onOpenResourceFile={openResourceFile}
         onRenameManuscript={(node) => {
           void renameNode(node);
         }}

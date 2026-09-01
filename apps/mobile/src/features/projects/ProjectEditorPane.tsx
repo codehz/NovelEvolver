@@ -1,77 +1,61 @@
-import type {
-  ManuscriptNode,
-  ResourceTreeNode,
-  WorktreeDomain,
-} from "@novelevolver/domain/worktree";
+import type { ManuscriptNode, ResourceTreeNode } from "@novelevolver/domain/worktree";
 import { useEffect, useState } from "react";
 import { StyleSheet, Text, TextInput, View } from "react-native";
 
 import { color, fontFamily, fontSize, space } from "../../shared/theme";
+import type { EditorDocument } from "./editor-document";
 import type { OpenedProject } from "./git/repository-manager";
 
 type ProjectEditorPaneProps = {
   opened: OpenedProject;
-  domain: WorktreeDomain;
+  document: EditorDocument | null;
   chapter: ManuscriptNode | undefined;
   resource: ResourceTreeNode | undefined;
 };
 
-export function ProjectEditorPane({ opened, domain, chapter, resource }: ProjectEditorPaneProps) {
-  const chapterId = chapter?.type === "chapter" ? chapter.id : null;
-  const resourceId = resource?.type === "file" ? resource.id : null;
-  const documentId = domain === "manuscript" ? chapterId : resourceId;
+export function ProjectEditorPane({ opened, document, chapter, resource }: ProjectEditorPaneProps) {
+  const chapterId =
+    document?.domain === "manuscript" && chapter?.type === "chapter" ? chapter.id : null;
+  const resourceId =
+    document?.domain === "resource" && resource?.type === "file" ? resource.id : null;
+  const documentId = chapterId ?? resourceId;
+  const editingDomain = chapterId !== null ? "manuscript" : resourceId !== null ? "resource" : null;
   const [content, setContent] = useState(() =>
-    documentId === null
+    documentId === null || editingDomain === null
       ? ""
-      : domain === "manuscript"
+      : editingDomain === "manuscript"
         ? opened.worktree.readChapter(documentId)
         : opened.worktree.readResourceFile(documentId),
   );
 
   useEffect(() => {
-    if (documentId === null) {
+    if (documentId === null || editingDomain === null) {
       setContent("");
       return;
     }
     setContent(
-      domain === "manuscript"
+      editingDomain === "manuscript"
         ? opened.worktree.readChapter(documentId)
         : opened.worktree.readResourceFile(documentId),
     );
-  }, [documentId, domain, opened]);
+  }, [documentId, editingDomain, opened]);
 
-  if (domain === "manuscript" && (chapter?.type !== "chapter" || chapterId === null)) {
+  if (documentId === null || editingDomain === null) {
     return (
       <View style={styles.center}>
         <Text style={styles.placeholderTitle}>编辑器</Text>
-        <Text style={styles.placeholderText}>请从正文中选择一个章节。</Text>
-      </View>
-    );
-  }
-  if (domain === "resource" && (resource?.type !== "file" || resourceId === null)) {
-    return (
-      <View style={styles.center}>
-        <Text style={styles.placeholderTitle}>编辑器</Text>
-        <Text style={styles.placeholderText}>请从资源库中选择一个文件。</Text>
-      </View>
-    );
-  }
-  if (documentId === null) {
-    return (
-      <View style={styles.center}>
-        <Text style={styles.placeholderTitle}>编辑器</Text>
-        <Text style={styles.placeholderText}>请选择要编辑的内容。</Text>
+        <Text style={styles.placeholderText}>请从目录中选择一个章节或资源文件。</Text>
       </View>
     );
   }
 
-  const title = domain === "manuscript" ? (chapter?.title ?? "") : (resource?.name ?? "");
-  const subtitle = domain === "manuscript" ? "章节正文" : "资源文件";
-  const placeholder = domain === "manuscript" ? "开始编辑章节正文…" : "开始编辑资源文件…";
+  const title = editingDomain === "manuscript" ? (chapter?.title ?? "") : (resource?.name ?? "");
+  const subtitle = editingDomain === "manuscript" ? "章节正文" : "资源文件";
+  const placeholder = editingDomain === "manuscript" ? "开始编辑章节正文…" : "开始编辑资源文件…";
 
   const updateContent = (value: string) => {
     setContent(value);
-    if (domain === "manuscript") opened.worktree.writeChapter(documentId, value);
+    if (editingDomain === "manuscript") opened.worktree.writeChapter(documentId, value);
     else opened.worktree.writeResourceFile(documentId, value);
   };
 

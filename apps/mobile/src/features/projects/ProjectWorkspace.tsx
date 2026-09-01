@@ -6,6 +6,7 @@ import IconFiles from "~icons/codicon/files";
 
 import type { ProjectTabParamList } from "../../app/navigation-types";
 import { color, fontFamily, fontSize } from "../../shared/theme";
+import type { EditorDocument } from "./editor-document";
 import type { OpenedProject } from "./git/repository-manager";
 import { ProjectAiPlaceholderPane } from "./ProjectAiPlaceholderPane";
 import { ProjectEditorPane } from "./ProjectEditorPane";
@@ -20,6 +21,7 @@ export type ProjectWorkspaceProps = Omit<
   "onOpenChapter" | "onOpenResourceFile"
 > & {
   opened: OpenedProject;
+  document: EditorDocument | null;
   onOpenChapter: (nodeId: string) => void;
   onOpenResourceFile: (nodeId: string) => void;
 };
@@ -28,20 +30,29 @@ const ProjectTabs = createBottomTabNavigator<ProjectTabParamList>();
 
 type ProjectTabsProps = ProjectWorkspaceProps;
 
+function resolveEditorNodes(
+  document: EditorDocument | null,
+  outline: ProjectExplorerPaneProps["outline"],
+  resourceTree: ProjectExplorerPaneProps["resourceTree"],
+) {
+  return {
+    chapter: document?.domain === "manuscript" ? outline.nodes[document.id] : undefined,
+    resource: document?.domain === "resource" ? resourceTree.nodes[document.id] : undefined,
+  };
+}
+
 function ProjectTabsView({
   opened,
+  document,
   onOpenChapter,
   onOpenResourceFile,
   ...explorerProps
 }: ProjectTabsProps) {
-  const selectedChapter =
-    explorerProps.selectedManuscriptId === null
-      ? undefined
-      : explorerProps.outline.nodes[explorerProps.selectedManuscriptId];
-  const selectedResource =
-    explorerProps.selectedResourceId === null
-      ? undefined
-      : explorerProps.resourceTree.nodes[explorerProps.selectedResourceId];
+  const { chapter, resource } = resolveEditorNodes(
+    document,
+    explorerProps.outline,
+    explorerProps.resourceTree,
+  );
   return (
     <ProjectTabs.Navigator
       initialRouteName="Project"
@@ -109,9 +120,9 @@ function ProjectTabsView({
         {() => (
           <ProjectEditorPane
             opened={opened}
-            domain={explorerProps.domain}
-            chapter={selectedChapter}
-            resource={selectedResource}
+            document={document}
+            chapter={chapter}
+            resource={resource}
           />
         )}
       </ProjectTabs.Screen>
@@ -132,19 +143,17 @@ function ProjectTabsView({
 
 export function ProjectWorkspace({
   opened,
+  document,
   onOpenChapter,
   onOpenResourceFile,
   ...explorerProps
 }: ProjectWorkspaceProps) {
   const { width } = useWindowDimensions();
-  const selectedChapter =
-    explorerProps.selectedManuscriptId === null
-      ? undefined
-      : explorerProps.outline.nodes[explorerProps.selectedManuscriptId];
-  const selectedResource =
-    explorerProps.selectedResourceId === null
-      ? undefined
-      : explorerProps.resourceTree.nodes[explorerProps.selectedResourceId];
+  const { chapter, resource } = resolveEditorNodes(
+    document,
+    explorerProps.outline,
+    explorerProps.resourceTree,
+  );
   const explorerPane = (
     <ProjectExplorerPane
       {...explorerProps}
@@ -157,6 +166,7 @@ export function ProjectWorkspace({
       <View style={styles.compact}>
         <ProjectTabsView
           opened={opened}
+          document={document}
           onOpenChapter={onOpenChapter}
           onOpenResourceFile={onOpenResourceFile}
           {...explorerProps}
@@ -171,9 +181,9 @@ export function ProjectWorkspace({
       <View style={styles.editorColumn}>
         <ProjectEditorPane
           opened={opened}
-          domain={explorerProps.domain}
-          chapter={selectedChapter}
-          resource={selectedResource}
+          document={document}
+          chapter={chapter}
+          resource={resource}
         />
       </View>
       <View style={[styles.aiColumn, styles.columnBorderLeft]}>
