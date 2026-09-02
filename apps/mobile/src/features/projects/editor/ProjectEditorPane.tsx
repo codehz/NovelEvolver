@@ -13,6 +13,7 @@ type ProjectEditorPaneProps = {
   chapter: ManuscriptNode | undefined;
   resource: ResourceTreeNode | undefined;
   worktreeRevision: number;
+  onWorkspaceChanged: () => void;
 };
 
 export function ProjectEditorPane({
@@ -21,6 +22,7 @@ export function ProjectEditorPane({
   chapter,
   resource,
   worktreeRevision,
+  onWorkspaceChanged,
 }: ProjectEditorPaneProps) {
   const chapterId =
     document?.domain === "manuscript" && chapter?.type === "chapter" ? chapter.id : null;
@@ -65,6 +67,7 @@ export function ProjectEditorPane({
     setContent(value);
     if (editingDomain === "manuscript") opened.worktree.writeChapter(documentId, value);
     else opened.worktree.writeResourceFile(documentId, value);
+    onWorkspaceChanged();
   };
 
   return (

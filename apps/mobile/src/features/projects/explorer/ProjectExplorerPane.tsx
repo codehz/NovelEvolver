@@ -1,9 +1,9 @@
 import type {
+  ChangesSnapshot,
   ManuscriptNode,
   ManuscriptOutline,
   ResourceTreeNode,
   ResourceTreeSnapshot,
-  WorktreeDomain,
 } from "@novelevolver/domain/worktree";
 import { useState } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
@@ -12,13 +12,14 @@ import IconNewFolder from "~icons/codicon/new-folder";
 
 import { color, fontFamily, fontSize, space } from "../../../shared/theme";
 import { SettingsHeaderButton } from "../../settings/SettingsHeaderButton";
+import { ProjectChangesPane } from "../changes/ProjectChangesPane";
 import { ManuscriptTreeList } from "../manuscript/ManuscriptTreeList";
 import { ResourceTreeList } from "../resource/ResourceTreeList";
-import { ExplorerDomainSelect } from "./ExplorerDomainSelect";
+import { ExplorerDomainSelect, type ExplorerDomain } from "./ExplorerDomainSelect";
 
 export type ProjectExplorerPaneProps = {
-  domain: WorktreeDomain;
-  onDomainChange: (domain: WorktreeDomain) => void;
+  domain: ExplorerDomain;
+  onDomainChange: (domain: ExplorerDomain) => void;
   outline: ManuscriptOutline;
   resourceTree: ResourceTreeSnapshot;
   selectedManuscriptId: string | null;
@@ -36,6 +37,13 @@ export type ProjectExplorerPaneProps = {
   onCreateChapter: () => Promise<boolean>;
   onCreateResourceFolder: () => void;
   onCreateResourceFile: () => Promise<boolean>;
+  changesSnapshot: ChangesSnapshot | null;
+  changesLoading: boolean;
+  changesError: boolean;
+  onRetryChanges: () => void;
+  onRevertChange: (changeId: string) => void;
+  onRevertAllChanges: () => void;
+  onCommitChanges: (message: string) => Promise<boolean>;
 };
 
 export function ProjectExplorerPane({
@@ -58,9 +66,17 @@ export function ProjectExplorerPane({
   onCreateChapter,
   onCreateResourceFolder,
   onCreateResourceFile,
+  changesSnapshot,
+  changesLoading,
+  changesError,
+  onRetryChanges,
+  onRevertChange,
+  onRevertAllChanges,
+  onCommitChanges,
 }: ProjectExplorerPaneProps) {
   const [selectOpen, setSelectOpen] = useState(false);
   const manuscript = domain === "manuscript";
+  const resource = domain === "resource";
   return (
     <View style={styles.root}>
       <View style={styles.paneHeader}>
@@ -86,7 +102,7 @@ export function ProjectExplorerPane({
                 onPress={onCreateFolder}
               />
             </>
-          ) : (
+          ) : resource ? (
             <>
               <SettingsHeaderButton
                 Icon={IconNewFile}
@@ -101,28 +117,42 @@ export function ProjectExplorerPane({
                 onPress={onCreateResourceFolder}
               />
             </>
-          )}
+          ) : null}
         </View>
       </View>
-      {warning !== null ? <Text style={styles.warning}>{warning}</Text> : null}
-      {manuscript ? (
-        <ManuscriptTreeList
-          outline={outline}
-          selectedNodeId={selectedManuscriptId}
-          onOpenChapter={onOpenChapter}
-          onRename={onRenameManuscript}
-          onDelete={onDeleteManuscript}
-          onMove={onMoveManuscript}
+      {domain === "changes" ? (
+        <ProjectChangesPane
+          snapshot={changesSnapshot}
+          loading={changesLoading}
+          error={changesError}
+          onRetry={onRetryChanges}
+          onRevertChange={onRevertChange}
+          onRevertAll={onRevertAllChanges}
+          onCommit={onCommitChanges}
         />
       ) : (
-        <ResourceTreeList
-          tree={resourceTree}
-          selectedNodeId={selectedResourceId}
-          onOpenFile={onOpenResourceFile}
-          onRename={onRenameResource}
-          onDelete={onDeleteResource}
-          onMove={onMoveResource}
-        />
+        <>
+          {warning !== null ? <Text style={styles.warning}>{warning}</Text> : null}
+          {manuscript ? (
+            <ManuscriptTreeList
+              outline={outline}
+              selectedNodeId={selectedManuscriptId}
+              onOpenChapter={onOpenChapter}
+              onRename={onRenameManuscript}
+              onDelete={onDeleteManuscript}
+              onMove={onMoveManuscript}
+            />
+          ) : (
+            <ResourceTreeList
+              tree={resourceTree}
+              selectedNodeId={selectedResourceId}
+              onOpenFile={onOpenResourceFile}
+              onRename={onRenameResource}
+              onDelete={onDeleteResource}
+              onMove={onMoveResource}
+            />
+          )}
+        </>
       )}
       {selectOpen ? (
         <Pressable

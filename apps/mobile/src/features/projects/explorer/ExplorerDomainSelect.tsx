@@ -4,16 +4,19 @@ import IconChevronDown from "~icons/codicon/chevron-down";
 
 import { color, fontFamily, fontSize, radius, space, wash } from "../../../shared/theme";
 
-const OPTIONS: { value: WorktreeDomain; label: string }[] = [
+export type ExplorerDomain = WorktreeDomain | "changes";
+
+const OPTIONS: { value: ExplorerDomain; label: string }[] = [
   { value: "manuscript", label: "正文" },
   { value: "resource", label: "资源库" },
+  { value: "changes", label: "更改" },
 ];
 
 export type ExplorerDomainSelectProps = {
-  value: WorktreeDomain;
+  value: ExplorerDomain;
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onChange: (value: WorktreeDomain) => void;
+  onChange: (value: ExplorerDomain) => void;
 };
 
 export function ExplorerDomainSelect({
@@ -22,7 +25,7 @@ export function ExplorerDomainSelect({
   onOpenChange,
   onChange,
 }: ExplorerDomainSelectProps) {
-  const currentLabel = value === "resource" ? "资源库" : "正文";
+  const currentLabel = value === "resource" ? "资源库" : value === "changes" ? "更改" : "正文";
   return (
     <View style={styles.wrap}>
       <Pressable

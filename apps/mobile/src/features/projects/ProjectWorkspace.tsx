@@ -137,6 +137,7 @@ function ProjectTabsView({
             chapter={chapter}
             resource={resource}
             worktreeRevision={worktreeRevision}
+            onWorkspaceChanged={onAiWorkspaceDirty}
           />
         )}
       </ProjectTabs.Screen>
@@ -204,6 +205,7 @@ export function ProjectWorkspace({
           chapter={chapter}
           resource={resource}
           worktreeRevision={worktreeRevision}
+          onWorkspaceChanged={onAiWorkspaceDirty}
         />
       </View>
       <View style={[styles.aiColumn, styles.columnBorderLeft]}>

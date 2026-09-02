@@ -1,4 +1,5 @@
 import type {
+  ChangesSnapshot,
   ManuscriptNode,
   ResourceTreeNode,
   WorktreeDomain,
@@ -14,6 +15,7 @@ import {
 import { useOverlay } from "../../shared/ui/OverlayHost";
 import type { EditorDocument } from "./editor/editor-document";
 import { errorMessage } from "./error-message";
+import type { ExplorerDomain } from "./explorer/ExplorerDomainSelect";
 import { containsManuscriptNode } from "./manuscript/manuscript-tree-flatten";
 import { useProjectManager } from "./ProjectManagerProvider";
 import type { ProjectWorkspaceProps } from "./ProjectWorkspace";
@@ -30,11 +32,14 @@ export function useProjectWorkspace(projectId: number): ProjectWorkspaceModel | 
   const [opened, setOpened] = useState(
     manager.opened?.record.id === projectId ? manager.opened : null,
   );
-  const [explorerDomain, setExplorerDomain] = useState<WorktreeDomain>("manuscript");
+  const [explorerDomain, setExplorerDomain] = useState<ExplorerDomain>("manuscript");
   const [selectedManuscriptId, setSelectedManuscriptId] = useState<string | null>(null);
   const [selectedResourceId, setSelectedResourceId] = useState<string | null>(null);
   const [editorDocument, setEditorDocument] = useState<EditorDocument | null>(null);
   const [revision, setRevision] = useState(0);
+  const [changesSnapshot, setChangesSnapshot] = useState<ChangesSnapshot | null>(null);
+  const [changesLoading, setChangesLoading] = useState(true);
+  const [changesError, setChangesError] = useState(false);
 
   const openChapter = (nodeId: string) => {
     setSelectedManuscriptId(nodeId);
@@ -96,6 +101,22 @@ export function useProjectWorkspace(projectId: number): ProjectWorkspaceModel | 
       active = false;
     };
   }, [manager, overlay, projectId]);
+
+  useEffect(() => {
+    if (opened === null) {
+      return;
+    }
+    setChangesLoading(true);
+    setChangesError(false);
+    try {
+      setChangesSnapshot(opened.worktree.getChangesSnapshot());
+    } catch {
+      setChangesSnapshot(null);
+      setChangesError(true);
+    } finally {
+      setChangesLoading(false);
+    }
+  }, [opened, revision]);
 
   if (opened === null) return null;
 
@@ -264,6 +285,48 @@ export function useProjectWorkspace(projectId: number): ProjectWorkspaceModel | 
     }
   };
 
+  const revertChange = async (changeId: string) => {
+    try {
+      const updated = opened.worktree.revertChange(changeId);
+      setChangesSnapshot(updated);
+      refresh();
+    } catch (error) {
+      await overlay.alert({ title: "还原失败", message: errorMessage(error) });
+    }
+  };
+  const revertAllChanges = async () => {
+    if (!changesSnapshot?.hasChanges) return;
+    const confirmed = await overlay.confirm({
+      title: "还原所有更改",
+      message: "将丢弃当前工作区全部未提交修改，恢复到上次提交状态。此操作不可撤销。",
+      confirmLabel: "还原全部",
+    });
+    if (!confirmed) return;
+    try {
+      const updated = opened.worktree.revertAllChanges();
+      setChangesSnapshot(updated);
+      refresh();
+    } catch (error) {
+      await overlay.alert({ title: "还原失败", message: errorMessage(error) });
+    }
+  };
+  const commitChanges = async (message: string) => {
+    const trimmed = message.trim();
+    if (trimmed === "" || !changesSnapshot?.hasChanges) return false;
+    try {
+      const updated = opened.worktree.commitChanges(trimmed, {
+        name: "NovelEvolver",
+        email: "app@novel-evolver.local",
+      });
+      setChangesSnapshot(updated);
+      refresh();
+      return true;
+    } catch (error) {
+      await overlay.alert({ title: "提交失败", message: errorMessage(error) });
+      return false;
+    }
+  };
+
   return {
     opened,
     domain: explorerDomain,
@@ -300,6 +363,17 @@ export function useProjectWorkspace(projectId: number): ProjectWorkspaceModel | 
     },
     onCreateResourceFile: createResourceFile,
     onAiWorkspaceDirty: refresh,
+    changesSnapshot,
+    changesLoading,
+    changesError,
+    onRetryChanges: refresh,
+    onRevertChange: (changeId) => {
+      void revertChange(changeId);
+    },
+    onRevertAllChanges: () => {
+      void revertAllChanges();
+    },
+    onCommitChanges: commitChanges,
     renameProject,
     exportProject,
   };
