@@ -10,12 +10,8 @@ import IconAdd from "~icons/codicon/add";
 
 import { ProjectListScreen } from "../features/projects/ProjectListScreen";
 import { ProjectScreen } from "../features/projects/ProjectScreen";
-import { AgentEditor, AiAgentsList } from "../features/settings/ai-agents/AiAgentsPanel";
-import {
-  AiModelsList,
-  ModelEditor,
-  ProviderEditor,
-} from "../features/settings/ai-models/AiModelsPanel";
+import { AgentEditor } from "../features/settings/ai-agents/AiAgentsPanel";
+import { ModelEditor, ProviderEditor } from "../features/settings/ai-models/AiModelsPanel";
 import { AiPromptsList, PromptEditor } from "../features/settings/ai-prompts/AiPromptsPanel";
 import { AiRuntimePolicyPanel } from "../features/settings/ai-runtime-policy/AiRuntimePolicyPanel";
 import {
@@ -75,21 +71,6 @@ const stackScreenOptions = (): NativeStackNavigationOptions => ({
 const AiModelsStack = createNativeStackNavigator({
   screenOptions: stackScreenOptions,
   screens: {
-    List: createNativeStackScreen({
-      screen: AiModelsList,
-      options: ({ navigation }) => ({
-        title: "AI 模型",
-        headerLeft: (props) => <SettingsListHeaderLeft {...props} />,
-        headerRight: () => (
-          <SettingsHeaderButton
-            label="添加供应商"
-            onPress={() => {
-              navigation.navigate("ProviderEditor", {});
-            }}
-          />
-        ),
-      }),
-    }),
     ProviderEditor: createNativeStackScreen({
       screen: ProviderEditor,
       options: ({ route }) => ({
@@ -108,22 +89,6 @@ const AiModelsStack = createNativeStackNavigator({
 const AiAgentsStack = createNativeStackNavigator({
   screenOptions: stackScreenOptions,
   screens: {
-    List: createNativeStackScreen({
-      screen: AiAgentsList,
-      options: ({ navigation }) => ({
-        title: "AI Agent",
-        headerLeft: (props) => <SettingsListHeaderLeft {...props} />,
-        headerRight: () => (
-          <SettingsHeaderButton
-            label="添加"
-            Icon={IconAdd}
-            onPress={() => {
-              navigation.navigate("AgentEditor", {});
-            }}
-          />
-        ),
-      }),
-    }),
     AgentEditor: createNativeStackScreen({
       screen: AgentEditor,
       options: ({ route }) => ({
