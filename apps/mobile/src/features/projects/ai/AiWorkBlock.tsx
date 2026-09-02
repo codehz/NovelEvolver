@@ -58,7 +58,7 @@ function WorkRow({ step, last }: { step: AssistantWorkStep; last: boolean }) {
   }, [step]);
 
   const body = (
-    <View style={aiStyles.timelineRowBody}>
+    <View style={[aiStyles.timelineRowBody, !last ? aiStyles.timelineRowSpacing : null]}>
       <View style={aiStyles.timelineRowHeader}>
         {step.type === "reasoning" ? (
           <Text style={aiStyles.timelineIcon}>…</Text>

@@ -311,6 +311,8 @@ export const aiStyles = StyleSheet.create({
   timelineRowBody: {
     position: "relative",
     paddingLeft: space[2],
+  },
+  timelineRowSpacing: {
     paddingBottom: space[1],
   },
   timelineRowHeader: {
