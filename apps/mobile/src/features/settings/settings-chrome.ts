@@ -80,6 +80,9 @@ export const settingsStyles = StyleSheet.create({
   },
   categoryLabelButton: {
     flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
     paddingHorizontal: space[4],
     paddingVertical: space[3],
   },

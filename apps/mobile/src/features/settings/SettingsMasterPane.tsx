@@ -1,6 +1,7 @@
 import { Header } from "@react-navigation/elements";
 import { Pressable, ScrollView, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import IconChevronRight from "~icons/codicon/chevron-right";
 
 import { color, fontSize } from "../../shared/theme";
 import { AiAgentsList } from "./ai-agents/AiAgentsPanel";
@@ -108,6 +109,9 @@ export function SettingsMasterPane({
                   >
                     {category.label}
                   </Text>
+                  {category.id === "ai-runtime-policy" ? (
+                    <IconChevronRight width={20} height={20} color={color.muted} />
+                  ) : null}
                 </Pressable>
               </View>
               {category.id === "ai-models" ? (
