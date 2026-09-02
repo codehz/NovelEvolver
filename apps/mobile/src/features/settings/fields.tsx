@@ -2,6 +2,7 @@ import type { ReactNode } from "react";
 import { Pressable, Switch, Text, TextInput, View } from "react-native";
 
 import { color } from "../../shared/theme";
+import { MarkdownTextInput } from "../../shared/ui/MarkdownTextInput";
 import { settingsStyles } from "./settings-chrome";
 
 type FieldProps = {
@@ -32,6 +33,7 @@ type TextFieldProps = {
   editable?: boolean;
   keyboardType?: "default" | "numeric" | "url";
   autoCapitalize?: "none" | "sentences";
+  markdown?: boolean;
 };
 
 export function SettingsTextField({
@@ -46,26 +48,43 @@ export function SettingsTextField({
   editable = true,
   keyboardType = "default",
   autoCapitalize = "none",
+  markdown = false,
 }: TextFieldProps) {
+  const inputStyle = [
+    settingsStyles.input,
+    monospace && settingsStyles.inputMono,
+    multiline ? settingsStyles.textarea : null,
+  ];
+
   return (
     <SettingsField label={label} hint={hint}>
-      <TextInput
-        style={[
-          settingsStyles.input,
-          monospace && settingsStyles.inputMono,
-          multiline ? settingsStyles.textarea : null,
-        ]}
-        value={value}
-        onChangeText={onChangeText}
-        placeholder={placeholder}
-        placeholderTextColor={color.placeholder}
-        secureTextEntry={secureTextEntry}
-        multiline={multiline}
-        editable={editable}
-        keyboardType={keyboardType}
-        autoCapitalize={autoCapitalize}
-        autoCorrect={false}
-      />
+      {markdown ? (
+        <MarkdownTextInput
+          text={value}
+          onTextChange={onChangeText}
+          placeholder={placeholder}
+          placeholderTextColor={color.placeholder}
+          multiline={multiline}
+          editable={editable}
+          keyboardType={keyboardType}
+          autoCapitalize={autoCapitalize}
+          style={inputStyle}
+        />
+      ) : (
+        <TextInput
+          style={inputStyle}
+          value={value}
+          onChangeText={onChangeText}
+          placeholder={placeholder}
+          placeholderTextColor={color.placeholder}
+          secureTextEntry={secureTextEntry}
+          multiline={multiline}
+          editable={editable}
+          keyboardType={keyboardType}
+          autoCapitalize={autoCapitalize}
+          autoCorrect={false}
+        />
+      )}
     </SettingsField>
   );
 }

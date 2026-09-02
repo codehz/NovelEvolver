@@ -1,11 +1,11 @@
 import type { ManuscriptNode, ResourceTreeNode } from "@novelevolver/domain/worktree";
 import { useEffect, useState } from "react";
-import { StyleSheet, Text, TextInput, View } from "react-native";
+import { StyleSheet, Text, View } from "react-native";
 
 import { color, fontFamily, fontSize, space, wash } from "../../../shared/theme";
+import { MarkdownTextInput } from "../../../shared/ui/MarkdownTextInput";
 import type { OpenedProject } from "../git/repository-manager";
 import type { EditorDocument } from "./editor-document";
-import { parseMarkdownForEditor, type MarkdownTextStyle } from "./markdown-inline";
 
 type ProjectEditorPaneProps = {
   opened: OpenedProject;
@@ -14,17 +14,6 @@ type ProjectEditorPaneProps = {
   resource: ResourceTreeNode | undefined;
   worktreeRevision: number;
 };
-
-function getSegmentStyle(segment: MarkdownTextStyle) {
-  return [
-    segment.bold && styles.markdownBold,
-    segment.italic && styles.markdownItalic,
-    segment.strikethrough && styles.markdownStrikethrough,
-    segment.code && styles.markdownCode,
-    segment.heading && styles.markdownHeading,
-    segment.marker && styles.markdownMarker,
-  ];
-}
 
 export function ProjectEditorPane({
   opened,
@@ -91,23 +80,15 @@ export function ProjectEditorPane({
           {opened.worktree.hasPendingChanges() ? "有未提交修改" : "已提交"}
         </Text>
       </View>
-      <TextInput
-        multiline
-        autoCorrect={false}
-        spellCheck={false}
-        onChangeText={updateContent}
+      <MarkdownTextInput
+        text={content}
+        onTextChange={updateContent}
         placeholder={placeholder}
         placeholderTextColor={color.placeholder}
         textAlignVertical="top"
         style={styles.editor}
         selectionColor={color.accent}
-      >
-        {parseMarkdownForEditor(content).map((segment, index) => (
-          <Text key={`${index}-${segment.text}`} style={getSegmentStyle(segment.style)}>
-            {segment.text}
-          </Text>
-        ))}
-      </TextInput>
+      />
     </View>
   );
 }

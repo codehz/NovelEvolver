@@ -5,7 +5,6 @@ export type MarkdownTextStyle = {
   code?: boolean;
   heading?: boolean;
   marker?: boolean;
-  link?: boolean;
 };
 
 export type MarkdownTextSegment = {
@@ -115,10 +114,7 @@ function parseLine(line: string): MarkdownTextSegment[] {
   return segments;
 }
 
-/**
- * Produces source-preserving spans for the editor overlay. Unclosed syntax is
- * left plain so a partially typed delimiter never changes the text layout.
- */
+/** Produces source-preserving spans for a Markdown-aware native TextInput. */
 export function parseMarkdownForEditor(source: string): MarkdownTextSegment[] {
   if (source.length === 0) return [];
 

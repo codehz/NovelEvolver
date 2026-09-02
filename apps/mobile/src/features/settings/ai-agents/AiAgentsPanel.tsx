@@ -213,6 +213,7 @@ function AgentForm({ initial, error, onError, onSaved, onActionsChange }: AgentF
           value={systemPrompt}
           onChangeText={setSystemPrompt}
           multiline
+          markdown
         />
         <View style={settingsStyles.field}>
           <Text style={settingsStyles.fieldLabel}>默认模型</Text>

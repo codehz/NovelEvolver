@@ -145,7 +145,13 @@ function PromptForm({ initial, error, onError, onSaved, onActionsChange }: Promp
           onChangeText={setSlug}
           monospace
         />
-        <SettingsTextField label="内容" value={prompt} onChangeText={setPrompt} multiline />
+        <SettingsTextField
+          label="内容"
+          value={prompt}
+          onChangeText={setPrompt}
+          multiline
+          markdown
+        />
       </ScrollView>
     </View>
   );
