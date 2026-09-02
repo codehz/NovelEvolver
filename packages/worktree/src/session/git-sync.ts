@@ -1,5 +1,6 @@
 import type { SHA1 } from "nano-git";
 
+import { encodeUtf8 } from "../bytes";
 import { resourceIndexFromTree } from "../resources/index";
 import { RESOURCES_DIR } from "../resources/paths";
 import { manuscriptTreeToOutline, sortedEntryValues } from "../trees/worktree-tree-bridge";
@@ -27,7 +28,7 @@ export function writeCurrentManuscriptTreeToRepo(state: WorktreeSessionState): S
     {
       mode: "100644",
       name: "outline.json",
-      hash: state.repo.writeBlob(Buffer.from(outline, "utf-8")),
+      hash: state.repo.writeBlob(encodeUtf8(outline)),
     },
   ];
 
@@ -36,7 +37,7 @@ export function writeCurrentManuscriptTreeToRepo(state: WorktreeSessionState): S
     .map((entry) => ({
       mode: "100644",
       name: `${entry.id}.md`,
-      hash: state.repo.writeBlob(Buffer.from(entry.content, "utf-8")),
+      hash: state.repo.writeBlob(encodeUtf8(entry.content)),
     }))
     .sort((left, right) => left.name.localeCompare(right.name));
 
@@ -57,7 +58,7 @@ export function writeCurrentResourcesTreeToRepo(state: WorktreeSessionState): SH
     {
       mode: "100644",
       name: RESOURCES_INDEX_FILE,
-      hash: state.repo.writeBlob(Buffer.from(index, "utf-8")),
+      hash: state.repo.writeBlob(encodeUtf8(index)),
     },
   ];
   const fileEntries = sortedEntryValues(state.currentResources.entries)
@@ -65,7 +66,7 @@ export function writeCurrentResourcesTreeToRepo(state: WorktreeSessionState): SH
     .map((entry) => ({
       mode: "100644",
       name: `${entry.id}.txt`,
-      hash: state.repo.writeBlob(Buffer.from(entry.content, "utf-8")),
+      hash: state.repo.writeBlob(encodeUtf8(entry.content)),
     }))
     .sort((left, right) => left.name.localeCompare(right.name));
   if (fileEntries.length > 0) {

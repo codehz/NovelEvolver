@@ -1,6 +1,7 @@
 import type { Change, ChangesSnapshot } from "@novelevolver/domain/worktree";
 import { nanoid } from "nanoid/non-secure";
 
+import { decodeUtf8, encodeUtf8 } from "../bytes";
 import type {
   ManuscriptNodeCommittedRow,
   ManuscriptNodeCurrentRow,
@@ -96,7 +97,7 @@ export function serializeCurrentManuscriptRows(
       sortIndex,
       content:
         node.type === "chapter"
-          ? Buffer.from(state.currentManuscript.entries.get(id)?.content ?? "", "utf-8")
+          ? encodeUtf8(state.currentManuscript.entries.get(id)?.content ?? "")
           : null,
       contentRevision:
         node.type === "chapter" ? getDocumentContentRevision(state, "manuscript", id) : 0,
@@ -131,9 +132,7 @@ export function serializeCommittedManuscriptRows(
       sortIndex,
       contentSha:
         node.type === "chapter"
-          ? state.repo.hashObject(
-              Buffer.from(state.baseManuscript.entries.get(id)?.content ?? "", "utf-8"),
-            )
+          ? state.repo.hashObject(encodeUtf8(state.baseManuscript.entries.get(id)?.content ?? ""))
           : null,
     });
     if (node.type === "folder") {
@@ -163,7 +162,7 @@ export function serializeCurrentResourceRows(
       name: node.name,
       content:
         node.type === "file"
-          ? Buffer.from(state.currentResources.entries.get(id)?.content ?? "", "utf-8")
+          ? encodeUtf8(state.currentResources.entries.get(id)?.content ?? "")
           : null,
       contentRevision: node.type === "file" ? getDocumentContentRevision(state, "resource", id) : 0,
     });
@@ -194,9 +193,7 @@ export function serializeCommittedResourceRows(
       name: node.name,
       contentSha:
         node.type === "file"
-          ? state.repo.hashObject(
-              Buffer.from(state.baseResources.entries.get(id)?.content ?? "", "utf-8"),
-            )
+          ? state.repo.hashObject(encodeUtf8(state.baseResources.entries.get(id)?.content ?? ""))
           : null,
     });
     if (node.type === "folder") {
@@ -240,7 +237,9 @@ export function recordJournalEntries(
       );
       if (existing !== null) {
         const mergedBeforeContent =
-          existing.beforeContent?.toString("utf-8") ?? beforeContent ?? null;
+          existing.beforeContent !== null
+            ? decodeUtf8(existing.beforeContent)
+            : (beforeContent ?? null);
         const afterBlobId = upsertJournalContentBlob(state, afterContent);
         const stats =
           mergedBeforeContent !== null && afterContent !== null
@@ -328,7 +327,7 @@ export function upsertJournalContentBlob(
     projectId: state.projectId,
     blobId: contentSha,
     contentSha,
-    content: Buffer.from(content, "utf-8"),
+    content: encodeUtf8(content),
   });
   return contentSha;
 }

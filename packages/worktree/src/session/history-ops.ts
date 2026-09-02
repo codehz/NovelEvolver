@@ -14,6 +14,7 @@ import type {
 import type { SHA1 } from "nano-git";
 import { walkLogEntries } from "nano-git/log";
 
+import { decodeUtf8 } from "../bytes";
 import type { WorktreeJournalEntryRecord } from "../db/worktree-repo";
 import { readTextFromTree } from "../git/diff-utils";
 import { buildJournalChangesSnapshot } from "../journal/journal-pending-projector";
@@ -284,8 +285,8 @@ export function readHistoryEntryContent(
       throw new Error(`Unknown journal history entry: ${entryId}`);
     }
     return {
-      content: entry.afterContent?.toString("utf-8") ?? null,
-      beforeContent: entry.beforeContent?.toString("utf-8") ?? null,
+      content: entry.afterContent !== null ? decodeUtf8(entry.afterContent) : null,
+      beforeContent: entry.beforeContent !== null ? decodeUtf8(entry.beforeContent) : null,
     };
   }
 
@@ -811,7 +812,7 @@ export function restoreEntityFromHistoryEntry(
     throw new Error("此记录没有可恢复内容。");
   }
 
-  const nextContent = historyEntry.afterContent.toString("utf-8");
+  const nextContent = decodeUtf8(historyEntry.afterContent);
 
   if (historyEntry.domain === "manuscript") {
     const entry = state.currentManuscript.entries.get(historyEntry.entityId);

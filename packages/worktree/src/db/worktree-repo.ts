@@ -16,7 +16,7 @@ export type ManuscriptNodeCurrentRow = {
   type: "folder" | "chapter";
   title: string;
   sortIndex: number;
-  content: Buffer | null;
+  content: Uint8Array | null;
   contentRevision: number;
 };
 
@@ -38,7 +38,7 @@ export type ResourceNodeCurrentRow = {
   parentId: string | null;
   type: "folder" | "file";
   name: string;
-  content: Buffer | null;
+  content: Uint8Array | null;
   contentRevision: number;
 };
 
@@ -76,7 +76,7 @@ export type WorktreeBlobRecord = {
   projectId: number;
   blobId: string;
   contentSha: string;
-  content: Buffer;
+  content: Uint8Array;
 };
 
 export type WorktreeJournalEntryRecord = {
@@ -104,8 +104,8 @@ export type WorktreeJournalEntryRecord = {
   commitHash: string | null;
   groupKey: string | null;
   metadataJson: string | null;
-  beforeContent: Buffer | null;
-  afterContent: Buffer | null;
+  beforeContent: Uint8Array | null;
+  afterContent: Uint8Array | null;
 };
 
 type WorktreeRow = {
@@ -189,10 +189,6 @@ type WorktreeJournalEntrySqlRow = {
   after_content: Uint8Array | null;
 };
 
-function toBuffer(value: Uint8Array | null): Buffer | null {
-  return value === null ? null : Buffer.from(value);
-}
-
 function rowToWorktreeRecord(row: WorktreeRow): WorktreeRecord {
   return {
     projectId: row.project_id,
@@ -229,8 +225,8 @@ function rowToJournalEntryRecord(row: WorktreeJournalEntrySqlRow): WorktreeJourn
     commitHash: row.commit_hash,
     groupKey: row.group_key,
     metadataJson: row.metadata_json,
-    beforeContent: toBuffer(row.before_content),
-    afterContent: toBuffer(row.after_content),
+    beforeContent: row.before_content,
+    afterContent: row.after_content,
   };
 }
 
@@ -332,7 +328,7 @@ export class WorktreeRepository {
       type: row.type,
       title: row.title,
       sortIndex: row.sort_index,
-      content: toBuffer(row.content),
+      content: row.content,
       contentRevision: row.content_revision,
     }));
   }
@@ -380,7 +376,7 @@ export class WorktreeRepository {
       parentId: row.parent_id,
       type: row.type,
       name: row.name,
-      content: toBuffer(row.content),
+      content: row.content,
       contentRevision: row.content_revision,
     }));
   }

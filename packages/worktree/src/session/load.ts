@@ -1,6 +1,7 @@
 import type { ChangesSnapshot, ResourceTreeSnapshot } from "@novelevolver/domain/worktree";
 import type { SHA1 } from "nano-git";
 
+import { decodeUtf8 } from "../bytes";
 import type {
   ManuscriptNodeCommittedRow,
   ResourceNodeCommittedRow,
@@ -92,12 +93,12 @@ export function loadFromStore(state: WorktreeSessionState, record: WorktreeRecor
   const currentManuscriptContent = new Map(
     manuscriptCurrentRows
       .filter((row) => row.type === "chapter")
-      .map((row) => [row.id, row.content?.toString("utf-8") ?? ""] as const),
+      .map((row) => [row.id, row.content !== null ? decodeUtf8(row.content) : ""] as const),
   );
   const currentResourceContent = new Map(
     resourceCurrentRows
       .filter((row) => row.type === "file")
-      .map((row) => [row.id, row.content?.toString("utf-8") ?? ""] as const),
+      .map((row) => [row.id, row.content !== null ? decodeUtf8(row.content) : ""] as const),
   );
 
   state.currentManuscript = buildManuscriptSnapshot(

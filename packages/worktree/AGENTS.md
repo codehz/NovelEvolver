@@ -19,4 +19,4 @@ Do not import Electron, React, or capnweb.
 
 ## Git
 
-Depends on `nano-git@^0.13`. Commit trees are `manuscript/` + `resources/` only.
+Depends on `nano-git@^0.14`. Commit trees are `manuscript/` + `resources/` only.

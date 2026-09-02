@@ -12,6 +12,8 @@ import {
 import { createSqliteRepository } from "nano-git/repository/sqlite";
 import type { SqliteDatabase } from "nano-git/types/sqlite";
 
+import { encodeUtf8 } from "../bytes";
+
 function asBunPort(db: BunDatabase, options: { singleStatement?: boolean } = {}): DatabasePort {
   return {
     exec(sql: string): void {
@@ -102,7 +104,7 @@ describe("WorktreeSession", () => {
 
     const repositoryDb = new BunDatabase(":memory:");
     const repository = createSqliteRepository(adaptGit(repositoryDb));
-    const extra = repository.writeBlob(Buffer.from("resource"));
+    const extra = repository.writeBlob(encodeUtf8("resource"));
     const initialTree = repository.createTree([
       { mode: "100644", name: "resource.txt", hash: extra },
     ]);

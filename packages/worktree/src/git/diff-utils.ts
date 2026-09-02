@@ -3,6 +3,8 @@ import type { SHA1 } from "nano-git";
 import { readObject } from "nano-git/objects";
 import type { Repository } from "nano-git/repository/core";
 
+import { decodeUtf8 } from "../bytes";
+
 export type ObjectDatabase = Repository["objects"];
 
 // ==================== Git Tree 读取 ====================
@@ -11,7 +13,7 @@ export function readFileFromTree(
   objects: ObjectDatabase,
   treeHash: SHA1,
   filePath: string,
-): Buffer | undefined {
+): Uint8Array | undefined {
   const segments = filePath.split("/");
   let hash: SHA1 = treeHash;
 
@@ -47,7 +49,7 @@ export function readTextFromTree(
   path: string,
 ): string | null {
   const buf = readFileFromTree(objects, treeHash, path);
-  return buf !== undefined ? buf.toString("utf-8") : null;
+  return buf !== undefined ? decodeUtf8(buf) : null;
 }
 
 // ==================== Diff Stats ====================
