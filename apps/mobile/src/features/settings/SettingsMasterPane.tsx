@@ -1,9 +1,13 @@
 import { Header } from "@react-navigation/elements";
 import { Pressable, ScrollView, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import IconAdd from "~icons/codicon/add";
 
 import type { SplitMasterComponentProps } from "../../app/split-navigator";
 import { color, fontSize } from "../../shared/theme";
+import { AiAgentsList } from "./ai-agents/AiAgentsPanel";
+import { AiModelsList } from "./ai-models/AiModelsPanel";
+import { AiPromptsList } from "./ai-prompts/AiPromptsPanel";
 import { SETTINGS_CATEGORIES, type SettingsCategoryId } from "./categories";
 import { settingsStyles } from "./settings-chrome";
 import { requestSettingsLeave } from "./settings-leave-guard";
@@ -57,26 +61,106 @@ export function SettingsMasterPane(props: SplitMasterComponentProps) {
       <ScrollView>
         {SETTINGS_CATEGORIES.map((category) => {
           const selected = highlightSelection && category.id === focused;
+          const openCategory = () => {
+            void selectCategory(category.id);
+          };
+          const addCategory = () => {
+            void requestSettingsLeave().then((ok) => {
+              if (!ok) {
+                return;
+              }
+              if (category.id === "ai-models") {
+                props.navigation.navigate(category.id, { screen: "ProviderEditor", params: {} });
+              } else if (category.id === "ai-agents") {
+                props.navigation.navigate(category.id, { screen: "AgentEditor", params: {} });
+              } else if (category.id === "ai-prompts") {
+                props.navigation.navigate(category.id, { screen: "PromptEditor", params: {} });
+              }
+            });
+          };
           return (
-            <Pressable
-              key={category.id}
-              style={[
-                wide ? settingsStyles.railItem : settingsStyles.row,
-                selected && settingsStyles.railItemSelected,
-              ]}
-              onPress={() => {
-                void selectCategory(category.id);
-              }}
-            >
-              <Text
-                style={[
-                  wide ? settingsStyles.railItemTitle : settingsStyles.rowTitle,
-                  selected && settingsStyles.railItemTitleSelected,
-                ]}
+            <View key={category.id}>
+              <View
+                style={[settingsStyles.categoryRow, selected && settingsStyles.railItemSelected]}
               >
-                {category.label}
-              </Text>
-            </Pressable>
+                <Pressable style={settingsStyles.categoryLabelButton} onPress={openCategory}>
+                  <Text
+                    style={[
+                      wide ? settingsStyles.railItemTitle : settingsStyles.rowTitle,
+                      selected && settingsStyles.railItemTitleSelected,
+                    ]}
+                  >
+                    {category.label}
+                  </Text>
+                </Pressable>
+                {category.id === "ai-models" ||
+                category.id === "ai-agents" ||
+                category.id === "ai-prompts" ? (
+                  <Pressable
+                    style={settingsStyles.categoryAction}
+                    onPress={addCategory}
+                    accessibilityRole="button"
+                    accessibilityLabel={`添加${category.label}`}
+                    hitSlop={8}
+                  >
+                    <IconAdd width={20} height={20} color={color.accent} />
+                  </Pressable>
+                ) : null}
+              </View>
+              {category.id === "ai-models" ? (
+                <AiModelsList
+                  onOpen={(target) => {
+                    void requestSettingsLeave().then((ok) => {
+                      if (!ok) return;
+                      if (target.type === "provider") {
+                        props.navigation.navigate(category.id, {
+                          screen: "ProviderEditor",
+                          params: { id: target.id },
+                        });
+                      } else if (target.type === "model") {
+                        props.navigation.navigate(category.id, {
+                          screen: "ModelEditor",
+                          params: { id: target.id },
+                        });
+                      } else {
+                        props.navigation.navigate(category.id, {
+                          screen: "ModelEditor",
+                          params: { providerId: target.providerId },
+                        });
+                      }
+                    });
+                  }}
+                />
+              ) : null}
+              {category.id === "ai-agents" ? (
+                <AiAgentsList
+                  onOpen={(id) => {
+                    void requestSettingsLeave().then((ok) => {
+                      if (ok) {
+                        props.navigation.navigate(category.id, {
+                          screen: "AgentEditor",
+                          params: { id },
+                        });
+                      }
+                    });
+                  }}
+                />
+              ) : null}
+              {category.id === "ai-prompts" ? (
+                <AiPromptsList
+                  onOpen={(id) => {
+                    void requestSettingsLeave().then((ok) => {
+                      if (ok) {
+                        props.navigation.navigate(category.id, {
+                          screen: "PromptEditor",
+                          params: { id },
+                        });
+                      }
+                    });
+                  }}
+                />
+              ) : null}
+            </View>
           );
         })}
       </ScrollView>

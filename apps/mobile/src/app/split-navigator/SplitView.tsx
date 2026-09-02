@@ -127,7 +127,7 @@ export function SplitView({
             {masterElement}
           </View>
           <View style={styles.wideDetail} collapsable={false}>
-            {scenes}
+            {pane === "detail" ? scenes : null}
           </View>
         </View>
       </SplitContext.Provider>

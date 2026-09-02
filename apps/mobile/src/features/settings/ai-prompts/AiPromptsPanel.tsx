@@ -11,7 +11,11 @@ import { settingsStyles } from "../settings-chrome";
 import { setSettingsDirty, useSettingsFormDirty } from "../settings-leave-guard";
 import { useSettingsLeaveGuard } from "../use-settings-leave-guard";
 
-export function AiPromptsList() {
+type AiPromptsListProps = {
+  onOpen?: (id: string) => void;
+};
+
+export function AiPromptsList({ onOpen }: AiPromptsListProps = {}) {
   const navigation = useNavigation<NativeStackNavigationProp<AiPromptsStackParamList>>();
   const [tick, setTick] = useState(0);
   const snapshot = getMobileSettings().prompts.getSnapshot();
@@ -34,7 +38,11 @@ export function AiPromptsList() {
               key={prompt.id}
               style={settingsStyles.row}
               onPress={() => {
-                navigation.navigate("PromptEditor", { id: prompt.id });
+                if (onOpen) {
+                  onOpen(prompt.id);
+                } else {
+                  navigation.navigate("PromptEditor", { id: prompt.id });
+                }
               }}
             >
               <Text style={settingsStyles.rowTitle}>{prompt.title}</Text>

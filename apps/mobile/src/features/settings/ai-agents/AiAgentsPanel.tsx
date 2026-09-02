@@ -12,7 +12,11 @@ import { settingsStyles } from "../settings-chrome";
 import { setSettingsDirty, useSettingsFormDirty } from "../settings-leave-guard";
 import { useSettingsLeaveGuard } from "../use-settings-leave-guard";
 
-export function AiAgentsList() {
+type AiAgentsListProps = {
+  onOpen?: (id: string) => void;
+};
+
+export function AiAgentsList({ onOpen }: AiAgentsListProps = {}) {
   const navigation = useNavigation<NativeStackNavigationProp<AiAgentsStackParamList>>();
   const [tick, setTick] = useState(0);
   const snapshot = getMobileSettings().agents.getSnapshot();
@@ -32,7 +36,11 @@ export function AiAgentsList() {
             key={agent.id}
             style={settingsStyles.row}
             onPress={() => {
-              navigation.navigate("AgentEditor", { id: agent.id });
+              if (onOpen) {
+                onOpen(agent.id);
+              } else {
+                navigation.navigate("AgentEditor", { id: agent.id });
+              }
             }}
           >
             <Text style={settingsStyles.rowTitle}>{agent.name}</Text>

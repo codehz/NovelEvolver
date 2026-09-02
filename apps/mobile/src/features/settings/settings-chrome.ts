@@ -74,6 +74,24 @@ export const settingsStyles = StyleSheet.create({
   railItemSelected: {
     backgroundColor: wash.accentSoft,
   },
+  categoryRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    borderBottomWidth: 1,
+    borderBottomColor: color.border,
+  },
+  categoryLabelButton: {
+    flex: 1,
+    paddingHorizontal: space[4],
+    paddingVertical: space[3],
+  },
+  categoryAction: {
+    width: 44,
+    height: 44,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+
   railItemTitle: {
     color: color.foreground,
     fontFamily: fontFamily.sans,

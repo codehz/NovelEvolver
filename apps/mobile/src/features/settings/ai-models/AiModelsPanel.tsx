@@ -27,7 +27,16 @@ import { settingsStyles } from "../settings-chrome";
 import { setSettingsDirty, useSettingsFormDirty } from "../settings-leave-guard";
 import { useSettingsLeaveGuard } from "../use-settings-leave-guard";
 
-export function AiModelsList() {
+type AiModelsListProps = {
+  onOpen?: (
+    target:
+      | { type: "provider"; id: string }
+      | { type: "model"; id: string }
+      | { type: "new-model"; providerId: string },
+  ) => void;
+};
+
+export function AiModelsList({ onOpen }: AiModelsListProps = {}) {
   const navigation = useNavigation<NativeStackNavigationProp<AiModelsStackParamList>>();
   const [tick, setTick] = useState(0);
   const [error, setError] = useState<string | null>(null);
@@ -55,7 +64,11 @@ export function AiModelsList() {
                 <Pressable
                   style={settingsStyles.row}
                   onPress={() => {
-                    navigation.navigate("ProviderEditor", { id: provider.id });
+                    if (onOpen) {
+                      onOpen({ type: "provider", id: provider.id });
+                    } else {
+                      navigation.navigate("ProviderEditor", { id: provider.id });
+                    }
                   }}
                 >
                   <Text style={settingsStyles.rowTitle}>{provider.name}</Text>
@@ -69,7 +82,11 @@ export function AiModelsList() {
                     key={model.id}
                     style={[settingsStyles.row, { paddingLeft: 28 }]}
                     onPress={() => {
-                      navigation.navigate("ModelEditor", { id: model.id });
+                      if (onOpen) {
+                        onOpen({ type: "model", id: model.id });
+                      } else {
+                        navigation.navigate("ModelEditor", { id: model.id });
+                      }
                     }}
                     onLongPress={() => {
                       try {
@@ -92,7 +109,11 @@ export function AiModelsList() {
                 <Pressable
                   style={settingsStyles.row}
                   onPress={() => {
-                    navigation.navigate("ModelEditor", { providerId: provider.id });
+                    if (onOpen) {
+                      onOpen({ type: "new-model", providerId: provider.id });
+                    } else {
+                      navigation.navigate("ModelEditor", { providerId: provider.id });
+                    }
                   }}
                 >
                   <Text style={settingsStyles.headerActionLabel}>添加模型</Text>
