@@ -45,6 +45,9 @@ export const aiStyles = StyleSheet.create({
     flexGrow: 0,
     maxHeight: 520,
   },
+  inlinePickerList: {
+    maxHeight: 240,
+  },
   listContent: {
     paddingHorizontal: space[4],
     paddingVertical: space[3],
@@ -138,6 +141,30 @@ export const aiStyles = StyleSheet.create({
     fontFamily: fontFamily.sans,
     fontSize: fontSize.xs,
     fontWeight: "600",
+  },
+  composerDock: {
+    position: "relative",
+    zIndex: 1,
+  },
+  triggerPicker: {
+    position: "absolute",
+    right: 0,
+    bottom: "100%",
+    left: 0,
+    zIndex: 1,
+    elevation: 1,
+    borderTopWidth: 1,
+    borderTopColor: color.border,
+    backgroundColor: color.surface,
+  },
+  triggerPickerTitle: {
+    color: color.muted,
+    fontFamily: fontFamily.sans,
+    fontSize: fontSize.xxs,
+    fontWeight: "600",
+    paddingHorizontal: space[4],
+    paddingTop: space[2],
+    paddingBottom: space[1],
   },
   composer: {
     borderTopWidth: 1,

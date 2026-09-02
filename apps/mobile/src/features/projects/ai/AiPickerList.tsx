@@ -13,11 +13,15 @@ type AiPickerListProps = {
   items: readonly AiPickerItem[];
   empty: string;
   onSelect: (id: string) => void;
+  inline?: boolean;
 };
 
-export function AiPickerList({ items, empty, onSelect }: AiPickerListProps) {
+export function AiPickerList({ items, empty, onSelect, inline = false }: AiPickerListProps) {
   return (
-    <ScrollView style={aiStyles.pickerList} keyboardShouldPersistTaps="handled">
+    <ScrollView
+      style={[aiStyles.pickerList, inline ? aiStyles.inlinePickerList : null]}
+      keyboardShouldPersistTaps="handled"
+    >
       {items.length === 0 ? (
         <Text style={aiStyles.empty}>{empty}</Text>
       ) : (

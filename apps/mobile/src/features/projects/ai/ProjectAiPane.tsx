@@ -248,66 +248,113 @@ export function ProjectAiPane({ opened, onWorkspaceDirty }: ProjectAiPaneProps) 
           void handleEditUser(message);
         }}
       />
-      {ai.snapshot.openInteractions.length > 0 ? (
-        <AiAskUserBar
-          interactions={ai.snapshot.openInteractions}
-          onSubmit={(id, text) => {
-            ai.submitInteraction(id, { kind: "ask_user", text });
-          }}
-          onCancel={ai.cancelInteraction}
-        />
-      ) : (
-        <AiComposer
-          ref={composerRef}
-          snapshot={ai.snapshot}
-          models={ai.models}
-          agents={ai.agents}
-          draft={draft}
-          slash={slash}
-          mentions={mentions}
-          onDraftChange={setDraft}
-          onTriggerChange={(indicator, query) => {
-            setTrigger(indicator);
-            setTriggerQuery(query);
-            if (indicator !== null) {
+      <View style={aiStyles.composerDock}>
+        {picker === "trigger" ? (
+          <View style={aiStyles.triggerPicker}>
+            <Text style={aiStyles.triggerPickerTitle}>
+              {trigger === "/" ? "插入提示词" : "提及节点"}
+              {triggerQuery !== "" ? ` · ${trigger}${triggerQuery}` : ""}
+            </Text>
+            {trigger === "/" ? (
+              <AiPickerList
+                inline
+                empty="还没有匹配的提示词。"
+                items={filterPromptItems(prompts, triggerQuery).map((prompt) => ({
+                  id: prompt.id,
+                  title: `/${prompt.slug}`,
+                  detail: prompt.title,
+                }))}
+                onSelect={(id) => {
+                  const prompt = prompts.find((item) => item.id === id);
+                  if (prompt) {
+                    handlePickPrompt(prompt);
+                  }
+                }}
+              />
+            ) : (
+              <AiPickerList
+                inline
+                empty="没有匹配的项目节点。"
+                items={filterMentionCatalog(mentionItems, triggerQuery).map((item) => ({
+                  id: `${item.domain}:${item.id}`,
+                  title: `@${item.label}`,
+                  detail: `${kindLabelFor(item.kind, item.domain)} · ${item.displayPath}`,
+                }))}
+                onSelect={(id) => {
+                  const item = mentionItems.find((entry) => `${entry.domain}:${entry.id}` === id);
+                  if (item) {
+                    handlePickMention(item);
+                  }
+                }}
+              />
+            )}
+          </View>
+        ) : null}
+        {ai.snapshot.openInteractions.length > 0 ? (
+          <AiAskUserBar
+            interactions={ai.snapshot.openInteractions}
+            onSubmit={(id, text) => {
+              ai.submitInteraction(id, { kind: "ask_user", text });
+            }}
+            onCancel={ai.cancelInteraction}
+          />
+        ) : (
+          <AiComposer
+            ref={composerRef}
+            snapshot={ai.snapshot}
+            models={ai.models}
+            agents={ai.agents}
+            draft={draft}
+            slash={slash}
+            mentions={mentions}
+            onDraftChange={setDraft}
+            onTriggerChange={(indicator, query) => {
+              setTrigger(indicator);
+              setTriggerQuery(query);
+              if (indicator !== null) {
+                setPicker("trigger");
+              } else if (picker === "trigger") {
+                setPicker(null);
+              }
+            }}
+            onClearSlash={() => {
+              setSlash(null);
+            }}
+            onRemoveMention={(token) => {
+              setMentions((current) => current.filter((item) => item.token !== token));
+            }}
+            onOpenModels={() => {
+              setPicker("models");
+            }}
+            onOpenAgents={() => {
+              setPicker("agents");
+            }}
+            onOpenReasoning={() => {
+              setPicker("reasoning");
+            }}
+            onOpenPrompts={() => {
+              composerRef.current?.startMention("/");
+              setTrigger("/");
+              setTriggerQuery("");
               setPicker("trigger");
-            } else if (picker === "trigger") {
-              setPicker(null);
-            }
-          }}
-          onClearSlash={() => {
-            setSlash(null);
-          }}
-          onRemoveMention={(token) => {
-            setMentions((current) => current.filter((item) => item.token !== token));
-          }}
-          onOpenModels={() => {
-            setPicker("models");
-          }}
-          onOpenAgents={() => {
-            setPicker("agents");
-          }}
-          onOpenReasoning={() => {
-            setPicker("reasoning");
-          }}
-          onOpenPrompts={() => {
-            composerRef.current?.startMention("/");
-            setTrigger("/");
-            setTriggerQuery("");
-            setPicker("trigger");
-          }}
-          onOpenMentions={() => {
-            composerRef.current?.startMention("@");
-            setTrigger("@");
-            setTriggerQuery("");
-            setPicker("trigger");
-          }}
-          onSend={handleSend}
-          onStop={ai.stopGeneration}
-        />
-      )}
+            }}
+            onOpenMentions={() => {
+              composerRef.current?.startMention("@");
+              setTrigger("@");
+              setTriggerQuery("");
+              setPicker("trigger");
+            }}
+            onSend={handleSend}
+            onStop={ai.stopGeneration}
+          />
+        )}
+      </View>
 
-      <AiPickerSheet title={pickerTitle} visible={picker !== null} onDismiss={closePicker}>
+      <AiPickerSheet
+        title={pickerTitle}
+        visible={picker !== null && picker !== "trigger"}
+        onDismiss={closePicker}
+      >
         {picker === "history" ? (
           <AiHistoryList
             conversations={ai.conversations}
@@ -390,38 +437,6 @@ export function ProjectAiPane({ opened, onWorkspaceDirty }: ProjectAiPaneProps) 
           />
         ) : null}
 
-        {picker === "trigger" && trigger === "/" ? (
-          <AiPickerList
-            empty="还没有匹配的提示词。"
-            items={filterPromptItems(prompts, triggerQuery).map((prompt) => ({
-              id: prompt.id,
-              title: `/${prompt.slug}`,
-              detail: prompt.title,
-            }))}
-            onSelect={(id) => {
-              const prompt = prompts.find((item) => item.id === id);
-              if (prompt) {
-                handlePickPrompt(prompt);
-              }
-            }}
-          />
-        ) : null}
-        {picker === "trigger" && trigger === "@" ? (
-          <AiPickerList
-            empty="没有匹配的项目节点。"
-            items={filterMentionCatalog(mentionItems, triggerQuery).map((item) => ({
-              id: `${item.domain}:${item.id}`,
-              title: `@${item.label}`,
-              detail: `${kindLabelFor(item.kind, item.domain)} · ${item.displayPath}`,
-            }))}
-            onSelect={(id) => {
-              const item = mentionItems.find((entry) => `${entry.domain}:${entry.id}` === id);
-              if (item) {
-                handlePickMention(item);
-              }
-            }}
-          />
-        ) : null}
         {picker === "prompts" ? (
           <AiPickerList
             empty="还没有自定义提示词。"
