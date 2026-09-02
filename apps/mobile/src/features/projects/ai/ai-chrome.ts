@@ -98,6 +98,141 @@ export const aiStyles = StyleSheet.create({
     alignSelf: "stretch",
     gap: space[2],
   },
+  markdown: {
+    gap: space[2],
+  },
+  paragraph: {
+    color: color.foreground,
+    fontFamily: fontFamily.sans,
+    fontSize: fontSize.chat,
+    lineHeight: 20,
+  },
+  heading1: {
+    color: color.foreground,
+    fontFamily: fontFamily.sans,
+    fontSize: fontSize.xl,
+    fontWeight: "700",
+    lineHeight: 28,
+  },
+  heading2: {
+    color: color.foreground,
+    fontFamily: fontFamily.sans,
+    fontSize: fontSize.lg,
+    fontWeight: "700",
+    lineHeight: 24,
+  },
+  heading3: {
+    color: color.foreground,
+    fontFamily: fontFamily.sans,
+    fontSize: fontSize.md,
+    fontWeight: "700",
+    lineHeight: 22,
+  },
+  strong: {
+    fontWeight: "700",
+  },
+  emphasis: {
+    fontStyle: "italic",
+  },
+  strikethrough: {
+    textDecorationLine: "line-through",
+  },
+  inlineCode: {
+    color: color.foreground,
+    fontFamily: fontFamily.mono,
+    backgroundColor: color.field,
+    fontSize: fontSize.chat,
+  },
+  link: {
+    color: color.accent,
+    textDecorationLine: "underline",
+  },
+  blockquote: {
+    borderLeftWidth: 3,
+    borderLeftColor: color.accent,
+    paddingLeft: space[3],
+    gap: space[2],
+  },
+  listBlock: {
+    gap: space[1],
+  },
+  listItem: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    gap: space[2],
+  },
+  listMarker: {
+    color: color.accent,
+    fontFamily: fontFamily.sans,
+    fontSize: fontSize.chat,
+    minWidth: 16,
+  },
+  listItemBody: {
+    flex: 1,
+    gap: space[1],
+  },
+  codeBlock: {
+    maxHeight: 280,
+    borderRadius: radius.panel,
+    backgroundColor: color.crust,
+  },
+  codeContent: {
+    minWidth: "100%",
+    padding: space[3],
+  },
+  codeText: {
+    color: color.foreground,
+    fontFamily: fontFamily.mono,
+    fontSize: fontSize.xs,
+    lineHeight: 18,
+  },
+  thematicBreak: {
+    height: StyleSheet.hairlineWidth,
+    backgroundColor: color.border,
+  },
+  tableCard: {
+    minWidth: "100%",
+    borderRadius: radius.panel,
+    borderWidth: 1,
+    borderColor: color.border,
+    backgroundColor: color.surface,
+    paddingHorizontal: space[2],
+    paddingVertical: space[1],
+  },
+  tableCardRow: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: space[3],
+    paddingVertical: space[2],
+  },
+  tableCardRowDivider: {
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: color.border,
+  },
+  tableCardField: {
+    flexGrow: 1,
+    flexBasis: 140,
+    gap: 2,
+  },
+  tableCardLabel: {
+    color: color.muted,
+    fontFamily: fontFamily.sans,
+    fontSize: fontSize.xxs,
+    fontWeight: "500",
+  },
+  tableCardValue: {
+    color: color.foreground,
+    fontFamily: fontFamily.sans,
+    fontSize: fontSize.chat,
+    lineHeight: 20,
+  },
+
+  streamingCursor: {
+    color: color.accent,
+    fontFamily: fontFamily.sans,
+    fontSize: fontSize.chat,
+  },
+
   messageText: {
     color: color.foreground,
     fontFamily: fontFamily.sans,

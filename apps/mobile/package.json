@@ -43,7 +43,8 @@
     "react-native-screens": "^4.27.0",
     "react-native-share": "^12.3.1",
     "react-native-svg": "^15.15.5",
-    "react-native-worklets": "^0.12.1"
+    "react-native-worklets": "^0.12.1",
+    "stream-markdown-parser": "1.2.13"
   },
   "devDependencies": {
     "@babel/core": "^7.25.2",

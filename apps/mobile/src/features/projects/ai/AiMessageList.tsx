@@ -9,6 +9,7 @@ import { useState } from "react";
 import { FlatList, Pressable, Text, View } from "react-native";
 
 import { aiStyles } from "./ai-chrome";
+import { AiMarkdown } from "./AiMarkdown";
 import { formatToolCall } from "./tool-summary";
 
 type AiMessageListProps = {
@@ -162,9 +163,7 @@ function AssistantMessage({
           );
         }
         return (
-          <Text key={part.id} style={aiStyles.messageText}>
-            {part.text || (part.status === "streaming" ? "…" : "")}
-          </Text>
+          <AiMarkdown key={part.id} content={part.text} streaming={part.status === "streaming"} />
         );
       })}
       {usage ? <Text style={aiStyles.metaText}>{usage}</Text> : null}
