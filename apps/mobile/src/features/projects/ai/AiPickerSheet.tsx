@@ -60,8 +60,6 @@ const styles = StyleSheet.create({
     borderColor: color.border,
   },
   content: {
-    flex: 1,
-    minHeight: 0,
     paddingBottom: space[4],
   },
   handle: {

@@ -17,7 +17,7 @@ type AiPickerListProps = {
 
 export function AiPickerList({ items, empty, onSelect }: AiPickerListProps) {
   return (
-    <ScrollView style={aiStyles.list} keyboardShouldPersistTaps="handled">
+    <ScrollView style={aiStyles.pickerList} keyboardShouldPersistTaps="handled">
       {items.length === 0 ? (
         <Text style={aiStyles.empty}>{empty}</Text>
       ) : (

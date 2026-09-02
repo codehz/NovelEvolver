@@ -41,6 +41,10 @@ export const aiStyles = StyleSheet.create({
   list: {
     flex: 1,
   },
+  pickerList: {
+    flexGrow: 0,
+    maxHeight: 520,
+  },
   listContent: {
     paddingHorizontal: space[4],
     paddingVertical: space[3],

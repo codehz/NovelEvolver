@@ -64,7 +64,7 @@ export function AiHistoryList({
         placeholderTextColor={color.placeholder}
         style={aiStyles.searchInput}
       />
-      <ScrollView style={aiStyles.list} keyboardShouldPersistTaps="handled">
+      <ScrollView style={aiStyles.pickerList} keyboardShouldPersistTaps="handled">
         {visible.length === 0 ? (
           <Text style={aiStyles.empty}>还没有会话。</Text>
         ) : (
