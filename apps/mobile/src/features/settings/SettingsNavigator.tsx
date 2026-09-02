@@ -22,6 +22,7 @@ import { AgentEditor } from "./ai-agents/AiAgentsPanel";
 import { ModelEditor, ProviderEditor } from "./ai-models/AiModelsPanel";
 import { PromptEditor } from "./ai-prompts/AiPromptsPanel";
 import { AiRuntimePolicyPanel } from "./ai-runtime-policy/AiRuntimePolicyPanel";
+import { SETTINGS_RAIL_WIDTH } from "./settings-chrome";
 import type { SettingsDetailActionChange } from "./settings-detail-actions";
 import { requestSettingsLeave, useSettingsDirty } from "./settings-leave-guard";
 import {
@@ -141,7 +142,7 @@ export function SettingsNavigator() {
   return (
     <View style={{ flex: 1, flexDirection: wide ? "row" : "column" }}>
       {wide ? (
-        <View style={{ width: 220 }}>{renderMaster()}</View>
+        <View style={{ width: SETTINGS_RAIL_WIDTH }}>{renderMaster()}</View>
       ) : (
         <View style={{ flex: 1 }}>
           <Animated.View

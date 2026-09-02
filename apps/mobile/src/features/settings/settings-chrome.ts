@@ -3,7 +3,7 @@ import { StyleSheet } from "react-native";
 import { color, fontFamily, fontSize, radius, space, wash } from "../../shared/theme";
 
 export const WIDE_SETTINGS_BREAKPOINT = 768;
-export const SETTINGS_RAIL_WIDTH = 220;
+export const SETTINGS_RAIL_WIDTH = 280;
 
 export const settingsStyles = StyleSheet.create({
   root: {
