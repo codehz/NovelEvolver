@@ -11,7 +11,7 @@ import {
   type AiPromptConfigPublic,
   type AiReasoningLevel,
 } from "@novelevolver/domain/settings/ai-settings";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { KeyboardAvoidingView, Platform, Text, View } from "react-native";
 import IconAdd from "~icons/codicon/add";
 import IconBeaker from "~icons/codicon/beaker";
@@ -24,11 +24,12 @@ import { errorMessage } from "../error-message";
 import type { OpenedProject } from "../git/repository-manager";
 import { aiStyles } from "./ai-chrome";
 import { AiAskUserBar } from "./AiAskUserBar";
-import { AiComposer } from "./AiComposer";
+import { AiComposer, type AiComposerHandle } from "./AiComposer";
 import { AiHistoryList } from "./AiHistoryList";
 import { AiMessageList } from "./AiMessageList";
 import { AiPickerList } from "./AiPickerList";
 import { AiPickerSheet } from "./AiPickerSheet";
+import { filterMentionCatalog, filterPromptItems, type ComposerTrigger } from "./composer-query";
 import {
   buildMentionToken,
   kindLabelFor,
@@ -44,6 +45,7 @@ type AiPicker =
   | "reasoning"
   | "prompts"
   | "mentions"
+  | "trigger"
   | "scenarios";
 
 type ProjectAiPaneProps = {
@@ -54,7 +56,10 @@ type ProjectAiPaneProps = {
 export function ProjectAiPane({ opened, onWorkspaceDirty }: ProjectAiPaneProps) {
   const overlay = useOverlay();
   const ai = useProjectAi(opened, onWorkspaceDirty);
+  const composerRef = useRef<AiComposerHandle>(null);
   const [picker, setPicker] = useState<AiPicker | null>(null);
+  const [trigger, setTrigger] = useState<ComposerTrigger | null>(null);
+  const [triggerQuery, setTriggerQuery] = useState("");
   const [draft, setDraft] = useState("");
   const [slash, setSlash] = useState<AiChatSlashRef | null>(null);
   const [mentions, setMentions] = useState<AiChatMentionRef[]>([]);
@@ -70,20 +75,30 @@ export function ProjectAiPane({ opened, onWorkspaceDirty }: ProjectAiPaneProps) 
 
   const closePicker = () => {
     setPicker(null);
+    if (trigger !== null) {
+      setTrigger(null);
+      setTriggerQuery("");
+    }
   };
 
   const handleCreate = () => {
     ai.createConversation();
+    composerRef.current?.clear();
     setDraft("");
     setSlash(null);
     setMentions([]);
+    setTrigger(null);
+    setTriggerQuery("");
   };
 
   const handleSelectConversation = (conversationId: string) => {
     ai.switchConversation(conversationId);
+    composerRef.current?.clear();
     setDraft("");
     setSlash(null);
     setMentions([]);
+    setTrigger(null);
+    setTriggerQuery("");
     closePicker();
   };
 
@@ -136,33 +151,41 @@ export function ProjectAiPane({ opened, onWorkspaceDirty }: ProjectAiPaneProps) 
   };
 
   const handleSend = () => {
-    const sent = ai.sendMessage({ text: draft, slash, mentions });
+    const sent = ai.sendMessage(
+      composerRef.current?.getSendPayload() ?? { text: draft, slash, mentions },
+    );
     if (sent) {
+      composerRef.current?.clear();
       setDraft("");
       setSlash(null);
       setMentions([]);
+      setTrigger(null);
+      setTriggerQuery("");
     }
   };
 
   const handlePickPrompt = (prompt: AiPromptConfigPublic) => {
-    setSlash({
+    const slashRef = {
       promptId: prompt.id,
       slug: prompt.slug,
       title: prompt.title,
       body: prompt.prompt,
-    });
-    closePicker();
+    };
+    composerRef.current?.setPrompt(slashRef);
+    setSlash(slashRef);
+    setPicker(null);
+    setTrigger(null);
+    setTriggerQuery("");
   };
 
-  const handlePickMention = (id: string) => {
-    const item = mentionItems.find((entry) => `${entry.domain}:${entry.id}` === id);
-    if (item === undefined) {
-      return;
-    }
+  const handlePickMention = (item: (typeof mentionItems)[number]) => {
     const existing = new Set(mentions.map((mention) => mention.token));
     const token = buildMentionToken(item, existing);
+    composerRef.current?.setMention(item, token);
     setMentions((current) => [...current, toMentionRef(item, token)]);
-    closePicker();
+    setPicker(null);
+    setTrigger(null);
+    setTriggerQuery("");
   };
 
   const selectedModel = ai.models.find((model) => model.id === ai.snapshot.selectedModelId);
@@ -179,7 +202,11 @@ export function ProjectAiPane({ opened, onWorkspaceDirty }: ProjectAiPaneProps) 
               ? "插入提示词"
               : picker === "mentions"
                 ? "提及节点"
-                : "测试场景";
+                : picker === "trigger"
+                  ? trigger === "/"
+                    ? "插入提示词"
+                    : "提及节点"
+                  : "测试场景";
 
   return (
     <KeyboardAvoidingView
@@ -231,6 +258,7 @@ export function ProjectAiPane({ opened, onWorkspaceDirty }: ProjectAiPaneProps) 
         />
       ) : (
         <AiComposer
+          ref={composerRef}
           snapshot={ai.snapshot}
           models={ai.models}
           agents={ai.agents}
@@ -238,6 +266,15 @@ export function ProjectAiPane({ opened, onWorkspaceDirty }: ProjectAiPaneProps) 
           slash={slash}
           mentions={mentions}
           onDraftChange={setDraft}
+          onTriggerChange={(indicator, query) => {
+            setTrigger(indicator);
+            setTriggerQuery(query);
+            if (indicator !== null) {
+              setPicker("trigger");
+            } else if (picker === "trigger") {
+              setPicker(null);
+            }
+          }}
           onClearSlash={() => {
             setSlash(null);
           }}
@@ -254,10 +291,16 @@ export function ProjectAiPane({ opened, onWorkspaceDirty }: ProjectAiPaneProps) 
             setPicker("reasoning");
           }}
           onOpenPrompts={() => {
-            setPicker("prompts");
+            composerRef.current?.startMention("/");
+            setTrigger("/");
+            setTriggerQuery("");
+            setPicker("trigger");
           }}
           onOpenMentions={() => {
-            setPicker("mentions");
+            composerRef.current?.startMention("@");
+            setTrigger("@");
+            setTriggerQuery("");
+            setPicker("trigger");
           }}
           onSend={handleSend}
           onStop={ai.stopGeneration}
@@ -347,6 +390,38 @@ export function ProjectAiPane({ opened, onWorkspaceDirty }: ProjectAiPaneProps) 
           />
         ) : null}
 
+        {picker === "trigger" && trigger === "/" ? (
+          <AiPickerList
+            empty="还没有匹配的提示词。"
+            items={filterPromptItems(prompts, triggerQuery).map((prompt) => ({
+              id: prompt.id,
+              title: `/${prompt.slug}`,
+              detail: prompt.title,
+            }))}
+            onSelect={(id) => {
+              const prompt = prompts.find((item) => item.id === id);
+              if (prompt) {
+                handlePickPrompt(prompt);
+              }
+            }}
+          />
+        ) : null}
+        {picker === "trigger" && trigger === "@" ? (
+          <AiPickerList
+            empty="没有匹配的项目节点。"
+            items={filterMentionCatalog(mentionItems, triggerQuery).map((item) => ({
+              id: `${item.domain}:${item.id}`,
+              title: `@${item.label}`,
+              detail: `${kindLabelFor(item.kind, item.domain)} · ${item.displayPath}`,
+            }))}
+            onSelect={(id) => {
+              const item = mentionItems.find((entry) => `${entry.domain}:${entry.id}` === id);
+              if (item) {
+                handlePickMention(item);
+              }
+            }}
+          />
+        ) : null}
         {picker === "prompts" ? (
           <AiPickerList
             empty="还没有自定义提示词。"
@@ -372,7 +447,12 @@ export function ProjectAiPane({ opened, onWorkspaceDirty }: ProjectAiPaneProps) 
               title: `@${item.label}`,
               detail: `${kindLabelFor(item.kind, item.domain)} · ${item.displayPath}`,
             }))}
-            onSelect={handlePickMention}
+            onSelect={(id) => {
+              const item = mentionItems.find((entry) => `${entry.domain}:${entry.id}` === id);
+              if (item) {
+                handlePickMention(item);
+              }
+            }}
           />
         ) : null}
 

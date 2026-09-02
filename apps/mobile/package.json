@@ -32,6 +32,7 @@
     "pako": "^2.1.0",
     "react": "19.2.3",
     "react-native": "0.87.1",
+    "react-native-enriched-html": "1.1.1",
     "react-native-file-access": "^4.0.3",
     "react-native-gesture-handler": "^3.2.1",
     "react-native-mmkv": "3.3.3",
