@@ -24,7 +24,7 @@ This is a **Bun workspace monorepo**. Root `AGENTS.md` is the always-on index. *
 
 ```
 apps/desktop/       @novelevolver/desktop — Electron + Vite renderer
-apps/mobile/        @novelevolver/mobile — bare React Native (no Expo / Metro)
+apps/mobile/        @novelevolver/mobile — bare React Native (Metro)
 packages/domain/    @novelevolver/domain — DTOs, pure helpers (zero deps)
 packages/desktop-rpc/  @novelevolver/desktop-rpc — capnweb contracts (desktop only)
 packages/worktree/     @novelevolver/worktree — shared worktree session + app-state SQL

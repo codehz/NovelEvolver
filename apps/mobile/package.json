@@ -5,12 +5,13 @@
   "description": "NovelEvolver mobile app (React Native, Community CLI — not Expo)",
   "scripts": {
     "fonts:link": "node ../../scripts/ensure-fonts.mjs && node ../../scripts/link-mobile-fonts.mjs",
+    "icons:generate": "node -e \"require('./metro-icons-resolver')\"",
     "sqlite:ensure": "bun run --filter @novelevolver/mobile-sqlite sqlite:ensure",
-    "prestart": "bun run fonts:link",
+    "prestart": "bun run fonts:link && bun run icons:generate",
     "start": "react-native start",
-    "preandroid": "bun run fonts:link && bun run sqlite:ensure",
+    "preandroid": "bun run fonts:link && bun run icons:generate && bun run sqlite:ensure",
     "android": "react-native run-android",
-    "preios": "bun run fonts:link && bun run sqlite:ensure",
+    "preios": "bun run fonts:link && bun run icons:generate && bun run sqlite:ensure",
     "ios": "react-native run-ios"
   },
   "dependencies": {
@@ -59,14 +60,12 @@
     "@react-native/codegen": "0.87.1",
     "@react-native/gradle-plugin": "0.87.1",
     "@react-native/js-polyfills": "0.87.1",
+    "@react-native/metro-config": "0.87.1",
     "@react-native/typescript-config": "0.87.1",
-    "@svgr/core": "^8.1.0",
-    "@svgr/plugin-jsx": "^8.1.0",
     "@swc/helpers": "^0.5.23",
     "@types/pako": "^2.0.3",
     "@types/react": "^19.2.0",
-    "rollipop": "1.0.0-alpha.29",
-    "unplugin-icons": "^23.0.1"
+    "react-native-monorepo-config": "0.4.0"
   },
   "engines": {
     "node": ">= 22.12.0"

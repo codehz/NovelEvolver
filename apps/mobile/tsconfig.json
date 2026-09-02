@@ -1,8 +1,16 @@
 {
   "extends": "@react-native/typescript-config",
   "compilerOptions": {
-    "types": []
+    "types": ["node"],
+    "lib": ["esnext", "dom"]
   },
-  "include": ["src", "index.js", "rollipop.config.ts", "rollipop-env.d.ts", "babel.config.js"],
+  "include": [
+    "src",
+    "index.js",
+    "metro.config.js",
+    "metro-icons-resolver.js",
+    "metro-icons.d.ts",
+    "babel.config.js"
+  ],
   "exclude": ["**/node_modules", "**/Pods", "android", "ios"]
 }

@@ -1,14 +1,14 @@
 # Mobile (`@novelevolver/mobile`)
 
-Bare React Native (Community CLI + [Rollipop](https://rollipop.dev)). **Do not add Expo** (`expo`, `expo-router`, `expo-*`) or Metro.
+Bare React Native (Community CLI + Metro). **Do not add Expo** (`expo`, `expo-router`, `expo-*`).
 
 - Native projects: `android/`, `ios/`
-- JS entry: `index.js`; bundler: `rollipop.config.ts`; UI: `src/`
+- JS entry: `index.js`; bundler: `metro.config.js` with `react-native-monorepo-config`; UI: `src/`
 - Domain DTOs: `@novelevolver/domain` (workspace package; no `#app` path alias)
-- Rollipop uses standard Node resolution — workspace packages resolve without Metro `watchFolders` / asset URL rewrites
-- Hermes does not parse `async function*` / `for await`; Rollipop Babel transforms those in app + `@novelevolver/ai-runtime` / `@codehz/ai`
+- Metro resolves workspace packages through `react-native-monorepo-config`; the custom `metro-icons-resolver.js` generates Codicon components backed by `react-native-svg`
+- Hermes does not parse `async function*` / `for await`; the standard React Native Babel preset transforms those in app + `@novelevolver/ai-runtime` / `@codehz/ai`
 - Hermes has no Web Crypto or `structuredClone`; `index.js` installs `crypto.randomUUID` via `src/shared/node-compat/crypto-global.ts` and `structuredClone` via `src/shared/node-compat/structured-clone.ts` (`@codehz/ai` uses the global)
-- Iconify: on-demand `unplugin-icons` (`import IconAdd from "~icons/codicon/add"`), compiled to `react-native-svg` in `rollipop.config.ts`
+- Icons: on-demand `~icons/codicon/*` imports are handled by the Metro custom resolver and compiled to `react-native-svg`
 - Theme: Catppuccin Mocha JS tokens in `src/shared/theme/` (no NativeWind / Tailwind). Semantic roles match desktop `@theme`. Flavor is pinned — do not follow system light mode
 - Backend: mobile-specific (MMKV for settings, SQLite app-state + nano-git for projects). **Not** capnweb / `desktop-rpc`
 - Settings: local MMKV (`novelevolver-settings`); domain store logic from `@novelevolver/domain`

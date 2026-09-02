@@ -60,8 +60,10 @@ yarn-error.log
 **/Pods/
 /vendor/bundle/
 
-# Rollipop cache / generated bundles
+# Metro-generated icon modules and cache
+.metro/
 .rollipop/
+metro-icons/
 
 # Generated native font binaries; source files live in vendor/fonts/native/
 android/app/src/main/res/font/*.ttf

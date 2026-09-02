@@ -3,7 +3,7 @@ new file mode 100644
 index 0000000000000000000000000000000000000000..bad70fdb687531d5ca5793d1957fa0c670d6de25
 --- /dev/null
 +++ b/rn-get-polyfills.js
-@@ -0,0 +1,20 @@
+@@ -0,0 +1,23 @@
 +"use strict";
 +
 +const fs = require("node:fs");
@@ -13,7 +13,10 @@ index 0000000000000000000000000000000000000000..bad70fdb687531d5ca5793d1957fa0c6
 +function findAppRoot() {
 +  let dir = process.cwd();
 +  while (dir !== path.dirname(dir)) {
-+    if (fs.existsSync(path.join(dir, "rollipop.config.ts"))) {
++    if (
++      fs.existsSync(path.join(dir, "metro.config.js")) ||
++      fs.existsSync(path.join(dir, "metro.config.cjs"))
++    ) {
 +      return dir;
 +    }
 +    dir = path.dirname(dir);
