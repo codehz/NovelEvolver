@@ -158,18 +158,25 @@ function MarkdownNode({
           ))}
         </View>
       );
-    case "code_block":
+    case "code_block": {
+      const code = (node.code ?? "").replace(/\n+$/, "");
       return (
         <ScrollView
-          horizontal
           style={aiStyles.codeBlock}
           contentContainerStyle={aiStyles.codeContent}
+          nestedScrollEnabled
         >
-          <Text selectable style={aiStyles.codeText}>
-            {node.code}
+          <Text
+            selectable
+            style={aiStyles.codeText}
+            textBreakStrategy="simple"
+            android_hyphenationFrequency="none"
+          >
+            {code || " "}
           </Text>
         </ScrollView>
       );
+    }
     case "thematic_break":
       return <View style={aiStyles.thematicBreak} />;
     case "table": {

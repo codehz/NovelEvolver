@@ -172,12 +172,13 @@ export const aiStyles = StyleSheet.create({
     gap: space[1],
   },
   codeBlock: {
+    width: "100%",
     maxHeight: 280,
     borderRadius: radius.panel,
     backgroundColor: color.crust,
   },
   codeContent: {
-    minWidth: "100%",
+    width: "100%",
     padding: space[3],
   },
   codeText: {
