@@ -14,11 +14,12 @@ import { useSettingsLeaveGuard } from "../use-settings-leave-guard";
 
 type AiAgentsListProps = {
   selectedId?: string;
+  adding: boolean;
   onOpen: (id: string) => void;
   onAdd: () => void;
 };
 
-export function AiAgentsList({ selectedId, onOpen, onAdd }: AiAgentsListProps) {
+export function AiAgentsList({ selectedId, adding, onOpen, onAdd }: AiAgentsListProps) {
   const [tick, setTick] = useState(0);
   const snapshot = getMobileSettings().agents.getSnapshot();
   void tick;
@@ -54,7 +55,10 @@ export function AiAgentsList({ selectedId, onOpen, onAdd }: AiAgentsListProps) {
             </Text>
           </Pressable>
         ))}
-        <Pressable style={settingsStyles.addCardButton} onPress={onAdd}>
+        <Pressable
+          style={[settingsStyles.addCardButton, adding && settingsStyles.cardSelected]}
+          onPress={onAdd}
+        >
           <Text style={settingsStyles.addCardLabel}>添加 Agent</Text>
         </Pressable>
       </ScrollView>

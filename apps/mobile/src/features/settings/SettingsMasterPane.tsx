@@ -37,12 +37,7 @@ function detailCategory(detail: SettingsDetail | null): SettingsCategoryId | nul
 }
 
 function hasSelectedDetailRow(detail: SettingsDetail | null): boolean {
-  return (
-    (detail?.type === "provider-editor" && detail.id != null) ||
-    (detail?.type === "model-editor" && (detail.id != null || detail.providerId != null)) ||
-    (detail?.type === "agent-editor" && detail.id != null) ||
-    (detail?.type === "prompt-editor" && detail.id != null)
-  );
+  return detail?.type !== undefined;
 }
 
 export function SettingsMasterPane({
@@ -128,6 +123,16 @@ export function SettingsMasterPane({
                   selectedModelId={
                     wide && selectedRow?.type === "model-editor" ? selectedRow.id : undefined
                   }
+                  addingProvider={
+                    wide && selectedRow?.type === "provider-editor" && selectedRow.id == null
+                      ? true
+                      : false
+                  }
+                  addingModelProviderId={
+                    wide && selectedRow?.type === "model-editor" && selectedRow.id == null
+                      ? selectedRow.providerId
+                      : undefined
+                  }
                   onOpen={(target) => {
                     if (target.type === "provider") {
                       openEditor({ type: "provider-editor", id: target.id });
@@ -147,6 +152,11 @@ export function SettingsMasterPane({
                   selectedId={
                     wide && selectedRow?.type === "agent-editor" ? selectedRow.id : undefined
                   }
+                  adding={
+                    wide && selectedRow?.type === "agent-editor" && selectedRow.id == null
+                      ? true
+                      : false
+                  }
                   onOpen={(id) => openEditor({ type: "agent-editor", id })}
                   onAdd={() => {
                     openEditor({ type: "agent-editor" });
@@ -157,6 +167,11 @@ export function SettingsMasterPane({
                 <AiPromptsList
                   selectedId={
                     wide && selectedRow?.type === "prompt-editor" ? selectedRow.id : undefined
+                  }
+                  adding={
+                    wide && selectedRow?.type === "prompt-editor" && selectedRow.id == null
+                      ? true
+                      : false
                   }
                   onOpen={(id) => openEditor({ type: "prompt-editor", id })}
                   onAdd={() => {

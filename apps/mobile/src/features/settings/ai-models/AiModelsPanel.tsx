@@ -30,6 +30,8 @@ import { useSettingsLeaveGuard } from "../use-settings-leave-guard";
 type AiModelsListProps = {
   selectedProviderId?: string;
   selectedModelId?: string;
+  addingProvider: boolean;
+  addingModelProviderId?: string;
   onOpen: (
     target:
       | { type: "provider"; id: string }
@@ -42,6 +44,8 @@ type AiModelsListProps = {
 export function AiModelsList({
   selectedProviderId,
   selectedModelId,
+  addingProvider,
+  addingModelProviderId,
   onOpen,
   onAddProvider,
 }: AiModelsListProps) {
@@ -118,7 +122,10 @@ export function AiModelsList({
                   </Pressable>
                 ))}
                 <Pressable
-                  style={settingsStyles.cardAction}
+                  style={[
+                    settingsStyles.cardAction,
+                    addingModelProviderId === provider.id && settingsStyles.cardSelected,
+                  ]}
                   onPress={() => {
                     onOpen({ type: "new-model", providerId: provider.id });
                   }}
@@ -129,7 +136,10 @@ export function AiModelsList({
             );
           })
         )}
-        <Pressable style={settingsStyles.addCardButton} onPress={onAddProvider}>
+        <Pressable
+          style={[settingsStyles.addCardButton, addingProvider && settingsStyles.cardSelected]}
+          onPress={onAddProvider}
+        >
           <Text style={settingsStyles.addCardLabel}>添加供应商</Text>
         </Pressable>
       </ScrollView>

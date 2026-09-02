@@ -13,11 +13,12 @@ import { useSettingsLeaveGuard } from "../use-settings-leave-guard";
 
 type AiPromptsListProps = {
   selectedId?: string;
+  adding: boolean;
   onOpen: (id: string) => void;
   onAdd: () => void;
 };
 
-export function AiPromptsList({ selectedId, onOpen, onAdd }: AiPromptsListProps) {
+export function AiPromptsList({ selectedId, adding, onOpen, onAdd }: AiPromptsListProps) {
   const [tick, setTick] = useState(0);
   const snapshot = getMobileSettings().prompts.getSnapshot();
   void tick;
@@ -54,7 +55,10 @@ export function AiPromptsList({ selectedId, onOpen, onAdd }: AiPromptsListProps)
             </Pressable>
           ))
         )}
-        <Pressable style={settingsStyles.addCardButton} onPress={onAdd}>
+        <Pressable
+          style={[settingsStyles.addCardButton, adding && settingsStyles.cardSelected]}
+          onPress={onAdd}
+        >
           <Text style={settingsStyles.addCardLabel}>添加提示词</Text>
         </Pressable>
       </ScrollView>
