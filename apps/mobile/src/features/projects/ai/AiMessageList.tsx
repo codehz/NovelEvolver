@@ -5,12 +5,18 @@ import type {
   AiChatSnapshot,
   AiChatUserMessage,
 } from "@novelevolver/domain/ai";
-import { useState } from "react";
+import {
+  isWorkSegmentLive,
+  projectAssistantSegments,
+  shouldKeepWorkExpanded,
+  type AssistantSegment,
+} from "@novelevolver/domain/ai";
 import { FlatList, Pressable, Text, View } from "react-native";
 
 import { aiStyles } from "./ai-chrome";
+import { AiAskUserCard, AiSubagentCard } from "./AiElevatedCards";
 import { AiMarkdown } from "./AiMarkdown";
-import { formatToolCall } from "./tool-summary";
+import { AiWorkBlock } from "./AiWorkBlock";
 
 type AiMessageListProps = {
   snapshot: AiChatSnapshot;
@@ -22,25 +28,17 @@ type AiMessageListProps = {
 
 function usageLine(message: AiChatAssistantMessage): string | null {
   const usage = message.usage;
-  if (usage == null) {
-    return null;
-  }
-  const parts: string[] = [];
-  if (usage.lastInputTokens != null) {
-    parts.push(`上下文 ${usage.lastInputTokens}`);
-  } else if (usage.inputTokens != null) {
-    parts.push(`输入 ${usage.inputTokens}`);
-  }
-  if (usage.outputTokens != null) {
-    parts.push(`输出 ${usage.outputTokens}`);
-  }
-  if (usage.reasoningTokens != null) {
-    parts.push(`推理 ${usage.reasoningTokens}`);
-  }
-  if (parts.length === 0) {
-    return null;
-  }
-  return [message.modelName, ...parts].filter((part) => part !== "").join(" · ");
+  if (usage == null) return null;
+  const parts = [
+    usage.lastInputTokens != null
+      ? `上下文 ${usage.lastInputTokens}`
+      : usage.inputTokens != null
+        ? `输入 ${usage.inputTokens}`
+        : null,
+    usage.outputTokens != null ? `输出 ${usage.outputTokens}` : null,
+    usage.reasoningTokens != null ? `推理 ${usage.reasoningTokens}` : null,
+  ].filter((part): part is string => part != null);
+  return parts.length === 0 ? null : [message.modelName, ...parts].filter(Boolean).join(" · ");
 }
 
 function BranchControls({
@@ -52,17 +50,15 @@ function BranchControls({
   disabled: boolean;
   onSelectBranch: (index: number) => void;
 }) {
-  if (message.branch == null || message.branch.count <= 1) {
-    return null;
-  }
+  if (message.branch == null || message.branch.count <= 1) return null;
   const { index, count } = message.branch;
   return (
     <View style={aiStyles.rowActions}>
       <Pressable
+        accessibilityRole="button"
+        accessibilityLabel="上一分支"
         disabled={disabled || index <= 0}
-        onPress={() => {
-          onSelectBranch(index - 1);
-        }}
+        onPress={() => onSelectBranch(index - 1)}
       >
         <Text style={aiStyles.actionLabel}>‹</Text>
       </Pressable>
@@ -70,14 +66,45 @@ function BranchControls({
         {index + 1}/{count}
       </Text>
       <Pressable
+        accessibilityRole="button"
+        accessibilityLabel="下一分支"
         disabled={disabled || index >= count - 1}
-        onPress={() => {
-          onSelectBranch(index + 1);
-        }}
+        onPress={() => onSelectBranch(index + 1)}
       >
         <Text style={aiStyles.actionLabel}>›</Text>
       </Pressable>
     </View>
+  );
+}
+
+function renderSegment(segment: AssistantSegment, index: number, message: AiChatAssistantMessage) {
+  if (segment.kind === "prose")
+    return (
+      <AiMarkdown
+        key={segment.id}
+        content={segment.part.text}
+        streaming={segment.part.status === "streaming"}
+      />
+    );
+  if (segment.kind === "work") {
+    const keepExpanded = shouldKeepWorkExpanded({
+      isStepsLive: isWorkSegmentLive(segment.steps),
+      messageStreaming: message.status === "streaming",
+      isLastSegment: index === projectAssistantSegments(message.parts).length - 1,
+    });
+    return (
+      <AiWorkBlock
+        key={segment.id}
+        id={segment.id}
+        steps={segment.steps}
+        keepExpanded={keepExpanded}
+      />
+    );
+  }
+  return segment.kind === "subagent" ? (
+    <AiSubagentCard key={segment.id} toolCall={segment.part} />
+  ) : (
+    <AiAskUserCard key={segment.id} toolCall={segment.part} />
   );
 }
 
@@ -106,7 +133,7 @@ function UserMessage({
       ) : null}
       <BranchControls message={message} disabled={disabled} onSelectBranch={onSelectBranch} />
       {isLast && !disabled ? (
-        <Pressable onPress={onEditUser}>
+        <Pressable accessibilityRole="button" accessibilityLabel="编辑消息" onPress={onEditUser}>
           <Text style={aiStyles.actionLabel}>编辑</Text>
         </Pressable>
       ) : null}
@@ -117,8 +144,6 @@ function UserMessage({
 function AssistantMessage({
   message,
   isLast,
-  canRetry,
-  canContinue,
   disabled,
   onRetry,
   onContinue,
@@ -126,57 +151,31 @@ function AssistantMessage({
 }: {
   message: AiChatAssistantMessage;
   isLast: boolean;
-  canRetry: boolean;
-  canContinue: boolean;
   disabled: boolean;
   onRetry?: () => void;
   onContinue?: () => void;
   onSelectBranch: (index: number) => void;
 }) {
-  const [reasoningOpen, setReasoningOpen] = useState(false);
+  const segments = projectAssistantSegments(message.parts);
   const usage = usageLine(message);
   return (
     <View style={aiStyles.assistantBlock}>
-      {message.parts.map((part) => {
-        if (part.type === "reasoning") {
-          return (
-            <Pressable
-              key={part.id}
-              style={aiStyles.partCard}
-              onPress={() => {
-                setReasoningOpen((value) => !value);
-              }}
-            >
-              <Text style={aiStyles.partTitle}>
-                思考{part.status === "streaming" ? "中…" : ""} {reasoningOpen ? "▾" : "▸"}
-              </Text>
-              {reasoningOpen ? <Text style={aiStyles.messageText}>{part.text || "…"}</Text> : null}
-            </Pressable>
-          );
-        }
-        if (part.type === "tool_call") {
-          return (
-            <View key={part.id} style={aiStyles.partCard}>
-              <Text style={aiStyles.partTitle}>工具</Text>
-              <Text style={aiStyles.messageText}>{formatToolCall(part)}</Text>
-            </View>
-          );
-        }
-        return (
-          <AiMarkdown key={part.id} content={part.text} streaming={part.status === "streaming"} />
-        );
-      })}
+      {segments.map((segment, index) => renderSegment(segment, index, message))}
       {usage ? <Text style={aiStyles.metaText}>{usage}</Text> : null}
       <BranchControls message={message} disabled={disabled} onSelectBranch={onSelectBranch} />
       {isLast && !disabled ? (
         <View style={aiStyles.rowActions}>
-          {canRetry && onRetry ? (
-            <Pressable onPress={onRetry}>
+          {onRetry ? (
+            <Pressable accessibilityRole="button" accessibilityLabel="重新生成" onPress={onRetry}>
               <Text style={aiStyles.actionLabel}>重试</Text>
             </Pressable>
           ) : null}
-          {canContinue && onContinue ? (
-            <Pressable onPress={onContinue}>
+          {onContinue ? (
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="继续会话"
+              onPress={onContinue}
+            >
               <Text style={aiStyles.actionLabel}>继续</Text>
             </Pressable>
           ) : null}
@@ -220,38 +219,26 @@ export function AiMessageList({
           </View>
         ) : undefined
       }
-      renderItem={({ item, index }) => {
-        const isLast = index === lastIndex;
-        if (item.role === "user") {
-          return (
-            <UserMessage
-              message={item}
-              disabled={disabled}
-              isLast={isLast}
-              onSelectBranch={(branchIndex) => {
-                onSelectBranch(item.id, branchIndex);
-              }}
-              onEditUser={() => {
-                onEditUser(item);
-              }}
-            />
-          );
-        }
-        return (
+      renderItem={({ item, index }) =>
+        item.role === "user" ? (
+          <UserMessage
+            message={item}
+            disabled={disabled}
+            isLast={index === lastIndex}
+            onSelectBranch={(branchIndex) => onSelectBranch(item.id, branchIndex)}
+            onEditUser={() => onEditUser(item)}
+          />
+        ) : (
           <AssistantMessage
             message={item}
-            isLast={isLast}
-            canRetry={isLast && snapshot.canRetry}
-            canContinue={isLast && snapshot.canContinue}
+            isLast={index === lastIndex}
             disabled={disabled}
             onRetry={onRetry}
             onContinue={onContinue}
-            onSelectBranch={(branchIndex) => {
-              onSelectBranch(item.id, branchIndex);
-            }}
+            onSelectBranch={(branchIndex) => onSelectBranch(item.id, branchIndex)}
           />
-        );
-      }}
+        )
+      }
     />
   );
 }
