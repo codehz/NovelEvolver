@@ -133,6 +133,9 @@ export const settingsStyles = StyleSheet.create({
     borderBottomColor: color.border,
     gap: space[1],
   },
+  rowSelected: {
+    backgroundColor: wash.accentSoft,
+  },
   rowTitle: {
     color: color.foreground,
     fontFamily: fontFamily.sans,

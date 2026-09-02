@@ -36,6 +36,15 @@ function detailCategory(detail: SettingsDetail | null): SettingsCategoryId | nul
   return null;
 }
 
+function hasSelectedDetailRow(detail: SettingsDetail | null): boolean {
+  return (
+    (detail?.type === "provider-editor" && detail.id != null) ||
+    (detail?.type === "model-editor" && (detail.id != null || detail.providerId != null)) ||
+    (detail?.type === "agent-editor" && detail.id != null) ||
+    (detail?.type === "prompt-editor" && detail.id != null)
+  );
+}
+
 export function SettingsMasterPane({
   wide,
   selectedDetail,
@@ -44,6 +53,7 @@ export function SettingsMasterPane({
 }: SettingsMasterPaneProps) {
   const insets = useSafeAreaInsets();
   const selectedCategory = detailCategory(selectedDetail);
+  const selectedRow = hasSelectedDetailRow(selectedDetail) ? selectedDetail : null;
 
   const openEditor = (detail: SettingsDetail) => {
     void requestSettingsLeave().then((ok) => {
@@ -76,7 +86,8 @@ export function SettingsMasterPane({
       </Text>
       <ScrollView>
         {SETTINGS_CATEGORIES.map((category) => {
-          const selected = selectedCategory === category.id;
+          const selected =
+            selectedCategory === category.id && !hasSelectedDetailRow(selectedDetail);
           const addCategory = () => {
             if (category.id === "ai-models") openEditor({ type: "provider-editor" });
             if (category.id === "ai-agents") openEditor({ type: "agent-editor" });
@@ -120,6 +131,18 @@ export function SettingsMasterPane({
               </View>
               {category.id === "ai-models" ? (
                 <AiModelsList
+                  selectedProviderId={
+                    wide &&
+                    selectedRow != null &&
+                    (selectedRow.type === "provider-editor" || selectedRow.type === "model-editor")
+                      ? selectedRow.type === "provider-editor"
+                        ? selectedRow.id
+                        : selectedRow.providerId
+                      : undefined
+                  }
+                  selectedModelId={
+                    wide && selectedRow?.type === "model-editor" ? selectedRow.id : undefined
+                  }
                   onOpen={(target) => {
                     if (target.type === "provider") {
                       openEditor({ type: "provider-editor", id: target.id });
@@ -132,10 +155,20 @@ export function SettingsMasterPane({
                 />
               ) : null}
               {category.id === "ai-agents" ? (
-                <AiAgentsList onOpen={(id) => openEditor({ type: "agent-editor", id })} />
+                <AiAgentsList
+                  selectedId={
+                    wide && selectedRow?.type === "agent-editor" ? selectedRow.id : undefined
+                  }
+                  onOpen={(id) => openEditor({ type: "agent-editor", id })}
+                />
               ) : null}
               {category.id === "ai-prompts" ? (
-                <AiPromptsList onOpen={(id) => openEditor({ type: "prompt-editor", id })} />
+                <AiPromptsList
+                  selectedId={
+                    wide && selectedRow?.type === "prompt-editor" ? selectedRow.id : undefined
+                  }
+                  onOpen={(id) => openEditor({ type: "prompt-editor", id })}
+                />
               ) : null}
             </View>
           );

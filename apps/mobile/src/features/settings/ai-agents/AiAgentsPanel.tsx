@@ -13,10 +13,11 @@ import { setSettingsDirty, useSettingsFormDirty } from "../settings-leave-guard"
 import { useSettingsLeaveGuard } from "../use-settings-leave-guard";
 
 type AiAgentsListProps = {
+  selectedId?: string;
   onOpen: (id: string) => void;
 };
 
-export function AiAgentsList({ onOpen }: AiAgentsListProps) {
+export function AiAgentsList({ selectedId, onOpen }: AiAgentsListProps) {
   const [tick, setTick] = useState(0);
   const snapshot = getMobileSettings().agents.getSnapshot();
   void tick;
@@ -33,7 +34,7 @@ export function AiAgentsList({ onOpen }: AiAgentsListProps) {
         {snapshot.agents.map((agent) => (
           <Pressable
             key={agent.id}
-            style={settingsStyles.row}
+            style={[settingsStyles.row, selectedId === agent.id && settingsStyles.rowSelected]}
             onPress={() => {
               onOpen(agent.id);
             }}

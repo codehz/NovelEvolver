@@ -12,10 +12,11 @@ import { setSettingsDirty, useSettingsFormDirty } from "../settings-leave-guard"
 import { useSettingsLeaveGuard } from "../use-settings-leave-guard";
 
 type AiPromptsListProps = {
+  selectedId?: string;
   onOpen: (id: string) => void;
 };
 
-export function AiPromptsList({ onOpen }: AiPromptsListProps) {
+export function AiPromptsList({ selectedId, onOpen }: AiPromptsListProps) {
   const [tick, setTick] = useState(0);
   const snapshot = getMobileSettings().prompts.getSnapshot();
   void tick;
@@ -35,7 +36,7 @@ export function AiPromptsList({ onOpen }: AiPromptsListProps) {
           snapshot.prompts.map((prompt) => (
             <Pressable
               key={prompt.id}
-              style={settingsStyles.row}
+              style={[settingsStyles.row, selectedId === prompt.id && settingsStyles.rowSelected]}
               onPress={() => {
                 onOpen(prompt.id);
               }}

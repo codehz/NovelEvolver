@@ -28,6 +28,8 @@ import { setSettingsDirty, useSettingsFormDirty } from "../settings-leave-guard"
 import { useSettingsLeaveGuard } from "../use-settings-leave-guard";
 
 type AiModelsListProps = {
+  selectedProviderId?: string;
+  selectedModelId?: string;
   onOpen: (
     target:
       | { type: "provider"; id: string }
@@ -36,7 +38,7 @@ type AiModelsListProps = {
   ) => void;
 };
 
-export function AiModelsList({ onOpen }: AiModelsListProps) {
+export function AiModelsList({ selectedProviderId, selectedModelId, onOpen }: AiModelsListProps) {
   const [tick, setTick] = useState(0);
   const [error, setError] = useState<string | null>(null);
   const session = getMobileSettings();
@@ -61,7 +63,10 @@ export function AiModelsList({ onOpen }: AiModelsListProps) {
             return (
               <View key={provider.id}>
                 <Pressable
-                  style={settingsStyles.row}
+                  style={[
+                    settingsStyles.row,
+                    selectedProviderId === provider.id && settingsStyles.rowSelected,
+                  ]}
                   onPress={() => {
                     onOpen({ type: "provider", id: provider.id });
                   }}
@@ -75,7 +80,11 @@ export function AiModelsList({ onOpen }: AiModelsListProps) {
                 {models.map((model) => (
                   <Pressable
                     key={model.id}
-                    style={[settingsStyles.row, { paddingLeft: 28 }]}
+                    style={[
+                      settingsStyles.row,
+                      { paddingLeft: 28 },
+                      selectedModelId === model.id && settingsStyles.rowSelected,
+                    ]}
                     onPress={() => {
                       onOpen({ type: "model", id: model.id });
                     }}
