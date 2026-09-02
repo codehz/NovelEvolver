@@ -9,10 +9,10 @@
   },
   "dependencies": {
     "@novelevolver/domain": "workspace:*",
-    "nano-git": "^0.13.0",
+    "nano-git": "^0.14.0",
     "nanoid": "^6.0.0"
   },
   "peerDependencies": {
-    "nano-git": "^0.13.0"
+    "nano-git": "^0.14.0"
   }
 }

@@ -180,11 +180,11 @@
       "version": "0.3.4",
       "dependencies": {
         "@novelevolver/domain": "workspace:*",
-        "nano-git": "^0.13.0",
+        "nano-git": "^0.14.0",
         "nanoid": "^6.0.0",
       },
       "peerDependencies": {
-        "nano-git": "^0.13.0",
+        "nano-git": "^0.14.0",
       },
     },
   },
@@ -2359,8 +2359,6 @@
     "@malept/flatpak-bundler/fs-extra": ["fs-extra@9.1.0", "", { "dependencies": { "at-least-node": "^1.0.0", "graceful-fs": "^4.2.0", "jsonfile": "^6.0.1", "universalify": "^2.0.0" } }, "sha512-hcg3ZmepS30/7BSFqRvoo3DOMQu7IjqxO5nCDt+zM9XWjb33Wg7ziNT+Qvqbuc3+gWpzO02JubVyk2G4Zvo1OQ=="],
 
     "@novelevolver/mobile/react": ["react@19.2.3", "", {}, "sha512-Ku/hhYbVjOQnXDZFv2+RibmLFGwFdeeKHFcOTlrt7xplBnya5OGn/hIRDsqDiSUcfORsDC7MPxwork8jBwsIWA=="],
-
-    "@novelevolver/worktree/nano-git": ["nano-git@0.13.0", "", { "peerDependencies": { "typescript": "^7.0.2" } }, "sha512-LZR25c0OwupaTI1HuccP8M+TGJDfctOx9PhPyBGYfIbcMg/0xV/7hdOKC2sS885q+1inHK4A0Ql2NANsNeBhVQ=="],
 
     "@react-native-community/cli/fs-extra": ["fs-extra@8.1.0", "", { "dependencies": { "graceful-fs": "^4.2.0", "jsonfile": "^4.0.0", "universalify": "^0.1.0" } }, "sha512-yhlQgA6mnOJUKOsRUFsgJdQCvkKhcz8tlZG5HBQfReYZy46OwLcY+Zia0mtdHsOo9y/hP+CxMN0TU9QxoOtG4g=="],
 
