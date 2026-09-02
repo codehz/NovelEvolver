@@ -12,7 +12,10 @@ import {
   type AssistantSegment,
 } from "@novelevolver/domain/ai";
 import { FlatList, Pressable, Text, View } from "react-native";
+import IconChevronLeft from "~icons/codicon/chevron-left";
+import IconChevronRight from "~icons/codicon/chevron-right";
 
+import { color } from "../../../shared/theme";
 import { aiStyles } from "./ai-chrome";
 import { AiAskUserCard, AiSubagentCard } from "./AiElevatedCards";
 import { AiMarkdown } from "./AiMarkdown";
@@ -60,7 +63,7 @@ function BranchControls({
         disabled={disabled || index <= 0}
         onPress={() => onSelectBranch(index - 1)}
       >
-        <Text style={aiStyles.actionLabel}>‹</Text>
+        <IconChevronLeft width={16} height={16} color={color.accent} />
       </Pressable>
       <Text style={aiStyles.metaText}>
         {index + 1}/{count}
@@ -71,7 +74,7 @@ function BranchControls({
         disabled={disabled || index >= count - 1}
         onPress={() => onSelectBranch(index + 1)}
       >
-        <Text style={aiStyles.actionLabel}>›</Text>
+        <IconChevronRight width={16} height={16} color={color.accent} />
       </Pressable>
     </View>
   );

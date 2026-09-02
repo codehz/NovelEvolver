@@ -1,7 +1,11 @@
 import type { AiChatToolCall } from "@novelevolver/domain/ai";
 import { useState } from "react";
 import { Pressable, Text, View } from "react-native";
+import IconChevronDown from "~icons/codicon/chevron-down";
+import IconChevronRight from "~icons/codicon/chevron-right";
+import IconCommentDiscussion from "~icons/codicon/comment-discussion";
 
+import { color } from "../../../shared/theme";
 import { aiStyles } from "./ai-chrome";
 import { presentMobileToolCall } from "./mobile-tool-presenter";
 
@@ -22,12 +26,16 @@ export function AiSubagentCard({ toolCall }: CardProps) {
         onPress={() => setOpen((value) => !value)}
       >
         <View style={aiStyles.workHeader}>
-          <Text style={aiStyles.timelineIcon}>◎</Text>
+          <IconCommentDiscussion width={16} height={16} color={color.accent} />
           <Text style={aiStyles.partTitle}>子代理</Text>
           <Text numberOfLines={1} style={aiStyles.workSummary}>
             {summary}
           </Text>
-          <Text style={aiStyles.disclosure}>{open ? "⌄" : "›"}</Text>
+          {open ? (
+            <IconChevronDown width={16} height={16} color={color.muted} />
+          ) : (
+            <IconChevronRight width={16} height={16} color={color.muted} />
+          )}
         </View>
       </Pressable>
       {!open && view?.report ? (
@@ -63,7 +71,14 @@ export function AiSubagentCard({ toolCall }: CardProps) {
                     accessibilityRole="button"
                     onPress={() => setReportOpen((value) => !value)}
                   >
-                    <Text style={aiStyles.partTitle}>报告 {reportOpen ? "⌄" : "›"}</Text>
+                    <View style={aiStyles.workHeader}>
+                      <Text style={aiStyles.partTitle}>报告</Text>
+                      {reportOpen ? (
+                        <IconChevronDown width={16} height={16} color={color.muted} />
+                      ) : (
+                        <IconChevronRight width={16} height={16} color={color.muted} />
+                      )}
+                    </View>
                   </Pressable>
                   {reportOpen ? <Text style={aiStyles.messageText}>{view.report}</Text> : null}
                 </>
@@ -103,7 +118,7 @@ export function AiAskUserCard({ toolCall }: CardProps) {
   return (
     <View style={aiStyles.elevatedCard}>
       <View style={aiStyles.workHeader}>
-        <Text style={aiStyles.timelineIcon}>?</Text>
+        <IconCommentDiscussion width={16} height={16} color={color.accent} />
         <Text style={aiStyles.partTitle}>询问用户</Text>
         <Text style={aiStyles.metaText}>{status}</Text>
       </View>

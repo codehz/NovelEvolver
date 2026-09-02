@@ -1,11 +1,47 @@
 import type { AssistantWorkStep } from "@novelevolver/domain/ai";
 import { useEffect, useState } from "react";
 import { Pressable, Text, View } from "react-native";
+import IconChevronDown from "~icons/codicon/chevron-down";
+import IconChevronRight from "~icons/codicon/chevron-right";
+import IconCommentDiscussion from "~icons/codicon/comment-discussion";
+import IconDiff from "~icons/codicon/diff";
+import IconEdit from "~icons/codicon/edit";
+import IconEye from "~icons/codicon/eye";
+import IconHistory from "~icons/codicon/history";
+import IconListTree from "~icons/codicon/list-tree";
+import IconSearch from "~icons/codicon/search";
+import IconSparkle from "~icons/codicon/sparkle";
+import IconTools from "~icons/codicon/tools";
 
+import { color } from "../../../shared/theme";
 import { aiStyles } from "./ai-chrome";
 import { describeMobileWork, presentMobileToolCall } from "./mobile-tool-presenter";
 
 type AiWorkBlockProps = { id: string; steps: readonly AssistantWorkStep[]; keepExpanded: boolean };
+
+function ToolIcon({ name, color: iconColor }: { name: string; color: string }) {
+  const props = { width: 16, height: 16, color: iconColor };
+  switch (name) {
+    case "search":
+      return <IconSearch {...props} />;
+    case "eye":
+      return <IconEye {...props} />;
+    case "list-tree":
+      return <IconListTree {...props} />;
+    case "edit":
+      return <IconEdit {...props} />;
+    case "diff":
+      return <IconDiff {...props} />;
+    case "history":
+      return <IconHistory {...props} />;
+    case "sparkle":
+      return <IconSparkle {...props} />;
+    case "comment-discussion":
+      return <IconCommentDiscussion {...props} />;
+    default:
+      return <IconTools {...props} />;
+  }
+}
 
 function WorkRow({ step, last }: { step: AssistantWorkStep; last: boolean }) {
   const [open, setOpen] = useState(step.type === "reasoning" && step.status === "streaming");
@@ -24,15 +60,11 @@ function WorkRow({ step, last }: { step: AssistantWorkStep; last: boolean }) {
   const body = (
     <View style={aiStyles.timelineRowBody}>
       <View style={aiStyles.timelineRowHeader}>
-        <Text
-          style={[
-            aiStyles.timelineIcon,
-            live && aiStyles.timelineIconLive,
-            error && aiStyles.timelineIconError,
-          ]}
-        >
-          {step.type === "reasoning" ? "…" : tool!.icon}
-        </Text>
+        {step.type === "reasoning" ? (
+          <Text style={aiStyles.timelineIcon}>…</Text>
+        ) : (
+          <ToolIcon name={tool!.icon} color={error ? color.error : color.accent} />
+        )}
         <Text style={aiStyles.timelineLabel}>
           {step.type === "reasoning" ? "思考" : tool!.label}
         </Text>
@@ -40,7 +72,13 @@ function WorkRow({ step, last }: { step: AssistantWorkStep; last: boolean }) {
           <Text style={aiStyles.timelineSubject}>{tool!.subject}</Text>
         ) : null}
         {live ? <Text style={aiStyles.timelineStatus}>进行中</Text> : null}
-        {hasDetail ? <Text style={aiStyles.disclosure}>{open ? "⌄" : "›"}</Text> : null}
+        {hasDetail ? (
+          open ? (
+            <IconChevronDown width={16} height={16} color={color.muted} />
+          ) : (
+            <IconChevronRight width={16} height={16} color={color.muted} />
+          )
+        ) : null}
       </View>
       {open && hasDetail ? (
         <View style={aiStyles.timelineDetail}>
@@ -106,7 +144,11 @@ export function AiWorkBlock({ id, steps, keepExpanded }: AiWorkBlockProps) {
               ? "进行中"
               : describeMobileWork(steps)}
           </Text>
-          <Text style={aiStyles.disclosure}>{open ? "⌄" : "›"}</Text>
+          {open ? (
+            <IconChevronDown width={16} height={16} color={color.muted} />
+          ) : (
+            <IconChevronRight width={16} height={16} color={color.muted} />
+          )}
         </View>
       </Pressable>
       {open ? (

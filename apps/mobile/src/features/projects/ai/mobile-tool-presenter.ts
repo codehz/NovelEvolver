@@ -20,7 +20,7 @@ function viewPresentation(view: AiToolView): Omit<MobileToolPresentation, "indic
   switch (view.kind) {
     case "search":
       return {
-        icon: "⌕",
+        icon: "search",
         label: "搜索",
         subject: `“${view.query}”`,
         detail: [
@@ -36,14 +36,14 @@ function viewPresentation(view: AiToolView): Omit<MobileToolPresentation, "indic
       };
     case "read":
       return {
-        icon: "◉",
+        icon: "eye",
         label: "读取",
         subject: `${view.domainLabel} · ${view.documentName}`,
         detail: view.scale ? [`规模：${view.scale}`] : [],
       };
     case "structure":
       return {
-        icon: "☷",
+        icon: "list-tree",
         label: "读取目录",
         subject: view.scopeLabel,
         detail: [
@@ -55,7 +55,7 @@ function viewPresentation(view: AiToolView): Omit<MobileToolPresentation, "indic
       };
     case "write":
       return {
-        icon: "✎",
+        icon: "edit",
         label: view.mode === "create" ? "创建" : "写入",
         subject: `${view.domainLabel} · ${view.documentName}`,
         detail: [
@@ -74,14 +74,14 @@ function viewPresentation(view: AiToolView): Omit<MobileToolPresentation, "indic
       };
     case "changes":
       return {
-        icon: "≠",
+        icon: "diff",
         label: "读取变更",
         subject: view.scopeLabel,
         detail: [`数量：${view.count}`, ...view.paths.slice(0, 12)],
       };
     case "change":
       return {
-        icon: "≠",
+        icon: "diff",
         label: "读取变更",
         subject: `${view.domainLabel} · ${view.documentName}`,
         detail: [
@@ -91,14 +91,14 @@ function viewPresentation(view: AiToolView): Omit<MobileToolPresentation, "indic
       };
     case "history":
       return {
-        icon: "◷",
+        icon: "history",
         label: "读取历史",
         subject: `${view.domainLabel} · ${view.documentName}`,
         detail: [`记录：${view.entryCount} 条`],
       };
     case "history_entry":
       return {
-        icon: "◷",
+        icon: "history",
         label: "读取历史记录",
         subject: `${view.domainLabel} · ${view.documentName}`,
         detail: [
@@ -108,7 +108,7 @@ function viewPresentation(view: AiToolView): Omit<MobileToolPresentation, "indic
       };
     case "ask_user":
       return {
-        icon: "?",
+        icon: "comment-discussion",
         label: "询问用户",
         subject: view.question,
         detail: [
@@ -123,7 +123,7 @@ function viewPresentation(view: AiToolView): Omit<MobileToolPresentation, "indic
       };
     case "subagent":
       return {
-        icon: "◎",
+        icon: "sparkle",
         label: "子代理",
         subject: `${view.agentName} · ${view.phase}`,
         detail: [
@@ -139,7 +139,7 @@ function viewPresentation(view: AiToolView): Omit<MobileToolPresentation, "indic
       };
     case "generic":
       return {
-        icon: "•",
+        icon: "tools",
         label: view.label,
         subject: view.subject,
         detail: view.detailLines ?? [],
@@ -150,7 +150,7 @@ function viewPresentation(view: AiToolView): Omit<MobileToolPresentation, "indic
 export function presentMobileToolCall(part: AiChatToolCall): MobileToolPresentation {
   const base = part.view
     ? viewPresentation(part.view)
-    : { icon: "•", label: part.name, subject: part.argumentsText, detail: [] };
+    : { icon: "tools", label: part.name, subject: part.argumentsText, detail: [] };
   return {
     ...base,
     indicator:
