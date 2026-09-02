@@ -55,7 +55,7 @@
         "foxact": "^0.3.8",
         "jotai": "^2.20.2",
         "motion": "^12.42.2",
-        "nano-git": "^0.13.0",
+        "nano-git": "^0.14.0",
         "nanoid": "^6.0.0",
         "partial-json": "^0.1.7",
         "react": "^19.2.8",
@@ -100,7 +100,7 @@
         "@swmansion/react-native-bottom-sheet": "0.16.2",
         "@ungap/structured-clone": "^1.4.0",
         "buffer": "^6.0.3",
-        "nano-git": "^0.13.0",
+        "nano-git": "^0.14.0",
         "pako": "^2.1.0",
         "react": "19.2.3",
         "react-native": "0.87.1",
@@ -1752,7 +1752,7 @@
 
     "ms": ["ms@2.1.3", "", {}, "sha512-6FlzubTLZG3J2a/NVCAleEhjzq5oxgHyaCU9yYXvcLsvoVaHJq/s5xXI6/XXP6tz7R9xAOtHnSO/tXtF3WRTlA=="],
 
-    "nano-git": ["nano-git@0.13.0", "", { "peerDependencies": { "typescript": "^7.0.2" } }, "sha512-LZR25c0OwupaTI1HuccP8M+TGJDfctOx9PhPyBGYfIbcMg/0xV/7hdOKC2sS885q+1inHK4A0Ql2NANsNeBhVQ=="],
+    "nano-git": ["nano-git@0.14.0", "", { "peerDependencies": { "typescript": "^7.0.2" } }, "sha512-cvWZgfOR8asg4egJP+6h+aJdxUcMZyz5PAYy65bAoIaKHx6yAff3cc9nmjAgDaXbOoIzgQ8TzuJobT1U2lFPhQ=="],
 
     "nanoid": ["nanoid@6.0.0", "", { "bin": { "nanoid": "bin/nanoid.js" } }, "sha512-mkUH+rPkwU2qPadJ0oJZOjeZ5Mxn8Q1UhevwkTRWNuUZzyia3h4rhzK39hxaHTk0o2OxB8W2SQ6A8k23ZDi1pQ=="],
 
@@ -2359,6 +2359,8 @@
     "@malept/flatpak-bundler/fs-extra": ["fs-extra@9.1.0", "", { "dependencies": { "at-least-node": "^1.0.0", "graceful-fs": "^4.2.0", "jsonfile": "^6.0.1", "universalify": "^2.0.0" } }, "sha512-hcg3ZmepS30/7BSFqRvoo3DOMQu7IjqxO5nCDt+zM9XWjb33Wg7ziNT+Qvqbuc3+gWpzO02JubVyk2G4Zvo1OQ=="],
 
     "@novelevolver/mobile/react": ["react@19.2.3", "", {}, "sha512-Ku/hhYbVjOQnXDZFv2+RibmLFGwFdeeKHFcOTlrt7xplBnya5OGn/hIRDsqDiSUcfORsDC7MPxwork8jBwsIWA=="],
+
+    "@novelevolver/worktree/nano-git": ["nano-git@0.13.0", "", { "peerDependencies": { "typescript": "^7.0.2" } }, "sha512-LZR25c0OwupaTI1HuccP8M+TGJDfctOx9PhPyBGYfIbcMg/0xV/7hdOKC2sS885q+1inHK4A0Ql2NANsNeBhVQ=="],
 
     "@react-native-community/cli/fs-extra": ["fs-extra@8.1.0", "", { "dependencies": { "graceful-fs": "^4.2.0", "jsonfile": "^4.0.0", "universalify": "^0.1.0" } }, "sha512-yhlQgA6mnOJUKOsRUFsgJdQCvkKhcz8tlZG5HBQfReYZy46OwLcY+Zia0mtdHsOo9y/hP+CxMN0TU9QxoOtG4g=="],
 

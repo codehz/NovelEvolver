@@ -29,7 +29,7 @@
     "@swmansion/react-native-bottom-sheet": "0.16.2",
     "@ungap/structured-clone": "^1.4.0",
     "buffer": "^6.0.3",
-    "nano-git": "^0.13.0",
+    "nano-git": "^0.14.0",
     "pako": "^2.1.0",
     "react": "19.2.3",
     "react-native": "0.87.1",
