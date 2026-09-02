@@ -14,9 +14,10 @@ import { useSettingsLeaveGuard } from "../use-settings-leave-guard";
 type AiPromptsListProps = {
   selectedId?: string;
   onOpen: (id: string) => void;
+  onAdd: () => void;
 };
 
-export function AiPromptsList({ selectedId, onOpen }: AiPromptsListProps) {
+export function AiPromptsList({ selectedId, onOpen, onAdd }: AiPromptsListProps) {
   const [tick, setTick] = useState(0);
   const snapshot = getMobileSettings().prompts.getSnapshot();
   void tick;
@@ -29,14 +30,21 @@ export function AiPromptsList({ selectedId, onOpen }: AiPromptsListProps) {
 
   return (
     <View style={settingsStyles.detail}>
-      <ScrollView style={settingsStyles.list}>
+      <ScrollView
+        style={settingsStyles.list}
+        contentContainerStyle={settingsStyles.cardListContent}
+      >
         {snapshot.prompts.length === 0 ? (
           <Text style={settingsStyles.empty}>还没有自定义提示词。</Text>
         ) : (
           snapshot.prompts.map((prompt) => (
             <Pressable
               key={prompt.id}
-              style={[settingsStyles.row, selectedId === prompt.id && settingsStyles.rowSelected]}
+              style={[
+                settingsStyles.card,
+                settingsStyles.cardItem,
+                selectedId === prompt.id && settingsStyles.cardSelected,
+              ]}
               onPress={() => {
                 onOpen(prompt.id);
               }}
@@ -46,6 +54,9 @@ export function AiPromptsList({ selectedId, onOpen }: AiPromptsListProps) {
             </Pressable>
           ))
         )}
+        <Pressable style={settingsStyles.addCardButton} onPress={onAdd}>
+          <Text style={settingsStyles.addCardLabel}>添加提示词</Text>
+        </Pressable>
       </ScrollView>
     </View>
   );

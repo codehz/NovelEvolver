@@ -1,7 +1,6 @@
 import { Header } from "@react-navigation/elements";
 import { Pressable, ScrollView, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import IconAdd from "~icons/codicon/add";
 
 import { color, fontSize } from "../../shared/theme";
 import { AiAgentsList } from "./ai-agents/AiAgentsPanel";
@@ -88,11 +87,6 @@ export function SettingsMasterPane({
         {SETTINGS_CATEGORIES.map((category) => {
           const selected =
             selectedCategory === category.id && !hasSelectedDetailRow(selectedDetail);
-          const addCategory = () => {
-            if (category.id === "ai-models") openEditor({ type: "provider-editor" });
-            if (category.id === "ai-agents") openEditor({ type: "agent-editor" });
-            if (category.id === "ai-prompts") openEditor({ type: "prompt-editor" });
-          };
           return (
             <View key={category.id}>
               <View
@@ -115,19 +109,6 @@ export function SettingsMasterPane({
                     {category.label}
                   </Text>
                 </Pressable>
-                {category.id === "ai-models" ||
-                category.id === "ai-agents" ||
-                category.id === "ai-prompts" ? (
-                  <Pressable
-                    style={settingsStyles.categoryAction}
-                    onPress={addCategory}
-                    accessibilityRole="button"
-                    accessibilityLabel={`添加${category.label}`}
-                    hitSlop={8}
-                  >
-                    <IconAdd width={20} height={20} color={color.accent} />
-                  </Pressable>
-                ) : null}
               </View>
               {category.id === "ai-models" ? (
                 <AiModelsList
@@ -152,6 +133,9 @@ export function SettingsMasterPane({
                       openEditor({ type: "model-editor", providerId: target.providerId });
                     }
                   }}
+                  onAddProvider={() => {
+                    openEditor({ type: "provider-editor" });
+                  }}
                 />
               ) : null}
               {category.id === "ai-agents" ? (
@@ -160,6 +144,9 @@ export function SettingsMasterPane({
                     wide && selectedRow?.type === "agent-editor" ? selectedRow.id : undefined
                   }
                   onOpen={(id) => openEditor({ type: "agent-editor", id })}
+                  onAdd={() => {
+                    openEditor({ type: "agent-editor" });
+                  }}
                 />
               ) : null}
               {category.id === "ai-prompts" ? (
@@ -168,6 +155,9 @@ export function SettingsMasterPane({
                     wide && selectedRow?.type === "prompt-editor" ? selectedRow.id : undefined
                   }
                   onOpen={(id) => openEditor({ type: "prompt-editor", id })}
+                  onAdd={() => {
+                    openEditor({ type: "prompt-editor" });
+                  }}
                 />
               ) : null}
             </View>

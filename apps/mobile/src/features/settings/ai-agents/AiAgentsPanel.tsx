@@ -15,9 +15,10 @@ import { useSettingsLeaveGuard } from "../use-settings-leave-guard";
 type AiAgentsListProps = {
   selectedId?: string;
   onOpen: (id: string) => void;
+  onAdd: () => void;
 };
 
-export function AiAgentsList({ selectedId, onOpen }: AiAgentsListProps) {
+export function AiAgentsList({ selectedId, onOpen, onAdd }: AiAgentsListProps) {
   const [tick, setTick] = useState(0);
   const snapshot = getMobileSettings().agents.getSnapshot();
   void tick;
@@ -30,11 +31,18 @@ export function AiAgentsList({ selectedId, onOpen }: AiAgentsListProps) {
 
   return (
     <View style={settingsStyles.detail}>
-      <ScrollView style={settingsStyles.list}>
+      <ScrollView
+        style={settingsStyles.list}
+        contentContainerStyle={settingsStyles.cardListContent}
+      >
         {snapshot.agents.map((agent) => (
           <Pressable
             key={agent.id}
-            style={[settingsStyles.row, selectedId === agent.id && settingsStyles.rowSelected]}
+            style={[
+              settingsStyles.card,
+              settingsStyles.cardItem,
+              selectedId === agent.id && settingsStyles.cardSelected,
+            ]}
             onPress={() => {
               onOpen(agent.id);
             }}
@@ -46,6 +54,9 @@ export function AiAgentsList({ selectedId, onOpen }: AiAgentsListProps) {
             </Text>
           </Pressable>
         ))}
+        <Pressable style={settingsStyles.addCardButton} onPress={onAdd}>
+          <Text style={settingsStyles.addCardLabel}>添加 Agent</Text>
+        </Pressable>
       </ScrollView>
     </View>
   );

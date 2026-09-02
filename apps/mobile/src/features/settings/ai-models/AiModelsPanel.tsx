@@ -36,9 +36,15 @@ type AiModelsListProps = {
       | { type: "model"; id: string }
       | { type: "new-model"; providerId: string },
   ) => void;
+  onAddProvider: () => void;
 };
 
-export function AiModelsList({ selectedProviderId, selectedModelId, onOpen }: AiModelsListProps) {
+export function AiModelsList({
+  selectedProviderId,
+  selectedModelId,
+  onOpen,
+  onAddProvider,
+}: AiModelsListProps) {
   const [tick, setTick] = useState(0);
   const [error, setError] = useState<string | null>(null);
   const session = getMobileSettings();
@@ -54,36 +60,41 @@ export function AiModelsList({ selectedProviderId, selectedModelId, onOpen }: Ai
   return (
     <View style={settingsStyles.detail}>
       {error ? <Text style={settingsStyles.error}>{error}</Text> : null}
-      <ScrollView style={settingsStyles.list}>
+      <ScrollView
+        style={settingsStyles.list}
+        contentContainerStyle={settingsStyles.cardListContent}
+      >
         {snapshot.providers.length === 0 ? (
           <Text style={settingsStyles.empty}>还没有供应商。先添加一个 API 供应商。</Text>
         ) : (
           snapshot.providers.map((provider) => {
             const models = snapshot.models.filter((model) => model.providerId === provider.id);
+            const adapterLabel = AI_ADAPTER_OPTIONS.find(
+              (option) => option.value === provider.kind,
+            )?.label;
             return (
-              <View key={provider.id}>
+              <View
+                key={provider.id}
+                style={[
+                  settingsStyles.card,
+                  selectedProviderId === provider.id && settingsStyles.cardSelected,
+                ]}
+              >
                 <Pressable
-                  style={[
-                    settingsStyles.row,
-                    selectedProviderId === provider.id && settingsStyles.rowSelected,
-                  ]}
+                  style={settingsStyles.cardHeader}
                   onPress={() => {
                     onOpen({ type: "provider", id: provider.id });
                   }}
                 >
-                  <Text style={settingsStyles.rowTitle}>{provider.name}</Text>
-                  <Text style={settingsStyles.rowMeta}>
-                    {provider.kind}
-                    {provider.hasApiKey ? " · 已保存密钥" : " · 无密钥"}
-                  </Text>
+                  <Text style={settingsStyles.cardHeaderTitle}>{provider.name}</Text>
+                  <Text style={settingsStyles.cardHeaderMeta}>{adapterLabel ?? provider.kind}</Text>
                 </Pressable>
                 {models.map((model) => (
                   <Pressable
                     key={model.id}
                     style={[
-                      settingsStyles.row,
-                      { paddingLeft: 28 },
-                      selectedModelId === model.id && settingsStyles.rowSelected,
+                      settingsStyles.cardRow,
+                      selectedModelId === model.id && settingsStyles.cardRowSelected,
                     ]}
                     onPress={() => {
                       onOpen({ type: "model", id: model.id });
@@ -107,7 +118,7 @@ export function AiModelsList({ selectedProviderId, selectedModelId, onOpen }: Ai
                   </Pressable>
                 ))}
                 <Pressable
-                  style={settingsStyles.row}
+                  style={settingsStyles.cardAction}
                   onPress={() => {
                     onOpen({ type: "new-model", providerId: provider.id });
                   }}
@@ -118,6 +129,9 @@ export function AiModelsList({ selectedProviderId, selectedModelId, onOpen }: Ai
             );
           })
         )}
+        <Pressable style={settingsStyles.addCardButton} onPress={onAddProvider}>
+          <Text style={settingsStyles.addCardLabel}>添加供应商</Text>
+        </Pressable>
       </ScrollView>
     </View>
   );
