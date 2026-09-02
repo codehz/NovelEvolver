@@ -9,7 +9,9 @@ import { Pressable, ScrollView, Text, View } from "react-native";
 import { getMobileSettings } from "../../../shared/settings/session";
 import { SettingsTextField } from "../fields";
 import { settingsStyles } from "../settings-chrome";
-import { setSettingsDirty, useSettingsFormDirty } from "../settings-leave-guard";
+import type { SettingsDetailActionChange } from "../settings-detail-actions";
+import { useSettingsDetailActions } from "../settings-detail-actions";
+import { setSettingsDirty } from "../settings-leave-guard";
 import { useSettingsLeaveGuard } from "../use-settings-leave-guard";
 
 const FIELDS: readonly {
@@ -51,9 +53,10 @@ const FIELDS: readonly {
 
 type AiRuntimePolicyPanelProps = {
   onSaved?: () => void;
+  onActionsChange: SettingsDetailActionChange;
 };
 
-export function AiRuntimePolicyPanel({ onSaved }: AiRuntimePolicyPanelProps) {
+export function AiRuntimePolicyPanel({ onSaved, onActionsChange }: AiRuntimePolicyPanelProps) {
   useSettingsLeaveGuard();
   const session = getMobileSettings();
   const [baseline, setBaseline] = useState(() => session.policy.getSnapshot());
@@ -62,8 +65,27 @@ export function AiRuntimePolicyPanel({ onSaved }: AiRuntimePolicyPanelProps) {
   );
   const [error, setError] = useState<string | null>(null);
 
-  const dirty = FIELDS.some((field) => form[field.key] !== String(baseline[field.key]));
-  useSettingsFormDirty(dirty);
+  const save = () => {
+    try {
+      session.setPolicy({
+        maxToolRounds: Number(form.maxToolRounds),
+        maxSubagentToolRounds: Number(form.maxSubagentToolRounds),
+        maxParallelReadOnlySubagents: Number(form.maxParallelReadOnlySubagents),
+        maxParentSummaryChars: Number(form.maxParentSummaryChars),
+        maxFocusTargets: Number(form.maxFocusTargets),
+        maxFocusContentChars: Number(form.maxFocusContentChars),
+      });
+      const next = session.policy.getSnapshot();
+      setBaseline(next);
+      setForm(toForm(next));
+      setSettingsDirty(false);
+      setError(null);
+      onSaved?.();
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : String(caught));
+    }
+  };
+  useSettingsDetailActions(onActionsChange, { save });
 
   return (
     <View style={settingsStyles.detail}>
@@ -89,31 +111,6 @@ export function AiRuntimePolicyPanel({ onSaved }: AiRuntimePolicyPanelProps) {
             keyboardType="numeric"
           />
         ))}
-        <Pressable
-          style={settingsStyles.optionSelected}
-          onPress={() => {
-            try {
-              session.setPolicy({
-                maxToolRounds: Number(form.maxToolRounds),
-                maxSubagentToolRounds: Number(form.maxSubagentToolRounds),
-                maxParallelReadOnlySubagents: Number(form.maxParallelReadOnlySubagents),
-                maxParentSummaryChars: Number(form.maxParentSummaryChars),
-                maxFocusTargets: Number(form.maxFocusTargets),
-                maxFocusContentChars: Number(form.maxFocusContentChars),
-              });
-              const next = session.policy.getSnapshot();
-              setBaseline(next);
-              setForm(toForm(next));
-              setSettingsDirty(false);
-              setError(null);
-              onSaved?.();
-            } catch (caught) {
-              setError(caught instanceof Error ? caught.message : String(caught));
-            }
-          }}
-        >
-          <Text style={settingsStyles.headerActionLabel}>保存</Text>
-        </Pressable>
       </ScrollView>
     </View>
   );

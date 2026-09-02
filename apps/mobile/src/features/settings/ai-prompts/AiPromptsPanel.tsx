@@ -6,6 +6,8 @@ import { Pressable, ScrollView, Text, View } from "react-native";
 import { getMobileSettings } from "../../../shared/settings/session";
 import { SettingsTextField } from "../fields";
 import { settingsStyles } from "../settings-chrome";
+import type { SettingsDetailActionChange } from "../settings-detail-actions";
+import { useSettingsDetailActions } from "../settings-detail-actions";
 import { setSettingsDirty, useSettingsFormDirty } from "../settings-leave-guard";
 import { useSettingsLeaveGuard } from "../use-settings-leave-guard";
 
@@ -51,9 +53,10 @@ export function AiPromptsList({ onOpen }: AiPromptsListProps) {
 type PromptEditorProps = {
   id?: string;
   onSaved: () => void;
+  onActionsChange: SettingsDetailActionChange;
 };
 
-export function PromptEditor({ id, onSaved }: PromptEditorProps) {
+export function PromptEditor({ id, onSaved, onActionsChange }: PromptEditorProps) {
   useSettingsLeaveGuard({ editor: true });
   const [error, setError] = useState<string | null>(null);
   const snapshot = getMobileSettings().prompts.getSnapshot();
@@ -67,6 +70,7 @@ export function PromptEditor({ id, onSaved }: PromptEditorProps) {
       onSaved={() => {
         onSaved();
       }}
+      onActionsChange={onActionsChange}
     />
   );
 }
@@ -76,9 +80,10 @@ type PromptFormProps = {
   error: string | null;
   onError: (message: string | null) => void;
   onSaved: () => void;
+  onActionsChange: SettingsDetailActionChange;
 };
 
-function PromptForm({ initial, error, onError, onSaved }: PromptFormProps) {
+function PromptForm({ initial, error, onError, onSaved, onActionsChange }: PromptFormProps) {
   const session = getMobileSettings();
   const [title, setTitle] = useState(initial?.title ?? "");
   const [slug, setSlug] = useState(initial?.slug ?? "");
@@ -89,6 +94,28 @@ function PromptForm({ initial, error, onError, onSaved }: PromptFormProps) {
     prompt !== (initial?.prompt ?? "");
 
   useSettingsFormDirty(dirty);
+
+  const save = () => {
+    try {
+      session.upsertPrompt({ id: initial?.id, title, slug, prompt });
+      setSettingsDirty(false);
+      onSaved();
+    } catch (caught) {
+      onError(caught instanceof Error ? caught.message : String(caught));
+    }
+  };
+  const remove = initial
+    ? () => {
+        try {
+          session.removePrompt(initial.id);
+          setSettingsDirty(false);
+          onSaved();
+        } catch (caught) {
+          onError(caught instanceof Error ? caught.message : String(caught));
+        }
+      }
+    : undefined;
+  useSettingsDetailActions(onActionsChange, { save, remove });
 
   return (
     <View style={settingsStyles.detail}>
@@ -103,40 +130,6 @@ function PromptForm({ initial, error, onError, onSaved }: PromptFormProps) {
           monospace
         />
         <SettingsTextField label="内容" value={prompt} onChangeText={setPrompt} multiline />
-        <Pressable
-          style={settingsStyles.optionSelected}
-          onPress={() => {
-            try {
-              session.upsertPrompt({
-                id: initial?.id,
-                title,
-                slug,
-                prompt,
-              });
-              setSettingsDirty(false);
-              onSaved();
-            } catch (caught) {
-              onError(caught instanceof Error ? caught.message : String(caught));
-            }
-          }}
-        >
-          <Text style={settingsStyles.headerActionLabel}>保存</Text>
-        </Pressable>
-        {initial ? (
-          <Pressable
-            onPress={() => {
-              try {
-                session.removePrompt(initial.id);
-                setSettingsDirty(false);
-                onSaved();
-              } catch (caught) {
-                onError(caught instanceof Error ? caught.message : String(caught));
-              }
-            }}
-          >
-            <Text style={settingsStyles.headerDangerLabel}>删除提示词</Text>
-          </Pressable>
-        ) : null}
       </ScrollView>
     </View>
   );

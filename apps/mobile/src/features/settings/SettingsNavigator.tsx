@@ -1,7 +1,7 @@
 import { Header } from "@react-navigation/elements";
 import { useNavigation, usePreventRemove } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
-import { useEffect, useReducer } from "react";
+import { useCallback, useEffect, useReducer, useState } from "react";
 import { BackHandler, StyleSheet, useWindowDimensions, View } from "react-native";
 import Animated, {
   FadeIn,
@@ -12,6 +12,8 @@ import Animated, {
   useSharedValue,
   withTiming,
 } from "react-native-reanimated";
+import IconSave from "~icons/codicon/save";
+import IconTrash from "~icons/codicon/trash";
 
 import type { RootStackParamList } from "../../app/navigation-types";
 import { color, fontFamily, fontSize } from "../../shared/theme";
@@ -20,6 +22,7 @@ import { AgentEditor } from "./ai-agents/AiAgentsPanel";
 import { ModelEditor, ProviderEditor } from "./ai-models/AiModelsPanel";
 import { PromptEditor } from "./ai-prompts/AiPromptsPanel";
 import { AiRuntimePolicyPanel } from "./ai-runtime-policy/AiRuntimePolicyPanel";
+import type { SettingsDetailActionChange } from "./settings-detail-actions";
 import { requestSettingsLeave, useSettingsDirty } from "./settings-leave-guard";
 import {
   initialSettingsNavigationState,
@@ -29,6 +32,7 @@ import {
 } from "./settings-navigation";
 import { SettingsDetailPlaceholder } from "./SettingsDetailPlaceholder";
 import { SettingsHeaderBackButton } from "./SettingsHeaderBackButton";
+import { SettingsHeaderButton } from "./SettingsHeaderButton";
 import { SettingsMasterPane } from "./SettingsMasterPane";
 
 const detailTitles: Record<SettingsDetail["type"], string> = {
@@ -184,6 +188,11 @@ type SettingsDetailViewProps = {
 };
 
 function SettingsDetailView({ detail, wide, onBack, onSaved }: SettingsDetailViewProps) {
+  const [actions, setActions] = useState<Parameters<SettingsDetailActionChange>[0]>(null);
+  const onActionsChange = useCallback<SettingsDetailActionChange>((next) => {
+    setActions(next);
+  }, []);
+
   return (
     <View style={{ flex: 1, backgroundColor: color.background }}>
       <Header
@@ -201,17 +210,32 @@ function SettingsDetailView({ detail, wide, onBack, onSaved }: SettingsDetailVie
         headerLeft={(props) => (
           <SettingsHeaderBackButton {...props} icon={wide ? "close" : "back"} onPress={onBack} />
         )}
+        headerRight={() =>
+          actions ? (
+            <View style={{ flexDirection: "row", gap: 4, paddingEnd: 16 }}>
+              <SettingsHeaderButton label="保存" onPress={actions.save} Icon={IconSave} />
+              {actions.remove ? (
+                <SettingsHeaderButton label="删除" onPress={actions.remove} Icon={IconTrash} />
+              ) : null}
+            </View>
+          ) : null
+        }
       />
       {detail.type === "provider-editor" ? (
-        <ProviderEditor id={detail.id} onSaved={onSaved} />
+        <ProviderEditor id={detail.id} onSaved={onSaved} onActionsChange={onActionsChange} />
       ) : detail.type === "model-editor" ? (
-        <ModelEditor id={detail.id} providerId={detail.providerId} onSaved={onSaved} />
+        <ModelEditor
+          id={detail.id}
+          providerId={detail.providerId}
+          onSaved={onSaved}
+          onActionsChange={onActionsChange}
+        />
       ) : detail.type === "agent-editor" ? (
-        <AgentEditor id={detail.id} onSaved={onSaved} />
+        <AgentEditor id={detail.id} onSaved={onSaved} onActionsChange={onActionsChange} />
       ) : detail.type === "prompt-editor" ? (
-        <PromptEditor id={detail.id} onSaved={onSaved} />
+        <PromptEditor id={detail.id} onSaved={onSaved} onActionsChange={onActionsChange} />
       ) : (
-        <AiRuntimePolicyPanel onSaved={onSaved} />
+        <AiRuntimePolicyPanel onSaved={onSaved} onActionsChange={onActionsChange} />
       )}
     </View>
   );

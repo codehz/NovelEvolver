@@ -7,6 +7,8 @@ import { Pressable, ScrollView, Text, View } from "react-native";
 import { getMobileSettings } from "../../../shared/settings/session";
 import { SettingsSwitchField, SettingsTextField } from "../fields";
 import { settingsStyles } from "../settings-chrome";
+import type { SettingsDetailActionChange } from "../settings-detail-actions";
+import { useSettingsDetailActions } from "../settings-detail-actions";
 import { setSettingsDirty, useSettingsFormDirty } from "../settings-leave-guard";
 import { useSettingsLeaveGuard } from "../use-settings-leave-guard";
 
@@ -51,9 +53,10 @@ export function AiAgentsList({ onOpen }: AiAgentsListProps) {
 type AgentEditorProps = {
   id?: string;
   onSaved: () => void;
+  onActionsChange: SettingsDetailActionChange;
 };
 
-export function AgentEditor({ id, onSaved }: AgentEditorProps) {
+export function AgentEditor({ id, onSaved, onActionsChange }: AgentEditorProps) {
   useSettingsLeaveGuard({ editor: true });
   const [error, setError] = useState<string | null>(null);
   const snapshot = getMobileSettings().agents.getSnapshot();
@@ -67,6 +70,7 @@ export function AgentEditor({ id, onSaved }: AgentEditorProps) {
       onSaved={() => {
         onSaved();
       }}
+      onActionsChange={onActionsChange}
     />
   );
 }
@@ -76,9 +80,10 @@ type AgentFormProps = {
   error: string | null;
   onError: (message: string | null) => void;
   onSaved: () => void;
+  onActionsChange: SettingsDetailActionChange;
 };
 
-function AgentForm({ initial, error, onError, onSaved }: AgentFormProps) {
+function AgentForm({ initial, error, onError, onSaved, onActionsChange }: AgentFormProps) {
   const session = getMobileSettings();
   const models = session.models.getSnapshot();
   const tools = session.agents.getSnapshot().tools;
@@ -104,6 +109,39 @@ function AgentForm({ initial, error, onError, onSaved }: AgentFormProps) {
     textOnlyMode !== (initial?.textOnlyMode ?? false);
 
   useSettingsFormDirty(dirty);
+
+  const save = () => {
+    try {
+      session.upsertAgent({
+        id: initial?.id,
+        name,
+        description,
+        systemPrompt,
+        defaultModelId: defaultModelId === "" ? null : defaultModelId,
+        availableToolNames,
+        userSelectable,
+        subagentEligible,
+        textOnlyMode,
+      });
+      setSettingsDirty(false);
+      onSaved();
+    } catch (caught) {
+      onError(caught instanceof Error ? caught.message : String(caught));
+    }
+  };
+  const remove =
+    initial && !initial.builtin
+      ? () => {
+          try {
+            session.removeAgent(initial.id);
+            setSettingsDirty(false);
+            onSaved();
+          } catch (caught) {
+            onError(caught instanceof Error ? caught.message : String(caught));
+          }
+        }
+      : undefined;
+  useSettingsDetailActions(onActionsChange, { save, remove });
 
   const modelOptions = [
     { value: "", label: "继承默认模型" },
@@ -198,45 +236,6 @@ function AgentForm({ initial, error, onError, onSaved }: AgentFormProps) {
           onValueChange={setTextOnlyMode}
           disabled={!subagentEligible}
         />
-        <Pressable
-          style={settingsStyles.optionSelected}
-          onPress={() => {
-            try {
-              session.upsertAgent({
-                id: initial?.id,
-                name,
-                description,
-                systemPrompt,
-                defaultModelId: defaultModelId === "" ? null : defaultModelId,
-                availableToolNames,
-                userSelectable,
-                subagentEligible,
-                textOnlyMode,
-              });
-              setSettingsDirty(false);
-              onSaved();
-            } catch (caught) {
-              onError(caught instanceof Error ? caught.message : String(caught));
-            }
-          }}
-        >
-          <Text style={settingsStyles.headerActionLabel}>保存</Text>
-        </Pressable>
-        {initial && !initial.builtin ? (
-          <Pressable
-            onPress={() => {
-              try {
-                session.removeAgent(initial.id);
-                setSettingsDirty(false);
-                onSaved();
-              } catch (caught) {
-                onError(caught instanceof Error ? caught.message : String(caught));
-              }
-            }}
-          >
-            <Text style={settingsStyles.headerDangerLabel}>删除 Agent</Text>
-          </Pressable>
-        ) : null}
       </ScrollView>
     </View>
   );

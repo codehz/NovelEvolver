@@ -22,6 +22,8 @@ import { getMobileSettings } from "../../../shared/settings/session";
 import { AI_ADAPTER_OPTIONS } from "../ai-adapter-labels";
 import { SettingsChoiceField, SettingsSwitchField, SettingsTextField } from "../fields";
 import { settingsStyles } from "../settings-chrome";
+import type { SettingsDetailActionChange } from "../settings-detail-actions";
+import { useSettingsDetailActions } from "../settings-detail-actions";
 import { setSettingsDirty, useSettingsFormDirty } from "../settings-leave-guard";
 import { useSettingsLeaveGuard } from "../use-settings-leave-guard";
 
@@ -115,9 +117,10 @@ export function AiModelsList({ onOpen }: AiModelsListProps) {
 type ProviderEditorProps = {
   id?: string;
   onSaved: () => void;
+  onActionsChange: SettingsDetailActionChange;
 };
 
-export function ProviderEditor({ id, onSaved }: ProviderEditorProps) {
+export function ProviderEditor({ id, onSaved, onActionsChange }: ProviderEditorProps) {
   useSettingsLeaveGuard({ editor: true });
   const [error, setError] = useState<string | null>(null);
   const snapshot = getMobileSettings().models.getSnapshot();
@@ -134,6 +137,7 @@ export function ProviderEditor({ id, onSaved }: ProviderEditorProps) {
         onSaved={() => {
           onSaved();
         }}
+        onActionsChange={onActionsChange}
       />
     </View>
   );
@@ -143,9 +147,10 @@ type ModelEditorProps = {
   id?: string;
   providerId?: string;
   onSaved: () => void;
+  onActionsChange: SettingsDetailActionChange;
 };
 
-export function ModelEditor({ id, providerId, onSaved }: ModelEditorProps) {
+export function ModelEditor({ id, providerId, onSaved, onActionsChange }: ModelEditorProps) {
   useSettingsLeaveGuard({ editor: true });
   const [error, setError] = useState<string | null>(null);
   const snapshot = getMobileSettings().models.getSnapshot();
@@ -165,6 +170,7 @@ export function ModelEditor({ id, providerId, onSaved }: ModelEditorProps) {
         onSaved={() => {
           onSaved();
         }}
+        onActionsChange={onActionsChange}
       />
     </View>
   );
@@ -175,9 +181,10 @@ type ProviderFormProps = {
   providers: AiProviderConfigPublic[];
   onError: (message: string | null) => void;
   onSaved: () => void;
+  onActionsChange: SettingsDetailActionChange;
 };
 
-function ProviderForm({ editor, providers, onError, onSaved }: ProviderFormProps) {
+function ProviderForm({ editor, providers, onError, onSaved, onActionsChange }: ProviderFormProps) {
   const session = getMobileSettings();
   const initial =
     editor.type === "edit-provider" ? providers.find((item) => item.id === editor.id) : null;
@@ -195,6 +202,34 @@ function ProviderForm({ editor, providers, onError, onSaved }: ProviderFormProps
     clearApiKey;
 
   useSettingsFormDirty(dirty);
+
+  const save = () => {
+    try {
+      session.upsertProvider({
+        id: initial?.id,
+        name,
+        kind,
+        baseUrl,
+        apiKey: clearApiKey ? "" : apiKey === "" ? undefined : apiKey,
+      });
+      setSettingsDirty(false);
+      onSaved();
+    } catch (caught) {
+      onError(caught instanceof Error ? caught.message : String(caught));
+    }
+  };
+  const remove = initial
+    ? () => {
+        try {
+          session.removeProvider(initial.id);
+          setSettingsDirty(false);
+          onSaved();
+        } catch (caught) {
+          onError(caught instanceof Error ? caught.message : String(caught));
+        }
+      }
+    : undefined;
+  useSettingsDetailActions(onActionsChange, { save, remove });
 
   return (
     <ScrollView contentContainerStyle={settingsStyles.form}>
@@ -234,41 +269,6 @@ function ProviderForm({ editor, providers, onError, onSaved }: ProviderFormProps
           onValueChange={setClearApiKey}
         />
       ) : null}
-      <Pressable
-        style={settingsStyles.optionSelected}
-        onPress={() => {
-          try {
-            session.upsertProvider({
-              id: initial?.id,
-              name,
-              kind,
-              baseUrl,
-              apiKey: clearApiKey ? "" : apiKey === "" ? undefined : apiKey,
-            });
-            setSettingsDirty(false);
-            onSaved();
-          } catch (caught) {
-            onError(caught instanceof Error ? caught.message : String(caught));
-          }
-        }}
-      >
-        <Text style={settingsStyles.headerActionLabel}>{initial ? "保存" : "添加"}</Text>
-      </Pressable>
-      {initial ? (
-        <Pressable
-          onPress={() => {
-            try {
-              session.removeProvider(initial.id);
-              setSettingsDirty(false);
-              onSaved();
-            } catch (caught) {
-              onError(caught instanceof Error ? caught.message : String(caught));
-            }
-          }}
-        >
-          <Text style={settingsStyles.headerDangerLabel}>删除供应商</Text>
-        </Pressable>
-      ) : null}
     </ScrollView>
   );
 }
@@ -279,9 +279,17 @@ type ModelFormProps = {
   models: AiModelConfigPublic[];
   onError: (message: string | null) => void;
   onSaved: () => void;
+  onActionsChange: SettingsDetailActionChange;
 };
 
-function ModelForm({ editor, providers, models, onError, onSaved }: ModelFormProps) {
+function ModelForm({
+  editor,
+  providers,
+  models,
+  onError,
+  onSaved,
+  onActionsChange,
+}: ModelFormProps) {
   const session = getMobileSettings();
   const initial =
     editor.type === "edit-model" ? models.find((item) => item.id === editor.id) : null;
@@ -329,6 +337,44 @@ function ModelForm({ editor, providers, models, onError, onSaved }: ModelFormPro
     supportsTools !== (initial?.supportsTools ?? true);
 
   useSettingsFormDirty(dirty);
+
+  const save = () => {
+    try {
+      session.upsertModel({
+        id: initial?.id,
+        providerId,
+        name,
+        model,
+        maxOutputTokens: Number(maxOutputTokens),
+        contextLength: contextLength.trim() === "" ? null : Number(contextLength),
+        availableReasoningLevels,
+        defaultReasoningLevel,
+        temperature: temperature.trim() === "" ? null : Number(temperature),
+        cache: {
+          ...(cacheMode === "" ? {} : { mode: cacheMode }),
+          ...(cacheKey.trim() === "" ? {} : { key: cacheKey }),
+          ...(cacheTtl.trim() === "" ? {} : { ttl: cacheTtl }),
+        },
+        supportsTools: toolless ? false : supportsTools,
+      });
+      setSettingsDirty(false);
+      onSaved();
+    } catch (caught) {
+      onError(caught instanceof Error ? caught.message : String(caught));
+    }
+  };
+  const remove = initial
+    ? () => {
+        try {
+          session.removeModel(initial.id);
+          setSettingsDirty(false);
+          onSaved();
+        } catch (caught) {
+          onError(caught instanceof Error ? caught.message : String(caught));
+        }
+      }
+    : undefined;
+  useSettingsDetailActions(onActionsChange, { save, remove });
 
   return (
     <ScrollView contentContainerStyle={settingsStyles.form}>
@@ -422,51 +468,6 @@ function ModelForm({ editor, providers, models, onError, onSaved }: ModelFormPro
         disabled={toolless}
         hint={toolless ? "delta-completions 不支持工具。" : undefined}
       />
-      <Pressable
-        style={settingsStyles.optionSelected}
-        onPress={() => {
-          try {
-            session.upsertModel({
-              id: initial?.id,
-              providerId,
-              name,
-              model,
-              maxOutputTokens: Number(maxOutputTokens),
-              contextLength: contextLength.trim() === "" ? null : Number(contextLength),
-              availableReasoningLevels,
-              defaultReasoningLevel,
-              temperature: temperature.trim() === "" ? null : Number(temperature),
-              cache: {
-                ...(cacheMode === "" ? {} : { mode: cacheMode }),
-                ...(cacheKey.trim() === "" ? {} : { key: cacheKey }),
-                ...(cacheTtl.trim() === "" ? {} : { ttl: cacheTtl }),
-              },
-              supportsTools: toolless ? false : supportsTools,
-            });
-            setSettingsDirty(false);
-            onSaved();
-          } catch (caught) {
-            onError(caught instanceof Error ? caught.message : String(caught));
-          }
-        }}
-      >
-        <Text style={settingsStyles.headerActionLabel}>{initial ? "保存" : "添加"}</Text>
-      </Pressable>
-      {initial ? (
-        <Pressable
-          onPress={() => {
-            try {
-              session.removeModel(initial.id);
-              setSettingsDirty(false);
-              onSaved();
-            } catch (caught) {
-              onError(caught instanceof Error ? caught.message : String(caught));
-            }
-          }}
-        >
-          <Text style={settingsStyles.headerDangerLabel}>删除模型</Text>
-        </Pressable>
-      ) : null}
     </ScrollView>
   );
 }
