@@ -181,9 +181,6 @@ const SettingsSplit = createSplitNavigator({
   breakpoint: WIDE_SETTINGS_BREAKPOINT,
   masterWidth: SETTINGS_RAIL_WIDTH,
   onLeaveDetail: requestSettingsLeave,
-  screenOptions: {
-    popToTopOnBlur: true,
-  },
   screens: {
     "ai-models": AiModelsStack,
     "ai-agents": AiAgentsStack,
