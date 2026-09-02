@@ -343,18 +343,6 @@ export function ProjectAiPane({ opened, onWorkspaceDirty }: ProjectAiPaneProps) 
             onOpenReasoning={() => {
               setPicker("reasoning");
             }}
-            onOpenPrompts={() => {
-              composerRef.current?.startMention("/");
-              setTrigger("/");
-              setTriggerQuery("");
-              setPicker("trigger");
-            }}
-            onOpenMentions={() => {
-              composerRef.current?.startMention("@");
-              setTrigger("@");
-              setTriggerQuery("");
-              setPicker("trigger");
-            }}
             onSend={handleSend}
             onStop={ai.stopGeneration}
           />

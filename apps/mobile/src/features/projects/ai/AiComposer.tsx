@@ -31,7 +31,6 @@ import type { MentionCatalogItem } from "./mention-catalog";
 export type AiComposerHandle = {
   clear: () => void;
   focus: () => void;
-  startMention: (indicator: ComposerTrigger) => void;
   setPrompt: (prompt: AiChatSlashRef) => void;
   setMention: (item: MentionCatalogItem, token: string) => void;
   clearPrompt: () => void;
@@ -57,8 +56,6 @@ type AiComposerProps = {
   onOpenModels: () => void;
   onOpenAgents: () => void;
   onOpenReasoning: () => void;
-  onOpenPrompts: () => void;
-  onOpenMentions: () => void;
   onSend: () => void;
   onStop: () => void;
 };
@@ -88,8 +85,6 @@ export function AiComposer({
   onOpenModels,
   onOpenAgents,
   onOpenReasoning,
-  onOpenPrompts,
-  onOpenMentions,
   onSend,
   onStop,
 }: AiComposerProps) {
@@ -186,16 +181,6 @@ export function AiComposer({
         onTriggerChange(null, "");
       },
       focus: () => inputRef.current?.focus(),
-      startMention: (indicator) => {
-        inputRef.current?.focus();
-        if (indicator === "/" && value !== "") return;
-        const prefix = indicator === "/" || value === "" || value.endsWith(" ") ? "" : " ";
-        inputProps.onChangeText(`${value}${prefix}${indicator}`);
-        inputProps.setSelection({
-          start: value.length + prefix.length + 1,
-          end: value.length + prefix.length + 1,
-        });
-      },
       setPrompt: (prompt) => {
         suggestions["/"]?.onSuggestionPress({ id: prompt.promptId });
         onTriggerChange(null, "");
@@ -295,20 +280,6 @@ export function AiComposer({
             </Text>
           </Pressable>
         ) : null}
-        <Pressable
-          style={aiStyles.selectorButton}
-          onPress={onOpenPrompts}
-          disabled={composerDisabled}
-        >
-          <Text style={aiStyles.selectorLabel}>/</Text>
-        </Pressable>
-        <Pressable
-          style={aiStyles.selectorButton}
-          onPress={onOpenMentions}
-          disabled={composerDisabled}
-        >
-          <Text style={aiStyles.selectorLabel}>@</Text>
-        </Pressable>
         {snapshot.pending ? (
           <Pressable style={aiStyles.sendButton} onPress={onStop}>
             <Text style={aiStyles.sendLabel}>停止</Text>
