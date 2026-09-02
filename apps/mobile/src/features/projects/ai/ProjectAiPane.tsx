@@ -28,6 +28,7 @@ import { AiComposer } from "./AiComposer";
 import { AiHistoryList } from "./AiHistoryList";
 import { AiMessageList } from "./AiMessageList";
 import { AiPickerList } from "./AiPickerList";
+import { AiPickerSheet } from "./AiPickerSheet";
 import {
   buildMentionToken,
   kindLabelFor,
@@ -36,8 +37,7 @@ import {
 } from "./mention-catalog";
 import { useProjectAi } from "./use-project-ai";
 
-type AiPaneView =
-  | "chat"
+type AiPicker =
   | "history"
   | "models"
   | "agents"
@@ -54,7 +54,7 @@ type ProjectAiPaneProps = {
 export function ProjectAiPane({ opened, onWorkspaceDirty }: ProjectAiPaneProps) {
   const overlay = useOverlay();
   const ai = useProjectAi(opened, onWorkspaceDirty);
-  const [view, setView] = useState<AiPaneView>("chat");
+  const [picker, setPicker] = useState<AiPicker | null>(null);
   const [draft, setDraft] = useState("");
   const [slash, setSlash] = useState<AiChatSlashRef | null>(null);
   const [mentions, setMentions] = useState<AiChatMentionRef[]>([]);
@@ -69,7 +69,7 @@ export function ProjectAiPane({ opened, onWorkspaceDirty }: ProjectAiPaneProps) 
     historyQuery.trim() === "" ? null : ai.searchConversations(historyQuery, includeArchived);
 
   const closePicker = () => {
-    setView("chat");
+    setPicker(null);
   };
 
   const handleCreate = () => {
@@ -77,7 +77,6 @@ export function ProjectAiPane({ opened, onWorkspaceDirty }: ProjectAiPaneProps) 
     setDraft("");
     setSlash(null);
     setMentions([]);
-    setView("chat");
   };
 
   const handleSelectConversation = (conversationId: string) => {
@@ -85,7 +84,7 @@ export function ProjectAiPane({ opened, onWorkspaceDirty }: ProjectAiPaneProps) 
     setDraft("");
     setSlash(null);
     setMentions([]);
-    setView("chat");
+    closePicker();
   };
 
   const handleRename = async (conversation: AiConversationSummary) => {
@@ -152,7 +151,7 @@ export function ProjectAiPane({ opened, onWorkspaceDirty }: ProjectAiPaneProps) 
       title: prompt.title,
       body: prompt.prompt,
     });
-    setView("chat");
+    closePicker();
   };
 
   const handlePickMention = (id: string) => {
@@ -163,26 +162,24 @@ export function ProjectAiPane({ opened, onWorkspaceDirty }: ProjectAiPaneProps) 
     const existing = new Set(mentions.map((mention) => mention.token));
     const token = buildMentionToken(item, existing);
     setMentions((current) => [...current, toMentionRef(item, token)]);
-    setView("chat");
+    closePicker();
   };
 
   const selectedModel = ai.models.find((model) => model.id === ai.snapshot.selectedModelId);
-  const title =
-    view === "history"
+  const pickerTitle =
+    picker === "history"
       ? "历史会话"
-      : view === "models"
+      : picker === "models"
         ? "选择模型"
-        : view === "agents"
+        : picker === "agents"
           ? "选择 Agent"
-          : view === "reasoning"
+          : picker === "reasoning"
             ? "推理强度"
-            : view === "prompts"
+            : picker === "prompts"
               ? "插入提示词"
-              : view === "mentions"
+              : picker === "mentions"
                 ? "提及节点"
-                : view === "scenarios"
-                  ? "测试场景"
-                  : "AI";
+                : "测试场景";
 
   return (
     <KeyboardAvoidingView
@@ -191,227 +188,213 @@ export function ProjectAiPane({ opened, onWorkspaceDirty }: ProjectAiPaneProps) 
     >
       <View style={aiStyles.header}>
         <View style={aiStyles.headerTitleWrap}>
-          <Text style={aiStyles.title}>{title}</Text>
-          {view === "chat" ? <Text style={aiStyles.subtitle}>助手</Text> : null}
+          <Text style={aiStyles.title}>AI</Text>
+          <Text style={aiStyles.subtitle}>助手</Text>
         </View>
         <View style={aiStyles.headerActions}>
-          {view !== "chat" ? (
-            <SettingsHeaderButton label="返回" onPress={closePicker} />
-          ) : (
-            <>
-              {__DEV__ ? (
-                <SettingsHeaderButton
-                  Icon={IconBeaker}
-                  label="测试场景"
-                  onPress={() => {
-                    setView("scenarios");
-                  }}
-                />
-              ) : null}
-              <SettingsHeaderButton
-                Icon={IconHistory}
-                label="历史会话"
-                onPress={() => {
-                  setView("history");
-                }}
-              />
-              <SettingsHeaderButton Icon={IconAdd} label="新建会话" onPress={handleCreate} />
-            </>
-          )}
+          {__DEV__ ? (
+            <SettingsHeaderButton
+              Icon={IconBeaker}
+              label="测试场景"
+              onPress={() => {
+                setPicker("scenarios");
+              }}
+            />
+          ) : null}
+          <SettingsHeaderButton
+            Icon={IconHistory}
+            label="历史会话"
+            onPress={() => {
+              setPicker("history");
+            }}
+          />
+          <SettingsHeaderButton Icon={IconAdd} label="新建会话" onPress={handleCreate} />
         </View>
       </View>
 
-      {view === "history" ? (
-        <AiHistoryList
-          conversations={ai.conversations}
-          hits={historyHits}
-          activeId={ai.snapshot.conversationId}
-          query={historyQuery}
-          includeArchived={includeArchived}
-          onQueryChange={setHistoryQuery}
-          onToggleArchived={() => {
-            setIncludeArchived((value) => !value);
+      <AiMessageList
+        snapshot={ai.snapshot}
+        onRetry={ai.snapshot.canRetry ? ai.retryLastRequest : undefined}
+        onContinue={ai.snapshot.canContinue ? ai.continueLastRequest : undefined}
+        onSelectBranch={ai.selectMessageBranch}
+        onEditUser={(message) => {
+          void handleEditUser(message);
+        }}
+      />
+      {ai.snapshot.openInteractions.length > 0 ? (
+        <AiAskUserBar
+          interactions={ai.snapshot.openInteractions}
+          onSubmit={(id, text) => {
+            ai.submitInteraction(id, { kind: "ask_user", text });
           }}
-          onSelect={handleSelectConversation}
-          onRename={(conversation) => {
-            void handleRename(conversation);
-          }}
-          onArchive={(conversation) => {
-            ai.archiveConversation(conversation.id);
-          }}
-          onUnarchive={(conversation) => {
-            ai.unarchiveConversation(conversation.id);
-          }}
-          onDelete={(conversation) => {
-            void handleDelete(conversation);
-          }}
+          onCancel={ai.cancelInteraction}
         />
-      ) : null}
-
-      {view === "models" ? (
-        <AiPickerList
-          title="模型"
-          empty="还没有可用模型。请先在设置中添加。"
-          items={ai.models.map((model) => ({
-            id: model.id,
-            title: model.name,
-            detail: `${model.kind} · ${model.model}`,
-            selected: model.id === ai.snapshot.selectedModelId,
-          }))}
-          onSelect={(id) => {
-            try {
-              ai.setSelectedModel(id);
-              setView("chat");
-            } catch (error) {
-              void overlay.alert({ title: "无法切换模型", message: errorMessage(error) });
-            }
+      ) : (
+        <AiComposer
+          snapshot={ai.snapshot}
+          models={ai.models}
+          agents={ai.agents}
+          draft={draft}
+          slash={slash}
+          mentions={mentions}
+          onDraftChange={setDraft}
+          onClearSlash={() => {
+            setSlash(null);
           }}
-        />
-      ) : null}
-
-      {view === "agents" ? (
-        <AiPickerList
-          title="Agent"
-          empty="没有可选 Agent。"
-          items={ai.agents.map((agent) => ({
-            id: agent.id,
-            title: agent.name,
-            detail: agent.description,
-            selected: agent.id === ai.snapshot.selectedAgentId,
-          }))}
-          onSelect={(id) => {
-            try {
-              ai.setSelectedAgent(id);
-              setView("chat");
-            } catch (error) {
-              void overlay.alert({ title: "无法切换 Agent", message: errorMessage(error) });
-            }
+          onRemoveMention={(token) => {
+            setMentions((current) => current.filter((item) => item.token !== token));
           }}
-        />
-      ) : null}
-
-      {view === "reasoning" ? (
-        <AiPickerList
-          title="推理强度"
-          empty="当前模型不支持推理强度。"
-          items={(selectedModel?.availableReasoningLevels ?? []).map((level) => ({
-            id: level,
-            title: AI_REASONING_LEVEL_LABELS[level],
-            selected: level === ai.snapshot.selectedReasoningLevel,
-          }))}
-          onSelect={(id) => {
-            ai.setSelectedReasoningLevel(id as AiReasoningLevel);
-            setView("chat");
+          onOpenModels={() => {
+            setPicker("models");
           }}
-        />
-      ) : null}
-
-      {view === "prompts" ? (
-        <AiPickerList
-          title="提示词"
-          empty="还没有自定义提示词。"
-          items={prompts.map((prompt) => ({
-            id: prompt.id,
-            title: `/${prompt.slug}`,
-            detail: prompt.title,
-          }))}
-          onSelect={(id) => {
-            const prompt = prompts.find((item) => item.id === id);
-            if (prompt) {
-              handlePickPrompt(prompt);
-            }
+          onOpenAgents={() => {
+            setPicker("agents");
           }}
-        />
-      ) : null}
-
-      {view === "mentions" ? (
-        <AiPickerList
-          title="项目节点"
-          empty="项目里还没有可提及的节点。"
-          items={mentionItems.map((item) => ({
-            id: `${item.domain}:${item.id}`,
-            title: `@${item.label}`,
-            detail: `${kindLabelFor(item.kind, item.domain)} · ${item.displayPath}`,
-          }))}
-          onSelect={handlePickMention}
-        />
-      ) : null}
-
-      {view === "scenarios" ? (
-        <AiPickerList
-          title="Mock 场景"
-          empty="没有测试场景。"
-          items={listMockScenarios().map((scenario) => ({
-            id: scenario.id,
-            title: scenario.title,
-            detail: scenario.description,
-          }))}
-          onSelect={(id) => {
-            try {
-              ai.runScenario(id);
-              setView("chat");
-            } catch (error) {
-              void overlay.alert({ title: "无法运行场景", message: errorMessage(error) });
-            }
+          onOpenReasoning={() => {
+            setPicker("reasoning");
           }}
+          onOpenPrompts={() => {
+            setPicker("prompts");
+          }}
+          onOpenMentions={() => {
+            setPicker("mentions");
+          }}
+          onSend={handleSend}
+          onStop={ai.stopGeneration}
         />
-      ) : null}
+      )}
 
-      {view === "chat" ? (
-        <>
-          <AiMessageList
-            snapshot={ai.snapshot}
-            onRetry={ai.snapshot.canRetry ? ai.retryLastRequest : undefined}
-            onContinue={ai.snapshot.canContinue ? ai.continueLastRequest : undefined}
-            onSelectBranch={ai.selectMessageBranch}
-            onEditUser={(message) => {
-              void handleEditUser(message);
+      <AiPickerSheet title={pickerTitle} visible={picker !== null} onDismiss={closePicker}>
+        {picker === "history" ? (
+          <AiHistoryList
+            conversations={ai.conversations}
+            hits={historyHits}
+            activeId={ai.snapshot.conversationId}
+            query={historyQuery}
+            includeArchived={includeArchived}
+            onQueryChange={setHistoryQuery}
+            onToggleArchived={() => {
+              setIncludeArchived((value) => !value);
+            }}
+            onSelect={handleSelectConversation}
+            onRename={(conversation) => {
+              void handleRename(conversation);
+            }}
+            onArchive={(conversation) => {
+              ai.archiveConversation(conversation.id);
+            }}
+            onUnarchive={(conversation) => {
+              ai.unarchiveConversation(conversation.id);
+            }}
+            onDelete={(conversation) => {
+              void handleDelete(conversation);
             }}
           />
-          {ai.snapshot.openInteractions.length > 0 ? (
-            <AiAskUserBar
-              interactions={ai.snapshot.openInteractions}
-              onSubmit={(id, text) => {
-                ai.submitInteraction(id, { kind: "ask_user", text });
-              }}
-              onCancel={ai.cancelInteraction}
-            />
-          ) : (
-            <AiComposer
-              snapshot={ai.snapshot}
-              models={ai.models}
-              agents={ai.agents}
-              draft={draft}
-              slash={slash}
-              mentions={mentions}
-              onDraftChange={setDraft}
-              onClearSlash={() => {
-                setSlash(null);
-              }}
-              onRemoveMention={(token) => {
-                setMentions((current) => current.filter((item) => item.token !== token));
-              }}
-              onOpenModels={() => {
-                setView("models");
-              }}
-              onOpenAgents={() => {
-                setView("agents");
-              }}
-              onOpenReasoning={() => {
-                setView("reasoning");
-              }}
-              onOpenPrompts={() => {
-                setView("prompts");
-              }}
-              onOpenMentions={() => {
-                setView("mentions");
-              }}
-              onSend={handleSend}
-              onStop={ai.stopGeneration}
-            />
-          )}
-        </>
-      ) : null}
+        ) : null}
+
+        {picker === "models" ? (
+          <AiPickerList
+            empty="还没有可用模型。请先在设置中添加。"
+            items={ai.models.map((model) => ({
+              id: model.id,
+              title: model.name,
+              detail: `${model.kind} · ${model.model}`,
+              selected: model.id === ai.snapshot.selectedModelId,
+            }))}
+            onSelect={(id) => {
+              try {
+                ai.setSelectedModel(id);
+                closePicker();
+              } catch (error) {
+                void overlay.alert({ title: "无法切换模型", message: errorMessage(error) });
+              }
+            }}
+          />
+        ) : null}
+
+        {picker === "agents" ? (
+          <AiPickerList
+            empty="没有可选 Agent。"
+            items={ai.agents.map((agent) => ({
+              id: agent.id,
+              title: agent.name,
+              detail: agent.description,
+              selected: agent.id === ai.snapshot.selectedAgentId,
+            }))}
+            onSelect={(id) => {
+              try {
+                ai.setSelectedAgent(id);
+                closePicker();
+              } catch (error) {
+                void overlay.alert({ title: "无法切换 Agent", message: errorMessage(error) });
+              }
+            }}
+          />
+        ) : null}
+
+        {picker === "reasoning" ? (
+          <AiPickerList
+            empty="当前模型不支持推理强度。"
+            items={(selectedModel?.availableReasoningLevels ?? []).map((level) => ({
+              id: level,
+              title: AI_REASONING_LEVEL_LABELS[level],
+              selected: level === ai.snapshot.selectedReasoningLevel,
+            }))}
+            onSelect={(id) => {
+              ai.setSelectedReasoningLevel(id as AiReasoningLevel);
+              closePicker();
+            }}
+          />
+        ) : null}
+
+        {picker === "prompts" ? (
+          <AiPickerList
+            empty="还没有自定义提示词。"
+            items={prompts.map((prompt) => ({
+              id: prompt.id,
+              title: `/${prompt.slug}`,
+              detail: prompt.title,
+            }))}
+            onSelect={(id) => {
+              const prompt = prompts.find((item) => item.id === id);
+              if (prompt) {
+                handlePickPrompt(prompt);
+              }
+            }}
+          />
+        ) : null}
+
+        {picker === "mentions" ? (
+          <AiPickerList
+            empty="项目里还没有可提及的节点。"
+            items={mentionItems.map((item) => ({
+              id: `${item.domain}:${item.id}`,
+              title: `@${item.label}`,
+              detail: `${kindLabelFor(item.kind, item.domain)} · ${item.displayPath}`,
+            }))}
+            onSelect={handlePickMention}
+          />
+        ) : null}
+
+        {picker === "scenarios" ? (
+          <AiPickerList
+            empty="没有测试场景。"
+            items={listMockScenarios().map((scenario) => ({
+              id: scenario.id,
+              title: scenario.title,
+              detail: scenario.description,
+            }))}
+            onSelect={(id) => {
+              try {
+                ai.runScenario(id);
+                closePicker();
+              } catch (error) {
+                void overlay.alert({ title: "无法运行场景", message: errorMessage(error) });
+              }
+            }}
+          />
+        ) : null}
+      </AiPickerSheet>
     </KeyboardAvoidingView>
   );
 }

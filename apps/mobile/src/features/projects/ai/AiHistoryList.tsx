@@ -56,7 +56,7 @@ export function AiHistoryList({
   }, [conversations, hits, includeArchived]);
 
   return (
-    <View style={aiStyles.root}>
+    <>
       <TextInput
         value={query}
         onChangeText={onQueryChange}
@@ -64,7 +64,7 @@ export function AiHistoryList({
         placeholderTextColor={color.placeholder}
         style={aiStyles.searchInput}
       />
-      <ScrollView style={aiStyles.list}>
+      <ScrollView style={aiStyles.list} keyboardShouldPersistTaps="handled">
         {visible.length === 0 ? (
           <Text style={aiStyles.empty}>还没有会话。</Text>
         ) : (
@@ -142,6 +142,6 @@ export function AiHistoryList({
           <Text style={aiStyles.actionLabel}>{includeArchived ? "隐藏已归档" : "显示已归档"}</Text>
         </Pressable>
       </ScrollView>
-    </View>
+    </>
   );
 }
