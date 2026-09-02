@@ -2,9 +2,10 @@ import type { ManuscriptNode, ResourceTreeNode } from "@novelevolver/domain/work
 import { useEffect, useState } from "react";
 import { StyleSheet, Text, TextInput, View } from "react-native";
 
-import { color, fontFamily, fontSize, space } from "../../../shared/theme";
+import { color, fontFamily, fontSize, space, wash } from "../../../shared/theme";
 import type { OpenedProject } from "../git/repository-manager";
 import type { EditorDocument } from "./editor-document";
+import { parseMarkdownForEditor, type MarkdownTextStyle } from "./markdown-inline";
 
 type ProjectEditorPaneProps = {
   opened: OpenedProject;
@@ -13,6 +14,17 @@ type ProjectEditorPaneProps = {
   resource: ResourceTreeNode | undefined;
   worktreeRevision: number;
 };
+
+function getSegmentStyle(segment: MarkdownTextStyle) {
+  return [
+    segment.bold && styles.markdownBold,
+    segment.italic && styles.markdownItalic,
+    segment.strikethrough && styles.markdownStrikethrough,
+    segment.code && styles.markdownCode,
+    segment.heading && styles.markdownHeading,
+    segment.marker && styles.markdownMarker,
+  ];
+}
 
 export function ProjectEditorPane({
   opened,
@@ -40,11 +52,11 @@ export function ProjectEditorPane({
       setContent("");
       return;
     }
-    setContent(
+    const nextContent =
       editingDomain === "manuscript"
         ? opened.worktree.readChapter(documentId)
-        : opened.worktree.readResourceFile(documentId),
-    );
+        : opened.worktree.readResourceFile(documentId);
+    setContent((current) => (current === nextContent ? current : nextContent));
   }, [documentId, editingDomain, opened, worktreeRevision]);
 
   if (documentId === null || editingDomain === null) {
@@ -81,14 +93,21 @@ export function ProjectEditorPane({
       </View>
       <TextInput
         multiline
-        value={content}
+        autoCorrect={false}
+        spellCheck={false}
         onChangeText={updateContent}
         placeholder={placeholder}
         placeholderTextColor={color.placeholder}
         textAlignVertical="top"
         style={styles.editor}
         selectionColor={color.accent}
-      />
+      >
+        {parseMarkdownForEditor(content).map((segment, index) => (
+          <Text key={`${index}-${segment.text}`} style={getSegmentStyle(segment.style)}>
+            {segment.text}
+          </Text>
+        ))}
+      </TextInput>
     </View>
   );
 }
@@ -138,6 +157,28 @@ const styles = StyleSheet.create({
     lineHeight: 26,
     paddingHorizontal: space[4],
     paddingTop: space[4],
+    paddingBottom: space[4],
+    includeFontPadding: true,
+  },
+  markdownBold: {
+    fontWeight: "700",
+  },
+  markdownItalic: {
+    fontStyle: "italic",
+  },
+  markdownStrikethrough: {
+    textDecorationLine: "line-through",
+  },
+  markdownCode: {
+    color: color.info,
+    fontFamily: fontFamily.mono,
+    backgroundColor: wash.mutedFill,
+  },
+  markdownHeading: {
+    fontWeight: "700",
+  },
+  markdownMarker: {
+    color: color.accent,
   },
   center: {
     flex: 1,
