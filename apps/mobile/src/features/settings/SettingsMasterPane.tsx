@@ -1,4 +1,5 @@
 import { Header } from "@react-navigation/elements";
+import { StackActions } from "@react-navigation/native";
 import { Pressable, ScrollView, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import IconAdd from "~icons/codicon/add";
@@ -17,7 +18,22 @@ export function SettingsMasterPane(props: SplitMasterComponentProps) {
   const wide = props.layout === "wide";
   const insets = useSafeAreaInsets();
   const focused = props.state.routes[props.state.index]?.name;
-  const highlightSelection = wide || props.pane === "detail";
+  const highlightSelection = props.pane === "detail";
+
+  const openEditor = (
+    category: SettingsCategoryId,
+    screen: string,
+    params: Record<string, string | undefined>,
+  ) => {
+    const route = props.navigation.getState().routes.find((item) => item.name === category);
+    const target = route?.state?.key;
+    if (wide && target) {
+      props.navigation.navigate(category);
+      props.navigation.dispatch({ ...StackActions.replace(screen, params), target });
+      return;
+    }
+    props.navigation.navigate(category, { screen, params });
+  };
 
   const selectCategory = async (id: SettingsCategoryId) => {
     if (!(await requestSettingsLeave())) {
@@ -41,19 +57,15 @@ export function SettingsMasterPane(props: SplitMasterComponentProps) {
         headerStyle={wide ? masterHeaderWideStyle : masterHeaderStyle}
         headerTitleAlign={wide ? "left" : undefined}
         headerShadowVisible={false}
-        headerLeftContainerStyle={wide ? undefined : settingsStyles.headerLeftContainer}
-        headerLeft={
-          wide
-            ? undefined
-            : (headerLeftProps) => (
-                <SettingsHeaderBackButton
-                  {...headerLeftProps}
-                  onPress={() => {
-                    props.navigation.goBack();
-                  }}
-                />
-              )
-        }
+        headerLeftContainerStyle={settingsStyles.headerLeftContainer}
+        headerLeft={(headerLeftProps) => (
+          <SettingsHeaderBackButton
+            {...headerLeftProps}
+            onPress={() => {
+              props.navigation.goBack();
+            }}
+          />
+        )}
       />
       <Text style={[settingsStyles.railLabel, !wide && settingsStyles.compactSectionLabel]}>
         分类
@@ -62,6 +74,9 @@ export function SettingsMasterPane(props: SplitMasterComponentProps) {
         {SETTINGS_CATEGORIES.map((category) => {
           const selected = highlightSelection && category.id === focused;
           const openCategory = () => {
+            if (category.id === "ai-models" || category.id === "ai-agents") {
+              return;
+            }
             void selectCategory(category.id);
           };
           const addCategory = () => {
@@ -70,11 +85,11 @@ export function SettingsMasterPane(props: SplitMasterComponentProps) {
                 return;
               }
               if (category.id === "ai-models") {
-                props.navigation.navigate(category.id, { screen: "ProviderEditor", params: {} });
+                openEditor(category.id, "ProviderEditor", {});
               } else if (category.id === "ai-agents") {
-                props.navigation.navigate(category.id, { screen: "AgentEditor", params: {} });
+                openEditor(category.id, "AgentEditor", {});
               } else if (category.id === "ai-prompts") {
-                props.navigation.navigate(category.id, { screen: "PromptEditor", params: {} });
+                openEditor(category.id, "PromptEditor", {});
               }
             });
           };
@@ -113,20 +128,11 @@ export function SettingsMasterPane(props: SplitMasterComponentProps) {
                     void requestSettingsLeave().then((ok) => {
                       if (!ok) return;
                       if (target.type === "provider") {
-                        props.navigation.navigate(category.id, {
-                          screen: "ProviderEditor",
-                          params: { id: target.id },
-                        });
+                        openEditor(category.id, "ProviderEditor", { id: target.id });
                       } else if (target.type === "model") {
-                        props.navigation.navigate(category.id, {
-                          screen: "ModelEditor",
-                          params: { id: target.id },
-                        });
+                        openEditor(category.id, "ModelEditor", { id: target.id });
                       } else {
-                        props.navigation.navigate(category.id, {
-                          screen: "ModelEditor",
-                          params: { providerId: target.providerId },
-                        });
+                        openEditor(category.id, "ModelEditor", { providerId: target.providerId });
                       }
                     });
                   }}
@@ -137,10 +143,7 @@ export function SettingsMasterPane(props: SplitMasterComponentProps) {
                   onOpen={(id) => {
                     void requestSettingsLeave().then((ok) => {
                       if (ok) {
-                        props.navigation.navigate(category.id, {
-                          screen: "AgentEditor",
-                          params: { id },
-                        });
+                        openEditor(category.id, "AgentEditor", { id });
                       }
                     });
                   }}
@@ -151,10 +154,7 @@ export function SettingsMasterPane(props: SplitMasterComponentProps) {
                   onOpen={(id) => {
                     void requestSettingsLeave().then((ok) => {
                       if (ok) {
-                        props.navigation.navigate(category.id, {
-                          screen: "PromptEditor",
-                          params: { id },
-                        });
+                        openEditor(category.id, "PromptEditor", { id });
                       }
                     });
                   }}

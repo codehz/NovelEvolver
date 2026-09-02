@@ -39,6 +39,8 @@ function SplitNavigator({
   masterWidth,
   swipeEnabled,
   onLeaveDetail,
+  showDetailOnWide,
+  detailPlaceholder,
 }: SplitNavigatorProps) {
   const { state, descriptors, navigation, NavigationContent } = useNavigationBuilder<
     SplitNavigationState<ParamListBase>,
@@ -80,6 +82,8 @@ function SplitNavigator({
         breakpoint={breakpoint}
         masterWidth={masterWidth}
         swipeEnabled={swipeEnabled}
+        showDetailOnWide={showDetailOnWide}
+        detailPlaceholder={detailPlaceholder}
       />
     </NavigationContent>
   );

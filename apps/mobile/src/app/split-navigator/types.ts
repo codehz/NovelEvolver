@@ -84,6 +84,8 @@ export type SplitNavigationConfig = {
   masterWidth?: number;
   swipeEnabled?: boolean;
   onLeaveDetail?: () => boolean | Promise<boolean>;
+  showDetailOnWide?: boolean;
+  detailPlaceholder?: ReactNode;
 };
 
 export type SplitRouterOptions = TabRouterOptions;

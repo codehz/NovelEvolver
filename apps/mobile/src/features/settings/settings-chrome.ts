@@ -105,6 +105,24 @@ export const settingsStyles = StyleSheet.create({
     flex: 1,
     minWidth: 0,
   },
+  detailPlaceholder: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    gap: space[2],
+    backgroundColor: color.background,
+  },
+  detailPlaceholderTitle: {
+    color: color.muted,
+    fontFamily: fontFamily.sans,
+    fontSize: fontSize.md,
+  },
+  detailPlaceholderHint: {
+    color: color.overlayMuted,
+    fontFamily: fontFamily.sans,
+    fontSize: fontSize.xs,
+  },
+
   list: {
     flex: 1,
   },

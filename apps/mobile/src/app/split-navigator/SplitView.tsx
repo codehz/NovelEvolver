@@ -26,6 +26,8 @@ type SplitViewProps = {
   breakpoint?: number;
   masterWidth?: number;
   swipeEnabled?: boolean;
+  showDetailOnWide?: boolean;
+  detailPlaceholder?: ReactNode;
 };
 
 export function SplitView({
@@ -36,6 +38,8 @@ export function SplitView({
   breakpoint = DEFAULT_BREAKPOINT,
   masterWidth = DEFAULT_MASTER_WIDTH,
   swipeEnabled = true,
+  showDetailOnWide = true,
+  detailPlaceholder,
 }: SplitViewProps) {
   const { width } = useWindowDimensions();
   const layout: SplitLayout = width >= breakpoint ? "wide" : "compact";
@@ -80,10 +84,10 @@ export function SplitView({
   };
 
   useEffect(() => {
-    if (layout === "wide" && pane !== "detail") {
+    if (showDetailOnWide && layout === "wide" && pane !== "detail") {
       navigation.dispatch(SplitActions.showDetail());
     }
-  }, [layout, pane, navigation]);
+  }, [layout, pane, navigation, showDetailOnWide]);
 
   const masterElement = master({
     state,
@@ -127,7 +131,7 @@ export function SplitView({
             {masterElement}
           </View>
           <View style={styles.wideDetail} collapsable={false}>
-            {pane === "detail" ? scenes : null}
+            {pane === "detail" ? scenes : detailPlaceholder}
           </View>
         </View>
       </SplitContext.Provider>

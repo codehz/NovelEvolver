@@ -1,15 +1,11 @@
-import {
-  createStaticNavigation,
-  DarkTheme,
-  type ParamListBase,
-  type Theme,
-} from "@react-navigation/native";
+import type { HeaderBackButtonProps } from "@react-navigation/elements";
+import { createStaticNavigation, DarkTheme, type Theme } from "@react-navigation/native";
 import {
   createNativeStackNavigator,
   createNativeStackScreen,
   type NativeStackNavigationOptions,
-  type NativeStackNavigationProp,
 } from "@react-navigation/native-stack";
+import { useWindowDimensions } from "react-native";
 import IconAdd from "~icons/codicon/add";
 
 import { ProjectListScreen } from "../features/projects/ProjectListScreen";
@@ -31,7 +27,7 @@ import {
   useSettingsDirty,
   useSettingsEditorOpen,
 } from "../features/settings/settings-leave-guard";
-import { SettingsHeaderBackButton } from "../features/settings/SettingsHeaderBackButton";
+import { SettingsDetailPlaceholder } from "../features/settings/SettingsDetailPlaceholder";
 import { SettingsHeaderButton } from "../features/settings/SettingsHeaderButton";
 import { SettingsListHeaderLeft } from "../features/settings/SettingsListHeaderLeft";
 import { SettingsMasterPane } from "../features/settings/SettingsMasterPane";
@@ -53,11 +49,15 @@ const navigationTheme: Theme = {
   },
 };
 
-const stackScreenOptions = ({
-  navigation,
-}: {
-  navigation: NativeStackNavigationProp<ParamListBase>;
-}): NativeStackNavigationOptions => ({
+function SettingsDetailHeaderLeft(props: HeaderBackButtonProps) {
+  const { width } = useWindowDimensions();
+  if (width >= WIDE_SETTINGS_BREAKPOINT) {
+    return null;
+  }
+  return <SettingsListHeaderLeft {...props} />;
+}
+
+const stackScreenOptions = (): NativeStackNavigationOptions => ({
   headerStyle: { backgroundColor: color.background },
   headerTintColor: color.accent,
   headerTitleStyle: {
@@ -69,9 +69,7 @@ const stackScreenOptions = ({
   headerShadowVisible: false,
   headerBackButtonDisplayMode: "minimal",
   contentStyle: { backgroundColor: color.background },
-  headerLeft: (props) => (
-    <SettingsHeaderBackButton {...props} onPress={() => navigation.goBack()} />
-  ),
+  headerLeft: (props) => <SettingsDetailHeaderLeft {...props} />,
 });
 
 const AiModelsStack = createNativeStackNavigator({
@@ -180,12 +178,14 @@ const SettingsSplit = createSplitNavigator({
   master: (props) => <SettingsMasterPane {...props} />,
   breakpoint: WIDE_SETTINGS_BREAKPOINT,
   masterWidth: SETTINGS_RAIL_WIDTH,
+  showDetailOnWide: false,
+  detailPlaceholder: <SettingsDetailPlaceholder />,
   onLeaveDetail: requestSettingsLeave,
   screens: {
-    "ai-models": AiModelsStack,
-    "ai-agents": AiAgentsStack,
-    "ai-prompts": AiPromptsStack,
-    "ai-runtime-policy": AiRuntimePolicyStack,
+    "ai-models": { screen: AiModelsStack, options: { popToTopOnBlur: true } },
+    "ai-agents": { screen: AiAgentsStack, options: { popToTopOnBlur: true } },
+    "ai-prompts": { screen: AiPromptsStack, options: { popToTopOnBlur: true } },
+    "ai-runtime-policy": { screen: AiRuntimePolicyStack, options: { popToTopOnBlur: true } },
   },
 }).with(({ Navigator }) => {
   const dirty = useSettingsDirty();
