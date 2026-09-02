@@ -174,22 +174,6 @@ export const aiStyles = StyleSheet.create({
     gap: space[2],
     backgroundColor: color.background,
   },
-  chipRow: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: space[1],
-  },
-  chip: {
-    borderRadius: radius.pill,
-    backgroundColor: wash.accentSoft,
-    paddingHorizontal: space[2],
-    paddingVertical: 2,
-  },
-  chipText: {
-    color: color.accent,
-    fontFamily: fontFamily.sans,
-    fontSize: fontSize.xxs,
-  },
   input: {
     minHeight: 44,
     maxHeight: 120,

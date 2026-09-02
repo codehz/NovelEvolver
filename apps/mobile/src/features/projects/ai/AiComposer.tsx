@@ -144,38 +144,6 @@ export function AiComposer({
 
   return (
     <View style={aiStyles.composer}>
-      {slash != null || mentions.length > 0 ? (
-        <View style={aiStyles.chipRow}>
-          {slash != null ? (
-            <Pressable
-              style={aiStyles.chip}
-              onPress={() => {
-                const marker = `/${slash.slug}`;
-                const next = draft.startsWith(marker) ? draft.slice(marker.length) : draft;
-                inputRef.current?.setValue(next);
-                onDraftChange(next);
-                onClearSlash();
-              }}
-            >
-              <Text style={aiStyles.chipText}>/{slash.slug} ×</Text>
-            </Pressable>
-          ) : null}
-          {mentions.map((mention) => (
-            <Pressable
-              key={mention.token}
-              style={aiStyles.chip}
-              onPress={() => {
-                const next = draft.replace(mention.token, "");
-                inputRef.current?.setValue(next);
-                onDraftChange(next);
-                onRemoveMention(mention.token);
-              }}
-            >
-              <Text style={aiStyles.chipText}>{mention.token} ×</Text>
-            </Pressable>
-          ))}
-        </View>
-      ) : null}
       <EnrichedTextInput
         ref={inputRef}
         mentionIndicators={["/", "@"]}
