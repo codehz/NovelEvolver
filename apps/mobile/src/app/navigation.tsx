@@ -6,13 +6,12 @@ import {
   type NativeStackNavigationOptions,
 } from "@react-navigation/native-stack";
 import { useWindowDimensions } from "react-native";
-import IconAdd from "~icons/codicon/add";
 
 import { ProjectListScreen } from "../features/projects/ProjectListScreen";
 import { ProjectScreen } from "../features/projects/ProjectScreen";
 import { AgentEditor } from "../features/settings/ai-agents/AiAgentsPanel";
 import { ModelEditor, ProviderEditor } from "../features/settings/ai-models/AiModelsPanel";
-import { AiPromptsList, PromptEditor } from "../features/settings/ai-prompts/AiPromptsPanel";
+import { PromptEditor } from "../features/settings/ai-prompts/AiPromptsPanel";
 import { AiRuntimePolicyPanel } from "../features/settings/ai-runtime-policy/AiRuntimePolicyPanel";
 import {
   SETTINGS_RAIL_WIDTH,
@@ -24,7 +23,6 @@ import {
   useSettingsEditorOpen,
 } from "../features/settings/settings-leave-guard";
 import { SettingsDetailPlaceholder } from "../features/settings/SettingsDetailPlaceholder";
-import { SettingsHeaderButton } from "../features/settings/SettingsHeaderButton";
 import { SettingsListHeaderLeft } from "../features/settings/SettingsListHeaderLeft";
 import { SettingsMasterPane } from "../features/settings/SettingsMasterPane";
 import { color, fontFamily, fontSize } from "../shared/theme";
@@ -47,10 +45,7 @@ const navigationTheme: Theme = {
 
 function SettingsDetailHeaderLeft(props: HeaderBackButtonProps) {
   const { width } = useWindowDimensions();
-  if (width >= WIDE_SETTINGS_BREAKPOINT) {
-    return null;
-  }
-  return <SettingsListHeaderLeft {...props} />;
+  return width < WIDE_SETTINGS_BREAKPOINT ? <SettingsListHeaderLeft {...props} /> : null;
 }
 
 const stackScreenOptions = (): NativeStackNavigationOptions => ({
@@ -68,9 +63,13 @@ const stackScreenOptions = (): NativeStackNavigationOptions => ({
   headerLeft: (props) => <SettingsDetailHeaderLeft {...props} />,
 });
 
-const AiModelsStack = createNativeStackNavigator({
+const SettingsDetailStack = createNativeStackNavigator({
   screenOptions: stackScreenOptions,
   screens: {
+    Empty: createNativeStackScreen({
+      screen: SettingsDetailPlaceholder,
+      options: { headerShown: false },
+    }),
     ProviderEditor: createNativeStackScreen({
       screen: ProviderEditor,
       options: ({ route }) => ({
@@ -83,38 +82,10 @@ const AiModelsStack = createNativeStackNavigator({
         title: route.params.id == null ? "添加模型" : "编辑模型",
       }),
     }),
-  },
-});
-
-const AiAgentsStack = createNativeStackNavigator({
-  screenOptions: stackScreenOptions,
-  screens: {
     AgentEditor: createNativeStackScreen({
       screen: AgentEditor,
       options: ({ route }) => ({
         title: route.params.id == null ? "添加 Agent" : "编辑 Agent",
-      }),
-    }),
-  },
-});
-
-const AiPromptsStack = createNativeStackNavigator({
-  screenOptions: stackScreenOptions,
-  screens: {
-    List: createNativeStackScreen({
-      screen: AiPromptsList,
-      options: ({ navigation }) => ({
-        title: "AI 提示词",
-        headerLeft: (props) => <SettingsListHeaderLeft {...props} />,
-        headerRight: () => (
-          <SettingsHeaderButton
-            label="添加"
-            Icon={IconAdd}
-            onPress={() => {
-              navigation.navigate("PromptEditor", {});
-            }}
-          />
-        ),
       }),
     }),
     PromptEditor: createNativeStackScreen({
@@ -123,19 +94,10 @@ const AiPromptsStack = createNativeStackNavigator({
         title: route.params.id == null ? "添加提示词" : "编辑提示词",
       }),
     }),
-  },
-});
-
-const AiRuntimePolicyStack = createNativeStackNavigator({
-  screenOptions: stackScreenOptions,
-  screens: {
-    List: {
+    AiRuntimePolicy: createNativeStackScreen({
       screen: AiRuntimePolicyPanel,
-      options: {
-        title: "AI 运行策略",
-        headerLeft: (props) => <SettingsListHeaderLeft {...props} />,
-      },
-    },
+      options: { title: "AI 运行策略" },
+    }),
   },
 });
 
@@ -147,10 +109,7 @@ const SettingsSplit = createSplitNavigator({
   detailPlaceholder: <SettingsDetailPlaceholder />,
   onLeaveDetail: requestSettingsLeave,
   screens: {
-    "ai-models": { screen: AiModelsStack, options: { popToTopOnBlur: true } },
-    "ai-agents": { screen: AiAgentsStack, options: { popToTopOnBlur: true } },
-    "ai-prompts": { screen: AiPromptsStack, options: { popToTopOnBlur: true } },
-    "ai-runtime-policy": { screen: AiRuntimePolicyStack, options: { popToTopOnBlur: true } },
+    detail: { screen: SettingsDetailStack },
   },
 }).with(({ Navigator }) => {
   const dirty = useSettingsDirty();
@@ -179,18 +138,9 @@ const RootStack = createNativeStackNavigator({
       options: { headerShown: false },
     }),
     Settings: SettingsSplit,
-    Alert: createNativeStackScreen({
-      screen: AlertScreen,
-      options: overlayScreenOptions,
-    }),
-    Confirm: createNativeStackScreen({
-      screen: ConfirmScreen,
-      options: overlayScreenOptions,
-    }),
-    Prompt: createNativeStackScreen({
-      screen: PromptScreen,
-      options: overlayScreenOptions,
-    }),
+    Alert: createNativeStackScreen({ screen: AlertScreen, options: overlayScreenOptions }),
+    Confirm: createNativeStackScreen({ screen: ConfirmScreen, options: overlayScreenOptions }),
+    Prompt: createNativeStackScreen({ screen: PromptScreen, options: overlayScreenOptions }),
   },
 });
 

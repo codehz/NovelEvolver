@@ -1,10 +1,8 @@
 import type { AiPromptConfigPublic } from "@novelevolver/domain/settings/ai-settings";
 import { useFocusEffect, useNavigation, type StaticScreenProps } from "@react-navigation/native";
-import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { useCallback, useState } from "react";
 import { Pressable, ScrollView, Text, View } from "react-native";
 
-import type { AiPromptsStackParamList } from "../../../app/navigation-types";
 import { getMobileSettings } from "../../../shared/settings/session";
 import { SettingsTextField } from "../fields";
 import { settingsStyles } from "../settings-chrome";
@@ -12,11 +10,10 @@ import { setSettingsDirty, useSettingsFormDirty } from "../settings-leave-guard"
 import { useSettingsLeaveGuard } from "../use-settings-leave-guard";
 
 type AiPromptsListProps = {
-  onOpen?: (id: string) => void;
+  onOpen: (id: string) => void;
 };
 
-export function AiPromptsList({ onOpen }: AiPromptsListProps = {}) {
-  const navigation = useNavigation<NativeStackNavigationProp<AiPromptsStackParamList>>();
+export function AiPromptsList({ onOpen }: AiPromptsListProps) {
   const [tick, setTick] = useState(0);
   const snapshot = getMobileSettings().prompts.getSnapshot();
   void tick;
@@ -38,11 +35,7 @@ export function AiPromptsList({ onOpen }: AiPromptsListProps = {}) {
               key={prompt.id}
               style={settingsStyles.row}
               onPress={() => {
-                if (onOpen) {
-                  onOpen(prompt.id);
-                } else {
-                  navigation.navigate("PromptEditor", { id: prompt.id });
-                }
+                onOpen(prompt.id);
               }}
             >
               <Text style={settingsStyles.rowTitle}>{prompt.title}</Text>

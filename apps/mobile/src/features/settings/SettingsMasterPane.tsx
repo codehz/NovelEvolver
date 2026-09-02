@@ -14,32 +14,48 @@ import { settingsStyles } from "./settings-chrome";
 import { requestSettingsLeave } from "./settings-leave-guard";
 import { SettingsHeaderBackButton } from "./SettingsHeaderBackButton";
 
+const EDITOR_CATEGORIES: Record<string, SettingsCategoryId> = {
+  ProviderEditor: "ai-models",
+  ModelEditor: "ai-models",
+  AgentEditor: "ai-agents",
+  PromptEditor: "ai-prompts",
+  AiRuntimePolicy: "ai-runtime-policy",
+};
+
 export function SettingsMasterPane(props: SplitMasterComponentProps) {
   const wide = props.layout === "wide";
   const insets = useSafeAreaInsets();
-  const focused = props.state.routes[props.state.index]?.name;
+  const detailRoute = props.state.routes.find((item) => item.name === "detail");
+  const detailState = detailRoute?.state;
+  const detailScreen =
+    detailState?.routes[detailState.index ?? detailState.routes.length - 1]?.name;
+  const selectedCategory = EDITOR_CATEGORIES[detailScreen ?? ""];
   const highlightSelection = props.pane === "detail";
+
+  const openDetail = (screen: string, params: Record<string, string | undefined>) => {
+    const target = detailRoute?.state?.key;
+    if (target) {
+      props.navigation.navigate("detail");
+      props.navigation.dispatch({ ...StackActions.replace(screen, params), target });
+    } else {
+      props.navigation.navigate("detail", { screen, params });
+    }
+  };
 
   const openEditor = (
     category: SettingsCategoryId,
     screen: string,
     params: Record<string, string | undefined>,
   ) => {
-    const route = props.navigation.getState().routes.find((item) => item.name === category);
-    const target = route?.state?.key;
-    if (wide && target) {
-      props.navigation.navigate(category);
-      props.navigation.dispatch({ ...StackActions.replace(screen, params), target });
-      return;
-    }
-    props.navigation.navigate(category, { screen, params });
+    void category;
+    openDetail(screen, params);
   };
 
   const selectCategory = async (id: SettingsCategoryId) => {
-    if (!(await requestSettingsLeave())) {
+    if (id !== "ai-runtime-policy" || !(await requestSettingsLeave())) {
       return;
     }
-    props.navigation.navigate(id, { screen: "List" });
+    openDetail("AiRuntimePolicy", {});
   };
 
   return (
@@ -72,18 +88,16 @@ export function SettingsMasterPane(props: SplitMasterComponentProps) {
       </Text>
       <ScrollView>
         {SETTINGS_CATEGORIES.map((category) => {
-          const selected = highlightSelection && category.id === focused;
+          const selected =
+            highlightSelection &&
+            (selectedCategory === category.id ||
+              (category.id === "ai-runtime-policy" && detailScreen === "AiRuntimePolicy"));
           const openCategory = () => {
-            if (category.id === "ai-models" || category.id === "ai-agents") {
-              return;
-            }
             void selectCategory(category.id);
           };
           const addCategory = () => {
             void requestSettingsLeave().then((ok) => {
-              if (!ok) {
-                return;
-              }
+              if (!ok) return;
               if (category.id === "ai-models") {
                 openEditor(category.id, "ProviderEditor", {});
               } else if (category.id === "ai-agents") {
@@ -142,9 +156,7 @@ export function SettingsMasterPane(props: SplitMasterComponentProps) {
                 <AiAgentsList
                   onOpen={(id) => {
                     void requestSettingsLeave().then((ok) => {
-                      if (ok) {
-                        openEditor(category.id, "AgentEditor", { id });
-                      }
+                      if (ok) openEditor(category.id, "AgentEditor", { id });
                     });
                   }}
                 />
@@ -153,9 +165,7 @@ export function SettingsMasterPane(props: SplitMasterComponentProps) {
                 <AiPromptsList
                   onOpen={(id) => {
                     void requestSettingsLeave().then((ok) => {
-                      if (ok) {
-                        openEditor(category.id, "PromptEditor", { id });
-                      }
+                      if (ok) openEditor(category.id, "PromptEditor", { id });
                     });
                   }}
                 />

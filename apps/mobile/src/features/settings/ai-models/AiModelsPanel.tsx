@@ -15,11 +15,9 @@ import {
   requiresAdapterBaseUrl,
 } from "@novelevolver/domain/settings/ai-settings";
 import { useFocusEffect, useNavigation, type StaticScreenProps } from "@react-navigation/native";
-import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { useCallback, useState, type ReactNode } from "react";
 import { Pressable, ScrollView, Text, View } from "react-native";
 
-import type { AiModelsStackParamList } from "../../../app/navigation-types";
 import { getMobileSettings } from "../../../shared/settings/session";
 import { AI_ADAPTER_OPTIONS } from "../ai-adapter-labels";
 import { SettingsChoiceField, SettingsSwitchField, SettingsTextField } from "../fields";
@@ -28,7 +26,7 @@ import { setSettingsDirty, useSettingsFormDirty } from "../settings-leave-guard"
 import { useSettingsLeaveGuard } from "../use-settings-leave-guard";
 
 type AiModelsListProps = {
-  onOpen?: (
+  onOpen: (
     target:
       | { type: "provider"; id: string }
       | { type: "model"; id: string }
@@ -36,8 +34,7 @@ type AiModelsListProps = {
   ) => void;
 };
 
-export function AiModelsList({ onOpen }: AiModelsListProps = {}) {
-  const navigation = useNavigation<NativeStackNavigationProp<AiModelsStackParamList>>();
+export function AiModelsList({ onOpen }: AiModelsListProps) {
   const [tick, setTick] = useState(0);
   const [error, setError] = useState<string | null>(null);
   const session = getMobileSettings();
@@ -64,11 +61,7 @@ export function AiModelsList({ onOpen }: AiModelsListProps = {}) {
                 <Pressable
                   style={settingsStyles.row}
                   onPress={() => {
-                    if (onOpen) {
-                      onOpen({ type: "provider", id: provider.id });
-                    } else {
-                      navigation.navigate("ProviderEditor", { id: provider.id });
-                    }
+                    onOpen({ type: "provider", id: provider.id });
                   }}
                 >
                   <Text style={settingsStyles.rowTitle}>{provider.name}</Text>
@@ -82,11 +75,7 @@ export function AiModelsList({ onOpen }: AiModelsListProps = {}) {
                     key={model.id}
                     style={[settingsStyles.row, { paddingLeft: 28 }]}
                     onPress={() => {
-                      if (onOpen) {
-                        onOpen({ type: "model", id: model.id });
-                      } else {
-                        navigation.navigate("ModelEditor", { id: model.id });
-                      }
+                      onOpen({ type: "model", id: model.id });
                     }}
                     onLongPress={() => {
                       try {
@@ -109,11 +98,7 @@ export function AiModelsList({ onOpen }: AiModelsListProps = {}) {
                 <Pressable
                   style={settingsStyles.row}
                   onPress={() => {
-                    if (onOpen) {
-                      onOpen({ type: "new-model", providerId: provider.id });
-                    } else {
-                      navigation.navigate("ModelEditor", { providerId: provider.id });
-                    }
+                    onOpen({ type: "new-model", providerId: provider.id });
                   }}
                 >
                   <Text style={settingsStyles.headerActionLabel}>添加模型</Text>

@@ -1,11 +1,9 @@
 import { AI_AGENT_DESCRIPTION_MAX_LENGTH } from "@novelevolver/domain/settings/ai-settings";
 import type { AiAgentConfigPublic } from "@novelevolver/domain/settings/ai-settings";
 import { useFocusEffect, useNavigation, type StaticScreenProps } from "@react-navigation/native";
-import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { useCallback, useState } from "react";
 import { Pressable, ScrollView, Text, View } from "react-native";
 
-import type { AiAgentsStackParamList } from "../../../app/navigation-types";
 import { getMobileSettings } from "../../../shared/settings/session";
 import { SettingsSwitchField, SettingsTextField } from "../fields";
 import { settingsStyles } from "../settings-chrome";
@@ -13,11 +11,10 @@ import { setSettingsDirty, useSettingsFormDirty } from "../settings-leave-guard"
 import { useSettingsLeaveGuard } from "../use-settings-leave-guard";
 
 type AiAgentsListProps = {
-  onOpen?: (id: string) => void;
+  onOpen: (id: string) => void;
 };
 
-export function AiAgentsList({ onOpen }: AiAgentsListProps = {}) {
-  const navigation = useNavigation<NativeStackNavigationProp<AiAgentsStackParamList>>();
+export function AiAgentsList({ onOpen }: AiAgentsListProps) {
   const [tick, setTick] = useState(0);
   const snapshot = getMobileSettings().agents.getSnapshot();
   void tick;
@@ -36,11 +33,7 @@ export function AiAgentsList({ onOpen }: AiAgentsListProps = {}) {
             key={agent.id}
             style={settingsStyles.row}
             onPress={() => {
-              if (onOpen) {
-                onOpen(agent.id);
-              } else {
-                navigation.navigate("AgentEditor", { id: agent.id });
-              }
+              onOpen(agent.id);
             }}
           >
             <Text style={settingsStyles.rowTitle}>{agent.name}</Text>
