@@ -15,4 +15,4 @@ Callers inject:
 - `AiChatRepository` + `ResolveWorktree` (`() => WorktreeSession`)
 - `AiModelsPort` / `AiAgentsPort` / `AiRuntimePolicyPort` (settings stores)
 
-Do not import Electron, React, or capnweb. Use `nanoid/non-secure` instead of `node:crypto` / Web Crypto. Do not use `structuredClone` or `DOMException` (missing on Hermes); JSON snapshots: `cloneJson` from `@novelevolver/domain/clone-json`; abort: `isAbortError` / `createAbortError`.
+Do not import Electron, React, or capnweb. Use `nanoid/non-secure` instead of `node:crypto` / Web Crypto. Use the global `structuredClone` for JSON snapshots; mobile installs its polyfill at the app entry point. Do not use `DOMException` (missing on Hermes); abort: `isAbortError` / `createAbortError`.

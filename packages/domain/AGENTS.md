@@ -6,5 +6,5 @@ Cross-platform DTOs and pure helpers. **Zero runtime deps.** Import as `@novelev
 - Shared feed primitives: `sync/feed.ts` (`SnapshotEvent`, `RpcDeltaEvent`)
 - Worktree path/domain literals (e.g. `"manuscript" | "resource"`) converge on a **single exported type** (`WorktreeDomain`); other domain aliases should not drift
 - Do not put capnweb handles or Electron/React code here — handles live in `@novelevolver/desktop-rpc`, UI in apps
-- Do not use `structuredClone` or Web Crypto (missing on Hermes). JSON snapshots: `cloneJson` from `@novelevolver/domain/clone-json`
+- Use the global `structuredClone` for deep-copying snapshots. Mobile installs its polyfill at the app entry point.
 - Prototype: public exports may break without semver
