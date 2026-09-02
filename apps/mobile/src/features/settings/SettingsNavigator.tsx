@@ -12,6 +12,7 @@ import Animated, {
   useSharedValue,
   withTiming,
 } from "react-native-reanimated";
+import IconDiscard from "~icons/codicon/discard";
 import IconSave from "~icons/codicon/save";
 import IconTrash from "~icons/codicon/trash";
 
@@ -214,6 +215,14 @@ function SettingsDetailView({ detail, wide, onBack, onSaved }: SettingsDetailVie
         headerRight={() =>
           actions ? (
             <View style={{ flexDirection: "row", gap: 4, paddingEnd: 16 }}>
+              {actions.resetToDefaults ? (
+                <SettingsHeaderButton
+                  label="恢复默认"
+                  onPress={actions.resetToDefaults}
+                  Icon={IconDiscard}
+                  disabled={actions.resetToDefaultsDisabled}
+                />
+              ) : null}
               <SettingsHeaderButton label="保存" onPress={actions.save} Icon={IconSave} />
               {actions.remove ? (
                 <SettingsHeaderButton label="删除" onPress={actions.remove} Icon={IconTrash} />

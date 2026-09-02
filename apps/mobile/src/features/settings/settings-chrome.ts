@@ -44,6 +44,12 @@ export const settingsStyles = StyleSheet.create({
     fontSize: fontSize.sm,
     fontWeight: "600",
   },
+  headerActionDisabled: {
+    opacity: 0.4,
+  },
+  headerActionLabelDisabled: {
+    color: color.muted,
+  },
   headerDangerLabel: {
     color: color.error,
     fontFamily: fontFamily.sans,

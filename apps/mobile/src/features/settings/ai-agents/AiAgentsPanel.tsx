@@ -1,7 +1,9 @@
+import { builtinAiAgentById } from "@novelevolver/domain/settings/ai-builtin-agents";
 import { AI_AGENT_DESCRIPTION_MAX_LENGTH } from "@novelevolver/domain/settings/ai-settings";
 import type { AiAgentConfigPublic } from "@novelevolver/domain/settings/ai-settings";
+import { isBuiltinAiAgentId } from "@novelevolver/domain/settings/ai-settings";
 import { useFocusEffect } from "@react-navigation/native";
-import { useCallback, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { Pressable, ScrollView, Text, View } from "react-native";
 
 import { getMobileSettings } from "../../../shared/settings/session";
@@ -157,7 +159,37 @@ function AgentForm({ initial, error, onError, onSaved, onActionsChange }: AgentF
           }
         }
       : undefined;
-  useSettingsDetailActions(onActionsChange, { save, remove });
+  const codeDefaults = useMemo(() => {
+    if (initial?.builtin !== true || !isBuiltinAiAgentId(initial.id)) {
+      return null;
+    }
+    return builtinAiAgentById(initial.id);
+  }, [initial]);
+  const isAtCodeDefaults =
+    codeDefaults != null &&
+    description === (codeDefaults.defaultDescription ?? "") &&
+    systemPrompt === (codeDefaults.defaultSystemPrompt ?? "") &&
+    defaultModelId === "" &&
+    userSelectable === codeDefaults.userSelectable &&
+    subagentEligible === codeDefaults.subagentEligible &&
+    textOnlyMode === codeDefaults.textOnlyMode;
+  const resetToDefaults = useCallback(() => {
+    if (codeDefaults == null) {
+      return;
+    }
+    setDescription(codeDefaults.defaultDescription ?? "");
+    setSystemPrompt(codeDefaults.defaultSystemPrompt ?? "");
+    setDefaultModelId("");
+    setUserSelectable(codeDefaults.userSelectable);
+    setSubagentEligible(codeDefaults.subagentEligible);
+    setTextOnlyMode(codeDefaults.textOnlyMode);
+  }, [codeDefaults]);
+  useSettingsDetailActions(onActionsChange, {
+    save,
+    remove,
+    resetToDefaults: codeDefaults ? resetToDefaults : undefined,
+    resetToDefaultsDisabled: isAtCodeDefaults,
+  });
 
   const modelOptions = [
     { value: "", label: "继承默认模型" },
