@@ -7,6 +7,8 @@ import type {
 } from "@novelevolver/domain/worktree";
 import { useState } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
+import IconCheck from "~icons/codicon/check";
+import IconDiscard from "~icons/codicon/discard";
 import IconNewFile from "~icons/codicon/new-file";
 import IconNewFolder from "~icons/codicon/new-folder";
 
@@ -75,8 +77,14 @@ export function ProjectExplorerPane({
   onCommitChanges,
 }: ProjectExplorerPaneProps) {
   const [selectOpen, setSelectOpen] = useState(false);
+  const [commitMessage, setCommitMessage] = useState("");
   const manuscript = domain === "manuscript";
   const resource = domain === "resource";
+  const canCommit = commitMessage.trim() !== "" && changesSnapshot?.hasChanges === true;
+  const commit = async () => {
+    if (!canCommit) return;
+    if (await onCommitChanges(commitMessage)) setCommitMessage("");
+  };
   return (
     <View style={styles.root}>
       <View style={styles.paneHeader}>
@@ -87,7 +95,24 @@ export function ProjectExplorerPane({
           onChange={onDomainChange}
         />
         <View style={styles.paneActions}>
-          {manuscript ? (
+          {domain === "changes" ? (
+            <>
+              <SettingsHeaderButton
+                Icon={IconDiscard}
+                label="全部还原"
+                disabled={!changesSnapshot?.hasChanges}
+                onPress={onRevertAllChanges}
+              />
+              <SettingsHeaderButton
+                Icon={IconCheck}
+                label="提交"
+                disabled={!canCommit}
+                onPress={() => {
+                  void commit();
+                }}
+              />
+            </>
+          ) : manuscript ? (
             <>
               <SettingsHeaderButton
                 Icon={IconNewFile}
@@ -127,8 +152,8 @@ export function ProjectExplorerPane({
           error={changesError}
           onRetry={onRetryChanges}
           onRevertChange={onRevertChange}
-          onRevertAll={onRevertAllChanges}
-          onCommit={onCommitChanges}
+          commitMessage={commitMessage}
+          onCommitMessageChange={setCommitMessage}
         />
       ) : (
         <>
