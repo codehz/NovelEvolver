@@ -55,21 +55,9 @@ export const settingsStyles = StyleSheet.create({
     borderRightWidth: StyleSheet.hairlineWidth,
     borderRightColor: color.border,
   },
-  railLabel: {
-    color: color.muted,
-    fontFamily: fontFamily.sans,
-    fontSize: fontSize.xxs,
-    fontWeight: "600",
-    paddingHorizontal: space[3],
-    paddingTop: space[3],
-    paddingBottom: space[2],
-  },
   railItem: {
     paddingHorizontal: space[3],
     paddingVertical: space[3],
-  },
-  compactSectionLabel: {
-    paddingHorizontal: space[4],
   },
   railItemSelected: {
     backgroundColor: wash.accentSoft,

@@ -76,9 +76,6 @@ export function SettingsMasterPane({
           <SettingsHeaderBackButton {...headerLeftProps} onPress={onCloseSettings} />
         )}
       />
-      <Text style={[settingsStyles.railLabel, !wide && settingsStyles.compactSectionLabel]}>
-        分类
-      </Text>
       <ScrollView>
         {SETTINGS_CATEGORIES.map((category) => {
           const selected =
