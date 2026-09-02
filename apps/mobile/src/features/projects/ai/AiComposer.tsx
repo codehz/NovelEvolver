@@ -198,6 +198,11 @@ export function AiComposer({
           }
         }}
         onStartMention={(indicator) => {
+          // Slash commands are available only when the draft is empty before `/`.
+          if (indicator === "/" && draft !== "") {
+            onTriggerChange(null, "");
+            return;
+          }
           onTriggerChange(indicator as ComposerTrigger, "");
         }}
         onChangeMention={(event) => {
