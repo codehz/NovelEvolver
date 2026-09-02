@@ -2,10 +2,20 @@ import { Header } from "@react-navigation/elements";
 import { useNavigation, usePreventRemove } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { useEffect, useReducer } from "react";
-import { BackHandler, useWindowDimensions, View } from "react-native";
+import { BackHandler, StyleSheet, useWindowDimensions, View } from "react-native";
+import Animated, {
+  FadeIn,
+  FadeOut,
+  SlideInRight,
+  SlideOutRight,
+  useAnimatedStyle,
+  useSharedValue,
+  withTiming,
+} from "react-native-reanimated";
 
 import type { RootStackParamList } from "../../app/navigation-types";
 import { color, fontFamily, fontSize } from "../../shared/theme";
+import { OVERLAY_TIMING } from "../../shared/ui/overlay-chrome";
 import { AgentEditor } from "./ai-agents/AiAgentsPanel";
 import { ModelEditor, ProviderEditor } from "./ai-models/AiModelsPanel";
 import { PromptEditor } from "./ai-prompts/AiPromptsPanel";
@@ -36,6 +46,23 @@ function detailTitle(detail: SettingsDetail): string {
   if (detail.type === "prompt-editor" && detail.id == null) return "添加提示词";
   return detailTitles[detail.type];
 }
+
+function settingsDetailKey(detail: SettingsDetail): string {
+  switch (detail.type) {
+    case "provider-editor":
+      return `${detail.type}:${detail.id ?? "new"}`;
+    case "model-editor":
+      return `${detail.type}:${detail.id ?? "new"}:${detail.providerId ?? ""}`;
+    case "agent-editor":
+      return `${detail.type}:${detail.id ?? "new"}`;
+    case "prompt-editor":
+      return `${detail.type}:${detail.id ?? "new"}`;
+    case "ai-runtime-policy":
+      return detail.type;
+  }
+}
+
+const settingsAnimation = { duration: OVERLAY_TIMING.duration, easing: OVERLAY_TIMING.easing };
 
 export function SettingsNavigator() {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
@@ -78,41 +105,72 @@ export function SettingsNavigator() {
     dispatch({ type: "open-detail", detail });
   };
 
+  const detail = isSettingsDetail(state) ? state.detail : null;
+  const detailKey = detail == null ? "master" : settingsDetailKey(detail);
+  const navigationProgress = useSharedValue(0);
+
+  useEffect(() => {
+    navigationProgress.value = withTiming(detail == null ? 0 : 1, OVERLAY_TIMING);
+  }, [detailKey, navigationProgress]);
+
+  const masterAnimatedStyle = useAnimatedStyle(() => ({
+    opacity: 1 - navigationProgress.value * 0.15,
+    transform: [{ translateX: -width * 0.3 * navigationProgress.value }],
+  }));
+
+  const renderMaster = () => (
+    <SettingsMasterPane
+      wide={wide}
+      selectedDetail={detail}
+      onOpenDetail={openDetail}
+      onCloseSettings={leaveSettings}
+    />
+  );
+
+  const renderDetail = () =>
+    detail ? (
+      <SettingsDetailView detail={detail} wide={wide} onBack={showMaster} onSaved={showMaster} />
+    ) : (
+      <SettingsDetailPlaceholder />
+    );
+
   return (
     <View style={{ flex: 1, flexDirection: wide ? "row" : "column" }}>
-      {wide || state.screen === "master" ? (
-        <View style={wide ? { width: 220 } : { flex: 1 }}>
-          <SettingsMasterPane
-            wide={wide}
-            selectedDetail={isSettingsDetail(state) ? state.detail : null}
-            onOpenDetail={openDetail}
-            onCloseSettings={leaveSettings}
-          />
-        </View>
-      ) : null}
       {wide ? (
-        <View style={{ flex: 1, minWidth: 0 }}>
-          {isSettingsDetail(state) ? (
-            <SettingsDetailView
-              detail={state.detail}
-              wide={wide}
-              onBack={showMaster}
-              onSaved={showMaster}
-            />
-          ) : (
-            <SettingsDetailPlaceholder />
-          )}
-        </View>
-      ) : null}
-      {!wide && isSettingsDetail(state) ? (
+        <View style={{ width: 220 }}>{renderMaster()}</View>
+      ) : (
         <View style={{ flex: 1 }}>
-          <SettingsDetailView
-            detail={state.detail}
-            wide={wide}
-            onBack={showMaster}
-            onSaved={showMaster}
-          />
+          <Animated.View
+            pointerEvents={detail == null ? "auto" : "none"}
+            style={[StyleSheet.absoluteFill, masterAnimatedStyle]}
+          >
+            {renderMaster()}
+          </Animated.View>
+          {detail ? (
+            <Animated.View
+              key={detailKey}
+              entering={SlideInRight.duration(OVERLAY_TIMING.duration).easing(
+                OVERLAY_TIMING.easing,
+              )}
+              exiting={SlideOutRight.duration(OVERLAY_TIMING.duration).easing(
+                OVERLAY_TIMING.easing,
+              )}
+              style={StyleSheet.absoluteFill}
+            >
+              {renderDetail()}
+            </Animated.View>
+          ) : null}
         </View>
+      )}
+      {wide ? (
+        <Animated.View
+          key={detail == null ? "placeholder" : settingsDetailKey(detail)}
+          entering={FadeIn.duration(settingsAnimation.duration).easing(settingsAnimation.easing)}
+          exiting={FadeOut.duration(settingsAnimation.duration).easing(settingsAnimation.easing)}
+          style={{ flex: 1, minWidth: 0 }}
+        >
+          {renderDetail()}
+        </Animated.View>
       ) : null}
     </View>
   );
