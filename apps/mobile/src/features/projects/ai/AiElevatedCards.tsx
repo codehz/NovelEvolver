@@ -1,6 +1,7 @@
 import type { AiChatToolCall } from "@novelevolver/domain/ai";
 import { useState } from "react";
 import { Pressable, Text, View } from "react-native";
+import Animated, { FadeIn, FadeOut, LinearTransition } from "react-native-reanimated";
 import IconChevronDown from "~icons/codicon/chevron-down";
 import IconChevronRight from "~icons/codicon/chevron-right";
 import IconCommentDiscussion from "~icons/codicon/comment-discussion";
@@ -44,7 +45,12 @@ export function AiSubagentCard({ toolCall }: CardProps) {
         </Text>
       ) : null}
       {open ? (
-        <View style={aiStyles.cardBody}>
+        <Animated.View
+          entering={FadeIn.duration(160)}
+          exiting={FadeOut.duration(120)}
+          layout={LinearTransition.duration(220)}
+          style={aiStyles.cardBody}
+        >
           {view ? (
             <>
               <Text style={aiStyles.messageText}>{view.task}</Text>
@@ -80,7 +86,16 @@ export function AiSubagentCard({ toolCall }: CardProps) {
                       )}
                     </View>
                   </Pressable>
-                  {reportOpen ? <Text style={aiStyles.messageText}>{view.report}</Text> : null}
+                  {reportOpen ? (
+                    <Animated.Text
+                      entering={FadeIn.duration(160)}
+                      exiting={FadeOut.duration(120)}
+                      layout={LinearTransition.duration(220)}
+                      style={aiStyles.messageText}
+                    >
+                      {view.report}
+                    </Animated.Text>
+                  ) : null}
                 </>
               ) : null}
             </>
@@ -90,7 +105,7 @@ export function AiSubagentCard({ toolCall }: CardProps) {
           {toolCall.errorMessage ? (
             <Text style={aiStyles.errorText}>{toolCall.errorMessage}</Text>
           ) : null}
-        </View>
+        </Animated.View>
       ) : null}
     </View>
   );

@@ -1,6 +1,7 @@
 import type { AssistantWorkStep } from "@novelevolver/domain/ai";
 import { useEffect, useState } from "react";
 import { Pressable, Text, View } from "react-native";
+import Animated, { FadeIn, FadeOut, LinearTransition } from "react-native-reanimated";
 import IconChevronDown from "~icons/codicon/chevron-down";
 import IconChevronRight from "~icons/codicon/chevron-right";
 import IconCommentDiscussion from "~icons/codicon/comment-discussion";
@@ -81,7 +82,12 @@ function WorkRow({ step, last }: { step: AssistantWorkStep; last: boolean }) {
         ) : null}
       </View>
       {open && hasDetail ? (
-        <View style={aiStyles.timelineDetail}>
+        <Animated.View
+          entering={FadeIn.duration(160)}
+          exiting={FadeOut.duration(120)}
+          layout={LinearTransition.duration(220)}
+          style={aiStyles.timelineDetail}
+        >
           {step.type === "reasoning" ? (
             <Text style={aiStyles.messageText}>{step.text || "…"}</Text>
           ) : (
@@ -91,7 +97,7 @@ function WorkRow({ step, last }: { step: AssistantWorkStep; last: boolean }) {
               </Text>
             ))
           )}
-        </View>
+        </Animated.View>
       ) : null}
       {!last ? <View style={aiStyles.timelineLine} /> : null}
     </View>
@@ -152,11 +158,16 @@ export function AiWorkBlock({ id, steps, keepExpanded }: AiWorkBlockProps) {
         </View>
       </Pressable>
       {open ? (
-        <View style={aiStyles.timeline}>
+        <Animated.View
+          entering={FadeIn.duration(160)}
+          exiting={FadeOut.duration(120)}
+          layout={LinearTransition.duration(220)}
+          style={aiStyles.timeline}
+        >
           {steps.map((step, index) => (
             <WorkRow key={step.id} step={step} last={index === steps.length - 1} />
           ))}
-        </View>
+        </Animated.View>
       ) : null}
     </View>
   );
