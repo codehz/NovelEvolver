@@ -14,7 +14,7 @@ import {
   isToollessAdapterKind,
   requiresAdapterBaseUrl,
 } from "@novelevolver/domain/settings/ai-settings";
-import { useFocusEffect, useNavigation, type StaticScreenProps } from "@react-navigation/native";
+import { useFocusEffect } from "@react-navigation/native";
 import { useCallback, useState, type ReactNode } from "react";
 import { Pressable, ScrollView, Text, View } from "react-native";
 
@@ -112,17 +112,17 @@ export function AiModelsList({ onOpen }: AiModelsListProps) {
   );
 }
 
-type ProviderEditorProps = StaticScreenProps<{ id?: string }>;
+type ProviderEditorProps = {
+  id?: string;
+  onSaved: () => void;
+};
 
-export function ProviderEditor({ route }: ProviderEditorProps) {
+export function ProviderEditor({ id, onSaved }: ProviderEditorProps) {
   useSettingsLeaveGuard({ editor: true });
-  const navigation = useNavigation();
   const [error, setError] = useState<string | null>(null);
   const snapshot = getMobileSettings().models.getSnapshot();
   const editor =
-    route.params.id == null
-      ? ({ type: "create-provider" } as const)
-      : ({ type: "edit-provider", id: route.params.id } as const);
+    id == null ? ({ type: "create-provider" } as const) : ({ type: "edit-provider", id } as const);
 
   return (
     <View style={settingsStyles.detail}>
@@ -132,24 +132,27 @@ export function ProviderEditor({ route }: ProviderEditorProps) {
         providers={snapshot.providers}
         onError={setError}
         onSaved={() => {
-          navigation.goBack();
+          onSaved();
         }}
       />
     </View>
   );
 }
 
-type ModelEditorProps = StaticScreenProps<{ id?: string; providerId?: string }>;
+type ModelEditorProps = {
+  id?: string;
+  providerId?: string;
+  onSaved: () => void;
+};
 
-export function ModelEditor({ route }: ModelEditorProps) {
+export function ModelEditor({ id, providerId, onSaved }: ModelEditorProps) {
   useSettingsLeaveGuard({ editor: true });
-  const navigation = useNavigation();
   const [error, setError] = useState<string | null>(null);
   const snapshot = getMobileSettings().models.getSnapshot();
   const editor =
-    route.params.id == null
-      ? ({ type: "create-model", providerId: route.params.providerId ?? "" } as const)
-      : ({ type: "edit-model", id: route.params.id } as const);
+    id == null
+      ? ({ type: "create-model", providerId: providerId ?? "" } as const)
+      : ({ type: "edit-model", id } as const);
 
   return (
     <View style={settingsStyles.detail}>
@@ -160,7 +163,7 @@ export function ModelEditor({ route }: ModelEditorProps) {
         models={snapshot.models}
         onError={setError}
         onSaved={() => {
-          navigation.goBack();
+          onSaved();
         }}
       />
     </View>

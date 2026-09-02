@@ -18,12 +18,3 @@ export type ProjectTabParamList = {
   Editor: undefined;
   AI: undefined;
 };
-
-export type SettingsDetailStackParamList = {
-  Empty: undefined;
-  ProviderEditor: { id?: string };
-  ModelEditor: { id?: string; providerId?: string };
-  AgentEditor: { id?: string };
-  PromptEditor: { id?: string };
-  AiRuntimePolicy: undefined;
-};

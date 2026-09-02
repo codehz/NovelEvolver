@@ -1,6 +1,6 @@
 import { AI_AGENT_DESCRIPTION_MAX_LENGTH } from "@novelevolver/domain/settings/ai-settings";
 import type { AiAgentConfigPublic } from "@novelevolver/domain/settings/ai-settings";
-import { useFocusEffect, useNavigation, type StaticScreenProps } from "@react-navigation/native";
+import { useFocusEffect } from "@react-navigation/native";
 import { useCallback, useState } from "react";
 import { Pressable, ScrollView, Text, View } from "react-native";
 
@@ -48,17 +48,16 @@ export function AiAgentsList({ onOpen }: AiAgentsListProps) {
   );
 }
 
-type AgentEditorProps = StaticScreenProps<{ id?: string }>;
+type AgentEditorProps = {
+  id?: string;
+  onSaved: () => void;
+};
 
-export function AgentEditor({ route }: AgentEditorProps) {
+export function AgentEditor({ id, onSaved }: AgentEditorProps) {
   useSettingsLeaveGuard({ editor: true });
-  const navigation = useNavigation();
   const [error, setError] = useState<string | null>(null);
   const snapshot = getMobileSettings().agents.getSnapshot();
-  const initial =
-    route.params.id == null
-      ? null
-      : (snapshot.agents.find((agent) => agent.id === route.params.id) ?? null);
+  const initial = id == null ? null : (snapshot.agents.find((agent) => agent.id === id) ?? null);
 
   return (
     <AgentForm
@@ -66,7 +65,7 @@ export function AgentEditor({ route }: AgentEditorProps) {
       error={error}
       onError={setError}
       onSaved={() => {
-        navigation.goBack();
+        onSaved();
       }}
     />
   );

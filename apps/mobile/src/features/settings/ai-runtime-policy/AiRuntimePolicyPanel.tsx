@@ -49,7 +49,11 @@ const FIELDS: readonly {
   },
 ];
 
-export function AiRuntimePolicyPanel() {
+type AiRuntimePolicyPanelProps = {
+  onSaved?: () => void;
+};
+
+export function AiRuntimePolicyPanel({ onSaved }: AiRuntimePolicyPanelProps) {
   useSettingsLeaveGuard();
   const session = getMobileSettings();
   const [baseline, setBaseline] = useState(() => session.policy.getSnapshot());
@@ -102,6 +106,7 @@ export function AiRuntimePolicyPanel() {
               setForm(toForm(next));
               setSettingsDirty(false);
               setError(null);
+              onSaved?.();
             } catch (caught) {
               setError(caught instanceof Error ? caught.message : String(caught));
             }

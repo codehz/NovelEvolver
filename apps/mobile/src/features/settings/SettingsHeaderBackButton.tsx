@@ -1,13 +1,24 @@
 import { HeaderBackButton, type HeaderBackButtonProps } from "@react-navigation/elements";
 import IconChevronLeft from "~icons/codicon/chevron-left";
+import IconClose from "~icons/codicon/close";
 
 import { wash } from "../../shared/theme";
 import { settingsStyles } from "./settings-chrome";
 
-export function SettingsHeaderBackButton(props: HeaderBackButtonProps) {
-  const backImage: NonNullable<HeaderBackButtonProps["backImage"]> = ({ tintColor }) => (
-    <IconChevronLeft width={24} height={24} color={tintColor} />
-  );
+type SettingsHeaderBackButtonProps = HeaderBackButtonProps & {
+  icon?: "back" | "close";
+};
+
+export function SettingsHeaderBackButton({
+  icon = "back",
+  ...props
+}: SettingsHeaderBackButtonProps) {
+  const backImage: NonNullable<HeaderBackButtonProps["backImage"]> = ({ tintColor }) =>
+    icon === "close" ? (
+      <IconClose width={20} height={20} color={tintColor} />
+    ) : (
+      <IconChevronLeft width={24} height={24} color={tintColor} />
+    );
 
   return (
     <HeaderBackButton

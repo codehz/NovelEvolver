@@ -3,10 +3,8 @@ import { useEffect, useSyncExternalStore } from "react";
 type ConfirmLeave = () => Promise<boolean>;
 
 let dirty = false;
-let editorOpen = 0;
 let confirmLeave: ConfirmLeave | null = null;
 const dirtyListeners = new Set<() => void>();
-const editorListeners = new Set<() => void>();
 
 function emit(listeners: Set<() => void>): void {
   for (const listener of listeners) {
@@ -45,34 +43,6 @@ export function subscribeSettingsDirty(onStoreChange: () => void): () => void {
 
 export function useSettingsDirty(): boolean {
   return useSyncExternalStore(subscribeSettingsDirty, isSettingsDirty, isSettingsDirty);
-}
-
-export function isSettingsEditorOpen(): boolean {
-  return editorOpen > 0;
-}
-
-export function subscribeSettingsEditorOpen(onStoreChange: () => void): () => void {
-  editorListeners.add(onStoreChange);
-  return () => {
-    editorListeners.delete(onStoreChange);
-  };
-}
-
-export function beginSettingsEditor(): () => void {
-  editorOpen += 1;
-  emit(editorListeners);
-  return () => {
-    editorOpen -= 1;
-    emit(editorListeners);
-  };
-}
-
-export function useSettingsEditorOpen(): boolean {
-  return useSyncExternalStore(
-    subscribeSettingsEditorOpen,
-    isSettingsEditorOpen,
-    isSettingsEditorOpen,
-  );
 }
 
 export function setSettingsLeaveConfirm(next: ConfirmLeave | null): void {

@@ -1,10 +1,8 @@
 import { Header } from "@react-navigation/elements";
-import { StackActions } from "@react-navigation/native";
 import { Pressable, ScrollView, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import IconAdd from "~icons/codicon/add";
 
-import type { SplitMasterComponentProps } from "../../app/split-navigator";
 import { color, fontSize } from "../../shared/theme";
 import { AiAgentsList } from "./ai-agents/AiAgentsPanel";
 import { AiModelsList } from "./ai-models/AiModelsPanel";
@@ -12,50 +10,45 @@ import { AiPromptsList } from "./ai-prompts/AiPromptsPanel";
 import { SETTINGS_CATEGORIES, type SettingsCategoryId } from "./categories";
 import { settingsStyles } from "./settings-chrome";
 import { requestSettingsLeave } from "./settings-leave-guard";
+import type { SettingsDetail } from "./settings-navigation";
 import { SettingsHeaderBackButton } from "./SettingsHeaderBackButton";
 
-const EDITOR_CATEGORIES: Record<string, SettingsCategoryId> = {
-  ProviderEditor: "ai-models",
-  ModelEditor: "ai-models",
-  AgentEditor: "ai-agents",
-  PromptEditor: "ai-prompts",
-  AiRuntimePolicy: "ai-runtime-policy",
+type SettingsMasterPaneProps = {
+  wide: boolean;
+  selectedDetail: SettingsDetail | null;
+  onOpenDetail: (detail: SettingsDetail) => void;
+  onCloseSettings: () => void;
 };
 
-export function SettingsMasterPane(props: SplitMasterComponentProps) {
-  const wide = props.layout === "wide";
+function detailCategory(detail: SettingsDetail | null): SettingsCategoryId | null {
+  if (detail?.type === "provider-editor" || detail?.type === "model-editor") {
+    return "ai-models";
+  }
+  if (detail?.type === "agent-editor") {
+    return "ai-agents";
+  }
+  if (detail?.type === "prompt-editor") {
+    return "ai-prompts";
+  }
+  if (detail?.type === "ai-runtime-policy") {
+    return "ai-runtime-policy";
+  }
+  return null;
+}
+
+export function SettingsMasterPane({
+  wide,
+  selectedDetail,
+  onOpenDetail,
+  onCloseSettings,
+}: SettingsMasterPaneProps) {
   const insets = useSafeAreaInsets();
-  const detailRoute = props.state.routes.find((item) => item.name === "detail");
-  const detailState = detailRoute?.state;
-  const detailScreen =
-    detailState?.routes[detailState.index ?? detailState.routes.length - 1]?.name;
-  const selectedCategory = EDITOR_CATEGORIES[detailScreen ?? ""];
-  const highlightSelection = props.pane === "detail";
+  const selectedCategory = detailCategory(selectedDetail);
 
-  const openDetail = (screen: string, params: Record<string, string | undefined>) => {
-    const target = detailRoute?.state?.key;
-    if (target) {
-      props.navigation.navigate("detail");
-      props.navigation.dispatch({ ...StackActions.replace(screen, params), target });
-    } else {
-      props.navigation.navigate("detail", { screen, params });
-    }
-  };
-
-  const openEditor = (
-    category: SettingsCategoryId,
-    screen: string,
-    params: Record<string, string | undefined>,
-  ) => {
-    void category;
-    openDetail(screen, params);
-  };
-
-  const selectCategory = async (id: SettingsCategoryId) => {
-    if (id !== "ai-runtime-policy" || !(await requestSettingsLeave())) {
-      return;
-    }
-    openDetail("AiRuntimePolicy", {});
+  const openEditor = (detail: SettingsDetail) => {
+    void requestSettingsLeave().then((ok) => {
+      if (ok) onOpenDetail(detail);
+    });
   };
 
   return (
@@ -75,12 +68,7 @@ export function SettingsMasterPane(props: SplitMasterComponentProps) {
         headerShadowVisible={false}
         headerLeftContainerStyle={settingsStyles.headerLeftContainer}
         headerLeft={(headerLeftProps) => (
-          <SettingsHeaderBackButton
-            {...headerLeftProps}
-            onPress={() => {
-              props.navigation.goBack();
-            }}
-          />
+          <SettingsHeaderBackButton {...headerLeftProps} onPress={onCloseSettings} />
         )}
       />
       <Text style={[settingsStyles.railLabel, !wide && settingsStyles.compactSectionLabel]}>
@@ -88,31 +76,25 @@ export function SettingsMasterPane(props: SplitMasterComponentProps) {
       </Text>
       <ScrollView>
         {SETTINGS_CATEGORIES.map((category) => {
-          const selected =
-            highlightSelection &&
-            (selectedCategory === category.id ||
-              (category.id === "ai-runtime-policy" && detailScreen === "AiRuntimePolicy"));
-          const openCategory = () => {
-            void selectCategory(category.id);
-          };
+          const selected = selectedCategory === category.id;
           const addCategory = () => {
-            void requestSettingsLeave().then((ok) => {
-              if (!ok) return;
-              if (category.id === "ai-models") {
-                openEditor(category.id, "ProviderEditor", {});
-              } else if (category.id === "ai-agents") {
-                openEditor(category.id, "AgentEditor", {});
-              } else if (category.id === "ai-prompts") {
-                openEditor(category.id, "PromptEditor", {});
-              }
-            });
+            if (category.id === "ai-models") openEditor({ type: "provider-editor" });
+            if (category.id === "ai-agents") openEditor({ type: "agent-editor" });
+            if (category.id === "ai-prompts") openEditor({ type: "prompt-editor" });
           };
           return (
             <View key={category.id}>
               <View
                 style={[settingsStyles.categoryRow, selected && settingsStyles.railItemSelected]}
               >
-                <Pressable style={settingsStyles.categoryLabelButton} onPress={openCategory}>
+                <Pressable
+                  style={settingsStyles.categoryLabelButton}
+                  onPress={() => {
+                    if (category.id === "ai-runtime-policy") {
+                      openEditor({ type: "ai-runtime-policy" });
+                    }
+                  }}
+                >
                   <Text
                     style={[
                       wide ? settingsStyles.railItemTitle : settingsStyles.rowTitle,
@@ -139,36 +121,21 @@ export function SettingsMasterPane(props: SplitMasterComponentProps) {
               {category.id === "ai-models" ? (
                 <AiModelsList
                   onOpen={(target) => {
-                    void requestSettingsLeave().then((ok) => {
-                      if (!ok) return;
-                      if (target.type === "provider") {
-                        openEditor(category.id, "ProviderEditor", { id: target.id });
-                      } else if (target.type === "model") {
-                        openEditor(category.id, "ModelEditor", { id: target.id });
-                      } else {
-                        openEditor(category.id, "ModelEditor", { providerId: target.providerId });
-                      }
-                    });
+                    if (target.type === "provider") {
+                      openEditor({ type: "provider-editor", id: target.id });
+                    } else if (target.type === "model") {
+                      openEditor({ type: "model-editor", id: target.id });
+                    } else {
+                      openEditor({ type: "model-editor", providerId: target.providerId });
+                    }
                   }}
                 />
               ) : null}
               {category.id === "ai-agents" ? (
-                <AiAgentsList
-                  onOpen={(id) => {
-                    void requestSettingsLeave().then((ok) => {
-                      if (ok) openEditor(category.id, "AgentEditor", { id });
-                    });
-                  }}
-                />
+                <AiAgentsList onOpen={(id) => openEditor({ type: "agent-editor", id })} />
               ) : null}
               {category.id === "ai-prompts" ? (
-                <AiPromptsList
-                  onOpen={(id) => {
-                    void requestSettingsLeave().then((ok) => {
-                      if (ok) openEditor(category.id, "PromptEditor", { id });
-                    });
-                  }}
-                />
+                <AiPromptsList onOpen={(id) => openEditor({ type: "prompt-editor", id })} />
               ) : null}
             </View>
           );

@@ -1,5 +1,5 @@
 import type { AiPromptConfigPublic } from "@novelevolver/domain/settings/ai-settings";
-import { useFocusEffect, useNavigation, type StaticScreenProps } from "@react-navigation/native";
+import { useFocusEffect } from "@react-navigation/native";
 import { useCallback, useState } from "react";
 import { Pressable, ScrollView, Text, View } from "react-native";
 
@@ -48,17 +48,16 @@ export function AiPromptsList({ onOpen }: AiPromptsListProps) {
   );
 }
 
-type PromptEditorProps = StaticScreenProps<{ id?: string }>;
+type PromptEditorProps = {
+  id?: string;
+  onSaved: () => void;
+};
 
-export function PromptEditor({ route }: PromptEditorProps) {
+export function PromptEditor({ id, onSaved }: PromptEditorProps) {
   useSettingsLeaveGuard({ editor: true });
-  const navigation = useNavigation();
   const [error, setError] = useState<string | null>(null);
   const snapshot = getMobileSettings().prompts.getSnapshot();
-  const initial =
-    route.params.id == null
-      ? null
-      : (snapshot.prompts.find((prompt) => prompt.id === route.params.id) ?? null);
+  const initial = id == null ? null : (snapshot.prompts.find((prompt) => prompt.id === id) ?? null);
 
   return (
     <PromptForm
@@ -66,7 +65,7 @@ export function PromptEditor({ route }: PromptEditorProps) {
       error={error}
       onError={setError}
       onSaved={() => {
-        navigation.goBack();
+        onSaved();
       }}
     />
   );
