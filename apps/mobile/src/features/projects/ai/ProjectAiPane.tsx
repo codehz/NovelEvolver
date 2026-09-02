@@ -188,6 +188,8 @@ export function ProjectAiPane({ opened, onWorkspaceDirty }: ProjectAiPaneProps) 
     setTriggerQuery("");
   };
 
+  const filteredPromptItems = filterPromptItems(prompts, triggerQuery);
+  const filteredMentionItems = filterMentionCatalog(mentionItems, triggerQuery);
   const selectedModel = ai.models.find((model) => model.id === ai.snapshot.selectedModelId);
   const pickerTitle =
     picker === "history"
@@ -256,26 +258,28 @@ export function ProjectAiPane({ opened, onWorkspaceDirty }: ProjectAiPaneProps) 
               {triggerQuery !== "" ? ` · ${trigger}${triggerQuery}` : ""}
             </Text>
             {trigger === "/" ? (
-              <AiPickerList
-                inline
-                empty="还没有匹配的提示词。"
-                items={filterPromptItems(prompts, triggerQuery).map((prompt) => ({
-                  id: prompt.id,
-                  title: `/${prompt.slug}`,
-                  detail: prompt.title,
-                }))}
-                onSelect={(id) => {
-                  const prompt = prompts.find((item) => item.id === id);
-                  if (prompt) {
-                    handlePickPrompt(prompt);
-                  }
-                }}
-              />
-            ) : (
+              filteredPromptItems.length > 0 ? (
+                <AiPickerList
+                  inline
+                  empty="还没有匹配的提示词。"
+                  items={filteredPromptItems.map((prompt) => ({
+                    id: prompt.id,
+                    title: `/${prompt.slug}`,
+                    detail: prompt.title,
+                  }))}
+                  onSelect={(id) => {
+                    const prompt = prompts.find((item) => item.id === id);
+                    if (prompt) {
+                      handlePickPrompt(prompt);
+                    }
+                  }}
+                />
+              ) : null
+            ) : filteredMentionItems.length > 0 ? (
               <AiPickerList
                 inline
                 empty="没有匹配的项目节点。"
-                items={filterMentionCatalog(mentionItems, triggerQuery).map((item) => ({
+                items={filteredMentionItems.map((item) => ({
                   id: `${item.domain}:${item.id}`,
                   title: `@${item.label}`,
                   detail: `${kindLabelFor(item.kind, item.domain)} · ${item.displayPath}`,
@@ -287,7 +291,7 @@ export function ProjectAiPane({ opened, onWorkspaceDirty }: ProjectAiPaneProps) 
                   }
                 }}
               />
-            )}
+            ) : null}
           </View>
         ) : null}
         {ai.snapshot.openInteractions.length > 0 ? (
@@ -304,6 +308,13 @@ export function ProjectAiPane({ opened, onWorkspaceDirty }: ProjectAiPaneProps) 
             snapshot={ai.snapshot}
             models={ai.models}
             agents={ai.agents}
+            prompts={prompts.map((prompt) => ({
+              promptId: prompt.id,
+              slug: prompt.slug,
+              title: prompt.title,
+              body: prompt.prompt,
+            }))}
+            mentionItems={mentionItems}
             draft={draft}
             slash={slash}
             mentions={mentions}

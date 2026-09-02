@@ -10,10 +10,18 @@ import {
   AI_REASONING_LEVEL_LABELS,
   type AiReasoningLevel,
 } from "@novelevolver/domain/settings/ai-settings";
-import { useImperativeHandle, useRef, type Ref } from "react";
-import { Pressable, Text, View } from "react-native";
-import type { EnrichedTextInputInstance } from "react-native-enriched-html";
-import { EnrichedTextInput } from "react-native-enriched-html";
+import {
+  useEffect,
+  useImperativeHandle,
+  useMemo,
+  useRef,
+  useState,
+  type ComponentRef,
+  type Ref,
+} from "react";
+import { Pressable, Text, TextInput, View } from "react-native";
+import type { TextInput as TextInputType } from "react-native";
+import { Input, useMention, type MentionPartType, type Part } from "react-native-headless-mention";
 
 import { color } from "../../../shared/theme";
 import { aiStyles } from "./ai-chrome";
@@ -37,6 +45,8 @@ type AiComposerProps = {
   snapshot: AiChatSnapshot;
   models: AiChatSelectableModel[];
   agents: AiChatSelectableAgent[];
+  prompts: readonly AiChatSlashRef[];
+  mentionItems: readonly MentionCatalogItem[];
   draft: string;
   slash: AiChatSlashRef | null;
   mentions: readonly AiChatMentionRef[];
@@ -53,11 +63,21 @@ type AiComposerProps = {
   onStop: () => void;
 };
 
+function mentionValue(id: string, trigger: string): string {
+  return `<${trigger}${id}>`;
+}
+
+function plainText(parts: readonly Part[]): string {
+  return parts.map((part) => part.text).join("");
+}
+
 export function AiComposer({
   ref,
   snapshot,
   models,
   agents,
+  prompts,
+  mentionItems,
   draft,
   slash,
   mentions,
@@ -73,115 +93,178 @@ export function AiComposer({
   onSend,
   onStop,
 }: AiComposerProps) {
-  const inputRef = useRef<EnrichedTextInputInstance>(null);
-  const selectedModel = models.find((model) => model.id === snapshot.selectedModelId);
-  const selectedAgent = agents.find((agent) => agent.id === snapshot.selectedAgentId);
-  const showReasoning = (selectedModel?.availableReasoningLevels.length ?? 0) > 0;
-  const composerDisabled = snapshot.pending || snapshot.openInteractions.length > 0;
+  const inputRef = useRef<ComponentRef<typeof TextInput>>(null);
+  const mentionLabelOverrides = useRef(new Map<string, string>());
+  const [value, setValue] = useState(draft);
+  const mentionById = useMemo(
+    () => new Map(mentionItems.map((item) => [`${item.domain}:${item.id}`, item])),
+    [mentionItems],
+  );
+  const promptById = useMemo(
+    () => new Map(prompts.map((prompt) => [prompt.promptId, prompt])),
+    [prompts],
+  );
+  const partTypes = useMemo<MentionPartType[]>(
+    () => [
+      {
+        trigger: "/",
+        pattern: /<(?<trigger>\/)(?<id>[^>]+)>/g,
+        getLabel: ({ id }) => `/${promptById.get(id)?.slug ?? id}`,
+        textStyle: { color: color.accent },
+      },
+      {
+        trigger: "@",
+        allowedSpacesCount: 0,
+        pattern: /<(?<trigger>@)(?<id>[^>]+)>/g,
+        getLabel: ({ id }) =>
+          mentionLabelOverrides.current.get(id) ??
+          `@${mentionById.get(id)?.displayPath || mentionById.get(id)?.label || id}`,
+        textStyle: { color: color.accent },
+      },
+    ],
+    [mentionById, promptById],
+  );
+  const {
+    inputProps,
+    suggestions,
+    plainText: renderedText,
+  } = useMention({
+    value,
+    partTypes,
+    onChange: (nextValue, nextParts) => {
+      setValue(nextValue);
+      const nextText = plainText(nextParts);
+      onDraftChange(nextText);
+      const activeMentions = nextParts
+        .filter((part) => part.data?.trigger === "@")
+        .map((part) => {
+          const item = mentionById.get(part.data?.id ?? "");
+          return item
+            ? {
+                domain: item.domain,
+                id: item.id,
+                kind: item.kind,
+                label: item.label,
+                displayPath: item.displayPath,
+                token: part.text,
+              }
+            : null;
+        })
+        .filter((item): item is AiChatMentionRef => item !== null);
+      for (const mention of mentions) {
+        if (!activeMentions.some((active) => active.token === mention.token)) {
+          onRemoveMention(mention.token);
+        }
+      }
+      const nextSlash = nextParts.find((part) => part.data?.trigger === "/")?.data?.id;
+      if (nextSlash === undefined && slash !== null) {
+        onClearSlash();
+      }
+    },
+  });
+
+  useEffect(() => {
+    const slashKeyword = suggestions["/"]?.keyword;
+    const mentionKeyword = suggestions["@"]?.keyword;
+    if (slashKeyword !== undefined && value.startsWith("/")) {
+      onTriggerChange("/", slashKeyword);
+    } else if (mentionKeyword !== undefined) {
+      onTriggerChange("@", mentionKeyword);
+    } else {
+      onTriggerChange(null, "");
+    }
+  }, [onTriggerChange, suggestions]);
 
   useImperativeHandle(
     ref,
     () => ({
       clear: () => {
-        inputRef.current?.setValue("");
+        inputProps.onChangeText("");
         onDraftChange("");
         onClearSlash();
-        for (const mention of mentions) {
-          onRemoveMention(mention.token);
-        }
+        for (const mention of mentions) onRemoveMention(mention.token);
         onTriggerChange(null, "");
       },
       focus: () => inputRef.current?.focus(),
       startMention: (indicator) => {
         inputRef.current?.focus();
-        if (indicator === "/") {
-          inputRef.current?.setSelection(0, 0);
-        }
-        inputRef.current?.startMention(indicator);
+        if (indicator === "/" && value !== "") return;
+        const prefix = indicator === "/" || value === "" || value.endsWith(" ") ? "" : " ";
+        inputProps.onChangeText(`${value}${prefix}${indicator}`);
+        inputProps.setSelection({
+          start: value.length + prefix.length + 1,
+          end: value.length + prefix.length + 1,
+        });
       },
       setPrompt: (prompt) => {
-        inputRef.current?.setMention("/", `/${prompt.slug}`, {
-          "data-prompt-id": prompt.promptId,
-          "data-slug": prompt.slug,
-          "data-title": prompt.title,
-          "data-body": prompt.body,
-        });
-        onClearSlash();
+        suggestions["/"]?.onSuggestionPress({ id: prompt.promptId });
         onTriggerChange(null, "");
       },
       setMention: (item, token) => {
-        inputRef.current?.setMention("@", token, {
-          "data-domain": item.domain,
-          "data-id": item.id,
-          "data-kind": item.kind,
-          "data-label": item.label,
-          "data-display-path": item.displayPath,
-        });
+        mentionLabelOverrides.current.set(`${item.domain}:${item.id}`, token);
+        suggestions["@"]?.onSuggestionPress({ id: `${item.domain}:${item.id}` });
         onTriggerChange(null, "");
       },
       clearPrompt: () => {
-        const value = draft;
-        const marker = slash === null ? "" : `/${slash.slug}`;
-        if (marker !== "" && value.startsWith(marker)) {
-          inputRef.current?.setValue(value.slice(marker.length));
-          onDraftChange(value.slice(marker.length));
+        if (slash !== null) {
+          const prompt = promptById.get(slash.promptId);
+          const rawMarker =
+            prompt === undefined
+              ? mentionValue(slash.promptId, "/")
+              : mentionValue(prompt.promptId, "/");
+          const nextValue = value.startsWith(rawMarker) ? value.slice(rawMarker.length) : value;
+          inputProps.onChangeText(nextValue);
         }
         onClearSlash();
       },
       removeMention: (token) => {
-        const next = draft.replace(token, "");
-        inputRef.current?.setValue(next);
-        onDraftChange(next);
+        const mention = mentions.find((item) => item.token === token);
+        const nextValue =
+          mention === undefined
+            ? value
+            : value.replace(mentionValue(`${mention.domain}:${mention.id}`, "@"), "");
+        inputProps.onChangeText(nextValue);
+        onDraftChange(renderedText.replace(token, ""));
         onRemoveMention(token);
       },
-      getSendPayload: () => buildComposerSendPayload(draft, slash, mentions),
-      isEmpty: () => isComposerEmpty(draft, slash, mentions),
+      getSendPayload: () => buildComposerSendPayload(renderedText, slash, mentions),
+      isEmpty: () => isComposerEmpty(renderedText, slash, mentions),
     }),
-    [draft, mentions, onClearSlash, onDraftChange, onRemoveMention, onTriggerChange, slash],
+    [
+      inputProps,
+      mentions,
+      onClearSlash,
+      onDraftChange,
+      onRemoveMention,
+      onTriggerChange,
+      promptById,
+      renderedText,
+      slash,
+      suggestions,
+      value,
+    ],
   );
 
-  const canSend = !composerDisabled && !isComposerEmpty(draft, slash, mentions);
+  const selectedModel = models.find((model) => model.id === snapshot.selectedModelId);
+  const selectedAgent = agents.find((agent) => agent.id === snapshot.selectedAgentId);
+  const showReasoning = (selectedModel?.availableReasoningLevels.length ?? 0) > 0;
+  const composerDisabled = snapshot.pending || snapshot.openInteractions.length > 0;
+  const canSend = !composerDisabled && !isComposerEmpty(renderedText, slash, mentions);
 
   return (
     <View style={aiStyles.composer}>
-      <EnrichedTextInput
-        ref={inputRef}
-        mentionIndicators={["/", "@"]}
+      <Input
+        {...inputProps}
+        inputRef={inputRef as unknown as Ref<TextInputType>}
         editable={!composerDisabled}
         placeholder={slash != null ? "补充说明（可选）…" : "输入消息…"}
         placeholderTextColor={color.placeholder}
         cursorColor={color.accent}
         selectionColor={color.accent}
         scrollEnabled
+        multiline
         submitBehavior="newline"
         style={aiStyles.input}
-        onChangeText={(event) => {
-          const value = event.nativeEvent.value;
-          onDraftChange(value);
-          const activeMentions = mentions.filter((mention) => value.includes(mention.token));
-          for (const mention of mentions) {
-            if (!activeMentions.some((active) => active.token === mention.token)) {
-              onRemoveMention(mention.token);
-            }
-          }
-        }}
-        onStartMention={(indicator) => {
-          // Slash commands are available only when the draft is empty before `/`.
-          if (indicator === "/" && draft !== "") {
-            onTriggerChange(null, "");
-            return;
-          }
-          onTriggerChange(indicator as ComposerTrigger, "");
-        }}
-        onChangeMention={(event) => {
-          onTriggerChange(event.indicator as ComposerTrigger, event.text);
-        }}
-        onEndMention={(indicator) => {
-          onTriggerChange(null, "");
-          if (indicator === "/" && slash === null) {
-            onClearSlash();
-          }
-        }}
         onSubmitEditing={onSend}
       />
       <View style={aiStyles.composerToolbar}>
