@@ -77,8 +77,6 @@ export const settingsStyles = StyleSheet.create({
   categoryRow: {
     flexDirection: "row",
     alignItems: "center",
-    borderBottomWidth: 1,
-    borderBottomColor: color.border,
   },
   categoryLabelButton: {
     flex: 1,
