@@ -101,6 +101,7 @@ export function ProjectListScreen() {
       title: name,
       options: [
         { key: "rename", label: "改名" },
+        { key: "share", label: "分享" },
         { key: "delete", label: "删除", destructive: true },
       ],
     });
@@ -121,6 +122,15 @@ export function ProjectListScreen() {
         await overlay.alert({ title: "改名失败", message: errorMessage(error) });
       } finally {
         setBusy(false);
+      }
+      return;
+    }
+
+    if (action === "share") {
+      try {
+        manager.shareProject(project.id);
+      } catch (error) {
+        await overlay.alert({ title: "分享失败", message: errorMessage(error) });
       }
       return;
     }
@@ -232,7 +242,7 @@ function ProjectCard({ project, width, disabled, onOpen, onLongPress }: ProjectC
     <Pressable
       accessibilityRole="button"
       accessibilityLabel={`打开项目：${name}`}
-      accessibilityHint="长按可改名或删除"
+      accessibilityHint="长按可改名、分享或删除"
       disabled={disabled}
       onPress={onOpen}
       onLongPress={onLongPress}

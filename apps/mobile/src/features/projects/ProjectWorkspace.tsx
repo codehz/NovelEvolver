@@ -4,7 +4,6 @@ import { StyleSheet, View, useWindowDimensions } from "react-native";
 
 import type { ProjectTabParamList } from "../../app/navigation-types";
 import { color } from "../../shared/theme";
-import type { ContextMenuAnchor } from "../../shared/ui/context-menu-position";
 import { ProjectAiPane } from "./ai/ProjectAiPane";
 import type { EditorDocument } from "./editor/editor-document";
 import { ProjectEditorPane } from "./editor/ProjectEditorPane";
@@ -31,7 +30,6 @@ export type ProjectWorkspaceProps = Omit<
   onOpenResourceFile: (nodeId: string) => void;
   onAiWorkspaceDirty: () => void;
   onBack: () => void;
-  onProjectMenu: (anchor: ContextMenuAnchor) => void;
 };
 
 const ProjectTabs = createBottomTabNavigator<ProjectTabParamList>();
@@ -52,7 +50,7 @@ function resolveEditorNodes(
   };
 }
 
-type ProjectTabsProps = Omit<ProjectWorkspaceProps, "onBack" | "onProjectMenu"> & EditorNodes;
+type ProjectTabsProps = Omit<ProjectWorkspaceProps, "onBack"> & EditorNodes;
 
 function ProjectTabsView({
   opened,
@@ -133,7 +131,6 @@ export function ProjectWorkspace({
   onOpenResourceFile,
   onAiWorkspaceDirty,
   onBack,
-  onProjectMenu,
   topInset,
   ...explorerProps
 }: ProjectWorkspaceViewProps) {
@@ -173,7 +170,6 @@ export function ProjectWorkspace({
           onOpenChapter={onOpenChapter}
           onOpenResourceFile={onOpenResourceFile}
           onBack={onBack}
-          onProjectMenu={onProjectMenu}
         />
       </View>
       <View style={[styles.editorColumn, styles.wideColumn, topInsetStyle]}>

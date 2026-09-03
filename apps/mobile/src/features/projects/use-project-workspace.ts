@@ -15,10 +15,7 @@ import { useProjectManager } from "./ProjectManagerProvider";
 import type { ProjectWorkspaceProps } from "./ProjectWorkspace";
 import { containsResourceNode, resourceCreateParentId } from "./resource/resource-tree-flatten";
 
-export type ProjectWorkspaceModel = Omit<ProjectWorkspaceProps, "onBack" | "onProjectMenu"> & {
-  renameProject: () => Promise<void>;
-  shareProject: () => Promise<void>;
-};
+export type ProjectWorkspaceModel = Omit<ProjectWorkspaceProps, "onBack">;
 
 export function useProjectWorkspace(projectId: number): ProjectWorkspaceModel | null {
   const overlay = useOverlay();
@@ -116,20 +113,6 @@ export function useProjectWorkspace(projectId: number): ProjectWorkspaceModel | 
 
   const outline = opened.worktree.getManuscriptOutline();
   const resourceTree = opened.worktree.getResourceTree();
-  const renameProject = async () => {
-    const name = await overlay.prompt({
-      title: "重命名项目",
-      initialValue: opened.record.displayName ?? "",
-      confirmLabel: "保存",
-    });
-    if (name === null) return;
-    try {
-      const updated = manager.renameProject(projectId, name);
-      setOpened((current) => (current === null ? current : { ...current, record: updated }));
-    } catch (error) {
-      await overlay.alert({ title: "重命名失败", message: errorMessage(error) });
-    }
-  };
   const createFolder = async () => {
     const name = await overlay.prompt({
       title: "新建文件夹",
@@ -260,14 +243,6 @@ export function useProjectWorkspace(projectId: number): ProjectWorkspaceModel | 
       opened.worktree.moveResourceNode(sourceId, parentId);
     });
   };
-  const shareProject = async () => {
-    try {
-      manager.shareProject(opened.record.id);
-    } catch (error) {
-      await overlay.alert({ title: "分享失败", message: errorMessage(error) });
-    }
-  };
-
   const revertChange = async (changeId: string) => {
     try {
       const updated = opened.worktree.revertChange(changeId);
@@ -357,7 +332,5 @@ export function useProjectWorkspace(projectId: number): ProjectWorkspaceModel | 
       void revertAllChanges();
     },
     onCommitChanges: commitChanges,
-    renameProject,
-    shareProject,
   };
 }

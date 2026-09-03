@@ -7,17 +7,13 @@ import {
   useRoute,
 } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
-import { StyleSheet, Text, View, type GestureResponderEvent } from "react-native";
+import { StyleSheet, Text, View } from "react-native";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
-import IconKebabVertical from "~icons/codicon/kebab-vertical";
 
 import type { ProjectTabParamList, RootStackParamList } from "../../app/navigation-types";
-import { color, fontFamily, fontSize, space } from "../../shared/theme";
-import type { ContextMenuAnchor } from "../../shared/ui/context-menu-position";
-import { useOverlay } from "../../shared/ui/OverlayHost";
+import { color, fontFamily, fontSize } from "../../shared/theme";
 import { settingsStyles } from "../settings/settings-chrome";
 import { SettingsHeaderBackButton } from "../settings/SettingsHeaderBackButton";
-import { SettingsHeaderButton } from "../settings/SettingsHeaderButton";
 import { ProjectHeaderTabs } from "./ProjectHeaderTabs";
 import { ProjectWorkspace, useProjectLayout } from "./ProjectWorkspace";
 import { useProjectWorkspace } from "./use-project-workspace";
@@ -25,7 +21,6 @@ import { useProjectWorkspace } from "./use-project-workspace";
 export function ProjectScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const route = useRoute();
-  const overlay = useOverlay();
   const projectId = (route.params as RootStackParamList["Project"]).projectId;
   const workspace = useProjectWorkspace(projectId);
   const layout = useProjectLayout();
@@ -57,7 +52,6 @@ export function ProjectScreen() {
     );
   }
 
-  const { renameProject, shareProject, ...workspaceProps } = workspace;
   const goBack = () => {
     navigation.goBack();
   };
@@ -70,26 +64,6 @@ export function ProjectScreen() {
       target: nestedTab.key,
     });
   };
-  const showProjectMenu = (anchor: ContextMenuAnchor) => {
-    void overlay
-      .menu({
-        anchor,
-        title: workspace.opened.record.displayName?.trim() || "未命名项目",
-        options: [
-          { key: "rename", label: "改名" },
-          { key: "share", label: "分享" },
-        ],
-      })
-      .then((action) => {
-        if (action === "rename") {
-          return renameProject();
-        }
-        if (action === "share") {
-          return shareProject();
-        }
-      });
-  };
-
   return (
     <SafeAreaView edges={["bottom"]} style={styles.safeArea}>
       {layout === "compact" ? (
@@ -105,26 +79,11 @@ export function ProjectScreen() {
           headerShadowVisible={false}
           headerLeftContainerStyle={settingsStyles.headerLeftContainer}
           headerLeft={(props) => <SettingsHeaderBackButton {...props} onPress={goBack} />}
-          headerRightContainerStyle={styles.headerRight}
-          headerRight={() => (
-            <SettingsHeaderButton
-              Icon={IconKebabVertical}
-              label="项目菜单"
-              onPress={(event: GestureResponderEvent) => {
-                showProjectMenu({
-                  type: "point",
-                  x: event.nativeEvent.pageX,
-                  y: event.nativeEvent.pageY,
-                });
-              }}
-            />
-          )}
         />
       ) : null}
       <ProjectWorkspace
-        {...workspaceProps}
+        {...workspace}
         onBack={goBack}
-        onProjectMenu={showProjectMenu}
         topInset={layout === "wide" ? insets.top : 0}
       />
     </SafeAreaView>
@@ -143,9 +102,6 @@ const styles = StyleSheet.create({
     maxWidth: "100%",
     marginHorizontal: 0,
     alignItems: "center",
-  },
-  headerRight: {
-    paddingEnd: space[4],
   },
   center: { flex: 1, alignItems: "center", justifyContent: "center" },
   text: { color: color.muted, fontFamily: fontFamily.sans, fontSize: fontSize.sm },
