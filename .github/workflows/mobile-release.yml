@@ -1,0 +1,120 @@
+name: mobile-release
+
+on:
+  push:
+    branches: [main]
+    tags: ["v*"]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: mobile-release-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+env:
+  HUSKY: "0"
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          # PR builds must use the source commit, not GitHub's synthetic merge commit.
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 0
+
+      - name: Fetch main history
+        run: git fetch origin main --no-tags
+
+      - name: Calculate Android version
+        id: version
+        shell: bash
+        run: |
+          set -euo pipefail
+          merge_base="$(git merge-base HEAD origin/main)"
+          if [[ -z "$merge_base" ]]; then
+            echo "Could not find a common ancestor with origin/main" >&2
+            exit 1
+          fi
+
+          version_code="$(git rev-list --count --first-parent "$merge_base")"
+          if ! [[ "$version_code" =~ ^[1-9][0-9]*$ ]]; then
+            echo "Invalid Android version code: $version_code" >&2
+            exit 1
+          fi
+
+          echo "merge_base=$merge_base" >> "$GITHUB_OUTPUT"
+          echo "version_code=$version_code" >> "$GITHUB_OUTPUT"
+          echo "Using Android versionCode=$version_code from main ancestor $merge_base"
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+          cache: gradle
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Prepare mobile native resources
+        run: |
+          bun run mobile:fonts
+          bun run sqlite:ensure
+
+      - name: Build release APK
+        working-directory: apps/mobile/android
+        env:
+          VERSION_CODE: ${{ steps.version.outputs.version_code }}
+        run: |
+          ./gradlew assembleRelease --no-daemon \
+            -PVERSION_CODE="$VERSION_CODE" \
+            -PVERSION_NAME="0.0.$VERSION_CODE"
+
+      - name: Rename APK
+        env:
+          VERSION_CODE: ${{ steps.version.outputs.version_code }}
+        run: |
+          mv apps/mobile/android/app/build/outputs/apk/release/app-release.apk \
+            "apps/mobile/android/app/build/outputs/apk/release/NovelEvolver-android-${VERSION_CODE}-${GITHUB_SHA}.apk"
+
+      - name: Upload APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: NovelEvolver-android-${{ github.sha }}
+          path: apps/mobile/android/app/build/outputs/apk/release/*.apk
+          if-no-files-found: error
+          retention-days: 14
+
+  release:
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: [build]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Download APK artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: NovelEvolver-android-${{ github.sha }}
+          path: artifacts
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: artifacts/*.apk
+          generate_release_notes: true
+          prerelease: ${{ contains(github.ref_name, '-') }}
