@@ -1,5 +1,6 @@
 import { StatusBar, StyleSheet } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
+import { KeyboardProvider } from "react-native-keyboard-controller";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 
 import { ProjectManagerProvider } from "../features/projects/ProjectManagerProvider";
@@ -10,16 +11,23 @@ import { RootNavigation } from "./navigation";
 export function App() {
   return (
     <GestureHandlerRootView style={styles.root}>
-      <SafeAreaProvider>
-        <StatusBar barStyle="light-content" />
-        <ProjectManagerProvider>
-          <OverlayHost>
-            <SettingsLeaveBinder>
-              <RootNavigation />
-            </SettingsLeaveBinder>
-          </OverlayHost>
-        </ProjectManagerProvider>
-      </SafeAreaProvider>
+      <KeyboardProvider
+        preload={false}
+        statusBarTranslucent
+        navigationBarTranslucent
+        preserveEdgeToEdge
+      >
+        <SafeAreaProvider>
+          <StatusBar barStyle="light-content" />
+          <ProjectManagerProvider>
+            <OverlayHost>
+              <SettingsLeaveBinder>
+                <RootNavigation />
+              </SettingsLeaveBinder>
+            </OverlayHost>
+          </ProjectManagerProvider>
+        </SafeAreaProvider>
+      </KeyboardProvider>
     </GestureHandlerRootView>
   );
 }

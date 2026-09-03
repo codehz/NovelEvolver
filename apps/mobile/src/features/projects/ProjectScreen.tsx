@@ -8,6 +8,7 @@ import {
 } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { StyleSheet, Text, View } from "react-native";
+import { KeyboardAvoidingView } from "react-native-keyboard-controller";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 
 import type { ProjectTabParamList, RootStackParamList } from "../../app/navigation-types";
@@ -66,32 +67,35 @@ export function ProjectScreen() {
   };
   return (
     <SafeAreaView edges={["bottom"]} style={styles.safeArea}>
-      {layout === "compact" ? (
-        <Header
-          title=""
-          headerTitle={() => (
-            <ProjectHeaderTabs activeTab={currentTab ?? "Explorer"} onSelectTab={selectTab} />
-          )}
-          headerTitleAlign="center"
-          headerTitleContainerStyle={styles.headerTitle}
-          headerTintColor={color.accent}
-          headerStyle={settingsStyles.header}
-          headerShadowVisible={false}
-          headerLeftContainerStyle={settingsStyles.headerLeftContainer}
-          headerLeft={(props) => <SettingsHeaderBackButton {...props} onPress={goBack} />}
+      <KeyboardAvoidingView style={styles.keyboardAvoiding} behavior="padding">
+        {layout === "compact" ? (
+          <Header
+            title=""
+            headerTitle={() => (
+              <ProjectHeaderTabs activeTab={currentTab ?? "Explorer"} onSelectTab={selectTab} />
+            )}
+            headerTitleAlign="center"
+            headerTitleContainerStyle={styles.headerTitle}
+            headerTintColor={color.accent}
+            headerStyle={settingsStyles.header}
+            headerShadowVisible={false}
+            headerLeftContainerStyle={settingsStyles.headerLeftContainer}
+            headerLeft={(props) => <SettingsHeaderBackButton {...props} onPress={goBack} />}
+          />
+        ) : null}
+        <ProjectWorkspace
+          {...workspace}
+          onBack={goBack}
+          topInset={layout === "wide" ? insets.top : 0}
         />
-      ) : null}
-      <ProjectWorkspace
-        {...workspace}
-        onBack={goBack}
-        topInset={layout === "wide" ? insets.top : 0}
-      />
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
   safeArea: { flex: 1, backgroundColor: color.background },
+  keyboardAvoiding: { flex: 1, minHeight: 0 },
   headerTitle: {
     position: "absolute",
     top: 0,

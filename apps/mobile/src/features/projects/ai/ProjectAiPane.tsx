@@ -12,7 +12,7 @@ import {
   type AiReasoningLevel,
 } from "@novelevolver/domain/settings/ai-settings";
 import { useRef, useState, type ComponentRef } from "react";
-import { KeyboardAvoidingView, Platform, Pressable, Text, View } from "react-native";
+import { Pressable, Text, View } from "react-native";
 import IconAdd from "~icons/codicon/add";
 import IconBeaker from "~icons/codicon/beaker";
 import IconHistory from "~icons/codicon/history";
@@ -360,10 +360,7 @@ export function ProjectAiPane({ opened, onWorkspaceDirty, mediumHeader }: Projec
   );
 
   return (
-    <KeyboardAvoidingView
-      style={aiStyles.root}
-      behavior={Platform.OS === "ios" ? "padding" : undefined}
-    >
+    <View style={aiStyles.root}>
       {mediumHeader ? (
         <ProjectMediumHeader
           {...mediumHeader}
@@ -487,6 +484,6 @@ export function ProjectAiPane({ opened, onWorkspaceDirty, mediumHeader }: Projec
           />
         )}
       </View>
-    </KeyboardAvoidingView>
+    </View>
   );
 }
