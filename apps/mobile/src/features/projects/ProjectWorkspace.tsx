@@ -1,5 +1,6 @@
 import type { ManuscriptNode, ResourceTreeNode } from "@novelevolver/domain/worktree";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
+import { TabActions } from "@react-navigation/native";
 import { StyleSheet, View, useWindowDimensions } from "react-native";
 
 import type { ProjectTabParamList } from "../../app/navigation-types";
@@ -10,18 +11,22 @@ import { ProjectEditorPane } from "./editor/ProjectEditorPane";
 import { ProjectExplorerPane, type ProjectExplorerPaneProps } from "./explorer/ProjectExplorerPane";
 import type { OpenedProject } from "./git/repository-manager";
 
+export const PROJECT_MEDIUM_BREAKPOINT = 480;
 export const PROJECT_WIDE_BREAKPOINT = 1024;
 const PROJECT_MANUSCRIPT_WIDTH = 280;
 const PROJECT_AI_WIDTH = 288;
 
-export function useProjectLayout(): "compact" | "wide" {
+export type ProjectLayout = "compact" | "medium" | "wide";
+
+export function useProjectLayout(): ProjectLayout {
   const { width } = useWindowDimensions();
-  return width < PROJECT_WIDE_BREAKPOINT ? "compact" : "wide";
+  if (width < PROJECT_MEDIUM_BREAKPOINT) return "compact";
+  return width < PROJECT_WIDE_BREAKPOINT ? "medium" : "wide";
 }
 
 export type ProjectWorkspaceProps = Omit<
   ProjectExplorerPaneProps,
-  "onOpenChapter" | "onOpenResourceFile"
+  "onOpenChapter" | "onOpenResourceFile" | "mediumHeader"
 > & {
   opened: OpenedProject;
   document: EditorDocument | null;
@@ -50,7 +55,11 @@ function resolveEditorNodes(
   };
 }
 
-type ProjectTabsProps = Omit<ProjectWorkspaceProps, "onBack"> & EditorNodes;
+type ProjectTabsProps = Omit<ProjectWorkspaceProps, "onBack"> &
+  EditorNodes & {
+    layout: Exclude<ProjectLayout, "wide">;
+    onBack: () => void;
+  };
 
 function ProjectTabsView({
   opened,
@@ -61,6 +70,8 @@ function ProjectTabsView({
   onOpenChapter,
   onOpenResourceFile,
   onAiWorkspaceDirty,
+  layout,
+  onBack,
   ...explorerProps
 }: ProjectTabsProps) {
   return (
@@ -77,6 +88,17 @@ function ProjectTabsView({
         {({ navigation }) => (
           <ProjectExplorerPane
             {...explorerProps}
+            mediumHeader={
+              layout === "medium"
+                ? {
+                    activeTab: "Explorer",
+                    onSelectTab: (tab) => {
+                      navigation.dispatch(TabActions.jumpTo(tab));
+                    },
+                    onBack,
+                  }
+                : undefined
+            }
             onCreateChapter={() =>
               explorerProps.onCreateChapter().then((created) => {
                 if (created) navigation.navigate("Editor");
@@ -101,7 +123,7 @@ function ProjectTabsView({
         )}
       </ProjectTabs.Screen>
       <ProjectTabs.Screen name="Editor" options={{ title: "编辑器" }}>
-        {() => (
+        {({ navigation }) => (
           <ProjectEditorPane
             opened={opened}
             document={document}
@@ -109,11 +131,38 @@ function ProjectTabsView({
             resource={resource}
             worktreeRevision={worktreeRevision}
             onWorkspaceChanged={onAiWorkspaceDirty}
+            mediumHeader={
+              layout === "medium"
+                ? {
+                    activeTab: "Editor",
+                    onSelectTab: (tab) => {
+                      navigation.dispatch(TabActions.jumpTo(tab));
+                    },
+                    onBack,
+                  }
+                : undefined
+            }
           />
         )}
       </ProjectTabs.Screen>
       <ProjectTabs.Screen name="AI" options={{ title: "AI" }}>
-        {() => <ProjectAiPane opened={opened} onWorkspaceDirty={onAiWorkspaceDirty} />}
+        {({ navigation }) => (
+          <ProjectAiPane
+            opened={opened}
+            onWorkspaceDirty={onAiWorkspaceDirty}
+            mediumHeader={
+              layout === "medium"
+                ? {
+                    activeTab: "AI",
+                    onSelectTab: (tab) => {
+                      navigation.dispatch(TabActions.jumpTo(tab));
+                    },
+                    onBack,
+                  }
+                : undefined
+            }
+          />
+        )}
       </ProjectTabs.Screen>
     </ProjectTabs.Navigator>
   );
@@ -140,7 +189,7 @@ export function ProjectWorkspace({
     explorerProps.outline,
     explorerProps.resourceTree,
   );
-  if (layout === "compact") {
+  if (layout !== "wide") {
     return (
       <View style={styles.compact}>
         <ProjectTabsView
@@ -152,6 +201,8 @@ export function ProjectWorkspace({
           onOpenChapter={onOpenChapter}
           onOpenResourceFile={onOpenResourceFile}
           onAiWorkspaceDirty={onAiWorkspaceDirty}
+          layout={layout}
+          onBack={onBack}
           {...explorerProps}
         />
       </View>

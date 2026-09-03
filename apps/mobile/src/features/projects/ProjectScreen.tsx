@@ -32,7 +32,7 @@ export function ProjectScreen() {
   const currentTab = nestedTab?.routes[nestedTab.index ?? 0]?.name as
     | keyof ProjectTabParamList
     | undefined;
-  usePreventRemove(layout === "compact" && currentTab != null && currentTab !== "Explorer", () => {
+  usePreventRemove(layout !== "wide" && currentTab != null && currentTab !== "Explorer", () => {
     if (nestedTab?.key == null) {
       return;
     }

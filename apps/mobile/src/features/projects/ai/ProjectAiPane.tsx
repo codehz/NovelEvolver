@@ -23,6 +23,7 @@ import { SettingsHeaderButton } from "../../settings/SettingsHeaderButton";
 import { errorMessage } from "../error-message";
 import type { OpenedProject } from "../git/repository-manager";
 import { projectPaneStyles } from "../project-pane-chrome";
+import { ProjectMediumHeader, type ProjectMediumHeaderNavigation } from "../ProjectMediumHeader";
 import { aiStyles } from "./ai-chrome";
 import { AiAskUserBar } from "./AiAskUserBar";
 import { AiComposer, type AiComposerHandle } from "./AiComposer";
@@ -52,9 +53,10 @@ type AiPicker =
 type ProjectAiPaneProps = {
   opened: OpenedProject;
   onWorkspaceDirty: () => void;
+  mediumHeader?: ProjectMediumHeaderNavigation;
 };
 
-export function ProjectAiPane({ opened, onWorkspaceDirty }: ProjectAiPaneProps) {
+export function ProjectAiPane({ opened, onWorkspaceDirty, mediumHeader }: ProjectAiPaneProps) {
   const overlay = useOverlay();
   const ai = useProjectAi(opened, onWorkspaceDirty);
   const composerRef = useRef<AiComposerHandle>(null);
@@ -210,37 +212,53 @@ export function ProjectAiPane({ opened, onWorkspaceDirty }: ProjectAiPaneProps) 
                     ? "插入提示词"
                     : "提及节点"
                   : "测试场景";
+  const headerActions = (
+    <>
+      {__DEV__ ? (
+        <SettingsHeaderButton
+          Icon={IconBeaker}
+          label="测试场景"
+          onPress={() => {
+            setPicker("scenarios");
+          }}
+        />
+      ) : null}
+      <SettingsHeaderButton
+        Icon={IconHistory}
+        label="历史会话"
+        onPress={() => {
+          setPicker("history");
+        }}
+      />
+      <SettingsHeaderButton Icon={IconAdd} label="新建会话" onPress={handleCreate} />
+    </>
+  );
 
   return (
     <KeyboardAvoidingView
       style={aiStyles.root}
       behavior={Platform.OS === "ios" ? "padding" : undefined}
     >
-      <View style={[projectPaneStyles.header, aiStyles.header]}>
-        <View style={aiStyles.headerTitleWrap}>
-          <Text style={aiStyles.title}>AI</Text>
-          <Text style={aiStyles.subtitle}>助手</Text>
+      {mediumHeader ? (
+        <ProjectMediumHeader
+          {...mediumHeader}
+          context={
+            <View style={aiStyles.headerTitleWrap}>
+              <Text style={aiStyles.title}>AI</Text>
+              <Text style={aiStyles.subtitle}>助手</Text>
+            </View>
+          }
+          actions={headerActions}
+        />
+      ) : (
+        <View style={[projectPaneStyles.header, aiStyles.header]}>
+          <View style={aiStyles.headerTitleWrap}>
+            <Text style={aiStyles.title}>AI</Text>
+            <Text style={aiStyles.subtitle}>助手</Text>
+          </View>
+          <View style={aiStyles.headerActions}>{headerActions}</View>
         </View>
-        <View style={aiStyles.headerActions}>
-          {__DEV__ ? (
-            <SettingsHeaderButton
-              Icon={IconBeaker}
-              label="测试场景"
-              onPress={() => {
-                setPicker("scenarios");
-              }}
-            />
-          ) : null}
-          <SettingsHeaderButton
-            Icon={IconHistory}
-            label="历史会话"
-            onPress={() => {
-              setPicker("history");
-            }}
-          />
-          <SettingsHeaderButton Icon={IconAdd} label="新建会话" onPress={handleCreate} />
-        </View>
-      </View>
+      )}
 
       <AiMessageList
         snapshot={ai.snapshot}
