@@ -1,4 +1,4 @@
-import { useRef } from "react";
+import { useEffect, useRef } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { GestureDetector, usePanGesture } from "react-native-gesture-handler";
 import Animated, {
@@ -155,7 +155,9 @@ export function ExplorerTreeActionTooltip({
   }
   const shown = lastRef.current;
   const opacity = useSharedValue(0);
-  opacity.value = withTiming(visible ? 1 : 0, OVERLAY_TIMING);
+  useEffect(() => {
+    opacity.value = withTiming(visible ? 1 : 0, OVERLAY_TIMING);
+  }, [opacity, visible]);
   const fadeStyle = useAnimatedStyle(() => ({ opacity: opacity.value }));
   const centerX = explorerTreeActionCenterX({
     action: shown.action,
@@ -200,9 +202,13 @@ function ExplorerTreeRowActions({ activeAction, visible }: ExplorerTreeRowAction
   const actionsOpacity = useSharedValue(0);
   const renameProgress = useSharedValue(0);
   const deleteProgress = useSharedValue(0);
-  actionsOpacity.value = withTiming(visible ? 1 : 0, OVERLAY_TIMING);
-  renameProgress.value = withTiming(activeAction === "rename" ? 1 : 0, OVERLAY_TIMING);
-  deleteProgress.value = withTiming(activeAction === "delete" ? 1 : 0, OVERLAY_TIMING);
+  useEffect(() => {
+    actionsOpacity.value = withTiming(visible ? 1 : 0, OVERLAY_TIMING);
+  }, [actionsOpacity, visible]);
+  useEffect(() => {
+    renameProgress.value = withTiming(activeAction === "rename" ? 1 : 0, OVERLAY_TIMING);
+    deleteProgress.value = withTiming(activeAction === "delete" ? 1 : 0, OVERLAY_TIMING);
+  }, [activeAction, deleteProgress, renameProgress]);
   const actionsStyle = useAnimatedStyle(() => ({ opacity: actionsOpacity.value }));
   const renameStyle = useAnimatedStyle(() => ({
     backgroundColor: interpolateColor(
@@ -270,11 +276,10 @@ export function ExplorerTreeRow({
     absoluteX: 0,
     absoluteY: 0,
   });
-  const ghostOpacity = useSharedValue(1);
-  const ghostRef = useRef(ghost);
-  if (ghost) ghostOpacity.value = withTiming(EXPLORER_TREE_GHOST_OPACITY, OVERLAY_TIMING);
-  else if (ghostRef.current) ghostOpacity.value = withTiming(1, OVERLAY_TIMING);
-  ghostRef.current = ghost;
+  const ghostOpacity = useSharedValue(ghost ? EXPLORER_TREE_GHOST_OPACITY : 1);
+  useEffect(() => {
+    ghostOpacity.value = withTiming(ghost ? EXPLORER_TREE_GHOST_OPACITY : 1, OVERLAY_TIMING);
+  }, [ghost, ghostOpacity]);
   const ghostStyle = useAnimatedStyle(() => ({ opacity: ghostOpacity.value }));
   dragEnabledRef.current = dragEnabled;
   onDragActivateRef.current = onDragActivate;

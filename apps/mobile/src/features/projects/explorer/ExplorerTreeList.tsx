@@ -63,34 +63,36 @@ function ExplorerTreeRowSlot({
   const enteredRef = useRef(false);
   const fadedRef = useRef(false);
   const yRef = useRef(y);
-  if (fade) {
-    shift.value = y;
-    if (!fadedRef.current) {
-      opacity.value = 0;
-      opacity.value = withTiming(1, OVERLAY_TIMING);
-      fadedRef.current = true;
-    }
-  } else if (enter) {
-    shift.value = y;
-    if (!enteredRef.current) {
-      opacity.value = 0;
-      opacity.value = withTiming(1, OVERLAY_TIMING);
-      if (!mountedRef.current) {
-        shift.value = y - ROW_ENTER_Y_OFFSET;
-        shift.value = withTiming(y, OVERLAY_TIMING);
+  useEffect(() => {
+    if (fade) {
+      shift.value = y;
+      if (!fadedRef.current) {
+        opacity.value = 0;
+        opacity.value = withTiming(1, OVERLAY_TIMING);
+        fadedRef.current = true;
       }
-      enteredRef.current = true;
+    } else if (enter) {
+      shift.value = y;
+      if (!enteredRef.current) {
+        opacity.value = 0;
+        opacity.value = withTiming(1, OVERLAY_TIMING);
+        if (!mountedRef.current) {
+          shift.value = y - ROW_ENTER_Y_OFFSET;
+          shift.value = withTiming(y, OVERLAY_TIMING);
+        }
+        enteredRef.current = true;
+      }
+    } else if (!mountedRef.current) {
+      shift.value = y;
+      opacity.value = 1;
+    } else if (yRef.current !== y) {
+      shift.value = withTiming(y, OVERLAY_TIMING);
     }
-  } else if (!mountedRef.current) {
-    shift.value = y;
-    opacity.value = 1;
-  } else if (yRef.current !== y) {
-    shift.value = withTiming(y, OVERLAY_TIMING);
-  }
-  if (!fade) fadedRef.current = false;
-  if (!enter) enteredRef.current = false;
-  mountedRef.current = true;
-  yRef.current = y;
+    if (!fade) fadedRef.current = false;
+    if (!enter) enteredRef.current = false;
+    mountedRef.current = true;
+    yRef.current = y;
+  }, [enter, fade, opacity, shift, y]);
   const style = useAnimatedStyle(() => ({
     transform: [{ translateY: shift.value }],
     opacity: opacity.value,

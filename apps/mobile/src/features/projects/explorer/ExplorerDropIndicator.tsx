@@ -1,4 +1,4 @@
-import { useRef } from "react";
+import { useEffect, useRef } from "react";
 import { StyleSheet } from "react-native";
 import Animated, {
   interpolate,
@@ -71,13 +71,16 @@ export function ExplorerDropIndicator({ preview }: ExplorerDropIndicatorProps) {
   const visibleRef = useRef(false);
   const geomRef = useRef<IndicatorGeom | null>(null);
 
-  if (preview === null) {
-    if (visibleRef.current) {
-      opacity.value = withTiming(0, OVERLAY_TIMING);
-      visibleRef.current = false;
-      geomRef.current = null;
+  useEffect(() => {
+    if (preview === null) {
+      if (visibleRef.current) {
+        opacity.value = withTiming(0, OVERLAY_TIMING);
+        visibleRef.current = false;
+        geomRef.current = null;
+      }
+      return;
     }
-  } else {
+
     const geom = previewGeom(preview);
     if (!visibleRef.current) {
       top.value = geom.top;
@@ -95,7 +98,7 @@ export function ExplorerDropIndicator({ preview }: ExplorerDropIndicatorProps) {
       mode.value = withTiming(geom.mode, OVERLAY_TIMING);
     }
     geomRef.current = geom;
-  }
+  }, [height, left, mode, opacity, preview, right, top]);
 
   const style = useAnimatedStyle(() => ({
     opacity: opacity.value,
