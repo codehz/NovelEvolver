@@ -35,7 +35,7 @@ import {
   type ProjectHeaderContribution,
 } from "./ProjectMediumHeader";
 
-export const PROJECT_MEDIUM_BREAKPOINT = 480;
+export const PROJECT_MEDIUM_BREAKPOINT = 400;
 export const PROJECT_WIDE_BREAKPOINT = 960;
 const PROJECT_MANUSCRIPT_WIDTH = 280;
 const PROJECT_AI_WIDTH = 320;
