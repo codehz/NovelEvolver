@@ -68,7 +68,7 @@ export function SettingsMasterPane({
         title="设置"
         headerTintColor={color.accent}
         headerTitleStyle={masterHeaderTitleStyle}
-        headerStyle={wide ? masterHeaderWideStyle : masterHeaderStyle}
+        headerStyle={settingsStyles.header}
         headerTitleAlign={wide ? "left" : undefined}
         headerShadowVisible={false}
         headerLeftContainerStyle={settingsStyles.headerLeftContainer}
@@ -184,8 +184,6 @@ export function SettingsMasterPane({
   );
 }
 
-const masterHeaderStyle = { backgroundColor: color.background };
-const masterHeaderWideStyle = { backgroundColor: color.surface };
 const masterHeaderTitleStyle = {
   color: color.foreground,
   fontSize: fontSize.md,

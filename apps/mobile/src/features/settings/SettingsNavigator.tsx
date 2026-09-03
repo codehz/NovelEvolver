@@ -23,7 +23,7 @@ import { AgentEditor } from "./ai-agents/AiAgentsPanel";
 import { ModelEditor, ProviderEditor } from "./ai-models/AiModelsPanel";
 import { PromptEditor } from "./ai-prompts/AiPromptsPanel";
 import { AiRuntimePolicyPanel } from "./ai-runtime-policy/AiRuntimePolicyPanel";
-import { SETTINGS_RAIL_WIDTH } from "./settings-chrome";
+import { settingsStyles, SETTINGS_RAIL_WIDTH } from "./settings-chrome";
 import type { SettingsDetailActionChange } from "./settings-detail-actions";
 import { requestSettingsLeave, useSettingsDirty } from "./settings-leave-guard";
 import {
@@ -199,7 +199,7 @@ function SettingsDetailView({ detail, wide, onBack, onSaved }: SettingsDetailVie
     <View style={{ flex: 1, backgroundColor: color.background }}>
       <Header
         title={detailTitle(detail)}
-        headerStyle={{ backgroundColor: color.background }}
+        headerStyle={settingsStyles.header}
         headerTintColor={color.accent}
         headerTitleStyle={{
           color: color.foreground,

@@ -99,7 +99,7 @@ export function ProjectScreen() {
             <ProjectHeaderTabs activeTab={currentTab ?? "Explorer"} onSelectTab={selectTab} />
           )}
           headerTintColor={color.accent}
-          headerStyle={styles.header}
+          headerStyle={settingsStyles.header}
           headerShadowVisible={false}
           headerLeftContainerStyle={settingsStyles.headerLeftContainer}
           headerLeft={(props) => <SettingsHeaderBackButton {...props} onPress={goBack} />}
@@ -120,11 +120,6 @@ export function ProjectScreen() {
 
 const styles = StyleSheet.create({
   safeArea: { flex: 1, backgroundColor: color.background },
-  header: {
-    backgroundColor: color.background,
-    borderBottomWidth: 1,
-    borderBottomColor: color.border,
-  },
   headerRight: {
     paddingEnd: space[4],
   },

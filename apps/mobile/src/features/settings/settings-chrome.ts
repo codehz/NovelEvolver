@@ -10,6 +10,9 @@ export const settingsStyles = StyleSheet.create({
     flex: 1,
     backgroundColor: color.background,
   },
+  header: {
+    backgroundColor: color.surface,
+  },
   headerBack: {
     marginVertical: 0,
     marginHorizontal: 0,
