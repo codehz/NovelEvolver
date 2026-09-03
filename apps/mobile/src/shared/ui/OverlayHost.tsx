@@ -1,4 +1,9 @@
-import { type StaticScreenProps, useNavigation } from "@react-navigation/native";
+import {
+  StackActions,
+  type StaticScreenProps,
+  useNavigation,
+  useRoute,
+} from "@react-navigation/native";
 import {
   createContext,
   useContext,
@@ -111,6 +116,37 @@ let pendingAlert: (() => void) | null = null;
 let pendingConfirm: ((ok: boolean) => void) | null = null;
 let pendingPrompt: ((value: string | null) => void) | null = null;
 let pendingMenu: ((key: string | null) => void) | null = null;
+let replaceableMenuRouteKey: string | null = null;
+
+function markMenuReplaceable(routeKey: string): void {
+  replaceableMenuRouteKey = routeKey;
+}
+
+function clearReplaceableMenu(routeKey: string): void {
+  if (replaceableMenuRouteKey === routeKey) {
+    replaceableMenuRouteKey = null;
+  }
+}
+
+type OverlayRouteName = "Alert" | "Confirm" | "Prompt" | "Menu";
+
+function replaceExitingMenu(routeName: OverlayRouteName, params: object): boolean {
+  const routeKey = replaceableMenuRouteKey;
+  if (routeKey === null) {
+    return false;
+  }
+  const currentRoute = navigationRef.getCurrentRoute();
+  if (currentRoute?.name !== "Menu" || currentRoute.key !== routeKey) {
+    replaceableMenuRouteKey = null;
+    return false;
+  }
+  replaceableMenuRouteKey = null;
+  navigationRef.dispatch({
+    ...StackActions.replace(routeName, params),
+    source: routeKey,
+  });
+  return true;
+}
 
 function settleAlert(_value: undefined): void {
   const resolve = pendingAlert;
@@ -163,11 +199,14 @@ export function OverlayHost({ children }: OverlayHostProps) {
           }
           pendingAlert?.();
           pendingAlert = resolve;
-          navigationRef.navigate("Alert", {
+          const params = {
             title: request.title,
             message: request.message,
             confirmLabel: request.confirmLabel ?? "确定",
-          });
+          };
+          if (!replaceExitingMenu("Alert", params)) {
+            navigationRef.navigate("Alert", params);
+          }
         });
       },
       confirm(request) {
@@ -178,11 +217,14 @@ export function OverlayHost({ children }: OverlayHostProps) {
           }
           pendingConfirm?.(false);
           pendingConfirm = resolve;
-          navigationRef.navigate("Confirm", {
+          const params = {
             title: request?.title ?? DEFAULT_CONFIRM.title,
             message: request?.message ?? DEFAULT_CONFIRM.message,
             confirmLabel: request?.confirmLabel ?? DEFAULT_CONFIRM.confirmLabel,
-          });
+          };
+          if (!replaceExitingMenu("Confirm", params)) {
+            navigationRef.navigate("Confirm", params);
+          }
         });
       },
       prompt(request) {
@@ -193,13 +235,16 @@ export function OverlayHost({ children }: OverlayHostProps) {
           }
           pendingPrompt?.(null);
           pendingPrompt = resolve;
-          navigationRef.navigate("Prompt", {
+          const params = {
             title: request.title,
             message: request.message,
             placeholder: request.placeholder,
             initialValue: request.initialValue,
             confirmLabel: request.confirmLabel ?? "确认",
-          });
+          };
+          if (!replaceExitingMenu("Prompt", params)) {
+            navigationRef.navigate("Prompt", params);
+          }
         });
       },
       menu(request) {
@@ -210,7 +255,9 @@ export function OverlayHost({ children }: OverlayHostProps) {
           }
           pendingMenu?.(null);
           pendingMenu = resolve;
-          navigationRef.navigate("Menu", request);
+          if (!replaceExitingMenu("Menu", request)) {
+            navigationRef.navigate("Menu", request);
+          }
         });
       },
     }),
@@ -401,10 +448,12 @@ const CONTEXT_MENU_SCREEN_MARGIN = space[2];
 export function MenuScreen({ route }: StaticScreenProps<OverlayMenuParams>) {
   const { anchor, title, selectedKey, options, emptyLabel, width = "default" } = route.params;
   const navigation = useNavigation();
+  const menuRoute = useRoute();
   const insets = useSafeAreaInsets();
   const { width: viewportWidth, height: viewportHeight } = useWindowDimensions();
   const closingRef = useRef(false);
   const choiceRef = useRef<string | null>(null);
+  const selectionSettledRef = useRef(false);
   const progress = useSharedValue(0);
   const [menuSize, setMenuSize] = useState<{ width: number; height: number } | null>(null);
   const preferredMinimumWidth =
@@ -435,14 +484,22 @@ export function MenuScreen({ route }: StaticScreenProps<OverlayMenuParams>) {
         });
 
   const finishClose = () => {
+    clearReplaceableMenu(menuRoute.key);
     navigation.goBack();
-    settleMenu(choiceRef.current);
+    if (!selectionSettledRef.current) {
+      settleMenu(choiceRef.current);
+    }
   };
 
   const requestClose = (value: string | null) => {
     if (closingRef.current) return;
     closingRef.current = true;
     choiceRef.current = value;
+    if (value !== null) {
+      selectionSettledRef.current = true;
+      markMenuReplaceable(menuRoute.key);
+      settleMenu(value);
+    }
     progress.value = withTiming(0, OVERLAY_TIMING, (finished) => {
       if (finished) scheduleOnRN(finishClose);
     });
@@ -453,6 +510,12 @@ export function MenuScreen({ route }: StaticScreenProps<OverlayMenuParams>) {
   useEffect(() => {
     if (menuSize !== null) progress.value = withTiming(1, OVERLAY_TIMING);
   }, [menuSize, progress]);
+
+  useEffect(() => {
+    return () => {
+      clearReplaceableMenu(menuRoute.key);
+    };
+  }, [menuRoute.key]);
 
   useEffect(() => {
     return navigation.addListener("beforeRemove", (event) => {
