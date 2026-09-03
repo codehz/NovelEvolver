@@ -22,6 +22,7 @@ import {
 import { Pressable, Text, TextInput, View } from "react-native";
 import type { TextInput as TextInputType } from "react-native";
 import { Input, useMention, type MentionPartType, type Part } from "react-native-headless-mention";
+import { KeyboardGestureArea } from "react-native-keyboard-controller";
 
 import { color } from "../../../shared/theme";
 import type { ContextMenuAnchor } from "../../../shared/ui/context-menu-position";
@@ -249,69 +250,71 @@ export function AiComposer({
   };
 
   return (
-    <View style={aiStyles.composer}>
-      <Input
-        {...inputProps}
-        inputRef={inputRef as unknown as Ref<TextInputType>}
-        editable={!composerDisabled}
-        placeholder={slash != null ? "补充说明（可选）…" : "输入消息…"}
-        placeholderTextColor={color.placeholder}
-        cursorColor={color.accent}
-        selectionColor={color.accent}
-        scrollEnabled
-        multiline
-        submitBehavior="newline"
-        style={aiStyles.input}
-        onSubmitEditing={onSend}
-      />
-      <View style={aiStyles.composerToolbar}>
-        <Pressable
-          ref={agentMenuTriggerRef}
-          collapsable={false}
-          style={aiStyles.selectorButton}
-          onPress={() => openMenuFromTrigger(agentMenuTriggerRef.current, onOpenAgents)}
-          disabled={composerDisabled}
-        >
-          <Text style={aiStyles.selectorLabel}>{selectedAgent?.name ?? "Agent"}</Text>
-        </Pressable>
-        <Pressable
-          ref={modelMenuTriggerRef}
-          collapsable={false}
-          style={aiStyles.selectorButton}
-          onPress={() => openMenuFromTrigger(modelMenuTriggerRef.current, onOpenModels)}
-          disabled={composerDisabled}
-        >
-          <Text style={aiStyles.selectorLabel}>{selectedModel?.name ?? "模型"}</Text>
-        </Pressable>
-        {showReasoning ? (
+    <KeyboardGestureArea interpolator="ios" enableSwipeToDismiss>
+      <View style={aiStyles.composer}>
+        <Input
+          {...inputProps}
+          inputRef={inputRef as unknown as Ref<TextInputType>}
+          editable={!composerDisabled}
+          placeholder={slash != null ? "补充说明（可选）…" : "输入消息…"}
+          placeholderTextColor={color.placeholder}
+          cursorColor={color.accent}
+          selectionColor={color.accent}
+          scrollEnabled
+          multiline
+          submitBehavior="newline"
+          style={aiStyles.input}
+          onSubmitEditing={onSend}
+        />
+        <View style={aiStyles.composerToolbar}>
           <Pressable
-            ref={reasoningMenuTriggerRef}
+            ref={agentMenuTriggerRef}
             collapsable={false}
             style={aiStyles.selectorButton}
-            onPress={() => openMenuFromTrigger(reasoningMenuTriggerRef.current, onOpenReasoning)}
+            onPress={() => openMenuFromTrigger(agentMenuTriggerRef.current, onOpenAgents)}
             disabled={composerDisabled}
           >
-            <Text style={aiStyles.selectorLabel}>
-              {snapshot.selectedReasoningLevel
-                ? AI_REASONING_LEVEL_LABELS[snapshot.selectedReasoningLevel as AiReasoningLevel]
-                : "推理"}
-            </Text>
+            <Text style={aiStyles.selectorLabel}>{selectedAgent?.name ?? "Agent"}</Text>
           </Pressable>
-        ) : null}
-        {snapshot.pending ? (
-          <Pressable style={aiStyles.sendButton} onPress={onStop}>
-            <Text style={aiStyles.sendLabel}>停止</Text>
-          </Pressable>
-        ) : (
           <Pressable
-            style={[aiStyles.sendButton, canSend ? null : aiStyles.sendButtonDisabled]}
-            disabled={!canSend}
-            onPress={onSend}
+            ref={modelMenuTriggerRef}
+            collapsable={false}
+            style={aiStyles.selectorButton}
+            onPress={() => openMenuFromTrigger(modelMenuTriggerRef.current, onOpenModels)}
+            disabled={composerDisabled}
           >
-            <Text style={aiStyles.sendLabel}>发送</Text>
+            <Text style={aiStyles.selectorLabel}>{selectedModel?.name ?? "模型"}</Text>
           </Pressable>
-        )}
+          {showReasoning ? (
+            <Pressable
+              ref={reasoningMenuTriggerRef}
+              collapsable={false}
+              style={aiStyles.selectorButton}
+              onPress={() => openMenuFromTrigger(reasoningMenuTriggerRef.current, onOpenReasoning)}
+              disabled={composerDisabled}
+            >
+              <Text style={aiStyles.selectorLabel}>
+                {snapshot.selectedReasoningLevel
+                  ? AI_REASONING_LEVEL_LABELS[snapshot.selectedReasoningLevel as AiReasoningLevel]
+                  : "推理"}
+              </Text>
+            </Pressable>
+          ) : null}
+          {snapshot.pending ? (
+            <Pressable style={aiStyles.sendButton} onPress={onStop}>
+              <Text style={aiStyles.sendLabel}>停止</Text>
+            </Pressable>
+          ) : (
+            <Pressable
+              style={[aiStyles.sendButton, canSend ? null : aiStyles.sendButtonDisabled]}
+              disabled={!canSend}
+              onPress={onSend}
+            >
+              <Text style={aiStyles.sendLabel}>发送</Text>
+            </Pressable>
+          )}
+        </View>
       </View>
-    </View>
+    </KeyboardGestureArea>
   );
 }
