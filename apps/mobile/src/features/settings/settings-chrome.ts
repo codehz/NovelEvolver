@@ -277,38 +277,6 @@ export const settingsStyles = StyleSheet.create({
     justifyContent: "space-between",
     gap: space[3],
   },
-  switch: {
-    width: 44,
-    height: 32,
-    justifyContent: "center",
-  },
-  switchTrack: {
-    width: 44,
-    height: 24,
-    justifyContent: "center",
-    borderWidth: 1,
-    borderColor: color.border,
-    borderRadius: radius.pill,
-    backgroundColor: color.field,
-  },
-  switchTrackOn: {
-    borderColor: color.accent,
-    backgroundColor: color.accent,
-  },
-  switchThumb: {
-    width: 18,
-    height: 18,
-    marginStart: 2,
-    borderRadius: radius.pill,
-    backgroundColor: color.muted,
-  },
-  switchThumbOn: {
-    backgroundColor: color.primaryForeground,
-    transform: [{ translateX: 20 }],
-  },
-  switchDisabled: {
-    opacity: 0.5,
-  },
   chipRow: {
     flexDirection: "row",
     flexWrap: "wrap",

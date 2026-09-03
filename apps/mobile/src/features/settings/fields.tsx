@@ -6,6 +6,7 @@ import { DropdownSelect } from "../../shared/ui/DropdownSelect";
 import { MarkdownTextInput } from "../../shared/ui/MarkdownTextInput";
 import type { OverlayMenuOption } from "../../shared/ui/OverlayHost";
 import { settingsStyles } from "./settings-chrome";
+import { SettingsToggle } from "./SettingsToggle";
 
 type FieldProps = {
   label: string;
@@ -110,17 +111,7 @@ export function SettingsSwitchField({
     <View style={settingsStyles.field}>
       <View style={settingsStyles.switchRow}>
         <Text style={[settingsStyles.fieldLabel, { flex: 1 }]}>{label}</Text>
-        <Pressable
-          accessibilityRole="switch"
-          accessibilityState={{ checked: value, disabled }}
-          disabled={disabled}
-          onPress={() => onValueChange(!value)}
-          style={[settingsStyles.switch, disabled && settingsStyles.switchDisabled]}
-        >
-          <View style={[settingsStyles.switchTrack, value && settingsStyles.switchTrackOn]}>
-            <View style={[settingsStyles.switchThumb, value && settingsStyles.switchThumbOn]} />
-          </View>
-        </Pressable>
+        <SettingsToggle value={value} onValueChange={onValueChange} disabled={disabled} />
       </View>
       {hint ? <Text style={settingsStyles.fieldHint}>{hint}</Text> : null}
     </View>
