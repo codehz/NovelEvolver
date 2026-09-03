@@ -36,13 +36,10 @@ jobs:
       - name: Cache Bun dependencies
         uses: actions/cache@v4
         with:
-          path: |
-            node_modules
-            apps/*/node_modules
-            packages/*/node_modules
-          key: ${{ runner.os }}-${{ runner.arch }}-node-modules-${{ hashFiles('bun.lock') }}
+          path: ~/.bun/install/cache
+          key: ${{ runner.os }}-${{ runner.arch }}-bun-install-${{ hashFiles('bun.lock') }}
           restore-keys: |
-            ${{ runner.os }}-${{ runner.arch }}-node-modules-
+            ${{ runner.os }}-${{ runner.arch }}-bun-install-
 
       - name: Cache vendor fonts
         uses: actions/cache@v4
@@ -102,13 +99,10 @@ jobs:
       - name: Cache Bun dependencies
         uses: actions/cache@v4
         with:
-          path: |
-            node_modules
-            apps/*/node_modules
-            packages/*/node_modules
-          key: ${{ runner.os }}-${{ runner.arch }}-node-modules-${{ hashFiles('bun.lock') }}
+          path: ~/.bun/install/cache
+          key: ${{ runner.os }}-${{ runner.arch }}-bun-install-${{ hashFiles('bun.lock') }}
           restore-keys: |
-            ${{ runner.os }}-${{ runner.arch }}-node-modules-
+            ${{ runner.os }}-${{ runner.arch }}-bun-install-
 
       # Must run before install: package.json prepare → ensure-fonts.mjs (needs system unzip
       # only on miss). Pre-seeded WOFF2 + pinned sha256 → cache hit on all platforms.
@@ -198,13 +192,10 @@ jobs:
       - name: Cache Bun dependencies
         uses: actions/cache@v4
         with:
-          path: |
-            node_modules
-            apps/*/node_modules
-            packages/*/node_modules
-          key: ${{ runner.os }}-${{ runner.arch }}-node-modules-${{ hashFiles('bun.lock') }}
+          path: ~/.bun/install/cache
+          key: ${{ runner.os }}-${{ runner.arch }}-bun-install-${{ hashFiles('bun.lock') }}
           restore-keys: |
-            ${{ runner.os }}-${{ runner.arch }}-node-modules-
+            ${{ runner.os }}-${{ runner.arch }}-bun-install-
 
       - name: Download vendor fonts
         uses: actions/download-artifact@v4
