@@ -7,7 +7,7 @@ import { useCallback, useMemo, useState } from "react";
 import { Pressable, ScrollView, Text, View } from "react-native";
 
 import { getMobileSettings } from "../../../shared/settings/session";
-import { SettingsSwitchField, SettingsTextField } from "../fields";
+import { SettingsMenuChoiceField, SettingsSwitchField, SettingsTextField } from "../fields";
 import { settingsStyles } from "../settings-chrome";
 import type { SettingsDetailActionChange } from "../settings-detail-actions";
 import { useSettingsDetailActions } from "../settings-detail-actions";
@@ -191,9 +191,15 @@ function AgentForm({ initial, error, onError, onSaved, onActionsChange }: AgentF
     resetToDefaultsDisabled: isAtCodeDefaults,
   });
 
+  const providerById = new Map(models.providers.map((provider) => [provider.id, provider.name]));
   const modelOptions = [
     { value: "", label: "继承默认模型" },
-    ...models.models.map((model) => ({ value: model.id, label: model.name })),
+    ...models.models.map((model) => ({
+      value: model.id,
+      label: model.name,
+      detail: model.model,
+      group: providerById.get(model.providerId) ?? "未知供应商",
+    })),
   ];
 
   return (
@@ -215,29 +221,12 @@ function AgentForm({ initial, error, onError, onSaved, onActionsChange }: AgentF
           multiline
           markdown
         />
-        <View style={settingsStyles.field}>
-          <Text style={settingsStyles.fieldLabel}>默认模型</Text>
-          <View style={settingsStyles.chipRow}>
-            {modelOptions.map((option) => {
-              const selected = defaultModelId === option.value;
-              return (
-                <Pressable
-                  key={option.value || "inherit"}
-                  style={[settingsStyles.chip, selected && settingsStyles.chipSelected]}
-                  onPress={() => {
-                    setDefaultModelId(option.value);
-                  }}
-                >
-                  <Text
-                    style={[settingsStyles.chipLabel, selected && settingsStyles.chipLabelSelected]}
-                  >
-                    {option.label}
-                  </Text>
-                </Pressable>
-              );
-            })}
-          </View>
-        </View>
+        <SettingsMenuChoiceField
+          label="默认模型"
+          value={defaultModelId}
+          options={modelOptions}
+          onChange={setDefaultModelId}
+        />
         {!builtin ? (
           <View style={settingsStyles.field}>
             <Text style={settingsStyles.fieldLabel}>工具</Text>

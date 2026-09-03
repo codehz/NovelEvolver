@@ -92,6 +92,15 @@ export const overlayStyles = StyleSheet.create({
     paddingVertical: space[3],
     textAlign: "center",
   },
+  contextMenuGroupLabel: {
+    color: color.muted,
+    fontFamily: fontFamily.sans,
+    fontSize: fontSize.xxs,
+    fontWeight: "600",
+    paddingHorizontal: space[3],
+    paddingTop: space[3],
+    paddingBottom: space[1],
+  },
   menuItem: {
     minHeight: 44,
     flexDirection: "row",

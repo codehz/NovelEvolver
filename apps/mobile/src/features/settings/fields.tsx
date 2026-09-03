@@ -1,8 +1,10 @@
-import type { ReactNode } from "react";
+import { type ReactNode } from "react";
 import { Pressable, Switch, Text, TextInput, View } from "react-native";
 
 import { color } from "../../shared/theme";
+import { DropdownSelect } from "../../shared/ui/DropdownSelect";
 import { MarkdownTextInput } from "../../shared/ui/MarkdownTextInput";
+import type { OverlayMenuOption } from "../../shared/ui/OverlayHost";
 import { settingsStyles } from "./settings-chrome";
 
 type FieldProps = {
@@ -123,6 +125,8 @@ export function SettingsSwitchField({
 type Choice<T extends string> = {
   value: T;
   label: string;
+  detail?: string;
+  group?: string;
 };
 
 type ChoiceFieldProps<T extends string> = {
@@ -162,6 +166,32 @@ export function SettingsChoiceField<T extends string>({
           );
         })}
       </View>
+    </SettingsField>
+  );
+}
+
+export function SettingsMenuChoiceField<T extends string>({
+  label,
+  hint,
+  value,
+  options,
+  onChange,
+}: ChoiceFieldProps<T>) {
+  const menuOptions = options.map<OverlayMenuOption>((option) => ({
+    key: option.value,
+    label: option.label,
+    detail: option.detail,
+    group: option.group,
+  }));
+
+  return (
+    <SettingsField label={label} hint={hint}>
+      <DropdownSelect
+        value={value}
+        options={menuOptions}
+        onChange={(next) => onChange(next as T)}
+        title={label}
+      />
     </SettingsField>
   );
 }

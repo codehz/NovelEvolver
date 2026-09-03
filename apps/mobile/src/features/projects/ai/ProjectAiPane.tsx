@@ -172,6 +172,13 @@ export const ProjectAiPane = forwardRef<ProjectAiPaneHandle, ProjectAiPaneProps>
     const filteredPromptItems = filterPromptItems(prompts, triggerQuery);
     const filteredMentionItems = filterMentionCatalog(mentionItems, triggerQuery);
     const selectedModel = ai.models.find((model) => model.id === ai.snapshot.selectedModelId);
+    const modelsSettings = getMobileSettings().models.getSnapshot();
+    const providerNameByModelId = new Map(
+      modelsSettings.models.map((model) => [
+        model.id,
+        modelsSettings.providers.find((provider) => provider.id === model.providerId)?.name,
+      ]),
+    );
 
     const openAiMenu = async (kind: AiMenu, anchor: ContextMenuAnchor) => {
       const request =
@@ -184,6 +191,7 @@ export const ProjectAiPane = forwardRef<ProjectAiPaneHandle, ProjectAiPaneProps>
                 key: model.id,
                 label: model.name,
                 detail: `${model.kind} · ${model.model}`,
+                group: providerNameByModelId.get(model.id),
               })),
             }
           : kind === "agents"

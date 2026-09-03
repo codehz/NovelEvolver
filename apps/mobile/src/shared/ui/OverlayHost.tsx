@@ -42,6 +42,7 @@ import {
   type ContextMenuAnchor,
 } from "./context-menu-position";
 import { OVERLAY_TIMING, overlayStyles } from "./overlay-chrome";
+import { isMenuGroupStart } from "./overlay-menu-model";
 
 export type OverlayAlertParams = {
   title: string;
@@ -67,6 +68,7 @@ export type OverlayMenuOption = {
   key: string;
   label: string;
   detail?: string;
+  group?: string;
   destructive?: boolean;
 };
 
@@ -574,38 +576,46 @@ export function MenuScreen({ route }: StaticScreenProps<OverlayMenuParams>) {
           {options.length === 0 && emptyLabel ? (
             <Text style={overlayStyles.contextMenuEmpty}>{emptyLabel}</Text>
           ) : null}
-          {options.map((option) => {
+          {options.map((option, index) => {
             const selected = option.key === selectedKey;
+            const previousOption = options[index - 1];
+            const showGroup = isMenuGroupStart(option.group, previousOption?.group);
             return (
-              <Pressable
-                key={option.key}
-                accessibilityRole="menuitem"
-                accessibilityState={{ selected }}
-                style={({ pressed }) => [
-                  overlayStyles.menuItem,
-                  selected && overlayStyles.menuItemSelected,
-                  pressed && overlayStyles.menuItemPressed,
-                ]}
-                onPress={() => requestClose(option.key)}
-              >
-                <View style={overlayStyles.menuItemContent}>
-                  <Text
-                    style={[
-                      overlayStyles.menuItemLabel,
-                      selected && overlayStyles.menuItemLabelSelected,
-                      option.destructive && overlayStyles.menuItemDangerLabel,
-                    ]}
-                    numberOfLines={1}
-                  >
-                    {option.label}
+              <View key={option.key}>
+                {showGroup ? (
+                  <Text style={overlayStyles.contextMenuGroupLabel} numberOfLines={1}>
+                    {option.group}
                   </Text>
-                  {option.detail ? (
-                    <Text style={overlayStyles.menuItemDetail} numberOfLines={2}>
-                      {option.detail}
+                ) : null}
+                <Pressable
+                  accessibilityRole="menuitem"
+                  accessibilityState={{ selected }}
+                  style={({ pressed }) => [
+                    overlayStyles.menuItem,
+                    selected && overlayStyles.menuItemSelected,
+                    pressed && overlayStyles.menuItemPressed,
+                  ]}
+                  onPress={() => requestClose(option.key)}
+                >
+                  <View style={overlayStyles.menuItemContent}>
+                    <Text
+                      style={[
+                        overlayStyles.menuItemLabel,
+                        selected && overlayStyles.menuItemLabelSelected,
+                        option.destructive && overlayStyles.menuItemDangerLabel,
+                      ]}
+                      numberOfLines={1}
+                    >
+                      {option.label}
                     </Text>
-                  ) : null}
-                </View>
-              </Pressable>
+                    {option.detail ? (
+                      <Text style={overlayStyles.menuItemDetail} numberOfLines={2}>
+                        {option.detail}
+                      </Text>
+                    ) : null}
+                  </View>
+                </Pressable>
+              </View>
             );
           })}
         </ScrollView>
