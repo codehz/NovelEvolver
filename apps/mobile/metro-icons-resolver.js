@@ -52,7 +52,7 @@ function resolveIcon(moduleName) {
 
   fs.mkdirSync(generatedDirectory, { recursive: true });
   const filePath = path.join(generatedDirectory, `${icon}.tsx`);
-  const source = createIconModule(iconName(icon), definition.body);
+  const source = createIconModule(iconName(icon), definition);
   if (!fs.existsSync(filePath) || fs.readFileSync(filePath, "utf8") !== source) {
     fs.writeFileSync(filePath, source);
   }
