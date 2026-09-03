@@ -96,7 +96,6 @@ const styles = StyleSheet.create({
     opacity: 0,
   },
   trigger: {
-    alignSelf: "flex-start",
     flexShrink: 0,
     flexDirection: "row",
     alignItems: "center",
