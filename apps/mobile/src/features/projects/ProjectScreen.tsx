@@ -44,7 +44,7 @@ export function ProjectScreen() {
           onBack={() => {
             navigation.goBack();
           }}
-          topInset={layout === "wide" ? insets.top : 0}
+          topInset={insets.top}
         />
       </KeyboardAvoidingView>
     </SafeAreaView>

@@ -1,17 +1,11 @@
-import { Header } from "@react-navigation/elements";
 import type { ReactNode } from "react";
 import { StyleSheet, View } from "react-native";
-import Animated, {
-  useAnimatedStyle,
-  useReducedMotion,
-  type SharedValue,
-} from "react-native-reanimated";
+import Animated, { FadeIn, FadeOut, type SharedValue } from "react-native-reanimated";
 
 import { color, space } from "../../shared/theme";
-import { settingsStyles } from "../settings/settings-chrome";
 import { SettingsHeaderBackButton } from "../settings/SettingsHeaderBackButton";
-import { PROJECT_PAGE_INDEX, PROJECT_PAGES, type ProjectPage } from "./project-pager-model";
-import { projectPaneStyles } from "./project-pane-chrome";
+import type { ProjectPage } from "./project-pager-model";
+import { projectPaneStyles, PROJECT_PANE_HEADER_HEIGHT } from "./project-pane-chrome";
 import { ProjectHeaderTabs } from "./ProjectHeaderTabs";
 
 export type ProjectHeaderContribution = {
@@ -19,99 +13,60 @@ export type ProjectHeaderContribution = {
   actions?: ReactNode;
 };
 
+const PROJECT_HEADER_HEIGHT = PROJECT_PANE_HEADER_HEIGHT;
+const PROJECT_COMPACT_CONTENT_HEADER_HEIGHT = 48;
+
 type ProjectHeaderNavigation = {
   activePage: ProjectPage;
   progress: SharedValue<number>;
   onSelectPage: (page: ProjectPage) => void;
   onBack: () => void;
+  topInset: number;
 };
 
 type ProjectHeaderLayersProps = {
   activePage: ProjectPage;
-  progress: SharedValue<number>;
   contributions: Record<ProjectPage, ProjectHeaderContribution>;
   kind: "context" | "actions" | "combined";
 };
 
-type ProjectHeaderLayerProps = {
-  active: boolean;
-  index: number;
-  progress: SharedValue<number>;
-  alignEnd: boolean;
-  children: ReactNode;
-};
-
-function ProjectHeaderLayer({
-  active,
-  index,
-  progress,
-  alignEnd,
-  children,
-}: ProjectHeaderLayerProps) {
-  const reduceMotion = useReducedMotion();
-  const animatedStyle = useAnimatedStyle(() => {
-    const distance = index - progress.value;
-    return {
-      opacity: Math.max(0, 1 - Math.abs(distance)),
-      transform: [{ translateX: reduceMotion ? 0 : distance * 12 }],
-    };
-  });
-
+function ProjectHeaderLayer({ children }: { children: ReactNode }) {
   return (
     <Animated.View
-      accessibilityElementsHidden={!active}
-      importantForAccessibility={active ? "auto" : "no-hide-descendants"}
-      pointerEvents={active ? "auto" : "none"}
-      style={[styles.layer, alignEnd ? styles.layerEnd : styles.layerStart, animatedStyle]}
+      entering={FadeIn.duration(160)}
+      exiting={FadeOut.duration(120)}
+      style={styles.layer}
     >
       {children}
     </Animated.View>
   );
 }
 
-function ProjectHeaderLayers({
-  activePage,
-  progress,
-  contributions,
-  kind,
-}: ProjectHeaderLayersProps) {
+function ProjectHeaderLayers({ activePage, contributions, kind }: ProjectHeaderLayersProps) {
+  const contribution = contributions[activePage];
+  const content =
+    kind === "context" ? (
+      contribution.context
+    ) : kind === "actions" ? (
+      contribution.actions ? (
+        <View style={styles.actions}>{contribution.actions}</View>
+      ) : null
+    ) : (
+      <View style={styles.combinedRow}>
+        <View style={styles.combinedContext}>{contribution.context}</View>
+        {contribution.actions ? <View style={styles.actions}>{contribution.actions}</View> : null}
+      </View>
+    );
+
   return (
     <View
       style={[
         styles.layerHost,
-        kind === "actions" && styles.actionsHost,
-        kind === "combined" && styles.combinedHost,
+        kind === "actions" && styles.actionLayerHost,
+        kind === "combined" && styles.combinedLayerHost,
       ]}
     >
-      {PROJECT_PAGES.map((page) => {
-        const contribution = contributions[page];
-        const content =
-          kind === "context" ? (
-            contribution.context
-          ) : kind === "actions" ? (
-            contribution.actions ? (
-              <View style={styles.actions}>{contribution.actions}</View>
-            ) : null
-          ) : (
-            <View style={styles.combinedRow}>
-              <View style={styles.combinedContext}>{contribution.context}</View>
-              {contribution.actions ? (
-                <View style={styles.actions}>{contribution.actions}</View>
-              ) : null}
-            </View>
-          );
-        return (
-          <ProjectHeaderLayer
-            key={page}
-            active={page === activePage}
-            index={PROJECT_PAGE_INDEX[page]}
-            progress={progress}
-            alignEnd={kind === "actions"}
-          >
-            {content}
-          </ProjectHeaderLayer>
-        );
-      })}
+      <ProjectHeaderLayer key={`${kind}-${activePage}`}>{content}</ProjectHeaderLayer>
     </View>
   );
 }
@@ -125,44 +80,28 @@ export function ProjectMediumHeader({
   progress,
   onSelectPage,
   onBack,
+  topInset,
   contributions,
 }: ProjectMediumHeaderProps) {
   return (
-    <Header
-      title=""
-      headerTitle={() => (
-        <ProjectHeaderLayers
+    <View
+      style={[styles.header, { height: PROJECT_HEADER_HEIGHT + topInset, paddingTop: topInset }]}
+    >
+      <View style={styles.leading}>
+        <SettingsHeaderBackButton tintColor={color.accent} onPress={onBack} />
+        <ProjectHeaderTabs
           activePage={activePage}
           progress={progress}
-          contributions={contributions}
-          kind="context"
+          onSelectPage={onSelectPage}
         />
-      )}
-      headerTitleAlign="left"
-      headerTintColor={color.accent}
-      headerStyle={settingsStyles.header}
-      headerShadowVisible={false}
-      headerLeftContainerStyle={settingsStyles.headerLeftContainer}
-      headerLeft={(props) => (
-        <View style={styles.leading}>
-          <SettingsHeaderBackButton {...props} onPress={onBack} />
-          <ProjectHeaderTabs
-            activePage={activePage}
-            progress={progress}
-            onSelectPage={onSelectPage}
-          />
-        </View>
-      )}
-      headerRightContainerStyle={styles.rightContainer}
-      headerRight={() => (
-        <ProjectHeaderLayers
-          activePage={activePage}
-          progress={progress}
-          contributions={contributions}
-          kind="actions"
-        />
-      )}
-    />
+      </View>
+      <View style={styles.contextSlot}>
+        <ProjectHeaderLayers activePage={activePage} contributions={contributions} kind="context" />
+      </View>
+      <View style={styles.actionsSlot}>
+        <ProjectHeaderLayers activePage={activePage} contributions={contributions} kind="actions" />
+      </View>
+    </View>
   );
 }
 
@@ -171,31 +110,29 @@ export function ProjectCompactHeader({
   progress,
   onSelectPage,
   onBack,
+  topInset,
   contributions,
 }: ProjectMediumHeaderProps) {
   return (
     <>
-      <Header
-        title=""
-        headerTitle={() => (
+      <View
+        style={[styles.header, { height: PROJECT_HEADER_HEIGHT + topInset, paddingTop: topInset }]}
+      >
+        <View style={styles.compactSide}>
+          <SettingsHeaderBackButton tintColor={color.accent} onPress={onBack} />
+        </View>
+        <View style={styles.compactTabs}>
           <ProjectHeaderTabs
             activePage={activePage}
             progress={progress}
             onSelectPage={onSelectPage}
           />
-        )}
-        headerTitleAlign="center"
-        headerTitleContainerStyle={styles.compactTitle}
-        headerTintColor={color.accent}
-        headerStyle={settingsStyles.header}
-        headerShadowVisible={false}
-        headerLeftContainerStyle={settingsStyles.headerLeftContainer}
-        headerLeft={(props) => <SettingsHeaderBackButton {...props} onPress={onBack} />}
-      />
-      <View style={projectPaneStyles.header}>
+        </View>
+        <View style={styles.compactSide} />
+      </View>
+      <View style={[projectPaneStyles.header, styles.compactContentHeader]}>
         <ProjectHeaderLayers
           activePage={activePage}
-          progress={progress}
           contributions={contributions}
           kind="combined"
         />
@@ -205,50 +142,56 @@ export function ProjectCompactHeader({
 }
 
 const styles = StyleSheet.create({
+  header: {
+    minHeight: PROJECT_HEADER_HEIGHT,
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: space[4],
+    backgroundColor: color.surface,
+  },
   leading: {
+    flexShrink: 0,
     flexDirection: "row",
     alignItems: "center",
   },
-  rightContainer: {
-    paddingEnd: space[4],
-  },
-  compactTitle: {
-    position: "absolute",
-    top: 0,
-    right: 0,
-    bottom: 0,
-    left: 0,
-    width: "100%",
-    maxWidth: "100%",
-    marginHorizontal: 0,
+  compactSide: {
+    width: 40,
+    flexShrink: 0,
+    flexDirection: "row",
     alignItems: "center",
   },
+  compactTabs: {
+    flex: 1,
+    minWidth: 0,
+    alignItems: "center",
+  },
+  compactContentHeader: {
+    height: PROJECT_COMPACT_CONTENT_HEADER_HEIGHT,
+  },
+  contextSlot: {
+    flex: 1,
+    minWidth: 0,
+    marginStart: space[3],
+  },
+  actionsSlot: {
+    flexShrink: 0,
+    marginStart: space[3],
+  },
   layerHost: {
-    position: "relative",
-    width: 180,
-    height: 48,
+    width: "100%",
+    minHeight: 48,
     overflow: "hidden",
   },
-  actionsHost: {
-    width: 152,
+  actionLayerHost: {
+    width: "auto",
   },
-  combinedHost: {
-    width: "100%",
-    height: "100%",
+  combinedLayerHost: {
+    flex: 1,
+    minHeight: 0,
   },
   layer: {
-    position: "absolute",
-    top: 0,
-    right: 0,
-    bottom: 0,
-    left: 0,
+    flex: 1,
     justifyContent: "center",
-  },
-  layerStart: {
-    alignItems: "flex-start",
-  },
-  layerEnd: {
-    alignItems: "flex-end",
   },
   combinedRow: {
     width: "100%",

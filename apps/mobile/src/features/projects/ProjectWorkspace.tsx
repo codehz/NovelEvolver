@@ -16,7 +16,6 @@ import IconNewFolder from "~icons/codicon/new-folder";
 
 import { color, fontFamily, fontSize } from "../../shared/theme";
 import { SettingsHeaderButton } from "../settings/SettingsHeaderButton";
-import { aiStyles } from "./ai/ai-chrome";
 import { ProjectAiPane, type AiPage, type ProjectAiPaneHandle } from "./ai/ProjectAiPane";
 import { ProjectChangeComparisonPane } from "./changes/ProjectChangeComparisonPane";
 import type { EditorDocument } from "./editor/editor-document";
@@ -37,7 +36,7 @@ import {
 } from "./ProjectMediumHeader";
 import type { ProjectComparisonTarget } from "./use-project-workspace";
 
-export const PROJECT_MEDIUM_BREAKPOINT = 400;
+export const PROJECT_MEDIUM_BREAKPOINT = 440;
 export const PROJECT_WIDE_BREAKPOINT = 960;
 const PROJECT_MANUSCRIPT_WIDTH = 280;
 const PROJECT_AI_WIDTH = 320;
@@ -298,9 +297,9 @@ export function ProjectWorkspace({
     },
     AI: {
       context: (
-        <View style={aiStyles.headerTitleWrap}>
-          <Text style={aiStyles.title}>AI</Text>
-          <Text style={aiStyles.subtitle}>{aiPage === "history" ? "历史会话" : "助手"}</Text>
+        <View style={styles.headerTitleWrap}>
+          <Text style={styles.title}>AI</Text>
+          <Text style={styles.subtitle}>{aiPage === "history" ? "历史会话" : "助手"}</Text>
         </View>
       ),
       actions: aiActions,
@@ -397,6 +396,7 @@ export function ProjectWorkspace({
           progress={progress}
           onSelectPage={selectPage}
           onBack={onBack}
+          topInset={topInset}
           contributions={contributions}
         />
       ) : (
@@ -405,6 +405,7 @@ export function ProjectWorkspace({
           progress={progress}
           onSelectPage={selectPage}
           onBack={onBack}
+          topInset={topInset}
           contributions={contributions}
         />
       )}
