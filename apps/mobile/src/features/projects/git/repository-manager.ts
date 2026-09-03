@@ -1,14 +1,19 @@
 import { ProjectAiChatController } from "@novelevolver/ai-runtime";
-import { Database } from "@novelevolver/mobile-sqlite";
+import {
+  Database,
+  PROJECTS_LOCATION,
+  deleteProjectFile,
+  displayNameFromFile,
+  listProjectFiles,
+  notifyProjectFilesChanged,
+  projectFileExists,
+  renameProjectFile,
+  shareProjectFile,
+  toProjectFileName,
+} from "@novelevolver/mobile-sqlite";
 import { WorktreeSession, type ProjectDbRecord } from "@novelevolver/worktree";
 import type { Repository } from "nano-git/repository/core";
 
-import {
-  appFiles,
-  copyPickedDocument,
-  ensureDirectory,
-  removePath,
-} from "../../../shared/files/mobile-file-bridge";
 import { getMobileSettings } from "../../../shared/settings/session";
 import { getMobileAppState } from "./app-state";
 import { openMobileRepository } from "./nano-git-sqlite";
@@ -18,29 +23,10 @@ export type OpenedProject = {
   repository: Repository;
   repositoryDb: Database;
   worktree: WorktreeSession;
-  repositoryPath: string;
+  fileName: string;
   aiChat: ProjectAiChatController;
   close(): void;
 };
-
-const REPO_FILE = "repository.npk";
-const SQLITE_ROOT = "novelevolver";
-
-function sqliteLocation(id: number): string {
-  return `${SQLITE_ROOT}/${id}`;
-}
-
-function sqliteRelativePath(id: number): string {
-  return `${sqliteLocation(id)}/${REPO_FILE}`;
-}
-
-function sqliteAbsoluteDir(id: number): string {
-  return `${appFiles.root}/${id}`;
-}
-
-function sqliteAbsoluteFile(id: number): string {
-  return `${sqliteAbsoluteDir(id)}/${REPO_FILE}`;
-}
 
 function normalizeDisplayName(value: string): string {
   const name = value.trim();
@@ -48,23 +34,11 @@ function normalizeDisplayName(value: string): string {
   return name;
 }
 
-function displayNameFromFile(fileName: string): string {
-  return normalizeDisplayName(fileName.replace(/\.npk$/i, "") || "未命名项目");
-}
-
 function toOpenedRecord(record: ProjectDbRecord): ProjectDbRecord {
   return {
     ...record,
     displayName: record.displayName ?? displayNameFromFile(record.path),
   };
-}
-
-async function removeIfPresent(path: string): Promise<void> {
-  try {
-    await removePath(path);
-  } catch {
-    // Preserve the original operation error when best-effort cleanup fails.
-  }
 }
 
 function openWorktree(repo: Repository, projectId: number, branchName: string): WorktreeSession {
@@ -77,8 +51,19 @@ function openWorktree(repo: Repository, projectId: number, branchName: string): 
   );
 }
 
-function openProjectRepository(id: number, readonly = false) {
-  return openMobileRepository(REPO_FILE, sqliteLocation(id), readonly);
+function openProjectRepository(fileName: string, readonly = false) {
+  const opened = openMobileRepository(fileName, PROJECTS_LOCATION, readonly);
+  opened.db.exec("PRAGMA journal_mode = DELETE");
+  opened.db.exec("PRAGMA busy_timeout = 5000");
+  return opened;
+}
+
+function removeFileIfPresent(fileName: string): void {
+  try {
+    if (projectFileExists(fileName)) deleteProjectFile(fileName);
+  } catch {
+    // Preserve the original operation error when best-effort cleanup fails.
+  }
 }
 
 export class ProjectRepositoryManager {
@@ -93,23 +78,41 @@ export class ProjectRepositoryManager {
     return this.#opened;
   }
 
+  syncFromDisk(): void {
+    const files = new Set(listProjectFiles());
+    const { projects } = getMobileAppState();
+    for (const record of projects.list()) {
+      if (files.has(record.path)) continue;
+      if (this.#opened?.record.id === record.id) this.close();
+      projects.removeById(record.id);
+    }
+    for (const fileName of files) {
+      if (projects.getByPath(fileName) !== null) continue;
+      const record = projects.upsertByPath(fileName, Date.now());
+      projects.setDisplayName(record.id, displayNameFromFile(fileName));
+    }
+  }
+
   async createEmpty(displayName: string): Promise<OpenedProject> {
     const name = normalizeDisplayName(displayName);
+    const fileName = toProjectFileName(name);
     const { projects } = getMobileAppState();
-    const pendingKey = `pending:${Date.now()}`;
+    this.syncFromDisk();
+    if (projectFileExists(fileName) || projects.getByPath(fileName) !== null) {
+      throw new Error("已存在同名项目文件");
+    }
     let record: ProjectDbRecord | null = null;
     let repositoryDb: Database | null = null;
     try {
-      record = projects.upsertByPath(pendingKey, Date.now());
+      record = projects.upsertByPath(fileName, Date.now());
       projects.setDisplayName(record.id, name);
-      await ensureDirectory(sqliteAbsoluteDir(record.id));
-      const opened = openProjectRepository(record.id);
+      const opened = openProjectRepository(fileName);
       repositoryDb = opened.db;
       const branchName = opened.repo.getCurrentBranch();
       if (branchName !== "main") {
         throw new Error("无法初始化 main 分支");
       }
-      projects.setPath(record.id, sqliteRelativePath(record.id));
+      notifyProjectFilesChanged();
       const stored = projects.getById(record.id);
       if (stored === null) throw new Error("创建项目后无法读取记录");
       const worktree = openWorktree(opened.repo, stored.id, branchName);
@@ -122,57 +125,7 @@ export class ProjectRepositoryManager {
     } catch (error) {
       repositoryDb?.close();
       if (record !== null) {
-        await removeIfPresent(sqliteAbsoluteDir(record.id));
-        projects.removeById(record.id);
-      }
-      throw error;
-    }
-  }
-
-  async importFromFile(
-    sourceUri: string,
-    fileName: string,
-    confirmed = false,
-  ): Promise<OpenedProject> {
-    const { projects } = getMobileAppState();
-    const displayName = displayNameFromFile(fileName);
-    const pendingKey = `import:${Date.now()}`;
-    let record: ProjectDbRecord | null = null;
-    let repositoryDb: Database | null = null;
-    try {
-      const existing = projects.getByRemoteUrl(sourceUri);
-      if (existing !== null && !confirmed) {
-        throw new ProjectConflictError(toOpenedRecord(existing));
-      }
-      if (existing !== null) {
-        await this.delete(existing.id, false);
-      }
-
-      record = projects.upsertByPath(pendingKey, Date.now());
-      projects.setDisplayName(record.id, displayName);
-      projects.setRemoteUrl(record.id, sourceUri);
-      await ensureDirectory(sqliteAbsoluteDir(record.id));
-      await copyPickedDocument({ uri: sourceUri, fileName }, sqliteAbsoluteFile(record.id));
-      const opened = openProjectRepository(record.id);
-      repositoryDb = opened.db;
-      const branchName = opened.repo.getCurrentBranch();
-      if (branchName === null || branchName === "") {
-        throw new Error("项目没有可编辑的当前分支");
-      }
-      projects.setPath(record.id, sqliteRelativePath(record.id));
-      const stored = projects.getById(record.id);
-      if (stored === null) throw new Error("导入项目后无法读取记录");
-      const worktree = openWorktree(opened.repo, stored.id, branchName);
-      return this.#setOpened(
-        toOpenedRecord({ ...stored, displayName }),
-        opened.repo,
-        repositoryDb,
-        worktree,
-      );
-    } catch (error) {
-      repositoryDb?.close();
-      if (record !== null) {
-        await removeIfPresent(sqliteAbsoluteDir(record.id));
+        removeFileIfPresent(fileName);
         projects.removeById(record.id);
       }
       throw error;
@@ -197,10 +150,12 @@ export class ProjectRepositoryManager {
   }
 
   async #openRecord(record: ProjectDbRecord): Promise<OpenedProject> {
-    await ensureDirectory(sqliteAbsoluteDir(record.id));
+    if (!projectFileExists(record.path)) {
+      throw new Error("项目文件不存在");
+    }
     let repositoryDb: Database | null = null;
     try {
-      const opened = openProjectRepository(record.id);
+      const opened = openProjectRepository(record.path);
       repositoryDb = opened.db;
       const branchName = opened.repo.getCurrentBranch();
       if (branchName === null || branchName === "") {
@@ -220,22 +175,46 @@ export class ProjectRepositoryManager {
     if (this.#opening?.promise === promise) this.#opening = null;
   }
 
-  async delete(id: number, updateCatalog = true): Promise<void> {
-    if (this.#opened?.record.id === id) this.close();
+  async delete(id: number): Promise<void> {
     const { projects } = getMobileAppState();
-    await removeIfPresent(sqliteAbsoluteDir(id));
-    if (updateCatalog) projects.removeById(id);
+    const record = projects.getById(id);
+    if (this.#opened?.record.id === id) this.close();
+    if (record !== null) removeFileIfPresent(record.path);
+    projects.removeById(id);
+    notifyProjectFilesChanged();
   }
 
   rename(id: number, displayName: string): ProjectDbRecord {
     const { projects } = getMobileAppState();
     const name = normalizeDisplayName(displayName);
-    projects.setDisplayName(id, name);
     const record = projects.getById(id);
     if (record === null) throw new Error("项目不存在");
-    const updated = toOpenedRecord(record);
-    if (this.#opened?.record.id === id) this.#opened = { ...this.#opened, record: updated };
-    return updated;
+    const nextFileName = toProjectFileName(name);
+    if (nextFileName !== record.path) {
+      if (projectFileExists(nextFileName) || projects.getByPath(nextFileName) !== null) {
+        throw new Error("已存在同名项目文件");
+      }
+      renameProjectFile(record.path, nextFileName);
+      projects.setPath(id, nextFileName);
+      notifyProjectFilesChanged();
+    }
+    projects.setDisplayName(id, name);
+    const updated = projects.getById(id);
+    if (updated === null) throw new Error("项目不存在");
+    const openedRecord = toOpenedRecord(updated);
+    if (this.#opened?.record.id === id) {
+      this.#opened = { ...this.#opened, record: openedRecord, fileName: nextFileName };
+    }
+    return openedRecord;
+  }
+
+  share(id: number): void {
+    const record =
+      this.#opened?.record.id === id
+        ? this.#opened.record
+        : getMobileAppState().projects.getById(id);
+    if (record === null) throw new Error("项目不存在");
+    shareProjectFile(record.path);
   }
 
   close(): void {
@@ -255,7 +234,7 @@ export class ProjectRepositoryManager {
       repository,
       repositoryDb,
       worktree,
-      repositoryPath: sqliteAbsoluteFile(record.id),
+      fileName: record.path,
       aiChat: null as unknown as ProjectAiChatController,
       close: () => {
         opened.aiChat[Symbol.dispose]();
@@ -274,14 +253,6 @@ export class ProjectRepositoryManager {
     });
     this.#opened = opened;
     return opened;
-  }
-}
-
-export class ProjectConflictError extends Error {
-  readonly name = "ProjectConflictError";
-
-  constructor(readonly existing: ProjectDbRecord) {
-    super(`项目已存在：${existing.displayName ?? existing.path}`);
   }
 }
 

@@ -8,19 +8,25 @@
 #pragma once
 
 // Forward declarations of C++ defined types
+// Forward declaration of `HybridNativeFsSpec` to properly resolve imports.
+namespace margelo::nitro::mobilesqlite { class HybridNativeFsSpec; }
 // Forward declaration of `HybridNativeSqlitePlatformSpec` to properly resolve imports.
 namespace margelo::nitro::mobilesqlite { class HybridNativeSqlitePlatformSpec; }
 
 // Forward declarations of Swift defined types
+// Forward declaration of `HybridNativeFsSpec_cxx` to properly resolve imports.
+namespace NovelEvolverMobileSqlite { class HybridNativeFsSpec_cxx; }
 // Forward declaration of `HybridNativeSqlitePlatformSpec_cxx` to properly resolve imports.
 namespace NovelEvolverMobileSqlite { class HybridNativeSqlitePlatformSpec_cxx; }
 
 // Include C++ defined types
+#include "HybridNativeFsSpec.hpp"
 #include "HybridNativeSqlitePlatformSpec.hpp"
 #include <NitroModules/Result.hpp>
 #include <exception>
 #include <memory>
 #include <string>
+#include <vector>
 
 /**
  * Contains specialized versions of C++ templated types so they can be accessed from Swift,
@@ -28,6 +34,56 @@ namespace NovelEvolverMobileSqlite { class HybridNativeSqlitePlatformSpec_cxx; }
  */
 namespace margelo::nitro::mobilesqlite::bridge::swift {
 
+  // pragma MARK: std::vector<std::string>
+  /**
+   * Specialized version of `std::vector<std::string>`.
+   */
+  using std__vector_std__string_ = std::vector<std::string>;
+  inline std::vector<std::string> create_std__vector_std__string_(size_t size) noexcept {
+    std::vector<std::string> vector;
+    vector.reserve(size);
+    return vector;
+  }
+  
+  // pragma MARK: std::shared_ptr<HybridNativeFsSpec>
+  /**
+   * Specialized version of `std::shared_ptr<HybridNativeFsSpec>`.
+   */
+  using std__shared_ptr_HybridNativeFsSpec_ = std::shared_ptr<HybridNativeFsSpec>;
+  std::shared_ptr<HybridNativeFsSpec> create_std__shared_ptr_HybridNativeFsSpec_(void* NON_NULL swiftUnsafePointer) noexcept;
+  void* NON_NULL get_std__shared_ptr_HybridNativeFsSpec_(std__shared_ptr_HybridNativeFsSpec_ cppType);
+  
+  // pragma MARK: std::weak_ptr<HybridNativeFsSpec>
+  using std__weak_ptr_HybridNativeFsSpec_ = std::weak_ptr<HybridNativeFsSpec>;
+  inline std__weak_ptr_HybridNativeFsSpec_ weakify_std__shared_ptr_HybridNativeFsSpec_(const std::shared_ptr<HybridNativeFsSpec>& strong) noexcept { return strong; }
+  
+  // pragma MARK: Result<std::vector<std::string>>
+  using Result_std__vector_std__string__ = Result<std::vector<std::string>>;
+  inline Result_std__vector_std__string__ create_Result_std__vector_std__string__(const std::vector<std::string>& value) noexcept {
+    return Result<std::vector<std::string>>::withValue(value);
+  }
+  inline Result_std__vector_std__string__ create_Result_std__vector_std__string__(const std::exception_ptr& error) noexcept {
+    return Result<std::vector<std::string>>::withError(error);
+  }
+  
+  // pragma MARK: Result<bool>
+  using Result_bool_ = Result<bool>;
+  inline Result_bool_ create_Result_bool_(bool value) noexcept {
+    return Result<bool>::withValue(std::move(value));
+  }
+  inline Result_bool_ create_Result_bool_(const std::exception_ptr& error) noexcept {
+    return Result<bool>::withError(error);
+  }
+  
+  // pragma MARK: Result<void>
+  using Result_void_ = Result<void>;
+  inline Result_void_ create_Result_void_() noexcept {
+    return Result<void>::withValue();
+  }
+  inline Result_void_ create_Result_void_(const std::exception_ptr& error) noexcept {
+    return Result<void>::withError(error);
+  }
+  
   // pragma MARK: std::shared_ptr<HybridNativeSqlitePlatformSpec>
   /**
    * Specialized version of `std::shared_ptr<HybridNativeSqlitePlatformSpec>`.

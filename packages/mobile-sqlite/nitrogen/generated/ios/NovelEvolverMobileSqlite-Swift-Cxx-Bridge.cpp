@@ -8,12 +8,29 @@
 #include "NovelEvolverMobileSqlite-Swift-Cxx-Bridge.hpp"
 
 // Include C++ implementation defined types
+#include "HybridNativeFsSpecSwift.hpp"
 #include "HybridNativeSqlitePlatformSpecSwift.hpp"
 #include "NovelEvolverMobileSqlite-Swift-Cxx-Umbrella.hpp"
 #include <NitroModules/NitroDefines.hpp>
 
 namespace margelo::nitro::mobilesqlite::bridge::swift {
 
+  // pragma MARK: std::shared_ptr<HybridNativeFsSpec>
+  std::shared_ptr<HybridNativeFsSpec> create_std__shared_ptr_HybridNativeFsSpec_(void* NON_NULL swiftUnsafePointer) noexcept {
+    NovelEvolverMobileSqlite::HybridNativeFsSpec_cxx swiftPart = NovelEvolverMobileSqlite::HybridNativeFsSpec_cxx::fromUnsafe(swiftUnsafePointer);
+    return std::make_shared<margelo::nitro::mobilesqlite::HybridNativeFsSpecSwift>(swiftPart);
+  }
+  void* NON_NULL get_std__shared_ptr_HybridNativeFsSpec_(std__shared_ptr_HybridNativeFsSpec_ cppType) {
+    std::shared_ptr<margelo::nitro::mobilesqlite::HybridNativeFsSpecSwift> swiftWrapper = std::dynamic_pointer_cast<margelo::nitro::mobilesqlite::HybridNativeFsSpecSwift>(cppType);
+    #ifdef NITRO_DEBUG
+    if (swiftWrapper == nullptr) [[unlikely]] {
+      throw std::runtime_error("Class \"HybridNativeFsSpec\" is not implemented in Swift!");
+    }
+    #endif
+    NovelEvolverMobileSqlite::HybridNativeFsSpec_cxx& swiftPart = swiftWrapper->getSwiftPart();
+    return swiftPart.toUnsafe();
+  }
+  
   // pragma MARK: std::shared_ptr<HybridNativeSqlitePlatformSpec>
   std::shared_ptr<HybridNativeSqlitePlatformSpec> create_std__shared_ptr_HybridNativeSqlitePlatformSpec_(void* NON_NULL swiftUnsafePointer) noexcept {
     NovelEvolverMobileSqlite::HybridNativeSqlitePlatformSpec_cxx swiftPart = NovelEvolverMobileSqlite::HybridNativeSqlitePlatformSpec_cxx::fromUnsafe(swiftUnsafePointer);

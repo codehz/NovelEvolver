@@ -10,6 +10,17 @@ import {
 } from "./values";
 
 export type { QueryRow, QueryResult, SqlValue };
+export {
+  PROJECTS_LOCATION,
+  deleteProjectFile,
+  displayNameFromFile,
+  listProjectFiles,
+  notifyProjectFilesChanged,
+  projectFileExists,
+  renameProjectFile,
+  shareProjectFile,
+  toProjectFileName,
+} from "./project-files";
 
 let nativeSqlite: NativeSqlite | undefined;
 

@@ -13,7 +13,9 @@ SQL 参数和结果行用 JSI 直接传 `string` / `number` / `boolean` / `null`
 - `readonly`（`SQLITE_OPEN_READONLY`）
 - `Symbol.dispose`
 
-原生层只暴露 `open` / `execute` / `close`。`Statement` 缓存的是 SQL 字符串，不是原生 prepared statement。
+原生层 SQLite 只暴露 `open` / `execute` / `close`。`Statement` 缓存的是 SQL 字符串，不是原生 prepared statement。
+
+项目 `.npk` 在 `{filesDir,Documents}/novelevolver/projects/`，JS 只使用文件名（`listProjectFiles` / `deleteProjectFile` / `renameProjectFile` / `shareProjectFile`）。Android 通过 `DocumentsProvider` 把该目录暴露给系统文件应用；iOS 分享为 stub。
 
 改 `*.nitro.ts` 或 `nitro.json` 后，在本包运行 `bun run specs`，并提交 `nitrogen/generated/`。
 
@@ -24,8 +26,8 @@ SQL 参数和结果行用 JSI 直接传 `string` / `number` / `boolean` / `null`
 ```ts
 import { Database } from "@novelevolver/mobile-sqlite";
 
-const database = new Database("project.sqlite", {
-  location: "projects/123",
+const database = new Database("demo.npk", {
+  location: "novelevolver/projects",
 });
 ```
 

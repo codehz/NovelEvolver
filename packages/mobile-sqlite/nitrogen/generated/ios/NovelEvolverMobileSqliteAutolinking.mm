@@ -12,6 +12,7 @@
 
 #include "HybridNativeSqlite.hpp"
 #include "HybridNativeSqlitePlatformSpecSwift.hpp"
+#include "HybridNativeFsSpecSwift.hpp"
 
 @interface NovelEvolverMobileSqliteAutolinking : NSObject
 @end
@@ -35,6 +36,13 @@
     "NativeSqlitePlatform",
     []() -> std::shared_ptr<HybridObject> {
       std::shared_ptr<HybridNativeSqlitePlatformSpec> hybridObject = NovelEvolverMobileSqlite::NovelEvolverMobileSqliteAutolinking::createNativeSqlitePlatform();
+      return hybridObject;
+    }
+  );
+  HybridObjectRegistry::registerHybridObjectConstructor(
+    "NativeFs",
+    []() -> std::shared_ptr<HybridObject> {
+      std::shared_ptr<HybridNativeFsSpec> hybridObject = NovelEvolverMobileSqlite::NovelEvolverMobileSqliteAutolinking::createNativeFs();
       return hybridObject;
     }
   );

@@ -8,15 +8,19 @@
 #pragma once
 
 // Forward declarations of C++ defined types
+// Forward declaration of `HybridNativeFsSpec` to properly resolve imports.
+namespace margelo::nitro::mobilesqlite { class HybridNativeFsSpec; }
 // Forward declaration of `HybridNativeSqlitePlatformSpec` to properly resolve imports.
 namespace margelo::nitro::mobilesqlite { class HybridNativeSqlitePlatformSpec; }
 
 // Include C++ defined types
+#include "HybridNativeFsSpec.hpp"
 #include "HybridNativeSqlitePlatformSpec.hpp"
 #include <NitroModules/Result.hpp>
 #include <exception>
 #include <memory>
 #include <string>
+#include <vector>
 
 // C++ helpers for Swift
 #include "NovelEvolverMobileSqlite-Swift-Cxx-Bridge.hpp"
@@ -28,6 +32,8 @@ namespace margelo::nitro::mobilesqlite { class HybridNativeSqlitePlatformSpec; }
 #include <NitroModules/DateToChronoDate.hpp>
 
 // Forward declarations of Swift defined types
+// Forward declaration of `HybridNativeFsSpec_cxx` to properly resolve imports.
+namespace NovelEvolverMobileSqlite { class HybridNativeFsSpec_cxx; }
 // Forward declaration of `HybridNativeSqlitePlatformSpec_cxx` to properly resolve imports.
 namespace NovelEvolverMobileSqlite { class HybridNativeSqlitePlatformSpec_cxx; }
 

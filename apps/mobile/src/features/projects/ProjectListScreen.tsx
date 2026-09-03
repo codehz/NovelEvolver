@@ -1,22 +1,30 @@
-import { useNavigation } from "@react-navigation/native";
+import { useFocusEffect, useNavigation } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
-import { useState } from "react";
+import { useCallback, useState } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import type { RootStackParamList } from "../../app/navigation-types";
-import { pickNpkDocument } from "../../shared/files/mobile-file-bridge";
 import { color, fontFamily, fontSize, radius, space, wash } from "../../shared/theme";
 import { useOverlay } from "../../shared/ui/OverlayHost";
 import { errorMessage } from "./error-message";
-import { ProjectConflictError } from "./git/repository-manager";
 import { useProjectManager } from "./ProjectManagerProvider";
+
+const IMPORT_HELP =
+  "本应用通过系统文件管理器暴露项目目录。把桌面端的 .npk 复制到「NovelEvolver」即可出现在列表中；也可以从该目录把文件拷出或分享。";
 
 export function ProjectListScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const overlay = useOverlay();
   const manager = useProjectManager();
   const [busy, setBusy] = useState(false);
+
+  const { refresh } = manager;
+  useFocusEffect(
+    useCallback(() => {
+      refresh();
+    }, [refresh]),
+  );
 
   const createProject = async () => {
     if (busy) return;
@@ -31,37 +39,15 @@ export function ProjectListScreen() {
       const opened = await manager.createEmpty(name);
       navigation.navigate("Project", { projectId: opened.record.id });
     } catch (error) {
+      manager.refresh();
       await overlay.alert({ title: "创建失败", message: errorMessage(error) });
     } finally {
       setBusy(false);
     }
   };
 
-  const importProject = async () => {
-    if (busy) return;
-    setBusy(true);
-    try {
-      const picked = await pickNpkDocument();
-      if (picked === null) return;
-      let opened;
-      try {
-        opened = await manager.importProject(picked.uri, picked.fileName);
-      } catch (error) {
-        if (!(error instanceof ProjectConflictError)) throw error;
-        const confirmed = await overlay.confirm({
-          title: "覆盖本地项目？",
-          message: `“${error.existing.displayName}”的 Git 仓库和草稿将被替换。`,
-          confirmLabel: "覆盖",
-        });
-        if (!confirmed) return;
-        opened = await manager.importProject(picked.uri, picked.fileName, true);
-      }
-      navigation.navigate("Project", { projectId: opened.record.id });
-    } catch (error) {
-      await overlay.alert({ title: "导入失败", message: errorMessage(error) });
-    } finally {
-      setBusy(false);
-    }
+  const showImportHelp = () => {
+    void overlay.alert({ title: "如何加入项目", message: IMPORT_HELP });
   };
 
   return (
@@ -85,21 +71,17 @@ export function ProjectListScreen() {
         >
           <Text style={styles.primaryText}>新建项目</Text>
         </Pressable>
-        <Pressable
-          style={styles.secondaryButton}
-          onPress={() => {
-            void importProject();
-          }}
-          disabled={busy}
-        >
-          <Text style={styles.secondaryText}>{busy ? "处理中…" : "导入 .npk"}</Text>
+        <Pressable style={styles.secondaryButton} onPress={showImportHelp} disabled={busy}>
+          <Text style={styles.secondaryText}>如何加入</Text>
         </Pressable>
       </View>
       <View style={styles.list}>
         {manager.records.length === 0 ? (
           <View style={styles.empty}>
             <Text style={styles.emptyTitle}>还没有项目</Text>
-            <Text style={styles.emptyText}>新建空白项目，或从桌面端导入 .npk 文件。</Text>
+            <Text style={styles.emptyText}>
+              新建空白项目，或用系统文件应用把 .npk 复制到 NovelEvolver 目录。
+            </Text>
           </View>
         ) : (
           manager.records.map((record) => (

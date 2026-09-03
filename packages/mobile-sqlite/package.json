@@ -2,7 +2,7 @@
   "name": "@novelevolver/mobile-sqlite",
   "version": "0.0.0",
   "private": true,
-  "description": "Bundled SQLite Nitro Module for the NovelEvolver mobile app",
+  "description": "Bundled SQLite Nitro Module and Android project-file access for the NovelEvolver mobile app",
   "files": [
     "android",
     "cpp",

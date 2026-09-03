@@ -49,7 +49,7 @@ export function ProjectScreen() {
     );
   }
 
-  const { renameProject, exportProject, ...workspaceProps } = workspace;
+  const { renameProject, shareProject, ...workspaceProps } = workspace;
 
   return (
     <SafeAreaView edges={["bottom"]} style={styles.safeArea}>
@@ -72,9 +72,9 @@ export function ProjectScreen() {
               }}
             />
             <SettingsHeaderButton
-              label="导出"
+              label="分享"
               onPress={() => {
-                void exportProject();
+                void shareProject();
               }}
             />
           </>

@@ -15,6 +15,7 @@
 #include <fbjni/fbjni.h>
 #include <NitroModules/HybridObjectRegistry.hpp>
 
+#include "JHybridNativeFsSpec.hpp"
 #include "JHybridNativeSqlitePlatformSpec.hpp"
 #include "HybridNativeSqlite.hpp"
 #include <NitroModules/DefaultConstructableObject.hpp>
@@ -35,12 +36,21 @@ struct JHybridNativeSqlitePlatformSpecImpl: public jni::JavaClass<JHybridNativeS
     return javaPart->getJHybridNativeSqlitePlatformSpec();
   }
 };
+struct JHybridNativeFsSpecImpl: public jni::JavaClass<JHybridNativeFsSpecImpl, JHybridNativeFsSpec::JavaPart> {
+  static constexpr auto kJavaDescriptor = "Lcom/margelo/nitro/mobilesqlite/HybridNativeFs;";
+  static std::shared_ptr<JHybridNativeFsSpec> create() {
+    static const auto constructorFn = javaClassStatic()->getConstructor<JHybridNativeFsSpecImpl::javaobject()>();
+    jni::local_ref<JHybridNativeFsSpec::JavaPart> javaPart = javaClassStatic()->newObject(constructorFn);
+    return javaPart->getJHybridNativeFsSpec();
+  }
+};
 
 void registerAllNatives() {
   using namespace margelo::nitro;
   using namespace margelo::nitro::mobilesqlite;
 
   // Register native JNI methods
+  margelo::nitro::mobilesqlite::JHybridNativeFsSpec::CxxPart::registerNatives();
   margelo::nitro::mobilesqlite::JHybridNativeSqlitePlatformSpec::CxxPart::registerNatives();
 
   // Register Nitro Hybrid Objects
@@ -57,6 +67,12 @@ void registerAllNatives() {
     "NativeSqlitePlatform",
     []() -> std::shared_ptr<HybridObject> {
       return JHybridNativeSqlitePlatformSpecImpl::create();
+    }
+  );
+  HybridObjectRegistry::registerHybridObjectConstructor(
+    "NativeFs",
+    []() -> std::shared_ptr<HybridObject> {
+      return JHybridNativeFsSpecImpl::create();
     }
   );
 }

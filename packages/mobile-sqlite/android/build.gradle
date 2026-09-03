@@ -147,4 +147,5 @@ dependencies {
   //noinspection GradleDynamicVersion
   implementation "com.facebook.react:react-native:+"
   implementation project(":react-native-nitro-modules")
+  implementation "androidx.core:core-ktx:1.15.0"
 }

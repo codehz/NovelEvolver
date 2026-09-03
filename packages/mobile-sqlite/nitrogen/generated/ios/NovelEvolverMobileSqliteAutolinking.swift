@@ -23,4 +23,16 @@ public final class NovelEvolverMobileSqliteAutolinking {
   public static func isNativeSqlitePlatformRecyclable() -> Bool {
     return HybridNativeSqlitePlatform.self is any RecyclableView.Type
   }
+  
+  public static func createNativeFs() -> bridge.std__shared_ptr_HybridNativeFsSpec_ {
+    let hybridObject = HybridNativeFs()
+    return { () -> bridge.std__shared_ptr_HybridNativeFsSpec_ in
+      let __cxxWrapped = hybridObject.getCxxWrapper()
+      return __cxxWrapped.getCxxPart()
+    }()
+  }
+  
+  public static func isNativeFsRecyclable() -> Bool {
+    return HybridNativeFs.self is any RecyclableView.Type
+  }
 }

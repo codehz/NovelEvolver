@@ -33,9 +33,11 @@ target_sources(
   # Autolinking Setup
   ../nitrogen/generated/android/NovelEvolverMobileSqliteOnLoad.cpp
   # Shared Nitrogen C++ sources
+  ../nitrogen/generated/shared/c++/HybridNativeFsSpec.cpp
   ../nitrogen/generated/shared/c++/HybridNativeSqliteSpec.cpp
   ../nitrogen/generated/shared/c++/HybridNativeSqlitePlatformSpec.cpp
   # Android-specific Nitrogen C++ sources
+  ../nitrogen/generated/android/c++/JHybridNativeFsSpec.cpp
   ../nitrogen/generated/android/c++/JHybridNativeSqlitePlatformSpec.cpp
 )
 

@@ -24,6 +24,16 @@
         "language": "kotlin",
         "implementationClassName": "HybridNativeSqlitePlatform"
       }
+    },
+    "NativeFs": {
+      "ios": {
+        "language": "swift",
+        "implementationClassName": "HybridNativeFs"
+      },
+      "android": {
+        "language": "kotlin",
+        "implementationClassName": "HybridNativeFs"
+      }
     }
   },
   "ignorePaths": ["**/node_modules"],

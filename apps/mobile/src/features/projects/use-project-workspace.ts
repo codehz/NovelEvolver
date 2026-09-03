@@ -6,12 +6,6 @@ import type {
 } from "@novelevolver/domain/worktree";
 import { useEffect, useState } from "react";
 
-import {
-  appFiles,
-  copyPath,
-  ensureDirectory,
-  shareNpk,
-} from "../../shared/files/mobile-file-bridge";
 import { useOverlay } from "../../shared/ui/OverlayHost";
 import type { EditorDocument } from "./editor/editor-document";
 import { errorMessage } from "./error-message";
@@ -23,7 +17,7 @@ import { containsResourceNode, resourceCreateParentId } from "./resource/resourc
 
 export type ProjectWorkspaceModel = ProjectWorkspaceProps & {
   renameProject: () => Promise<void>;
-  exportProject: () => Promise<void>;
+  shareProject: () => Promise<void>;
 };
 
 export function useProjectWorkspace(projectId: number): ProjectWorkspaceModel | null {
@@ -266,22 +260,11 @@ export function useProjectWorkspace(projectId: number): ProjectWorkspaceModel | 
       opened.worktree.moveResourceNode(sourceId, parentId);
     });
   };
-  const exportProject = async () => {
-    if (!opened.worktree.hasCommittedTip()) {
-      await overlay.alert({ title: "无法导出", message: "项目尚无提交，请先提交内容。" });
-      return;
-    }
-    if (opened.worktree.hasPendingChanges()) {
-      await overlay.alert({ title: "无法导出", message: "存在未提交修改，请先提交。" });
-      return;
-    }
+  const shareProject = async () => {
     try {
-      await ensureDirectory(appFiles.cache);
-      const output = `${appFiles.cache}/${opened.record.id}.npk`;
-      await copyPath(opened.repositoryPath, output);
-      await shareNpk(output, `${opened.record.displayName ?? "project"}.npk`);
+      manager.shareProject(opened.record.id);
     } catch (error) {
-      await overlay.alert({ title: "导出失败", message: errorMessage(error) });
+      await overlay.alert({ title: "分享失败", message: errorMessage(error) });
     }
   };
 
@@ -375,6 +358,6 @@ export function useProjectWorkspace(projectId: number): ProjectWorkspaceModel | 
     },
     onCommitChanges: commitChanges,
     renameProject,
-    exportProject,
+    shareProject,
   };
 }
