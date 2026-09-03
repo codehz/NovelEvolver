@@ -15,9 +15,11 @@ function toJsxAttributes(body) {
   });
 }
 
-function createIconModule(name, body) {
-  const svgBody = toJsxAttributes(body);
-  return `import Svg, { Path } from "react-native-svg";\n\nexport default function Icon${name}({ color, width = 16, height = 16, ...props }) {\n  return (\n    <Svg width={width} height={height} viewBox="0 0 16 16" {...props}>\n      ${svgBody.replace("<path", "<Path").replace("/>", "/>")}\n    </Svg>\n  );\n}\n`;
+function createIconModule(name, definition) {
+  const svgBody = toJsxAttributes(definition.body);
+  const viewBoxWidth = definition.width ?? 16;
+  const viewBoxHeight = definition.height ?? 16;
+  return `import Svg, { Path } from "react-native-svg";\n\nexport default function Icon${name}({ color, width = 16, height = 16, ...props }) {\n  return (\n    <Svg width={width} height={height} viewBox="0 0 ${viewBoxWidth} ${viewBoxHeight}" {...props}>\n      ${svgBody.replace("<path", "<Path").replace("/>", "/>")}\n    </Svg>\n  );\n}\n`;
 }
 
 function iconName(icon) {
@@ -29,7 +31,7 @@ function generateIconModules() {
   for (const [icon, definition] of Object.entries(icons)) {
     if (!/^<path\b/.test(definition.body)) continue;
     const filePath = path.join(generatedDirectory, `${icon}.tsx`);
-    const source = createIconModule(iconName(icon), definition.body);
+    const source = createIconModule(iconName(icon), definition);
     if (!fs.existsSync(filePath) || fs.readFileSync(filePath, "utf8") !== source) {
       fs.writeFileSync(filePath, source);
     }
