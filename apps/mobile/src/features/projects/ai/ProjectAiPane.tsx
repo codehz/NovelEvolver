@@ -1,24 +1,26 @@
 import { listMockScenarios } from "@novelevolver/ai-runtime";
-import type {
-  AiChatMentionRef,
-  AiChatSlashRef,
-  AiChatUserMessage,
-  AiConversationSearchHit,
-  AiConversationSummary,
-} from "@novelevolver/domain/ai";
+import type { AiChatMentionRef, AiChatSlashRef, AiChatUserMessage } from "@novelevolver/domain/ai";
 import {
   AI_REASONING_LEVEL_LABELS,
   type AiPromptConfigPublic,
   type AiReasoningLevel,
 } from "@novelevolver/domain/settings/ai-settings";
-import { useRef, useState, type ComponentRef } from "react";
-import { Pressable, Text, View } from "react-native";
+import { useEffect, useRef, useState, type ComponentRef } from "react";
+import { Pressable, StyleSheet, Text, View } from "react-native";
+import Animated, {
+  FadeIn,
+  FadeOut,
+  useAnimatedStyle,
+  useSharedValue,
+  withTiming,
+} from "react-native-reanimated";
 import IconAdd from "~icons/codicon/add";
 import IconBeaker from "~icons/codicon/beaker";
 import IconHistory from "~icons/codicon/history";
 
 import { getMobileSettings } from "../../../shared/settings/session";
 import type { ContextMenuAnchor } from "../../../shared/ui/context-menu-position";
+import { OVERLAY_TIMING } from "../../../shared/ui/overlay-chrome";
 import { useOverlay } from "../../../shared/ui/OverlayHost";
 import { SettingsHeaderButton } from "../../settings/SettingsHeaderButton";
 import { errorMessage } from "../error-message";
@@ -27,6 +29,7 @@ import { projectPaneStyles } from "../project-pane-chrome";
 import { ProjectMediumHeader, type ProjectMediumHeaderNavigation } from "../ProjectMediumHeader";
 import { aiStyles } from "./ai-chrome";
 import { AiAskUserBar } from "./AiAskUserBar";
+import { AiChatHistoryPage } from "./AiChatHistoryPage";
 import { AiComposer, type AiComposerHandle } from "./AiComposer";
 import { AiMessageList } from "./AiMessageList";
 import { AiPickerList } from "./AiPickerList";
@@ -39,7 +42,8 @@ import {
 } from "./mention-catalog";
 import { useProjectAi } from "./use-project-ai";
 
-type AiMenu = "history" | "models" | "agents" | "reasoning" | "scenarios";
+type AiMenu = "models" | "agents" | "reasoning" | "scenarios";
+type AiPage = "chat" | "history";
 
 type ProjectAiPaneProps = {
   opened: OpenedProject;
@@ -52,13 +56,21 @@ export function ProjectAiPane({ opened, onWorkspaceDirty, mediumHeader }: Projec
   const ai = useProjectAi(opened, onWorkspaceDirty);
   const composerRef = useRef<AiComposerHandle>(null);
   const scenarioMenuTriggerRef = useRef<ComponentRef<typeof Pressable>>(null);
-  const historyMenuTriggerRef = useRef<ComponentRef<typeof Pressable>>(null);
+  const [page, setPage] = useState<AiPage>("chat");
   const [trigger, setTrigger] = useState<ComposerTrigger | null>(null);
   const [triggerQuery, setTriggerQuery] = useState("");
   const [draft, setDraft] = useState("");
   const [slash, setSlash] = useState<AiChatSlashRef | null>(null);
   const [mentions, setMentions] = useState<AiChatMentionRef[]>([]);
-  const [includeArchived, setIncludeArchived] = useState(false);
+  const navigationProgress = useSharedValue(0);
+
+  useEffect(() => {
+    navigationProgress.value = withTiming(page === "history" ? 1 : 0, OVERLAY_TIMING);
+  }, [navigationProgress, page]);
+
+  const chatAnimatedStyle = useAnimatedStyle(() => ({
+    opacity: 1 - navigationProgress.value,
+  }));
 
   const outline = opened.worktree.getManuscriptOutline();
   const resourceTree = opened.worktree.getResourceTree();
@@ -72,6 +84,7 @@ export function ProjectAiPane({ opened, onWorkspaceDirty, mediumHeader }: Projec
 
   const handleCreate = () => {
     ai.createConversation();
+    setPage("chat");
     composerRef.current?.clear();
     setDraft("");
     setSlash(null);
@@ -81,44 +94,15 @@ export function ProjectAiPane({ opened, onWorkspaceDirty, mediumHeader }: Projec
   };
 
   const handleSelectConversation = (conversationId: string) => {
-    ai.switchConversation(conversationId);
+    if (conversationId !== ai.snapshot.conversationId) {
+      ai.switchConversation(conversationId);
+    }
+    setPage("chat");
     composerRef.current?.clear();
     setDraft("");
     setSlash(null);
     setMentions([]);
     clearTrigger();
-  };
-
-  const handleRename = async (conversation: AiConversationSummary) => {
-    const title = await overlay.prompt({
-      title: "重命名会话",
-      initialValue: conversation.title,
-      confirmLabel: "保存",
-    });
-    if (title === null) {
-      return;
-    }
-    try {
-      ai.renameConversation(conversation.id, title);
-    } catch (error) {
-      await overlay.alert({ title: "重命名失败", message: errorMessage(error) });
-    }
-  };
-
-  const handleDelete = async (conversation: AiConversationSummary) => {
-    const confirmed = await overlay.confirm({
-      title: "删除会话？",
-      message: "删除后无法恢复。",
-      confirmLabel: "删除",
-    });
-    if (!confirmed) {
-      return;
-    }
-    try {
-      ai.deleteConversation(conversation.id);
-    } catch (error) {
-      await overlay.alert({ title: "删除失败", message: errorMessage(error) });
-    }
   };
 
   const handleEditUser = async (message: AiChatUserMessage) => {
@@ -175,105 +159,7 @@ export function ProjectAiPane({ opened, onWorkspaceDirty, mediumHeader }: Projec
   const filteredMentionItems = filterMentionCatalog(mentionItems, triggerQuery);
   const selectedModel = ai.models.find((model) => model.id === ai.snapshot.selectedModelId);
 
-  const openConversationActions = async (
-    conversation: AiConversationSummary,
-    anchor: ContextMenuAnchor,
-  ) => {
-    const action = await overlay.menu({
-      anchor,
-      title: conversation.title || "新会话",
-      options: [
-        { key: "rename", label: "重命名" },
-        {
-          key: conversation.status === "archived" ? "unarchive" : "archive",
-          label: conversation.status === "archived" ? "取消归档" : "归档",
-        },
-        { key: "delete", label: "删除", destructive: true },
-      ],
-    });
-    if (action === "rename") await handleRename(conversation);
-    if (action === "archive") ai.archiveConversation(conversation.id);
-    if (action === "unarchive") ai.unarchiveConversation(conversation.id);
-    if (action === "delete") await handleDelete(conversation);
-  };
-
-  const openHistoryChoices = async (
-    anchor: ContextMenuAnchor,
-    conversations: readonly (AiConversationSummary | AiConversationSearchHit)[],
-    title: string,
-    showControls: boolean,
-    showArchived: boolean,
-  ) => {
-    const action = await overlay.menu({
-      anchor,
-      width: "wide",
-      title,
-      selectedKey: ai.snapshot.conversationId,
-      emptyLabel: "没有匹配的会话。",
-      options: [
-        ...(showControls
-          ? [
-              { key: "action:search", label: "搜索会话…" },
-              { key: "action:manage", label: "管理当前会话…" },
-              {
-                key: "action:archived",
-                label: showArchived ? "隐藏已归档" : "显示已归档",
-              },
-            ]
-          : []),
-        ...conversations.map((conversation) => ({
-          key: conversation.id,
-          label: conversation.title || "新会话",
-          detail:
-            "snippet" in conversation && conversation.snippet
-              ? conversation.snippet
-              : conversation.status === "archived"
-                ? "已归档"
-                : undefined,
-        })),
-      ],
-    });
-
-    if (action === "action:search") {
-      const query = await overlay.prompt({
-        title: "搜索会话",
-        placeholder: "标题或消息内容",
-        confirmLabel: "搜索",
-      });
-      if (query !== null) {
-        const hits = ai.searchConversations(query, showArchived);
-        await openHistoryChoices(anchor, hits, `搜索：${query}`, false, showArchived);
-      }
-      return;
-    }
-    if (action === "action:manage") {
-      const current = ai.conversations.find(
-        (conversation) => conversation.id === ai.snapshot.conversationId,
-      );
-      if (current) await openConversationActions(current, anchor);
-      return;
-    }
-    if (action === "action:archived") {
-      const nextIncludeArchived = !showArchived;
-      setIncludeArchived(nextIncludeArchived);
-      const visible = nextIncludeArchived
-        ? ai.conversations
-        : ai.conversations.filter((conversation) => conversation.status !== "archived");
-      await openHistoryChoices(anchor, visible, "历史会话", true, nextIncludeArchived);
-      return;
-    }
-    if (action !== null) handleSelectConversation(action);
-  };
-
   const openAiMenu = async (kind: AiMenu, anchor: ContextMenuAnchor) => {
-    if (kind === "history") {
-      const visible = includeArchived
-        ? ai.conversations
-        : ai.conversations.filter((conversation) => conversation.status !== "archived");
-      await openHistoryChoices(anchor, visible, "历史会话", true, includeArchived);
-      return;
-    }
-
     const request =
       kind === "models"
         ? {
@@ -348,11 +234,10 @@ export function ProjectAiPane({ opened, onWorkspaceDirty, mediumHeader }: Projec
         />
       ) : null}
       <SettingsHeaderButton
-        ref={historyMenuTriggerRef}
         Icon={IconHistory}
-        label="历史会话"
+        label={page === "history" ? "显示当前会话" : "历史会话"}
         onPress={() => {
-          openAiMenuFromTrigger("history", historyMenuTriggerRef.current);
+          setPage((current) => (current === "history" ? "chat" : "history"));
         }}
       />
       <SettingsHeaderButton Icon={IconAdd} label="新建会话" onPress={handleCreate} />
@@ -367,7 +252,7 @@ export function ProjectAiPane({ opened, onWorkspaceDirty, mediumHeader }: Projec
           context={
             <View style={aiStyles.headerTitleWrap}>
               <Text style={aiStyles.title}>AI</Text>
-              <Text style={aiStyles.subtitle}>助手</Text>
+              <Text style={aiStyles.subtitle}>{page === "history" ? "历史会话" : "助手"}</Text>
             </View>
           }
           actions={headerActions}
@@ -376,113 +261,131 @@ export function ProjectAiPane({ opened, onWorkspaceDirty, mediumHeader }: Projec
         <View style={[projectPaneStyles.header, aiStyles.header]}>
           <View style={aiStyles.headerTitleWrap}>
             <Text style={aiStyles.title}>AI</Text>
-            <Text style={aiStyles.subtitle}>助手</Text>
+            <Text style={aiStyles.subtitle}>{page === "history" ? "历史会话" : "助手"}</Text>
           </View>
           <View style={aiStyles.headerActions}>{headerActions}</View>
         </View>
       )}
 
-      <AiMessageList
-        snapshot={ai.snapshot}
-        onRetry={ai.snapshot.canRetry ? ai.retryLastRequest : undefined}
-        onContinue={ai.snapshot.canContinue ? ai.continueLastRequest : undefined}
-        onSelectBranch={ai.selectMessageBranch}
-        onEditUser={(message) => {
-          void handleEditUser(message);
-        }}
-      />
-      <View style={aiStyles.composerDock}>
-        {trigger !== null ? (
-          <View style={aiStyles.triggerPicker}>
-            <Text style={aiStyles.triggerPickerTitle}>
-              {trigger === "/" ? "插入提示词" : "提及节点"}
-              {triggerQuery !== "" ? ` · ${trigger}${triggerQuery}` : ""}
-            </Text>
-            {trigger === "/" ? (
-              filteredPromptItems.length > 0 ? (
-                <AiPickerList
-                  inline
-                  empty="还没有匹配的提示词。"
-                  items={filteredPromptItems.map((prompt) => ({
-                    id: prompt.id,
-                    title: `/${prompt.slug}`,
-                    detail: prompt.title,
-                  }))}
-                  onSelect={(id) => {
-                    const prompt = prompts.find((item) => item.id === id);
-                    if (prompt) {
-                      handlePickPrompt(prompt);
-                    }
-                  }}
-                />
-              ) : null
-            ) : filteredMentionItems.length > 0 ? (
-              <AiPickerList
-                inline
-                empty="没有匹配的项目节点。"
-                items={filteredMentionItems.map((item) => ({
-                  id: `${item.domain}:${item.id}`,
-                  title: `@${item.label}`,
-                  detail: `${kindLabelFor(item.kind, item.domain)} · ${item.displayPath}`,
-                }))}
-                onSelect={(id) => {
-                  const item = mentionItems.find((entry) => `${entry.domain}:${entry.id}` === id);
-                  if (item) {
-                    handlePickMention(item);
-                  }
-                }}
-              />
-            ) : null}
-          </View>
-        ) : null}
-        {ai.snapshot.openInteractions.length > 0 ? (
-          <AiAskUserBar
-            interactions={ai.snapshot.openInteractions}
-            onSubmit={(id, text) => {
-              ai.submitInteraction(id, { kind: "ask_user", text });
-            }}
-            onCancel={ai.cancelInteraction}
-          />
-        ) : (
-          <AiComposer
-            ref={composerRef}
+      <View style={aiStyles.pageViewport}>
+        <Animated.View
+          pointerEvents={page === "chat" ? "auto" : "none"}
+          style={[aiStyles.chatPage, chatAnimatedStyle]}
+        >
+          <AiMessageList
             snapshot={ai.snapshot}
-            models={ai.models}
-            agents={ai.agents}
-            prompts={prompts.map((prompt) => ({
-              promptId: prompt.id,
-              slug: prompt.slug,
-              title: prompt.title,
-              body: prompt.prompt,
-            }))}
-            mentionItems={mentionItems}
-            draft={draft}
-            slash={slash}
-            mentions={mentions}
-            onDraftChange={setDraft}
-            onTriggerChange={(indicator, query) => {
-              setTrigger(indicator);
-              setTriggerQuery(query);
+            onRetry={ai.snapshot.canRetry ? ai.retryLastRequest : undefined}
+            onContinue={ai.snapshot.canContinue ? ai.continueLastRequest : undefined}
+            onSelectBranch={ai.selectMessageBranch}
+            onEditUser={(message) => {
+              void handleEditUser(message);
             }}
-            onClearSlash={() => {
-              setSlash(null);
-            }}
-            onRemoveMention={(token) => {
-              setMentions((current) => current.filter((item) => item.token !== token));
-            }}
-            onOpenModels={(anchor) => {
-              void openAiMenu("models", anchor);
-            }}
-            onOpenAgents={(anchor) => {
-              void openAiMenu("agents", anchor);
-            }}
-            onOpenReasoning={(anchor) => {
-              void openAiMenu("reasoning", anchor);
-            }}
-            onSend={handleSend}
-            onStop={ai.stopGeneration}
           />
-        )}
+          <View style={aiStyles.composerDock}>
+            {trigger !== null ? (
+              <View style={aiStyles.triggerPicker}>
+                <Text style={aiStyles.triggerPickerTitle}>
+                  {trigger === "/" ? "插入提示词" : "提及节点"}
+                  {triggerQuery !== "" ? ` · ${trigger}${triggerQuery}` : ""}
+                </Text>
+                {trigger === "/" ? (
+                  filteredPromptItems.length > 0 ? (
+                    <AiPickerList
+                      inline
+                      empty="还没有匹配的提示词。"
+                      items={filteredPromptItems.map((prompt) => ({
+                        id: prompt.id,
+                        title: `/${prompt.slug}`,
+                        detail: prompt.title,
+                      }))}
+                      onSelect={(id) => {
+                        const prompt = prompts.find((item) => item.id === id);
+                        if (prompt) {
+                          handlePickPrompt(prompt);
+                        }
+                      }}
+                    />
+                  ) : null
+                ) : filteredMentionItems.length > 0 ? (
+                  <AiPickerList
+                    inline
+                    empty="没有匹配的项目节点。"
+                    items={filteredMentionItems.map((item) => ({
+                      id: `${item.domain}:${item.id}`,
+                      title: `@${item.label}`,
+                      detail: `${kindLabelFor(item.kind, item.domain)} · ${item.displayPath}`,
+                    }))}
+                    onSelect={(id) => {
+                      const item = mentionItems.find(
+                        (entry) => `${entry.domain}:${entry.id}` === id,
+                      );
+                      if (item) {
+                        handlePickMention(item);
+                      }
+                    }}
+                  />
+                ) : null}
+              </View>
+            ) : null}
+            {ai.snapshot.openInteractions.length > 0 ? (
+              <AiAskUserBar
+                interactions={ai.snapshot.openInteractions}
+                onSubmit={(id, text) => {
+                  ai.submitInteraction(id, { kind: "ask_user", text });
+                }}
+                onCancel={ai.cancelInteraction}
+              />
+            ) : (
+              <AiComposer
+                ref={composerRef}
+                snapshot={ai.snapshot}
+                models={ai.models}
+                agents={ai.agents}
+                prompts={prompts.map((prompt) => ({
+                  promptId: prompt.id,
+                  slug: prompt.slug,
+                  title: prompt.title,
+                  body: prompt.prompt,
+                }))}
+                mentionItems={mentionItems}
+                draft={draft}
+                slash={slash}
+                mentions={mentions}
+                onDraftChange={setDraft}
+                onTriggerChange={(indicator, query) => {
+                  setTrigger(indicator);
+                  setTriggerQuery(query);
+                }}
+                onClearSlash={() => {
+                  setSlash(null);
+                }}
+                onRemoveMention={(token) => {
+                  setMentions((current) => current.filter((item) => item.token !== token));
+                }}
+                onOpenModels={(anchor) => {
+                  void openAiMenu("models", anchor);
+                }}
+                onOpenAgents={(anchor) => {
+                  void openAiMenu("agents", anchor);
+                }}
+                onOpenReasoning={(anchor) => {
+                  void openAiMenu("reasoning", anchor);
+                }}
+                onSend={handleSend}
+                onStop={ai.stopGeneration}
+              />
+            )}
+          </View>
+        </Animated.View>
+        {page === "history" ? (
+          <Animated.View
+            entering={FadeIn.duration(OVERLAY_TIMING.duration).easing(OVERLAY_TIMING.easing)}
+            exiting={FadeOut.duration(OVERLAY_TIMING.duration).easing(OVERLAY_TIMING.easing)}
+            style={StyleSheet.absoluteFill}
+          >
+            <AiChatHistoryPage ai={ai} onSelectConversation={handleSelectConversation} />
+          </Animated.View>
+        ) : null}
       </View>
     </View>
   );
