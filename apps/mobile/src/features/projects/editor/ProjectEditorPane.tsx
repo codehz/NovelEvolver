@@ -5,6 +5,7 @@ import { StyleSheet, Text, View } from "react-native";
 import { color, fontFamily, fontSize, space, wash } from "../../../shared/theme";
 import { MarkdownTextInput } from "../../../shared/ui/MarkdownTextInput";
 import type { OpenedProject } from "../git/repository-manager";
+import { projectPaneStyles } from "../project-pane-chrome";
 import type { EditorDocument } from "./editor-document";
 
 type ProjectEditorPaneProps = {
@@ -52,9 +53,12 @@ export function ProjectEditorPane({
 
   if (documentId === null || editingDomain === null) {
     return (
-      <View style={styles.center}>
-        <Text style={styles.placeholderTitle}>编辑器</Text>
-        <Text style={styles.placeholderText}>请从目录中选择一个章节或资源文件。</Text>
+      <View style={styles.root}>
+        <View style={projectPaneStyles.header} />
+        <View style={styles.center}>
+          <Text style={styles.placeholderTitle}>编辑器</Text>
+          <Text style={styles.placeholderText}>请从目录中选择一个章节或资源文件。</Text>
+        </View>
       </View>
     );
   }
@@ -72,7 +76,7 @@ export function ProjectEditorPane({
 
   return (
     <View style={styles.root}>
-      <View style={styles.header}>
+      <View style={[projectPaneStyles.header, styles.header]}>
         <View style={styles.headerTitleWrap}>
           <Text style={styles.title} numberOfLines={1}>
             {title}
@@ -103,14 +107,11 @@ const styles = StyleSheet.create({
     backgroundColor: color.background,
   },
   header: {
-    minHeight: 60,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
     gap: space[3],
     paddingHorizontal: space[4],
-    borderBottomWidth: 1,
-    borderBottomColor: color.border,
   },
   headerTitleWrap: {
     flex: 1,

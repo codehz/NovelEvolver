@@ -18,6 +18,7 @@ import { SettingsHeaderBackButton } from "../../settings/SettingsHeaderBackButto
 import { SettingsHeaderButton } from "../../settings/SettingsHeaderButton";
 import { ProjectChangesPane } from "../changes/ProjectChangesPane";
 import { ManuscriptTreeList } from "../manuscript/ManuscriptTreeList";
+import { projectPaneStyles } from "../project-pane-chrome";
 import { ResourceTreeList } from "../resource/ResourceTreeList";
 import { ExplorerDomainSelect, type ExplorerDomain } from "./ExplorerDomainSelect";
 
@@ -93,7 +94,7 @@ export function ProjectExplorerPane({
   };
   return (
     <View style={styles.root}>
-      <View style={styles.paneHeader}>
+      <View style={[projectPaneStyles.header, styles.paneHeader]}>
         {onBack ? (
           <SettingsHeaderBackButton
             tintColor={color.accent}
@@ -220,13 +221,10 @@ const styles = StyleSheet.create({
   },
   paneHeader: {
     zIndex: 4,
-    minHeight: 60,
     flexDirection: "row",
     alignItems: "center",
     gap: space[2],
     paddingHorizontal: space[4],
-    borderBottomWidth: 1,
-    borderBottomColor: color.border,
   },
   paneBack: {
     width: 32,

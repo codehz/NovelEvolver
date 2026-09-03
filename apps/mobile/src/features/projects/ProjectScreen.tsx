@@ -8,7 +8,7 @@ import {
 } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { StyleSheet, Text, View } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import IconKebabVertical from "~icons/codicon/kebab-vertical";
 
 import type { ProjectTabParamList, RootStackParamList } from "../../app/navigation-types";
@@ -28,6 +28,7 @@ export function ProjectScreen() {
   const projectId = (route.params as RootStackParamList["Project"]).projectId;
   const workspace = useProjectWorkspace(projectId);
   const layout = useProjectLayout();
+  const insets = useSafeAreaInsets();
   const nestedTab = useNavigationState((state) => {
     const projectRoute = state.routes.find((item) => item.name === "Project");
     return projectRoute?.state?.type === "tab" ? projectRoute.state : undefined;
@@ -88,10 +89,7 @@ export function ProjectScreen() {
   };
 
   return (
-    <SafeAreaView
-      edges={layout === "compact" ? ["bottom"] : ["top", "bottom"]}
-      style={styles.safeArea}
-    >
+    <SafeAreaView edges={["bottom"]} style={styles.safeArea}>
       {layout === "compact" ? (
         <Header
           title=""
@@ -112,7 +110,9 @@ export function ProjectScreen() {
             />
           )}
         />
-      ) : null}
+      ) : (
+        <View style={[styles.wideTopInset, { height: insets.top }]} />
+      )}
       <ProjectWorkspace {...workspaceProps} onBack={goBack} onProjectMenu={showProjectMenu} />
     </SafeAreaView>
   );
@@ -120,6 +120,7 @@ export function ProjectScreen() {
 
 const styles = StyleSheet.create({
   safeArea: { flex: 1, backgroundColor: color.background },
+  wideTopInset: { backgroundColor: color.surface },
   headerRight: {
     paddingEnd: space[4],
   },

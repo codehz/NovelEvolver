@@ -9,13 +9,10 @@ export const aiStyles = StyleSheet.create({
     backgroundColor: color.background,
   },
   header: {
-    minHeight: 60,
     flexDirection: "row",
     alignItems: "center",
     gap: space[2],
     paddingHorizontal: space[4],
-    borderBottomWidth: 1,
-    borderBottomColor: color.border,
   },
   headerTitleWrap: {
     flex: 1,

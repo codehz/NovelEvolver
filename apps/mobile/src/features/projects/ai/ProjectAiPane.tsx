@@ -22,6 +22,7 @@ import { useOverlay } from "../../../shared/ui/OverlayHost";
 import { SettingsHeaderButton } from "../../settings/SettingsHeaderButton";
 import { errorMessage } from "../error-message";
 import type { OpenedProject } from "../git/repository-manager";
+import { projectPaneStyles } from "../project-pane-chrome";
 import { aiStyles } from "./ai-chrome";
 import { AiAskUserBar } from "./AiAskUserBar";
 import { AiComposer, type AiComposerHandle } from "./AiComposer";
@@ -215,7 +216,7 @@ export function ProjectAiPane({ opened, onWorkspaceDirty }: ProjectAiPaneProps) 
       style={aiStyles.root}
       behavior={Platform.OS === "ios" ? "padding" : undefined}
     >
-      <View style={aiStyles.header}>
+      <View style={[projectPaneStyles.header, aiStyles.header]}>
         <View style={aiStyles.headerTitleWrap}>
           <Text style={aiStyles.title}>AI</Text>
           <Text style={aiStyles.subtitle}>助手</Text>
