@@ -14,9 +14,3 @@ export type RootStackParamList = {
   Prompt: OverlayPromptParams;
   Menu: OverlayMenuParams;
 };
-
-export type ProjectTabParamList = {
-  Explorer: undefined;
-  Editor: undefined;
-  AI: undefined;
-};

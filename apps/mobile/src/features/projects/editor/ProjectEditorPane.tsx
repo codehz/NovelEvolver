@@ -6,7 +6,6 @@ import { color, fontFamily, fontSize, space, wash } from "../../../shared/theme"
 import { MarkdownTextInput } from "../../../shared/ui/MarkdownTextInput";
 import type { OpenedProject } from "../git/repository-manager";
 import { projectPaneStyles } from "../project-pane-chrome";
-import { ProjectMediumHeader, type ProjectMediumHeaderNavigation } from "../ProjectMediumHeader";
 import type { EditorDocument } from "./editor-document";
 
 type ProjectEditorPaneProps = {
@@ -16,7 +15,7 @@ type ProjectEditorPaneProps = {
   resource: ResourceTreeNode | undefined;
   worktreeRevision: number;
   onWorkspaceChanged: () => void;
-  mediumHeader?: ProjectMediumHeaderNavigation;
+  showHeader?: boolean;
 };
 
 export function ProjectEditorPane({
@@ -26,7 +25,7 @@ export function ProjectEditorPane({
   resource,
   worktreeRevision,
   onWorkspaceChanged,
-  mediumHeader,
+  showHeader = true,
 }: ProjectEditorPaneProps) {
   const chapterId =
     document?.domain === "manuscript" && chapter?.type === "chapter" ? chapter.id : null;
@@ -57,14 +56,7 @@ export function ProjectEditorPane({
   if (documentId === null || editingDomain === null) {
     return (
       <View style={styles.root}>
-        {mediumHeader ? (
-          <ProjectMediumHeader
-            {...mediumHeader}
-            context={<Text style={styles.title}>编辑器</Text>}
-          />
-        ) : (
-          <View style={projectPaneStyles.header} />
-        )}
+        {showHeader ? <View style={projectPaneStyles.header} /> : null}
         <View style={styles.center}>
           <Text style={styles.placeholderTitle}>编辑器</Text>
           <Text style={styles.placeholderText}>请从目录中选择一个章节或资源文件。</Text>
@@ -86,24 +78,7 @@ export function ProjectEditorPane({
 
   return (
     <View style={styles.root}>
-      {mediumHeader ? (
-        <ProjectMediumHeader
-          {...mediumHeader}
-          context={
-            <View style={styles.headerTitleWrap}>
-              <Text style={styles.title} numberOfLines={1}>
-                {title}
-              </Text>
-              <Text style={styles.subtitle}>{subtitle}</Text>
-            </View>
-          }
-          actions={
-            <Text style={styles.status} numberOfLines={1}>
-              {opened.worktree.hasPendingChanges() ? "有未提交修改" : "已提交"}
-            </Text>
-          }
-        />
-      ) : (
+      {showHeader ? (
         <View style={[projectPaneStyles.header, styles.header]}>
           <View style={styles.headerTitleWrap}>
             <Text style={styles.title} numberOfLines={1}>
@@ -115,7 +90,7 @@ export function ProjectEditorPane({
             {opened.worktree.hasPendingChanges() ? "有未提交修改" : "已提交"}
           </Text>
         </View>
-      )}
+      ) : null}
       <MarkdownTextInput
         text={content}
         onTextChange={updateContent}

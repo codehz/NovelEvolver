@@ -5,7 +5,6 @@ import type {
   ResourceTreeNode,
   ResourceTreeSnapshot,
 } from "@novelevolver/domain/worktree";
-import { useState } from "react";
 import { StyleSheet, Text, View } from "react-native";
 import IconCheck from "~icons/codicon/check";
 import IconDiscard from "~icons/codicon/discard";
@@ -18,7 +17,6 @@ import { SettingsHeaderButton } from "../../settings/SettingsHeaderButton";
 import { ProjectChangesPane } from "../changes/ProjectChangesPane";
 import { ManuscriptTreeList } from "../manuscript/ManuscriptTreeList";
 import { projectPaneStyles } from "../project-pane-chrome";
-import { ProjectMediumHeader, type ProjectMediumHeaderNavigation } from "../ProjectMediumHeader";
 import { ResourceTreeList } from "../resource/ResourceTreeList";
 import { ExplorerDomainSelect, type ExplorerDomain } from "./ExplorerDomainSelect";
 
@@ -49,8 +47,10 @@ export type ProjectExplorerPaneProps = {
   onRevertChange: (changeId: string) => void;
   onRevertAllChanges: () => void;
   onCommitChanges: (message: string) => Promise<boolean>;
+  commitMessage: string;
+  onCommitMessageChange: (message: string) => void;
   onBack?: () => void;
-  mediumHeader?: ProjectMediumHeaderNavigation;
+  showHeader?: boolean;
 };
 
 export function ProjectExplorerPane({
@@ -80,16 +80,17 @@ export function ProjectExplorerPane({
   onRevertChange,
   onRevertAllChanges,
   onCommitChanges,
+  commitMessage,
+  onCommitMessageChange,
   onBack,
-  mediumHeader,
+  showHeader = true,
 }: ProjectExplorerPaneProps) {
-  const [commitMessage, setCommitMessage] = useState("");
   const manuscript = domain === "manuscript";
   const resource = domain === "resource";
   const canCommit = commitMessage.trim() !== "" && changesSnapshot?.hasChanges === true;
   const commit = async () => {
     if (!canCommit) return;
-    if (await onCommitChanges(commitMessage)) setCommitMessage("");
+    if (await onCommitChanges(commitMessage)) onCommitMessageChange("");
   };
   const headerActions =
     domain === "changes" ? (
@@ -138,13 +139,7 @@ export function ProjectExplorerPane({
     ) : null;
   return (
     <View style={styles.root}>
-      {mediumHeader ? (
-        <ProjectMediumHeader
-          {...mediumHeader}
-          context={<ExplorerDomainSelect value={domain} onChange={onDomainChange} />}
-          actions={headerActions}
-        />
-      ) : (
+      {showHeader ? (
         <View style={[projectPaneStyles.header, styles.paneHeader]}>
           {onBack ? (
             <SettingsHeaderBackButton
@@ -156,7 +151,7 @@ export function ProjectExplorerPane({
           <ExplorerDomainSelect value={domain} onChange={onDomainChange} />
           <View style={styles.paneActions}>{headerActions}</View>
         </View>
-      )}
+      ) : null}
       {domain === "changes" ? (
         <ProjectChangesPane
           snapshot={changesSnapshot}
@@ -165,7 +160,7 @@ export function ProjectExplorerPane({
           onRetry={onRetryChanges}
           onRevertChange={onRevertChange}
           commitMessage={commitMessage}
-          onCommitMessageChange={setCommitMessage}
+          onCommitMessageChange={onCommitMessageChange}
         />
       ) : (
         <>
