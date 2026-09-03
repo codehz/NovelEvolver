@@ -4,6 +4,7 @@ import {
   PROJECTS_LOCATION,
   deleteProjectFile,
   displayNameFromFile,
+  importProjectFile,
   listProjectFiles,
   notifyProjectFilesChanged,
   projectFileExists,
@@ -91,6 +92,10 @@ export class ProjectRepositoryManager {
       const record = projects.upsertByPath(fileName, Date.now());
       projects.setDisplayName(record.id, displayNameFromFile(fileName));
     }
+  }
+
+  importProject(): Promise<string | null> {
+    return importProjectFile();
   }
 
   async createEmpty(displayName: string): Promise<OpenedProject> {

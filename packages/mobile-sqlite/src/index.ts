@@ -14,6 +14,7 @@ export {
   PROJECTS_LOCATION,
   deleteProjectFile,
   displayNameFromFile,
+  importProjectFile,
   listProjectFiles,
   notifyProjectFilesChanged,
   projectFileExists,

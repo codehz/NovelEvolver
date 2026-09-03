@@ -12,7 +12,7 @@ Bare React Native (Community CLI + Metro). **Do not add Expo** (`expo`, `expo-ro
 - Theme: Catppuccin Mocha JS tokens in `src/shared/theme/` (no NativeWind / Tailwind). Semantic roles match desktop `@theme`. Flavor is pinned — do not follow system light mode
 - Backend: mobile-specific (MMKV for settings, SQLite app-state + nano-git for projects). **Not** capnweb / `desktop-rpc`
 - Settings: local MMKV (`novelevolver-settings`); domain store logic from `@novelevolver/domain`
-- Projects / worktree drafts: `@novelevolver/worktree` on a mobile `app-state.db` (not MMKV), via `@novelevolver/mobile-sqlite`. Project files are `{base}/novelevolver/projects/*.npk`; Android exposes that directory through a `DocumentsProvider` (copy files in/out via the system Files app). Do **not** add `@react-native-documents/picker`, `react-native-file-access`, or `react-native-share` — file list/delete/rename/share go through `NativeFs` in `@novelevolver/mobile-sqlite`.
+- Projects / worktree drafts: `@novelevolver/worktree` on a mobile `app-state.db` (not MMKV), via `@novelevolver/mobile-sqlite`. Project files are `{base}/novelevolver/projects/*.npk`; Android exposes that directory through a `DocumentsProvider` (copy files in/out via the system Files app) and imports a selected `.npk` through the native system document picker. Do **not** add `@react-native-documents/picker`, `react-native-file-access`, or `react-native-share` — file list/delete/rename/import/share go through `NativeFs` in `@novelevolver/mobile-sqlite`.
 - AI chat: `@novelevolver/ai-runtime` on the opened project's `AiChatRepository` + settings stores
 - Overlays: root-stack `transparentModal` via `OverlayHost` (`useOverlay`); not `Alert.alert` / `Modal`
 

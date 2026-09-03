@@ -11,6 +11,7 @@ import androidx.annotation.Keep
 import com.facebook.jni.HybridData
 import com.facebook.proguard.annotations.DoNotStrip
 import dalvik.annotation.optimization.FastNative
+import com.margelo.nitro.core.Promise
 import com.margelo.nitro.core.HybridObject
 
 /**
@@ -44,6 +45,10 @@ abstract class HybridNativeFsSpec: HybridObject() {
   @DoNotStrip
   @Keep
   abstract fun renameFile(fromFileName: String, toFileName: String): Unit
+  
+  @DoNotStrip
+  @Keep
+  abstract fun importNpkFile(): Promise<String>
   
   @DoNotStrip
   @Keep

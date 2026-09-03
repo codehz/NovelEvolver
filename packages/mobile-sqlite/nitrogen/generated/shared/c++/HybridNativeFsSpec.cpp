@@ -18,6 +18,7 @@ namespace margelo::nitro::mobilesqlite {
       prototype.registerHybridMethod("fileExists", &HybridNativeFsSpec::fileExists);
       prototype.registerHybridMethod("deleteFile", &HybridNativeFsSpec::deleteFile);
       prototype.registerHybridMethod("renameFile", &HybridNativeFsSpec::renameFile);
+      prototype.registerHybridMethod("importNpkFile", &HybridNativeFsSpec::importNpkFile);
       prototype.registerHybridMethod("shareFile", &HybridNativeFsSpec::shareFile);
       prototype.registerHybridMethod("notifyChanged", &HybridNativeFsSpec::notifyChanged);
     });

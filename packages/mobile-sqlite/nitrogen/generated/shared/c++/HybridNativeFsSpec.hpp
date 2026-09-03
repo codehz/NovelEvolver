@@ -17,6 +17,7 @@
 
 #include <string>
 #include <vector>
+#include <NitroModules/Promise.hpp>
 
 namespace margelo::nitro::mobilesqlite {
 
@@ -53,6 +54,7 @@ namespace margelo::nitro::mobilesqlite {
       virtual bool fileExists(const std::string& fileName) = 0;
       virtual void deleteFile(const std::string& fileName) = 0;
       virtual void renameFile(const std::string& fromFileName, const std::string& toFileName) = 0;
+      virtual std::shared_ptr<Promise<std::string>> importNpkFile() = 0;
       virtual void shareFile(const std::string& fileName) = 0;
       virtual void notifyChanged() = 0;
 

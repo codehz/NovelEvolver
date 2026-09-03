@@ -1,5 +1,10 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
   <application>
+    <activity
+      android:name=".NpkImportActivity"
+      android:excludeFromRecents="true"
+      android:exported="false"
+      android:theme="@android:style/Theme.Translucent.NoTitleBar" />
     <provider
       android:name=".NpkDocumentsProvider"
       android:authorities="${applicationId}.documents"

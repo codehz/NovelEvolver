@@ -15,7 +15,7 @@ SQL 参数和结果行用 JSI 直接传 `string` / `number` / `boolean` / `null`
 
 原生层 SQLite 只暴露 `open` / `execute` / `close`。`Statement` 缓存的是 SQL 字符串，不是原生 prepared statement。
 
-项目 `.npk` 在 `{filesDir,Documents}/novelevolver/projects/`，JS 只使用文件名（`listProjectFiles` / `deleteProjectFile` / `renameProjectFile` / `shareProjectFile`）。Android 通过 `DocumentsProvider` 把该目录暴露给系统文件应用；iOS 分享为 stub。
+项目 `.npk` 在 `{filesDir,Documents}/novelevolver/projects/`，JS 只使用文件名（`listProjectFiles` / `deleteProjectFile` / `renameProjectFile` / `importProjectFile` / `shareProjectFile`）。Android 通过 `DocumentsProvider` 把该目录暴露给系统文件应用，并通过系统文档选择器把用户选择的 `.npk` 复制进该目录；iOS 导入和分享为 stub。
 
 改 `*.nitro.ts` 或 `nitro.json` 后，在本包运行 `bun run specs`，并提交 `nitrogen/generated/`。
 

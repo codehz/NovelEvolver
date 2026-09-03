@@ -16,6 +16,7 @@ namespace margelo::nitro::mobilesqlite { class HybridNativeSqlitePlatformSpec; }
 // Include C++ defined types
 #include "HybridNativeFsSpec.hpp"
 #include "HybridNativeSqlitePlatformSpec.hpp"
+#include <NitroModules/Promise.hpp>
 #include <NitroModules/Result.hpp>
 #include <exception>
 #include <memory>

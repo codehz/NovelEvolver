@@ -11,6 +11,8 @@
 
 #include <string>
 #include <vector>
+#include <NitroModules/Promise.hpp>
+#include <NitroModules/JPromise.hpp>
 
 namespace margelo::nitro::mobilesqlite {
 
@@ -71,6 +73,22 @@ namespace margelo::nitro::mobilesqlite {
   void JHybridNativeFsSpec::renameFile(const std::string& fromFileName, const std::string& toFileName) {
     static const auto method = _javaPart->javaClassStatic()->getMethod<void(jni::alias_ref<jni::JString> /* fromFileName */, jni::alias_ref<jni::JString> /* toFileName */)>("renameFile");
     method(_javaPart, jni::make_jstring(fromFileName), jni::make_jstring(toFileName));
+  }
+  std::shared_ptr<Promise<std::string>> JHybridNativeFsSpec::importNpkFile() {
+    static const auto method = _javaPart->javaClassStatic()->getMethod<jni::local_ref<JPromise::javaobject>()>("importNpkFile");
+    auto __result = method(_javaPart);
+    return [&]() {
+      auto __promise = Promise<std::string>::create();
+      __result->cthis()->addOnResolvedListener([=](const jni::alias_ref<jni::JObject>& __boxedResult) {
+        auto __result = jni::static_ref_cast<jni::JString>(__boxedResult);
+        __promise->resolve(__result->toStdString());
+      });
+      __result->cthis()->addOnRejectedListener([=](const jni::alias_ref<jni::JThrowable>& __throwable) {
+        jni::JniException __jniError(__throwable);
+        __promise->reject(std::make_exception_ptr(__jniError));
+      });
+      return __promise;
+    }();
   }
   void JHybridNativeFsSpec::shareFile(const std::string& fileName) {
     static const auto method = _javaPart->javaClassStatic()->getMethod<void(jni::alias_ref<jni::JString> /* fileName */)>("shareFile");

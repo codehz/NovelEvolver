@@ -1,7 +1,7 @@
 import { useFocusEffect, useNavigation } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { useCallback, useState } from "react";
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import { Platform, Pressable, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import type { RootStackParamList } from "../../app/navigation-types";
@@ -46,6 +46,22 @@ export function ProjectListScreen() {
     }
   };
 
+  const importProject = async () => {
+    if (busy) return;
+    setBusy(true);
+    try {
+      const fileName = await manager.importProject();
+      if (fileName !== null) {
+        await overlay.alert({ title: "导入完成", message: `${fileName} 已复制到工作区。` });
+      }
+    } catch (error) {
+      manager.refresh();
+      await overlay.alert({ title: "导入失败", message: errorMessage(error) });
+    } finally {
+      setBusy(false);
+    }
+  };
+
   const showImportHelp = () => {
     void overlay.alert({ title: "如何加入项目", message: IMPORT_HELP });
   };
@@ -71,16 +87,30 @@ export function ProjectListScreen() {
         >
           <Text style={styles.primaryText}>新建项目</Text>
         </Pressable>
-        <Pressable style={styles.secondaryButton} onPress={showImportHelp} disabled={busy}>
-          <Text style={styles.secondaryText}>如何加入</Text>
-        </Pressable>
+        {Platform.OS === "android" ? (
+          <Pressable
+            style={styles.secondaryButton}
+            onPress={() => {
+              void importProject();
+            }}
+            disabled={busy}
+          >
+            <Text style={styles.secondaryText}>导入项目</Text>
+          </Pressable>
+        ) : (
+          <Pressable style={styles.secondaryButton} onPress={showImportHelp} disabled={busy}>
+            <Text style={styles.secondaryText}>如何加入</Text>
+          </Pressable>
+        )}
       </View>
       <View style={styles.list}>
         {manager.records.length === 0 ? (
           <View style={styles.empty}>
             <Text style={styles.emptyTitle}>还没有项目</Text>
             <Text style={styles.emptyText}>
-              新建空白项目，或用系统文件应用把 .npk 复制到 NovelEvolver 目录。
+              {Platform.OS === "android"
+                ? "新建空白项目，或选择一个 .npk 文件并复制到工作区。"
+                : "新建空白项目，或按照说明加入已有的 .npk 项目。"}
             </Text>
           </View>
         ) : (

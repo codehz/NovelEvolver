@@ -16,6 +16,7 @@ export type ProjectManagerContextValue = {
   records: ProjectDbRecord[];
   opened: OpenedProject | null;
   refresh: () => void;
+  importProject(): Promise<string | null>;
   createEmpty(name: string): Promise<OpenedProject>;
   openProject(record: ProjectDbRecord): Promise<OpenedProject>;
   deleteProject(id: number): Promise<void>;
@@ -51,6 +52,11 @@ export function ProjectManagerProvider({ children }: PropsWithChildren) {
       records,
       opened,
       refresh,
+      async importProject() {
+        const fileName = await projectStorage.importProject();
+        refresh();
+        return fileName;
+      },
       async createEmpty(name) {
         const result = await projectStorage.createEmpty(name);
         refresh();

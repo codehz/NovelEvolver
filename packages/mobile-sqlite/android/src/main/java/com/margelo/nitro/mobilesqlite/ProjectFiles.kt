@@ -4,7 +4,7 @@ import android.content.Context
 import android.provider.DocumentsContract
 import java.io.File
 
-internal object ProjectFiles {
+object ProjectFiles {
   const val RELATIVE_DIR = "novelevolver/projects"
   const val ROOT_DOCUMENT_ID = "root"
   const val MIME_TYPE = "application/octet-stream"

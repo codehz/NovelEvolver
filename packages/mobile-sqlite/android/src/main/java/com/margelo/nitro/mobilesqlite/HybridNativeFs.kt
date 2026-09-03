@@ -6,6 +6,7 @@ import androidx.annotation.Keep
 import androidx.core.content.FileProvider
 import com.facebook.proguard.annotations.DoNotStrip
 import com.margelo.nitro.NitroModules
+import com.margelo.nitro.core.Promise
 
 @DoNotStrip
 @Keep
@@ -31,6 +32,10 @@ class HybridNativeFs : HybridNativeFsSpec() {
       ProjectFiles.resolve(context, toFileName),
     )
     ProjectFiles.notifyChanged(context)
+  }
+
+  override fun importNpkFile(): Promise<String> {
+    return NpkImportActivity.launch(requireContext())
   }
 
   override fun shareFile(fileName: String) {

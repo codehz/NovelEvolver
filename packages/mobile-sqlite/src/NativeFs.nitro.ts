@@ -9,6 +9,7 @@ export interface NativeFs extends HybridObject<{ ios: "swift"; android: "kotlin"
   fileExists(fileName: string): boolean;
   deleteFile(fileName: string): void;
   renameFile(fromFileName: string, toFileName: string): void;
+  importNpkFile(): Promise<string>;
   shareFile(fileName: string): void;
   notifyChanged(): void;
 }

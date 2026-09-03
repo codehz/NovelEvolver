@@ -17,6 +17,7 @@ public protocol HybridNativeFsSpec_protocol: HybridObject {
   func fileExists(fileName: String) throws -> Bool
   func deleteFile(fileName: String) throws -> Void
   func renameFile(fromFileName: String, toFileName: String) throws -> Void
+  func importNpkFile() throws -> Promise<String>
   func shareFile(fileName: String) throws -> Void
   func notifyChanged() throws -> Void
 }

@@ -15,6 +15,22 @@
 
 namespace margelo::nitro::mobilesqlite::bridge::swift {
 
+  // pragma MARK: std::function<void(const std::string& /* result */)>
+  Func_void_std__string create_Func_void_std__string(void* NON_NULL swiftClosureWrapper) noexcept {
+    auto swiftClosure = NovelEvolverMobileSqlite::Func_void_std__string::fromUnsafe(swiftClosureWrapper);
+    return [swiftClosure = std::move(swiftClosure)](const std::string& result) mutable -> void {
+      swiftClosure.call(result);
+    };
+  }
+  
+  // pragma MARK: std::function<void(const std::exception_ptr& /* error */)>
+  Func_void_std__exception_ptr create_Func_void_std__exception_ptr(void* NON_NULL swiftClosureWrapper) noexcept {
+    auto swiftClosure = NovelEvolverMobileSqlite::Func_void_std__exception_ptr::fromUnsafe(swiftClosureWrapper);
+    return [swiftClosure = std::move(swiftClosure)](const std::exception_ptr& error) mutable -> void {
+      swiftClosure.call(error);
+    };
+  }
+  
   // pragma MARK: std::shared_ptr<HybridNativeFsSpec>
   std::shared_ptr<HybridNativeFsSpec> create_std__shared_ptr_HybridNativeFsSpec_(void* NON_NULL swiftUnsafePointer) noexcept {
     NovelEvolverMobileSqlite::HybridNativeFsSpec_cxx swiftPart = NovelEvolverMobileSqlite::HybridNativeFsSpec_cxx::fromUnsafe(swiftUnsafePointer);

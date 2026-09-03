@@ -58,6 +58,7 @@ namespace margelo::nitro::mobilesqlite {
     bool fileExists(const std::string& fileName) override;
     void deleteFile(const std::string& fileName) override;
     void renameFile(const std::string& fromFileName, const std::string& toFileName) override;
+    std::shared_ptr<Promise<std::string>> importNpkFile() override;
     void shareFile(const std::string& fileName) override;
     void notifyChanged() override;
 

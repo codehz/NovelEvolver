@@ -44,6 +44,12 @@ class HybridNativeFs : HybridNativeFsSpec {
     }
   }
 
+  func importNpkFile() throws -> Promise<String> {
+    return Promise.async {
+      throw RuntimeError.error(withMessage: "iOS 文件导入尚未实现")
+    }
+  }
+
   func shareFile(fileName: String) throws {
     _ = fileName
     throw RuntimeError.error(withMessage: "iOS 分享尚未实现")

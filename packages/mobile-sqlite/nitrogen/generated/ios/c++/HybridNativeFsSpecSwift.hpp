@@ -16,6 +16,7 @@ namespace NovelEvolverMobileSqlite { class HybridNativeFsSpec_cxx; }
 
 #include <string>
 #include <vector>
+#include <NitroModules/Promise.hpp>
 
 #include "NovelEvolverMobileSqlite-Swift-Cxx-Umbrella.hpp"
 
@@ -94,6 +95,14 @@ namespace margelo::nitro::mobilesqlite {
       if (__result.hasError()) [[unlikely]] {
         std::rethrow_exception(__result.error());
       }
+    }
+    inline std::shared_ptr<Promise<std::string>> importNpkFile() override {
+      auto __result = _swiftPart.importNpkFile();
+      if (__result.hasError()) [[unlikely]] {
+        std::rethrow_exception(__result.error());
+      }
+      auto __value = std::move(__result.value());
+      return __value;
     }
     inline void shareFile(const std::string& fileName) override {
       auto __result = _swiftPart.shareFile(fileName);

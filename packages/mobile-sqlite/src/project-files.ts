@@ -33,6 +33,12 @@ export function renameProjectFile(fromFileName: string, toFileName: string): voi
   getNativeFs().renameFile(fromFileName, toFileName);
 }
 
+/** Opens the platform file picker and copies the selected `.npk` into project storage. */
+export async function importProjectFile(): Promise<string | null> {
+  const fileName = await getNativeFs().importNpkFile();
+  return fileName === "" ? null : fileName;
+}
+
 export function shareProjectFile(fileName: string): void {
   getNativeFs().shareFile(fileName);
 }
