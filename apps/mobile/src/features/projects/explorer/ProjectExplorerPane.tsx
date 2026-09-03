@@ -6,7 +6,7 @@ import type {
   ResourceTreeSnapshot,
 } from "@novelevolver/domain/worktree";
 import { useState } from "react";
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import { StyleSheet, Text, View, type GestureResponderEvent } from "react-native";
 import IconCheck from "~icons/codicon/check";
 import IconDiscard from "~icons/codicon/discard";
 import IconKebabVertical from "~icons/codicon/kebab-vertical";
@@ -14,6 +14,7 @@ import IconNewFile from "~icons/codicon/new-file";
 import IconNewFolder from "~icons/codicon/new-folder";
 
 import { color, fontFamily, fontSize, space } from "../../../shared/theme";
+import type { ContextMenuAnchor } from "../../../shared/ui/context-menu-position";
 import { SettingsHeaderBackButton } from "../../settings/SettingsHeaderBackButton";
 import { SettingsHeaderButton } from "../../settings/SettingsHeaderButton";
 import { ProjectChangesPane } from "../changes/ProjectChangesPane";
@@ -50,7 +51,7 @@ export type ProjectExplorerPaneProps = {
   onRevertAllChanges: () => void;
   onCommitChanges: (message: string) => Promise<boolean>;
   onBack?: () => void;
-  onProjectMenu?: () => void;
+  onProjectMenu?: (anchor: ContextMenuAnchor) => void;
 };
 
 export function ProjectExplorerPane({
@@ -83,7 +84,6 @@ export function ProjectExplorerPane({
   onBack,
   onProjectMenu,
 }: ProjectExplorerPaneProps) {
-  const [selectOpen, setSelectOpen] = useState(false);
   const [commitMessage, setCommitMessage] = useState("");
   const manuscript = domain === "manuscript";
   const resource = domain === "resource";
@@ -102,12 +102,7 @@ export function ProjectExplorerPane({
             style={styles.paneBack}
           />
         ) : null}
-        <ExplorerDomainSelect
-          value={domain}
-          open={selectOpen}
-          onOpenChange={setSelectOpen}
-          onChange={onDomainChange}
-        />
+        <ExplorerDomainSelect value={domain} onChange={onDomainChange} />
         <View style={styles.paneActions}>
           {domain === "changes" ? (
             <>
@@ -161,7 +156,13 @@ export function ProjectExplorerPane({
             <SettingsHeaderButton
               Icon={IconKebabVertical}
               label="项目菜单"
-              onPress={onProjectMenu}
+              onPress={(event: GestureResponderEvent) => {
+                onProjectMenu({
+                  type: "point",
+                  x: event.nativeEvent.pageX,
+                  y: event.nativeEvent.pageY,
+                });
+              }}
             />
           ) : null}
         </View>
@@ -200,15 +201,6 @@ export function ProjectExplorerPane({
           )}
         </>
       )}
-      {selectOpen ? (
-        <Pressable
-          style={styles.dismiss}
-          onPress={() => {
-            setSelectOpen(false);
-          }}
-          accessibilityLabel="关闭选择"
-        />
-      ) : null}
     </View>
   );
 }
@@ -243,9 +235,5 @@ const styles = StyleSheet.create({
     fontSize: fontSize.xs,
     paddingHorizontal: space[3],
     paddingBottom: space[2],
-  },
-  dismiss: {
-    ...StyleSheet.absoluteFill,
-    zIndex: 3,
   },
 });

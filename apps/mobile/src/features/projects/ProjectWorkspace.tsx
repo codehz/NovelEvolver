@@ -4,6 +4,7 @@ import { StyleSheet, View, useWindowDimensions } from "react-native";
 
 import type { ProjectTabParamList } from "../../app/navigation-types";
 import { color } from "../../shared/theme";
+import type { ContextMenuAnchor } from "../../shared/ui/context-menu-position";
 import { ProjectAiPane } from "./ai/ProjectAiPane";
 import type { EditorDocument } from "./editor/editor-document";
 import { ProjectEditorPane } from "./editor/ProjectEditorPane";
@@ -30,7 +31,7 @@ export type ProjectWorkspaceProps = Omit<
   onOpenResourceFile: (nodeId: string) => void;
   onAiWorkspaceDirty: () => void;
   onBack: () => void;
-  onProjectMenu: () => void;
+  onProjectMenu: (anchor: ContextMenuAnchor) => void;
 };
 
 const ProjectTabs = createBottomTabNavigator<ProjectTabParamList>();

@@ -10,6 +10,7 @@ import {
   Text,
   useWindowDimensions,
   View,
+  type GestureResponderEvent,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import IconRepo from "~icons/codicon/repo";
@@ -88,10 +89,15 @@ export function ProjectListScreen() {
     void overlay.alert({ title: "如何加入项目", message: IMPORT_HELP });
   };
 
-  const showProjectMenu = async (project: ProjectDbRecord) => {
+  const showProjectMenu = async (project: ProjectDbRecord, event: GestureResponderEvent) => {
     if (busy) return;
     const name = project.displayName?.trim() || "未命名项目";
     const action = await overlay.menu({
+      anchor: {
+        type: "point",
+        x: event.nativeEvent.pageX,
+        y: event.nativeEvent.pageY,
+      },
       title: name,
       options: [
         { key: "rename", label: "改名" },
@@ -201,8 +207,8 @@ export function ProjectListScreen() {
             width={cardWidth}
             disabled={busy}
             onOpen={() => navigation.navigate("Project", { projectId: item.id })}
-            onLongPress={() => {
-              void showProjectMenu(item);
+            onLongPress={(event) => {
+              void showProjectMenu(item, event);
             }}
           />
         )}
@@ -216,7 +222,7 @@ type ProjectCardProps = {
   width: number;
   disabled: boolean;
   onOpen: () => void;
-  onLongPress: () => void;
+  onLongPress: (event: GestureResponderEvent) => void;
 };
 
 function ProjectCard({ project, width, disabled, onOpen, onLongPress }: ProjectCardProps) {

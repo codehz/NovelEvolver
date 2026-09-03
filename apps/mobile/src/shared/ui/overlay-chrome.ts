@@ -51,22 +51,63 @@ export const overlayStyles = StyleSheet.create({
     paddingHorizontal: space[3],
     paddingVertical: space[2],
   },
-  menu: {
-    gap: space[2],
+  contextMenuBackdrop: {
+    ...StyleSheet.absoluteFill,
+  },
+  contextMenu: {
+    position: "absolute",
+    overflow: "hidden",
+    backgroundColor: color.surface,
+    borderRadius: radius.panel,
+    borderWidth: 1,
+    borderColor: color.border,
+    elevation: 16,
+    shadowColor: color.crust,
+    shadowOpacity: 0.45,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 6 },
+  },
+  contextMenuTitle: {
+    color: color.muted,
+    fontFamily: fontFamily.sans,
+    fontSize: fontSize.xs,
+    fontWeight: "600",
+    paddingHorizontal: space[3],
+    paddingTop: space[3],
+    paddingBottom: space[2],
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: color.border,
+  },
+  contextMenuList: {
+    paddingVertical: space[1],
   },
   menuItem: {
-    borderRadius: radius.control,
-    backgroundColor: color.field,
+    minHeight: 44,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: space[2],
     paddingHorizontal: space[3],
-    paddingVertical: space[3],
+    paddingVertical: space[2],
   },
   menuItemPressed: {
     backgroundColor: wash.row,
   },
+  menuItemSelected: {
+    backgroundColor: wash.accentSoft,
+  },
+  menuItemCheck: {
+    width: 16,
+    alignItems: "center",
+    justifyContent: "center",
+  },
   menuItemLabel: {
+    flex: 1,
     color: color.foreground,
     fontFamily: fontFamily.sans,
     fontSize: fontSize.sm,
+  },
+  menuItemLabelSelected: {
+    color: color.accent,
     fontWeight: "600",
   },
   menuItemDangerLabel: {

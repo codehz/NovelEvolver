@@ -7,12 +7,13 @@ import {
   useRoute,
 } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
-import { StyleSheet, Text, View } from "react-native";
+import { StyleSheet, Text, View, type GestureResponderEvent } from "react-native";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import IconKebabVertical from "~icons/codicon/kebab-vertical";
 
 import type { ProjectTabParamList, RootStackParamList } from "../../app/navigation-types";
 import { color, fontFamily, fontSize, space } from "../../shared/theme";
+import type { ContextMenuAnchor } from "../../shared/ui/context-menu-position";
 import { useOverlay } from "../../shared/ui/OverlayHost";
 import { settingsStyles } from "../settings/settings-chrome";
 import { SettingsHeaderBackButton } from "../settings/SettingsHeaderBackButton";
@@ -69,9 +70,10 @@ export function ProjectScreen() {
       target: nestedTab.key,
     });
   };
-  const showProjectMenu = () => {
+  const showProjectMenu = (anchor: ContextMenuAnchor) => {
     void overlay
       .menu({
+        anchor,
         title: workspace.opened.record.displayName?.trim() || "未命名项目",
         options: [
           { key: "rename", label: "改名" },
@@ -108,7 +110,13 @@ export function ProjectScreen() {
             <SettingsHeaderButton
               Icon={IconKebabVertical}
               label="项目菜单"
-              onPress={showProjectMenu}
+              onPress={(event: GestureResponderEvent) => {
+                showProjectMenu({
+                  type: "point",
+                  x: event.nativeEvent.pageX,
+                  y: event.nativeEvent.pageY,
+                });
+              }}
             />
           )}
         />

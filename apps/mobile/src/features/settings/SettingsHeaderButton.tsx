@@ -1,5 +1,5 @@
 import type { ComponentType } from "react";
-import { Pressable, Text } from "react-native";
+import { Pressable, Text, type GestureResponderEvent } from "react-native";
 import type { SvgProps } from "react-native-svg";
 
 import { color } from "../../shared/theme";
@@ -7,7 +7,7 @@ import { settingsStyles } from "./settings-chrome";
 
 type SettingsHeaderButtonProps = {
   label: string;
-  onPress: () => void;
+  onPress: (event: GestureResponderEvent) => void;
   Icon?: ComponentType<SvgProps>;
   disabled?: boolean;
 };

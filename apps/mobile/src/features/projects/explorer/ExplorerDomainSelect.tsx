@@ -1,8 +1,10 @@
 import type { WorktreeDomain } from "@novelevolver/domain/worktree";
+import { useRef, useState, type ComponentRef } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import IconChevronDown from "~icons/codicon/chevron-down";
 
-import { color, fontFamily, fontSize, radius, space, wash } from "../../../shared/theme";
+import { color, fontFamily, fontSize, radius, space } from "../../../shared/theme";
+import { useOverlay } from "../../../shared/ui/OverlayHost";
 
 export type ExplorerDomain = WorktreeDomain | "changes";
 
@@ -14,84 +16,74 @@ const OPTIONS: { value: ExplorerDomain; label: string }[] = [
 
 export type ExplorerDomainSelectProps = {
   value: ExplorerDomain;
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
   onChange: (value: ExplorerDomain) => void;
 };
 
-export function ExplorerDomainSelect({
-  value,
-  open,
-  onOpenChange,
-  onChange,
-}: ExplorerDomainSelectProps) {
+export function ExplorerDomainSelect({ value, onChange }: ExplorerDomainSelectProps) {
+  const overlay = useOverlay();
+  const triggerRef = useRef<ComponentRef<typeof Pressable>>(null);
+  const [open, setOpen] = useState(false);
   const currentLabel = value === "resource" ? "资源库" : value === "changes" ? "更改" : "正文";
+  const openMenu = () => {
+    if (open) return;
+    setOpen(true);
+    const trigger = triggerRef.current;
+    if (trigger === null) {
+      setOpen(false);
+      return;
+    }
+    trigger.measureInWindow((x, y, width, height) => {
+      void overlay
+        .menu({
+          anchor: { type: "rect", x, y, width, height },
+          selectedKey: value,
+          options: OPTIONS.map((option) => ({ key: option.value, label: option.label })),
+        })
+        .then((nextValue) => {
+          if (nextValue === "manuscript" || nextValue === "resource" || nextValue === "changes") {
+            onChange(nextValue);
+          }
+        })
+        .finally(() => {
+          setOpen(false);
+        });
+    });
+  };
+
   return (
-    <View style={styles.wrap}>
-      <Pressable
-        style={styles.trigger}
-        onPress={() => {
-          onOpenChange(!open);
-        }}
-        accessibilityRole="button"
-        accessibilityLabel={currentLabel}
-        accessibilityState={{ expanded: open }}
-      >
-        <View>
-          {OPTIONS.map((option) => (
-            <Text
-              key={option.value}
-              style={[styles.triggerLabel, option.value === value ? undefined : styles.widthProbe]}
-              numberOfLines={1}
-            >
-              {option.label}
-            </Text>
-          ))}
-        </View>
-        <IconChevronDown width={16} height={16} color={color.muted} />
-      </Pressable>
-      {open ? (
-        <View style={styles.menu} accessibilityRole="menu">
-          {OPTIONS.map((option) => {
-            const selected = option.value === value;
-            return (
-              <Pressable
-                key={option.value}
-                style={[styles.option, selected ? styles.optionSelected : undefined]}
-                onPress={() => {
-                  onChange(option.value);
-                  onOpenChange(false);
-                }}
-                accessibilityRole="menuitem"
-                accessibilityState={{ selected }}
-              >
-                <Text
-                  style={[styles.optionLabel, selected ? styles.optionLabelSelected : undefined]}
-                  numberOfLines={1}
-                >
-                  {option.label}
-                </Text>
-              </Pressable>
-            );
-          })}
-        </View>
-      ) : null}
-    </View>
+    <Pressable
+      ref={triggerRef}
+      collapsable={false}
+      style={styles.trigger}
+      onPress={openMenu}
+      accessibilityRole="button"
+      accessibilityLabel={currentLabel}
+      accessibilityState={{ expanded: open }}
+    >
+      <View>
+        {OPTIONS.map((option) => (
+          <Text
+            key={option.value}
+            style={[styles.triggerLabel, option.value === value ? undefined : styles.widthProbe]}
+            numberOfLines={1}
+          >
+            {option.label}
+          </Text>
+        ))}
+      </View>
+      <IconChevronDown width={16} height={16} color={color.muted} />
+    </Pressable>
   );
 }
 
 const styles = StyleSheet.create({
-  wrap: {
-    position: "relative",
-    zIndex: 4,
-    flexShrink: 0,
-  },
   widthProbe: {
     height: 0,
     overflow: "hidden",
     opacity: 0,
   },
   trigger: {
+    flexShrink: 0,
     flexDirection: "row",
     alignItems: "center",
     gap: space[1],
@@ -107,36 +99,6 @@ const styles = StyleSheet.create({
     color: color.foreground,
     fontFamily: fontFamily.sans,
     fontSize: fontSize.sm,
-    fontWeight: "600",
-  },
-  menu: {
-    position: "absolute",
-    top: "100%",
-    left: 0,
-    marginTop: space[1],
-    minWidth: "100%",
-    backgroundColor: color.surface,
-    borderWidth: 1,
-    borderColor: color.border,
-    borderRadius: radius.control,
-    overflow: "hidden",
-    zIndex: 8,
-    elevation: 12,
-  },
-  option: {
-    paddingHorizontal: space[3],
-    paddingVertical: space[2],
-  },
-  optionSelected: {
-    backgroundColor: wash.accentSoft,
-  },
-  optionLabel: {
-    color: color.foreground,
-    fontFamily: fontFamily.sans,
-    fontSize: fontSize.sm,
-  },
-  optionLabelSelected: {
-    color: color.accent,
     fontWeight: "600",
   },
 });

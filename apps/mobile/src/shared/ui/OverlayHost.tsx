@@ -12,16 +12,27 @@ import {
   KeyboardAvoidingView,
   Platform,
   Pressable,
+  ScrollView,
   StyleSheet,
   Text,
   TextInput,
+  useWindowDimensions,
   View,
+  type LayoutChangeEvent,
 } from "react-native";
-import Animated, { useAnimatedStyle, useSharedValue, withTiming } from "react-native-reanimated";
+import Animated, {
+  interpolate,
+  useAnimatedStyle,
+  useSharedValue,
+  withTiming,
+} from "react-native-reanimated";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { scheduleOnRN } from "react-native-worklets";
+import IconCheck from "~icons/codicon/check";
 
 import { navigationRef } from "../../app/navigation-ref";
-import { color } from "../theme";
+import { color, space } from "../theme";
+import { resolveContextMenuPlacement, type ContextMenuAnchor } from "./context-menu-position";
 import { OVERLAY_TIMING, overlayStyles } from "./overlay-chrome";
 
 export type OverlayAlertParams = {
@@ -51,7 +62,9 @@ export type OverlayMenuOption = {
 };
 
 export type OverlayMenuParams = {
-  title: string;
+  anchor: ContextMenuAnchor;
+  title?: string;
+  selectedKey?: string;
   options: OverlayMenuOption[];
 };
 
@@ -375,43 +388,150 @@ export function PromptScreen({ route }: StaticScreenProps<OverlayPromptParams>) 
   );
 }
 
+const CONTEXT_MENU_MIN_WIDTH = 168;
+const CONTEXT_MENU_SCREEN_MARGIN = space[2];
+
 export function MenuScreen({ route }: StaticScreenProps<OverlayMenuParams>) {
-  const { title, options } = route.params;
+  const { anchor, title, selectedKey, options } = route.params;
+  const navigation = useNavigation();
+  const insets = useSafeAreaInsets();
+  const { width: viewportWidth, height: viewportHeight } = useWindowDimensions();
+  const closingRef = useRef(false);
+  const choiceRef = useRef<string | null>(null);
+  const progress = useSharedValue(0);
+  const [menuSize, setMenuSize] = useState<{ width: number; height: number } | null>(null);
+  const minimumWidth =
+    anchor.type === "rect"
+      ? Math.max(CONTEXT_MENU_MIN_WIDTH, anchor.width)
+      : CONTEXT_MENU_MIN_WIDTH;
+  const maximumWidth = Math.max(
+    CONTEXT_MENU_MIN_WIDTH,
+    viewportWidth - insets.left - insets.right - CONTEXT_MENU_SCREEN_MARGIN * 2,
+  );
+  const maximumHeight = Math.max(
+    44,
+    viewportHeight - insets.top - insets.bottom - CONTEXT_MENU_SCREEN_MARGIN * 2,
+  );
+  const placement =
+    menuSize === null
+      ? null
+      : resolveContextMenuPlacement({
+          anchor,
+          menuWidth: menuSize.width,
+          menuHeight: menuSize.height,
+          viewportWidth,
+          viewportHeight,
+          insets,
+          margin: CONTEXT_MENU_SCREEN_MARGIN,
+          gap: space[1],
+        });
+
+  const finishClose = () => {
+    navigation.goBack();
+    settleMenu(choiceRef.current);
+  };
+
+  const requestClose = (value: string | null) => {
+    if (closingRef.current) return;
+    closingRef.current = true;
+    choiceRef.current = value;
+    progress.value = withTiming(0, OVERLAY_TIMING, (finished) => {
+      if (finished) scheduleOnRN(finishClose);
+    });
+  };
+  const requestCloseRef = useRef(requestClose);
+  requestCloseRef.current = requestClose;
+
+  useEffect(() => {
+    if (menuSize !== null) progress.value = withTiming(1, OVERLAY_TIMING);
+  }, [menuSize, progress]);
+
+  useEffect(() => {
+    return navigation.addListener("beforeRemove", (event) => {
+      if (closingRef.current) return;
+      event.preventDefault();
+      requestCloseRef.current(null);
+    });
+  }, [navigation]);
+
+  const menuAnimatedStyle = useAnimatedStyle(() => {
+    const enteringOffset = placement?.side === "above" ? space[1] : -space[1];
+    return {
+      opacity: progress.value,
+      transform: [
+        { translateY: interpolate(progress.value, [0, 1], [enteringOffset, 0]) },
+        { scale: interpolate(progress.value, [0, 1], [0.96, 1]) },
+      ],
+    };
+  });
+  const onMenuLayout = (event: LayoutChangeEvent) => {
+    const { width, height } = event.nativeEvent.layout;
+    setMenuSize((current) =>
+      current?.width === width && current.height === height ? current : { width, height },
+    );
+  };
 
   return (
-    <OverlayShell<string | null> dismissValue={null} settle={settleMenu}>
-      {(requestClose) => (
-        <>
-          <Text style={overlayStyles.title}>{title}</Text>
-          <View style={overlayStyles.menu}>
-            {options.map((option) => (
+    <View style={overlayStyles.root} accessibilityViewIsModal>
+      <Pressable
+        accessibilityLabel="关闭菜单"
+        style={overlayStyles.contextMenuBackdrop}
+        onPress={() => requestClose(null)}
+      />
+      <Animated.View
+        accessibilityRole="menu"
+        onLayout={onMenuLayout}
+        style={[
+          overlayStyles.contextMenu,
+          {
+            left: placement?.left ?? CONTEXT_MENU_SCREEN_MARGIN,
+            top: placement?.top ?? CONTEXT_MENU_SCREEN_MARGIN,
+            minWidth: minimumWidth,
+            maxWidth: maximumWidth,
+            maxHeight: maximumHeight,
+            opacity: placement === null ? 0 : undefined,
+          },
+          menuAnimatedStyle,
+        ]}
+      >
+        {title ? (
+          <Text style={overlayStyles.contextMenuTitle} numberOfLines={1}>
+            {title}
+          </Text>
+        ) : null}
+        <ScrollView contentContainerStyle={overlayStyles.contextMenuList} bounces={false}>
+          {options.map((option) => {
+            const selected = option.key === selectedKey;
+            return (
               <Pressable
                 key={option.key}
-                accessibilityRole="button"
+                accessibilityRole="menuitem"
+                accessibilityState={{ selected }}
                 style={({ pressed }) => [
                   overlayStyles.menuItem,
+                  selected && overlayStyles.menuItemSelected,
                   pressed && overlayStyles.menuItemPressed,
                 ]}
                 onPress={() => requestClose(option.key)}
               >
+                <View style={overlayStyles.menuItemCheck}>
+                  {selected ? <IconCheck width={16} height={16} color={color.accent} /> : null}
+                </View>
                 <Text
                   style={[
                     overlayStyles.menuItemLabel,
+                    selected && overlayStyles.menuItemLabelSelected,
                     option.destructive && overlayStyles.menuItemDangerLabel,
                   ]}
+                  numberOfLines={1}
                 >
                   {option.label}
                 </Text>
               </Pressable>
-            ))}
-          </View>
-          <View style={overlayStyles.actions}>
-            <Pressable style={overlayStyles.secondary} onPress={() => requestClose(null)}>
-              <Text style={overlayStyles.secondaryLabel}>取消</Text>
-            </Pressable>
-          </View>
-        </>
-      )}
-    </OverlayShell>
+            );
+          })}
+        </ScrollView>
+      </Animated.View>
+    </View>
   );
 }
