@@ -51,6 +51,27 @@ export const overlayStyles = StyleSheet.create({
     paddingHorizontal: space[3],
     paddingVertical: space[2],
   },
+  menu: {
+    gap: space[2],
+  },
+  menuItem: {
+    borderRadius: radius.control,
+    backgroundColor: color.field,
+    paddingHorizontal: space[3],
+    paddingVertical: space[3],
+  },
+  menuItemPressed: {
+    backgroundColor: wash.row,
+  },
+  menuItemLabel: {
+    color: color.foreground,
+    fontFamily: fontFamily.sans,
+    fontSize: fontSize.sm,
+    fontWeight: "600",
+  },
+  menuItemDangerLabel: {
+    color: color.error,
+  },
   actions: {
     flexDirection: "row",
     justifyContent: "flex-end",

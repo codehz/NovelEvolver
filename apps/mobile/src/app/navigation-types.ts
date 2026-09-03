@@ -1,6 +1,7 @@
 import type {
   OverlayAlertParams,
   OverlayConfirmParams,
+  OverlayMenuParams,
   OverlayPromptParams,
 } from "../shared/ui/OverlayHost";
 
@@ -11,6 +12,7 @@ export type RootStackParamList = {
   Alert: OverlayAlertParams;
   Confirm: OverlayConfirmParams;
   Prompt: OverlayPromptParams;
+  Menu: OverlayMenuParams;
 };
 
 export type ProjectTabParamList = {

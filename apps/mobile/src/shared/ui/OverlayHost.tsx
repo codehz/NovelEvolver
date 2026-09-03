@@ -48,6 +48,17 @@ export type OverlayPromptParams = {
   confirmLabel: string;
 };
 
+export type OverlayMenuOption = {
+  key: string;
+  label: string;
+  destructive?: boolean;
+};
+
+export type OverlayMenuParams = {
+  title: string;
+  options: OverlayMenuOption[];
+};
+
 export type OverlayAlertRequest = {
   title: string;
   message: string;
@@ -64,10 +75,13 @@ export type OverlayPromptRequest = {
   confirmLabel?: string;
 };
 
+export type OverlayMenuRequest = OverlayMenuParams;
+
 type OverlayApi = {
   alert: (request: OverlayAlertRequest) => Promise<void>;
   confirm: (request?: OverlayConfirmRequest) => Promise<boolean>;
   prompt: (request: OverlayPromptRequest) => Promise<string | null>;
+  menu: (request: OverlayMenuRequest) => Promise<string | null>;
 };
 
 const OverlayContext = createContext<OverlayApi | null>(null);
@@ -81,6 +95,7 @@ const DEFAULT_CONFIRM: OverlayConfirmParams = {
 let pendingAlert: (() => void) | null = null;
 let pendingConfirm: ((ok: boolean) => void) | null = null;
 let pendingPrompt: ((value: string | null) => void) | null = null;
+let pendingMenu: ((key: string | null) => void) | null = null;
 
 function settleAlert(_value: undefined): void {
   const resolve = pendingAlert;
@@ -98,6 +113,12 @@ function settlePrompt(value: string | null): void {
   const resolve = pendingPrompt;
   pendingPrompt = null;
   resolve?.(value);
+}
+
+function settleMenu(key: string | null): void {
+  const resolve = pendingMenu;
+  pendingMenu = null;
+  resolve?.(key);
 }
 
 export function useOverlay(): OverlayApi {
@@ -164,6 +185,17 @@ export function OverlayHost({ children }: OverlayHostProps) {
             initialValue: request.initialValue,
             confirmLabel: request.confirmLabel ?? "确认",
           });
+        });
+      },
+      menu(request) {
+        return new Promise((resolve) => {
+          if (!navigationRef.isReady()) {
+            resolve(null);
+            return;
+          }
+          pendingMenu?.(null);
+          pendingMenu = resolve;
+          navigationRef.navigate("Menu", request);
         });
       },
     }),
@@ -339,6 +371,47 @@ export function PromptScreen({ route }: StaticScreenProps<OverlayPromptParams>) 
               >
                 {confirmLabel}
               </Text>
+            </Pressable>
+          </View>
+        </>
+      )}
+    </OverlayShell>
+  );
+}
+
+export function MenuScreen({ route }: StaticScreenProps<OverlayMenuParams>) {
+  const { title, options } = route.params;
+
+  return (
+    <OverlayShell<string | null> dismissValue={null} settle={settleMenu}>
+      {(requestClose) => (
+        <>
+          <Text style={overlayStyles.title}>{title}</Text>
+          <View style={overlayStyles.menu}>
+            {options.map((option) => (
+              <Pressable
+                key={option.key}
+                accessibilityRole="button"
+                style={({ pressed }) => [
+                  overlayStyles.menuItem,
+                  pressed && overlayStyles.menuItemPressed,
+                ]}
+                onPress={() => requestClose(option.key)}
+              >
+                <Text
+                  style={[
+                    overlayStyles.menuItemLabel,
+                    option.destructive && overlayStyles.menuItemDangerLabel,
+                  ]}
+                >
+                  {option.label}
+                </Text>
+              </Pressable>
+            ))}
+          </View>
+          <View style={overlayStyles.actions}>
+            <Pressable style={overlayStyles.secondary} onPress={() => requestClose(null)}>
+              <Text style={overlayStyles.secondaryLabel}>取消</Text>
             </Pressable>
           </View>
         </>

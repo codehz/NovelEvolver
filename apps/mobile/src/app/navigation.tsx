@@ -9,7 +9,7 @@ import { ProjectListScreen } from "../features/projects/ProjectListScreen";
 import { ProjectScreen } from "../features/projects/ProjectScreen";
 import { SettingsNavigator } from "../features/settings/SettingsNavigator";
 import { color } from "../shared/theme";
-import { AlertScreen, ConfirmScreen, PromptScreen } from "../shared/ui/OverlayHost";
+import { AlertScreen, ConfirmScreen, MenuScreen, PromptScreen } from "../shared/ui/OverlayHost";
 import { navigationRef } from "./navigation-ref";
 
 const navigationTheme: Theme = {
@@ -48,6 +48,7 @@ const RootStack = createNativeStackNavigator({
     Alert: createNativeStackScreen({ screen: AlertScreen, options: overlayScreenOptions }),
     Confirm: createNativeStackScreen({ screen: ConfirmScreen, options: overlayScreenOptions }),
     Prompt: createNativeStackScreen({ screen: PromptScreen, options: overlayScreenOptions }),
+    Menu: createNativeStackScreen({ screen: MenuScreen, options: overlayScreenOptions }),
   },
 });
 

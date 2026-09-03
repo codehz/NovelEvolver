@@ -88,6 +88,56 @@ export function ProjectListScreen() {
     void overlay.alert({ title: "如何加入项目", message: IMPORT_HELP });
   };
 
+  const showProjectMenu = async (project: ProjectDbRecord) => {
+    if (busy) return;
+    const name = project.displayName?.trim() || "未命名项目";
+    const action = await overlay.menu({
+      title: name,
+      options: [
+        { key: "rename", label: "改名" },
+        { key: "delete", label: "删除", destructive: true },
+      ],
+    });
+
+    if (action === "rename") {
+      const nextName = await overlay.prompt({
+        title: "项目改名",
+        placeholder: "项目名称",
+        initialValue: name,
+        confirmLabel: "保存",
+      });
+      if (nextName === null) return;
+      setBusy(true);
+      try {
+        manager.renameProject(project.id, nextName);
+      } catch (error) {
+        manager.refresh();
+        await overlay.alert({ title: "改名失败", message: errorMessage(error) });
+      } finally {
+        setBusy(false);
+      }
+      return;
+    }
+
+    if (action === "delete") {
+      const confirmed = await overlay.confirm({
+        title: `删除“${name}”？`,
+        message: "项目文件及其全部内容将被永久删除，此操作无法撤销。",
+        confirmLabel: "删除",
+      });
+      if (!confirmed) return;
+      setBusy(true);
+      try {
+        await manager.deleteProject(project.id);
+      } catch (error) {
+        manager.refresh();
+        await overlay.alert({ title: "删除失败", message: errorMessage(error) });
+      } finally {
+        setBusy(false);
+      }
+    }
+  };
+
   return (
     <SafeAreaView style={styles.safeArea}>
       <View style={styles.header}>
@@ -149,7 +199,11 @@ export function ProjectListScreen() {
           <ProjectCard
             project={item}
             width={cardWidth}
+            disabled={busy}
             onOpen={() => navigation.navigate("Project", { projectId: item.id })}
+            onLongPress={() => {
+              void showProjectMenu(item);
+            }}
           />
         )}
       />
@@ -160,17 +214,22 @@ export function ProjectListScreen() {
 type ProjectCardProps = {
   project: ProjectDbRecord;
   width: number;
+  disabled: boolean;
   onOpen: () => void;
+  onLongPress: () => void;
 };
 
-function ProjectCard({ project, width, onOpen }: ProjectCardProps) {
+function ProjectCard({ project, width, disabled, onOpen, onLongPress }: ProjectCardProps) {
   const name = project.displayName?.trim() || "未命名项目";
 
   return (
     <Pressable
       accessibilityRole="button"
       accessibilityLabel={`打开项目：${name}`}
+      accessibilityHint="长按可改名或删除"
+      disabled={disabled}
       onPress={onOpen}
+      onLongPress={onLongPress}
       style={({ pressed }) => [styles.card, { width }, pressed && styles.cardPressed]}
     >
       <IconRepo width={22} height={22} color={color.info} />
