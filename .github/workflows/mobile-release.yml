@@ -89,15 +89,54 @@ jobs:
           bun run mobile:fonts
           bun run sqlite:ensure
 
+      - name: Prepare release keystore
+        id: signing
+        if: ${{ secrets.ANDROID_KEYSTORE_BASE64 != '' }}
+        env:
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: |
+          set -euo pipefail
+          for secret_name in ANDROID_KEYSTORE_BASE64 ANDROID_KEYSTORE_PASSWORD ANDROID_KEY_ALIAS ANDROID_KEY_PASSWORD; do
+            if [[ -z "${!secret_name}" ]]; then
+              echo "Missing Android signing secret: $secret_name" >&2
+              exit 1
+            fi
+          done
+          keystore_path="$RUNNER_TEMP/novelevolver-release.keystore"
+          printf '%s' "$ANDROID_KEYSTORE_BASE64" | base64 --decode > "$keystore_path"
+          chmod 600 "$keystore_path"
+          test -s "$keystore_path"
+          echo "store_file=$keystore_path" >> "$GITHUB_OUTPUT"
+
       - name: Build release APK
         working-directory: apps/mobile/android
         env:
           VERSION_CODE: ${{ steps.version.outputs.version_code }}
           VERSION_NAME: ${{ steps.version.outputs.version_name }}
+          RELEASE_STORE_FILE: ${{ steps.signing.outputs.store_file }}
+          ORG_GRADLE_PROJECT_RELEASE_STORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ORG_GRADLE_PROJECT_RELEASE_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ORG_GRADLE_PROJECT_RELEASE_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
         run: |
-          ./gradlew assembleRelease --no-daemon \
-            -PVERSION_CODE="$VERSION_CODE" \
-            -PVERSION_NAME="$VERSION_NAME"
+          set -euo pipefail
+          gradle_args=(
+            "-PVERSION_CODE=$VERSION_CODE"
+            "-PVERSION_NAME=$VERSION_NAME"
+          )
+          if [[ -n "$RELEASE_STORE_FILE" ]]; then
+            gradle_args+=(
+              "-PRELEASE_STORE_FILE=$RELEASE_STORE_FILE"
+            )
+          elif [[ "$GITHUB_EVENT_NAME" != "pull_request" ]]; then
+            echo "Release builds outside pull requests require Android signing secrets" >&2
+            exit 1
+          else
+            echo "Signing secrets are unavailable; using the local debug keystore for this PR artifact"
+          fi
+          ./gradlew assembleRelease --no-daemon "${gradle_args[@]}"
 
       - name: Rename APK
         env:
