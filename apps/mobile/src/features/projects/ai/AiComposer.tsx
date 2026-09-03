@@ -19,7 +19,7 @@ import {
   type ComponentRef,
   type Ref,
 } from "react";
-import { Pressable, Text, TextInput, View } from "react-native";
+import { Pressable, Text, TextInput, View, type GestureResponderEvent } from "react-native";
 import type { TextInput as TextInputType } from "react-native";
 import { Input, useMention, type MentionPartType, type Part } from "react-native-headless-mention";
 
@@ -53,9 +53,9 @@ type AiComposerProps = {
   onTriggerChange: (indicator: ComposerTrigger | null, query: string) => void;
   onClearSlash: () => void;
   onRemoveMention: (token: string) => void;
-  onOpenModels: () => void;
-  onOpenAgents: () => void;
-  onOpenReasoning: () => void;
+  onOpenModels: (event: GestureResponderEvent) => void;
+  onOpenAgents: (event: GestureResponderEvent) => void;
+  onOpenReasoning: (event: GestureResponderEvent) => void;
   onSend: () => void;
   onStop: () => void;
 };

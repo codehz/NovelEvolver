@@ -84,6 +84,14 @@ export const overlayStyles = StyleSheet.create({
   contextMenuList: {
     paddingVertical: space[1],
   },
+  contextMenuEmpty: {
+    color: color.muted,
+    fontFamily: fontFamily.sans,
+    fontSize: fontSize.sm,
+    paddingHorizontal: space[4],
+    paddingVertical: space[3],
+    textAlign: "center",
+  },
   menuItem: {
     minHeight: 44,
     flexDirection: "row",
@@ -103,11 +111,19 @@ export const overlayStyles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  menuItemLabel: {
+  menuItemContent: {
     flex: 1,
+    gap: 2,
+  },
+  menuItemLabel: {
     color: color.foreground,
     fontFamily: fontFamily.sans,
     fontSize: fontSize.sm,
+  },
+  menuItemDetail: {
+    color: color.muted,
+    fontFamily: fontFamily.sans,
+    fontSize: fontSize.xxs,
   },
   menuItemLabelSelected: {
     color: color.accent,

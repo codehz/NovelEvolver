@@ -58,6 +58,7 @@ export type OverlayPromptParams = {
 export type OverlayMenuOption = {
   key: string;
   label: string;
+  detail?: string;
   destructive?: boolean;
 };
 
@@ -66,6 +67,7 @@ export type OverlayMenuParams = {
   title?: string;
   selectedKey?: string;
   options: OverlayMenuOption[];
+  emptyLabel?: string;
 };
 
 export type OverlayAlertRequest = {
@@ -392,7 +394,7 @@ const CONTEXT_MENU_MIN_WIDTH = 168;
 const CONTEXT_MENU_SCREEN_MARGIN = space[2];
 
 export function MenuScreen({ route }: StaticScreenProps<OverlayMenuParams>) {
-  const { anchor, title, selectedKey, options } = route.params;
+  const { anchor, title, selectedKey, options, emptyLabel } = route.params;
   const navigation = useNavigation();
   const insets = useSafeAreaInsets();
   const { width: viewportWidth, height: viewportHeight } = useWindowDimensions();
@@ -500,6 +502,9 @@ export function MenuScreen({ route }: StaticScreenProps<OverlayMenuParams>) {
           </Text>
         ) : null}
         <ScrollView contentContainerStyle={overlayStyles.contextMenuList} bounces={false}>
+          {options.length === 0 && emptyLabel ? (
+            <Text style={overlayStyles.contextMenuEmpty}>{emptyLabel}</Text>
+          ) : null}
           {options.map((option) => {
             const selected = option.key === selectedKey;
             return (
@@ -517,16 +522,23 @@ export function MenuScreen({ route }: StaticScreenProps<OverlayMenuParams>) {
                 <View style={overlayStyles.menuItemCheck}>
                   {selected ? <IconCheck width={16} height={16} color={color.accent} /> : null}
                 </View>
-                <Text
-                  style={[
-                    overlayStyles.menuItemLabel,
-                    selected && overlayStyles.menuItemLabelSelected,
-                    option.destructive && overlayStyles.menuItemDangerLabel,
-                  ]}
-                  numberOfLines={1}
-                >
-                  {option.label}
-                </Text>
+                <View style={overlayStyles.menuItemContent}>
+                  <Text
+                    style={[
+                      overlayStyles.menuItemLabel,
+                      selected && overlayStyles.menuItemLabelSelected,
+                      option.destructive && overlayStyles.menuItemDangerLabel,
+                    ]}
+                    numberOfLines={1}
+                  >
+                    {option.label}
+                  </Text>
+                  {option.detail ? (
+                    <Text style={overlayStyles.menuItemDetail} numberOfLines={2}>
+                      {option.detail}
+                    </Text>
+                  ) : null}
+                </View>
               </Pressable>
             );
           })}
