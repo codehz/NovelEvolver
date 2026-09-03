@@ -85,11 +85,11 @@ export class TextDecoder {
   }
 }
 
-type RuntimeGlobal = typeof globalThis & {
+type RuntimeGlobal = {
   TextDecoder?: typeof TextDecoder;
 };
 
-const runtimeGlobal = globalThis as RuntimeGlobal;
+const runtimeGlobal = globalThis as unknown as RuntimeGlobal;
 if (typeof runtimeGlobal.TextDecoder !== "function") {
   runtimeGlobal.TextDecoder = TextDecoder;
 }
