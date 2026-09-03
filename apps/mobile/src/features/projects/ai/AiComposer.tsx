@@ -19,11 +19,12 @@ import {
   type ComponentRef,
   type Ref,
 } from "react";
-import { Pressable, Text, TextInput, View, type GestureResponderEvent } from "react-native";
+import { Pressable, Text, TextInput, View } from "react-native";
 import type { TextInput as TextInputType } from "react-native";
 import { Input, useMention, type MentionPartType, type Part } from "react-native-headless-mention";
 
 import { color } from "../../../shared/theme";
+import type { ContextMenuAnchor } from "../../../shared/ui/context-menu-position";
 import { aiStyles } from "./ai-chrome";
 import { buildComposerSendPayload, isComposerEmpty, type ComposerTrigger } from "./composer-query";
 import type { MentionCatalogItem } from "./mention-catalog";
@@ -53,9 +54,9 @@ type AiComposerProps = {
   onTriggerChange: (indicator: ComposerTrigger | null, query: string) => void;
   onClearSlash: () => void;
   onRemoveMention: (token: string) => void;
-  onOpenModels: (event: GestureResponderEvent) => void;
-  onOpenAgents: (event: GestureResponderEvent) => void;
-  onOpenReasoning: (event: GestureResponderEvent) => void;
+  onOpenModels: (anchor: ContextMenuAnchor) => void;
+  onOpenAgents: (anchor: ContextMenuAnchor) => void;
+  onOpenReasoning: (anchor: ContextMenuAnchor) => void;
   onSend: () => void;
   onStop: () => void;
 };
@@ -89,6 +90,9 @@ export function AiComposer({
   onStop,
 }: AiComposerProps) {
   const inputRef = useRef<ComponentRef<typeof TextInput>>(null);
+  const agentMenuTriggerRef = useRef<ComponentRef<typeof Pressable>>(null);
+  const modelMenuTriggerRef = useRef<ComponentRef<typeof Pressable>>(null);
+  const reasoningMenuTriggerRef = useRef<ComponentRef<typeof Pressable>>(null);
   const mentionLabelOverrides = useRef(new Map<string, string>());
   const [value, setValue] = useState(draft);
   const mentionById = useMemo(
@@ -235,6 +239,14 @@ export function AiComposer({
   const showReasoning = (selectedModel?.availableReasoningLevels.length ?? 0) > 0;
   const composerDisabled = snapshot.pending || snapshot.openInteractions.length > 0;
   const canSend = !composerDisabled && !isComposerEmpty(renderedText, slash, mentions);
+  const openMenuFromTrigger = (
+    trigger: ComponentRef<typeof Pressable> | null,
+    onOpen: (anchor: ContextMenuAnchor) => void,
+  ) => {
+    trigger?.measureInWindow((x, y, width, height) => {
+      onOpen({ x, y, width, height });
+    });
+  };
 
   return (
     <View style={aiStyles.composer}>
@@ -254,23 +266,29 @@ export function AiComposer({
       />
       <View style={aiStyles.composerToolbar}>
         <Pressable
+          ref={agentMenuTriggerRef}
+          collapsable={false}
           style={aiStyles.selectorButton}
-          onPress={onOpenAgents}
+          onPress={() => openMenuFromTrigger(agentMenuTriggerRef.current, onOpenAgents)}
           disabled={composerDisabled}
         >
           <Text style={aiStyles.selectorLabel}>{selectedAgent?.name ?? "Agent"}</Text>
         </Pressable>
         <Pressable
+          ref={modelMenuTriggerRef}
+          collapsable={false}
           style={aiStyles.selectorButton}
-          onPress={onOpenModels}
+          onPress={() => openMenuFromTrigger(modelMenuTriggerRef.current, onOpenModels)}
           disabled={composerDisabled}
         >
           <Text style={aiStyles.selectorLabel}>{selectedModel?.name ?? "模型"}</Text>
         </Pressable>
         {showReasoning ? (
           <Pressable
+            ref={reasoningMenuTriggerRef}
+            collapsable={false}
             style={aiStyles.selectorButton}
-            onPress={onOpenReasoning}
+            onPress={() => openMenuFromTrigger(reasoningMenuTriggerRef.current, onOpenReasoning)}
             disabled={composerDisabled}
           >
             <Text style={aiStyles.selectorLabel}>

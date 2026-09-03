@@ -1,6 +1,9 @@
-export type ContextMenuAnchor =
-  | { type: "point"; x: number; y: number }
-  | { type: "rect"; x: number; y: number; width: number; height: number };
+export type ContextMenuAnchor = {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+};
 
 export type ContextMenuInsets = {
   top: number;
@@ -50,10 +53,9 @@ export function resolveContextMenuWidth({
   margin = DEFAULT_MARGIN,
 }: ContextMenuWidthInput): { minWidth: number; maxWidth: number } {
   const availableWidth = Math.max(0, viewportWidth - insets.left - insets.right - margin * 2);
-  const anchorWidth = anchor.type === "rect" ? anchor.width : 0;
 
   return {
-    minWidth: Math.min(availableWidth, Math.max(preferredMinimumWidth, anchorWidth)),
+    minWidth: Math.min(availableWidth, Math.max(preferredMinimumWidth, anchor.width)),
     maxWidth: availableWidth,
   };
 }
@@ -72,12 +74,11 @@ export function resolveContextMenuPlacement({
   const maximumLeft = viewportWidth - insets.right - margin - menuWidth;
   const minimumTop = insets.top + margin;
   const maximumTop = viewportHeight - insets.bottom - margin - menuHeight;
-  const anchorBottom = anchor.type === "rect" ? anchor.y + anchor.height : anchor.y;
+  const anchorBottom = anchor.y + anchor.height;
   const belowTop = anchorBottom + gap;
   const aboveTop = anchor.y - gap - menuHeight;
   const spaceBelow = viewportHeight - insets.bottom - margin - belowTop;
-  const spaceAbove = anchor.y - gap - minimumTop;
-  const side = spaceBelow >= menuHeight || spaceBelow >= spaceAbove ? "below" : "above";
+  const side = spaceBelow >= menuHeight ? "below" : "above";
   const preferredTop = side === "below" ? belowTop : aboveTop;
 
   return {

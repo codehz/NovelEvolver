@@ -1,4 +1,4 @@
-import type { ComponentType } from "react";
+import type { ComponentRef, ComponentType, Ref } from "react";
 import { Pressable, Text, type GestureResponderEvent } from "react-native";
 import type { SvgProps } from "react-native-svg";
 
@@ -6,6 +6,7 @@ import { color } from "../../shared/theme";
 import { settingsStyles } from "./settings-chrome";
 
 type SettingsHeaderButtonProps = {
+  ref?: Ref<ComponentRef<typeof Pressable>>;
   label: string;
   onPress: (event: GestureResponderEvent) => void;
   Icon?: ComponentType<SvgProps>;
@@ -13,6 +14,7 @@ type SettingsHeaderButtonProps = {
 };
 
 export function SettingsHeaderButton({
+  ref,
   label,
   onPress,
   Icon,
@@ -20,6 +22,8 @@ export function SettingsHeaderButton({
 }: SettingsHeaderButtonProps) {
   return (
     <Pressable
+      ref={ref}
+      collapsable={false}
       onPress={onPress}
       disabled={disabled}
       style={[

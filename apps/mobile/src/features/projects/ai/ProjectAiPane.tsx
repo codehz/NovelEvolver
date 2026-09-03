@@ -11,19 +11,14 @@ import {
   type AiPromptConfigPublic,
   type AiReasoningLevel,
 } from "@novelevolver/domain/settings/ai-settings";
-import { useRef, useState } from "react";
-import {
-  KeyboardAvoidingView,
-  Platform,
-  Text,
-  View,
-  type GestureResponderEvent,
-} from "react-native";
+import { useRef, useState, type ComponentRef } from "react";
+import { KeyboardAvoidingView, Platform, Pressable, Text, View } from "react-native";
 import IconAdd from "~icons/codicon/add";
 import IconBeaker from "~icons/codicon/beaker";
 import IconHistory from "~icons/codicon/history";
 
 import { getMobileSettings } from "../../../shared/settings/session";
+import type { ContextMenuAnchor } from "../../../shared/ui/context-menu-position";
 import { useOverlay } from "../../../shared/ui/OverlayHost";
 import { SettingsHeaderButton } from "../../settings/SettingsHeaderButton";
 import { errorMessage } from "../error-message";
@@ -46,12 +41,6 @@ import { useProjectAi } from "./use-project-ai";
 
 type AiMenu = "history" | "models" | "agents" | "reasoning" | "scenarios";
 
-type MenuAnchor = {
-  type: "point";
-  x: number;
-  y: number;
-};
-
 type ProjectAiPaneProps = {
   opened: OpenedProject;
   onWorkspaceDirty: () => void;
@@ -62,6 +51,8 @@ export function ProjectAiPane({ opened, onWorkspaceDirty, mediumHeader }: Projec
   const overlay = useOverlay();
   const ai = useProjectAi(opened, onWorkspaceDirty);
   const composerRef = useRef<AiComposerHandle>(null);
+  const scenarioMenuTriggerRef = useRef<ComponentRef<typeof Pressable>>(null);
+  const historyMenuTriggerRef = useRef<ComponentRef<typeof Pressable>>(null);
   const [trigger, setTrigger] = useState<ComposerTrigger | null>(null);
   const [triggerQuery, setTriggerQuery] = useState("");
   const [draft, setDraft] = useState("");
@@ -184,15 +175,9 @@ export function ProjectAiPane({ opened, onWorkspaceDirty, mediumHeader }: Projec
   const filteredMentionItems = filterMentionCatalog(mentionItems, triggerQuery);
   const selectedModel = ai.models.find((model) => model.id === ai.snapshot.selectedModelId);
 
-  const anchorFromEvent = (event: GestureResponderEvent): MenuAnchor => ({
-    type: "point",
-    x: event.nativeEvent.pageX,
-    y: event.nativeEvent.pageY,
-  });
-
   const openConversationActions = async (
     conversation: AiConversationSummary,
-    anchor: MenuAnchor,
+    anchor: ContextMenuAnchor,
   ) => {
     const action = await overlay.menu({
       anchor,
@@ -213,7 +198,7 @@ export function ProjectAiPane({ opened, onWorkspaceDirty, mediumHeader }: Projec
   };
 
   const openHistoryChoices = async (
-    anchor: MenuAnchor,
+    anchor: ContextMenuAnchor,
     conversations: readonly (AiConversationSummary | AiConversationSearchHit)[],
     title: string,
     showControls: boolean,
@@ -280,8 +265,7 @@ export function ProjectAiPane({ opened, onWorkspaceDirty, mediumHeader }: Projec
     if (action !== null) handleSelectConversation(action);
   };
 
-  const openAiMenu = async (kind: AiMenu, event: GestureResponderEvent) => {
-    const anchor = anchorFromEvent(event);
+  const openAiMenu = async (kind: AiMenu, anchor: ContextMenuAnchor) => {
     if (kind === "history") {
       const visible = includeArchived
         ? ai.conversations
@@ -345,22 +329,30 @@ export function ProjectAiPane({ opened, onWorkspaceDirty, mediumHeader }: Projec
     }
   };
 
+  const openAiMenuFromTrigger = (kind: AiMenu, trigger: ComponentRef<typeof Pressable> | null) => {
+    trigger?.measureInWindow((x, y, width, height) => {
+      void openAiMenu(kind, { x, y, width, height });
+    });
+  };
+
   const headerActions = (
     <>
       {__DEV__ ? (
         <SettingsHeaderButton
+          ref={scenarioMenuTriggerRef}
           Icon={IconBeaker}
           label="测试场景"
-          onPress={(event) => {
-            void openAiMenu("scenarios", event);
+          onPress={() => {
+            openAiMenuFromTrigger("scenarios", scenarioMenuTriggerRef.current);
           }}
         />
       ) : null}
       <SettingsHeaderButton
+        ref={historyMenuTriggerRef}
         Icon={IconHistory}
         label="历史会话"
-        onPress={(event) => {
-          void openAiMenu("history", event);
+        onPress={() => {
+          openAiMenuFromTrigger("history", historyMenuTriggerRef.current);
         }}
       />
       <SettingsHeaderButton Icon={IconAdd} label="新建会话" onPress={handleCreate} />
@@ -481,14 +473,14 @@ export function ProjectAiPane({ opened, onWorkspaceDirty, mediumHeader }: Projec
             onRemoveMention={(token) => {
               setMentions((current) => current.filter((item) => item.token !== token));
             }}
-            onOpenModels={(event) => {
-              void openAiMenu("models", event);
+            onOpenModels={(anchor) => {
+              void openAiMenu("models", anchor);
             }}
-            onOpenAgents={(event) => {
-              void openAiMenu("agents", event);
+            onOpenAgents={(anchor) => {
+              void openAiMenu("agents", anchor);
             }}
-            onOpenReasoning={(event) => {
-              void openAiMenu("reasoning", event);
+            onOpenReasoning={(anchor) => {
+              void openAiMenu("reasoning", anchor);
             }}
             onSend={handleSend}
             onStop={ai.stopGeneration}

@@ -1,7 +1,7 @@
 import type { ProjectDbRecord } from "@novelevolver/worktree";
 import { useFocusEffect, useNavigation } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
-import { useCallback, useState } from "react";
+import { useCallback, useRef, useState, type ComponentRef } from "react";
 import {
   FlatList,
   Platform,
@@ -10,13 +10,13 @@ import {
   Text,
   useWindowDimensions,
   View,
-  type GestureResponderEvent,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import IconRepo from "~icons/codicon/repo";
 
 import type { RootStackParamList } from "../../app/navigation-types";
 import { color, fontFamily, fontSize, radius, space, wash } from "../../shared/theme";
+import type { ContextMenuAnchor } from "../../shared/ui/context-menu-position";
 import { useOverlay } from "../../shared/ui/OverlayHost";
 import { errorMessage } from "./error-message";
 import { useProjectManager } from "./ProjectManagerProvider";
@@ -89,15 +89,11 @@ export function ProjectListScreen() {
     void overlay.alert({ title: "如何加入项目", message: IMPORT_HELP });
   };
 
-  const showProjectMenu = async (project: ProjectDbRecord, event: GestureResponderEvent) => {
+  const showProjectMenu = async (project: ProjectDbRecord, anchor: ContextMenuAnchor) => {
     if (busy) return;
     const name = project.displayName?.trim() || "未命名项目";
     const action = await overlay.menu({
-      anchor: {
-        type: "point",
-        x: event.nativeEvent.pageX,
-        y: event.nativeEvent.pageY,
-      },
+      anchor,
       title: name,
       options: [
         { key: "rename", label: "改名" },
@@ -217,8 +213,8 @@ export function ProjectListScreen() {
             width={cardWidth}
             disabled={busy}
             onOpen={() => navigation.navigate("Project", { projectId: item.id })}
-            onLongPress={(event) => {
-              void showProjectMenu(item, event);
+            onLongPress={(anchor) => {
+              void showProjectMenu(item, anchor);
             }}
           />
         )}
@@ -232,20 +228,27 @@ type ProjectCardProps = {
   width: number;
   disabled: boolean;
   onOpen: () => void;
-  onLongPress: (event: GestureResponderEvent) => void;
+  onLongPress: (anchor: ContextMenuAnchor) => void;
 };
 
 function ProjectCard({ project, width, disabled, onOpen, onLongPress }: ProjectCardProps) {
+  const cardRef = useRef<ComponentRef<typeof Pressable>>(null);
   const name = project.displayName?.trim() || "未命名项目";
 
   return (
     <Pressable
+      ref={cardRef}
+      collapsable={false}
       accessibilityRole="button"
       accessibilityLabel={`打开项目：${name}`}
       accessibilityHint="长按可改名、分享或删除"
       disabled={disabled}
       onPress={onOpen}
-      onLongPress={onLongPress}
+      onLongPress={() => {
+        cardRef.current?.measureInWindow((x, y, measuredWidth, height) => {
+          onLongPress({ x, y, width: measuredWidth, height });
+        });
+      }}
       style={({ pressed }) => [styles.card, { width }, pressed && styles.cardPressed]}
     >
       <IconRepo width={22} height={22} color={color.info} />

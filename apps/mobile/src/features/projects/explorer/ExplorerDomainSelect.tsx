@@ -35,7 +35,7 @@ export function ExplorerDomainSelect({ value, onChange }: ExplorerDomainSelectPr
     trigger.measureInWindow((x, y, width, height) => {
       void overlay
         .menu({
-          anchor: { type: "rect", x, y, width, height },
+          anchor: { x, y, width, height },
           selectedKey: value,
           options: OPTIONS.map((option) => ({ key: option.value, label: option.label })),
         })
