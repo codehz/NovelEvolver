@@ -483,8 +483,9 @@ const styles = StyleSheet.create({
     borderLeftColor: color.border,
   },
   headerTitleWrap: {
-    flex: 1,
+    height: 48,
     minWidth: 0,
+    justifyContent: "center",
   },
   title: {
     color: color.foreground,
