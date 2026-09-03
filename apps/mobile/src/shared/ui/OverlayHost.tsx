@@ -17,12 +17,8 @@ import {
   TextInput,
   View,
 } from "react-native";
-import Animated, {
-  runOnJS,
-  useAnimatedStyle,
-  useSharedValue,
-  withTiming,
-} from "react-native-reanimated";
+import Animated, { useAnimatedStyle, useSharedValue, withTiming } from "react-native-reanimated";
+import { scheduleOnRN } from "react-native-worklets";
 
 import { navigationRef } from "../../app/navigation-ref";
 import { color } from "../theme";
@@ -236,7 +232,7 @@ function OverlayShell<T>({
     choiceRef.current = value;
     progress.value = withTiming(0, OVERLAY_TIMING, (finished) => {
       if (finished) {
-        runOnJS(finishClose)();
+        scheduleOnRN(finishClose);
       }
     });
   };

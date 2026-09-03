@@ -3,11 +3,11 @@ import { StyleSheet, Text, View } from "react-native";
 import { ScrollView } from "react-native-gesture-handler";
 import Animated, {
   interpolate,
-  runOnJS,
   useAnimatedStyle,
   useSharedValue,
   withTiming,
 } from "react-native-reanimated";
+import { scheduleOnRN } from "react-native-worklets";
 
 import { color, fontFamily, fontSize, space } from "../../../shared/theme";
 import { OVERLAY_TIMING } from "../../../shared/ui/overlay-chrome";
@@ -392,7 +392,7 @@ export function ExplorerTreeList<TNode>({
     stopAutoScroll();
     const generation = previewGenRef.current;
     overlayProgress.value = withTiming(0, OVERLAY_TIMING, (finished) => {
-      if (finished) runOnJS(clearPreview)(generation);
+      if (finished) scheduleOnRN(clearPreview, generation);
     });
     draggingIdRef.current = null;
     dragZoneRef.current = null;
