@@ -154,7 +154,7 @@ function ComparisonSummary({
   return (
     <View style={styles.summary}>
       <Text style={styles.summaryText}>
-        左侧基线 · 右侧当前工作区 · {model.hunks.length} 个差异块
+        显示基线与当前工作区的差异 · {model.hunks.length} 个差异块
       </Text>
       {model.hunks.map((hunk) => (
         <Pressable

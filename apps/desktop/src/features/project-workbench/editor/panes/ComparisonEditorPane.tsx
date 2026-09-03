@@ -434,10 +434,10 @@ export function ComparisonEditorPane({ tab, active }: ComparisonEditorPaneProps)
       <div className={comparisonToolbarClass}>
         <span className={comparisonToolbarHintClass}>
           {tab.target.kind === "commit-change"
-            ? "左侧为父版本，右侧为该提交版本；可写回工作区草稿。"
+            ? "显示父版本与该提交版本的差异；可写回工作区草稿。"
             : tab.target.kind === "history-entry"
-              ? "左侧为历史版本，右侧为当前工作区；可局部回滚或全文采用。"
-              : "左侧为基线，右侧为当前工作区；可局部回滚或全文采用。"}
+              ? "显示历史版本与当前工作区的差异；可局部回滚或全文采用。"
+              : "显示基线与当前工作区的差异；可局部回滚或全文采用。"}
         </span>
         {tab.target.kind === "commit-change" ? (
           <>
