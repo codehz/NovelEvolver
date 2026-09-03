@@ -96,6 +96,8 @@ export function ProjectScreen() {
           headerTitle={() => (
             <ProjectHeaderTabs activeTab={currentTab ?? "Explorer"} onSelectTab={selectTab} />
           )}
+          headerTitleAlign="center"
+          headerTitleContainerStyle={styles.headerTitle}
           headerTintColor={color.accent}
           headerStyle={settingsStyles.header}
           headerShadowVisible={false}
@@ -123,6 +125,17 @@ export function ProjectScreen() {
 
 const styles = StyleSheet.create({
   safeArea: { flex: 1, backgroundColor: color.background },
+  headerTitle: {
+    position: "absolute",
+    top: 0,
+    right: 0,
+    bottom: 0,
+    left: 0,
+    width: "100%",
+    maxWidth: "100%",
+    marginHorizontal: 0,
+    alignItems: "center",
+  },
   headerRight: {
     paddingEnd: space[4],
   },
