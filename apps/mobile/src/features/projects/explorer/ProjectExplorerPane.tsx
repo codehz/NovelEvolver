@@ -1,5 +1,6 @@
 import type {
   ChangesSnapshot,
+  Change,
   ManuscriptNode,
   ManuscriptOutline,
   ResourceTreeNode,
@@ -129,6 +130,7 @@ export type ProjectExplorerPaneProps = {
   changesError: boolean;
   onRetryChanges: () => void;
   onRevertChange: (changeId: string) => void;
+  onOpenChange: (change: Change) => void;
   onRevertAllChanges: () => void;
   onCommitChanges: (message: string) => Promise<boolean>;
   commitMessage: string;
@@ -164,6 +166,7 @@ export function ProjectExplorerPane({
   changesError,
   onRetryChanges,
   onRevertChange,
+  onOpenChange,
   onRevertAllChanges,
   onCommitChanges,
   commitMessage,
@@ -306,6 +309,7 @@ export function ProjectExplorerPane({
             error={changesError}
             onRetry={onRetryChanges}
             onRevertChange={onRevertChange}
+            onOpenChange={onOpenChange}
             commitMessage={commitMessage}
             onCommitMessageChange={onCommitMessageChange}
           />

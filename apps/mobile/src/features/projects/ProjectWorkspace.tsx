@@ -1,4 +1,4 @@
-import type { ManuscriptNode, ResourceTreeNode } from "@novelevolver/domain/worktree";
+import type { Change, ManuscriptNode, ResourceTreeNode } from "@novelevolver/domain/worktree";
 import { useEffect, useRef, useState, type ComponentRef } from "react";
 import { Pressable, StyleSheet, Text, View, useWindowDimensions } from "react-native";
 import PagerView, {
@@ -18,6 +18,7 @@ import { color, fontFamily, fontSize } from "../../shared/theme";
 import { SettingsHeaderButton } from "../settings/SettingsHeaderButton";
 import { aiStyles } from "./ai/ai-chrome";
 import { ProjectAiPane, type AiPage, type ProjectAiPaneHandle } from "./ai/ProjectAiPane";
+import { ProjectChangeComparisonPane } from "./changes/ProjectChangeComparisonPane";
 import type { EditorDocument } from "./editor/editor-document";
 import { ProjectEditorPane } from "./editor/ProjectEditorPane";
 import { ExplorerDomainSelect } from "./explorer/ExplorerDomainSelect";
@@ -63,6 +64,9 @@ export type ProjectWorkspaceProps = Omit<
 > & {
   opened: OpenedProject;
   document: EditorDocument | null;
+  comparisonChangeId: string | null;
+  onOpenChange: (change: Change) => void;
+  onCloseChange: () => void;
   worktreeRevision: number;
   onOpenChapter: (nodeId: string) => void;
   onOpenResourceFile: (nodeId: string) => void;
@@ -105,6 +109,9 @@ type ProjectWorkspaceViewProps = ProjectWorkspaceProps & {
 export function ProjectWorkspace({
   opened,
   document,
+  comparisonChangeId,
+  onOpenChange,
+  onCloseChange,
   worktreeRevision,
   onOpenChapter,
   onOpenResourceFile,
@@ -315,23 +322,37 @@ export function ProjectWorkspace({
         onOpenResourceFile(nodeId);
         if (!showHeader) selectPage("Editor");
       }}
+      onOpenChange={(change) => {
+        onOpenChange(change);
+        if (!showHeader) selectPage("Editor");
+      }}
       onCreateChapter={createChapterAndOpen}
       onCreateResourceFile={createResourceFileAndOpen}
       onBack={showHeader ? onBack : undefined}
     />
   );
 
-  const editorPane = (showHeader: boolean) => (
-    <ProjectEditorPane
-      opened={opened}
-      document={document}
-      chapter={chapter}
-      resource={resource}
-      worktreeRevision={worktreeRevision}
-      onWorkspaceChanged={onAiWorkspaceDirty}
-      showHeader={showHeader}
-    />
-  );
+  const editorPane = (showHeader: boolean) =>
+    comparisonChangeId !== null ? (
+      <ProjectChangeComparisonPane
+        worktree={opened.worktree}
+        changeId={comparisonChangeId}
+        revision={worktreeRevision}
+        onChanged={onAiWorkspaceDirty}
+        onClose={onCloseChange}
+        showHeader={showHeader}
+      />
+    ) : (
+      <ProjectEditorPane
+        opened={opened}
+        document={document}
+        chapter={chapter}
+        resource={resource}
+        worktreeRevision={worktreeRevision}
+        onWorkspaceChanged={onAiWorkspaceDirty}
+        showHeader={showHeader}
+      />
+    );
 
   const aiPane = (showHeader: boolean) => (
     <ProjectAiPane

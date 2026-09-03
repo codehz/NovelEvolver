@@ -1,5 +1,6 @@
 import type {
   ChangesSnapshot,
+  Change,
   ManuscriptNode,
   ResourceTreeNode,
   WorktreeDomain,
@@ -27,18 +28,28 @@ export function useProjectWorkspace(projectId: number): ProjectWorkspaceModel | 
   const [selectedManuscriptId, setSelectedManuscriptId] = useState<string | null>(null);
   const [selectedResourceId, setSelectedResourceId] = useState<string | null>(null);
   const [editorDocument, setEditorDocument] = useState<EditorDocument | null>(null);
+  const [comparisonChangeId, setComparisonChangeId] = useState<string | null>(null);
   const [revision, setRevision] = useState(0);
   const [changesSnapshot, setChangesSnapshot] = useState<ChangesSnapshot | null>(null);
   const [changesLoading, setChangesLoading] = useState(true);
   const [changesError, setChangesError] = useState(false);
 
   const openChapter = (nodeId: string) => {
+    setComparisonChangeId(null);
     setSelectedManuscriptId(nodeId);
     setEditorDocument({ domain: "manuscript", id: nodeId });
   };
   const openResourceFile = (nodeId: string) => {
+    setComparisonChangeId(null);
     setSelectedResourceId(nodeId);
     setEditorDocument({ domain: "resource", id: nodeId });
+  };
+  const openChange = (changeId: string) => {
+    setComparisonChangeId(changeId);
+    setEditorDocument(null);
+  };
+  const closeChange = () => {
+    setComparisonChangeId(null);
   };
   const refresh = () => {
     setRevision((value) => value + 1);
@@ -295,6 +306,11 @@ export function useProjectWorkspace(projectId: number): ProjectWorkspaceModel | 
     selectedResourceId,
     warning: opened.worktree.warning,
     document: editorDocument,
+    comparisonChangeId,
+    onOpenChange: (change: Change) => {
+      openChange(change.id);
+    },
+    onCloseChange: closeChange,
     worktreeRevision: revision,
     onOpenChapter: openChapter,
     onOpenResourceFile: openResourceFile,

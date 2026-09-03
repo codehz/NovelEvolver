@@ -4,7 +4,6 @@ import IconCheck from "~icons/codicon/check";
 import IconLoading from "~icons/codicon/loading";
 
 import { color, fontFamily, fontSize, radius, space, wash } from "../../../shared/theme";
-import { useOverlay } from "../../../shared/ui/OverlayHost";
 import { ChangesList } from "./ChangesList";
 
 type ProjectChangesPaneProps = {
@@ -13,6 +12,7 @@ type ProjectChangesPaneProps = {
   error: boolean;
   onRetry: () => void;
   onRevertChange: (changeId: string) => void;
+  onOpenChange: (change: Change) => void;
   commitMessage: string;
   onCommitMessageChange: (message: string) => void;
 };
@@ -23,17 +23,10 @@ export function ProjectChangesPane({
   error,
   onRetry,
   onRevertChange,
+  onOpenChange,
   commitMessage,
   onCommitMessageChange,
 }: ProjectChangesPaneProps) {
-  const overlay = useOverlay();
-  const openChangePlaceholder = (_change: Change) => {
-    void overlay.alert({
-      title: "查看更改",
-      message: "修改对比功能暂未支持，之后将加入此功能。",
-      confirmLabel: "知道了",
-    });
-  };
   return (
     <View style={styles.root}>
       <View style={styles.commitBox}>
@@ -70,7 +63,7 @@ export function ProjectChangesPane({
             manuscriptChanges={snapshot.manuscriptChanges}
             resourceChanges={snapshot.resourceChanges}
             onRevert={onRevertChange}
-            onOpenChange={openChangePlaceholder}
+            onOpenChange={onOpenChange}
           />
         </>
       )}
