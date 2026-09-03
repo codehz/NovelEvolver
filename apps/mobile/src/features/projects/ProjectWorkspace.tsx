@@ -56,6 +56,8 @@ export type ProjectWorkspaceProps = Omit<
   | "onOpenResourceFile"
   | "commitMessage"
   | "onCommitMessageChange"
+  | "worktree"
+  | "historyRefreshKey"
   | "onBack"
   | "showHeader"
 > & {
@@ -302,6 +304,8 @@ export function ProjectWorkspace({
       {...explorerProps}
       commitMessage={commitMessage}
       onCommitMessageChange={setCommitMessage}
+      worktree={opened.worktree}
+      historyRefreshKey={worktreeRevision}
       showHeader={showHeader}
       onOpenChapter={(nodeId) => {
         onOpenChapter(nodeId);

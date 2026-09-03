@@ -6,12 +6,13 @@ import IconChevronDown from "~icons/codicon/chevron-down";
 import { color, fontFamily, fontSize, radius, space } from "../../../shared/theme";
 import { useOverlay } from "../../../shared/ui/OverlayHost";
 
-export type ExplorerDomain = WorktreeDomain | "changes";
+export type ExplorerDomain = WorktreeDomain | "changes" | "history";
 
 const OPTIONS: { value: ExplorerDomain; label: string }[] = [
   { value: "manuscript", label: "正文" },
   { value: "resource", label: "资源库" },
   { value: "changes", label: "更改" },
+  { value: "history", label: "历史" },
 ];
 
 export type ExplorerDomainSelectProps = {
@@ -23,7 +24,14 @@ export function ExplorerDomainSelect({ value, onChange }: ExplorerDomainSelectPr
   const overlay = useOverlay();
   const triggerRef = useRef<ComponentRef<typeof Pressable>>(null);
   const [open, setOpen] = useState(false);
-  const currentLabel = value === "resource" ? "资源库" : value === "changes" ? "更改" : "正文";
+  const currentLabel =
+    value === "resource"
+      ? "资源库"
+      : value === "changes"
+        ? "更改"
+        : value === "history"
+          ? "历史"
+          : "正文";
   const openMenu = () => {
     if (open) return;
     setOpen(true);
@@ -40,7 +48,12 @@ export function ExplorerDomainSelect({ value, onChange }: ExplorerDomainSelectPr
           options: OPTIONS.map((option) => ({ key: option.value, label: option.label })),
         })
         .then((nextValue) => {
-          if (nextValue === "manuscript" || nextValue === "resource" || nextValue === "changes") {
+          if (
+            nextValue === "manuscript" ||
+            nextValue === "resource" ||
+            nextValue === "changes" ||
+            nextValue === "history"
+          ) {
             onChange(nextValue);
           }
         })

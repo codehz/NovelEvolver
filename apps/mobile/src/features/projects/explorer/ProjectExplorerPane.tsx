@@ -5,6 +5,7 @@ import type {
   ResourceTreeNode,
   ResourceTreeSnapshot,
 } from "@novelevolver/domain/worktree";
+import type { WorktreeSession } from "@novelevolver/worktree";
 import { useEffect, type ReactNode } from "react";
 import { StyleSheet, Text, View } from "react-native";
 import Animated, {
@@ -24,6 +25,7 @@ import { OVERLAY_TIMING } from "../../../shared/ui/overlay-chrome";
 import { SettingsHeaderBackButton } from "../../settings/SettingsHeaderBackButton";
 import { SettingsHeaderButton } from "../../settings/SettingsHeaderButton";
 import { ProjectChangesPane } from "../changes/ProjectChangesPane";
+import { ProjectHistoryPane } from "../history/ProjectHistoryPane";
 import { ManuscriptTreeList } from "../manuscript/ManuscriptTreeList";
 import { projectPaneStyles } from "../project-pane-chrome";
 import { ResourceTreeList } from "../resource/ResourceTreeList";
@@ -33,6 +35,7 @@ const EXPLORER_DOMAIN_INDEX: Record<ExplorerDomain, number> = {
   manuscript: 0,
   resource: 1,
   changes: 2,
+  history: 3,
 };
 
 type ExplorerDomainLayerProps = {
@@ -130,6 +133,8 @@ export type ProjectExplorerPaneProps = {
   onCommitChanges: (message: string) => Promise<boolean>;
   commitMessage: string;
   onCommitMessageChange: (message: string) => void;
+  worktree: WorktreeSession;
+  historyRefreshKey: number;
   onBack?: () => void;
   showHeader?: boolean;
 };
@@ -163,6 +168,8 @@ export function ProjectExplorerPane({
   onCommitChanges,
   commitMessage,
   onCommitMessageChange,
+  worktree,
+  historyRefreshKey,
   onBack,
   showHeader = true,
 }: ProjectExplorerPaneProps) {
@@ -302,6 +309,15 @@ export function ProjectExplorerPane({
             commitMessage={commitMessage}
             onCommitMessageChange={onCommitMessageChange}
           />
+        </ExplorerDomainLayer>
+        <ExplorerDomainLayer
+          active={domain === "history"}
+          index={EXPLORER_DOMAIN_INDEX.history}
+          previousIndex={previousDomainIndex}
+          targetIndex={targetDomainIndex}
+          transition={domainTransition}
+        >
+          <ProjectHistoryPane worktree={worktree} refreshKey={historyRefreshKey} />
         </ExplorerDomainLayer>
       </View>
     </View>
