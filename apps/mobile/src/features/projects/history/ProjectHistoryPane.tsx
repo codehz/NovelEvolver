@@ -8,7 +8,6 @@ import IconChevronRight from "~icons/codicon/chevron-right";
 import IconError from "~icons/codicon/error";
 import IconFile from "~icons/codicon/file";
 import IconFiles from "~icons/codicon/files";
-import IconGitCommit from "~icons/codicon/git-commit";
 import IconHistory from "~icons/codicon/history";
 import IconLoading from "~icons/codicon/loading";
 
@@ -165,15 +164,13 @@ function CommitRow({ commit, isHead, expanded, changesState, onToggle, onRetry }
         ) : (
           <IconChevronRight width={16} height={16} color={color.muted} />
         )}
-        {isHead ? (
-          <View style={styles.headDot} />
-        ) : (
-          <IconGitCommit width={7} height={7} color={color.muted} />
-        )}
         <View style={styles.commitContent}>
-          <Text style={styles.commitMessage} numberOfLines={1}>
-            {commit.message}
-          </Text>
+          <View style={styles.commitMessageRow}>
+            {isHead ? <View style={styles.headDot} /> : null}
+            <Text style={styles.commitMessage} numberOfLines={1}>
+              {commit.message}
+            </Text>
+          </View>
           <Text style={styles.commitMeta} numberOfLines={1}>
             {commit.shortHash} · {formatCommitTime(commit.committedAt)} · {commit.authorName}
           </Text>
@@ -327,7 +324,14 @@ const styles = StyleSheet.create({
   pressed: { backgroundColor: wash.row },
   headDot: { width: 7, height: 7, borderRadius: radius.pill, backgroundColor: color.accent },
   commitContent: { flex: 1, minWidth: 0, gap: 3 },
+  commitMessageRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: space[2],
+  },
   commitMessage: {
+    flex: 1,
+    minWidth: 0,
     color: color.subtext,
     fontFamily: fontFamily.sans,
     fontSize: fontSize.xs,
