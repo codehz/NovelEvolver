@@ -15,7 +15,7 @@ import { useProjectManager } from "./ProjectManagerProvider";
 import type { ProjectWorkspaceProps } from "./ProjectWorkspace";
 import { containsResourceNode, resourceCreateParentId } from "./resource/resource-tree-flatten";
 
-export type ProjectWorkspaceModel = ProjectWorkspaceProps & {
+export type ProjectWorkspaceModel = Omit<ProjectWorkspaceProps, "onBack" | "onProjectMenu"> & {
   renameProject: () => Promise<void>;
   shareProject: () => Promise<void>;
 };

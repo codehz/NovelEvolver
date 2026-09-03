@@ -9,10 +9,12 @@ import { useState } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import IconCheck from "~icons/codicon/check";
 import IconDiscard from "~icons/codicon/discard";
+import IconKebabVertical from "~icons/codicon/kebab-vertical";
 import IconNewFile from "~icons/codicon/new-file";
 import IconNewFolder from "~icons/codicon/new-folder";
 
 import { color, fontFamily, fontSize, space } from "../../../shared/theme";
+import { SettingsHeaderBackButton } from "../../settings/SettingsHeaderBackButton";
 import { SettingsHeaderButton } from "../../settings/SettingsHeaderButton";
 import { ProjectChangesPane } from "../changes/ProjectChangesPane";
 import { ManuscriptTreeList } from "../manuscript/ManuscriptTreeList";
@@ -46,6 +48,8 @@ export type ProjectExplorerPaneProps = {
   onRevertChange: (changeId: string) => void;
   onRevertAllChanges: () => void;
   onCommitChanges: (message: string) => Promise<boolean>;
+  onBack?: () => void;
+  onProjectMenu?: () => void;
 };
 
 export function ProjectExplorerPane({
@@ -75,6 +79,8 @@ export function ProjectExplorerPane({
   onRevertChange,
   onRevertAllChanges,
   onCommitChanges,
+  onBack,
+  onProjectMenu,
 }: ProjectExplorerPaneProps) {
   const [selectOpen, setSelectOpen] = useState(false);
   const [commitMessage, setCommitMessage] = useState("");
@@ -88,6 +94,13 @@ export function ProjectExplorerPane({
   return (
     <View style={styles.root}>
       <View style={styles.paneHeader}>
+        {onBack ? (
+          <SettingsHeaderBackButton
+            tintColor={color.accent}
+            onPress={onBack}
+            style={styles.paneBack}
+          />
+        ) : null}
         <ExplorerDomainSelect
           value={domain}
           open={selectOpen}
@@ -142,6 +155,13 @@ export function ProjectExplorerPane({
                 onPress={onCreateResourceFolder}
               />
             </>
+          ) : null}
+          {onProjectMenu ? (
+            <SettingsHeaderButton
+              Icon={IconKebabVertical}
+              label="项目菜单"
+              onPress={onProjectMenu}
+            />
           ) : null}
         </View>
       </View>
@@ -200,12 +220,18 @@ const styles = StyleSheet.create({
   },
   paneHeader: {
     zIndex: 4,
+    minHeight: 60,
     flexDirection: "row",
     alignItems: "center",
     gap: space[2],
     paddingHorizontal: space[4],
-    paddingTop: space[3],
-    paddingBottom: space[2],
+    borderBottomWidth: 1,
+    borderBottomColor: color.border,
+  },
+  paneBack: {
+    width: 32,
+    height: 32,
+    marginEnd: 0,
   },
   paneActions: {
     flexDirection: "row",

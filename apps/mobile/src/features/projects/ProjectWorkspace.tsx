@@ -1,12 +1,9 @@
 import type { ManuscriptNode, ResourceTreeNode } from "@novelevolver/domain/worktree";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { StyleSheet, View, useWindowDimensions } from "react-native";
-import IconCommentDiscussion from "~icons/codicon/comment-discussion";
-import IconEdit from "~icons/codicon/edit";
-import IconFiles from "~icons/codicon/files";
 
 import type { ProjectTabParamList } from "../../app/navigation-types";
-import { color, fontFamily, fontSize } from "../../shared/theme";
+import { color } from "../../shared/theme";
 import { ProjectAiPane } from "./ai/ProjectAiPane";
 import type { EditorDocument } from "./editor/editor-document";
 import { ProjectEditorPane } from "./editor/ProjectEditorPane";
@@ -32,6 +29,8 @@ export type ProjectWorkspaceProps = Omit<
   onOpenChapter: (nodeId: string) => void;
   onOpenResourceFile: (nodeId: string) => void;
   onAiWorkspaceDirty: () => void;
+  onBack: () => void;
+  onProjectMenu: () => void;
 };
 
 const ProjectTabs = createBottomTabNavigator<ProjectTabParamList>();
@@ -52,7 +51,7 @@ function resolveEditorNodes(
   };
 }
 
-type ProjectTabsProps = ProjectWorkspaceProps & EditorNodes;
+type ProjectTabsProps = Omit<ProjectWorkspaceProps, "onBack" | "onProjectMenu"> & EditorNodes;
 
 function ProjectTabsView({
   opened,
@@ -69,32 +68,13 @@ function ProjectTabsView({
     <ProjectTabs.Navigator
       initialRouteName="Explorer"
       backBehavior="firstRoute"
+      tabBar={() => null}
       screenOptions={{
         headerShown: false,
         animation: "shift",
-        tabBarActiveTintColor: color.accent,
-        tabBarInactiveTintColor: color.muted,
-        tabBarHideOnKeyboard: true,
-        tabBarLabelStyle: {
-          fontFamily: fontFamily.sans,
-          fontSize: fontSize.xxs,
-          fontWeight: "600",
-        },
-        tabBarStyle: {
-          backgroundColor: color.surface,
-          borderTopColor: color.border,
-        },
       }}
     >
-      <ProjectTabs.Screen
-        name="Explorer"
-        options={{
-          title: "项目",
-          tabBarIcon: ({ color: iconColor, size }) => (
-            <IconFiles width={size} height={size} color={iconColor} />
-          ),
-        }}
-      >
+      <ProjectTabs.Screen name="Explorer" options={{ title: "项目" }}>
         {({ navigation }) => (
           <ProjectExplorerPane
             {...explorerProps}
@@ -121,15 +101,7 @@ function ProjectTabsView({
           />
         )}
       </ProjectTabs.Screen>
-      <ProjectTabs.Screen
-        name="Editor"
-        options={{
-          title: "编辑器",
-          tabBarIcon: ({ color: iconColor, size }) => (
-            <IconEdit width={size} height={size} color={iconColor} />
-          ),
-        }}
-      >
+      <ProjectTabs.Screen name="Editor" options={{ title: "编辑器" }}>
         {() => (
           <ProjectEditorPane
             opened={opened}
@@ -141,15 +113,7 @@ function ProjectTabsView({
           />
         )}
       </ProjectTabs.Screen>
-      <ProjectTabs.Screen
-        name="AI"
-        options={{
-          title: "AI",
-          tabBarIcon: ({ color: iconColor, size }) => (
-            <IconCommentDiscussion width={size} height={size} color={iconColor} />
-          ),
-        }}
-      >
+      <ProjectTabs.Screen name="AI" options={{ title: "AI" }}>
         {() => <ProjectAiPane opened={opened} onWorkspaceDirty={onAiWorkspaceDirty} />}
       </ProjectTabs.Screen>
     </ProjectTabs.Navigator>
@@ -163,6 +127,8 @@ export function ProjectWorkspace({
   onOpenChapter,
   onOpenResourceFile,
   onAiWorkspaceDirty,
+  onBack,
+  onProjectMenu,
   ...explorerProps
 }: ProjectWorkspaceProps) {
   const layout = useProjectLayout();
@@ -196,6 +162,8 @@ export function ProjectWorkspace({
           {...explorerProps}
           onOpenChapter={onOpenChapter}
           onOpenResourceFile={onOpenResourceFile}
+          onBack={onBack}
+          onProjectMenu={onProjectMenu}
         />
       </View>
       <View style={styles.editorColumn}>
