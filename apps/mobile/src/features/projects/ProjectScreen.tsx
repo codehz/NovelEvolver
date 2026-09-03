@@ -110,17 +110,19 @@ export function ProjectScreen() {
             />
           )}
         />
-      ) : (
-        <View style={[styles.wideTopInset, { height: insets.top }]} />
-      )}
-      <ProjectWorkspace {...workspaceProps} onBack={goBack} onProjectMenu={showProjectMenu} />
+      ) : null}
+      <ProjectWorkspace
+        {...workspaceProps}
+        onBack={goBack}
+        onProjectMenu={showProjectMenu}
+        topInset={layout === "wide" ? insets.top : 0}
+      />
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
   safeArea: { flex: 1, backgroundColor: color.background },
-  wideTopInset: { backgroundColor: color.surface },
   headerRight: {
     paddingEnd: space[4],
   },

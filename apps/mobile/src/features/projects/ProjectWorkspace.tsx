@@ -120,6 +120,10 @@ function ProjectTabsView({
   );
 }
 
+type ProjectWorkspaceViewProps = ProjectWorkspaceProps & {
+  topInset: number;
+};
+
 export function ProjectWorkspace({
   opened,
   document,
@@ -129,8 +133,9 @@ export function ProjectWorkspace({
   onAiWorkspaceDirty,
   onBack,
   onProjectMenu,
+  topInset,
   ...explorerProps
-}: ProjectWorkspaceProps) {
+}: ProjectWorkspaceViewProps) {
   const layout = useProjectLayout();
   const { chapter, resource } = resolveEditorNodes(
     document,
@@ -155,9 +160,13 @@ export function ProjectWorkspace({
     );
   }
 
+  const topInsetStyle = { paddingTop: topInset };
+
   return (
     <View style={styles.wide}>
-      <View style={[styles.manuscriptColumn, styles.columnBorder]}>
+      <View
+        style={[styles.manuscriptColumn, styles.wideColumn, styles.columnBorder, topInsetStyle]}
+      >
         <ProjectExplorerPane
           {...explorerProps}
           onOpenChapter={onOpenChapter}
@@ -166,7 +175,7 @@ export function ProjectWorkspace({
           onProjectMenu={onProjectMenu}
         />
       </View>
-      <View style={styles.editorColumn}>
+      <View style={[styles.editorColumn, styles.wideColumn, topInsetStyle]}>
         <ProjectEditorPane
           opened={opened}
           document={document}
@@ -176,7 +185,7 @@ export function ProjectWorkspace({
           onWorkspaceChanged={onAiWorkspaceDirty}
         />
       </View>
-      <View style={[styles.aiColumn, styles.columnBorderLeft]}>
+      <View style={[styles.aiColumn, styles.wideColumn, styles.columnBorderLeft, topInsetStyle]}>
         <ProjectAiPane opened={opened} onWorkspaceDirty={onAiWorkspaceDirty} />
       </View>
     </View>
@@ -193,6 +202,9 @@ const styles = StyleSheet.create({
     minHeight: 0,
     flexDirection: "row",
     backgroundColor: color.background,
+  },
+  wideColumn: {
+    backgroundColor: color.surface,
   },
   manuscriptColumn: {
     width: PROJECT_MANUSCRIPT_WIDTH,
