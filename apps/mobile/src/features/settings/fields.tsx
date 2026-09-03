@@ -1,5 +1,5 @@
 import { type ReactNode } from "react";
-import { Pressable, Switch, Text, TextInput, View } from "react-native";
+import { Pressable, Text, TextInput, View } from "react-native";
 
 import { color } from "../../shared/theme";
 import { DropdownSelect } from "../../shared/ui/DropdownSelect";
@@ -110,12 +110,17 @@ export function SettingsSwitchField({
     <View style={settingsStyles.field}>
       <View style={settingsStyles.switchRow}>
         <Text style={[settingsStyles.fieldLabel, { flex: 1 }]}>{label}</Text>
-        <Switch
-          value={value}
-          onValueChange={onValueChange}
+        <Pressable
+          accessibilityRole="switch"
+          accessibilityState={{ checked: value, disabled }}
           disabled={disabled}
-          trackColor={{ true: color.accent, false: color.border }}
-        />
+          onPress={() => onValueChange(!value)}
+          style={[settingsStyles.switch, disabled && settingsStyles.switchDisabled]}
+        >
+          <View style={[settingsStyles.switchTrack, value && settingsStyles.switchTrackOn]}>
+            <View style={[settingsStyles.switchThumb, value && settingsStyles.switchThumbOn]} />
+          </View>
+        </Pressable>
       </View>
       {hint ? <Text style={settingsStyles.fieldHint}>{hint}</Text> : null}
     </View>
