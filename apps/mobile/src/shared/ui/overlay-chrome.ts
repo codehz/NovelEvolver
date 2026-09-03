@@ -18,10 +18,13 @@ export const overlayStyles = StyleSheet.create({
   },
   frame: {
     flex: 1,
+    alignItems: "center",
     justifyContent: "center",
     padding: space[6],
   },
   card: {
+    width: "100%",
+    maxWidth: 480,
     backgroundColor: color.surface,
     borderRadius: radius.panel,
     borderWidth: 1,
