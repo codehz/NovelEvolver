@@ -1,9 +1,14 @@
 import type { Change, CommitChangesSnapshot, CommitSummary } from "@novelevolver/domain/worktree";
 import type { WorktreeSession } from "@novelevolver/worktree";
-import { useEffect, useState } from "react";
-import { FlatList, Pressable, StyleSheet, Text, View } from "react-native";
+import { useEffect, useState, type ReactNode } from "react";
+import { FlatList, Pressable, StyleSheet, Text, View, type LayoutChangeEvent } from "react-native";
+import Animated, {
+  useAnimatedStyle,
+  useReducedMotion,
+  useSharedValue,
+  withTiming,
+} from "react-native-reanimated";
 import IconBook from "~icons/codicon/book";
-import IconChevronDown from "~icons/codicon/chevron-down";
 import IconChevronRight from "~icons/codicon/chevron-right";
 import IconError from "~icons/codicon/error";
 import IconFile from "~icons/codicon/file";
@@ -12,6 +17,7 @@ import IconHistory from "~icons/codicon/history";
 import IconLoading from "~icons/codicon/loading";
 
 import { color, fontFamily, fontSize, radius, space, wash } from "../../../shared/theme";
+import { OVERLAY_TIMING } from "../../../shared/ui/overlay-chrome";
 
 const HISTORY_MAX_COMMITS = 100;
 
@@ -140,6 +146,75 @@ function ChangeSection({
   );
 }
 
+type CollapsibleCommitBodyProps = {
+  expanded: boolean;
+  children: ReactNode;
+};
+
+function CollapsibleCommitBody({ expanded, children }: CollapsibleCommitBodyProps) {
+  const reduceMotion = useReducedMotion();
+  const measuredHeight = useSharedValue(0);
+  const height = useSharedValue(0);
+  const opacity = useSharedValue(expanded ? 1 : 0);
+
+  useEffect(() => {
+    const nextHeight = expanded ? measuredHeight.value : 0;
+    if (reduceMotion) {
+      height.value = nextHeight;
+      opacity.value = expanded ? 1 : 0;
+      return;
+    }
+    height.value = withTiming(nextHeight, OVERLAY_TIMING);
+    opacity.value = withTiming(expanded ? 1 : 0, OVERLAY_TIMING);
+  }, [expanded, height, measuredHeight, opacity, reduceMotion]);
+
+  const animatedStyle = useAnimatedStyle(() => ({
+    height: height.value,
+    opacity: opacity.value,
+  }));
+
+  const recordContentHeight = (event: LayoutChangeEvent) => {
+    const nextHeight = event.nativeEvent.layout.height;
+    if (nextHeight === measuredHeight.value) return;
+    measuredHeight.value = nextHeight;
+    if (!expanded) return;
+    height.value = reduceMotion ? nextHeight : withTiming(nextHeight, OVERLAY_TIMING);
+  };
+
+  return (
+    <Animated.View
+      accessibilityElementsHidden={!expanded}
+      importantForAccessibility={expanded ? "auto" : "no-hide-descendants"}
+      pointerEvents={expanded ? "auto" : "none"}
+      style={[styles.collapsible, animatedStyle]}
+    >
+      <View style={styles.collapsibleContent} onLayout={recordContentHeight}>
+        {children}
+      </View>
+    </Animated.View>
+  );
+}
+
+function CommitChevron({ expanded }: { expanded: boolean }) {
+  const reduceMotion = useReducedMotion();
+  const progress = useSharedValue(expanded ? 1 : 0);
+
+  useEffect(() => {
+    const nextProgress = expanded ? 1 : 0;
+    progress.value = reduceMotion ? nextProgress : withTiming(nextProgress, OVERLAY_TIMING);
+  }, [expanded, progress, reduceMotion]);
+
+  const animatedStyle = useAnimatedStyle(() => ({
+    transform: [{ rotate: `${progress.value * 90}deg` }],
+  }));
+
+  return (
+    <Animated.View style={animatedStyle}>
+      <IconChevronRight width={16} height={16} color={color.muted} />
+    </Animated.View>
+  );
+}
+
 type CommitRowProps = {
   commit: CommitSummary;
   isHead: boolean;
@@ -159,11 +234,7 @@ function CommitRow({ commit, isHead, expanded, changesState, onToggle, onRetry }
         onPress={onToggle}
         style={({ pressed }) => [styles.commitRow, pressed && styles.pressed]}
       >
-        {expanded ? (
-          <IconChevronDown width={16} height={16} color={color.muted} />
-        ) : (
-          <IconChevronRight width={16} height={16} color={color.muted} />
-        )}
+        <CommitChevron expanded={expanded} />
         <View style={styles.commitContent}>
           <View style={styles.commitMessageRow}>
             {isHead ? <View style={styles.headDot} /> : null}
@@ -176,7 +247,7 @@ function CommitRow({ commit, isHead, expanded, changesState, onToggle, onRetry }
           </Text>
         </View>
       </Pressable>
-      {expanded ? (
+      <CollapsibleCommitBody expanded={expanded}>
         <View style={styles.expandedBody}>
           {changesState === undefined || changesState.status === "loading" ? (
             <View style={styles.inlineStatus}>
@@ -210,7 +281,7 @@ function CommitRow({ commit, isHead, expanded, changesState, onToggle, onRetry }
             </>
           )}
         </View>
-      ) : null}
+      </CollapsibleCommitBody>
     </View>
   );
 }
@@ -340,6 +411,13 @@ const styles = StyleSheet.create({
     color: color.muted,
     fontFamily: fontFamily.sans,
     fontSize: fontSize.xxs,
+  },
+  collapsible: { position: "relative", overflow: "hidden" },
+  collapsibleContent: {
+    position: "absolute",
+    top: 0,
+    right: 0,
+    left: 0,
   },
   expandedBody: { backgroundColor: wash.panel },
   inlineStatus: {
