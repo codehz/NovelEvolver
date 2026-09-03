@@ -1,5 +1,7 @@
 import type { ChangesSnapshot, Change } from "@novelevolver/domain/worktree";
 import { Pressable, StyleSheet, Text, TextInput, View } from "react-native";
+import IconCheck from "~icons/codicon/check";
+import IconLoading from "~icons/codicon/loading";
 
 import { color, fontFamily, fontSize, radius, space, wash } from "../../../shared/theme";
 import { useOverlay } from "../../../shared/ui/OverlayHost";
@@ -48,7 +50,7 @@ export function ProjectChangesPane({
         />
       </View>
       {loading ? (
-        <StatusView title="正在计算差异…" />
+        <StatusView title="正在计算差异…" icon="loading" />
       ) : error ? (
         <View style={styles.status}>
           <Text style={styles.statusTitle}>无法加载更改</Text>
@@ -59,7 +61,7 @@ export function ProjectChangesPane({
       ) : snapshot === null || !snapshot.hasChanges ? (
         <>
           {snapshot?.warning ? <WarningBanner message={snapshot.warning} /> : null}
-          <StatusView title="没有变更。" />
+          <StatusView title="没有变更。" icon="check" />
         </>
       ) : (
         <>
@@ -76,10 +78,14 @@ export function ProjectChangesPane({
   );
 }
 
-function StatusView({ title }: { title: string }) {
+function StatusView({ title, icon }: { title: string; icon: "check" | "loading" }) {
   return (
     <View style={styles.status}>
-      <Text style={styles.statusIcon}>✓</Text>
+      {icon === "check" ? (
+        <IconCheck width={32} height={32} color={color.success} />
+      ) : (
+        <IconLoading width={32} height={32} color={color.accent} />
+      )}
       <Text style={styles.statusTitle}>{title}</Text>
     </View>
   );
@@ -121,7 +127,6 @@ const styles = StyleSheet.create({
     gap: space[2],
     padding: space[4],
   },
-  statusIcon: { color: color.success, fontSize: 28 },
   statusTitle: {
     color: color.muted,
     fontFamily: fontFamily.sans,

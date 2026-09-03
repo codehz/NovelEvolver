@@ -1,7 +1,19 @@
 import type { AiChatToolCall, AiToolView, AssistantWorkStep } from "@novelevolver/domain/ai";
 
+export type MobileToolIcon =
+  | "comment-discussion"
+  | "diff"
+  | "edit"
+  | "eye"
+  | "history"
+  | "list-tree"
+  | "search"
+  | "sparkle"
+  | "symbol-event"
+  | "tools";
+
 export type MobileToolPresentation = {
-  icon: string;
+  icon: MobileToolIcon;
   label: string;
   subject: string;
   indicator?: string;
@@ -67,7 +79,7 @@ function viewPresentation(view: AiToolView): Omit<MobileToolPresentation, "indic
       };
     case "mutation":
       return {
-        icon: "◆",
+        icon: "symbol-event",
         label: view.actionLabel,
         subject: `${view.domainLabel} · ${view.display}`,
         detail: view.previousDisplay ? [`此前：${view.previousDisplay}`] : [],
@@ -148,7 +160,7 @@ function viewPresentation(view: AiToolView): Omit<MobileToolPresentation, "indic
 }
 
 export function presentMobileToolCall(part: AiChatToolCall): MobileToolPresentation {
-  const base = part.view
+  const base: Omit<MobileToolPresentation, "indicator"> = part.view
     ? viewPresentation(part.view)
     : { icon: "tools", label: part.name, subject: part.argumentsText, detail: [] };
   return {

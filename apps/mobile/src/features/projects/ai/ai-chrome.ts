@@ -318,15 +318,6 @@ export const aiStyles = StyleSheet.create({
     gap: space[1],
     minHeight: 24,
   },
-  timelineIcon: {
-    color: color.accent,
-    fontFamily: fontFamily.sans,
-    fontSize: fontSize.sm,
-    width: 18,
-    textAlign: "center",
-  },
-  timelineIconLive: { color: color.accent },
-  timelineIconError: { color: color.error },
   timelineLabel: {
     color: color.foreground,
     fontFamily: fontFamily.sans,

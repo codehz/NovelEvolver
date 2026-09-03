@@ -9,18 +9,24 @@ import IconDiff from "~icons/codicon/diff";
 import IconEdit from "~icons/codicon/edit";
 import IconEye from "~icons/codicon/eye";
 import IconHistory from "~icons/codicon/history";
+import IconLightbulb from "~icons/codicon/lightbulb";
 import IconListTree from "~icons/codicon/list-tree";
 import IconSearch from "~icons/codicon/search";
 import IconSparkle from "~icons/codicon/sparkle";
+import IconSymbolEvent from "~icons/codicon/symbol-event";
 import IconTools from "~icons/codicon/tools";
 
 import { color } from "../../../shared/theme";
 import { aiStyles } from "./ai-chrome";
-import { describeMobileWork, presentMobileToolCall } from "./mobile-tool-presenter";
+import {
+  describeMobileWork,
+  type MobileToolIcon,
+  presentMobileToolCall,
+} from "./mobile-tool-presenter";
 
 type AiWorkBlockProps = { id: string; steps: readonly AssistantWorkStep[]; keepExpanded: boolean };
 
-function ToolIcon({ name, color: iconColor }: { name: string; color: string }) {
+function ToolIcon({ name, color: iconColor }: { name: MobileToolIcon; color: string }) {
   const props = { width: 16, height: 16, color: iconColor };
   switch (name) {
     case "search":
@@ -39,6 +45,8 @@ function ToolIcon({ name, color: iconColor }: { name: string; color: string }) {
       return <IconSparkle {...props} />;
     case "comment-discussion":
       return <IconCommentDiscussion {...props} />;
+    case "symbol-event":
+      return <IconSymbolEvent {...props} />;
     default:
       return <IconTools {...props} />;
   }
@@ -62,7 +70,7 @@ function WorkRow({ step, last }: { step: AssistantWorkStep; last: boolean }) {
     <View style={[aiStyles.timelineRowBody, !last ? aiStyles.timelineRowSpacing : null]}>
       <View style={aiStyles.timelineRowHeader}>
         {step.type === "reasoning" ? (
-          <Text style={aiStyles.timelineIcon}>…</Text>
+          <IconLightbulb width={16} height={16} color={color.accent} />
         ) : (
           <ToolIcon name={tool!.icon} color={error ? color.error : color.accent} />
         )}
