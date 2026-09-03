@@ -80,6 +80,7 @@ function createWindow() {
     height: 840,
     minWidth: 960,
     minHeight: 640,
+    icon: join(__dirname, "../build/icon.png"),
     title: "NovelEvolver",
     titleBarStyle: process.platform === "darwin" ? "hiddenInset" : "hidden",
     backgroundColor: "#1e1e1e",

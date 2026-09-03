@@ -6,6 +6,7 @@ asar: true
 # Main/preload are esbuild-bundled; renderer is Vite-built. No runtime node_modules needed.
 npmRebuild: false
 nodeGypRebuild: false
+icon: build/icon.png
 
 directories:
   output: release
@@ -16,6 +17,7 @@ files:
   - package.json
   - dist/**/*
   - dist-electron/**/*
+  - build/icon.png
   - "!**/*.map"
 
 artifactName: ${productName}-${version}-${os}-${arch}.${ext}
