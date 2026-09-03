@@ -206,6 +206,18 @@ jobs:
       - name: Install dependencies
         run: bun install --frozen-lockfile
 
+      - name: Verify Hermes compiler
+        shell: bash
+        run: |
+          set -euo pipefail
+          react_native_dir="$(realpath apps/mobile/node_modules/react-native)"
+          hermesc="$(dirname "$react_native_dir")/hermes-compiler/hermesc/linux64-bin/hermesc"
+          if [[ ! -x "$hermesc" ]]; then
+            echo "Hermes compiler was not linked beside React Native: $hermesc" >&2
+            exit 1
+          fi
+          echo "Using Hermes compiler: $hermesc"
+
       - name: Prepare mobile native resources
         run: |
           bun run mobile:fonts
