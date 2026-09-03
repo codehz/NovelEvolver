@@ -96,7 +96,6 @@ export const overlayStyles = StyleSheet.create({
     minHeight: 44,
     flexDirection: "row",
     alignItems: "center",
-    gap: space[2],
     paddingHorizontal: space[3],
     paddingVertical: space[2],
   },
@@ -105,11 +104,6 @@ export const overlayStyles = StyleSheet.create({
   },
   menuItemSelected: {
     backgroundColor: wash.accentSoft,
-  },
-  menuItemCheck: {
-    width: 16,
-    alignItems: "center",
-    justifyContent: "center",
   },
   menuItemContent: {
     flex: 1,

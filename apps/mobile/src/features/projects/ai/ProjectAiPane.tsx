@@ -221,6 +221,7 @@ export function ProjectAiPane({ opened, onWorkspaceDirty, mediumHeader }: Projec
   ) => {
     const action = await overlay.menu({
       anchor,
+      width: "wide",
       title,
       selectedKey: ai.snapshot.conversationId,
       emptyLabel: "没有匹配的会话。",
@@ -331,7 +332,7 @@ export function ProjectAiPane({ opened, onWorkspaceDirty, mediumHeader }: Projec
                   detail: scenario.description,
                 })),
               };
-    const selection = await overlay.menu({ anchor, ...request });
+    const selection = await overlay.menu({ anchor, width: "wide", ...request });
     if (selection === null) return;
 
     try {

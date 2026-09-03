@@ -1,13 +1,48 @@
 // @ts-expect-error Bun test types are intentionally not part of the React Native app tsconfig.
 import { describe, expect, test } from "bun:test";
 
-import { resolveContextMenuPlacement } from "./context-menu-position";
+import { resolveContextMenuPlacement, resolveContextMenuWidth } from "./context-menu-position";
 
 const viewport = {
   viewportWidth: 400,
   viewportHeight: 800,
   insets: { top: 24, right: 0, bottom: 20, left: 0 },
 };
+
+describe("resolveContextMenuWidth", () => {
+  test("uses the preferred minimum width for a point anchor", () => {
+    expect(
+      resolveContextMenuWidth({
+        anchor: { type: "point", x: 100, y: 100 },
+        preferredMinimumWidth: 280,
+        viewportWidth: 400,
+        insets: { left: 0, right: 0 },
+      }),
+    ).toEqual({ minWidth: 280, maxWidth: 384 });
+  });
+
+  test("matches a wider rectangle trigger", () => {
+    expect(
+      resolveContextMenuWidth({
+        anchor: { type: "rect", x: 20, y: 100, width: 300, height: 32 },
+        preferredMinimumWidth: 168,
+        viewportWidth: 400,
+        insets: { left: 0, right: 0 },
+      }),
+    ).toEqual({ minWidth: 300, maxWidth: 384 });
+  });
+
+  test("shrinks the minimum width to the safe-area width", () => {
+    expect(
+      resolveContextMenuWidth({
+        anchor: { type: "point", x: 100, y: 100 },
+        preferredMinimumWidth: 280,
+        viewportWidth: 280,
+        insets: { left: 12, right: 12 },
+      }),
+    ).toEqual({ minWidth: 240, maxWidth: 240 });
+  });
+});
 
 describe("resolveContextMenuPlacement", () => {
   test("aligns a rectangle menu below its trigger", () => {

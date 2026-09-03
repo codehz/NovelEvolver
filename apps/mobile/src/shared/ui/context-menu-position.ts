@@ -20,6 +20,14 @@ type ContextMenuPlacementInput = {
   gap?: number;
 };
 
+type ContextMenuWidthInput = {
+  anchor: ContextMenuAnchor;
+  preferredMinimumWidth: number;
+  viewportWidth: number;
+  insets: Pick<ContextMenuInsets, "left" | "right">;
+  margin?: number;
+};
+
 export type ContextMenuPlacement = {
   left: number;
   top: number;
@@ -32,6 +40,22 @@ const DEFAULT_GAP = 4;
 function clamp(value: number, minimum: number, maximum: number): number {
   if (maximum < minimum) return minimum;
   return Math.min(maximum, Math.max(minimum, value));
+}
+
+export function resolveContextMenuWidth({
+  anchor,
+  preferredMinimumWidth,
+  viewportWidth,
+  insets,
+  margin = DEFAULT_MARGIN,
+}: ContextMenuWidthInput): { minWidth: number; maxWidth: number } {
+  const availableWidth = Math.max(0, viewportWidth - insets.left - insets.right - margin * 2);
+  const anchorWidth = anchor.type === "rect" ? anchor.width : 0;
+
+  return {
+    minWidth: Math.min(availableWidth, Math.max(preferredMinimumWidth, anchorWidth)),
+    maxWidth: availableWidth,
+  };
 }
 
 export function resolveContextMenuPlacement({

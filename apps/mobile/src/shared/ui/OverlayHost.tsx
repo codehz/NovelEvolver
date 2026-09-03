@@ -28,11 +28,14 @@ import Animated, {
 } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { scheduleOnRN } from "react-native-worklets";
-import IconCheck from "~icons/codicon/check";
 
 import { navigationRef } from "../../app/navigation-ref";
 import { color, space } from "../theme";
-import { resolveContextMenuPlacement, type ContextMenuAnchor } from "./context-menu-position";
+import {
+  resolveContextMenuPlacement,
+  resolveContextMenuWidth,
+  type ContextMenuAnchor,
+} from "./context-menu-position";
 import { OVERLAY_TIMING, overlayStyles } from "./overlay-chrome";
 
 export type OverlayAlertParams = {
@@ -68,6 +71,7 @@ export type OverlayMenuParams = {
   selectedKey?: string;
   options: OverlayMenuOption[];
   emptyLabel?: string;
+  width?: "default" | "wide";
 };
 
 export type OverlayAlertRequest = {
@@ -391,10 +395,11 @@ export function PromptScreen({ route }: StaticScreenProps<OverlayPromptParams>) 
 }
 
 const CONTEXT_MENU_MIN_WIDTH = 168;
+const CONTEXT_MENU_WIDE_MIN_WIDTH = 280;
 const CONTEXT_MENU_SCREEN_MARGIN = space[2];
 
 export function MenuScreen({ route }: StaticScreenProps<OverlayMenuParams>) {
-  const { anchor, title, selectedKey, options, emptyLabel } = route.params;
+  const { anchor, title, selectedKey, options, emptyLabel, width = "default" } = route.params;
   const navigation = useNavigation();
   const insets = useSafeAreaInsets();
   const { width: viewportWidth, height: viewportHeight } = useWindowDimensions();
@@ -402,14 +407,15 @@ export function MenuScreen({ route }: StaticScreenProps<OverlayMenuParams>) {
   const choiceRef = useRef<string | null>(null);
   const progress = useSharedValue(0);
   const [menuSize, setMenuSize] = useState<{ width: number; height: number } | null>(null);
-  const minimumWidth =
-    anchor.type === "rect"
-      ? Math.max(CONTEXT_MENU_MIN_WIDTH, anchor.width)
-      : CONTEXT_MENU_MIN_WIDTH;
-  const maximumWidth = Math.max(
-    CONTEXT_MENU_MIN_WIDTH,
-    viewportWidth - insets.left - insets.right - CONTEXT_MENU_SCREEN_MARGIN * 2,
-  );
+  const preferredMinimumWidth =
+    width === "wide" ? CONTEXT_MENU_WIDE_MIN_WIDTH : CONTEXT_MENU_MIN_WIDTH;
+  const { minWidth: minimumWidth, maxWidth: maximumWidth } = resolveContextMenuWidth({
+    anchor,
+    preferredMinimumWidth,
+    viewportWidth,
+    insets,
+    margin: CONTEXT_MENU_SCREEN_MARGIN,
+  });
   const maximumHeight = Math.max(
     44,
     viewportHeight - insets.top - insets.bottom - CONTEXT_MENU_SCREEN_MARGIN * 2,
@@ -519,9 +525,6 @@ export function MenuScreen({ route }: StaticScreenProps<OverlayMenuParams>) {
                 ]}
                 onPress={() => requestClose(option.key)}
               >
-                <View style={overlayStyles.menuItemCheck}>
-                  {selected ? <IconCheck width={16} height={16} color={color.accent} /> : null}
-                </View>
                 <View style={overlayStyles.menuItemContent}>
                   <Text
                     style={[
