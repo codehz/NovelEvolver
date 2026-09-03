@@ -1,14 +1,28 @@
+import type { ProjectDbRecord } from "@novelevolver/worktree";
 import { useFocusEffect, useNavigation } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { useCallback, useState } from "react";
-import { Platform, Pressable, StyleSheet, Text, View } from "react-native";
+import {
+  FlatList,
+  Platform,
+  Pressable,
+  StyleSheet,
+  Text,
+  useWindowDimensions,
+  View,
+} from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import IconRepo from "~icons/codicon/repo";
 
 import type { RootStackParamList } from "../../app/navigation-types";
 import { color, fontFamily, fontSize, radius, space, wash } from "../../shared/theme";
 import { useOverlay } from "../../shared/ui/OverlayHost";
 import { errorMessage } from "./error-message";
 import { useProjectManager } from "./ProjectManagerProvider";
+
+const CARD_MIN_WIDTH = 224;
+const CARD_GAP = space[3];
+const LIST_HORIZONTAL_PADDING = space[4];
 
 const IMPORT_HELP =
   "本应用通过系统文件管理器暴露项目目录。把桌面端的 .npk 复制到「NovelEvolver」即可出现在列表中；也可以从该目录把文件拷出或分享。";
@@ -18,6 +32,14 @@ export function ProjectListScreen() {
   const overlay = useOverlay();
   const manager = useProjectManager();
   const [busy, setBusy] = useState(false);
+
+  const { width } = useWindowDimensions();
+  const availableListWidth = Math.max(0, width - LIST_HORIZONTAL_PADDING * 2);
+  const columnCount = Math.max(
+    1,
+    Math.floor((availableListWidth + CARD_GAP) / (CARD_MIN_WIDTH + CARD_GAP)),
+  );
+  const cardWidth = (availableListWidth - CARD_GAP * Math.max(0, columnCount - 1)) / columnCount;
 
   const { refresh } = manager;
   useFocusEffect(
@@ -103,8 +125,17 @@ export function ProjectListScreen() {
           </Pressable>
         )}
       </View>
-      <View style={styles.list}>
-        {manager.records.length === 0 ? (
+      <FlatList
+        key={columnCount}
+        data={manager.records}
+        numColumns={columnCount}
+        keyExtractor={(record) => String(record.id)}
+        contentContainerStyle={[
+          styles.listContent,
+          manager.records.length === 0 && styles.emptyListContent,
+        ]}
+        columnWrapperStyle={columnCount > 1 ? styles.cardRow : undefined}
+        ListEmptyComponent={
           <View style={styles.empty}>
             <Text style={styles.emptyTitle}>还没有项目</Text>
             <Text style={styles.emptyText}>
@@ -113,20 +144,44 @@ export function ProjectListScreen() {
                 : "新建空白项目，或按照说明加入已有的 .npk 项目。"}
             </Text>
           </View>
-        ) : (
-          manager.records.map((record) => (
-            <Pressable
-              key={record.id}
-              style={styles.row}
-              onPress={() => navigation.navigate("Project", { projectId: record.id })}
-            >
-              <Text style={styles.rowTitle}>{record.displayName ?? "未命名项目"}</Text>
-              <Text style={styles.rowMeta}>{new Date(record.lastOpenedAt).toLocaleString()}</Text>
-            </Pressable>
-          ))
+        }
+        renderItem={({ item }) => (
+          <ProjectCard
+            project={item}
+            width={cardWidth}
+            onOpen={() => navigation.navigate("Project", { projectId: item.id })}
+          />
         )}
-      </View>
+      />
     </SafeAreaView>
+  );
+}
+
+type ProjectCardProps = {
+  project: ProjectDbRecord;
+  width: number;
+  onOpen: () => void;
+};
+
+function ProjectCard({ project, width, onOpen }: ProjectCardProps) {
+  const name = project.displayName?.trim() || "未命名项目";
+
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={`打开项目：${name}`}
+      onPress={onOpen}
+      style={({ pressed }) => [styles.card, { width }, pressed && styles.cardPressed]}
+    >
+      <IconRepo width={22} height={22} color={color.info} />
+      <Text style={styles.cardTitle} numberOfLines={2}>
+        {name}
+      </Text>
+      <Text style={styles.cardPath} numberOfLines={2}>
+        {project.path}
+      </Text>
+      <Text style={styles.cardMeta}>{new Date(project.lastOpenedAt).toLocaleString()}</Text>
+    </Pressable>
   );
 }
 
@@ -194,16 +249,42 @@ const styles = StyleSheet.create({
     fontSize: fontSize.sm,
     fontWeight: "600",
   },
-  list: { flex: 1, paddingHorizontal: space[4] },
-  row: { borderBottomWidth: 1, borderBottomColor: color.border, paddingVertical: space[3] },
-  rowTitle: {
+  listContent: {
+    flexGrow: 1,
+    paddingHorizontal: LIST_HORIZONTAL_PADDING,
+    paddingBottom: space[4],
+  },
+  emptyListContent: { justifyContent: "center" },
+  cardRow: { gap: CARD_GAP },
+  card: {
+    minHeight: 148,
+    marginBottom: CARD_GAP,
+    borderRadius: radius.panel,
+    backgroundColor: color.surface,
+    padding: space[4],
+    gap: space[2],
+  },
+  cardPressed: { backgroundColor: wash.panel },
+  cardTitle: {
     color: color.foreground,
     fontFamily: fontFamily.sans,
     fontSize: fontSize.md,
     fontWeight: "600",
+    lineHeight: 22,
   },
-  rowMeta: { color: color.muted, fontFamily: fontFamily.sans, fontSize: fontSize.xs, marginTop: 2 },
-  empty: { alignItems: "center", justifyContent: "center", flex: 1, gap: space[2] },
+  cardPath: {
+    color: color.muted,
+    fontFamily: fontFamily.sans,
+    fontSize: fontSize.xs,
+    lineHeight: 17,
+  },
+  cardMeta: {
+    color: color.subtext,
+    fontFamily: fontFamily.sans,
+    fontSize: fontSize.xs,
+    marginTop: "auto",
+  },
+  empty: { alignItems: "center", gap: space[2], paddingHorizontal: space[4] },
   emptyTitle: {
     color: color.foreground,
     fontFamily: fontFamily.sans,
