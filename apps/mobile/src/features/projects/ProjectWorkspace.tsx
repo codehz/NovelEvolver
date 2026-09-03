@@ -11,7 +11,7 @@ import { ProjectExplorerPane, type ProjectExplorerPaneProps } from "./explorer/P
 import type { OpenedProject } from "./git/repository-manager";
 
 export const PROJECT_WIDE_BREAKPOINT = 1024;
-const PROJECT_MANUSCRIPT_WIDTH = 256;
+const PROJECT_MANUSCRIPT_WIDTH = 280;
 const PROJECT_AI_WIDTH = 288;
 
 export function useProjectLayout(): "compact" | "wide" {
