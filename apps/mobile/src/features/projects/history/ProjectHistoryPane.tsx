@@ -29,6 +29,7 @@ type CommitChangesState =
 type ProjectHistoryPaneProps = {
   worktree: WorktreeSession;
   refreshKey: number;
+  onOpenChange: (commitHash: string, change: Change) => void;
 };
 
 function formatCommitTime(timestampSeconds: number): string {
@@ -97,9 +98,17 @@ function HistoryStatus({
   );
 }
 
-function ChangeRow({ change }: { change: Change }) {
-  const changeColor = kindColor(change.kind);
+function isPreviewableChange(change: Change): boolean {
   return (
+    (change.kind === "create" || change.kind === "delete" || change.kind === "content") &&
+    (change.entityKind === "chapter" || change.entityKind === "file")
+  );
+}
+
+function ChangeRow({ change, onPress }: { change: Change; onPress: () => void }) {
+  const previewable = isPreviewableChange(change);
+  const changeColor = kindColor(change.kind);
+  const row = (
     <View style={styles.changeRow}>
       <IconFile width={15} height={15} color={color.muted} />
       <View style={styles.changeContent}>
@@ -117,7 +126,20 @@ function ChangeRow({ change }: { change: Change }) {
         </Text>
       ) : null}
       <Text style={[styles.changeKind, { color: changeColor }]}>{kindLabel(change.kind)}</Text>
+      {previewable ? <IconChevronRight width={15} height={15} color={color.muted} /> : null}
     </View>
+  );
+  return previewable ? (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={`查看${change.label}的提交差异`}
+      onPress={onPress}
+      style={({ pressed }) => [pressed && styles.pressed]}
+    >
+      {row}
+    </Pressable>
+  ) : (
+    row
   );
 }
 
@@ -125,10 +147,14 @@ function ChangeSection({
   title,
   domain,
   changes,
+  commitHash,
+  onOpenChange,
 }: {
   title: string;
   domain: "manuscript" | "resource";
   changes: Change[];
+  commitHash: string;
+  onOpenChange: (commitHash: string, change: Change) => void;
 }) {
   if (changes.length === 0) return null;
   const Icon = domain === "manuscript" ? IconBook : IconFiles;
@@ -140,7 +166,11 @@ function ChangeSection({
         <Text style={styles.count}>{changes.length}</Text>
       </View>
       {changes.map((change) => (
-        <ChangeRow key={change.id} change={change} />
+        <ChangeRow
+          key={change.id}
+          change={change}
+          onPress={() => onOpenChange(commitHash, change)}
+        />
       ))}
     </View>
   );
@@ -222,9 +252,18 @@ type CommitRowProps = {
   changesState: CommitChangesState | undefined;
   onToggle: () => void;
   onRetry: () => void;
+  onOpenChange: (commitHash: string, change: Change) => void;
 };
 
-function CommitRow({ commit, isHead, expanded, changesState, onToggle, onRetry }: CommitRowProps) {
+function CommitRow({
+  commit,
+  isHead,
+  expanded,
+  changesState,
+  onToggle,
+  onRetry,
+  onOpenChange,
+}: CommitRowProps) {
   return (
     <View>
       <Pressable
@@ -272,11 +311,15 @@ function CommitRow({ commit, isHead, expanded, changesState, onToggle, onRetry }
                 title="正文"
                 domain="manuscript"
                 changes={changesState.snapshot.manuscriptChanges}
+                commitHash={commit.hash}
+                onOpenChange={onOpenChange}
               />
               <ChangeSection
                 title="资源库"
                 domain="resource"
                 changes={changesState.snapshot.resourceChanges}
+                commitHash={commit.hash}
+                onOpenChange={onOpenChange}
               />
             </>
           )}
@@ -286,7 +329,11 @@ function CommitRow({ commit, isHead, expanded, changesState, onToggle, onRetry }
   );
 }
 
-export function ProjectHistoryPane({ worktree, refreshKey }: ProjectHistoryPaneProps) {
+export function ProjectHistoryPane({
+  worktree,
+  refreshKey,
+  onOpenChange,
+}: ProjectHistoryPaneProps) {
   const [commits, setCommits] = useState<CommitSummary[] | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
@@ -354,6 +401,7 @@ export function ProjectHistoryPane({ worktree, refreshKey }: ProjectHistoryPaneP
           changesState={changesByCommit.get(item.hash)}
           onToggle={() => toggleCommit(item.hash)}
           onRetry={() => loadChanges(item.hash)}
+          onOpenChange={onOpenChange}
         />
       )}
     />

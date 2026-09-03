@@ -131,6 +131,7 @@ export type ProjectExplorerPaneProps = {
   onRetryChanges: () => void;
   onRevertChange: (changeId: string) => void;
   onOpenChange: (change: Change) => void;
+  onOpenHistoryChange: (commitHash: string, change: Change) => void;
   onRevertAllChanges: () => void;
   onCommitChanges: (message: string) => Promise<boolean>;
   commitMessage: string;
@@ -167,6 +168,7 @@ export function ProjectExplorerPane({
   onRetryChanges,
   onRevertChange,
   onOpenChange,
+  onOpenHistoryChange,
   onRevertAllChanges,
   onCommitChanges,
   commitMessage,
@@ -321,7 +323,11 @@ export function ProjectExplorerPane({
           targetIndex={targetDomainIndex}
           transition={domainTransition}
         >
-          <ProjectHistoryPane worktree={worktree} refreshKey={historyRefreshKey} />
+          <ProjectHistoryPane
+            worktree={worktree}
+            refreshKey={historyRefreshKey}
+            onOpenChange={onOpenHistoryChange}
+          />
         </ExplorerDomainLayer>
       </View>
     </View>

@@ -35,6 +35,7 @@ import {
   ProjectMediumHeader,
   type ProjectHeaderContribution,
 } from "./ProjectMediumHeader";
+import type { ProjectComparisonTarget } from "./use-project-workspace";
 
 export const PROJECT_MEDIUM_BREAKPOINT = 400;
 export const PROJECT_WIDE_BREAKPOINT = 960;
@@ -64,7 +65,7 @@ export type ProjectWorkspaceProps = Omit<
 > & {
   opened: OpenedProject;
   document: EditorDocument | null;
-  comparisonChangeId: string | null;
+  comparisonTarget: ProjectComparisonTarget | null;
   onOpenChange: (change: Change) => void;
   onCloseChange: () => void;
   worktreeRevision: number;
@@ -109,7 +110,7 @@ type ProjectWorkspaceViewProps = ProjectWorkspaceProps & {
 export function ProjectWorkspace({
   opened,
   document,
-  comparisonChangeId,
+  comparisonTarget,
   onOpenChange,
   onCloseChange,
   worktreeRevision,
@@ -326,6 +327,10 @@ export function ProjectWorkspace({
         onOpenChange(change);
         if (!showHeader) selectPage("Editor");
       }}
+      onOpenHistoryChange={(commitHash, change) => {
+        explorerProps.onOpenHistoryChange(commitHash, change);
+        if (!showHeader) selectPage("Editor");
+      }}
       onCreateChapter={createChapterAndOpen}
       onCreateResourceFile={createResourceFileAndOpen}
       onBack={showHeader ? onBack : undefined}
@@ -333,10 +338,10 @@ export function ProjectWorkspace({
   );
 
   const editorPane = (showHeader: boolean) =>
-    comparisonChangeId !== null ? (
+    comparisonTarget !== null ? (
       <ProjectChangeComparisonPane
         worktree={opened.worktree}
-        changeId={comparisonChangeId}
+        target={comparisonTarget}
         revision={worktreeRevision}
         onChanged={onAiWorkspaceDirty}
         onClose={onCloseChange}
