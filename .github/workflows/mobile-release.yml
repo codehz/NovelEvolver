@@ -48,8 +48,22 @@ jobs:
             exit 1
           fi
 
+          branch_name="${GITHUB_HEAD_REF:-${GITHUB_REF_NAME}}"
+          branch_slug="${branch_name//[^A-Za-z0-9._-]/-}"
+          commit_hash="$(git rev-parse --short=12 HEAD)"
+          if [[ "${GITHUB_REF_TYPE:-}" == "tag" ]]; then
+            # Keep the release tag (for example, v0.3.4) visible in the app version.
+            version_name="${GITHUB_REF_NAME}-${commit_hash}"
+          else
+            version_name="dev-${version_code}-${branch_slug}-${commit_hash}"
+          fi
+
           echo "merge_base=$merge_base" >> "$GITHUB_OUTPUT"
           echo "version_code=$version_code" >> "$GITHUB_OUTPUT"
+          echo "branch_name=$branch_name" >> "$GITHUB_OUTPUT"
+          echo "commit_hash=$commit_hash" >> "$GITHUB_OUTPUT"
+          echo "version_name=$version_name" >> "$GITHUB_OUTPUT"
+          echo "Using Android versionName=$version_name"
           echo "Using Android versionCode=$version_code from main ancestor $merge_base"
 
       - name: Setup Bun
@@ -79,17 +93,19 @@ jobs:
         working-directory: apps/mobile/android
         env:
           VERSION_CODE: ${{ steps.version.outputs.version_code }}
+          VERSION_NAME: ${{ steps.version.outputs.version_name }}
         run: |
           ./gradlew assembleRelease --no-daemon \
             -PVERSION_CODE="$VERSION_CODE" \
-            -PVERSION_NAME="0.0.$VERSION_CODE"
+            -PVERSION_NAME="$VERSION_NAME"
 
       - name: Rename APK
         env:
-          VERSION_CODE: ${{ steps.version.outputs.version_code }}
+          VERSION_NAME: ${{ steps.version.outputs.version_name }}
         run: |
+          apk_name="${VERSION_NAME//[^A-Za-z0-9._-]/-}"
           mv apps/mobile/android/app/build/outputs/apk/release/app-release.apk \
-            "apps/mobile/android/app/build/outputs/apk/release/NovelEvolver-android-${VERSION_CODE}-${GITHUB_SHA}.apk"
+            "apps/mobile/android/app/build/outputs/apk/release/NovelEvolver-android-${apk_name}.apk"
 
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
