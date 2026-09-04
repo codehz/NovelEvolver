@@ -1,4 +1,5 @@
 import type { AiChatToolCall, AiToolView, AssistantWorkStep } from "@novelevolver/domain/ai";
+import { parse as parsePartialJson } from "partial-json";
 
 export type MobileToolIcon =
   | "comment-discussion"
@@ -20,6 +21,8 @@ export type MobileToolPresentation = {
   detail: string[];
 };
 
+type JsonObject = Record<string, unknown>;
+
 const statusLabel: Record<AiChatToolCall["status"], string> = {
   pending: "准备中",
   running: "进行中",
@@ -27,6 +30,191 @@ const statusLabel: Record<AiChatToolCall["status"], string> = {
   complete: "完成",
   error: "失败",
 };
+
+function parseObject(text: string | null): JsonObject | null {
+  if (text === null || text.trim() === "") {
+    return null;
+  }
+  try {
+    const value: unknown = parsePartialJson(text);
+    return typeof value === "object" && value !== null && !Array.isArray(value)
+      ? (value as JsonObject)
+      : null;
+  } catch {
+    return null;
+  }
+}
+
+function getObject(value: unknown): JsonObject | null {
+  return typeof value === "object" && value !== null && !Array.isArray(value)
+    ? (value as JsonObject)
+    : null;
+}
+
+function getString(object: JsonObject | null, key: string): string | null {
+  const value = object?.[key];
+  return typeof value === "string" ? value : null;
+}
+
+function domainLabel(domain: string | null): string {
+  return domain === "manuscript" ? "手稿" : domain === "resource" ? "资源库" : "全部内容";
+}
+
+function textStats(text: string): string {
+  const lines = text === "" ? 0 : text.split(/\r?\n/u).length;
+  return `${text.length} 字符 · ${lines} 行`;
+}
+
+function generationStats(text: string | null, status: AiChatToolCall["status"]): string {
+  if (text === null) return "等待正文";
+  return status === "pending" ? `正在生成 · ${text.length} 字符` : textStats(text);
+}
+
+function toolActionLabel(name: string): string {
+  switch (name) {
+    case "ask_user":
+      return "询问";
+    case "run_subagent":
+      return "子代理";
+    case "read_structure":
+      return "查看结构";
+    case "read_document":
+      return "读取";
+    case "search_documents":
+      return "搜索";
+    case "write_document":
+      return "重写";
+    case "replace_document_text":
+      return "替换片段";
+    case "create_folder":
+      return "创建文件夹";
+    case "create_document":
+      return "创建文档";
+    case "move_node":
+      return "移动节点";
+    case "rename_node":
+      return "重命名节点";
+    case "delete_node":
+      return "删除节点";
+    case "read_changes":
+    case "read_change":
+      return "查看变更";
+    case "read_history":
+      return "查看历史";
+    case "read_history_entry":
+      return "历史版本";
+    default:
+      return "工具";
+  }
+}
+
+function toolIconForName(name: string): MobileToolIcon {
+  switch (name) {
+    case "search_documents":
+      return "search";
+    case "read_document":
+      return "eye";
+    case "read_structure":
+      return "list-tree";
+    case "write_document":
+    case "replace_document_text":
+    case "create_document":
+      return "edit";
+    case "read_changes":
+    case "read_change":
+      return "diff";
+    case "read_history":
+    case "read_history_entry":
+      return "history";
+    case "ask_user":
+      return "comment-discussion";
+    case "run_subagent":
+      return "sparkle";
+    case "create_folder":
+    case "move_node":
+    case "rename_node":
+    case "delete_node":
+      return "symbol-event";
+    default:
+      return "tools";
+  }
+}
+
+function isContentWriteToolName(name: string): boolean {
+  switch (name) {
+    case "create_document":
+    case "write_document":
+    case "replace_document_text":
+      return true;
+    default:
+      return false;
+  }
+}
+
+function contentWriteBodyFromArgs(name: string, args: JsonObject | null): string | null {
+  if (args === null) {
+    return null;
+  }
+  switch (name) {
+    case "create_document":
+      return getString(args, "content");
+    case "write_document":
+      return getString(args, "new_content");
+    case "replace_document_text":
+      return getString(args, "replacement_text");
+    default:
+      return null;
+  }
+}
+
+function contentWriteSubjectFromArgs(name: string, args: JsonObject | null): string | null {
+  if (args === null) {
+    return null;
+  }
+  switch (name) {
+    case "create_document": {
+      const domain = domainLabel(getString(args, "domain"));
+      const docName = getString(args, "name");
+      if (docName) {
+        return domain !== "全部内容" ? `${domain} · ${docName}` : docName;
+      }
+      return domain !== "全部内容" ? domain : null;
+    }
+    case "write_document":
+    case "replace_document_text": {
+      const target = getObject(args.target);
+      const domain = domainLabel(getString(target, "domain"));
+      return domain !== "全部内容" ? domain : null;
+    }
+    default:
+      return null;
+  }
+}
+
+function presentContentWriteProgress(part: AiChatToolCall): MobileToolPresentation {
+  const args = parseObject(part.argumentsText);
+  const body = contentWriteBodyFromArgs(part.name, args);
+  const subject = contentWriteSubjectFromArgs(part.name, args);
+  return {
+    icon: "edit",
+    label: toolActionLabel(part.name),
+    subject: subject ?? "…",
+    indicator: generationStats(body, part.status),
+    detail: [],
+  };
+}
+
+function presentWithoutView(part: AiChatToolCall): MobileToolPresentation {
+  if (isContentWriteToolName(part.name)) {
+    return presentContentWriteProgress(part);
+  }
+  return {
+    icon: toolIconForName(part.name),
+    label: toolActionLabel(part.name),
+    subject: "…",
+    detail: [],
+  };
+}
 
 function viewPresentation(view: AiToolView): Omit<MobileToolPresentation, "indicator"> {
   switch (view.kind) {
@@ -160,9 +348,16 @@ function viewPresentation(view: AiToolView): Omit<MobileToolPresentation, "indic
 }
 
 export function presentMobileToolCall(part: AiChatToolCall): MobileToolPresentation {
-  const base: Omit<MobileToolPresentation, "indicator"> = part.view
-    ? viewPresentation(part.view)
-    : { icon: "tools", label: part.name, subject: part.argumentsText, detail: [] };
+  if (!part.view) {
+    const base = presentWithoutView(part);
+    return {
+      ...base,
+      indicator:
+        base.indicator ?? (part.status === "complete" ? undefined : statusLabel[part.status]),
+      detail: part.errorMessage ? [...base.detail, `错误：${part.errorMessage}`] : base.detail,
+    };
+  }
+  const base = viewPresentation(part.view);
   return {
     ...base,
     indicator:

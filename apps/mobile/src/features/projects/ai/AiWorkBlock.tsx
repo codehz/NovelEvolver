@@ -78,9 +78,11 @@ function WorkRow({ step, last }: { step: AssistantWorkStep; last: boolean }) {
           {step.type === "reasoning" ? "思考" : tool!.label}
         </Text>
         {step.type === "tool_call" ? (
-          <Text style={aiStyles.timelineSubject}>{tool!.subject}</Text>
+          <Text numberOfLines={1} style={aiStyles.timelineSubject}>
+            {tool!.subject}
+          </Text>
         ) : null}
-        {live ? <Text style={aiStyles.timelineStatus}>进行中</Text> : null}
+        {live ? <Text style={aiStyles.timelineStatus}>{tool?.indicator ?? "进行中"}</Text> : null}
         {hasDetail ? (
           open ? (
             <IconChevronDown width={16} height={16} color={color.muted} />
