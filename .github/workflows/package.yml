@@ -238,6 +238,9 @@ jobs:
           java-version: "17"
           cache: gradle
 
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v4
+
       - name: Cache Android project state
         uses: actions/cache@v4
         with:
@@ -245,15 +248,6 @@ jobs:
           key: android-project-gradle-${{ runner.os }}-${{ hashFiles('apps/mobile/android/**/*.gradle*', 'apps/mobile/android/gradle.properties', 'apps/mobile/android/gradle/wrapper/gradle-wrapper.properties', 'packages/mobile-sqlite/android/**/*.gradle*', 'bun.lock') }}
           restore-keys: |
             android-project-gradle-${{ runner.os }}-
-
-      - name: Setup Android SDK
-        uses: maxim-lobanov/setup-android-tools@v1
-        with:
-          packages: |
-            platforms;android-37
-            build-tools;37.0.0
-            ndk;27.1.12297006
-          cache: true
 
       - name: Prepare release keystore
         id: signing
