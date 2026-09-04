@@ -1,5 +1,5 @@
 import type { AiChatOpenInteraction } from "@novelevolver/domain/ai";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Pressable, ScrollView, Text, TextInput, useWindowDimensions, View } from "react-native";
 import { KeyboardGestureArea } from "react-native-keyboard-controller";
 import IconArrowUp from "~icons/codicon/arrow-up";
@@ -13,58 +13,113 @@ type AiAskUserBarProps = {
   onCancel: (id: string) => void;
 };
 
+function isDraftReady(draft: string): boolean {
+  return draft.trim() !== "";
+}
+
+function tabLabel(input: AiChatOpenInteraction, index: number): string {
+  const prompt = input.prompt.trim() || input.question.trim();
+  return prompt === "" ? `问题 ${index + 1}` : prompt;
+}
+
 export function AiAskUserBar({ interactions, onSubmit, onCancel }: AiAskUserBarProps) {
   const { height } = useWindowDimensions();
-  const [index, setIndex] = useState(0);
-  const [draft, setDraft] = useState("");
-  const current = interactions[Math.min(index, interactions.length - 1)];
+  const [activeId, setActiveId] = useState<string | null>(null);
+  const [draftsById, setDraftsById] = useState<Record<string, string>>({});
+
+  useEffect(() => {
+    const ids = interactions.map((input) => input.id);
+    if (ids.length === 0) {
+      setActiveId(null);
+      setDraftsById({});
+      return;
+    }
+    setActiveId((current) => (current !== null && ids.includes(current) ? current : ids[0]!));
+    setDraftsById((current) => {
+      const stale = Object.keys(current).some((id) => !ids.includes(id));
+      if (!stale) {
+        return current;
+      }
+      const next: Record<string, string> = {};
+      for (const id of ids) {
+        const draft = current[id];
+        if (draft != null) {
+          next[id] = draft;
+        }
+      }
+      return next;
+    });
+  }, [interactions]);
+
+  const current =
+    activeId === null
+      ? undefined
+      : (interactions.find((input) => input.id === activeId) ?? interactions[0]);
   if (current === undefined) {
     return null;
   }
 
-  const canSubmit = draft.trim() !== "";
+  const activeDraft = draftsById[current.id] ?? "";
+  const allReady = interactions.every((input) => isDraftReady(draftsById[input.id] ?? ""));
   const promptMaxHeight = Math.round(height * 0.42);
+  const showTabs = interactions.length > 1;
+
+  const setActiveDraft = (draft: string) => {
+    setDraftsById((currentDrafts) => ({ ...currentDrafts, [current.id]: draft }));
+  };
 
   const submit = () => {
-    const text = draft.trim();
-    if (text === "") {
+    if (!allReady) {
       return;
     }
-    onSubmit(current.id, text);
-    setDraft("");
+    for (const input of interactions) {
+      const text = (draftsById[input.id] ?? "").trim();
+      if (input.kind === "ask_user" && text !== "") {
+        onSubmit(input.id, text);
+      }
+    }
   };
 
   return (
     <KeyboardGestureArea interpolator="ios" enableSwipeToDismiss>
       <View style={aiStyles.composer}>
-        {interactions.length > 1 ? (
-          <View style={aiStyles.askUserPager}>
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel="上一问"
-              disabled={index <= 0}
-              onPress={() => {
-                setIndex((value) => Math.max(0, value - 1));
-                setDraft("");
-              }}
-            >
-              <Text style={aiStyles.actionLabel}>上一问</Text>
-            </Pressable>
-            <Text style={aiStyles.metaText}>
-              {Math.min(index, interactions.length - 1) + 1}/{interactions.length}
-            </Text>
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel="下一问"
-              disabled={index >= interactions.length - 1}
-              onPress={() => {
-                setIndex((value) => Math.min(interactions.length - 1, value + 1));
-                setDraft("");
-              }}
-            >
-              <Text style={aiStyles.actionLabel}>下一问</Text>
-            </Pressable>
-          </View>
+        {showTabs ? (
+          <ScrollView
+            horizontal
+            keyboardShouldPersistTaps="handled"
+            nestedScrollEnabled
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={aiStyles.askUserTabsContent}
+          >
+            {interactions.map((input, index) => {
+              const selected = input.id === current.id;
+              const ready = isDraftReady(draftsById[input.id] ?? "");
+              return (
+                <Pressable
+                  key={input.id}
+                  accessibilityRole="tab"
+                  accessibilityState={{ selected, disabled: false }}
+                  accessibilityLabel={tabLabel(input, index)}
+                  style={[aiStyles.askUserTab, selected ? aiStyles.askUserTabActive : null]}
+                  onPress={() => {
+                    setActiveId(input.id);
+                  }}
+                >
+                  <Text
+                    numberOfLines={1}
+                    ellipsizeMode="tail"
+                    style={[
+                      aiStyles.askUserTabLabel,
+                      ready ? aiStyles.askUserTabLabelReady : null,
+                      selected ? aiStyles.askUserTabLabelActive : null,
+                    ]}
+                  >
+                    {tabLabel(input, index)}
+                  </Text>
+                </Pressable>
+              );
+            })}
+          </ScrollView>
         ) : null}
         <ScrollView
           keyboardShouldPersistTaps="handled"
@@ -78,13 +133,13 @@ export function AiAskUserBar({ interactions, onSubmit, onCancel }: AiAskUserBarP
             <Pressable
               key={choice.title}
               accessibilityRole="button"
-              accessibilityState={{ selected: draft === choice.title }}
+              accessibilityState={{ selected: activeDraft === choice.title }}
               style={[
                 aiStyles.choiceRow,
-                draft === choice.title ? aiStyles.choiceRowSelected : null,
+                activeDraft === choice.title ? aiStyles.choiceRowSelected : null,
               ]}
               onPress={() => {
-                setDraft(choice.title);
+                setActiveDraft(choice.title);
               }}
             >
               <Text style={aiStyles.listRowTitle}>{choice.title}</Text>
@@ -95,8 +150,8 @@ export function AiAskUserBar({ interactions, onSubmit, onCancel }: AiAskUserBarP
           ))}
         </ScrollView>
         <TextInput
-          value={draft}
-          onChangeText={setDraft}
+          value={activeDraft}
+          onChangeText={setActiveDraft}
           placeholder={current.placeholder ?? "输入回答…"}
           placeholderTextColor={color.placeholder}
           cursorColor={color.accent}
@@ -114,9 +169,9 @@ export function AiAskUserBar({ interactions, onSubmit, onCancel }: AiAskUserBarP
           </Pressable>
           <Pressable
             accessibilityRole="button"
-            accessibilityLabel="提交"
-            style={[aiStyles.sendButton, canSubmit ? null : aiStyles.sendButtonDisabled]}
-            disabled={!canSubmit}
+            accessibilityLabel={showTabs ? "提交全部" : "提交"}
+            style={[aiStyles.sendButton, allReady ? null : aiStyles.sendButtonDisabled]}
+            disabled={!allReady}
             onPress={submit}
           >
             <IconArrowUp width={18} height={18} color={color.primaryForeground} />

@@ -588,19 +588,40 @@ export const aiStyles = StyleSheet.create({
     paddingHorizontal: space[3],
     paddingVertical: space[2],
   },
-  askUserPager: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingHorizontal: space[3],
-    paddingTop: space[2],
-    gap: space[2],
-  },
   askUserPrompt: {
     paddingHorizontal: space[3],
     paddingTop: space[3],
     paddingBottom: space[2],
     gap: space[2],
+  },
+  askUserTabsContent: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: space[1],
+    paddingHorizontal: space[2],
+    paddingTop: space[2],
+    paddingBottom: space[1],
+  },
+  askUserTab: {
+    maxWidth: 160,
+    minHeight: 28,
+    justifyContent: "center",
+    borderRadius: radius.control,
+    paddingHorizontal: space[2],
+  },
+  askUserTabActive: {
+    backgroundColor: wash.row,
+  },
+  askUserTabLabel: {
+    color: color.subtext,
+    fontFamily: fontFamily.sans,
+    fontSize: fontSize.xxs,
+  },
+  askUserTabLabelActive: {
+    color: color.foreground,
+  },
+  askUserTabLabelReady: {
+    color: color.accent,
   },
   askUserQuestion: {
     color: color.foreground,
