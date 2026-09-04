@@ -20,6 +20,7 @@ class NpkDocumentsProvider : DocumentsProvider() {
     Root.COLUMN_SUMMARY,
     Root.COLUMN_MIME_TYPES,
     Root.COLUMN_FLAGS,
+    Root.COLUMN_ICON,
   )
 
   private val documentProjection = arrayOf(
@@ -50,6 +51,7 @@ class NpkDocumentsProvider : DocumentsProvider() {
       Root.COLUMN_FLAGS,
       Root.FLAG_SUPPORTS_CREATE or Root.FLAG_SUPPORTS_IS_CHILD,
     )
+    row.add(Root.COLUMN_ICON, context.applicationInfo.icon)
     return result
   }
 
