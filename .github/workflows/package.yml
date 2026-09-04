@@ -218,6 +218,14 @@ jobs:
           fi
           echo "Using Hermes compiler: $hermesc"
 
+      - name: Cache SQLite amalgamation
+        uses: actions/cache@v4
+        with:
+          path: packages/mobile-sqlite/cpp/sqlite
+          key: sqlite-${{ hashFiles('packages/mobile-sqlite/sqlite.manifest.json', 'packages/mobile-sqlite/scripts/ensure-sqlite.mjs') }}
+          restore-keys: |
+            sqlite-
+
       - name: Prepare mobile native resources
         run: |
           bun run mobile:fonts
@@ -230,8 +238,22 @@ jobs:
           java-version: "17"
           cache: gradle
 
+      - name: Cache Android project state
+        uses: actions/cache@v4
+        with:
+          path: apps/mobile/android/.gradle
+          key: android-project-gradle-${{ runner.os }}-${{ hashFiles('apps/mobile/android/**/*.gradle*', 'apps/mobile/android/gradle.properties', 'apps/mobile/android/gradle/wrapper/gradle-wrapper.properties', 'packages/mobile-sqlite/android/**/*.gradle*', 'bun.lock') }}
+          restore-keys: |
+            android-project-gradle-${{ runner.os }}-
+
       - name: Setup Android SDK
-        uses: android-actions/setup-android@v3
+        uses: maxim-lobanov/setup-android-tools@v1
+        with:
+          packages: |
+            platforms;android-37
+            build-tools;37.0.0
+            ndk;27.1.12297006
+          cache: true
 
       - name: Prepare release keystore
         id: signing
