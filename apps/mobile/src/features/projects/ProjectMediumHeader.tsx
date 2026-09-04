@@ -155,7 +155,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   compactSide: {
-    width: 40,
+    width: 32,
     flexShrink: 0,
     flexDirection: "row",
     alignItems: "center",

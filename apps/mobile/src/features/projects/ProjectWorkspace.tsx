@@ -36,7 +36,7 @@ import {
 } from "./ProjectMediumHeader";
 import type { ProjectComparisonTarget } from "./use-project-workspace";
 
-export const PROJECT_MEDIUM_BREAKPOINT = 440;
+export const PROJECT_MEDIUM_BREAKPOINT = 400;
 export const PROJECT_WIDE_BREAKPOINT = 960;
 const PROJECT_MANUSCRIPT_WIDTH = 280;
 const PROJECT_AI_WIDTH = 320;
