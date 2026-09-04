@@ -23,6 +23,7 @@ import { Pressable, Text, TextInput, View } from "react-native";
 import type { TextInput as TextInputType } from "react-native";
 import { Input, useMention, type MentionPartType, type Part } from "react-native-headless-mention";
 import { KeyboardGestureArea } from "react-native-keyboard-controller";
+import IconSend from "~icons/codicon/send";
 
 import { color } from "../../../shared/theme";
 import type { ContextMenuAnchor } from "../../../shared/ui/context-menu-position";
@@ -306,11 +307,13 @@ export function AiComposer({
             </Pressable>
           ) : (
             <Pressable
+              accessibilityLabel="发送"
+              accessibilityRole="button"
               style={[aiStyles.sendButton, canSend ? null : aiStyles.sendButtonDisabled]}
               disabled={!canSend}
               onPress={onSend}
             >
-              <Text style={aiStyles.sendLabel}>发送</Text>
+              <IconSend width={18} height={18} color={color.primaryForeground} />
             </Pressable>
           )}
         </View>
