@@ -259,7 +259,9 @@ export function ProjectExplorerPane({
               style={styles.paneBack}
             />
           ) : null}
-          <ExplorerDomainSelect value={domain} onChange={onDomainChange} />
+          <View style={styles.paneSelect}>
+            <ExplorerDomainSelect value={domain} onChange={onDomainChange} />
+          </View>
           <View style={styles.paneActions}>{headerActions}</View>
         </View>
       ) : null}
@@ -352,11 +354,14 @@ const styles = StyleSheet.create({
     height: 32,
     marginEnd: 0,
   },
+  paneSelect: {
+    flex: 1,
+    minWidth: 0,
+  },
   paneActions: {
     flexDirection: "row",
     alignItems: "center",
     flexShrink: 0,
-    marginLeft: "auto",
   },
   domainHost: {
     position: "relative",

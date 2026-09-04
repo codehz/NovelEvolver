@@ -204,7 +204,7 @@ const styles = StyleSheet.create({
   combinedContext: {
     flex: 1,
     minWidth: 0,
-    alignItems: "flex-start",
+    justifyContent: "center",
   },
   actions: {
     flexShrink: 0,

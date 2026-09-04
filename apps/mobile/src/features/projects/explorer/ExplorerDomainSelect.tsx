@@ -32,8 +32,8 @@ export function ExplorerDomainSelect({ value, onChange }: ExplorerDomainSelectPr
 
 const styles = StyleSheet.create({
   trigger: {
-    flexShrink: 0,
-    minWidth: 76,
+    width: "100%",
+    minWidth: 0,
     minHeight: 32,
     paddingHorizontal: space[2],
     paddingVertical: space[1],
