@@ -140,7 +140,11 @@ export function AiAskUserCard({ toolCall }: CardProps) {
       <View style={aiStyles.cardBody}>
         <Text style={aiStyles.messageText}>{view.question}</Text>
         {view.context ? <Text style={aiStyles.detailText}>{view.context}</Text> : null}
-        {!view.answer ? (
+        {toolCall.status === "awaiting_user" ? (
+          <Text style={aiStyles.detailText}>请在底部回答。</Text>
+        ) : view.answer ? (
+          <Text style={aiStyles.detailText}>回答：{view.answer}</Text>
+        ) : (
           view.choices?.map((choice) => (
             <View key={choice.title} style={aiStyles.choiceRow}>
               <Text style={aiStyles.messageText}>{choice.title}</Text>
@@ -149,8 +153,6 @@ export function AiAskUserCard({ toolCall }: CardProps) {
               ) : null}
             </View>
           ))
-        ) : (
-          <Text style={aiStyles.detailText}>回答：{view.answer}</Text>
         )}
         {toolCall.errorMessage ? (
           <Text style={aiStyles.errorText}>{toolCall.errorMessage}</Text>
