@@ -461,11 +461,9 @@ export const aiStyles = StyleSheet.create({
   },
   timeline: {
     gap: space[1],
-    paddingLeft: space[1],
   },
   timelineRowBody: {
     position: "relative",
-    paddingLeft: space[2],
   },
   timelineRowSpacing: {
     paddingBottom: space[1],
@@ -500,7 +498,7 @@ export const aiStyles = StyleSheet.create({
   },
   timelineLine: {
     position: "absolute",
-    left: 10,
+    left: 8,
     top: 25,
     bottom: 0,
     width: StyleSheet.hairlineWidth,
