@@ -82,7 +82,9 @@ function WorkRow({ step, last }: { step: AssistantWorkStep; last: boolean }) {
           <Text numberOfLines={1} style={aiStyles.timelineSubject}>
             {tool!.subject}
           </Text>
-        ) : null}
+        ) : (
+          <View style={aiStyles.timelineSpacer} />
+        )}
         {live ? <Text style={aiStyles.timelineStatus}>{tool?.indicator ?? "进行中"}</Text> : null}
         {hasDetail ? (
           open ? (

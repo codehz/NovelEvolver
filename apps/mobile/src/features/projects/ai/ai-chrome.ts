@@ -486,6 +486,9 @@ export const aiStyles = StyleSheet.create({
     fontFamily: fontFamily.sans,
     fontSize: fontSize.xxs,
   },
+  timelineSpacer: {
+    flex: 1,
+  },
   timelineStatus: {
     color: color.accent,
     fontFamily: fontFamily.sans,
