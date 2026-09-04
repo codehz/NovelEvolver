@@ -65,20 +65,65 @@ export function useProjectAi(opened: OpenedProject, onWorkspaceDirty: () => void
     () => chat.getDirectory().snapshot,
   );
   const [catalogTick, setCatalogTick] = useState(0);
+  const snapshotRef = useRef(snapshot);
 
   useEffect(() => {
-    setSnapshot(chat.getSnapshot());
+    snapshotRef.current = chat.getSnapshot();
+    setSnapshot(snapshotRef.current);
     setDirectory(chat.getDirectory().snapshot);
-    const stopChat = chat.addEventListener((event) => {
-      setSnapshot((current) => applyAiChatEvent(current, event));
-      if (eventTouchesWorktree(event)) {
+
+    let frame = 0;
+    let worktreeDirty = false;
+    let pendingDirectory: AiConversationDirectorySnapshot | null = null;
+    let skipInitialSnapshot = true;
+    let skipInitialDirectory = true;
+
+    const flush = () => {
+      frame = 0;
+      setSnapshot(snapshotRef.current);
+      if (pendingDirectory !== null) {
+        setDirectory(pendingDirectory);
+        pendingDirectory = null;
+      }
+      if (worktreeDirty) {
+        worktreeDirty = false;
         dirtyRef.current();
       }
+    };
+
+    const scheduleFlush = () => {
+      if (frame === 0) {
+        frame = requestAnimationFrame(flush);
+      }
+    };
+
+    const stopChat = chat.addEventListener((event) => {
+      if (skipInitialSnapshot && event.kind === "snapshot") {
+        skipInitialSnapshot = false;
+        return;
+      }
+      skipInitialSnapshot = false;
+      snapshotRef.current = applyAiChatEvent(snapshotRef.current, event);
+      if (eventTouchesWorktree(event)) {
+        worktreeDirty = true;
+      }
+      scheduleFlush();
     });
     const stopDirectory = chat.addDirectoryListener((event) => {
-      setDirectory(event.snapshot);
+      if (skipInitialDirectory) {
+        skipInitialDirectory = false;
+        return;
+      }
+      pendingDirectory = event.snapshot;
+      scheduleFlush();
     });
     return () => {
+      if (frame !== 0) {
+        cancelAnimationFrame(frame);
+      }
+      if (worktreeDirty) {
+        dirtyRef.current();
+      }
       stopChat();
       stopDirectory();
     };
@@ -92,13 +137,14 @@ export function useProjectAi(opened: OpenedProject, onWorkspaceDirty: () => void
     models: chat.listSelectableModels(),
     agents: chat.listSelectableAgents(),
     sendMessage: (input) => {
+      const current = snapshotRef.current;
       const hasSlash = input.slash != null;
       const hasMentions = (input.mentions?.length ?? 0) > 0;
       const normalizedText = input.text.trim();
       if (
         (!hasSlash && !hasMentions && normalizedText === "") ||
-        snapshot.pending ||
-        snapshot.openInteractions.length > 0
+        current.pending ||
+        current.openInteractions.length > 0
       ) {
         return false;
       }

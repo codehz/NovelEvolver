@@ -1,7 +1,7 @@
 import type { AssistantWorkStep } from "@novelevolver/domain/ai";
 import { useEffect, useState } from "react";
 import { Pressable, Text, View } from "react-native";
-import Animated, { FadeIn, FadeOut, LinearTransition } from "react-native-reanimated";
+import Animated, { FadeIn, FadeOut } from "react-native-reanimated";
 import IconChevronDown from "~icons/codicon/chevron-down";
 import IconChevronRight from "~icons/codicon/chevron-right";
 import IconCommentDiscussion from "~icons/codicon/comment-discussion";
@@ -23,6 +23,7 @@ import {
   type MobileToolIcon,
   presentMobileToolCall,
 } from "./mobile-tool-presenter";
+import { useAutoCollapseExpand } from "./use-auto-collapse-expand";
 
 type AiWorkBlockProps = { id: string; steps: readonly AssistantWorkStep[]; keepExpanded: boolean };
 
@@ -64,7 +65,7 @@ function WorkRow({ step, last }: { step: AssistantWorkStep; last: boolean }) {
 
   useEffect(() => {
     if (step.type === "reasoning" && step.status === "streaming") setOpen(true);
-  }, [step]);
+  }, [step.status, step.type]);
 
   const body = (
     <View style={[aiStyles.timelineRowBody, !last ? aiStyles.timelineRowSpacing : null]}>
@@ -95,7 +96,6 @@ function WorkRow({ step, last }: { step: AssistantWorkStep; last: boolean }) {
         <Animated.View
           entering={FadeIn.duration(160)}
           exiting={FadeOut.duration(120)}
-          layout={LinearTransition.duration(220)}
           style={aiStyles.timelineDetail}
         >
           {step.type === "reasoning" ? (
@@ -123,28 +123,14 @@ function WorkRow({ step, last }: { step: AssistantWorkStep; last: boolean }) {
 }
 
 export function AiWorkBlock({ id, steps, keepExpanded }: AiWorkBlockProps) {
-  const [open, setOpen] = useState(keepExpanded);
-  const [wasLive, setWasLive] = useState(keepExpanded);
-  const [pinned, setPinned] = useState(false);
-  useEffect(() => {
-    if (keepExpanded && !wasLive) {
-      setOpen(true);
-      setPinned(false);
-    } else if (!keepExpanded && wasLive && !pinned) {
-      setOpen(false);
-    }
-    setWasLive(keepExpanded);
-  }, [id, keepExpanded, pinned, wasLive]);
+  const { open, onOpenChange } = useAutoCollapseExpand({ isLive: keepExpanded, resetKey: id });
 
   return (
     <View style={aiStyles.workBlock}>
       <Pressable
         accessibilityRole="button"
         accessibilityLabel={open ? "收起工作步骤" : "展开工作步骤"}
-        onPress={() => {
-          setOpen((value) => !value);
-          setPinned(!open);
-        }}
+        onPress={() => onOpenChange(!open)}
       >
         <View style={aiStyles.workHeader}>
           <Text style={aiStyles.partTitle}>工作</Text>
@@ -171,7 +157,6 @@ export function AiWorkBlock({ id, steps, keepExpanded }: AiWorkBlockProps) {
         <Animated.View
           entering={FadeIn.duration(160)}
           exiting={FadeOut.duration(120)}
-          layout={LinearTransition.duration(220)}
           style={aiStyles.timeline}
         >
           {steps.map((step, index) => (

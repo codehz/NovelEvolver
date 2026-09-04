@@ -11,6 +11,7 @@ import {
   type AiReasoningLevel,
 } from "@novelevolver/domain/settings/ai-settings";
 import {
+  useCallback,
   useEffect,
   useImperativeHandle,
   useMemo,
@@ -98,10 +99,24 @@ export function AiComposer({
   const reasoningMenuTriggerRef = useRef<ComponentRef<typeof Pressable>>(null);
   const mentionLabelOverrides = useRef(new Map<string, string>());
   const [value, setValue] = useState(draft);
+  const onDraftChangeRef = useRef(onDraftChange);
+  onDraftChangeRef.current = onDraftChange;
+  const onTriggerChangeRef = useRef(onTriggerChange);
+  onTriggerChangeRef.current = onTriggerChange;
+  const onClearSlashRef = useRef(onClearSlash);
+  onClearSlashRef.current = onClearSlash;
+  const onRemoveMentionRef = useRef(onRemoveMention);
+  onRemoveMentionRef.current = onRemoveMention;
+  const mentionsRef = useRef(mentions);
+  mentionsRef.current = mentions;
+  const slashRef = useRef(slash);
+  slashRef.current = slash;
   const mentionById = useMemo(
     () => new Map(mentionItems.map((item) => [`${item.domain}:${item.id}`, item])),
     [mentionItems],
   );
+  const mentionByIdRef = useRef(mentionById);
+  mentionByIdRef.current = mentionById;
   const promptById = useMemo(
     () => new Map(prompts.map((prompt) => [prompt.promptId, prompt])),
     [prompts],
@@ -126,6 +141,36 @@ export function AiComposer({
     ],
     [mentionById, promptById],
   );
+  const handleMentionChange = useCallback((nextValue: string, nextParts: readonly Part[]) => {
+    setValue(nextValue);
+    const nextText = plainText(nextParts);
+    onDraftChangeRef.current(nextText);
+    const activeMentions = nextParts
+      .filter((part) => part.data?.trigger === "@")
+      .map((part) => {
+        const item = mentionByIdRef.current.get(part.data?.id ?? "");
+        return item
+          ? {
+              domain: item.domain,
+              id: item.id,
+              kind: item.kind,
+              label: item.label,
+              displayPath: item.displayPath,
+              token: part.text,
+            }
+          : null;
+      })
+      .filter((item): item is AiChatMentionRef => item !== null);
+    for (const mention of mentionsRef.current) {
+      if (!activeMentions.some((active) => active.token === mention.token)) {
+        onRemoveMentionRef.current(mention.token);
+      }
+    }
+    const nextSlash = nextParts.find((part) => part.data?.trigger === "/")?.data?.id;
+    if (nextSlash === undefined && slashRef.current !== null) {
+      onClearSlashRef.current();
+    }
+  }, []);
   const {
     inputProps,
     suggestions,
@@ -133,69 +178,40 @@ export function AiComposer({
   } = useMention({
     value,
     partTypes,
-    onChange: (nextValue, nextParts) => {
-      setValue(nextValue);
-      const nextText = plainText(nextParts);
-      onDraftChange(nextText);
-      const activeMentions = nextParts
-        .filter((part) => part.data?.trigger === "@")
-        .map((part) => {
-          const item = mentionById.get(part.data?.id ?? "");
-          return item
-            ? {
-                domain: item.domain,
-                id: item.id,
-                kind: item.kind,
-                label: item.label,
-                displayPath: item.displayPath,
-                token: part.text,
-              }
-            : null;
-        })
-        .filter((item): item is AiChatMentionRef => item !== null);
-      for (const mention of mentions) {
-        if (!activeMentions.some((active) => active.token === mention.token)) {
-          onRemoveMention(mention.token);
-        }
-      }
-      const nextSlash = nextParts.find((part) => part.data?.trigger === "/")?.data?.id;
-      if (nextSlash === undefined && slash !== null) {
-        onClearSlash();
-      }
-    },
+    onChange: handleMentionChange,
   });
 
+  const slashKeyword = suggestions["/"]?.keyword;
+  const mentionKeyword = suggestions["@"]?.keyword;
   useEffect(() => {
-    const slashKeyword = suggestions["/"]?.keyword;
-    const mentionKeyword = suggestions["@"]?.keyword;
     if (slashKeyword !== undefined && value.startsWith("/")) {
-      onTriggerChange("/", slashKeyword);
+      onTriggerChangeRef.current("/", slashKeyword);
     } else if (mentionKeyword !== undefined) {
-      onTriggerChange("@", mentionKeyword);
+      onTriggerChangeRef.current("@", mentionKeyword);
     } else {
-      onTriggerChange(null, "");
+      onTriggerChangeRef.current(null, "");
     }
-  }, [onTriggerChange, suggestions]);
+  }, [mentionKeyword, slashKeyword, value]);
 
   useImperativeHandle(
     ref,
     () => ({
       clear: () => {
         inputProps.onChangeText("");
-        onDraftChange("");
-        onClearSlash();
-        for (const mention of mentions) onRemoveMention(mention.token);
-        onTriggerChange(null, "");
+        onDraftChangeRef.current("");
+        onClearSlashRef.current();
+        for (const mention of mentions) onRemoveMentionRef.current(mention.token);
+        onTriggerChangeRef.current(null, "");
       },
       focus: () => inputRef.current?.focus(),
       setPrompt: (prompt) => {
         suggestions["/"]?.onSuggestionPress({ id: prompt.promptId });
-        onTriggerChange(null, "");
+        onTriggerChangeRef.current(null, "");
       },
       setMention: (item, token) => {
         mentionLabelOverrides.current.set(`${item.domain}:${item.id}`, token);
         suggestions["@"]?.onSuggestionPress({ id: `${item.domain}:${item.id}` });
-        onTriggerChange(null, "");
+        onTriggerChangeRef.current(null, "");
       },
       clearPrompt: () => {
         if (slash !== null) {
@@ -207,7 +223,7 @@ export function AiComposer({
           const nextValue = value.startsWith(rawMarker) ? value.slice(rawMarker.length) : value;
           inputProps.onChangeText(nextValue);
         }
-        onClearSlash();
+        onClearSlashRef.current();
       },
       removeMention: (token) => {
         const mention = mentions.find((item) => item.token === token);
@@ -216,8 +232,8 @@ export function AiComposer({
             ? value
             : value.replace(mentionValue(`${mention.domain}:${mention.id}`, "@"), "");
         inputProps.onChangeText(nextValue);
-        onDraftChange(renderedText.replace(token, ""));
-        onRemoveMention(token);
+        onDraftChangeRef.current(renderedText.replace(token, ""));
+        onRemoveMentionRef.current(token);
       },
       getSendPayload: () => buildComposerSendPayload(renderedText, slash, mentions),
       isEmpty: () => isComposerEmpty(renderedText, slash, mentions),
@@ -225,10 +241,10 @@ export function AiComposer({
     [
       inputProps,
       mentions,
-      onClearSlash,
-      onDraftChange,
-      onRemoveMention,
-      onTriggerChange,
+      onClearSlashRef,
+      onDraftChangeRef,
+      onRemoveMentionRef,
+      onTriggerChangeRef,
       promptById,
       renderedText,
       slash,

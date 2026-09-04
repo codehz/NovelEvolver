@@ -1,7 +1,7 @@
 import type { AiChatToolCall } from "@novelevolver/domain/ai";
 import { useState } from "react";
 import { Pressable, Text, View } from "react-native";
-import Animated, { FadeIn, FadeOut, LinearTransition } from "react-native-reanimated";
+import Animated, { FadeIn, FadeOut } from "react-native-reanimated";
 import IconChevronDown from "~icons/codicon/chevron-down";
 import IconChevronRight from "~icons/codicon/chevron-right";
 import IconCommentDiscussion from "~icons/codicon/comment-discussion";
@@ -48,7 +48,6 @@ export function AiSubagentCard({ toolCall }: CardProps) {
         <Animated.View
           entering={FadeIn.duration(160)}
           exiting={FadeOut.duration(120)}
-          layout={LinearTransition.duration(220)}
           style={aiStyles.cardBody}
         >
           {view ? (
@@ -90,7 +89,6 @@ export function AiSubagentCard({ toolCall }: CardProps) {
                     <Animated.Text
                       entering={FadeIn.duration(160)}
                       exiting={FadeOut.duration(120)}
-                      layout={LinearTransition.duration(220)}
                       style={aiStyles.messageText}
                     >
                       {view.report}
