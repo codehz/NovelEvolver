@@ -241,6 +241,9 @@ export const aiStyles = StyleSheet.create({
     fontFamily: fontFamily.sans,
     fontSize: fontSize.xs,
   },
+  userMessageRow: {
+    alignItems: "flex-end",
+  },
   userBubble: {
     alignSelf: "flex-end",
     maxWidth: "92%",
@@ -248,6 +251,18 @@ export const aiStyles = StyleSheet.create({
     borderRadius: radius.panel,
     paddingHorizontal: space[3],
     paddingVertical: space[2],
+  },
+  userEditInput: {
+    minHeight: 44,
+    maxHeight: 160,
+    color: color.foreground,
+    fontFamily: fontFamily.sans,
+    fontSize: fontSize.chat,
+    lineHeight: 20,
+    padding: 0,
+  },
+  disabledActionLabel: {
+    opacity: 0.4,
   },
   assistantBlock: {
     alignSelf: "stretch",

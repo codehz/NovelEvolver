@@ -11,7 +11,8 @@ import {
   shouldKeepWorkExpanded,
   type AssistantSegment,
 } from "@novelevolver/domain/ai";
-import { FlatList, Pressable, Text, View } from "react-native";
+import { useState } from "react";
+import { FlatList, Pressable, Text, TextInput, View } from "react-native";
 import IconChevronLeft from "~icons/codicon/chevron-left";
 import IconChevronRight from "~icons/codicon/chevron-right";
 
@@ -26,7 +27,10 @@ type AiMessageListProps = {
   onRetry?: () => void;
   onContinue?: () => void;
   onSelectBranch: (messageId: string, index: number) => void;
-  onEditUser: (message: AiChatUserMessage) => void;
+  onEditUser: (message: AiChatUserMessage, text: string) => void;
+  editingMessageId: string | null;
+  onBeginEdit: (messageId: string) => void;
+  onCancelEdit: () => void;
 };
 
 function usageLine(message: AiChatAssistantMessage): string | null {
@@ -114,31 +118,101 @@ function renderSegment(segment: AssistantSegment, index: number, message: AiChat
 function UserMessage({
   message,
   disabled,
-  isLast,
   onSelectBranch,
   onEditUser,
+  editing,
+  onBeginEdit,
+  onCancelEdit,
 }: {
   message: AiChatUserMessage;
   disabled: boolean;
-  isLast: boolean;
   onSelectBranch: (index: number) => void;
-  onEditUser: () => void;
+  onEditUser: (text: string) => void;
+  editing: boolean;
+  onBeginEdit: () => void;
+  onCancelEdit: () => void;
 }) {
+  const [draft, setDraft] = useState(message.text);
+
+  function beginEdit(): void {
+    if (disabled) return;
+    setDraft(message.text);
+    onBeginEdit();
+  }
+
+  function cancelEdit(): void {
+    setDraft(message.text);
+    onCancelEdit();
+  }
+
+  function commitEdit(): void {
+    const next = draft;
+    onCancelEdit();
+    if (next.trim() !== "" && next !== message.text) {
+      onEditUser(next);
+    }
+  }
+
   return (
-    <View style={aiStyles.userBubble}>
-      <Text style={aiStyles.messageText}>
-        {formatUserMessageDisplay(message.slash, message.text)}
-      </Text>
-      {message.mentions.length > 0 ? (
-        <Text style={aiStyles.metaText}>
-          {message.mentions.map((item) => item.token).join(" ")}
-        </Text>
-      ) : null}
-      <BranchControls message={message} disabled={disabled} onSelectBranch={onSelectBranch} />
-      {isLast && !disabled ? (
-        <Pressable accessibilityRole="button" accessibilityLabel="编辑消息" onPress={onEditUser}>
-          <Text style={aiStyles.actionLabel}>编辑</Text>
+    <View style={aiStyles.userMessageRow}>
+      {editing ? (
+        <View
+          style={aiStyles.userBubble}
+          onTouchStart={(event) => {
+            event.stopPropagation();
+          }}
+        >
+          <TextInput
+            autoFocus
+            multiline
+            value={draft}
+            onChangeText={setDraft}
+            style={aiStyles.userEditInput}
+            selectionColor={color.accent}
+          />
+          <View style={aiStyles.rowActions}>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="取消编辑"
+              onPress={cancelEdit}
+            >
+              <Text style={aiStyles.actionLabel}>取消</Text>
+            </Pressable>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="保存并发送"
+              disabled={draft.trim() === ""}
+              onPress={commitEdit}
+            >
+              <Text
+                style={[aiStyles.actionLabel, draft.trim() === "" && aiStyles.disabledActionLabel]}
+              >
+                保存并发送
+              </Text>
+            </Pressable>
+          </View>
+        </View>
+      ) : (
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="编辑消息"
+          accessibilityHint="长按编辑此消息"
+          disabled={disabled}
+          onLongPress={beginEdit}
+          style={aiStyles.userBubble}
+        >
+          <Text style={aiStyles.messageText}>
+            {formatUserMessageDisplay(message.slash, message.text)}
+          </Text>
+          {message.mentions.length > 0 ? (
+            <Text style={aiStyles.metaText}>
+              {message.mentions.map((item) => item.token).join(" ")}
+            </Text>
+          ) : null}
         </Pressable>
+      )}
+      {!editing ? (
+        <BranchControls message={message} disabled={disabled} onSelectBranch={onSelectBranch} />
       ) : null}
     </View>
   );
@@ -194,6 +268,9 @@ export function AiMessageList({
   onContinue,
   onSelectBranch,
   onEditUser,
+  editingMessageId,
+  onBeginEdit,
+  onCancelEdit,
 }: AiMessageListProps) {
   const lastIndex = snapshot.messages.length - 1;
   const disabled = snapshot.pending || snapshot.openInteractions.length > 0;
@@ -227,9 +304,11 @@ export function AiMessageList({
           <UserMessage
             message={item}
             disabled={disabled}
-            isLast={index === lastIndex}
             onSelectBranch={(branchIndex) => onSelectBranch(item.id, branchIndex)}
-            onEditUser={() => onEditUser(item)}
+            onEditUser={(text) => onEditUser(item, text)}
+            editing={editingMessageId === item.id}
+            onBeginEdit={() => onBeginEdit(item.id)}
+            onCancelEdit={onCancelEdit}
           />
         ) : (
           <AssistantMessage

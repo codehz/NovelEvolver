@@ -76,6 +76,7 @@ export const ProjectAiPane = forwardRef<ProjectAiPaneHandle, ProjectAiPaneProps>
     const [draft, setDraft] = useState("");
     const [slash, setSlash] = useState<AiChatSlashRef | null>(null);
     const [mentions, setMentions] = useState<AiChatMentionRef[]>([]);
+    const [editingMessageId, setEditingMessageId] = useState<string | null>(null);
     const navigationProgress = useSharedValue(0);
 
     useEffect(() => {
@@ -119,17 +120,9 @@ export const ProjectAiPane = forwardRef<ProjectAiPaneHandle, ProjectAiPaneProps>
       clearTrigger();
     };
 
-    const handleEditUser = async (message: AiChatUserMessage) => {
-      const text = await overlay.prompt({
-        title: "编辑消息",
-        initialValue: message.text,
-        confirmLabel: "发送",
-      });
-      if (text === null) {
-        return;
-      }
+    const handleEditUser = (message: AiChatUserMessage, editedText: string) => {
       ai.editUserMessage(message.id, {
-        text,
+        text: editedText,
         slash: message.slash,
         mentions: message.mentions,
       });
@@ -280,7 +273,14 @@ export const ProjectAiPane = forwardRef<ProjectAiPaneHandle, ProjectAiPaneProps>
     );
 
     return (
-      <View style={aiStyles.root}>
+      <View
+        style={aiStyles.root}
+        onTouchStart={() => {
+          if (editingMessageId !== null) {
+            setEditingMessageId(null);
+          }
+        }}
+      >
         {showHeader ? (
           <View style={[projectPaneStyles.header, aiStyles.header]}>
             <View style={aiStyles.headerTitleWrap}>
@@ -301,8 +301,11 @@ export const ProjectAiPane = forwardRef<ProjectAiPaneHandle, ProjectAiPaneProps>
               onRetry={ai.snapshot.canRetry ? ai.retryLastRequest : undefined}
               onContinue={ai.snapshot.canContinue ? ai.continueLastRequest : undefined}
               onSelectBranch={ai.selectMessageBranch}
-              onEditUser={(message) => {
-                void handleEditUser(message);
+              onEditUser={handleEditUser}
+              editingMessageId={editingMessageId}
+              onBeginEdit={setEditingMessageId}
+              onCancelEdit={() => {
+                setEditingMessageId(null);
               }}
             />
             <View style={aiStyles.composerDock}>
