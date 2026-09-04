@@ -6,7 +6,6 @@ import { MAX_SUBAGENT_TOOL_ROUNDS } from "./policy";
 export const SUBAGENT_PROGRESS_KIND = "subagent_progress" as const;
 
 export const PARTIAL_SUMMARY_THROTTLE_MS = 250;
-export const PARTIAL_SUMMARY_MAX_CHARS = 400;
 export const RECENT_TOOLS_MAX = 6;
 
 export type SubagentProgressPhase = "starting" | "thinking" | "tool" | "finalizing";
@@ -51,27 +50,6 @@ export type BuildSubagentProgressInput = {
   touchedCount?: number;
 };
 
-/**
- * Keep the tail of a growing partial summary so the UI shows what the child is
- * currently writing rather than the intro.
- */
-export function truncatePartialSummary(
-  text: string,
-  maxChars: number = PARTIAL_SUMMARY_MAX_CHARS,
-): string {
-  if (maxChars <= 0) {
-    return "";
-  }
-  const trimmed = text.trimEnd();
-  if (trimmed.length <= maxChars) {
-    return trimmed;
-  }
-  if (maxChars === 1) {
-    return "…";
-  }
-  return `…${trimmed.slice(-(maxChars - 1))}`;
-}
-
 export function capRecentTools(
   tools: readonly SubagentProgressTool[],
   max: number = RECENT_TOOLS_MAX,
@@ -109,7 +87,7 @@ export function buildSubagentProgress(input: BuildSubagentProgressInput): Subage
     max_rounds: Math.max(1, Math.floor(input.maxRounds ?? MAX_SUBAGENT_TOOL_ROUNDS)),
     current_tool: input.currentTool ? { ...input.currentTool } : null,
     recent_tools: recent,
-    partial_summary: truncatePartialSummary(input.partialSummary ?? ""),
+    partial_summary: input.partialSummary ?? "",
     artifacts: {
       wrote: input.wrote === true,
       touched_count: Math.max(0, Math.floor(input.touchedCount ?? 0)),

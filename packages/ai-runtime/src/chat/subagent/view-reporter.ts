@@ -5,11 +5,7 @@ import type {
 } from "@novelevolver/domain/ai";
 
 import type { SubagentArtifacts, SubagentRunStatus } from "./result";
-import {
-  createViewThrottle,
-  PARTIAL_SUMMARY_THROTTLE_MS,
-  truncatePartialSummary,
-} from "./throttle";
+import { createViewThrottle, PARTIAL_SUMMARY_THROTTLE_MS } from "./throttle";
 
 export type SubagentViewPhase = AiSubagentToolView["phase"];
 
@@ -119,7 +115,7 @@ export function createSubagentViewReporter(
       emitRaw(build(phase));
     },
     setReport(text) {
-      report = truncatePartialSummary(text);
+      report = text;
       if (phase === "starting") {
         phase = "thinking";
       }

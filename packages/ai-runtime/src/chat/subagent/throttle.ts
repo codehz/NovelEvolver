@@ -1,26 +1,4 @@
 export const PARTIAL_SUMMARY_THROTTLE_MS = 250;
-export const PARTIAL_SUMMARY_MAX_CHARS = 400;
-
-/**
- * Keep the tail of a growing partial report so the UI shows what the child is
- * currently writing rather than the intro.
- */
-export function truncatePartialSummary(
-  text: string,
-  maxChars: number = PARTIAL_SUMMARY_MAX_CHARS,
-): string {
-  if (maxChars <= 0) {
-    return "";
-  }
-  const trimmed = text.trimEnd();
-  if (trimmed.length <= maxChars) {
-    return trimmed;
-  }
-  if (maxChars === 1) {
-    return "…";
-  }
-  return `…${trimmed.slice(-(maxChars - 1))}`;
-}
 
 /**
  * Throttle helper for high-frequency report updates. Milestone events should

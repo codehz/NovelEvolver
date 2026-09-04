@@ -66,9 +66,4 @@ export {
   type SubagentCatalogAgent,
   type SubagentCatalogEntry,
 } from "./prompt-visibility";
-export {
-  createViewThrottle,
-  PARTIAL_SUMMARY_MAX_CHARS,
-  PARTIAL_SUMMARY_THROTTLE_MS,
-  truncatePartialSummary,
-} from "./throttle";
+export { createViewThrottle, PARTIAL_SUMMARY_THROTTLE_MS } from "./throttle";

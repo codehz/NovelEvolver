@@ -1,21 +1,6 @@
 import { describe, expect, test } from "bun:test";
 
-import { truncatePartialSummary } from "./throttle";
 import { buildStepsDigest, createSubagentViewReporter } from "./view-reporter";
-
-describe("truncatePartialSummary", () => {
-  test("keeps short text", () => {
-    expect(truncatePartialSummary("hello")).toBe("hello");
-  });
-
-  test("keeps the tail of long text", () => {
-    const long = `${"a".repeat(50)}TAIL`;
-    const result = truncatePartialSummary(long, 10);
-    expect(result.startsWith("…")).toBe(true);
-    expect(result.endsWith("TAIL")).toBe(true);
-    expect(result.length).toBe(10);
-  });
-});
 
 describe("createSubagentViewReporter", () => {
   test("records full step timeline", () => {
@@ -35,6 +20,10 @@ describe("createSubagentViewReporter", () => {
     reporter.emit("starting");
     reporter.bumpRound();
     reporter.emit("thinking");
+    const streamingReport = `${"前文".repeat(250)}\n完整结尾`;
+    reporter.setReport(streamingReport);
+    reporter.forceFlush();
+    expect(reporter.snapshot().report).toBe(streamingReport);
     const stepId = reporter.beginStep({ name: "read_document", subject: "第一章" });
     reporter.completeStep({
       id: stepId,
