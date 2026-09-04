@@ -23,7 +23,8 @@ import { Pressable, Text, TextInput, View } from "react-native";
 import type { TextInput as TextInputType } from "react-native";
 import { Input, useMention, type MentionPartType, type Part } from "react-native-headless-mention";
 import { KeyboardGestureArea } from "react-native-keyboard-controller";
-import IconSend from "~icons/codicon/send";
+import IconArrowUp from "~icons/codicon/arrow-up";
+import IconDebugStop from "~icons/codicon/debug-stop";
 
 import { color } from "../../../shared/theme";
 import type { ContextMenuAnchor } from "../../../shared/ui/context-menu-position";
@@ -264,7 +265,7 @@ export function AiComposer({
           scrollEnabled
           multiline
           submitBehavior="newline"
-          style={aiStyles.input}
+          style={aiStyles.composerInput}
           onSubmitEditing={onSend}
         />
         <View style={aiStyles.composerToolbar}>
@@ -275,7 +276,9 @@ export function AiComposer({
             onPress={() => openMenuFromTrigger(agentMenuTriggerRef.current, onOpenAgents)}
             disabled={composerDisabled}
           >
-            <Text style={aiStyles.selectorLabel}>{selectedAgent?.name ?? "Agent"}</Text>
+            <Text style={aiStyles.selectorLabel} numberOfLines={1} ellipsizeMode="tail">
+              {selectedAgent?.name ?? "Agent"}
+            </Text>
           </Pressable>
           <Pressable
             ref={modelMenuTriggerRef}
@@ -284,7 +287,9 @@ export function AiComposer({
             onPress={() => openMenuFromTrigger(modelMenuTriggerRef.current, onOpenModels)}
             disabled={composerDisabled}
           >
-            <Text style={aiStyles.selectorLabel}>{selectedModel?.name ?? "模型"}</Text>
+            <Text style={aiStyles.selectorLabel} numberOfLines={1} ellipsizeMode="tail">
+              {selectedModel?.name ?? "模型"}
+            </Text>
           </Pressable>
           {showReasoning ? (
             <Pressable
@@ -294,7 +299,7 @@ export function AiComposer({
               onPress={() => openMenuFromTrigger(reasoningMenuTriggerRef.current, onOpenReasoning)}
               disabled={composerDisabled}
             >
-              <Text style={aiStyles.selectorLabel}>
+              <Text style={aiStyles.selectorLabel} numberOfLines={1} ellipsizeMode="tail">
                 {snapshot.selectedReasoningLevel
                   ? AI_REASONING_LEVEL_LABELS[snapshot.selectedReasoningLevel as AiReasoningLevel]
                   : "推理"}
@@ -302,8 +307,13 @@ export function AiComposer({
             </Pressable>
           ) : null}
           {snapshot.pending ? (
-            <Pressable style={aiStyles.sendButton} onPress={onStop}>
-              <Text style={aiStyles.sendLabel}>停止</Text>
+            <Pressable
+              accessibilityLabel="停止生成"
+              accessibilityRole="button"
+              style={aiStyles.sendButton}
+              onPress={onStop}
+            >
+              <IconDebugStop width={18} height={18} color={color.primaryForeground} />
             </Pressable>
           ) : (
             <Pressable
@@ -313,7 +323,7 @@ export function AiComposer({
               disabled={!canSend}
               onPress={onSend}
             >
-              <IconSend width={18} height={18} color={color.primaryForeground} />
+              <IconArrowUp width={18} height={18} color={color.primaryForeground} />
             </Pressable>
           )}
         </View>

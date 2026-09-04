@@ -77,7 +77,7 @@ export function AiAskUserBar({ interactions, onSubmit, onCancel }: AiAskUserBarP
         onChangeText={setDraft}
         placeholder={current.placeholder ?? "输入回答…"}
         placeholderTextColor={color.placeholder}
-        style={aiStyles.input}
+        style={aiStyles.composerInput}
       />
       <View style={aiStyles.rowActions}>
         <Pressable onPress={() => onCancel(current.id)}>
