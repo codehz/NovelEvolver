@@ -12,6 +12,7 @@ import Animated, {
   useSharedValue,
   withTiming,
 } from "react-native-reanimated";
+import { SafeAreaView } from "react-native-safe-area-context";
 import IconDiscard from "~icons/codicon/discard";
 import IconSave from "~icons/codicon/save";
 import IconTrash from "~icons/codicon/trash";
@@ -141,7 +142,7 @@ export function SettingsNavigator() {
     );
 
   return (
-    <View style={{ flex: 1, flexDirection: wide ? "row" : "column" }}>
+    <SafeAreaView edges={["bottom"]} style={{ flex: 1, flexDirection: wide ? "row" : "column" }}>
       {wide ? (
         <View style={{ width: SETTINGS_RAIL_WIDTH }}>{renderMaster()}</View>
       ) : (
@@ -178,7 +179,7 @@ export function SettingsNavigator() {
           {renderDetail()}
         </Animated.View>
       ) : null}
-    </View>
+    </SafeAreaView>
   );
 }
 

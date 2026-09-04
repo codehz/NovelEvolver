@@ -283,6 +283,7 @@ function OverlayShell<T>({
   children,
 }: OverlayShellProps<T>) {
   const navigation = useNavigation();
+  const insets = useSafeAreaInsets();
   const closingRef = useRef(false);
   const choiceRef = useRef(dismissValue);
   const progress = useSharedValue(0);
@@ -342,7 +343,15 @@ function OverlayShell<T>({
           enabled={avoidKeyboard}
           behavior={Platform.OS === "ios" ? "padding" : undefined}
           pointerEvents="box-none"
-          style={overlayStyles.frame}
+          style={[
+            overlayStyles.frame,
+            {
+              paddingTop: space[6] + insets.top,
+              paddingBottom: space[6] + insets.bottom,
+              paddingLeft: space[6] + insets.left,
+              paddingRight: space[6] + insets.right,
+            },
+          ]}
         >
           <Animated.View accessibilityRole="alert" style={[overlayStyles.card, cardStyle]}>
             {children(requestClose)}
