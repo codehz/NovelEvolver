@@ -8,6 +8,7 @@ import {
 } from "stream-markdown-parser";
 import type { MarkdownIt } from "stream-markdown-parser";
 
+import { color } from "../../../shared/theme";
 import { aiStyles } from "./ai-chrome";
 
 type AiMarkdownProps = {
@@ -107,13 +108,19 @@ function MarkdownNode({
     case "paragraph":
     case "inline":
       return (
-        <Text style={inline ? undefined : aiStyles.paragraph}>
+        <Text
+          selectable
+          selectionColor={color.accent}
+          style={inline ? undefined : aiStyles.paragraph}
+        >
           <InlineChildren nodes={node.children ?? []} keyPrefix={keyPath} />
         </Text>
       );
     case "heading":
       return (
         <Text
+          selectable
+          selectionColor={color.accent}
           style={
             node.level === 1
               ? aiStyles.heading1
@@ -168,6 +175,7 @@ function MarkdownNode({
         >
           <Text
             selectable
+            selectionColor={color.accent}
             style={aiStyles.codeText}
             textBreakStrategy="simple"
             android_hyphenationFrequency="none"
@@ -192,13 +200,13 @@ function MarkdownNode({
               >
                 {(row.cells ?? []).map((cell, cellIndex) => (
                   <View key={`${keyPath}-${rowIndex}-${cellIndex}`} style={aiStyles.tableCardField}>
-                    <Text style={aiStyles.tableCardLabel}>
+                    <Text selectable selectionColor={color.accent} style={aiStyles.tableCardLabel}>
                       <InlineChildren
                         nodes={headers[cellIndex]?.children ?? []}
                         keyPrefix={`${keyPath}-header-${cellIndex}`}
                       />
                     </Text>
-                    <Text style={aiStyles.tableCardValue}>
+                    <Text selectable selectionColor={color.accent} style={aiStyles.tableCardValue}>
                       <InlineChildren
                         nodes={cell.children ?? []}
                         keyPrefix={`${keyPath}-${rowIndex}-${cellIndex}`}
@@ -216,15 +224,31 @@ function MarkdownNode({
       return null;
 
     case "image":
-      return <Text style={aiStyles.metaText}>[图片: {node.alt || node.src}]</Text>;
+      return (
+        <Text selectable selectionColor={color.accent} style={aiStyles.metaText}>
+          [图片: {node.alt || node.src}]
+        </Text>
+      );
     case "checkbox":
     case "checkbox_input":
-      return <Text style={aiStyles.messageText}>{node.checked ? "☑" : "☐"}</Text>;
+      return (
+        <Text selectable selectionColor={color.accent} style={aiStyles.messageText}>
+          {node.checked ? "☑" : "☐"}
+        </Text>
+      );
     case "html_block":
     case "html_inline":
-      return <Text>{nodeText(node)}</Text>;
+      return (
+        <Text selectable selectionColor={color.accent}>
+          {nodeText(node)}
+        </Text>
+      );
     default:
-      return <Text>{nodeText(node)}</Text>;
+      return (
+        <Text selectable selectionColor={color.accent}>
+          {nodeText(node)}
+        </Text>
+      );
   }
 }
 
