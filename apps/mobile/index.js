@@ -2,6 +2,7 @@ import "./src/shared/node-compat/buffer";
 import "./src/shared/node-compat/text-encoding";
 import "./src/shared/node-compat/crypto-global";
 import "./src/shared/node-compat/structured-clone";
+import "./src/shared/node-compat/fetch";
 import { AppRegistry } from "react-native";
 import "react-native-gesture-handler";
 

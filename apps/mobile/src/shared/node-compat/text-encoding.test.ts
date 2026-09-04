@@ -21,4 +21,19 @@ describe("mobile text encoding compatibility", () => {
     const withBom = new Uint8Array([0xef, 0xbb, 0xbf, ...new TextEncoder().encode("abc")]);
     expect(new TextDecoder("utf-8", { ignoreBOM: true }).decode(withBom)).toBe("abc");
   });
+
+  test("reassembles a character split across stream chunks", () => {
+    const encoded = new TextEncoder().encode("你");
+    const decoder = new TextDecoder();
+    expect(decoder.decode(encoded.subarray(0, 1), { stream: true })).toBe("");
+    expect(decoder.decode(encoded.subarray(1), { stream: true })).toBe("你");
+    expect(decoder.decode()).toBe("");
+  });
+
+  test("flushes an incomplete trailing sequence on the final decode", () => {
+    const decoder = new TextDecoder();
+    const encoded = new TextEncoder().encode("ab你");
+    expect(decoder.decode(encoded.subarray(0, 3), { stream: true })).toBe("ab");
+    expect(decoder.decode()).toBe("\uFFFD");
+  });
 });

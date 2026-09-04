@@ -1,0 +1,36 @@
+{
+  "name": "@novelevolver/mobile-fetch",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Streaming fetch Nitro Module for the NovelEvolver mobile app",
+  "files": [
+    "android",
+    "ios",
+    "nitrogen",
+    "src",
+    "nitro.json",
+    "NovelEvolverMobileFetch.podspec",
+    "react-native.config.cjs"
+  ],
+  "type": "module",
+  "react-native": "./src/index.ts",
+  "exports": {
+    ".": {
+      "types": "./src/index.ts",
+      "react-native": "./src/index.ts",
+      "default": "./src/index.ts"
+    }
+  },
+  "scripts": {
+    "specs": "nitrogen --logLevel=\"debug\""
+  },
+  "devDependencies": {
+    "nitrogen": "^0.37.1",
+    "react-native-nitro-modules": "^0.37.1"
+  },
+  "peerDependencies": {
+    "react": ">=19.2.0",
+    "react-native": ">=0.87.0",
+    "react-native-nitro-modules": "^0.37.1"
+  }
+}

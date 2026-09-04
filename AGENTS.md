@@ -14,6 +14,7 @@ This is a **Bun workspace monorepo**. Root `AGENTS.md` is the always-on index. *
 | [packages/worktree/AGENTS.md](packages/worktree/AGENTS.md)                                                     | Shared worktree session / app-state SQL     |
 | [packages/ai-runtime/AGENTS.md](packages/ai-runtime/AGENTS.md)                                                 | Shared AI conversation engine               |
 | [packages/mobile-sqlite/AGENTS.md](packages/mobile-sqlite/AGENTS.md)                                           | Mobile SQLite Nitro Module / amalgamation   |
+| [packages/mobile-fetch/AGENTS.md](packages/mobile-fetch/AGENTS.md)                                             | Mobile streaming fetch Nitro Module         |
 | [scripts/AGENTS.md](scripts/AGENTS.md)                                                                         | Fonts and repo-level build helpers          |
 
 ## Compatibility (prototype)
@@ -30,6 +31,7 @@ packages/desktop-rpc/  @novelevolver/desktop-rpc — capnweb contracts (desktop 
 packages/worktree/     @novelevolver/worktree — shared worktree session + app-state SQL
 packages/ai-runtime/   @novelevolver/ai-runtime — shared AI conversation engine
 packages/mobile-sqlite/ @novelevolver/mobile-sqlite — mobile SQLite Nitro Module
+packages/mobile-fetch/  @novelevolver/mobile-fetch — mobile streaming fetch Nitro Module
 scripts/            repo-level helpers (electron bundle, fonts)
 ```
 

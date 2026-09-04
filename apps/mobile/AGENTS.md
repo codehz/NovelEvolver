@@ -7,7 +7,7 @@ Bare React Native (Community CLI + Metro). **Do not add Expo** (`expo`, `expo-ro
 - Domain DTOs: `@novelevolver/domain` (workspace package; no `#app` path alias)
 - Metro resolves workspace packages through `react-native-monorepo-config`; the custom `metro-icons-resolver.js` generates Codicon components backed by `react-native-svg`
 - Hermes does not parse `async function*` / `for await`; the standard React Native Babel preset transforms those in app + `@novelevolver/ai-runtime` / `@codehz/ai`
-- Hermes has no Web Crypto, `TextDecoder`, or `structuredClone`; `index.js` installs `crypto.randomUUID` via `src/shared/node-compat/crypto-global.ts`, `TextDecoder` via `src/shared/node-compat/text-encoding.ts`, and `structuredClone` via `src/shared/node-compat/structured-clone.ts` (`@codehz/ai` uses the global)
+- Hermes has no Web Crypto, `TextDecoder`, or `structuredClone`; `index.js` installs `crypto.randomUUID` via `src/shared/node-compat/crypto-global.ts`, `TextDecoder` via `src/shared/node-compat/text-encoding.ts` (including incremental UTF-8 `stream: true` for `@codehz/ai`), `structuredClone` via `src/shared/node-compat/structured-clone.ts`, and a streaming `fetch` via `src/shared/node-compat/fetch.ts` (`@novelevolver/mobile-fetch`; RN `fetch` has no `response.body`)
 - Icons: on-demand `~icons/codicon/*` imports are handled by the Metro custom resolver and compiled to `react-native-svg`
 - Theme: Catppuccin Mocha JS tokens in `src/shared/theme/` (no NativeWind / Tailwind). Semantic roles match desktop `@theme`. Flavor is pinned — do not follow system light mode
 - Backend: mobile-specific (MMKV for settings, SQLite app-state + nano-git for projects). **Not** capnweb / `desktop-rpc`

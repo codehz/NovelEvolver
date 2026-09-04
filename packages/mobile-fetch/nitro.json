@@ -1,0 +1,25 @@
+{
+  "$schema": "https://nitro.margelo.com/nitro.schema.json",
+  "cxxNamespace": ["mobilefetch"],
+  "ios": {
+    "iosModuleName": "NovelEvolverMobileFetch"
+  },
+  "android": {
+    "androidNamespace": ["mobilefetch"],
+    "androidCxxLibName": "NovelEvolverMobileFetch"
+  },
+  "autolinking": {
+    "NativeStreamFetch": {
+      "ios": {
+        "language": "swift",
+        "implementationClassName": "HybridNativeStreamFetch"
+      },
+      "android": {
+        "language": "kotlin",
+        "implementationClassName": "HybridNativeStreamFetch"
+      }
+    }
+  },
+  "ignorePaths": ["**/node_modules"],
+  "gitAttributesGeneratedFlag": true
+}

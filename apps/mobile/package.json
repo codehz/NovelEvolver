@@ -18,6 +18,7 @@
     "@codehz/ai": "0.9.1",
     "@novelevolver/ai-runtime": "workspace:*",
     "@novelevolver/domain": "workspace:*",
+    "@novelevolver/mobile-fetch": "workspace:*",
     "@novelevolver/mobile-sqlite": "workspace:*",
     "@novelevolver/worktree": "workspace:*",
     "@react-navigation/core": "^7.21.13",

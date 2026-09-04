@@ -20,6 +20,11 @@ extensions.configure(com.facebook.react.ReactSettingsExtension) { ex ->
       new File(repoRoot, "packages/mobile-sqlite/nitro.json"),
       new File(repoRoot, "packages/mobile-sqlite/android/build.gradle"),
       new File(repoRoot, "packages/mobile-sqlite/NovelEvolverMobileSqlite.podspec"),
+      new File(repoRoot, "packages/mobile-fetch/package.json"),
+      new File(repoRoot, "packages/mobile-fetch/react-native.config.cjs"),
+      new File(repoRoot, "packages/mobile-fetch/nitro.json"),
+      new File(repoRoot, "packages/mobile-fetch/android/build.gradle"),
+      new File(repoRoot, "packages/mobile-fetch/NovelEvolverMobileFetch.podspec"),
     ),
   )
 }

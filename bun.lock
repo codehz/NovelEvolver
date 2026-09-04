@@ -89,6 +89,7 @@
         "@codehz/ai": "0.9.1",
         "@novelevolver/ai-runtime": "workspace:*",
         "@novelevolver/domain": "workspace:*",
+        "@novelevolver/mobile-fetch": "workspace:*",
         "@novelevolver/mobile-sqlite": "workspace:*",
         "@novelevolver/worktree": "workspace:*",
         "@react-navigation/core": "^7.21.13",
@@ -158,6 +159,19 @@
     "packages/domain": {
       "name": "@novelevolver/domain",
       "version": "0.3.4",
+    },
+    "packages/mobile-fetch": {
+      "name": "@novelevolver/mobile-fetch",
+      "version": "0.0.0",
+      "devDependencies": {
+        "nitrogen": "^0.37.1",
+        "react-native-nitro-modules": "^0.37.1",
+      },
+      "peerDependencies": {
+        "react": ">=19.2.0",
+        "react-native": ">=0.87.0",
+        "react-native-nitro-modules": "^0.37.1",
+      },
     },
     "packages/mobile-sqlite": {
       "name": "@novelevolver/mobile-sqlite",
@@ -608,6 +622,8 @@
     "@novelevolver/domain": ["@novelevolver/domain@workspace:packages/domain"],
 
     "@novelevolver/mobile": ["@novelevolver/mobile@workspace:apps/mobile"],
+
+    "@novelevolver/mobile-fetch": ["@novelevolver/mobile-fetch@workspace:packages/mobile-fetch"],
 
     "@novelevolver/mobile-sqlite": ["@novelevolver/mobile-sqlite@workspace:packages/mobile-sqlite"],
 
