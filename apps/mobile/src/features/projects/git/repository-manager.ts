@@ -16,6 +16,7 @@ import { WorktreeSession, type ProjectDbRecord } from "@novelevolver/worktree";
 import type { Repository } from "nano-git/repository/core";
 
 import { getMobileSettings } from "../../../shared/settings/session";
+import { trackAiExecution } from "../ai/ai-execution-coordinator";
 import { getMobileAppState } from "./app-state";
 import { openMobileRepository } from "./nano-git-sqlite";
 
@@ -26,6 +27,7 @@ export type OpenedProject = {
   worktree: WorktreeSession;
   fileName: string;
   aiChat: ProjectAiChatController;
+  aiExecutionCleanup: (() => void) | null;
   close(): void;
 };
 
@@ -241,7 +243,9 @@ export class ProjectRepositoryManager {
       worktree,
       fileName: record.path,
       aiChat: null as unknown as ProjectAiChatController,
+      aiExecutionCleanup: null,
       close: () => {
+        opened.aiExecutionCleanup?.();
         opened.aiChat[Symbol.dispose]();
         worktree[Symbol.dispose]();
         repositoryDb.close();
@@ -256,6 +260,7 @@ export class ProjectRepositoryManager {
       getAiAgentsStore: () => getMobileSettings().agents,
       getAiRuntimePolicyStore: () => getMobileSettings().policy,
     });
+    opened.aiExecutionCleanup = trackAiExecution(opened.aiChat);
     this.#opened = opened;
     return opened;
   }
