@@ -14,6 +14,7 @@ import Animated, {
 } from "react-native-reanimated";
 import { SafeAreaView } from "react-native-safe-area-context";
 import IconDiscard from "~icons/codicon/discard";
+import IconExport from "~icons/codicon/export";
 import IconSave from "~icons/codicon/save";
 import IconTrash from "~icons/codicon/trash";
 
@@ -223,6 +224,9 @@ function SettingsDetailView({ detail, wide, onBack, onSaved }: SettingsDetailVie
                   Icon={IconDiscard}
                   disabled={actions.resetToDefaultsDisabled}
                 />
+              ) : null}
+              {actions.export ? (
+                <SettingsHeaderButton label="导出" onPress={actions.export} Icon={IconExport} />
               ) : null}
               <SettingsHeaderButton label="保存" onPress={actions.save} Icon={IconSave} />
               {actions.remove ? (

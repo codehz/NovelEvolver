@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 
+import { cn } from "#app/shared/lib/ui/cn";
 import { Button } from "#app/shared/ui";
 
 import {
@@ -17,6 +18,8 @@ type SettingsRailProps = {
   addLabel: string;
   addDisabled?: boolean;
   onAdd: () => void;
+  importLabel?: string;
+  onImport?: () => void;
 };
 
 /** Left master list rail with bottom primary add action. */
@@ -27,6 +30,8 @@ export function SettingsRail({
   addLabel,
   addDisabled = false,
   onAdd,
+  importLabel,
+  onImport,
 }: SettingsRailProps) {
   return (
     <aside className={settingsDualPaneRailClass}>
@@ -36,7 +41,15 @@ export function SettingsRail({
           {children}
         </ul>
       </div>
-      <div className={settingsDualPaneRailFooterClass}>
+      <div
+        className={cn(settingsDualPaneRailFooterClass, onImport != null && "flex flex-col gap-1")}
+      >
+        {onImport != null && importLabel != null ? (
+          <Button className="w-full" disabled={addDisabled} variant="secondary" onClick={onImport}>
+            <span aria-hidden="true" className="icon-[codicon--desktop-download] text-sm" />
+            {importLabel}
+          </Button>
+        ) : null}
         <Button className="w-full" disabled={addDisabled} variant="primary" onClick={onAdd}>
           <span aria-hidden="true" className="icon-[codicon--add] text-sm" />
           {addLabel}

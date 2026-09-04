@@ -5,6 +5,11 @@
       android:excludeFromRecents="true"
       android:exported="false"
       android:theme="@android:style/Theme.Translucent.NoTitleBar" />
+    <activity
+      android:name=".Utf8ImportActivity"
+      android:excludeFromRecents="true"
+      android:exported="false"
+      android:theme="@android:style/Theme.Translucent.NoTitleBar" />
     <provider
       android:name=".NpkDocumentsProvider"
       android:authorities="${applicationId}.documents"

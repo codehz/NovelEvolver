@@ -1,18 +1,9 @@
-import { NitroModules } from "react-native-nitro-modules";
-
-import type { NativeFs } from "./NativeFs.nitro";
+import { getNativeFs } from "./native-fs";
 
 /** SQLite `location` for project `.npk` files (relative to the platform base directory). */
 export const PROJECTS_LOCATION = "novelevolver/projects";
 
 export { displayNameFromFile, toProjectFileName } from "./project-file-name";
-
-let nativeFs: NativeFs | undefined;
-
-function getNativeFs(): NativeFs {
-  nativeFs ??= NitroModules.createHybridObject<NativeFs>("NativeFs");
-  return nativeFs;
-}
 
 export function listProjectFiles(): string[] {
   return getNativeFs().listNpkFiles();

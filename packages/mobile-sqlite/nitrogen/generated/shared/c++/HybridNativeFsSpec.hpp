@@ -57,6 +57,8 @@ namespace margelo::nitro::mobilesqlite {
       virtual std::shared_ptr<Promise<std::string>> importNpkFile() = 0;
       virtual void shareFile(const std::string& fileName) = 0;
       virtual void notifyChanged() = 0;
+      virtual std::shared_ptr<Promise<std::string>> pickUtf8File() = 0;
+      virtual void shareUtf8File(const std::string& fileName, const std::string& content) = 0;
 
     protected:
       // Hybrid Setup

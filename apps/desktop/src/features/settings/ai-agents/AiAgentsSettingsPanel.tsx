@@ -282,6 +282,22 @@ export function AiAgentsSettingsPanel({ active = true }: AiAgentsSettingsPanelPr
     await selectCreateWithSeed(seedFromAgent(agent, agents));
   };
 
+  const handleImport = async () => {
+    const ok = await requestLeave();
+    if (!ok) {
+      return;
+    }
+    const result = await runMutation(() => settingsService.importAiAgent(), "导入 Agent 失败");
+    if (result == null) {
+      return;
+    }
+    applySelection({ type: "edit", id: result.agentId });
+  };
+
+  const handleExport = async (id: string) => {
+    await runMutation(() => settingsService.exportAiAgent(id), "导出 Agent 失败");
+  };
+
   if (isLoading && data === undefined) {
     return <SettingsPanelLoading />;
   }
@@ -316,8 +332,12 @@ export function AiAgentsSettingsPanel({ active = true }: AiAgentsSettingsPanelPr
           listAriaLabel="Agent 列表"
           addLabel="添加 Agent"
           addDisabled={busy}
+          importLabel="导入"
           onAdd={() => {
             void select({ type: "create" });
+          }}
+          onImport={() => {
+            void handleImport();
           }}
         >
           {agents.map((agent) => {
@@ -404,6 +424,20 @@ export function AiAgentsSettingsPanel({ active = true }: AiAgentsSettingsPanelPr
                   )}
                 </div>
                 <div className={settingsHeaderActionsClass}>
+                  {selectedAgent ? (
+                    <Button
+                      aria-label={`导出 Agent ${selectedAgent.name}`}
+                      className={settingsGhostActionClass}
+                      disabled={busy}
+                      variant="ghost"
+                      size="icon-md"
+                      onClick={() => {
+                        void handleExport(selectedAgent.id);
+                      }}
+                    >
+                      <span aria-hidden="true" className="icon-[codicon--export] text-base" />
+                    </Button>
+                  ) : null}
                   {selectedAgent ? (
                     <Button
                       aria-label={`复制 Agent ${selectedAgent.name}`}

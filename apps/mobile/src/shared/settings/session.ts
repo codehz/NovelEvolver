@@ -1,3 +1,9 @@
+import {
+  applyAgentExport,
+  resolveImportedAgentId,
+  serializeAgentExport,
+  type AiAgentImportResult,
+} from "@novelevolver/domain/settings/agent-export";
 import type {
   AiAgentConfigWrite,
   AiModelConfigWrite,
@@ -109,6 +115,24 @@ export class MobileSettingsSession {
     const snapshot = this.agents.remove(id);
     this.#persistAgents();
     return snapshot;
+  }
+
+  exportAgentPayload(id: string): string {
+    const agent = this.agents.findRuntimeConfig(id);
+    if (agent == null) {
+      throw new Error("Agent 不存在。");
+    }
+    return serializeAgentExport(agent);
+  }
+
+  importAgentFromText(text: string): AiAgentImportResult {
+    const previousIds = new Set(this.agents.getSnapshot().agents.map((agent) => agent.id));
+    const write = applyAgentExport(text, (id) => this.agents.findRuntimeConfig(id));
+    const snapshot = this.upsertAgent(write);
+    return {
+      agentId: resolveImportedAgentId(write, snapshot, previousIds),
+      snapshot,
+    };
   }
 
   upsertPrompt(input: AiPromptConfigWrite) {

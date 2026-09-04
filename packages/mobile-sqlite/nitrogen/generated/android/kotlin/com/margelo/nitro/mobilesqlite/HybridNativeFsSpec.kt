@@ -57,6 +57,14 @@ abstract class HybridNativeFsSpec: HybridObject() {
   @DoNotStrip
   @Keep
   abstract fun notifyChanged(): Unit
+  
+  @DoNotStrip
+  @Keep
+  abstract fun pickUtf8File(): Promise<String>
+  
+  @DoNotStrip
+  @Keep
+  abstract fun shareUtf8File(fileName: String, content: String): Unit
 
   // Default implementation of `HybridObject.toString()`
   override fun toString(): String {

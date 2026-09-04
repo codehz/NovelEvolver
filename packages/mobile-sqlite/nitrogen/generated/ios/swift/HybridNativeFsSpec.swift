@@ -20,6 +20,8 @@ public protocol HybridNativeFsSpec_protocol: HybridObject {
   func importNpkFile() throws -> Promise<String>
   func shareFile(fileName: String) throws -> Void
   func notifyChanged() throws -> Void
+  func pickUtf8File() throws -> Promise<String>
+  func shareUtf8File(fileName: String, content: String) throws -> Void
 }
 
 public extension HybridNativeFsSpec_protocol {

@@ -98,5 +98,25 @@ namespace margelo::nitro::mobilesqlite {
     static const auto method = _javaPart->javaClassStatic()->getMethod<void()>("notifyChanged");
     method(_javaPart);
   }
+  std::shared_ptr<Promise<std::string>> JHybridNativeFsSpec::pickUtf8File() {
+    static const auto method = _javaPart->javaClassStatic()->getMethod<jni::local_ref<JPromise::javaobject>()>("pickUtf8File");
+    auto __result = method(_javaPart);
+    return [&]() {
+      auto __promise = Promise<std::string>::create();
+      __result->cthis()->addOnResolvedListener([=](const jni::alias_ref<jni::JObject>& __boxedResult) {
+        auto __result = jni::static_ref_cast<jni::JString>(__boxedResult);
+        __promise->resolve(__result->toStdString());
+      });
+      __result->cthis()->addOnRejectedListener([=](const jni::alias_ref<jni::JThrowable>& __throwable) {
+        jni::JniException __jniError(__throwable);
+        __promise->reject(std::make_exception_ptr(__jniError));
+      });
+      return __promise;
+    }();
+  }
+  void JHybridNativeFsSpec::shareUtf8File(const std::string& fileName, const std::string& content) {
+    static const auto method = _javaPart->javaClassStatic()->getMethod<void(jni::alias_ref<jni::JString> /* fileName */, jni::alias_ref<jni::JString> /* content */)>("shareUtf8File");
+    method(_javaPart, jni::make_jstring(fileName), jni::make_jstring(content));
+  }
 
 } // namespace margelo::nitro::mobilesqlite

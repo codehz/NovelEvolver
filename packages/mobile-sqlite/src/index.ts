@@ -22,6 +22,7 @@ export {
   shareProjectFile,
   toProjectFileName,
 } from "./project-files";
+export { pickUtf8File, shareUtf8File } from "./utf8-files";
 
 let nativeSqlite: NativeSqlite | undefined;
 

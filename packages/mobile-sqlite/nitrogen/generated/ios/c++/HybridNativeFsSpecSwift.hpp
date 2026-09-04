@@ -116,6 +116,20 @@ namespace margelo::nitro::mobilesqlite {
         std::rethrow_exception(__result.error());
       }
     }
+    inline std::shared_ptr<Promise<std::string>> pickUtf8File() override {
+      auto __result = _swiftPart.pickUtf8File();
+      if (__result.hasError()) [[unlikely]] {
+        std::rethrow_exception(__result.error());
+      }
+      auto __value = std::move(__result.value());
+      return __value;
+    }
+    inline void shareUtf8File(const std::string& fileName, const std::string& content) override {
+      auto __result = _swiftPart.shareUtf8File(fileName, content);
+      if (__result.hasError()) [[unlikely]] {
+        std::rethrow_exception(__result.error());
+      }
+    }
 
   private:
     NovelEvolverMobileSqlite::HybridNativeFsSpec_cxx _swiftPart;

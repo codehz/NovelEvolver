@@ -1,3 +1,4 @@
+import type { AiAgentImportResult } from "@novelevolver/domain/settings/agent-export";
 import type {
   AiAgentConfigWrite,
   AiAgentsSettingsSnapshot,
@@ -23,6 +24,8 @@ export interface SettingsService extends RpcTarget {
   getAiAgents(): AiAgentsSettingsSnapshot;
   upsertAiAgent(input: AiAgentConfigWrite): AiAgentsSettingsSnapshot;
   removeAiAgent(id: string): AiAgentsSettingsSnapshot;
+  exportAiAgent(id: string): Promise<boolean>;
+  importAiAgent(): Promise<AiAgentImportResult | null>;
   getAiPrompts(): AiPromptsSettingsSnapshot;
   upsertAiPrompt(input: AiPromptConfigWrite): AiPromptsSettingsSnapshot;
   removeAiPrompt(id: string): AiPromptsSettingsSnapshot;

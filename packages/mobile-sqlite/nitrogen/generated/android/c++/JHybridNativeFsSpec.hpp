@@ -61,6 +61,8 @@ namespace margelo::nitro::mobilesqlite {
     std::shared_ptr<Promise<std::string>> importNpkFile() override;
     void shareFile(const std::string& fileName) override;
     void notifyChanged() override;
+    std::shared_ptr<Promise<std::string>> pickUtf8File() override;
+    void shareUtf8File(const std::string& fileName, const std::string& content) override;
 
   private:
     jni::global_ref<JHybridNativeFsSpec::JavaPart> _javaPart;

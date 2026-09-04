@@ -21,6 +21,8 @@ namespace margelo::nitro::mobilesqlite {
       prototype.registerHybridMethod("importNpkFile", &HybridNativeFsSpec::importNpkFile);
       prototype.registerHybridMethod("shareFile", &HybridNativeFsSpec::shareFile);
       prototype.registerHybridMethod("notifyChanged", &HybridNativeFsSpec::notifyChanged);
+      prototype.registerHybridMethod("pickUtf8File", &HybridNativeFsSpec::pickUtf8File);
+      prototype.registerHybridMethod("shareUtf8File", &HybridNativeFsSpec::shareUtf8File);
     });
   }
 

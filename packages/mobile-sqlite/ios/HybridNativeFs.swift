@@ -57,6 +57,18 @@ class HybridNativeFs : HybridNativeFsSpec {
 
   func notifyChanged() throws {}
 
+  func pickUtf8File() throws -> Promise<String> {
+    return Promise.async {
+      throw RuntimeError.error(withMessage: "iOS 文件导入尚未实现")
+    }
+  }
+
+  func shareUtf8File(fileName: String, content: String) throws {
+    _ = fileName
+    _ = content
+    throw RuntimeError.error(withMessage: "iOS 分享尚未实现")
+  }
+
   private func documentsDirectory() throws -> URL {
     let paths = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)
     guard let documentsPath = paths.first else {

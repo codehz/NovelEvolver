@@ -1,17 +1,24 @@
+import { agentExportFileName } from "@novelevolver/domain/settings/agent-export";
 import { builtinAiAgentById } from "@novelevolver/domain/settings/ai-builtin-agents";
 import { AI_AGENT_DESCRIPTION_MAX_LENGTH } from "@novelevolver/domain/settings/ai-settings";
 import type { AiAgentConfigPublic } from "@novelevolver/domain/settings/ai-settings";
 import { isBuiltinAiAgentId } from "@novelevolver/domain/settings/ai-settings";
+import { pickUtf8File, shareUtf8File } from "@novelevolver/mobile-sqlite";
 import { useFocusEffect } from "@react-navigation/native";
 import { useCallback, useMemo, useState } from "react";
-import { Pressable, ScrollView, Text, View } from "react-native";
+import { Platform, Pressable, ScrollView, Text, View } from "react-native";
 
 import { getMobileSettings } from "../../../shared/settings/session";
+import { useOverlay } from "../../../shared/ui/OverlayHost";
 import { SettingsMenuChoiceField, SettingsSwitchField, SettingsTextField } from "../fields";
 import { settingsStyles } from "../settings-chrome";
 import type { SettingsDetailActionChange } from "../settings-detail-actions";
 import { useSettingsDetailActions } from "../settings-detail-actions";
-import { setSettingsDirty, useSettingsFormDirty } from "../settings-leave-guard";
+import {
+  requestSettingsLeave,
+  setSettingsDirty,
+  useSettingsFormDirty,
+} from "../settings-leave-guard";
 import { useSettingsLeaveGuard } from "../use-settings-leave-guard";
 
 type AiAgentsListProps = {
@@ -23,6 +30,7 @@ type AiAgentsListProps = {
 
 export function AiAgentsList({ selectedId, adding, onOpen, onAdd }: AiAgentsListProps) {
   const [tick, setTick] = useState(0);
+  const overlay = useOverlay();
   const snapshot = getMobileSettings().agents.getSnapshot();
   void tick;
 
@@ -31,6 +39,27 @@ export function AiAgentsList({ selectedId, adding, onOpen, onAdd }: AiAgentsList
       setTick((value) => value + 1);
     }, []),
   );
+
+  const importAgent = async () => {
+    const ok = await requestSettingsLeave();
+    if (!ok) {
+      return;
+    }
+    try {
+      const text = await pickUtf8File();
+      if (text == null) {
+        return;
+      }
+      const { agentId } = getMobileSettings().importAgentFromText(text);
+      setTick((value) => value + 1);
+      onOpen(agentId);
+    } catch (error) {
+      await overlay.alert({
+        title: "导入失败",
+        message: error instanceof Error ? error.message : String(error),
+      });
+    }
+  };
 
   return (
     <View style={settingsStyles.detail}>
@@ -57,6 +86,11 @@ export function AiAgentsList({ selectedId, adding, onOpen, onAdd }: AiAgentsList
             </Text>
           </Pressable>
         ))}
+        {Platform.OS === "android" ? (
+          <Pressable style={settingsStyles.addCardButton} onPress={() => void importAgent()}>
+            <Text style={settingsStyles.addCardLabel}>导入 Agent</Text>
+          </Pressable>
+        ) : null}
         <Pressable
           style={[settingsStyles.addCardButton, adding && settingsStyles.cardSelected]}
           onPress={onAdd}
@@ -103,6 +137,7 @@ type AgentFormProps = {
 
 function AgentForm({ initial, error, onError, onSaved, onActionsChange }: AgentFormProps) {
   const session = getMobileSettings();
+  const overlay = useOverlay();
   const models = session.models.getSnapshot();
   const tools = session.agents.getSnapshot().tools;
   const builtin = initial?.builtin ?? false;
@@ -184,9 +219,26 @@ function AgentForm({ initial, error, onError, onSaved, onActionsChange }: AgentF
     setSubagentEligible(codeDefaults.subagentEligible);
     setTextOnlyMode(codeDefaults.textOnlyMode);
   }, [codeDefaults]);
+  const exportAgent =
+    initial != null && Platform.OS === "android"
+      ? () => {
+          try {
+            shareUtf8File(
+              agentExportFileName(initial.name),
+              session.exportAgentPayload(initial.id),
+            );
+          } catch (caught) {
+            void overlay.alert({
+              title: "导出失败",
+              message: caught instanceof Error ? caught.message : String(caught),
+            });
+          }
+        }
+      : undefined;
   useSettingsDetailActions(onActionsChange, {
     save,
     remove,
+    export: exportAgent,
     resetToDefaults: codeDefaults ? resetToDefaults : undefined,
     resetToDefaultsDisabled: isAtCodeDefaults,
   });

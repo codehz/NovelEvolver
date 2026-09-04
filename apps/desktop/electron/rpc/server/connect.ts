@@ -83,7 +83,7 @@ export class ElectronRpcServer {
     const windowService = new WindowServiceImpl(window, this.#deps);
     const projectLibraryService = new ProjectLibraryServiceImpl(window, this.#deps);
     const workspaceService = new WorkspaceServiceImpl(window, this.#deps);
-    const settingsService = new SettingsServiceImpl(this.#deps);
+    const settingsService = new SettingsServiceImpl(window, this.#deps);
     const root = new AppRpcRootImpl(
       windowService,
       projectLibraryService,

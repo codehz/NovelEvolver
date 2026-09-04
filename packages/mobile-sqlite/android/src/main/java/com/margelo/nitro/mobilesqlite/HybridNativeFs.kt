@@ -62,6 +62,28 @@ class HybridNativeFs : HybridNativeFsSpec() {
     ProjectFiles.notifyChanged(requireContext())
   }
 
+  override fun pickUtf8File(): Promise<String> {
+    return Utf8ImportActivity.launch(requireContext())
+  }
+
+  override fun shareUtf8File(fileName: String, content: String) {
+    val context = requireContext()
+    val file = Utf8Files.resolveExport(context, fileName)
+    file.writeText(content)
+    val uri = FileProvider.getUriForFile(context, ProjectFiles.fileProviderAuthority(context), file)
+    val send = Intent(Intent.ACTION_SEND).apply {
+      type = Utf8Files.MIME_TYPE
+      putExtra(Intent.EXTRA_STREAM, uri)
+      putExtra(Intent.EXTRA_TITLE, fileName)
+      clipData = ClipData.newRawUri(fileName, uri)
+      addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+    }
+    val chooser = Intent.createChooser(send, fileName).apply {
+      addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_GRANT_READ_URI_PERMISSION)
+    }
+    context.startActivity(chooser)
+  }
+
   private fun requireContext() =
     NitroModules.applicationContext
       ?: throw Error("Cannot access project files — no Android Context available")
