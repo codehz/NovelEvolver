@@ -11,6 +11,6 @@
     "@codehz/ai": "0.9.1",
     "@novelevolver/domain": "workspace:*",
     "@novelevolver/worktree": "workspace:*",
-    "nanoid": "^6.0.0"
+    "nanoid": "^6.0.1"
   }
 }
